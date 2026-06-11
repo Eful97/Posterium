@@ -38,6 +38,7 @@ yarn-error.log*
 
 # opencode
 /.opencode/
+/CLAUDE.md
 
 # vercel
 .vercel
