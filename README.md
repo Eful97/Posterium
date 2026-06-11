@@ -10,6 +10,10 @@ app_port: 7860
 
 # Posterium 🎬
 
+<p align="center">
+  <img src="public/posterium.svg" alt="Posterium" width="400" />
+</p>
+
 Crea poster personalizzati per Stremio con badge genere/rating, ranking streaming e loghi.
 
 ## Funzionalità
