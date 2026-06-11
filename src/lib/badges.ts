@@ -23,7 +23,7 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
       <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.12)"/>
     </filter>
   </defs>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="Inter, SF Pro Display, Geist, Helvetica Neue, sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#s)">${escapeXml(fullText)}</text>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#s)">${escapeXml(fullText)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
@@ -84,7 +84,7 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} Q ${totalW},${svgH} ${totalW-r},${svgH} L ${r},${svgH} Q 0,${svgH} 0,${svgH-r} Z" fill="url(#g)"/>
     <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   </g>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Inter, SF Pro Display, Geist, Helvetica Neue, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(fullText)}</text>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(fullText)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
@@ -127,7 +127,7 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} Q ${totalW},${svgH} ${totalW-r},${svgH} L ${r},${svgH} Q 0,${svgH} 0,${svgH-r} Z" fill="url(#g)"/>
     <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   </g>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Inter, SF Pro Display, Geist, Helvetica Neue, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(label)}</text>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(label)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
