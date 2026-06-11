@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y fonts-noto && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm install
+RUN rm -f package-lock.json && npm install && npm install lightningcss-linux-x64-gnu
 
 COPY . .
 
