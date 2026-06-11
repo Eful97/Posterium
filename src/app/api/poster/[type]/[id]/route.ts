@@ -7,7 +7,7 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG } from "@/lib/badges"
 
-const RENDER_VERSION = 16
+const RENDER_VERSION = 17
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -157,9 +157,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const finalLogoW = Math.min(logoW, pw)
       logoH = Math.min(logoHval, ph, maxLogoH)
       const logoResized = await sharp(logoBuf).resize(finalLogoW, logoH, { fit: "inside" }).png().toBuffer()
-      const logoX = Math.round((pw - finalLogoW) / 2 + userOx)
+      const resizedMeta = await sharp(logoResized).metadata()
+      const actualLogoW = resizedMeta.width || finalLogoW
+      const actualLogoH = resizedMeta.height || logoH
+      const logoX = Math.round((pw - actualLogoW) / 2 + userOx)
       const logoBadgeOffset = (badgesEnabled && genreName && voteAverage && voteAverage > 0) ? 0 : Math.round(40 * s)
-      logoTop = Math.round(ph - logoH - ph * 0.1 + userOy + logoBadgeOffset)
+      logoTop = Math.round(ph - actualLogoH - ph * 0.1 + userOy + logoBadgeOffset)
       composites.push({ input: logoResized, top: logoTop, left: logoX })
       }
 
