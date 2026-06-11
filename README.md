@@ -1,15 +1,3 @@
----
-title: Posterium
-emoji: 🎬
-colorFrom: purple
-colorTo: indigo
-sdk: docker
-pinned: false
-app_port: 7860
----
-
-# Posterium 🎬
-
 <p align="center">
   <img src="public/posterium.svg" alt="Posterium" width="400" />
 </p>
