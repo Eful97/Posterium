@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y fonts-noto && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN rm -f package-lock.json && npm install
+RUN npm ci
 
 COPY . .
 
