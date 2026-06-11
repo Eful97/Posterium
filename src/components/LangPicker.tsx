@@ -1,0 +1,28 @@
+"use client"
+
+import { PICKER_LANGS, LANG_FLAGS } from "@/lib/utils"
+
+export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
+  return (
+    <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
+      <div className="w-full max-w-lg mx-4">
+        <div className="text-center mb-10">
+          <img src="/posterium.svg" alt="Posterium" className="h-16 w-auto mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-zinc-100">Benvenuto in Posterium</h2>
+          <p className="text-sm text-zinc-400 mt-1.5">Scegli la tua lingua preferita</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {PICKER_LANGS.map((l) => (
+            <button key={l.code} onClick={() => onPick(l.code)} className="flex items-center gap-2 px-4 py-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-accent/50 hover:bg-zinc-800 active:scale-[0.97] transition-all duration-200 text-left group">
+              <span className="text-2xl shrink-0">{LANG_FLAGS[l.code] || "🌐"}</span>
+              <div>
+                <p className="text-sm font-medium text-zinc-200 group-hover:text-accent transition-colors">{l.name}</p>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{l.code}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
