@@ -26,7 +26,7 @@ export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbK
       <div className="flex flex-col gap-1">
         <label className="text-[10px] text-zinc-400 font-medium">Chiave MDBList</label>
         <div className="flex gap-1">
-          <input type="text" value={mdblistApiKey} onChange={(e) => setMdblistApiKey(e.target.value)} onBlur={() => localStorage.setItem("mdblist_key", mdblistApiKey)} onKeyDown={(e) => { if (e.key === "Enter") { localStorage.setItem("mdblist_key", mdblistApiKey); setSettingsOpen(false) } }} placeholder="Inserisci la chiave MDBList" className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-600" />
+          <input key={mdblistApiKey} type="text" defaultValue={mdblistApiKey} onChange={(e) => { setMdblistApiKey(e.target.value); localStorage.setItem("mdblist_key", e.target.value) }} placeholder="Inserisci la chiave MDBList" className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-600" />
         </div>
       </div>
       <button onClick={(e) => { exportData(); setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">Esporta JSON</button>
