@@ -32,7 +32,7 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
   const bulletW = Math.round(starFontSize * 0.4)
   const starW = Math.round(starFontSize * 0.75)
   const voteW = Math.round(voteStr.length * charW)
-  const gap = Math.round(fontSize * 0.25)
+  const gap = Math.round(fontSize * 0.33)
   const pad = Math.round(fontSize * 0.35)
   const totalW = Math.round(genreW + gap + bulletW + gap + starW + gap + voteW + pad * 2)
   const svgH = Math.round(fontSize * 1.6)
@@ -42,7 +42,7 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
     <filter id="${fid}" x="-10%" y="-20%" width="120%" height="140%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.15)"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(0,0,0,0.5)"/>
     </filter>
   </defs>
   <text x="${pad}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">${escapeXml(genreName)}</text>
@@ -54,7 +54,7 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
 }
 
 export function bottomGradientSVG(pw: number, ph: number): { svg: string; top: number } {
-  const gh = Math.round(ph * 0.18)
+  const gh = Math.max(Math.round(ph * 0.4), 100)
   const top = ph - gh
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}" viewBox="0 0 ${pw} ${gh}">
   <defs>

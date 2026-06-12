@@ -267,7 +267,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const { svg: badgeSvg, totalW } = genreRatingSVG(genreName, voteAverage, pw)
       const badgeMeta = await sharp(Buffer.from(badgeSvg)).metadata()
       const badgeH = badgeMeta.height || 38
-      const badgeY = ph - badgeH - Math.round(16 * ph / 570)
+      const badgeY = ph - badgeH - Math.round(6 * ph / 570)
       const badgeLeft = Math.round((pw - totalW) / 2)
       composites.push({ input: Buffer.from(badgeSvg), top: badgeY, left: badgeLeft })
     }
