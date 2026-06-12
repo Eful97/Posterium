@@ -82,15 +82,8 @@ function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: s
     }
   }
 
-  const lum = hexLuminance(color)
-  const [h, s, l] = hexToHsl(color)
-
-  // Keep the poster's hue, use as-is or slightly boost saturation
-  const newH = h
-  const newS = Math.max(0.15, Math.min(0.55, s * 1.2))
-
-  const bgTop = hslToHex(newH, newS, l)
-  const bgBot = hslToHex(newH, newS, Math.max(0, l - 0.03))
+  const bgTop = color
+  const bgBot = adjustColor(color, -0.04)
   const bgLum = relativeLuminance(bgTop)
   const textFill = (1.0 + 0.05) / (bgLum + 0.05) >= 4.5 ? '#fff' : '#1a1a1a'
   const textShadow = textFill === '#fff' ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
