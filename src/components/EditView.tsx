@@ -183,7 +183,7 @@ export default function EditView() {
       {!p.selected && p.tmdbKey && (
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-center mb-4">
-            <h2 className="text-xl font-bold">🔥 Top 10 Italia JustWatch</h2>
+            <h2 className="text-xl font-bold">🔥 Top 20 Italia JustWatch</h2>
           </div>
           {p.trending.length > 0 && (
             <div className="space-y-6">
