@@ -1,6 +1,6 @@
 "use client"
 
-import { genreRatingSVG, rankingBadgeSVG, extraBadgeSVG } from "@/lib/badges"
+import { rankingBadgeSVG, extraBadgeSVG } from "@/lib/badges"
 
 function TopGradient({ containerW, svgH }: { containerW: number; svgH: number }) {
   const gradH = Math.max(Math.round(svgH * 1.5), Math.round(containerW * 0.06))
@@ -23,14 +23,16 @@ export function RankingBadge({ rank, containerW, containerH, color }: { rank: nu
 }
 
 export function GenreRatingBadges({ genreName, voteAverage, containerW, containerH }: { genreName: string; voteAverage: number; containerW: number; containerH: number }) {
-  const { svg, totalW, svgH } = genreRatingSVG(genreName, voteAverage, containerW)
-  const bottomOff = Math.round(containerH * 0.032)
-
   return (
     <>
-      <div className="absolute z-[8] pointer-events-none" style={{ bottom: 0, left: 0, right: 0, height: `${Math.round(containerH * 0.18)}px`, background: "linear-gradient(to top, rgba(0,0,0,.50), transparent)" }} />
-      <div className="absolute z-[11] pointer-events-none" style={{ bottom: `${bottomOff}px`, left: 0, right: 0, display: "flex", justifyContent: "center", overflow: "hidden" }}>
-        <div style={{ width: totalW, height: svgH }} dangerouslySetInnerHTML={{ __html: svg }} />
+      <div className="absolute z-[8] pointer-events-none" style={{ bottom: 0, left: 0, right: 0, height: `${Math.round(containerH * 0.18)}px`, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 40%)" }} />
+      <div className="absolute z-[11] pointer-events-none" style={{ bottom: "16px", left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ fontSize: "14px", fontWeight: 500, color: "#fff", marginRight: "8px" }}>{genreName}</span>
+          <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", marginRight: "8px", lineHeight: 1 }}>•</span>
+          <span style={{ fontSize: "12px", color: "#F5C518", marginRight: "6px", lineHeight: 1, display: "inline-flex", alignItems: "center" }}>★</span>
+          <span style={{ fontSize: "14px", fontWeight: 600, color: "#fff" }}>{voteAverage.toFixed(1)}</span>
+        </div>
       </div>
     </>
   )

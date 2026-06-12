@@ -16,16 +16,20 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
   const voteStr = voteAverage.toFixed(1)
   const fontSize = Math.round(60 * pw / 1000)
   const charW = fontSize * 0.58
-  const leftText = `${genreName} •`
-  const leftW = leftText.length * charW
-  const rightW = voteStr.length * charW
+  const genreW = genreName.length * charW
+  const bulletSpaceW = fontSize * 0.65
+  const leftW = genreW + bulletSpaceW
+  const rightW = voteStr.length * fontSize * 0.55
   const starR = Math.round(fontSize * 0.45)
   const starW = starR * 2
   const gap = Math.round(fontSize * 0.5)
   const pad = Math.round(fontSize * 0.5)
   const totalW = Math.round(leftW + gap + starW + gap + rightW + pad * 2)
   const svgH = Math.round(fontSize * 1.6)
-  const textY = Math.round(svgH / 2)
+  const axisY = Math.round(svgH / 2)
+  const sin54 = Math.sin(54 * Math.PI / 180)
+  const starY = axisY + Math.round(starR * (1 - sin54) / 2)
+  const textY = axisY + Math.round(fontSize * 0.28)
   const fid = uid()
 
   const starPts = []
@@ -45,9 +49,9 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
       <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.12)"/>
     </filter>
   </defs>
-  <text x="${pad}" y="${textY}" text-anchor="start" dominant-baseline="middle" alignment-baseline="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(leftText)}</text>
-  <polygon points="${starPts.join(' ')}" transform="translate(${starX}, ${textY})" fill="rgba(255,255,255,.90)"/>
-  <text x="${rightX}" y="${textY}" text-anchor="start" dominant-baseline="middle" alignment-baseline="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(voteStr)}</text>
+  <text x="${pad}" y="${textY}" text-anchor="start" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(`${genreName} •`)}</text>
+  <polygon points="${starPts.join(' ')}" transform="translate(${starX}, ${starY})" fill="rgba(255,255,255,.90)"/>
+  <text x="${rightX}" y="${textY}" text-anchor="start" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(voteStr)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
