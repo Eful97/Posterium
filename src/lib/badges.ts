@@ -107,13 +107,13 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const fontSize = Math.round(24 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.round(rankStr.length * charW + fontSize * 0.35 + periodText.length * charW)
-  const px = Math.round(fontSize * 0.5)
-  const pt = Math.round(fontSize * 0.35)
-  const pb = Math.round(fontSize * 0.35)
+  const px = Math.round(fontSize * 1.0)
+  const pt = Math.round(fontSize * 0.33)
+  const pb = Math.round(fontSize * 0.33)
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
-  const textY = Math.round(pt + fontSize * 0.7)
-  const r = Math.round(fontSize * 0.25)
+  const textY = Math.round(pt + fontSize * 0.78)
+  const r = Math.round(fontSize * 0.67)
   const shadowColor = 'rgba(0,0,0,0.30)'
   const fid = uid()
 
@@ -133,13 +133,13 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const fontSize = Math.round(24 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.max(Math.round(label.length * charW), fontSize)
-  const px = Math.round(fontSize * 0.5)
-  const pt = Math.round(fontSize * 0.35)
-  const pb = Math.round(fontSize * 0.35)
+  const px = Math.round(fontSize * 1.0)
+  const pt = Math.round(fontSize * 0.33)
+  const pb = Math.round(fontSize * 0.33)
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
-  const textY = Math.round(pt + fontSize * 0.7)
-  const r = Math.round(fontSize * 0.25)
+  const textY = Math.round(pt + fontSize * 0.78)
+  const r = Math.round(fontSize * 0.67)
   const shadowColor = 'rgba(0,0,0,0.30)'
   const fid = uid()
 
