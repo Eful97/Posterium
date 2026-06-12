@@ -69,6 +69,9 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
   <defs>
+    <clipPath id="c">
+      <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z"/>
+    </clipPath>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${bgTop}"/>
       <stop offset="100%" stop-color="${bgBot}"/>
@@ -80,9 +83,9 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
       <feDropShadow dx="0" dy="${Math.round(1 * s)}" stdDeviation="${Math.round(1 * s)}" flood-color="${textShadow}"/>
     </filter>
   </defs>
-  <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="${bgBot}"/>
+  <rect width="${totalW}" height="${svgH}" fill="${bgBot}" clip-path="url(#c)"/>
   <g filter="url(#s)">
-    <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
+    <rect width="${totalW}" height="${svgH}" fill="url(#g)" clip-path="url(#c)"/>
   </g>
   <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(fullText)}</text>
@@ -113,6 +116,9 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
   <defs>
+    <clipPath id="c">
+      <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z"/>
+    </clipPath>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${bgTop}"/>
       <stop offset="100%" stop-color="${bgBot}"/>
@@ -124,9 +130,9 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
       <feDropShadow dx="0" dy="${Math.round(1 * s)}" stdDeviation="${Math.round(1 * s)}" flood-color="${textShadow}"/>
     </filter>
   </defs>
-  <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="${bgBot}"/>
+  <rect width="${totalW}" height="${svgH}" fill="${bgBot}" clip-path="url(#c)"/>
   <g filter="url(#s)">
-    <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
+    <rect width="${totalW}" height="${svgH}" fill="url(#g)" clip-path="url(#c)"/>
   </g>
   <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(label)}</text>
