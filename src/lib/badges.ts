@@ -82,7 +82,7 @@ function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: s
     }
   }
 
-  const bgTop = color
+  const bgTop = adjustColor(color, 0.06)
   const bgBot = adjustColor(color, -0.12)
   const bgLum = relativeLuminance(bgTop)
   const textFill = (1.0 + 0.05) / (bgLum + 0.05) >= 4.5 ? '#fff' : '#1a1a1a'
