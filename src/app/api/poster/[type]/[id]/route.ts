@@ -5,7 +5,7 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
-import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG } from "@/lib/badges"
+import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG, topGradientSVG } from "@/lib/badges"
 
 const RENDER_VERSION = 20
 const IMG_BASE = "https://image.tmdb.org/t/p"
@@ -186,6 +186,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
       const { svg: extraSvg, totalW, svgH } = extraBadgeSVG(extraLabel, pw, badgeColor)
       const extraLeft = Math.round((pw - totalW) / 2)
+      const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
+      composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
       composites.push({ input: Buffer.from(extraSvg), top: 0, left: extraLeft })
     } else if (rankingEnabled && rankingRank) {
       let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
@@ -198,6 +200,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       }
       const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(rankingRank, pw, badgeColor, mapping?.trendPeriod)
       const rankLeft = Math.round((pw - totalW) / 2)
+      const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
+      composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
       composites.push({ input: Buffer.from(rankSvg), top: 0, left: rankLeft })
     }
 

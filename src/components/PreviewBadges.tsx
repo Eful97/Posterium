@@ -4,10 +4,12 @@ import { genreRatingSVG, rankingBadgeSVG, extraBadgeSVG } from "@/lib/badges"
 
 export function RankingBadge({ rank, containerW, containerH, color }: { rank: number; containerW: number; containerH: number; color?: string }) {
   const { svg, totalW, svgH, cornerR } = rankingBadgeSVG(rank, containerW, color)
+  const gradH = Math.max(Math.round(svgH * 1.5), Math.round(containerW * 0.06))
 
   return (
     <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
-      <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: `${gradH}px`, background: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)" }} />
+      <div dangerouslySetInnerHTML={{ __html: svg }} style={{ position: "relative", width: "100%", height: "100%" }} />
     </div>
   )
 }
@@ -27,11 +29,13 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
 }
 
 export function ExtraBadge({ label, containerW, containerH, color }: { label: string; containerW: number; containerH: number; color?: string }) {
-  const { svg, totalW, svgH } = extraBadgeSVG(label, containerW, color)
+  const { svg, totalW, svgH, cornerR } = extraBadgeSVG(label, containerW, color)
+  const gradH = Math.max(Math.round(svgH * 1.5), Math.round(containerW * 0.06))
 
   return (
-    <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH }}>
-      <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
+    <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: `${gradH}px`, background: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)" }} />
+      <div dangerouslySetInnerHTML={{ __html: svg }} style={{ position: "relative", width: "100%", height: "100%" }} />
     </div>
   )
 }

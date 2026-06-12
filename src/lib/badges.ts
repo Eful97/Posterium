@@ -43,6 +43,20 @@ export function bottomGradientSVG(pw: number, ph: number): { svg: string; top: n
   return { svg, top }
 }
 
+export function topGradientSVG(pw: number, badgeH: number): { svg: string; h: number } {
+  const gh = Math.max(Math.round(badgeH * 1.5), Math.round(pw * 0.06))
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}" viewBox="0 0 ${pw} ${gh}">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.55)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </linearGradient>
+  </defs>
+  <rect width="${pw}" height="${gh}" fill="url(#g)"/>
+</svg>`
+  return { svg, h: gh }
+}
+
 export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "day"): { svg: string; totalW: number; svgH: number; cornerR: number } {
   const periodMap: Record<string, string> = { day: "Oggi", week: "Settimana" }
   const periodText = periodMap[period] || "Oggi"
