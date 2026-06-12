@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) return Response.json([])
     const data = await res.json()
-    const items = (data.items || data || []).slice(0, 10)
+    const rawItems = data?.items || data?.data || (Array.isArray(data) ? data : [])
+    const items = rawItems.slice(0, 10)
 
     const results = await Promise.all(items.map(async (item: any, idx: number) => {
       const imdbId = item.imdb_id || item.imdb || ''
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
         )
         if (!tmdbRes.ok) return null
         const tmdbData = await tmdbRes.json()
-        const found = tmdbData.tv_results?.[0] || tmdbData.movie_results?.[0]
+        const found = tmdbData?.tv_results?.[0] || tmdbData?.movie_results?.[0]
         if (!found) return null
         return {
           id: found.id,
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
     }))
 
     const filtered = results.filter(Boolean)
-    cacheSet(cacheKey, filtered, ["mdblist"])
+    if (filtered.length > 0) cacheSet(cacheKey, filtered, ["mdblist"])
     return Response.json(filtered)
   } catch { return Response.json([]) }
 }
