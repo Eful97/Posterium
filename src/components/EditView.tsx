@@ -76,7 +76,7 @@ export default function EditView() {
             if (extra) return <div className="absolute inset-0"><ExtraBadge label={extra} containerW={380} containerH={570} color={p.badgeBgColor} /></div>
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={380} containerH={570} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={380} containerH={570} posterPath={p.previewPoster?.file_path || null} /></div>}
         </div>
         </div>
       {p.selected && (
