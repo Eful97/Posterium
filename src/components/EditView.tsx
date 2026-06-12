@@ -68,8 +68,6 @@ export default function EditView() {
               if (nextAir > now && nextAir - now < twoWeeks) return <div className="absolute inset-0"><ExtraBadge label="Nuova stagione" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
             }
 
-            if (p.isTendenza) return <div className="absolute inset-0"><ExtraBadge label="Di Tendenza" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
-
             if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} containerW={380} containerH={570} color={p.badgeBgColor} /></div>
 
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null

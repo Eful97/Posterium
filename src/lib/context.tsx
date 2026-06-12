@@ -95,7 +95,6 @@ export interface PosteriumCtx {
   copied: boolean
   accentColor: string
   badgeBgColor: string
-  isTendenza: boolean
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
@@ -361,15 +360,6 @@ export function usePosterium(): PosteriumCtx {
     return () => { cancelled = true }
   }, [previewPoster])
 
-  const isTendenza = useMemo(() => {
-    if (!selected) return false
-    const inTrending = trending.some((t) => t.id === selected.id)
-    const inCharts = Object.values(streamingCharts).some((chart) =>
-      [...(chart.movies || []), ...(chart.tv || [])].some((item) => item.tmdbId === selected.id)
-    )
-    return inTrending || inCharts
-  }, [selected, trending, streamingCharts])
-
   const buildPreviewUrl = useCallback(() => {
     if (!selected) { setPreviewUrl(""); return }
     const params: string[] = []
@@ -411,7 +401,6 @@ export function usePosterium(): PosteriumCtx {
         const nextAir = new Date(metaInfo.next_episode_to_air.air_date).getTime()
         if (nextAir > now && nextAir - now < twoWeeks) { params.push(`extra=${encodeURIComponent("Nuova stagione")}`) }
       }
-      else if (isTendenza) { params.push(`extra=${encodeURIComponent("Di Tendenza")}`) }
       else if (trendRank) {
         // skip - the server renders the ranking badge instead
       }
@@ -426,7 +415,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`v=${v}`)
     const qs = params.length > 0 ? "?" + params.join("&") : ""
     setPreviewUrl(`${getDomain()}/api/poster/${selected.media_type}/${selected.id}${qs}`)
-  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, badgeBgColor, accentColor, isTendenza, trendRank])
+  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, badgeBgColor, accentColor, trendRank])
 
   useEffect(() => {
     if (!selected) { setPreviewUrl(""); return }
@@ -753,7 +742,6 @@ export function usePosterium(): PosteriumCtx {
     copyUrl, copied,
     accentColor,
     badgeBgColor,
-    isTendenza,
   }), [
     selected, view, posters, loadingImages, previewPoster, selectedLogo,
     logos, posterActivePath, previewUrl, urlPattern, lang,
@@ -766,7 +754,6 @@ export function usePosterium(): PosteriumCtx {
     tmdbKeyInput, showKey, copied,
     accentColor,
     badgeBgColor,
-    isTendenza,
     trending, streamingCharts,
   ])
 }
