@@ -196,13 +196,6 @@ export default function EditView() {
             </div>
           )}
 
-          {p.mdblistAnimeList.length > 0 && (
-            <div className="mt-10">
-              <h2 className="text-xl font-bold mb-4 text-center">🎌 Top 10 Anime di tendenza</h2>
-              <RankRow label="ANIME" items={p.mdblistAnimeList} onItemClick={(item: any) => p.navigateToPoster({ id: item.id ?? 0, media_type: item.media_type || 'tv', title: item.title ?? '', name: item.title ?? '', poster_path: item.poster_path ?? '' })} />
-            </div>
-          )}
-
           {p.STREAMING_PLATFORMS.map((sp) => {
             const chart = p.streamingCharts[sp.slug]
             if (!chart || (chart.movies.length === 0 && chart.tv.length === 0)) return null
@@ -218,6 +211,13 @@ export default function EditView() {
               </div>
             )
           })}
+
+          {p.mdblistAnimeList.length > 0 && (
+            <div className="mt-10">
+              <h2 className="text-xl font-bold mb-4 text-center">🎌 Top 10 Anime di tendenza</h2>
+              <RankRow label="ANIME" items={p.mdblistAnimeList} onItemClick={(item: any) => p.navigateToPoster({ id: item.id ?? 0, media_type: item.media_type || 'tv', title: item.title ?? '', name: item.title ?? '', poster_path: item.poster_path ?? '' })} />
+            </div>
+          )}
 
           {p.trending.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 text-zinc-600">
