@@ -32,6 +32,10 @@ function isExpired(entry: CacheEntry<unknown>): boolean {
   return Date.now() - entry.timestamp > entryTtl(entry)
 }
 
+function isBufferLike(v: unknown): v is { type: "Buffer"; data: number[] } {
+  return !!v && typeof v === "object" && (v as any).type === "Buffer" && Array.isArray((v as any).data)
+}
+
 function loadFromDisk() {
   try {
     if (fs.existsSync(CACHE_FILE)) {
@@ -40,6 +44,9 @@ function loadFromDisk() {
         for (const [key, entry] of Object.entries(raw)) {
           const e = entry as CacheEntry<unknown>
           if (!isExpired(e)) {
+            if (isBufferLike(e.data)) {
+              e.data = Buffer.from(e.data.data)
+            }
             store.set(key, e)
           }
         }

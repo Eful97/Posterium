@@ -1,3 +1,6 @@
+let filterUid = 0
+function uid(): string { return `f${++filterUid}` }
+
 function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 }
@@ -10,20 +13,22 @@ function hexLuminance(hex: string): number {
 }
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
-  const fullText = `${genreName} • ★ ${voteAverage.toFixed(1)}`
+  const voteStr = voteAverage.toFixed(1)
+  const fullText = `${genreName} • ★ ${voteStr}`
   const fontSize = Math.round(60 * pw / 1000)
   const charW = fontSize * 0.58
-  const totalW = Math.round(genreName.length * charW + fontSize * 0.35 + fontSize * 0.30 + fontSize * 0.35 + fontSize * 1.0 + fontSize * 0.35 + 3 * charW)
+  const totalW = Math.round(genreName.length * charW + fontSize * 0.35 + fontSize * 0.30 + fontSize * 0.35 + fontSize * 1.0 + fontSize * 0.35 + voteStr.length * charW)
   const svgH = Math.round(fontSize * 1.6)
   const textY = Math.round(svgH * 0.72)
+  const fid = uid()
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
-    <filter id="s" x="-10%" y="-20%" width="120%" height="140%">
+    <filter id="${fid}" x="-10%" y="-20%" width="120%" height="140%">
       <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.12)"/>
     </filter>
   </defs>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#s)">${escapeXml(fullText)}</text>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(fullText)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
@@ -60,11 +65,12 @@ export function topGradientSVG(pw: number, badgeH: number): { svg: string; h: nu
 export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "day"): { svg: string; totalW: number; svgH: number; cornerR: number } {
   const periodMap: Record<string, string> = { day: "Oggi", week: "Settimana" }
   const periodText = periodMap[period] || "Oggi"
-  const fullText = `#${rank} ${periodText}`
+  const rankStr = String(rank)
+  const fullText = `#${rankStr} ${periodText}`
   const s = pw / 1000
   const fontSize = Math.round(72 * s)
   const charW = fontSize * 0.58
-  const textW = Math.round(2 * charW + fontSize * 0.35 + periodText.length * charW)
+  const textW = Math.round(rankStr.length * charW + fontSize * 0.35 + periodText.length * charW)
   const px = Math.round(100 * s) * 2
   const pt = Math.round(12 * s)
   const pb = Math.round(56 * s)
@@ -80,6 +86,8 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const rimColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
   const shadowColor = 'rgba(0,0,0,0.30)'
   const textShadow = isDark ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
+  const fid = uid()
+  const tid = uid()
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
   <defs>
@@ -87,17 +95,17 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
       <stop offset="0%" stop-color="${bgTop}"/>
       <stop offset="100%" stop-color="${bgBot}"/>
     </linearGradient>
-    <filter id="s" x="-20%" y="-20%" width="140%" height="200%">
+    <filter id="${fid}" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(5 * s)}" stdDeviation="${Math.round(10 * s)}" flood-color="${shadowColor}"/>
     </filter>
-    <filter id="t" x="-20%" y="-20%" width="140%" height="200%">
+    <filter id="${tid}" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(1 * s)}" stdDeviation="${Math.round(1 * s)}" flood-color="${textShadow}"/>
     </filter>
   </defs>
-  <g filter="url(#s)">
+  <g filter="url(#${fid})">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
     <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
-    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(fullText)}</text>
+    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(fullText)}</text>
   </g>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
@@ -123,6 +131,8 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const rimColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
   const shadowColor = 'rgba(0,0,0,0.30)'
   const textShadow = isDark ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
+  const fid = uid()
+  const tid = uid()
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
   <defs>
@@ -130,17 +140,17 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
       <stop offset="0%" stop-color="${bgTop}"/>
       <stop offset="100%" stop-color="${bgBot}"/>
     </linearGradient>
-    <filter id="s" x="-20%" y="-20%" width="140%" height="200%">
+    <filter id="${fid}" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(5 * s)}" stdDeviation="${Math.round(10 * s)}" flood-color="${shadowColor}"/>
     </filter>
-    <filter id="t" x="-20%" y="-20%" width="140%" height="200%">
+    <filter id="${tid}" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(1 * s)}" stdDeviation="${Math.round(1 * s)}" flood-color="${textShadow}"/>
     </filter>
   </defs>
-  <g filter="url(#s)">
+  <g filter="url(#${fid})">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
     <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
-    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(label)}</text>
+    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(label)}</text>
   </g>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }

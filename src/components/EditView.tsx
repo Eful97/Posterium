@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useP } from "@/lib/context"
 import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
@@ -14,11 +14,18 @@ import { RankingBadge, GenreRatingBadges, ExtraBadge } from "@/components/Previe
 export default function EditView() {
   const p = useP()
   const [searchFocused, setSearchFocused] = useState(false)
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
+    }
+  }, [])
 
   const posterCol = (
     <div className="w-full md:w-64 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
       <h3 className="text-base font-semibold text-zinc-200 mb-3 text-center">🖼️ Poster</h3>
-      {p.loadingImages ? <div className="text-center py-12 text-zinc-400">Caricamento poster...</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} selected={p.selected} lang={p.lang} openSections={p.openSections} posterScrollInfo={p.posterScrollInfo} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} setPosterScrollInfo={p.setPosterScrollInfo} />}
+      {p.loadingImages ? <div className="text-center py-12 text-zinc-400">Caricamento poster...</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} selected={p.selected} lang={p.lang} openSections={p.openSections} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} />}
     </div>
   )
 
@@ -81,8 +88,8 @@ export default function EditView() {
         </div>
       )}
       {p.previewPoster && p.selected && (
-        <div className="flex gap-2 mt-3">
-          <button onClick={p.saveConfig} className="flex-1 py-3 px-4 rounded-xl text-sm font-bold bg-accent-orange text-white hover:bg-accent-orange/90 hover:shadow-lg hover:shadow-accent-orange/25 active:scale-[0.97] transition-all duration-200">💾 Salva Poster</button>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <button onClick={p.saveConfig} className="flex-1 min-w-0 py-3 px-4 rounded-xl text-sm font-bold bg-accent-orange text-white hover:bg-accent-orange/90 hover:shadow-lg hover:shadow-accent-orange/25 active:scale-[0.97] transition-all duration-200">💾 Salva Poster</button>
           <button onClick={() => window.open(p.previewUrl || p.urlPattern.replace("{type}", p.selected!.media_type).replace("{tmdb_id}", String(p.selected!.id)), "_blank")} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">🔍 Testa URL</button>
           {(() => {
             const key = `${p.selected!.media_type}:${p.selected!.id}`
@@ -136,7 +143,7 @@ export default function EditView() {
       {p.selected && (
         <div className="flex flex-col items-center">
           <div className="w-full max-w-lg mb-8 relative z-[100] isolate">
-            <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => setTimeout(() => setSearchFocused(false), 200)} />
+            <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
             {searchFocused && p.recentSearches.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
                 <p className="text-[10px] text-zinc-500 font-medium px-2 py-1">Ricerche recenti</p>
@@ -160,7 +167,7 @@ export default function EditView() {
       )}
       {!p.selected && (
         <div className="max-w-lg mx-auto relative z-[100] isolate mb-8">
-          <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => setTimeout(() => setSearchFocused(false), 200)} />
+          <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
             {searchFocused && p.recentSearches.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
                 <p className="text-[10px] text-zinc-500 font-medium px-2 py-1">Ricerche recenti</p>

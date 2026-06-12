@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo, useEffect, useRef } from "react"
 import { useP } from "@/lib/context"
 import { posterUrl, LANG_NAMES } from "@/lib/utils"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
@@ -13,6 +13,8 @@ export function MyPostersView() {
   const [showDeleteAll, setShowDeleteAll] = useState(false)
   const [sortBy, setSortBy] = useState<"updated" | "alpha">("updated")
   const [sortOpen, setSortOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const sortRef = useRef<HTMLDivElement>(null)
 
   const toggleSelect = (key: string) => {
     setSelected((prev) => {
@@ -22,20 +24,42 @@ export function MyPostersView() {
     })
   }
 
-  const deleteSelected = () => {
-    mappings.filter((m) => selected.has(`${m.mediaType}:${m.tmdbId}`)).forEach(removeMapping)
+  const deleteSelected = async () => {
+    const toDelete = mappings.filter((m) => selected.has(`${m.mediaType}:${m.tmdbId}`))
+    setDeleting(true)
+    for (const m of toDelete) {
+      await removeMapping(m)
+    }
+    setDeleting(false)
     setSelected(new Set())
     setSelectMode(false)
   }
 
-  const deleteAll = () => {
-    mappings.forEach(removeMapping)
+  const deleteAll = async () => {
+    setDeleting(true)
+    for (const m of mappings) {
+      await removeMapping(m)
+    }
+    setDeleting(false)
     setShowDeleteAll(false)
   }
 
-  const filtered = mappings
-    .filter((m) => m.title.toLowerCase().includes(filter.toLowerCase()))
-    .sort((a, b) => sortBy === "updated" ? b.updatedAt.localeCompare(a.updatedAt) : a.title.localeCompare(b.title))
+  const filtered = useMemo(() => {
+    return mappings
+      .filter((m) => m.title.toLowerCase().includes(filter.toLowerCase()))
+      .sort((a, b) => sortBy === "updated" ? b.updatedAt.localeCompare(a.updatedAt) : a.title.localeCompare(b.title))
+  }, [mappings, filter, sortBy])
+
+  useEffect(() => {
+    if (!sortOpen) return
+    const handler = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setSortOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [sortOpen])
 
   return (
     <div className="pt-4 animate-fade-scale-in">
@@ -59,7 +83,7 @@ export function MyPostersView() {
               </div>
             )}
         </div>
-        <div className="relative">
+        <div className="relative" ref={sortRef}>
           <button onClick={() => setSortOpen((o) => !o)} className="flex items-center gap-1 px-3 h-9 md:h-10 rounded-lg text-xs font-medium bg-black/40 border border-zinc-700 text-zinc-400 hover:border-zinc-500 transition-all duration-150">
             {sortBy === "updated" ? "📅 Più recenti" : "🔤 A-Z"} <span className="text-[10px]">▼</span>
           </button>
@@ -73,22 +97,31 @@ export function MyPostersView() {
       </div>
 
       {selected.size > 0 && (
-        <button onClick={deleteSelected} className="mb-4 py-3 px-4 rounded-lg text-xs font-medium text-red-400 border border-red-400/40 bg-red-900/15 hover:text-red-300 hover:border-red-400/70 hover:bg-red-900/30 active:scale-[0.98] transition-all duration-150">
-          Elimina {selected.size} selezionat{selected.size === 1 ? "o" : "i"}
+        <button disabled={deleting} onClick={deleteSelected} className="mb-4 py-3 px-4 rounded-lg text-xs font-medium text-red-400 border border-red-400/40 bg-red-900/15 hover:text-red-300 hover:border-red-400/70 hover:bg-red-900/30 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+          {deleting ? "Eliminazione..." : `Elimina ${selected.size} selezionat${selected.size === 1 ? "o" : "i"}`}
         </button>
       )}
-      {filtered.length === 0 && <p className="text-sm text-zinc-500 text-center py-12">{mappings.length === 0 ? "Nessun poster personalizzato" : "Nessun risultato"}</p>}
+      {filtered.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-sm text-zinc-500 mb-4">{mappings.length === 0 ? "Nessun poster personalizzato" : "Nessun risultato"}</p>
+          {mappings.length === 0 && (
+            <button onClick={goHome} className="px-6 py-3 rounded-xl text-sm font-medium bg-accent-orange text-white hover:bg-accent-orange/90 active:scale-95 transition-all duration-150 shadow-lg shadow-accent-orange/25">
+              🔍 Cerca un film o una serie
+            </button>
+          )}
+        </div>
+      )}
       <div className="mx-auto grid grid-cols-3 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] lg:grid-cols-5 gap-3 md:gap-4 max-w-7xl justify-items-center">
         {filtered.map((m) => {
           const key = `${m.mediaType}:${m.tmdbId}`
           return (
-            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster({ id: m.tmdbId, media_type: m.mediaType as "movie" | "tv", title: m.title, name: m.title, poster_path: m.posterPath } as any) }} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10"}`}>
+            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster({ id: m.tmdbId, media_type: m.mediaType as "movie" | "tv", title: m.title, name: m.title, poster_path: m.posterPath } as any) }} aria-label={m.title} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10"}`}>
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden relative">
-                  <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                  {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" /> : <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-600">{m.title.charAt(0)}</div>}
                   {m.logoPath && (
                     <div className="absolute inset-x-0 flex items-center justify-center" style={{ bottom: "7.33%" }}>
                       <div style={{ transform: `translate(${m.logoOffsetX ?? 0}px, ${m.logoOffsetY ?? 0}px)`, width: `${m.logoScale ?? 75}%` }}>
-                        <img src={posterUrl(m.logoPath, "original")} alt="" loading="lazy" decoding="async" className="w-full" style={{ objectFit: "contain" }} />
+                        <img src={posterUrl(m.logoPath, "w154")} alt="" loading="lazy" decoding="async" className="w-full" style={{ objectFit: "contain" }} />
                       </div>
                     </div>
                   )}

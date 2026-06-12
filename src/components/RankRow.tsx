@@ -38,6 +38,7 @@ function RankCard({ item, onClick, isFirst }: { item: RankItem; onClick: () => v
   return (
     <button
       onClick={onClick}
+      aria-label={label}
       className="group rank-btn relative text-left flex-shrink-0 scroll-snap-start"
     >
       <div className="flex items-end">
@@ -100,11 +101,11 @@ export function RankRow({
         <div
           ref={scrollRef}
           className="flex overflow-x-auto md:overflow-x-hidden gap-0 pb-1 pr-4 scrollbar-none scroll-smooth scroll-snap-x"
-          onWheel={(e) => e.preventDefault()}
+          onWheel={(e) => { if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.preventDefault() }}
         >
           {items.map((item, idx) => (
             <RankCard
-              key={item.tmdbId ?? item.id ?? idx}
+              key={item.tmdbId ?? item.id ?? `rank-${idx}`}
               item={item}
               onClick={() => onItemClick(item)}
               isFirst={idx === 0}

@@ -11,14 +11,12 @@ interface Props {
   selected: SearchResult | null
   lang: string
   openSections: Record<string, boolean>
-  posterScrollInfo: { top: number; height: number }
   posterScrollRef: React.RefObject<HTMLDivElement | null>
   toggleSection: (key: string) => void
   selectPoster: (img: TMDBImage) => void
-  setPosterScrollInfo: (info: { top: number; height: number }) => void
 }
 
-export function PosterOptions({ posters, posterActivePath, selected, lang, openSections, posterScrollInfo, posterScrollRef, toggleSection, selectPoster, setPosterScrollInfo }: Props) {
+export function PosterOptions({ posters, posterActivePath, selected, lang, openSections, posterScrollRef, toggleSection, selectPoster }: Props) {
   const cleanPosters = posters.filter((img) => img.iso_639_1 === null)
   const hasClean = cleanPosters.length > 0
   const langGroups = Object.entries(groupBy(posters.filter((img) => img.iso_639_1 !== null), (img) => img.iso_639_1 || "other")).sort(([a], [b]) => {
@@ -26,15 +24,8 @@ export function PosterOptions({ posters, posterActivePath, selected, lang, openS
     if (a === "en") return -1; if (b === "en") return 1
     return a.localeCompare(b)
   })
-  const primaryLang = !hasClean ? (langGroups.find(([l]) => l === lang)?.[0] || langGroups.find(([l]) => l === "en")?.[0] || langGroups[0]?.[0]) : null
+  const primaryLang = !hasClean && langGroups.length > 0 ? (langGroups.find(([l]) => l === lang)?.[0] || langGroups.find(([l]) => l === "en")?.[0] || langGroups[0][0]) : null
   let idx = 0
-  const updateScroll = () => {
-    const el = posterScrollRef.current
-    if (!el || el.scrollHeight <= el.clientHeight) return
-    const pct = el.scrollTop / (el.scrollHeight - el.clientHeight)
-    const thumbH = Math.max(20, (el.clientHeight / el.scrollHeight) * 100)
-    setPosterScrollInfo({ top: pct * (100 - thumbH), height: thumbH })
-  }
   return (
     <div className="relative">
       <div ref={posterScrollRef} className="max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none pl-2">
@@ -43,9 +34,9 @@ export function PosterOptions({ posters, posterActivePath, selected, lang, openS
         return (
           <CollapsibleSection isOpen={isOpen} onToggle={() => toggleSection("clean")} label="Clean" count={cleanPosters.length}>
             <div className="grid grid-cols-3 md:grid-cols-2 gap-1.5 md:gap-2">
-              {cleanPosters.map((img, i) => {
+              {cleanPosters.map((img) => {
                 const stagger = idx++
-                return <PosterBtn key={`clean-${i}`} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} title={selected ? titleOf(selected) : undefined} />
+                return <PosterBtn key={img.file_path} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
               })}
             </div>
           </CollapsibleSection>
@@ -58,9 +49,9 @@ export function PosterOptions({ posters, posterActivePath, selected, lang, openS
         return (
           <CollapsibleSection key={language} isOpen={isOpen} onToggle={() => toggleSection(language)} label={LANG_NAMES[language] || language} count={imgs.length}>
             <div className="grid grid-cols-3 md:grid-cols-2 gap-1.5 md:gap-2">
-              {imgs.map((img, i) => {
+              {imgs.map((img) => {
                 const stagger = idx++
-                return <PosterBtn key={`${language}-${i}`} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} title={selected ? titleOf(selected) : undefined} />
+                return <PosterBtn key={img.file_path} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
               })}
             </div>
           </CollapsibleSection>

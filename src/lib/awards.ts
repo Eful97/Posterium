@@ -15,6 +15,7 @@ const RULES: AwardRule[] = [
 
 const CACHE = new Map<string, { awards: string[]; timestamp: number }>()
 const CACHE_TTL = 24 * 60 * 60 * 1000
+const CACHE_MAX = 500
 
 async function sparqlQuery(query: string): Promise<any[]> {
   const url = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(query)}`
@@ -51,6 +52,7 @@ export async function fetchAwards(tmdbId: number, mediaType: "movie" | "tv"): Pr
     }
 
     const awards = [...found]
+    if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value!)
     CACHE.set(cacheKey, { awards, timestamp: Date.now() })
     return awards
   } catch {

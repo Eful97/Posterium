@@ -20,13 +20,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
+  if (!tmdbId || !type || (type !== "movie" && type !== "tv")) {
+    return Response.json({ error: "Invalid id format" }, { status: 400 })
+  }
   const existing = getById(type as "movie" | "tv", tmdbId)
   const body = await req.json()
+  if (!body || typeof body !== "object") {
+    return Response.json({ error: "Invalid body" }, { status: 400 })
+  }
   upsert({
     tmdbId,
     mediaType: type as "movie" | "tv",
-    title: body.title,
-    posterPath: body.posterPath,
+    title: String(body.title || existing?.title || ""),
+    posterPath: body.posterPath ? String(body.posterPath) : existing?.posterPath || "",
     logoPath: body.logoPath ?? null,
     originalPosterPath: body.originalPosterPath ?? null,
     language: body.language ?? null,

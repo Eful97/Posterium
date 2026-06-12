@@ -14,11 +14,14 @@ export async function POST(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const body = await req.json()
+  if (!body || typeof body !== "object" || !body.tmdbId || !body.mediaType || !body.posterPath) {
+    return Response.json({ error: "Missing required fields: tmdbId, mediaType, posterPath" }, { status: 400 })
+  }
   upsert({
-    tmdbId: body.tmdbId,
+    tmdbId: Number(body.tmdbId),
     mediaType: body.mediaType,
-    title: body.title,
-    posterPath: body.posterPath,
+    title: String(body.title || ""),
+    posterPath: String(body.posterPath),
     logoPath: body.logoPath ?? null,
     originalPosterPath: body.originalPosterPath ?? null,
     language: body.language ?? null,

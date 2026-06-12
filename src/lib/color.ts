@@ -1,4 +1,5 @@
 const CACHE = new Map<string, string>()
+const CACHE_MAX = 200
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255
@@ -116,6 +117,7 @@ export async function extractColor(imgUrl: string): Promise<string | null> {
     }
 
     const color = hslToHex(bestHue, 65, 55)
+    if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value!)
     CACHE.set(imgUrl, color)
     return color
   } catch {

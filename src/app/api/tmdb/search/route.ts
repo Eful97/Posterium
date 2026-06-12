@@ -6,7 +6,8 @@ import { cacheGet, cacheSet } from "@/lib/cache"
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "search")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
-  const query = req.nextUrl.searchParams.get("q")
+  const rawQuery = req.nextUrl.searchParams.get("q")
+  const query = rawQuery ? rawQuery.trim().slice(0, 100) : null
   const language = req.nextUrl.searchParams.get("language") || "it-IT"
   const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
   const page = parseInt(req.nextUrl.searchParams.get("page") || "1", 10)

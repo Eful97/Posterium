@@ -344,9 +344,10 @@ export function usePosterium(): PosteriumCtx {
     if (tmdbKey) params.push(`api_key=${encodeURIComponent(tmdbKey)}`)
     if (!globalBadges) params.push("badges=0")
     if (!rankingBadges) params.push("ranking=0")
+    if (lang) params.push(`lang=${encodeURIComponent(lang)}`)
     if (params.length > 0) url += "?" + params.join("&")
     setUrlPattern(url)
-  }, [globalBadges, rankingBadges, tmdbKey])
+  }, [globalBadges, rankingBadges, tmdbKey, lang])
 
   const [badgeBgColor, setBadgeBgColor] = useState("")
 
@@ -527,9 +528,11 @@ export function usePosterium(): PosteriumCtx {
       }
       const existing = mappingsMap.get(`${itemType}:${itemId}`)
       if (existing) {
-        setPreviewPoster({ file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
+        const foundPoster = (data.posters || []).find((p: TMDBImage) => p.file_path === existing.posterPath)
+        setPreviewPoster(foundPoster ? { file_path: foundPoster.file_path, iso_639_1: existing.language, vote_average: 0, width: foundPoster.width, height: foundPoster.height } : { file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
         if (existing.logoPath) {
-          setSelectedLogo({ file_path: existing.logoPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
+          const foundLogo = (data.logos || []).find((l: TMDBImage) => l.file_path === existing.logoPath)
+          setSelectedLogo(foundLogo ? { file_path: foundLogo.file_path, iso_639_1: existing.language, vote_average: 0, width: foundLogo.width, height: foundLogo.height } : { file_path: existing.logoPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
         }
         setLogoScale(existing.logoScale ?? 75)
         setLogoOffsetX(existing.logoOffsetX ?? 0)
@@ -556,13 +559,13 @@ export function usePosterium(): PosteriumCtx {
     }
   }
 
-  const selectPoster = async (image: TMDBImage) => {
+  const selectPoster = useCallback(async (image: TMDBImage) => {
     if (!selected) return
     setPreviewPoster(image)
     setPreviewId(`${selected.media_type}:${selected.id}`)
-  }
+  }, [selected])
 
-  const selectLogo = async (logo: TMDBImage) => {
+  const selectLogo = useCallback(async (logo: TMDBImage) => {
     setSelectedLogo(logo)
     if (!previewPoster && selected) {
       const existing = mappingsMap.get(`${selected.media_type}:${selected.id}`)
@@ -573,9 +576,9 @@ export function usePosterium(): PosteriumCtx {
       }
     }
     if (selected) setPreviewId(`${selected.media_type}:${selected.id}`)
-  }
+  }, [selected, previewPoster, mappingsMap, posters])
 
-  const saveConfig = async () => {
+  const saveConfig = useCallback(async () => {
     if (!selected || !previewPoster) return
     try {
       await api("/api/mappings", {
@@ -594,6 +597,7 @@ export function usePosterium(): PosteriumCtx {
           voteAverage: metaInfo.voteAverage || null,
           trendRank: trendRank ?? undefined,
           trendPeriod: "day",
+          showBadges: globalBadges,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)
@@ -602,17 +606,23 @@ export function usePosterium(): PosteriumCtx {
     } catch {
       showToast("Errore nel salvataggio")
     }
-  }
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, loadMappings])
 
-  const removeLogo = async () => {
+  const removeLogo = useCallback(async () => {
     setSelectedLogo(null)
     if (!selected) return
-    await api(`/api/mappings/${selected.media_type}:${selected.id}`, {
+    const key = `${selected.media_type}:${selected.id}`
+    const existing = mappingsMap.get(key)
+    if (!existing) {
+      showToast("Nessun mapping da aggiornare")
+      return
+    }
+    await api(`/api/mappings/${key}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tmdbId: selected.id, mediaType: selected.media_type, title: titleOf(selected),
-        posterPath: previewPoster?.file_path || selected.poster_path, logoPath: null,
+        posterPath: previewPoster?.file_path || selected.poster_path!, logoPath: null,
         originalPosterPath: selected.poster_path, language: previewPoster?.iso_639_1 || null,
         logoScale, logoOffsetX, logoOffsetY,
         genreName: metaInfo.genres[0]?.name || null,
@@ -621,8 +631,9 @@ export function usePosterium(): PosteriumCtx {
       }),
     })
     showToast("Logo rimosso!")
+    loadMappings()
     if (selected) setPreviewId(`${selected.media_type}:${selected.id}`)
-  }
+  }, [selected, previewPoster, logoScale, logoOffsetX, logoOffsetY, metaInfo, trendRank, mappingsMap, loadMappings])
 
   const removeMapping = useCallback(async (m: Mapping) => {
     await api(`/api/mappings/${m.mediaType}:${m.tmdbId}`, { method: "DELETE" })
@@ -749,6 +760,7 @@ export function usePosterium(): PosteriumCtx {
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
     globalBadges, rankingBadges, trendRank, metaInfo, previewId,
+    selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
     tmdbKeyInput, showKey, copied,

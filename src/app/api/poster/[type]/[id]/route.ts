@@ -12,14 +12,25 @@ const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
 
+const MAX_IMG_SIZE = 10 * 1024 * 1024
+const TMDB_IMG_HOST = "https://image.tmdb.org/t/p"
+
 async function fetchImg(url: string) {
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
   if (!res.ok) throw new Error(`fetch failed: ${res.status}`)
-  return Buffer.from(await res.arrayBuffer())
+  const cl = res.headers.get("content-length")
+  if (cl && Number(cl) > MAX_IMG_SIZE) throw new Error("image too large")
+  const buf = Buffer.from(await res.arrayBuffer())
+  if (buf.length > MAX_IMG_SIZE) throw new Error("image too large")
+  return buf
 }
 
 function imgSrc(path: string): string {
-  return path.startsWith("http") ? path : `${IMG_BASE}/w780${path}`
+  if (path.startsWith("http")) {
+    if (!path.startsWith(TMDB_IMG_HOST)) return `${IMG_BASE}/w780${path}`
+    return path
+  }
+  return `${IMG_BASE}/w780${path}`
 }
 
 function etagHeaders(etag: string) {
@@ -150,9 +161,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const qScale = req.nextUrl.searchParams.get("scale")
       const qOx = req.nextUrl.searchParams.get("ox")
       const qOy = req.nextUrl.searchParams.get("oy")
-      const userScale = qScale ? Number(qScale) : (mapping?.logoScale ?? 75)
-      const userOx = qOx ? Number(qOx) : (mapping?.logoOffsetX ?? 0)
-      const userOy = qOy ? Number(qOy) : (mapping?.logoOffsetY ?? 0)
+      const userScale = qScale ? (Number(qScale) || 75) : (mapping?.logoScale ?? 75)
+      const userOx = qOx ? (Number(qOx) || 0) : (mapping?.logoOffsetX ?? 0)
+      const userOy = qOy ? (Number(qOy) || 0) : (mapping?.logoOffsetY ?? 0)
       const scalePct = userScale / 100
       const logoW = Math.round(pw * scalePct)
       const logoHval = Math.round(lh * (logoW / lw))
@@ -217,6 +228,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       headers: etagHeaders(etag),
     })
   } catch {
-    return Response.redirect(imgSrc(posterPath))
+    return new Response("Poster generation failed", { status: 500 })
   }
 }

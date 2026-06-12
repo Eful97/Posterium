@@ -22,6 +22,7 @@ interface JWRankEntry {
 
 const rankingsCache = new Map<string, { data: JWRankEntry[]; timestamp: number }>()
 const CACHE_TTL = 30 * 60 * 1000
+const CACHE_MAX = 100
 
 export async function getJWRankings(objectType: "MOVIE" | "SHOW", country = "IT", first = 20): Promise<JWRankEntry[]> {
   const cacheKey = `${objectType}:${country}:${first}`
@@ -57,6 +58,7 @@ export async function getJWRankings(objectType: "MOVIE" | "SHOW", country = "IT"
     })
     .filter(Boolean) as JWRankEntry[]
 
+  if (rankingsCache.size >= CACHE_MAX) rankingsCache.delete(rankingsCache.keys().next().value!)
   rankingsCache.set(cacheKey, { data: result, timestamp: Date.now() })
   return result
 }

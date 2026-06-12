@@ -4,6 +4,7 @@ const IMG_BASE = "https://image.tmdb.org/t/p"
 
 const fetchCache = new Map<string, { data: unknown; timestamp: number }>()
 const CACHE_TTL = 5 * 60 * 1000
+const CACHE_MAX = 500
 
 async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
   const url = new URL(`${TMDB_BASE}${path}`)
@@ -19,6 +20,7 @@ async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
   if (!res.ok) throw new Error(`TMDB fetch failed: ${res.status}`)
   const data = await res.json()
 
+  if (fetchCache.size >= CACHE_MAX) fetchCache.delete(fetchCache.keys().next().value!)
   fetchCache.set(cacheKey, { data, timestamp: Date.now() })
   return data
 }

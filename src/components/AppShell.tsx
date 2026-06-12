@@ -18,7 +18,7 @@ export function AppShell() {
         <div
           className="fixed inset-0 -z-10 bg-cover bg-center transition-all duration-700"
           style={{
-            backgroundImage: `url(${p.posterUrl(p.previewPoster.file_path, "original")})`,
+            backgroundImage: `url(${p.posterUrl(p.previewPoster.file_path, "w780")})`,
             filter: "blur(80px)",
             opacity: 0.15,
           }}
@@ -27,8 +27,8 @@ export function AppShell() {
       {p.showLangPicker && <LangPicker onPick={p.pickLang} />}
       <div className="max-w-full px-4 pt-5 md:pt-3 pb-20 md:pb-3">
         <div className="hidden md:flex justify-end items-center gap-2 mb-4">
-          <button onClick={(e) => { p.copyUrl() }} disabled={!p.urlPattern} className="h-10 px-4 bg-accent-orange hover:bg-accent-orange/90 active:scale-95 transition-all duration-150 text-sm font-semibold text-white rounded-xl shadow-lg shadow-accent-orange/25 disabled:opacity-40 disabled:shadow-none">{p.copied ? "✅ Copiato!" : "🔗 AIOmetadata URL"}</button>
-          <button onClick={() => { if (p.view === "myposters") { history.back() } else { window.history.pushState({ view: p.view }, ""); p.setView("myposters") } }} className="h-10 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm font-medium rounded-xl text-zinc-300">📋 I miei poster ({p.mappings.length})</button>
+          <button onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="h-10 px-4 bg-accent-orange hover:bg-accent-orange/90 active:scale-95 transition-all duration-150 text-sm font-semibold text-white rounded-xl shadow-lg shadow-accent-orange/25 disabled:opacity-40 disabled:shadow-none">{p.copied ? "✅ Copiato!" : "🔗 AIOmetadata URL"}</button>
+          <button onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.pushState({ view: p.view }, ""); p.setView("myposters") } }} className="h-10 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm font-medium rounded-xl text-zinc-300">📋 I miei poster ({p.mappings.length})</button>
           <div className="relative" ref={p.settingsRef}>
             <button onClick={(e) => { e.stopPropagation(); p.setSettingsOpen((o) => !o) }} className="h-10 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm flex items-center gap-1.5 rounded-xl text-zinc-300">⚙️ Impostazioni</button>
             <div className="hidden md:block">{p.settingsOpen && <SettingsPanel showKey={p.showKey} tmdbKeyInput={p.tmdbKeyInput} setTmdbKeyInput={p.setTmdbKeyInput} setTmdbKey={p.setTmdbKey} setShowKey={p.setShowKey} setSettingsOpen={p.setSettingsOpen} exportData={p.exportData} importData={p.importData} />}</div>
@@ -37,9 +37,9 @@ export function AppShell() {
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
           <img onClick={p.goHome} src="/posterium.svg" alt="Posterium" decoding="async" className="h-16 md:h-20 w-auto mb-5 md:mb-4 cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
-            <button onClick={(e) => { p.copyUrl() }} disabled={!p.urlPattern} className="h-9 px-3 bg-accent-orange hover:bg-accent-orange/90 active:scale-95 transition-all duration-150 text-[11px] font-semibold text-white rounded-xl shadow-lg shadow-accent-orange/25 disabled:opacity-40 disabled:shadow-none">{p.copied ? "✅ Copiato!" : "🔗 AIOmetadata URL"}</button>
-            <button onClick={() => { if (p.view === "myposters") { history.back() } else { window.history.pushState({ view: p.view }, ""); p.setView("myposters") } }} className="h-9 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-xs font-medium rounded-xl text-zinc-300">📋 I miei poster ({p.mappings.length})</button>
-            <button onClick={() => p.setSettingsOpen(true)} className="md:hidden h-8 w-8 flex items-center justify-center bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm rounded-xl text-zinc-300">⚙️</button>
+            <button onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="h-9 px-3 bg-accent-orange hover:bg-accent-orange/90 active:scale-95 transition-all duration-150 text-[11px] font-semibold text-white rounded-xl shadow-lg shadow-accent-orange/25 disabled:opacity-40 disabled:shadow-none">{p.copied ? "✅ Copiato!" : "🔗 AIOmetadata URL"}</button>
+            <button onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.pushState({ view: p.view }, ""); p.setView("myposters") } }} className="h-9 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-xs font-medium rounded-xl text-zinc-300">📋 I miei poster ({p.mappings.length})</button>
+            <button onClick={() => p.setSettingsOpen(true)} className="h-8 w-8 flex items-center justify-center bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm rounded-xl text-zinc-300">⚙️</button>
           </div>
         </div>
         <div key={p.view} className="animate-fade-scale-in">
@@ -65,6 +65,7 @@ export function AppShell() {
 
       {p.settingsOpen && (
         <div className="fixed inset-0 z-[70] bg-background md:hidden animate-fade-scale-in overflow-y-auto">
+          <div className="fixed inset-0 z-[-1]" onClick={() => p.setSettingsOpen(false)} />
           <div className="flex items-center gap-3 p-4 border-b border-zinc-800">
             <button onClick={() => p.setSettingsOpen(false)} className="text-sm text-zinc-300 hover:text-white active:scale-90 transition-all duration-150">← Indietro</button>
             <h2 className="text-sm font-semibold text-zinc-200">⚙️ Impostazioni</h2>

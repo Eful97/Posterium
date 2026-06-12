@@ -23,12 +23,13 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
   }, [value])
 
   return (
-    <div className={`flex items-center ${h} bg-black/50 backdrop-blur-sm border ${focused ? "border-accent/60 shadow-lg shadow-accent/10" : "border-zinc-700/80"} focus-within:border-accent/60 focus-within:shadow-lg focus-within:shadow-accent/10 rounded-2xl transition-all duration-300 group`}>
-      <span className="shrink-0 pl-3.5 text-zinc-500 group-focus-within:text-accent transition-colors duration-300">🔍</span>
+    <div role="search" className={`flex items-center ${h} bg-black/50 backdrop-blur-sm border ${focused ? "border-accent/60 shadow-lg shadow-accent/10" : "border-zinc-700/80"} focus-within:border-accent/60 focus-within:shadow-lg focus-within:shadow-accent/10 rounded-2xl transition-all duration-300 group`}>
+      <span className="shrink-0 pl-3.5 text-zinc-500 group-focus-within:text-accent transition-colors duration-300" aria-hidden="true">🔍</span>
       <input
         suppressHydrationWarning
         ref={inputRef}
         value={text}
+        aria-label={large ? "Cerca un film o una serie TV" : "Cerca"}
         onChange={(e) => { setText(e.target.value); onChange?.(e.target.value) }}
         onFocus={() => { setFocused(true); onFocus?.() }}
         onBlur={() => { setFocused(false); onBlur?.() }}
@@ -38,6 +39,8 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
       />
       {text.length > 0 && (
         <button
+          type="button"
+          aria-label="Avvia ricerca"
           onClick={() => { if (text.length >= 2 && tmdbKey) { onSearch(text) } }}
           disabled={!tmdbKey}
           className="shrink-0 w-8 h-8 mr-1.5 flex items-center justify-center bg-accent-orange text-white rounded-full text-sm hover:shadow-lg hover:shadow-accent-orange/30 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-200"
