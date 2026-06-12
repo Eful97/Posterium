@@ -5,7 +5,7 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
-import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG, topGradientSVG, relativeLuminance, adjustColor, GENRE_FALLBACK } from "@/lib/badges"
+import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG, topGradientSVG, adjustColor, GENRE_FALLBACK } from "@/lib/badges"
 
 const RENDER_VERSION = 20
 const IMG_BASE = "https://image.tmdb.org/t/p"
@@ -161,6 +161,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const ph = STD_H
     const composites: { input: Buffer; top: number; left: number }[] = []
 
+    function simpleLum(hex: string): number {
+      const r = parseInt(hex.slice(1, 3), 16) / 255
+      const g = parseInt(hex.slice(3, 5), 16) / 255
+      const b = parseInt(hex.slice(5, 7), 16) / 255
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+
     async function extractMostSaturated(buf: Buffer): Promise<string> {
       const pixelBuf = await sharp(buf).resize(200, 300, { fit: 'fill' }).raw().toBuffer()
       let maxSat = -1, mr = 0, mg = 0, mb = 0
@@ -176,7 +183,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       }
       if (maxSat < 0) return ''
       let hex = `#${mr.toString(16).padStart(2, '0')}${mg.toString(16).padStart(2, '0')}${mb.toString(16).padStart(2, '0')}`
-      const lum = relativeLuminance(hex)
+      const lum = simpleLum(hex)
       if (lum < 0.4) hex = adjustColor(hex, 0.2)
       else if (lum > 0.7) hex = adjustColor(hex, -0.15)
       return hex
@@ -191,7 +198,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const pr = parseInt(pColor.slice(1,3),16), pg = parseInt(pColor.slice(3,5),16), pb = parseInt(pColor.slice(5,7),16)
         const lr = parseInt(lColor.slice(1,3),16), lg = parseInt(lColor.slice(3,5),16), lb = parseInt(lColor.slice(5,7),16)
         let hex = `#${Math.round((pr+lr)/2).toString(16).padStart(2,'0')}${Math.round((pg+lg)/2).toString(16).padStart(2,'0')}${Math.round((pb+lb)/2).toString(16).padStart(2,'0')}`
-        const lum = relativeLuminance(hex)
+        const lum = simpleLum(hex)
         if (lum < 0.4) hex = adjustColor(hex, 0.2)
         else if (lum > 0.7) hex = adjustColor(hex, -0.15)
         return hex
