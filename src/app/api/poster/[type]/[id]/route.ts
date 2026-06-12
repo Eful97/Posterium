@@ -274,7 +274,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     // If rank is already provided via URL or mapping, skip extraLabel logic
     const hasRank = req.nextUrl.searchParams.has("rank") || !!finalRank
-    const extraLabel = req.nextUrl.searchParams.get("extra") || (hasRank ? '' : (() => {
+    const extraLabel = (() => {
+      if (req.nextUrl.searchParams.get("extra")) return req.nextUrl.searchParams.get("extra")!
+      if (hasRank) return ''
       if (!rankingEnabled) return ''
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
@@ -313,6 +315,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
       if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
+      const badgeLabel = req.nextUrl.searchParams.get("label") || "Oggi"
       const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(finalRank, pw, badgeColor, mapping?.trendPeriod, badgeLabel)
       const rankLeft = Math.round((pw - totalW) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
