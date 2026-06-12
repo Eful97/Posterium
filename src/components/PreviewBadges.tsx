@@ -113,12 +113,11 @@ function TopGradient({ containerW, svgH }: { containerW: number; svgH: number })
 
 export function RankingBadge({ rank, containerW, containerH, color, posterPath, genreName, logoPath }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null }) {
   const [extracted, setExtracted] = useState("")
-  const [dbg, setDbg] = useState("")
   const gn = genreName || ''
   useEffect(() => {
     const pp = !color ? posterPath : null
     const lp = !color ? logoPath : null
-    if (!pp) { setExtracted(""); setDbg("no poster"); return }
+    if (!pp) { setExtracted(""); return }
     let cancelled = false
     const run = async () => {
       try {
@@ -131,7 +130,6 @@ export function RankingBadge({ rank, containerW, containerH, color, posterPath, 
         if (!poster) throw new Error()
         if (cancelled) return
         const ph = `#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`
-        setDbg(`px=${poster.v} sc=${poster.s.toFixed(3)}${poster.fb?' FALLBACK':''}`)
         if (!lp) { setExtracted(ph); return }
         let logo: AccentResult | null = null
         try { logo = await extractAccentColor(posterUrl(lp, "original"), gn) } catch {}
@@ -142,7 +140,7 @@ export function RankingBadge({ rank, containerW, containerH, color, posterPath, 
           const b = Math.round((poster.b + logo.b) / 2)
           setExtracted(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`)
         } else { setExtracted(ph) }
-      } catch { if (!cancelled) { setExtracted(""); setDbg("error") } }
+      } catch { if (!cancelled) setExtracted("") }
     }
     run()
     return () => { cancelled = true }
@@ -156,9 +154,6 @@ export function RankingBadge({ rank, containerW, containerH, color, posterPath, 
       <TopGradient containerW={containerW} svgH={svgH} />
       <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
         <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
-      </div>
-      <div className="absolute z-50" style={{ top: 0, left: 0, right: 0, fontSize: "11px", color: "#fff", background: "rgba(0,0,0,0.8)", padding: "2px 6px", borderBottom: "1px solid #f00", textAlign: "center" }}>
-        {badgeColor} {dbg}
       </div>
     </>
   )
@@ -179,12 +174,11 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
 
 export function ExtraBadge({ label, containerW, containerH, color, posterPath, genreName, logoPath }: { label: string; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null }) {
   const [extracted, setExtracted] = useState("")
-  const [dbg, setDbg] = useState("")
   const gn = genreName || ''
   useEffect(() => {
     const pp = !color ? posterPath : null
     const lp = !color ? logoPath : null
-    if (!pp) { setExtracted(""); setDbg("no poster"); return }
+    if (!pp) { setExtracted(""); return }
     let cancelled = false
     const run = async () => {
       try {
@@ -197,7 +191,6 @@ export function ExtraBadge({ label, containerW, containerH, color, posterPath, g
         if (!poster) throw new Error()
         if (cancelled) return
         const ph = `#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`
-        setDbg(`px=${poster.v} sc=${poster.s.toFixed(3)}${poster.fb?' FALLBACK':''}`)
         if (!lp) { setExtracted(ph); return }
         let logo: AccentResult | null = null
         try { logo = await extractAccentColor(posterUrl(lp, "original"), gn) } catch {}
@@ -208,7 +201,7 @@ export function ExtraBadge({ label, containerW, containerH, color, posterPath, g
           const b = Math.round((poster.b + logo.b) / 2)
           setExtracted(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`)
         } else { setExtracted(ph) }
-      } catch { if (!cancelled) { setExtracted(""); setDbg("error") } }
+      } catch { if (!cancelled) setExtracted("") }
     }
     run()
     return () => { cancelled = true }
@@ -222,9 +215,6 @@ export function ExtraBadge({ label, containerW, containerH, color, posterPath, g
       <TopGradient containerW={containerW} svgH={svgH} />
       <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
         <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
-      </div>
-      <div className="absolute z-50" style={{ top: 0, left: 0, right: 0, fontSize: "11px", color: "red", background: "#000", padding: "2px 6px", borderBottom: "1px solid red", textAlign: "center" }}>
-        [{label}] {badgeColor} {dbg}
       </div>
     </>
   )
