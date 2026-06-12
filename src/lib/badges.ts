@@ -14,13 +14,22 @@ function hexLuminance(hex: string): number {
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
   const voteStr = voteAverage.toFixed(1)
-  const fullText = `${genreName} • ★ ${voteStr}`
   const fontSize = Math.round(60 * pw / 1000)
   const charW = fontSize * 0.58
   const totalW = Math.round(genreName.length * charW + fontSize * 0.35 + fontSize * 0.30 + fontSize * 0.35 + fontSize * 1.0 + fontSize * 0.35 + voteStr.length * charW)
   const svgH = Math.round(fontSize * 1.6)
   const textY = Math.round(svgH * 0.72)
+  const starR = Math.round(fontSize * 0.45)
   const fid = uid()
+
+  const starCenterX = Math.round(genreName.length * charW + fontSize * 0.35 + fontSize * 0.30 + fontSize * 0.35 + fontSize * 0.5)
+  const starPts = []
+  for (let i = 0; i < 5; i++) {
+    const oa = (i * 2 * Math.PI) / 5 - Math.PI / 2
+    const ia = oa + Math.PI / 5
+    starPts.push(`${(starR * Math.cos(oa)).toFixed(2)},${(starR * Math.sin(oa)).toFixed(2)}`)
+    starPts.push(`${(starR * 0.4 * Math.cos(ia)).toFixed(2)},${(starR * 0.4 * Math.sin(ia)).toFixed(2)}`)
+  }
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
@@ -28,7 +37,8 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
       <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.12)"/>
     </filter>
   </defs>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(fullText)}</text>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(`${genreName} •  ${voteStr}`)}</text>
+  <polygon points="${starPts.join(' ')}" transform="translate(${starCenterX}, ${textY})" fill="rgba(255,255,255,.90)"/>
 </svg>`
   return { svg, totalW, svgH }
 }
@@ -105,7 +115,7 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   <g filter="url(#${fid})">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
     <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
-    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(fullText)}</text>
+    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(fullText)}</text>
   </g>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
@@ -150,7 +160,7 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   <g filter="url(#${fid})">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
     <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
-    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(label)}</text>
+    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(label)}</text>
   </g>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
