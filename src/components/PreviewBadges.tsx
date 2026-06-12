@@ -56,53 +56,88 @@ function adjustHex(hex: string, ratio: number): string {
   return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`
 }
 
-function useDominantColor(posterPath: string | null | undefined, containerW: number, containerH: number): string {
+function extractFromCanvas(containerW: number, containerH: number): { r: number; g: number; b: number } | null {
+  const canvas = document.createElement("canvas")
+  canvas.width = containerW
+  canvas.height = containerH
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return null
+  let maxSat = -1, mr = 0, mg = 0, mb = 0
+  const step = 4
+  for (let y = 0; y < containerH; y += step) {
+    for (let x = 0; x < containerW; x += step) {
+      const p = ctx.getImageData(x, y, 1, 1).data
+      const r = p[0] / 255, g = p[1] / 255, b = p[2] / 255
+      const max = Math.max(r, g, b), min = Math.min(r, g, b)
+      const l = (max + min) / 2
+      const d = max - min
+      const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+      if (s < 0.05 || l < 0.03 || l > 0.97) continue
+      if (s > maxSat) { maxSat = s; mr = p[0]; mg = p[1]; mb = p[2] }
+    }
+  }
+  if (maxSat < 0) return null
+  return { r: mr, g: mg, b: mb }
+}
+
+function processRgb(r: number, g: number, b: number): string {
+  let hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+  const lum = relativeLuminance(hex)
+  if (lum < 0.4) hex = adjustHex(hex, 0.2)
+  else if (lum > 0.7) hex = adjustHex(hex, -0.15)
+  return hex
+}
+
+function useDominantColor(posterPath: string | null | undefined, containerW: number, containerH: number, logoPath?: string | null): string {
   const [color, setColor] = useState("")
   useEffect(() => {
     if (!posterPath) { setColor(""); return }
-    const url = posterUrl(posterPath, "w500")
-    const img = new Image()
-    img.crossOrigin = "anonymous"
+    const posterUrl_ = posterUrl(posterPath, "w500")
+    const logoUrl_ = logoPath ? posterUrl(logoPath, "original") : null
     let cancelled = false
-    img.onload = () => {
+
+    const posterImg = new Image()
+    posterImg.crossOrigin = "anonymous"
+    posterImg.onload = () => {
       if (cancelled) return
       const canvas = document.createElement("canvas")
       canvas.width = containerW
       canvas.height = containerH
       const ctx = canvas.getContext("2d")
       if (!ctx) { setColor(""); return }
-      ctx.drawImage(img, 0, 0, containerW, containerH)
+      ctx.drawImage(posterImg, 0, 0, containerW, containerH)
+      const posterResult = extractFromCanvas(containerW, containerH)
 
-      let maxSat = -1
-      let mr = 0, mg = 0, mb = 0
-      const step = 4
-      for (let y = 0; y < containerH; y += step) {
-        for (let x = 0; x < containerW; x += step) {
-          const p = ctx.getImageData(x, y, 1, 1).data
-          const r = p[0] / 255, g = p[1] / 255, b = p[2] / 255
-          const max = Math.max(r, g, b), min = Math.min(r, g, b)
-          const l = (max + min) / 2
-          const d = max - min
-          const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-          if (s < 0.05 || l < 0.03 || l > 0.97) continue
-          if (s > maxSat) {
-            maxSat = s; mr = p[0]; mg = p[1]; mb = p[2]
-          }
-        }
+      if (!logoUrl_ || !posterResult) {
+        if (posterResult) setColor(processRgb(posterResult.r, posterResult.g, posterResult.b))
+        else setColor("")
+        return
       }
 
-      if (maxSat >= 0) {
-        let hex = `#${mr.toString(16).padStart(2, '0')}${mg.toString(16).padStart(2, '0')}${mb.toString(16).padStart(2, '0')}`
-        const lum = relativeLuminance(hex)
-        if (lum < 0.4) hex = adjustHex(hex, 0.2)
-        else if (lum > 0.7) hex = adjustHex(hex, -0.15)
-        setColor(hex)
+      const logoImg = new Image()
+      logoImg.crossOrigin = "anonymous"
+      logoImg.onload = () => {
+        if (cancelled) return
+        canvas.width = 100
+        canvas.height = Math.round(100 * logoImg.naturalHeight / logoImg.naturalWidth)
+        ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height)
+        const logoResult = extractFromCanvas(canvas.width, canvas.height)
+        if (!logoResult) { setColor(processRgb(posterResult.r, posterResult.g, posterResult.b)); return }
+
+        const r = Math.round((posterResult.r + logoResult.r) / 2)
+        const g = Math.round((posterResult.g + logoResult.g) / 2)
+        const b = Math.round((posterResult.b + logoResult.b) / 2)
+        setColor(processRgb(r, g, b))
       }
+      logoImg.onerror = () => {
+        if (!cancelled && posterResult) setColor(processRgb(posterResult.r, posterResult.g, posterResult.b))
+      }
+      logoImg.src = logoUrl_
     }
-    img.onerror = () => { if (!cancelled) setColor("") }
-    img.src = url
+    posterImg.onerror = () => { if (!cancelled) setColor("") }
+    posterImg.src = posterUrl_
     return () => { cancelled = true }
-  }, [posterPath, containerW, containerH])
+  }, [posterPath, containerW, containerH, logoPath])
   return color
 }
 
@@ -144,8 +179,8 @@ const BadgePill = ({ children, totalW, svgH, cornerR, bgColor }: { children: Rea
   )
 }
 
-export function RankingBadge({ rank, containerW, containerH, color, posterPath, genreName }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null }) {
-  const extracted = useDominantColor(!color ? posterPath : null, containerW, containerH)
+export function RankingBadge({ rank, containerW, containerH, color, posterPath, genreName, logoPath }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null }) {
+  const extracted = useDominantColor(!color ? posterPath : null, containerW, containerH, !color ? logoPath : null)
   const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
   const bgColor = color || extracted || genreFallback || '#555'
   const fullText = `#${rank} Oggi`
@@ -177,8 +212,8 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
   )
 }
 
-export function ExtraBadge({ label, containerW, containerH, color, posterPath, genreName }: { label: string; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null }) {
-  const extracted = useDominantColor(!color ? posterPath : null, containerW, containerH)
+export function ExtraBadge({ label, containerW, containerH, color, posterPath, genreName, logoPath }: { label: string; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null }) {
+  const extracted = useDominantColor(!color ? posterPath : null, containerW, containerH, !color ? logoPath : null)
   const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
   const bgColor = color || extracted || genreFallback || '#555'
   const { totalW, svgH, cornerR, fontSize } = badgeLayout(label, containerW)

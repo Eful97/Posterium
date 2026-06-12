@@ -158,9 +158,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const ph = posterMeta.height || 1500
     const composites: { input: Buffer; top: number; left: number }[] = []
 
-    async function extractBadgeColor(buf: Buffer, fallbackGenre?: string | null): Promise<string> {
+    async function extractMostSaturated(buf: Buffer): Promise<string> {
       const smallBuf = await sharp(buf).resize(8, 8, { fit: 'fill' }).raw().toBuffer()
-      let maxSat = -1, mr = 60, mg = 60, mb = 60
+      let maxSat = -1, mr = 0, mg = 0, mb = 0
       for (let i = 0; i < smallBuf.length; i += 4) {
         const r = smallBuf[i], g = smallBuf[i + 1], b = smallBuf[i + 2]
         const max = Math.max(r, g, b), min = Math.min(r, g, b)
@@ -171,15 +171,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (s < 0.05) continue
         if (s > maxSat) { maxSat = s; mr = r; mg = g; mb = b }
       }
-      if (maxSat >= 0) {
-        let hex = `#${mr.toString(16).padStart(2, '0')}${mg.toString(16).padStart(2, '0')}${mb.toString(16).padStart(2, '0')}`
+      if (maxSat < 0) return ''
+      let hex = `#${mr.toString(16).padStart(2, '0')}${mg.toString(16).padStart(2, '0')}${mb.toString(16).padStart(2, '0')}`
+      const lum = relativeLuminance(hex)
+      if (lum < 0.4) hex = adjustColor(hex, 0.2)
+      else if (lum > 0.7) hex = adjustColor(hex, -0.15)
+      return hex
+    }
+
+    async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fallbackGenre?: string | null): Promise<string> {
+      const [pColor, lColor] = await Promise.all([
+        extractMostSaturated(posterBuf),
+        logoBuf ? extractMostSaturated(logoBuf) : Promise.resolve(''),
+      ])
+      if (pColor && lColor) {
+        const pr = parseInt(pColor.slice(1,3),16), pg = parseInt(pColor.slice(3,5),16), pb = parseInt(pColor.slice(5,7),16)
+        const lr = parseInt(lColor.slice(1,3),16), lg = parseInt(lColor.slice(3,5),16), lb = parseInt(lColor.slice(5,7),16)
+        let hex = `#${Math.round((pr+lr)/2).toString(16).padStart(2,'0')}${Math.round((pg+lg)/2).toString(16).padStart(2,'0')}${Math.round((pb+lb)/2).toString(16).padStart(2,'0')}`
         const lum = relativeLuminance(hex)
         if (lum < 0.4) hex = adjustColor(hex, 0.2)
         else if (lum > 0.7) hex = adjustColor(hex, -0.15)
         return hex
       }
-      if (fallbackGenre) return GENRE_FALLBACK[fallbackGenre] || '#555'
-      return '#555'
+      return pColor || lColor || (fallbackGenre ? (GENRE_FALLBACK[fallbackGenre] || '#555') : '#555')
     }
     const qBadges = req.nextUrl.searchParams.get("badges")
     const badgesEnabled = qBadges !== "0" && showBadges
@@ -258,7 +272,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
       if (!badgeColor) {
         try {
-          badgeColor = await extractBadgeColor(posterBuf, genreName || queryGenre)
+          badgeColor = await extractBadgeColor(posterBuf, logoFetch, genreName || queryGenre)
         } catch {}
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
@@ -272,7 +286,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
       if (!badgeColor) {
         try {
-          badgeColor = await extractBadgeColor(posterBuf, genreName || queryGenre)
+          badgeColor = await extractBadgeColor(posterBuf, logoFetch, genreName || queryGenre)
         } catch {}
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
