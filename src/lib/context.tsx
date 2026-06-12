@@ -46,6 +46,7 @@ export interface PosteriumCtx {
   rankingBadges: boolean
   setRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
   trendRank: number | null
+  mdblistMatch: { key: string; rank: number } | null
   metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[] }
   previewId: string | null
   setPreviewId: React.Dispatch<React.SetStateAction<string | null>>
@@ -151,6 +152,7 @@ export function usePosterium(): PosteriumCtx {
   const [globalBadges, setGlobalBadges] = useState(true)
   const [rankingBadges, setRankingBadges] = useState(true)
   const [trendRank, setTrendRank] = useState<number | null>(null)
+  const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
   const [accentColor, setAccentColor] = useState("#ffffff")
@@ -398,6 +400,9 @@ export function usePosterium(): PosteriumCtx {
       else if (trendRank) {
         // skip - the server renders the ranking badge instead
       }
+      else if (mdblistMatch) {
+        params.push(`rank=${mdblistMatch.rank}`)
+      }
       else {
         const tvType = selected?.media_type === "tv" ? metaInfo.type : null
         const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
@@ -518,6 +523,14 @@ export function usePosterium(): PosteriumCtx {
       if (details.name) setSelected((prev) => ({ ...prev!, name: details.name }))
       setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [] })
       setTrendRank(rankData.rank || null)
+      const extImdbId = item.imdb_id || extIds.imdb_id
+      if (extImdbId) {
+        api(`/api/mdblist?imdb=${extImdbId}`).then((d) => {
+          if (d?.match) {
+            setMdblistMatch(d.match)
+          }
+        }).catch(() => {})
+      }
       if (!item.poster_path && data.posters?.length > 0) {
         const first = data.posters.find((p: TMDBImage) => p.iso_639_1) || data.posters[0]
         setSelected((prev) => ({ ...prev!, poster_path: first.file_path }))
@@ -730,6 +743,7 @@ export function usePosterium(): PosteriumCtx {
     globalBadges, setGlobalBadges,
     rankingBadges, setRankingBadges,
     trendRank,
+    mdblistMatch,
     metaInfo,
     previewId, setPreviewId,
     saveConfig, removeMapping, mappingsMap,
@@ -754,7 +768,7 @@ export function usePosterium(): PosteriumCtx {
     logos, posterActivePath, previewUrl, urlPattern, lang,
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
-    globalBadges, rankingBadges, trendRank, metaInfo, previewId,
+    globalBadges, rankingBadges, trendRank, mdblistMatch, metaInfo, previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,

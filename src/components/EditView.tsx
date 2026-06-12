@@ -70,6 +70,10 @@ export default function EditView() {
               if (nextAir > now && nextAir - now < twoWeeks) return <div className="absolute inset-0"><ExtraBadge label="Nuova stagione" containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
             }
 
+            if (p.mdblistMatch?.key === 'mdblistMovie' && p.selected?.media_type === 'movie') return <div className="absolute inset-0"><RankingBadge rank={p.mdblistMatch.rank} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} label="Di tendenza" /></div>
+            if (p.mdblistMatch?.key === 'mdblistShow' && p.selected?.media_type === 'tv') return <div className="absolute inset-0"><RankingBadge rank={p.mdblistMatch.rank} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} label="Serie di tendenza" /></div>
+            if (p.mdblistMatch?.key === 'mdblistAnime') return <div className="absolute inset-0"><RankingBadge rank={p.mdblistMatch.rank} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} label="Anime" /></div>
+
             if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
 
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null

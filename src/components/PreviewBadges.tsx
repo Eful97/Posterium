@@ -111,7 +111,7 @@ function TopGradient({ containerW, svgH }: { containerW: number; svgH: number })
   )
 }
 
-export function RankingBadge({ rank, containerW, containerH, color, posterPath, genreName, logoPath }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null }) {
+export function RankingBadge({ rank, containerW, containerH, color, posterPath, genreName, logoPath, label }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null; label?: string }) {
   const [extracted, setExtracted] = useState("")
   const gn = genreName || ''
   useEffect(() => {
@@ -147,7 +147,7 @@ export function RankingBadge({ rank, containerW, containerH, color, posterPath, 
   }, [posterPath, color, logoPath, gn])
   const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
   const badgeColor = color || extracted || genreFallback || '#555'
-  const { svg, totalW, svgH, cornerR } = rankingBadgeSVG(rank, containerW, badgeColor)
+  const { svg, totalW, svgH, cornerR } = rankingBadgeSVG(rank, containerW, badgeColor, "day", label)
 
   return (
     <>

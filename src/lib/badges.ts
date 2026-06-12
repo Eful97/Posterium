@@ -169,9 +169,9 @@ export function topGradientSVG(pw: number, badgeH: number): { svg: string; h: nu
   return { svg, h: gh }
 }
 
-export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "day"): { svg: string; totalW: number; svgH: number; cornerR: number } {
+export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "day", label?: string): { svg: string; totalW: number; svgH: number; cornerR: number } {
   const periodMap: Record<string, string> = { day: "Oggi", week: "Settimana" }
-  const periodText = periodMap[period] || "Oggi"
+  const periodText = label || periodMap[period] || "Oggi"
   const rankStr = String(rank)
   const fullText = `#${rankStr} ${periodText}`
   const fontSize = Math.round(24 * pw / 380)
