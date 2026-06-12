@@ -24,48 +24,29 @@ export function adjustColor(hex: string, amount: number): string {
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
   const voteStr = voteAverage.toFixed(1)
-  const fontSize = Math.round(24 * pw / 380)
+  const fontSize = Math.round(20 * pw / 380)
   const charW = fontSize * 0.58
-  const genreW = genreName.length * charW
-  const bulletFontSize = Math.round(fontSize * 19 / 24)
-  const bulletW = Math.round(fontSize * 0.3)
-  const rightW = voteStr.length * fontSize * 0.55
-  const starR = Math.round(fontSize * 0.45)
-  const starW = starR * 2
-  const gap = Math.round(fontSize / 3)
-  const gap2 = Math.round(fontSize / 4)
-  const pad = Math.round(fontSize * 0.5)
-  const totalW = Math.round(genreW + gap + bulletW + gap + starW + gap2 + rightW + pad * 2)
-  const svgH = Math.round(fontSize * 1.6)
-  const axisY = Math.round(svgH / 2)
-  const sin54 = Math.sin(54 * Math.PI / 180)
-  const starY = axisY + Math.round(starR * (1 - sin54) / 2)
-  const textY = axisY + Math.round(fontSize * 0.28)
+  const genreW = Math.round(genreName.length * charW)
+  const bulletW = Math.round(fontSize * 0.4)
+  const starW = Math.round(fontSize * 0.75)
+  const voteW = Math.round(voteStr.length * charW)
+  const gap = Math.round(fontSize * 0.35)
+  const pad = Math.round(fontSize * 0.35)
+  const totalW = Math.round(genreW + gap + bulletW + gap + starW + gap + voteW + pad * 2)
+  const svgH = Math.round(fontSize * 1.8)
+  const textY = Math.round(svgH * 0.72)
   const fid = uid()
-
-  const starPts = []
-  for (let i = 0; i < 5; i++) {
-    const oa = (i * 2 * Math.PI) / 5 - Math.PI / 2
-    const ia = oa + Math.PI / 5
-    starPts.push(`${(starR * Math.cos(oa)).toFixed(2)},${(starR * Math.sin(oa)).toFixed(2)}`)
-    starPts.push(`${(starR * 0.4 * Math.cos(ia)).toFixed(2)},${(starR * 0.4 * Math.sin(ia)).toFixed(2)}`)
-  }
-
-  const genreX = pad
-  const bulletX = pad + genreW + gap
-  const starX = pad + genreW + gap + bulletW + gap + starR
-  const rightX = pad + genreW + gap + bulletW + gap + starW + gap2
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
     <filter id="${fid}" x="-10%" y="-20%" width="120%" height="140%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.12)"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.15)"/>
     </filter>
   </defs>
-  <text x="${genreX}" y="${textY}" text-anchor="start" fill="#d4d4d4" font-size="${fontSize}" font-family="sans-serif" font-weight="600" filter="url(#${fid})">${escapeXml(genreName)}</text>
-  <text x="${bulletX}" y="${textY}" text-anchor="start" fill="#d4d4d4" font-size="${fontSize}" font-family="sans-serif" font-weight="600" filter="url(#${fid})">•</text>
-  <polygon points="${starPts.join(' ')}" transform="translate(${starX}, ${starY})" fill="#d4d4d4"/>
-  <text x="${rightX}" y="${textY}" text-anchor="start" fill="#d4d4d4" font-size="${fontSize}" font-family="sans-serif" font-weight="600" filter="url(#${fid})">${escapeXml(voteStr)}</text>
+  <text x="${pad}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="500" filter="url(#${fid})">${escapeXml(genreName)}</text>
+  <text x="${pad + genreW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="500" filter="url(#${fid})">•</text>
+  <text x="${pad + genreW + gap + bulletW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="500" filter="url(#${fid})">★</text>
+  <text x="${pad + genreW + gap + bulletW + gap + starW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="500" filter="url(#${fid})">${escapeXml(voteStr)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
@@ -124,7 +105,7 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
     </filter>
   </defs>
   <rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" ry="${r}" fill="#171717" fill-opacity="0.95" filter="url(#${fid})"/>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700" letter-spacing="0.025em">${escapeXml(fullText)}</text>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700" letter-spacing="-0.025em">${escapeXml(fullText)}</text>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
 }
@@ -150,7 +131,7 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
     </filter>
   </defs>
   <rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" ry="${r}" fill="#171717" fill-opacity="0.95" filter="url(#${fid})"/>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700" letter-spacing="0.025em">${escapeXml(label)}</text>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700" letter-spacing="-0.025em">${escapeXml(label)}</text>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
 }
