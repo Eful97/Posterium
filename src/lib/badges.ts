@@ -105,7 +105,7 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
   const r = Math.round(pb * 1.0)
   const lum = color.startsWith('#') ? hexLuminance(color) : 0.7
-  const isDark = lum < 0.5
+  const isDark = lum >= 0.5
   const bgTop = isDark ? '#2a2a2a' : '#e0e0e0'
   const bgBot = isDark ? '#111111' : '#c0c0c0'
   const textFill = isDark ? '#fff' : '#111'
@@ -149,7 +149,7 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
   const r = Math.round(pb * 1.0)
   const lum = color.startsWith('#') ? hexLuminance(color) : 0.7
-  const isDark = lum < 0.5
+  const isDark = lum >= 0.5
   const bgTop = isDark ? '#2a2a2a' : '#e0e0e0'
   const bgBot = isDark ? '#111111' : '#c0c0c0'
   const textFill = isDark ? '#fff' : '#111'
