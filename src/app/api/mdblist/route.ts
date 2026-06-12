@@ -30,9 +30,20 @@ export async function GET(req: NextRequest) {
         signal: AbortSignal.timeout(10000)
       })
       if (!res.ok) continue
-      const data = await res.json()
-      const items: MDBListEntry[] = (data.items || data || []).slice(0, 20).map((item: any) => ({
-        imdb: item.imdb_id || item.imdb || '',
+      const body = await res.json()
+      const payload = body?.data || body
+      let parsedItems: any[] = []
+      if (Array.isArray(payload)) {
+        parsedItems = payload
+      } else if (payload?.items) {
+        parsedItems = payload.items
+      } else if (payload?.shows) {
+        parsedItems = payload.shows
+      } else if (payload?.movies) {
+        parsedItems = payload.movies
+      }
+      const items: MDBListEntry[] = parsedItems.slice(0, 20).map((item: any) => ({
+        imdb: item.imdb_id || item.imdb || item.ids?.imdb || '',
         title: item.title || '',
         year: item.year || 0,
       }))
