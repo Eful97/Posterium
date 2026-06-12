@@ -24,16 +24,18 @@ export function adjustColor(hex: string, amount: number): string {
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
   const voteStr = voteAverage.toFixed(1)
-  const fontSize = Math.round(20 * pw / 380)
+  const fontSize = Math.round(24 * pw / 380)
+  const starFontSize = Math.round(20 * pw / 380)
   const charW = fontSize * 0.58
+  const starCharW = starFontSize * 0.58
   const genreW = Math.round(genreName.length * charW)
-  const bulletW = Math.round(fontSize * 0.4)
-  const starW = Math.round(fontSize * 0.75)
+  const bulletW = Math.round(starFontSize * 0.4)
+  const starW = Math.round(starFontSize * 0.75)
   const voteW = Math.round(voteStr.length * charW)
-  const gap = Math.round(fontSize * 0.35)
+  const gap = Math.round(fontSize * 0.25)
   const pad = Math.round(fontSize * 0.35)
   const totalW = Math.round(genreW + gap + bulletW + gap + starW + gap + voteW + pad * 2)
-  const svgH = Math.round(fontSize * 1.8)
+  const svgH = Math.round(fontSize * 1.6)
   const textY = Math.round(svgH * 0.72)
   const fid = uid()
 
@@ -43,10 +45,10 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
       <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.15)"/>
     </filter>
   </defs>
-  <text x="${pad}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="500" filter="url(#${fid})">${escapeXml(genreName)}</text>
-  <text x="${pad + genreW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="500" filter="url(#${fid})">•</text>
-  <text x="${pad + genreW + gap + bulletW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="500" filter="url(#${fid})">★</text>
-  <text x="${pad + genreW + gap + bulletW + gap + starW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="500" filter="url(#${fid})">${escapeXml(voteStr)}</text>
+  <text x="${pad}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">${escapeXml(genreName)}</text>
+  <text x="${pad + genreW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${starFontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">•</text>
+  <text x="${pad + genreW + gap + bulletW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${starFontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">★</text>
+  <text x="${pad + genreW + gap + bulletW + gap + starW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">${escapeXml(voteStr)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
@@ -85,10 +87,10 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const periodText = label || periodMap[period] || "Oggi"
   const rankStr = String(rank)
   const fullText = `#${rankStr} ${periodText}`
-  const fontSize = Math.round(24 * pw / 380)
+  const fontSize = Math.round(20 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.round(rankStr.length * charW + fontSize * 0.35 + periodText.length * charW)
-  const px = Math.round(fontSize * 1.0)
+  const px = Math.round(fontSize * 1.2)
   const pt = Math.round(fontSize * 0.25)
   const pb = Math.round(fontSize * 0.25)
   const totalW = textW + px * 2
@@ -111,10 +113,10 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
 }
 
 export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: string; totalW: number; svgH: number; cornerR: number } {
-  const fontSize = Math.round(24 * pw / 380)
+  const fontSize = Math.round(20 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.max(Math.round(label.length * charW), fontSize)
-  const px = Math.round(fontSize * 1.0)
+  const px = Math.round(fontSize * 1.2)
   const pt = Math.round(fontSize * 0.25)
   const pb = Math.round(fontSize * 0.25)
   const totalW = textW + px * 2
