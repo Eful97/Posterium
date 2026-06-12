@@ -121,9 +121,10 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
       <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.12)"/>
     </filter>
   </defs>
-  <text x="${genreX}" y="${textY}" text-anchor="start" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="600" filter="url(#${fid})">${escapeXml(genreName)}</text>
-  <text x="${bulletX}" y="${textY}" text-anchor="start" fill="rgba(255,255,255,0.6)" font-size="${bulletFontSize}" font-family="sans-serif" font-weight="500" filter="url(#${fid})">•</text>
-  <text x="${rightX}" y="${textY}" text-anchor="start" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">${escapeXml(voteStr)}</text>
+  <text x="${genreX}" y="${textY}" text-anchor="start" fill="#d4d4d4" font-size="${fontSize}" font-family="sans-serif" font-weight="600" filter="url(#${fid})">${escapeXml(genreName)}</text>
+  <text x="${bulletX}" y="${textY}" text-anchor="start" fill="#d4d4d4" font-size="${fontSize}" font-family="sans-serif" font-weight="600" filter="url(#${fid})">•</text>
+  <polygon points="${starPts.join(' ')}" transform="translate(${starX}, ${starY})" fill="#d4d4d4"/>
+  <text x="${rightX}" y="${textY}" text-anchor="start" fill="#d4d4d4" font-size="${fontSize}" font-family="sans-serif" font-weight="600" filter="url(#${fid})">${escapeXml(voteStr)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
