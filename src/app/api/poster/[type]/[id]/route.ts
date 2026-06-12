@@ -157,8 +157,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       })(),
     ]) as [Buffer, Buffer | null, Buffer | null, number | null]
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
-    const qRank = req.nextUrl.searchParams.get("rank")
-    const finalRank = qRank ? Number(qRank) : rankingRank
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'fill' }).toBuffer()
     const pw = STD_W
     const ph = STD_H
@@ -273,7 +271,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
       composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
       composites.push({ input: Buffer.from(extraSvg), top: 0, left: extraLeft })
-    } else if (rankingEnabled && finalRank) {
+    } else if (rankingEnabled && rankingRank) {
       let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
       if (!badgeColor) {
         try {
@@ -282,8 +280,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
       if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
-      console.log({ type, tmdbId, rank: finalRank, genre: genreName || queryGenre, badgeColor })
-      const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(finalRank, pw, badgeColor, mapping?.trendPeriod)
+      console.log({ type, tmdbId, rank: rankingRank, genre: genreName || queryGenre, badgeColor })
+      const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(rankingRank, pw, badgeColor, mapping?.trendPeriod)
       const rankLeft = Math.round((pw - totalW) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
       composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
