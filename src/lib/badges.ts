@@ -123,8 +123,8 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
       <feDropShadow dx="0" dy="${Math.round(fontSize * 0.08)}" stdDeviation="${Math.round(fontSize * 0.15)}" flood-color="${shadowColor}"/>
     </filter>
   </defs>
-  <rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" ry="${r}" fill="#171717" filter="url(#${fid})"/>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700">${escapeXml(fullText)}</text>
+  <rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" ry="${r}" fill="#171717" fill-opacity="0.95" filter="url(#${fid})"/>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700" letter-spacing="0.025em">${escapeXml(fullText)}</text>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
 }
@@ -149,8 +149,8 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
       <feDropShadow dx="0" dy="${Math.round(fontSize * 0.08)}" stdDeviation="${Math.round(fontSize * 0.15)}" flood-color="${shadowColor}"/>
     </filter>
   </defs>
-  <rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" ry="${r}" fill="#171717" filter="url(#${fid})"/>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700">${escapeXml(label)}</text>
+  <rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" ry="${r}" fill="#171717" fill-opacity="0.95" filter="url(#${fid})"/>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700" letter-spacing="0.025em">${escapeXml(label)}</text>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
 }
