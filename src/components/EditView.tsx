@@ -70,12 +70,12 @@ export default function EditView() {
 
             if (p.isTendenza) return <div className="absolute inset-0"><ExtraBadge label="Di Tendenza" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
 
+            if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} containerW={380} containerH={570} color={p.badgeBgColor} /></div>
+
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
             const status = p.selected?.media_type === "tv" ? p.metaInfo.status : null
             const extra = tvType === "Miniseries" ? "Miniserie" : status === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8 ? "Da divorare" : null
             if (extra) return <div className="absolute inset-0"><ExtraBadge label={extra} containerW={380} containerH={570} color={p.badgeBgColor} /></div>
-
-            if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} containerW={380} containerH={570} color={p.badgeBgColor} /></div>
             return null
           })()}
           {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={380} containerH={570} /></div>}
