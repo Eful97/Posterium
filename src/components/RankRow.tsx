@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useEffect } from "react"
 import { posterUrl } from "@/lib/utils"
 import { ScrollButton } from "@/components/ScrollButton"
 
@@ -81,6 +81,15 @@ export function RankRow({
   onItemClick: (item: RankItem) => void
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const storageKey = `scroll:${label}`
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const saved = sessionStorage.getItem(storageKey)
+    if (saved) el.scrollLeft = Number(saved)
+  }, [items.length, storageKey])
+
   if (items.length === 0) return null
   const gap = 3
 
@@ -90,6 +99,12 @@ export function RankRow({
     const poster = el.querySelector(".rank-btn") as HTMLElement
     const w = poster?.offsetWidth || 192
     el.scrollBy({ left: dir === "left" ? -(w * gap) : w * gap, behavior: "smooth" })
+    requestAnimationFrame(() => sessionStorage.setItem(storageKey, String(el.scrollLeft)))
+  }
+
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (el) sessionStorage.setItem(storageKey, String(el.scrollLeft))
   }
 
   return (
@@ -102,6 +117,7 @@ export function RankRow({
           ref={scrollRef}
           className="flex overflow-x-auto md:overflow-x-hidden gap-0 pb-1 pr-4 scrollbar-none scroll-smooth scroll-snap-x"
           onWheel={(e) => { if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.preventDefault() }}
+          onScroll={handleScroll}
         >
           {items.map((item, idx) => (
             <RankCard
