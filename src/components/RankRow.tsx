@@ -15,18 +15,12 @@ interface RankItem {
 }
 
 function rankBadge(rank: number) {
+  const twoDigit = rank >= 10
   return (
-    <span className="absolute top-[3%] left-[3%] flex items-center justify-center z-20">
-      <span className="absolute w-6 md:w-9 h-6 md:h-9 rounded bg-black/50 backdrop-blur-sm" />
-      <span className="relative text-base md:text-2xl font-black leading-none"
-        style={{
-          background: "linear-gradient(180deg, #fff 0%, #f0f0f0 50%, #b0b8c4 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-          filter: "drop-shadow(2px 3px 4px rgba(0,0,0,0.50))",
-          WebkitTextStroke: "0.5px rgba(60,60,60,0.45)",
-        }}
+    <span className="absolute top-[4%] left-[4%] flex items-center justify-center z-20" style={{ width: twoDigit ? '38px' : '30px', height: '30px' }}>
+      <span className="absolute inset-0 rounded bg-black/50 backdrop-blur-sm" />
+      <span className="relative text-sm md:text-lg font-bold leading-none text-white"
+        style={{ filter: "drop-shadow(1px 2px 3px rgba(0,0,0,0.50))" }}
       >
         {rank}
       </span>
