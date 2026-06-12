@@ -12,6 +12,13 @@ function hexLuminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
+function adjustColor(hex: string, amount: number): string {
+  const r = Math.max(0, Math.min(255, parseInt(hex.slice(1, 3), 16) + Math.round(amount * 255)))
+  const g = Math.max(0, Math.min(255, parseInt(hex.slice(3, 5), 16) + Math.round(amount * 255)))
+  const b = Math.max(0, Math.min(255, parseInt(hex.slice(5, 7), 16) + Math.round(amount * 255)))
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}
+
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
   const voteStr = voteAverage.toFixed(1)
   const fontSize = Math.round(24 * pw / 380)
@@ -106,8 +113,8 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const r = Math.round(pb * 1.0)
   const lum = color.startsWith('#') ? hexLuminance(color) : 0.7
   const isDark = lum >= 0.5
-  const bgTop = isDark ? '#2a2a2a' : '#e0e0e0'
-  const bgBot = isDark ? '#111111' : '#c0c0c0'
+  const bgTop = color && color.startsWith('#') ? color : (isDark ? '#2a2a2a' : '#e0e0e0')
+  const bgBot = color && color.startsWith('#') ? adjustColor(color, -0.12) : (isDark ? '#111111' : '#c0c0c0')
   const textFill = isDark ? '#fff' : '#111'
   const rimColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
   const shadowColor = 'rgba(0,0,0,0.30)'
@@ -150,8 +157,8 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const r = Math.round(pb * 1.0)
   const lum = color.startsWith('#') ? hexLuminance(color) : 0.7
   const isDark = lum >= 0.5
-  const bgTop = isDark ? '#2a2a2a' : '#e0e0e0'
-  const bgBot = isDark ? '#111111' : '#c0c0c0'
+  const bgTop = color && color.startsWith('#') ? color : (isDark ? '#2a2a2a' : '#e0e0e0')
+  const bgBot = color && color.startsWith('#') ? adjustColor(color, -0.12) : (isDark ? '#111111' : '#c0c0c0')
   const textFill = isDark ? '#fff' : '#111'
   const rimColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
   const shadowColor = 'rgba(0,0,0,0.30)'
