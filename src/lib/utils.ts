@@ -65,6 +65,8 @@ export const STREAMING_PLATFORMS = [
   { slug: "disney", name: "Disney+", icon: "🔵" },
   { slug: "amazon-prime", name: "Prime Video", icon: "🟠" },
   { slug: "hbo-max", name: "HBO Max", icon: "🟣" },
+  { slug: "apple-tv", name: "Apple TV+", icon: "⚪" },
+  { slug: "paramount-plus", name: "Paramount+", icon: "🟦" },
 ] as const
 
 export const PICKER_LANGS = [
