@@ -20,7 +20,7 @@ export function GenreRatingBadges({ genreName, voteAverage }: { genreName: strin
       minHeight: "100px",
       pointerEvents: "none",
     }}>
-      <div className="absolute bottom-6 w-full flex justify-center items-center gap-2 text-2xl font-bold text-gray-200 drop-shadow-lg">
+      <div className="absolute bottom-6 w-full flex justify-center items-center gap-2 text-2xl font-bold text-gray-200 drop-shadow-lg whitespace-nowrap">
         <span>{genreName}</span>
         <span>&bull;</span>
         <span className="flex items-center gap-1">
