@@ -8,7 +8,7 @@ import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { bottomGradientSVG, topGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 
-const RENDER_VERSION = 24
+const RENDER_VERSION = 25
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
     // Fetch missing tv/movie details when using mapping or query params
-    if (!releaseDate && !firstAirDate && !tvType) {
+    if ((mediaType === "tv" && !tvType) || !releaseDate) {
       try {
         const details = await getDetails(mediaType, tmdbId)
         if (!releaseDate) releaseDate = details.release_date || null
