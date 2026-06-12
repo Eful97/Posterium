@@ -67,24 +67,24 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const shadowColor = 'rgba(0,0,0,0.30)'
   const textShadow = isDark ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${bgTop}"/>
       <stop offset="100%" stop-color="${bgBot}"/>
     </linearGradient>
-    <filter id="s" x="-10%" y="0%" width="120%" height="200%">
+    <filter id="s" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(5 * s)}" stdDeviation="${Math.round(10 * s)}" flood-color="${shadowColor}"/>
     </filter>
-    <filter id="t" x="-10%" y="-20%" width="120%" height="140%">
+    <filter id="t" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(1 * s)}" stdDeviation="${Math.round(1 * s)}" flood-color="${textShadow}"/>
     </filter>
   </defs>
   <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="${bgBot}"/>
   <g filter="url(#s)">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
-    <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   </g>
+  <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(fullText)}</text>
 </svg>`
   return { svg, totalW, svgH }
@@ -111,24 +111,24 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const shadowColor = 'rgba(0,0,0,0.30)'
   const textShadow = isDark ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${bgTop}"/>
       <stop offset="100%" stop-color="${bgBot}"/>
     </linearGradient>
-    <filter id="s" x="-10%" y="0%" width="120%" height="200%">
+    <filter id="s" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(5 * s)}" stdDeviation="${Math.round(10 * s)}" flood-color="${shadowColor}"/>
     </filter>
-    <filter id="t" x="-10%" y="-20%" width="120%" height="140%">
+    <filter id="t" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(1 * s)}" stdDeviation="${Math.round(1 * s)}" flood-color="${textShadow}"/>
     </filter>
   </defs>
   <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="${bgBot}"/>
   <g filter="url(#s)">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
-    <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   </g>
+  <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(label)}</text>
 </svg>`
   return { svg, totalW, svgH }
