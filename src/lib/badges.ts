@@ -14,7 +14,7 @@ function hexLuminance(hex: string): number {
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
   const voteStr = voteAverage.toFixed(1)
-  const fontSize = Math.round(60 * pw / 1000)
+  const fontSize = Math.round(84 * pw / 1000)
   const charW = fontSize * 0.58
   const genreW = genreName.length * charW
   const bulletSpaceW = fontSize * 0.65
