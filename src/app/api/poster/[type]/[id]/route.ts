@@ -169,7 +169,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     async function extractMostSaturated(buf: Buffer): Promise<string> {
-      const pixelBuf = await sharp(buf).resize(200, 300, { fit: 'fill' }).raw().toBuffer()
+      const pixelBuf = await sharp(buf).resize(200, 300, { fit: 'fill', kernel: 'nearest' }).raw().toBuffer()
 
       // Gather valid pixels and compute bgMean
       const pixels: { r: number; g: number; b: number; s: number; l: number }[] = []
