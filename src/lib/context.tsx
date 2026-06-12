@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { SearchResult, TMDBImage, Mapping, FlixPatrolChart } from "./types"
 import { getDomain, posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from "./utils"
-import { extractColor } from "./color"
+import { findAccentColor } from "./accent-color"
 import { getAwardBadgeLabel } from "./awards"
 
 export interface PosteriumCtx {
@@ -374,7 +374,7 @@ export function usePosterium(): PosteriumCtx {
     }
     if (lang) params.push(`lang=${lang}`)
     if (badgeBgColor) params.push(`badgeColor=${encodeURIComponent(badgeBgColor)}`)
-    else params.push(`badgeColor=%23999999`)
+    else if (accentColor && accentColor !== '#ffffff') params.push(`badgeColor=${encodeURIComponent(accentColor)}`)
     if (rankingBadges) {
       const currYear = new Date().getFullYear().toString()
       const isNewMovie = selected?.media_type === "movie" && selected?.release_date?.startsWith(currYear)
@@ -425,15 +425,28 @@ export function usePosterium(): PosteriumCtx {
   useEffect(() => {
     const root = document.documentElement
     if (!previewPoster) { root.style.setProperty("--color-accent", "#ffffff"); setAccentColor("#ffffff"); return }
+    const genreName = metaInfo.genres[0]?.name
     let cancelled = false
     const url = posterUrl(previewPoster.file_path, "w342")
-    extractColor(url).then((color) => {
-      if (!cancelled) {
-        const c = color || "#ffffff"
-        root.style.setProperty("--color-accent", c)
-        setAccentColor(c)
-      }
-    })
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    img.onload = () => {
+      if (cancelled) return
+      const w = Math.min(img.naturalWidth, 342)
+      const h = Math.round(w * img.naturalHeight / img.naturalWidth)
+      const canvas = document.createElement("canvas")
+      canvas.width = w; canvas.height = h
+      const ctx = canvas.getContext("2d")!
+      ctx.imageSmoothingEnabled = false
+      ctx.drawImage(img, 0, 0, w, h)
+      const pixels = ctx.getImageData(0, 0, w, h).data
+      const result = findAccentColor(pixels, w, h, genreName || '')
+      const c = `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
+      root.style.setProperty("--color-accent", c)
+      setAccentColor(c)
+    }
+    img.onerror = () => { if (!cancelled) { setAccentColor("#ffffff") } }
+    img.src = url
     return () => { cancelled = true }
   }, [previewPoster])
 
