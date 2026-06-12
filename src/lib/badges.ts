@@ -76,13 +76,13 @@ function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: s
   const lum = hexLuminance(color)
   const [h, s, l] = hexToHsl(color)
 
-  // Shift hue by ~40° for a harmonious contrast
-  let newH = (h + 0.11) % 1
-  // Boost saturation to at least 50%
-  const newS = Math.max(0.5, Math.min(0.7, s * 1.5))
-  // Prefer dark backgrounds, always white text
-  const newL = lum < 0.5 ? Math.min(0.45, l + 0.3) : Math.max(0.2, l - 0.5)
-  const newL2 = lum < 0.5 ? Math.min(0.35, l + 0.2) : Math.max(0.28, l - 0.42)
+  // Keep the poster's hue, use as-is or slightly boost saturation
+  const newH = h
+  const newS = Math.max(0.15, Math.min(0.55, s * 1.2))
+  // Darken enough for white text visibility
+  const targetL = 0.08  // how much to approach darkness
+  const newL = l + (targetL - l) * 0.6
+  const newL2 = l + (targetL - 0.03 - l) * 0.6
 
   const bgTop = hslToHex(newH, newS, newL)
   const bgBot = hslToHex(newH, newS, newL2)
