@@ -282,11 +282,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       if (isNewMovie) return "Nuovo film"
       if (isNewSeries) return "Nuova serie"
 
-      if (mediaType === "tv" && nextEpisodeAir) {
-        const nextEp = new Date(nextEpisodeAir).getTime()
-        if (nextEp > now && nextEp - now < twoWeeks) return "Nuova stagione"
-      }
-
       if (tvType === "Miniseries") return "Miniserie"
       if (tvStatus === "Returning Series") return "Ritorna"
       if (voteAverage && voteAverage >= 8) return "Da divorare"
