@@ -32,19 +32,18 @@ async function extractAccentColor(imageUrl: string, genre: string): Promise<Acce
     i.src = imageUrl
   })
 
-  const MAX_W = 200
+  const MAX_W = 342
   const w = Math.min(img.naturalWidth, MAX_W)
   const h = Math.round(w * img.naturalHeight / img.naturalWidth)
   const canvas = document.createElement("canvas")
   canvas.width = w
   canvas.height = h
   const ctx = canvas.getContext("2d")!
-  // Use nearest-neighbor scaling to preserve individual pixel colors
   ctx.imageSmoothingEnabled = false
   ctx.drawImage(img, 0, 0, w, h)
 
   const pixels: { r: number; g: number; b: number; h: number; s: number; l: number }[] = []
-  const step = 4
+  const step = 2
   for (let y = 0; y < h; y += step) {
     for (let x = 0; x < w; x += step) {
       const p = ctx.getImageData(x, y, 1, 1).data
@@ -109,7 +108,7 @@ function useAccentColor(posterPath: string | null | undefined, genre: string, lo
   const [hex, setHex] = useState("")
   useEffect(() => {
     if (!posterPath) { setHex(""); return }
-    const posterUrl_ = posterUrl(posterPath, "w185")
+    const posterUrl_ = posterUrl(posterPath, "w342")
     const logoUrl_ = logoPath ? posterUrl(logoPath, "original") : null
     let cancelled = false
 
