@@ -256,7 +256,7 @@ export function usePosterium(): PosteriumCtx {
     if (mdblistApiKey) {
       api(`/api/mdblist/anime?api_key=${mdblistApiKey}`).then(setMdblistAnimeList).catch(() => {})
     }
-  }, [tmdbKey])
+  }, [tmdbKey, mdblistApiKey])
 
   useEffect(() => {
     if (!tmdbKey) return
