@@ -5,7 +5,7 @@ export function RankingBadge({ rank = "13", label = "Oggi", topLight }: { rank?:
   const text = topLight ? "text-white/90" : "text-black/80"
   return (
     <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} px-6 py-2.5 rounded-b-2xl`}>
-      <span className={`${text} text-xl font-semibold tracking-wide`}>
+      <span className={`${text} text-xl font-semibold tracking-wide whitespace-nowrap`}>
         #{rank} {label}
       </span>
     </div>
@@ -37,7 +37,7 @@ export function ExtraBadge({ label, topLight }: { label: string; topLight?: bool
   const text = topLight ? "text-white/90" : "text-black/80"
   return (
     <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} px-6 py-2.5 rounded-b-2xl`}>
-      <span className={`${text} text-xl font-semibold tracking-wide`}>{label}</span>
+      <span className={`${text} text-xl font-semibold tracking-wide whitespace-nowrap`}>{label}</span>
     </div>
   )
 }
