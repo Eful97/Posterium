@@ -49,8 +49,6 @@ export default function EditView() {
             const now = Date.now()
             const twoWeeks = 14 * 24 * 60 * 60 * 1000
             const isNewMovie = p.selected?.media_type === "movie" && p.selected?.release_date ? (now - new Date(p.selected.release_date).getTime()) < twoWeeks : false
-            const isNewSeries = p.selected?.media_type === "tv" && p.selected?.first_air_date ? (now - new Date(p.selected.first_air_date).getTime()) < twoWeeks : false
-            const twoMonths = 60 * 24 * 60 * 60 * 1000
             const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
 
             const badgeColor = p.badgeBgColor || (p.accentColor !== '#ffffff' ? p.accentColor : undefined)
@@ -58,11 +56,6 @@ export default function EditView() {
             if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
             if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
             if (award) return <div className="absolute inset-0"><ExtraBadge label={award} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
-
-            if (p.selected?.media_type === "movie" && p.selected?.release_date) {
-              const releaseTime = new Date(p.selected.release_date).getTime()
-              if (releaseTime < now && now - releaseTime < twoMonths) return <div className="absolute inset-0"><ExtraBadge label="Al cinema" containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
-            }
 
             if (p.selected?.media_type === "tv" && p.metaInfo.next_episode_to_air?.air_date) {
               const nextAir = new Date(p.metaInfo.next_episode_to_air.air_date).getTime()

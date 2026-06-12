@@ -278,15 +278,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
       const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < twoWeeks : false
       const isNewSeries = mediaType === "tv" && firstAirDate ? (now - new Date(firstAirDate).getTime()) < twoWeeks : false
-      const twoMonths = 60 * 24 * 60 * 60 * 1000
 
       if (isNewMovie) return "Nuovo film"
       if (isNewSeries) return "Nuova serie"
-
-      if (mediaType === "movie" && releaseDate) {
-        const rd = new Date(releaseDate).getTime()
-        if (rd < now && now - rd < twoMonths) return "Al cinema"
-      }
 
       if (mediaType === "tv" && nextEpisodeAir) {
         const nextEp = new Date(nextEpisodeAir).getTime()
