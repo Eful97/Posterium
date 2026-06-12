@@ -163,18 +163,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const composites: { input: Buffer; top: number; left: number }[] = []
 
     async function extractBadgeColor(imgBuf: Buffer, logoBuf?: Buffer | null, fallbackGenre?: string | null): Promise<string> {
+      const { createCanvas, loadImage } = await import("canvas")
       const { findAccentColor, blendColors } = await import("@/lib/accent-color")
 
       async function extractFrom(buf: Buffer, genre: string) {
-        const meta = await sharp(buf, { limitInputPixels: false }).metadata()
-        const w = Math.min(meta.width || 342, 342)
-        const h = Math.round(w * (meta.height || 513) / (meta.width || 342))
-        const raw = await sharp(buf, { limitInputPixels: false })
-          .resize(w, h, { fit: 'fill', kernel: 'nearest' })
-          .ensureAlpha()
-          .raw()
-          .toBuffer()
-        return findAccentColor(raw, w, h, genre, 0.04)
+        const img = await loadImage(buf)
+        const w = Math.min(img.width, 342)
+        const h = Math.round(w * img.height / img.width)
+        const canvas = createCanvas(w, h)
+        const ctx = canvas.getContext("2d")
+        ctx.imageSmoothingEnabled = false
+        ctx.drawImage(img, 0, 0, w, h)
+        const pix = ctx.getImageData(0, 0, w, h).data
+        return findAccentColor(pix, w, h, genre)
       }
 
       const pColor = await extractFrom(imgBuf, fallbackGenre || '')
