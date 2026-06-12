@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { SearchResult, TMDBImage, Mapping, FlixPatrolChart } from "./types"
 import { getDomain, posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from "./utils"
-import { extractColor, averageTopColor } from "./color"
+import { extractColor } from "./color"
 import { getAwardBadgeLabel } from "./awards"
 
 export interface PosteriumCtx {
@@ -352,12 +352,6 @@ export function usePosterium(): PosteriumCtx {
 
   useEffect(() => {
     if (!previewPoster) { setBadgeBgColor(""); return }
-    let cancelled = false
-    const url = posterUrl(previewPoster.file_path, "w342")
-    averageTopColor(url).then((color) => {
-      if (!cancelled) setBadgeBgColor(color || "")
-    })
-    return () => { cancelled = true }
   }, [previewPoster])
 
   const buildPreviewUrl = useCallback(() => {
