@@ -161,9 +161,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
     // Fetch missing tv/movie details when using mapping or query params
-    if ((mediaType === "tv" && !tvType) || !releaseDate) {
+    const qApiKey = req.nextUrl.searchParams.get("api_key") || undefined
+    if (!releaseDate || (mediaType === "tv" && !tvType)) {
       try {
-        const details = await getDetails(mediaType, tmdbId)
+        const details = await getDetails(mediaType, tmdbId, "it-IT", qApiKey)
         if (!releaseDate) releaseDate = details.release_date || null
         if (!firstAirDate) firstAirDate = details.first_air_date || null
         if (!tvType) tvType = details.type || null
