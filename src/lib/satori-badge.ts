@@ -163,6 +163,7 @@ export async function renderGenreBadge(
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        gap: `${gap}px`,
         width: `${totalW}px`,
         height: `${svgH}px`,
         color: "#e5e7eb",
@@ -173,9 +174,7 @@ export async function renderGenreBadge(
       },
     },
     React.createElement("span", null, genreName),
-    React.createElement("span", {
-      style: { marginLeft: `${m}px`, marginRight: `${m}px` },
-    }, "\u2022"),
+    React.createElement("span", null, "\u2022"),
     React.createElement("span", {
       style: {
         display: "flex",
