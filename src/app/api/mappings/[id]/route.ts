@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
-  const mapping = getById(type as "movie" | "tv", tmdbId)
+  const mapping = await getById(type as "movie" | "tv", tmdbId)
   if (!mapping) return Response.json({ error: "not found" }, { status: 404 })
   return Response.json(mapping)
 }
@@ -23,12 +23,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
   if (!tmdbId || !type || (type !== "movie" && type !== "tv")) {
     return Response.json({ error: "Invalid id format" }, { status: 400 })
   }
-  const existing = getById(type as "movie" | "tv", tmdbId)
-  const body = await req.json()
+  const [body, existing] = await Promise.all([
+    req.json(),
+    getById(type as "movie" | "tv", tmdbId),
+  ])
   if (!body || typeof body !== "object") {
     return Response.json({ error: "Invalid body" }, { status: 400 })
   }
-  upsert({
+  await upsert({
     tmdbId,
     mediaType: type as "movie" | "tv",
     title: String(body.title || existing?.title || ""),
@@ -56,7 +58,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Rou
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
-  remove(type as "movie" | "tv", tmdbId)
+  await remove(type as "movie" | "tv", tmdbId)
   cacheInvalidate("poster")
   return Response.json({ ok: true })
 }

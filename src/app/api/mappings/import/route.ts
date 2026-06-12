@@ -6,6 +6,6 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(body.mappings)) {
     return Response.json({ error: "mappings array required" }, { status: 400 });
   }
-  importMappings(body.mappings);
+  await importMappings(body.mappings);
   return Response.json({ ok: true, count: body.mappings.length });
 }

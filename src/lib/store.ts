@@ -1,10 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const DATA_DIR = path.join(process.cwd(), "data")
-const DATA_FILE = path.join(DATA_DIR, "mappings.json")
-
-interface Mapping {
+export interface Mapping {
   tmdbId: number
   mediaType: "movie" | "tv"
   title: string
@@ -23,9 +20,54 @@ interface Mapping {
   trendPeriod?: string
 }
 
-type Mappings = Record<string, Mapping>
+const isVercel = !!process.env.VERCEL
 
-let cache: Mappings | null = null
+// ---- Vercel KV helpers ----
+
+async function kvGetAll(): Promise<Mapping[]> {
+  const { kv } = await import("@vercel/kv")
+  const raw = await kv.hgetall<Record<string, Mapping>>("mappings")
+  if (!raw) return []
+  return Object.values(raw)
+}
+
+async function kvGetById(type: "movie" | "tv", id: number): Promise<Mapping | null> {
+  const { kv } = await import("@vercel/kv")
+  const key = `${type}:${id}`
+  return kv.hget<Mapping>("mappings", key)
+}
+
+async function kvUpsert(mapping: Mapping) {
+  const { kv } = await import("@vercel/kv")
+  const key = `${mapping.mediaType}:${mapping.tmdbId}`
+  await kv.hset("mappings", { [key]: { ...mapping, updatedAt: new Date().toISOString() } })
+}
+
+async function kvRemove(type: "movie" | "tv", id: number) {
+  const { kv } = await import("@vercel/kv")
+  await kv.hdel("mappings", `${type}:${id}`)
+}
+
+async function kvRemoveAll() {
+  const { kv } = await import("@vercel/kv")
+  await kv.del("mappings")
+}
+
+async function kvImportMappings(mappings: Mapping[]) {
+  const { kv } = await import("@vercel/kv")
+  const entries: Record<string, Mapping> = {}
+  for (const m of mappings) {
+    entries[`${m.mediaType}:${m.tmdbId}`] = m
+  }
+  await kv.hset("mappings", entries)
+}
+
+// ---- File-based helpers (HF) ----
+
+const DATA_DIR = path.join(process.cwd(), "data")
+const DATA_FILE = path.join(DATA_DIR, "mappings.json")
+
+let fileCache: Record<string, Mapping> | null = null
 let cacheDirty = false
 
 function ensureDataDir() {
@@ -34,7 +76,7 @@ function ensureDataDir() {
   }
 }
 
-function loadFromDisk(): Mappings {
+function loadFromDisk(): Record<string, Mapping> {
   ensureDataDir()
   if (!fs.existsSync(DATA_FILE)) return {}
   try {
@@ -44,30 +86,38 @@ function loadFromDisk(): Mappings {
   }
 }
 
-function getData(): Mappings {
-  if (cache === null) {
-    cache = loadFromDisk()
+function getData(): Record<string, Mapping> {
+  if (fileCache === null) {
+    fileCache = loadFromDisk()
   }
-  return cache
+  return fileCache
 }
 
 function persist() {
-  if (!cacheDirty || cache === null) return
+  if (!cacheDirty || fileCache === null) return
   ensureDataDir()
-  fs.writeFileSync(DATA_FILE, JSON.stringify(cache, null, 2))
+  fs.writeFileSync(DATA_FILE, JSON.stringify(fileCache, null, 2))
   cacheDirty = false
 }
 
-export function getAll(): Mapping[] {
+// ---- Exported API ----
+
+export async function getAll(): Promise<Mapping[]> {
+  if (isVercel) return kvGetAll()
   return Object.values(getData())
 }
 
-export function getById(type: "movie" | "tv", id: number): Mapping | null {
+export async function getById(type: "movie" | "tv", id: number): Promise<Mapping | null> {
+  if (isVercel) return kvGetById(type, id)
   const key = `${type}:${id}`
   return getData()[key] ?? null
 }
 
-export function upsert(mapping: Mapping) {
+export async function upsert(mapping: Mapping) {
+  if (isVercel) {
+    await kvUpsert(mapping)
+    return
+  }
   const data = getData()
   const key = `${mapping.mediaType}:${mapping.tmdbId}`
   data[key] = { ...mapping, updatedAt: new Date().toISOString() }
@@ -75,7 +125,11 @@ export function upsert(mapping: Mapping) {
   persist()
 }
 
-export function remove(type: "movie" | "tv", id: number) {
+export async function remove(type: "movie" | "tv", id: number) {
+  if (isVercel) {
+    await kvRemove(type, id)
+    return
+  }
   const data = getData()
   const key = `${type}:${id}`
   delete data[key]
@@ -83,13 +137,21 @@ export function remove(type: "movie" | "tv", id: number) {
   persist()
 }
 
-export function removeAll() {
-  cache = {}
+export async function removeAll() {
+  if (isVercel) {
+    await kvRemoveAll()
+    return
+  }
+  fileCache = {}
   cacheDirty = true
   persist()
 }
 
-export function importMappings(mappings: Mapping[]) {
+export async function importMappings(mappings: Mapping[]) {
+  if (isVercel) {
+    await kvImportMappings(mappings)
+    return
+  }
   const data = getData()
   for (const m of mappings) {
     const key = `${m.mediaType}:${m.tmdbId}`

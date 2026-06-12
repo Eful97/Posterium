@@ -6,7 +6,7 @@ import { cacheInvalidate } from "@/lib/cache"
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
-  const mappings = getAll()
+  const mappings = await getAll()
   return Response.json({ mappings })
 }
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (!body || typeof body !== "object" || !body.tmdbId || !body.mediaType || !body.posterPath) {
     return Response.json({ error: "Missing required fields: tmdbId, mediaType, posterPath" }, { status: 400 })
   }
-  upsert({
+  await upsert({
     tmdbId: Number(body.tmdbId),
     mediaType: body.mediaType,
     title: String(body.title || ""),
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
-  removeAll()
+  await removeAll()
   cacheInvalidate("poster")
   return Response.json({ ok: true })
 }

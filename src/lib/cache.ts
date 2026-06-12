@@ -1,6 +1,3 @@
-import fs from "node:fs"
-import path from "node:path"
-
 interface CacheEntry<T> {
   data: T
   timestamp: number
@@ -8,8 +5,6 @@ interface CacheEntry<T> {
 }
 
 const store = new Map<string, CacheEntry<unknown>>()
-const CACHE_FILE = path.join(process.cwd(), "data", "cache.json")
-let persistTimer: ReturnType<typeof setTimeout> | null = null
 
 const MAX_TTL = 30 * 60 * 1000
 
@@ -24,56 +19,9 @@ function ttlForTags(tags: string[]): number {
   return MAX_TTL
 }
 
-function entryTtl(entry: CacheEntry<unknown>): number {
-  return ttlForTags(entry.tags)
-}
-
 function isExpired(entry: CacheEntry<unknown>): boolean {
-  return Date.now() - entry.timestamp > entryTtl(entry)
+  return Date.now() - entry.timestamp > ttlForTags(entry.tags)
 }
-
-function isBufferLike(v: unknown): v is { type: "Buffer"; data: number[] } {
-  return !!v && typeof v === "object" && (v as any).type === "Buffer" && Array.isArray((v as any).data)
-}
-
-function loadFromDisk() {
-  try {
-    if (fs.existsSync(CACHE_FILE)) {
-      const raw = JSON.parse(fs.readFileSync(CACHE_FILE, "utf-8"))
-      if (raw && typeof raw === "object") {
-        for (const [key, entry] of Object.entries(raw)) {
-          const e = entry as CacheEntry<unknown>
-          if (!isExpired(e)) {
-            if (isBufferLike(e.data)) {
-              e.data = Buffer.from(e.data.data)
-            }
-            store.set(key, e)
-          }
-        }
-      }
-    }
-  } catch {}
-}
-
-function persistToDisk() {
-  if (persistTimer) return
-  persistTimer = setTimeout(() => {
-    persistTimer = null
-    try {
-      const obj: Record<string, CacheEntry<unknown>> = {}
-      for (const [key, entry] of store) {
-        if (!isExpired(entry)) {
-          obj[key] = entry
-        }
-      }
-      const dir = path.dirname(CACHE_FILE)
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-      fs.writeFileSync(CACHE_FILE, JSON.stringify(obj))
-    } catch {}
-  }, 2000)
-}
-
-loadFromDisk()
 
 let cleanupTimer: ReturnType<typeof setInterval> | null = null
 
@@ -82,7 +30,7 @@ function startCleanup() {
   cleanupTimer = setInterval(() => {
     const now = Date.now()
     for (const [key, entry] of store) {
-      if (now - entry.timestamp > entryTtl(entry)) store.delete(key)
+      if (now - entry.timestamp > ttlForTags(entry.tags)) store.delete(key)
     }
   }, 60_000)
 }
@@ -111,17 +59,14 @@ export function cacheGetStale<T>(key: string): { data: T | null; stale: boolean 
 export function cacheSet<T>(key: string, data: T, tags: string[] = []): void {
   startCleanup()
   store.set(key, { data, timestamp: Date.now(), tags })
-  persistToDisk()
 }
 
 export function cacheInvalidate(tag: string): void {
   for (const [key, entry] of store) {
     if (entry.tags.includes(tag)) store.delete(key)
   }
-  persistToDisk()
 }
 
 export function cacheClear(): void {
   store.clear()
-  persistToDisk()
 }

@@ -74,7 +74,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const queryLogo = req.nextUrl.searchParams.get("logo")
   const queryGenre = req.nextUrl.searchParams.get("genreName")
   const queryVote = req.nextUrl.searchParams.get("voteAverage")
-  const mapping = getById(mediaType, tmdbId)
+  const mapping = await getById(mediaType, tmdbId)
 
   if (queryPoster) {
     posterPath = queryPoster
