@@ -625,6 +625,7 @@ export function usePosterium(): PosteriumCtx {
           voteAverage: metaInfo.voteAverage || null,
           trendRank: trendRank ?? undefined,
           trendPeriod: "day",
+          accentColor: accentColor !== '#ffffff' ? accentColor : undefined,
           showBadges: globalBadges,
         }),
       })

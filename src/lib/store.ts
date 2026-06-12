@@ -18,6 +18,7 @@ export interface Mapping {
   voteAverage?: number
   trendRank?: number
   trendPeriod?: string
+  accentColor?: string
 }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL

@@ -291,7 +291,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     })()
 
     if (extraLabel) {
-      let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
+      let badgeColor = req.nextUrl.searchParams.get("badgeColor") || mapping?.accentColor || ''
       if (!badgeColor) {
         try {
           badgeColor = await extractBadgeColor(posterBuf, logoFetch, genreName || queryGenre)
@@ -305,7 +305,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
       composites.push({ input: Buffer.from(extraSvg), top: 0, left: extraLeft })
     } else if (rankingEnabled && finalRank) {
-      let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
+      let badgeColor = req.nextUrl.searchParams.get("badgeColor") || mapping?.accentColor || ''
       if (!badgeColor) {
         try {
           badgeColor = await extractBadgeColor(posterBuf, logoFetch, genreName || queryGenre)
@@ -313,7 +313,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
       if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
-      const badgeLabel = req.nextUrl.searchParams.get("label") || "Oggi"
       const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(finalRank, pw, badgeColor, mapping?.trendPeriod, badgeLabel)
       const rankLeft = Math.round((pw - totalW) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
