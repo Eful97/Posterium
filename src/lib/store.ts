@@ -20,7 +20,7 @@ export interface Mapping {
   trendPeriod?: string
 }
 
-const isVercel = !!process.env.VERCEL
+const useKv = !!process.env.VERCEL && !!process.env.KV_URL
 
 // ---- Vercel KV helpers ----
 
@@ -103,18 +103,18 @@ function persist() {
 // ---- Exported API ----
 
 export async function getAll(): Promise<Mapping[]> {
-  if (isVercel) return kvGetAll()
+  if (useKv) return kvGetAll()
   return Object.values(getData())
 }
 
 export async function getById(type: "movie" | "tv", id: number): Promise<Mapping | null> {
-  if (isVercel) return kvGetById(type, id)
+  if (useKv) return kvGetById(type, id)
   const key = `${type}:${id}`
   return getData()[key] ?? null
 }
 
 export async function upsert(mapping: Mapping) {
-  if (isVercel) {
+  if (useKv) {
     await kvUpsert(mapping)
     return
   }
@@ -126,7 +126,7 @@ export async function upsert(mapping: Mapping) {
 }
 
 export async function remove(type: "movie" | "tv", id: number) {
-  if (isVercel) {
+  if (useKv) {
     await kvRemove(type, id)
     return
   }
@@ -138,7 +138,7 @@ export async function remove(type: "movie" | "tv", id: number) {
 }
 
 export async function removeAll() {
-  if (isVercel) {
+  if (useKv) {
     await kvRemoveAll()
     return
   }
@@ -148,7 +148,7 @@ export async function removeAll() {
 }
 
 export async function importMappings(mappings: Mapping[]) {
-  if (isVercel) {
+  if (useKv) {
     await kvImportMappings(mappings)
     return
   }
