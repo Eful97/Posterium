@@ -48,12 +48,12 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const periodText = periodMap[period] || "Oggi"
   const fullText = `#${rank} ${periodText}`
   const s = pw / 1000
-  const fontSize = Math.round(60 * s)
+  const fontSize = Math.round(72 * s)
   const charW = fontSize * 0.58
   const textW = Math.round(2 * charW + fontSize * 0.35 + periodText.length * charW)
-  const px = Math.round(90 * s) * 2
-  const pt = Math.round(10 * s)
-  const pb = Math.round(36 * s)
+  const px = Math.round(100 * s) * 2
+  const pt = Math.round(12 * s)
+  const pb = Math.round(56 * s)
   const totalW = textW + px
   const svgH = fontSize + pt + pb
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
@@ -91,12 +91,12 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
 
 export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: string; totalW: number; svgH: number } {
   const s = pw / 1000
-  const fontSize = Math.round(60 * s)
+  const fontSize = Math.round(72 * s)
   const charW = fontSize * 0.58
-  const textW = Math.max(Math.round(label.length * charW), Math.round(60 * s))
-  const px = Math.max(Math.round(textW * 0.15), Math.round(30 * s))
-  const pt = Math.round(10 * s)
-  const pb = Math.round(36 * s)
+  const textW = Math.max(Math.round(label.length * charW), Math.round(72 * s))
+  const px = Math.max(Math.round(textW * 0.15), Math.round(40 * s))
+  const pt = Math.round(12 * s)
+  const pb = Math.round(56 * s)
   const totalW = textW + px
   const svgH = fontSize + pt + pb
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
