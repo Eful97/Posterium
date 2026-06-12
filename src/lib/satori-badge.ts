@@ -144,15 +144,13 @@ export async function renderGenreBadge(
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const voteStr = voteAverage.toFixed(1)
   const fontSize = Math.round(24 * pw / 380)
-  const starFontSize = Math.round(20 * pw / 380)
   const charW = fontSize * 0.58
   const genreW = Math.round(genreName.length * charW)
   const bulletW = Math.round(fontSize * 0.35)
-  const starW = Math.round(starFontSize * 0.55)
+  const starW = Math.round(fontSize * 0.55)
   const voteW = Math.round(voteStr.length * charW)
   const gap = Math.round(fontSize * 0.33)
   const gapStar = Math.round(fontSize * 0.17)
-  const starPb = Math.round(Math.max(2 * pw / 380, 1))
   const pad = Math.round(fontSize * 0.35)
   const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + pad * 2
   const svgH = Math.round(fontSize * 1.6)
@@ -185,11 +183,7 @@ export async function renderGenreBadge(
       },
     },
       React.createElement("span", {
-        style: {
-          fontSize: `${starFontSize}px`,
-          paddingBottom: `${starPb}px`,
-          marginRight: `${gapStar}px`,
-        },
+        style: { marginRight: `${gapStar}px` },
       }, "\u2605"),
       React.createElement("span", null, voteStr),
     ),

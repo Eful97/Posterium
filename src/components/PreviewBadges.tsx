@@ -24,7 +24,7 @@ export function GenreRatingBadges({ genreName, voteAverage }: { genreName: strin
         <span>{genreName}</span>
         <span>&bull;</span>
         <span className="flex items-center gap-1">
-          <span className="text-xl pb-[2px]">★</span>
+          <span>★</span>
           <span>{voteAverage.toFixed(1)}</span>
         </span>
       </div>
