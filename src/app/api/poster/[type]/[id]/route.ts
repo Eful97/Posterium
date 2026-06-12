@@ -70,6 +70,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let genreName: string | null = null
   let voteAverage: number | null = null
   let showBadges = true
+  let releaseDate: string | null = null
+  let firstAirDate: string | null = null
+  let nextEpisodeAir: string | null = null
+  let tvType: string | null = null
+  let tvStatus: string | null = null
   const queryPoster = req.nextUrl.searchParams.get("poster")
   const queryLogo = req.nextUrl.searchParams.get("logo")
   const queryGenre = req.nextUrl.searchParams.get("genreName")
@@ -103,6 +108,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       ])
       genreName = details.genres[0]?.name || null
       voteAverage = details.vote_average
+      releaseDate = details.release_date || null
+      firstAirDate = details.first_air_date || null
+      nextEpisodeAir = details.next_episode_to_air?.air_date || null
+      tvType = details.type || null
+      tvStatus = details.status || null
       const clean = images.posters.find((p: any) => p.iso_639_1 === null)
       if (clean) {
         posterPath = clean.file_path
@@ -191,7 +201,34 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       composites.push({ input: Buffer.from(badgeSvg), top: badgeY, left: badgeLeft })
     }
 
-    const extraLabel = req.nextUrl.searchParams.get("extra") || ''
+    const extraLabel = req.nextUrl.searchParams.get("extra") || (() => {
+      if (!rankingEnabled) return ''
+      const currYear = new Date().getFullYear().toString()
+      const isNewMovie = mediaType === "movie" && releaseDate?.startsWith(currYear)
+      const isNewSeries = mediaType === "tv" && firstAirDate?.startsWith(currYear)
+      const now = Date.now()
+      const twoMonths = 60 * 24 * 60 * 60 * 1000
+      const twoWeeks = 14 * 24 * 60 * 60 * 1000
+
+      if (isNewMovie) return "Nuovo film"
+      if (isNewSeries) return "Nuova serie"
+
+      if (mediaType === "movie" && releaseDate) {
+        const rd = new Date(releaseDate).getTime()
+        if (rd < now && now - rd < twoMonths) return "Al cinema"
+      }
+
+      if (mediaType === "tv" && nextEpisodeAir) {
+        const nextEp = new Date(nextEpisodeAir).getTime()
+        if (nextEp > now && nextEp - now < twoWeeks) return "Nuova stagione"
+      }
+
+      if (tvType === "Miniseries") return "Miniserie"
+      if (tvStatus === "Returning Series") return "Ritorna"
+      if (voteAverage && voteAverage >= 8) return "Da divorare"
+
+      return ''
+    })()
 
     if (extraLabel) {
       const badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''

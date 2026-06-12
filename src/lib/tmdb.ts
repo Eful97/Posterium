@@ -113,6 +113,7 @@ export interface TMDBDetails {
   type?: string
   status?: string
   release_date?: string
+  first_air_date?: string
   last_air_date?: string
   next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null
   number_of_seasons?: number
