@@ -12,7 +12,17 @@ function hexLuminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
-function adjustColor(hex: string, amount: number): string {
+export function relativeLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  const rs = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4)
+  const gs = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4)
+  const bs = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4)
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs
+}
+
+export function adjustColor(hex: string, amount: number): string {
   const r = Math.max(0, Math.min(255, parseInt(hex.slice(1, 3), 16) + Math.round(amount * 255)))
   const g = Math.max(0, Math.min(255, parseInt(hex.slice(3, 5), 16) + Math.round(amount * 255)))
   const b = Math.max(0, Math.min(255, parseInt(hex.slice(5, 7), 16) + Math.round(amount * 255)))
@@ -86,9 +96,10 @@ function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: s
 
   const bgTop = hslToHex(newH, newS, newL)
   const bgBot = hslToHex(newH, newS, newL2)
-  const textFill = '#fff'
-  const rimColor = 'rgba(255,255,255,0.08)'
-  const textShadow = 'rgba(0,0,0,0.40)'
+  const bgLum = relativeLuminance(bgTop)
+  const textFill = (1.0 + 0.05) / (bgLum + 0.05) >= 4.5 ? '#fff' : '#1a1a1a'
+  const rimColor = textFill === '#fff' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
+  const textShadow = textFill === '#fff' ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
 
   return { bgTop, bgBot, textFill, rimColor, textShadow }
 }
@@ -193,8 +204,8 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${bgTop}"/>
-      <stop offset="100%" stop-color="${bgBot}"/>
+      <stop offset="0%" stop-color="${bgTop}" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="${bgBot}" stop-opacity="0.85"/>
     </linearGradient>
     <filter id="${fid}" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(fontSize * 5 / 72)}" stdDeviation="${Math.round(fontSize * 10 / 72)}" flood-color="${shadowColor}"/>
@@ -231,8 +242,8 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${bgTop}"/>
-      <stop offset="100%" stop-color="${bgBot}"/>
+      <stop offset="0%" stop-color="${bgTop}" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="${bgBot}" stop-opacity="0.85"/>
     </linearGradient>
     <filter id="${fid}" x="-20%" y="-20%" width="140%" height="200%">
       <feDropShadow dx="0" dy="${Math.round(fontSize * 5 / 72)}" stdDeviation="${Math.round(fontSize * 10 / 72)}" flood-color="${shadowColor}"/>
@@ -248,4 +259,25 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   </g>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
+}
+
+export const GENRE_FALLBACK: Record<string, string> = {
+  Action: '#D4A574', Azione: '#D4A574',
+  Horror: '#8B0000', Horreur: '#8B0000',
+  Comedy: '#F4D03F', Commedia: '#F4D03F', Comédie: '#F4D03F',
+  Drama: '#5D6D7E', Dramma: '#5D6D7E', Drame: '#5D6D7E',
+  Thriller: '#4A4A4A',
+  Adventure: '#2E86AB', Avventura: '#2E86AB', Aventure: '#2E86AB',
+  Animation: '#E67E22', Animazione: '#E67E22',
+  'Science Fiction': '#3498DB', 'Science-Fiction': '#3498DB', Fantascienza: '#3498DB',
+  Romance: '#E74C3C', Romantico: '#E74C3C',
+  Documentary: '#7F8C8D', Documentario: '#7F8C8D',
+  Mystery: '#6C3483', Mistero: '#6C3483',
+  Fantasy: '#8E44AD', Fantasia: '#8E44AD',
+  War: '#6B4226', Guerra: '#6B4226',
+  Western: '#A0522D',
+  Music: '#1ABC9C', Musica: '#1ABC9C',
+  Family: '#2ECC71', Famiglia: '#2ECC71',
+  History: '#A67B5B', Storico: '#A67B5B', Storia: '#A67B5B',
+  Crime: '#2C3E50', Crimine: '#2C3E50',
 }

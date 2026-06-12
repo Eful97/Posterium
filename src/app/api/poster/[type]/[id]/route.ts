@@ -5,7 +5,7 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
-import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG, topGradientSVG } from "@/lib/badges"
+import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG, topGradientSVG, relativeLuminance, adjustColor, GENRE_FALLBACK } from "@/lib/badges"
 
 const RENDER_VERSION = 20
 const IMG_BASE = "https://image.tmdb.org/t/p"
@@ -157,6 +157,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const pw = posterMeta.width || 1000
     const ph = posterMeta.height || 1500
     const composites: { input: Buffer; top: number; left: number }[] = []
+
+    async function extractBadgeColor(buf: Buffer, fallbackGenre?: string | null): Promise<string> {
+      const smallBuf = await sharp(buf).resize(8, 8, { fit: 'fill' }).raw().toBuffer()
+      let maxSat = -1, mr = 60, mg = 60, mb = 60
+      for (let i = 0; i < smallBuf.length; i += 4) {
+        const r = smallBuf[i], g = smallBuf[i + 1], b = smallBuf[i + 2]
+        const max = Math.max(r, g, b), min = Math.min(r, g, b)
+        const l = (max + min) / 510
+        if (l < 0.03 || l > 0.97) continue
+        const d = max - min
+        const s = l > 0.5 ? d / (510 - max - min) : d / (max + min)
+        if (s < 0.05) continue
+        if (s > maxSat) { maxSat = s; mr = r; mg = g; mb = b }
+      }
+      if (maxSat >= 0) {
+        let hex = `#${mr.toString(16).padStart(2, '0')}${mg.toString(16).padStart(2, '0')}${mb.toString(16).padStart(2, '0')}`
+        const lum = relativeLuminance(hex)
+        if (lum < 0.4) hex = adjustColor(hex, 0.2)
+        else if (lum > 0.7) hex = adjustColor(hex, -0.15)
+        return hex
+      }
+      if (fallbackGenre) return GENRE_FALLBACK[fallbackGenre] || '#555'
+      return '#555'
+    }
     const qBadges = req.nextUrl.searchParams.get("badges")
     const badgesEnabled = qBadges !== "0" && showBadges
     const qRanking = req.nextUrl.searchParams.get("ranking")
@@ -231,7 +255,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     })()
 
     if (extraLabel) {
-      const badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
+      let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
+      if (!badgeColor) {
+        try {
+          badgeColor = await extractBadgeColor(posterBuf, genreName || queryGenre)
+        } catch {}
+        if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
+      }
+      if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       const { svg: extraSvg, totalW, svgH } = extraBadgeSVG(extraLabel, pw, badgeColor)
       const extraLeft = Math.round((pw - totalW) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
@@ -241,10 +272,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
       if (!badgeColor) {
         try {
-          const buf = await sharp(posterBuf).resize(1, 1).raw().toBuffer()
-          badgeColor = `#${buf[0].toString(16).padStart(2, '0')}${buf[1].toString(16).padStart(2, '0')}${buf[2].toString(16).padStart(2, '0')}`
+          badgeColor = await extractBadgeColor(posterBuf, genreName || queryGenre)
         } catch {}
+        if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
+      if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(rankingRank, pw, badgeColor, mapping?.trendPeriod)
       const rankLeft = Math.round((pw - totalW) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
