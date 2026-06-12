@@ -43,6 +43,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# test
+/test_color/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
