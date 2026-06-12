@@ -10,7 +10,7 @@ import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/sa
 import { fetchAwards, getAwardBadgeLabel } from "@/lib/awards"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 
-const RENDER_VERSION = 26
+const RENDER_VERSION = 27
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -174,7 +174,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
     // Fetch missing tv/movie details when using mapping or query params
     const qApiKey = req.nextUrl.searchParams.get("api_key") || undefined
-    if (!releaseDate || (mediaType === "tv" && !tvType)) {
+    if ((mediaType === "tv" && !tvType) || (mediaType === "movie" && !releaseDate)) {
       try {
         const details = await getDetails(mediaType, tmdbId, "it-IT", qApiKey)
         if (!releaseDate) releaseDate = details.release_date || null
@@ -254,7 +254,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     async function topLuminance(buf: Buffer): Promise<number> {
-      const sm = await sharp(buf).resize(100, 10, { fit: 'fill', kernel: 'nearest' }).raw().toBuffer()
+      const meta = await sharp(buf).metadata()
+      const w = meta.width || STD_W
+      const h = meta.height || STD_H
+      const stripH = Math.max(Math.round(h * 0.08), 3)
+      const sm = await sharp(buf)
+        .extract({ left: 0, top: 0, width: w, height: stripH })
+        .resize(100, 10, { fit: 'fill', kernel: 'nearest' }).raw().toBuffer()
       let r = 0, g = 0, b = 0, n = 0
       for (let i = 0; i < sm.length; i += 4) { r += sm[i]; g += sm[i + 1]; b += sm[i + 2]; n++ }
       r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n)
@@ -262,11 +268,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     const topLum = await topLuminance(posterBuf)
-    const topLight = topLum > 0.55
+    const topLight = topLum > 0.55 && topLum < 0.99
     const qBadges = req.nextUrl.searchParams.get("badges")
     const badgesEnabled = qBadges !== "0" && showBadges
     const qRanking = req.nextUrl.searchParams.get("ranking")
-    const rankingEnabled = qRanking !== "0"
+    const rankingEnabled = qRanking !== "0" && showBadges
     const s = ph / 1500
 
     if (logoFetch) {
