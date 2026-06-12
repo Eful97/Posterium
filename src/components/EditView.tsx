@@ -90,7 +90,47 @@ export default function EditView() {
       {p.previewPoster && p.selected && (
         <div className="flex flex-wrap gap-2 mt-3">
           <button onClick={p.saveConfig} className="flex-1 min-w-0 py-3 px-4 rounded-xl text-sm font-bold bg-accent-orange text-white hover:bg-accent-orange/90 hover:shadow-lg hover:shadow-accent-orange/25 active:scale-[0.97] transition-all duration-200">💾 Salva Poster</button>
-          <button onClick={() => window.open(p.previewUrl || p.urlPattern.replace("{type}", p.selected!.media_type).replace("{tmdb_id}", String(p.selected!.id)), "_blank")} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">🔍 Testa URL</button>
+          <button onClick={() => {
+            if (!p.selected || !p.previewPoster) return
+            const params: string[] = []
+            if (p.tmdbKey) params.push(`api_key=${encodeURIComponent(p.tmdbKey)}`)
+            if (!p.globalBadges) params.push("badges=0")
+            if (!p.rankingBadges) params.push("ranking=0")
+            params.push(`poster=${encodeURIComponent(p.previewPoster.file_path)}`)
+            const g = p.metaInfo.genres[0]?.name
+            if (g) params.push(`genreName=${encodeURIComponent(g)}`)
+            if (p.metaInfo.voteAverage > 0) params.push(`voteAverage=${p.metaInfo.voteAverage}`)
+            if (p.selectedLogo) {
+              params.push(`logo=${encodeURIComponent(p.selectedLogo.file_path)}`)
+              params.push(`scale=${p.logoScale}`)
+              params.push(`ox=${p.logoOffsetX}`)
+              params.push(`oy=${p.logoOffsetY}`)
+            }
+            if (p.lang) params.push(`lang=${p.lang}`)
+            if (p.rankingBadges) {
+              const now = Date.now()
+              const twoWeeks = 14 * 24 * 60 * 60 * 1000
+              const isNewMovie = p.selected.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
+              const isNewSeries = p.selected.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
+              const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
+              if (isNewMovie) params.push(`extra=${encodeURIComponent("Nuovo film")}`)
+              else if (isNewSeries) params.push(`extra=${encodeURIComponent("Nuova serie")}`)
+              else if (award) params.push(`extra=${encodeURIComponent(award)}`)
+              else {
+                const animeRank = p.mdblistAnimeList?.find((a: any) => a.id === p.selected!.id)
+                if (animeRank) params.push(`rank=${animeRank.rank}&label=Anime`)
+                else if (p.trendRank) params.push(`rank=${p.trendRank}`)
+                else {
+                  const tvType = p.selected.media_type === "tv" ? p.metaInfo.type : null
+                  const tvStatus = p.selected.media_type === "tv" ? p.metaInfo.status : null
+                  const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8 ? "Da divorare" : null
+                  if (extra) params.push(`extra=${encodeURIComponent(extra)}`)
+                }
+              }
+            }
+            params.push(`v=${Date.now()}`)
+            window.open(`/api/poster/${p.selected.media_type}/${p.selected.id}?${params.join("&")}`, "_blank")
+          }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">🔍 Testa URL</button>
           {(() => {
             const key = `${p.selected!.media_type}:${p.selected!.id}`
             const hasMapping = p.mappingsMap.get(key)
