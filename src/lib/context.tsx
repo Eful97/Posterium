@@ -393,34 +393,21 @@ export function usePosterium(): PosteriumCtx {
     if (badgeBgColor) params.push(`badgeColor=${encodeURIComponent(badgeBgColor)}`)
     else if (accentColor && accentColor !== '#ffffff') params.push(`badgeColor=${encodeURIComponent(accentColor)}`)
     if (rankingBadges) {
-      const currYear = new Date().getFullYear().toString()
-      const isNewMovie = selected?.media_type === "movie" && selected?.release_date?.startsWith(currYear)
-      const isNewSeries = selected?.media_type === "tv" && selected?.first_air_date?.startsWith(currYear)
       const now = Date.now()
-      const twoMonths = 60 * 24 * 60 * 60 * 1000
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
+      const isNewMovie = selected?.media_type === "movie" && selected?.release_date ? (now - new Date(selected.release_date).getTime()) < twoWeeks : false
+      const isNewSeries = selected?.media_type === "tv" && selected?.first_air_date ? (now - new Date(selected.first_air_date).getTime()) < twoWeeks : false
       const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards) : null
 
       if (isNewMovie) { params.push(`extra=${encodeURIComponent("Nuovo film")}`) }
       else if (isNewSeries) { params.push(`extra=${encodeURIComponent("Nuova serie")}`) }
       else if (award) { params.push(`extra=${encodeURIComponent(award)}`) }
-      else if (selected?.media_type === "movie" && selected?.release_date) {
-        const rd = new Date(selected.release_date).getTime()
-        if (rd < now && now - rd < twoMonths) { params.push(`extra=${encodeURIComponent("Al cinema")}`) }
-      }
-      else if (selected?.media_type === "tv" && metaInfo.next_episode_to_air?.air_date) {
-        const nextAir = new Date(metaInfo.next_episode_to_air.air_date).getTime()
-        if (nextAir > now && nextAir - now < twoWeeks) { params.push(`extra=${encodeURIComponent("Nuova stagione")}`) }
-      }
-      else if (trendRank) {
-        // skip - the server renders the ranking badge instead
-      }
-      else if (mdblistMatch) {
-        params.push(`rank=${mdblistMatch.rank}`)
-      }
       else if (selected && mdblistAnimeList.length > 0) {
         const anime = mdblistAnimeList.find((a: any) => a.id === selected.id)
         if (anime) params.push(`rank=${anime.rank}&label=Anime`)
+      }
+      else if (trendRank) {
+        // skip - the server renders the ranking badge instead
       }
       else {
         const tvType = selected?.media_type === "tv" ? metaInfo.type : null

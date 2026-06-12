@@ -272,8 +272,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       composites.push({ input: Buffer.from(badgeSvg), top: badgeY, left: badgeLeft })
     }
 
-    // If rank is already provided via URL, skip extraLabel logic
-    const extraLabel = req.nextUrl.searchParams.get("extra") || req.nextUrl.searchParams.has("rank") ? '' : (() => {
+    // If rank is already provided via URL or mapping, skip extraLabel logic
+    const hasRank = req.nextUrl.searchParams.has("rank") || !!finalRank
+    const extraLabel = req.nextUrl.searchParams.get("extra") || (hasRank ? '' : (() => {
       if (!rankingEnabled) return ''
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
