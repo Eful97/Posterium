@@ -60,12 +60,12 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const r = Math.round(pb * 1.0)
   const lum = color.startsWith('#') ? hexLuminance(color) : 0.7
   const isDark = lum < 0.5
-  const bgTop = isDark ? 'rgba(255,255,255,0.50)' : 'rgba(0,0,0,0.58)'
-  const bgBot = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.72)'
-  const textFill = isDark ? '#000' : '#fff'
-  const rimColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)'
-  const shadowColor = isDark ? 'rgba(0,0,0,0.10)' : 'rgba(0,0,0,0.20)'
-  const textShadow = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.20)'
+  const bgTop = isDark ? '#2a2a2a' : '#e0e0e0'
+  const bgBot = isDark ? '#111111' : '#c0c0c0'
+  const textFill = isDark ? '#fff' : '#111'
+  const rimColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
+  const shadowColor = 'rgba(0,0,0,0.30)'
+  const textShadow = isDark ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
@@ -103,12 +103,12 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const r = Math.round(pb * 1.0)
   const lum = color.startsWith('#') ? hexLuminance(color) : 0.7
   const isDark = lum < 0.5
-  const bgTop = isDark ? 'rgba(255,255,255,0.50)' : 'rgba(0,0,0,0.58)'
-  const bgBot = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.72)'
-  const textFill = isDark ? '#000' : '#fff'
-  const rimColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)'
-  const shadowColor = isDark ? 'rgba(0,0,0,0.10)' : 'rgba(0,0,0,0.20)'
-  const textShadow = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.20)'
+  const bgTop = isDark ? '#2a2a2a' : '#e0e0e0'
+  const bgBot = isDark ? '#111111' : '#c0c0c0'
+  const textFill = isDark ? '#fff' : '#111'
+  const rimColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
+  const shadowColor = 'rgba(0,0,0,0.30)'
+  const textShadow = isDark ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>

@@ -8,7 +8,7 @@ export function RankingBadge({ rank, containerW, containerH, color }: { rank: nu
   const r = Math.round(36 * containerW / 1000)
 
   return (
-    <div className="absolute z-10 pointer-events-none" style={{ top: `${topOff}px`, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${r}px ${r}px`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+    <div className="absolute z-10 pointer-events-none" style={{ top: `${topOff}px`, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${r}px ${r}px` }}>
       <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
     </div>
   )
@@ -33,7 +33,7 @@ export function ExtraBadge({ label, containerW, containerH, color }: { label: st
   const r = Math.round(36 * containerW / 1000)
 
   return (
-    <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${r}px ${r}px`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+    <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${r}px ${r}px` }}>
       <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
     </div>
   )

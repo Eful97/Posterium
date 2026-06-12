@@ -7,7 +7,7 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG } from "@/lib/badges"
 
-const RENDER_VERSION = 17
+const RENDER_VERSION = 18
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -186,10 +186,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
       const { svg: extraSvg, totalW, svgH } = extraBadgeSVG(extraLabel, pw, badgeColor)
       const extraLeft = Math.round((pw - totalW) / 2)
-      if (svgH <= ph && extraLeft + totalW <= pw) {
-        const blurRegion = await sharp(posterBuf).extract({ left: extraLeft, top: 0, width: totalW, height: svgH }).blur(12).toBuffer()
-        composites.push({ input: blurRegion, top: 0, left: extraLeft })
-      }
       composites.push({ input: Buffer.from(extraSvg), top: 0, left: extraLeft })
     } else if (rankingEnabled && rankingRank) {
       let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
@@ -202,10 +198,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       }
       const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(rankingRank, pw, badgeColor, mapping?.trendPeriod)
       const rankLeft = Math.round((pw - totalW) / 2)
-      if (svgH <= ph && rankLeft + totalW <= pw) {
-        const blurRegion = await sharp(posterBuf).extract({ left: rankLeft, top: 0, width: totalW, height: svgH }).blur(12).toBuffer()
-        composites.push({ input: blurRegion, top: 0, left: rankLeft })
-      }
       composites.push({ input: Buffer.from(rankSvg), top: 0, left: rankLeft })
     }
 
