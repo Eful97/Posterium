@@ -104,39 +104,6 @@ async function extractAccentColor(imageUrl: string, genre: string): Promise<Acce
   return { r: cr, g: cg, b: cb, hsl: [best.h, best.s, best.l], v: n, s: bestScore, fb: false }
 }
 
-function useAccentColor(posterPath: string | null | undefined, genre: string, logoPath?: string | null): string {
-  const [hex, setHex] = useState("")
-  useEffect(() => {
-    if (!posterPath) { setHex(""); return }
-    const posterUrl_ = posterUrl(posterPath, "w342")
-    const logoUrl_ = logoPath ? posterUrl(logoPath, "original") : null
-    let cancelled = false
-
-    const run = async () => {
-      try {
-        const poster = await extractAccentColor(posterUrl_, genre)
-        if (cancelled) return
-        const posterHex = `#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`
-        if (!logoUrl_) { setHex(posterHex); return }
-        let logo: AccentResult | null = null
-        try { logo = await extractAccentColor(logoUrl_, genre) } catch {}
-        if (cancelled) return
-        if (logo) {
-          const r = Math.round((poster.r + logo.r) / 2)
-          const g = Math.round((poster.g + logo.g) / 2)
-          const b = Math.round((poster.b + logo.b) / 2)
-          setHex(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`)
-        } else {
-          setHex(posterHex)
-        }
-      } catch { if (!cancelled) setHex("") }
-    }
-    run()
-    return () => { cancelled = true }
-  }, [posterPath, genre, logoPath])
-  return hex
-}
-
 function TopGradient({ containerW, svgH }: { containerW: number; svgH: number }) {
   const gradH = Math.max(Math.round(svgH * 1.5), Math.round(containerW * 0.06))
   return (
@@ -155,7 +122,13 @@ export function RankingBadge({ rank, containerW, containerH, color, posterPath, 
     let cancelled = false
     const run = async () => {
       try {
-        const poster = await extractAccentColor(posterUrl(pp, "w342"), gn)
+        const sizes = ["w342", "w185", "original"]
+        let poster: AccentResult | null = null
+        for (const s of sizes) {
+          if (cancelled) return
+          try { poster = await extractAccentColor(posterUrl(pp, s), gn); break } catch {}
+        }
+        if (!poster) throw new Error()
         if (cancelled) return
         const ph = `#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`
         setDbg(`px=${poster.v} sc=${poster.s.toFixed(3)}${poster.fb?' FALLBACK':''}`)
@@ -215,7 +188,13 @@ export function ExtraBadge({ label, containerW, containerH, color, posterPath, g
     let cancelled = false
     const run = async () => {
       try {
-        const poster = await extractAccentColor(posterUrl(pp, "w342"), gn)
+        const sizes = ["w342", "w185", "original"]
+        let poster: AccentResult | null = null
+        for (const s of sizes) {
+          if (cancelled) return
+          try { poster = await extractAccentColor(posterUrl(pp, s), gn); break } catch {}
+        }
+        if (!poster) throw new Error()
         if (cancelled) return
         const ph = `#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`
         setDbg(`px=${poster.v} sc=${poster.s.toFixed(3)}${poster.fb?' FALLBACK':''}`)
