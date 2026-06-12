@@ -25,7 +25,7 @@ const GENRE_FALLBACK: Record<string, string> = {
   Crime: '#2C3E50', Crimine: '#2C3E50',
 }
 
-export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: number, height: number, genre: string): AccentResult {
+export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: number, height: number, genre: string, satThreshold = 0.05): AccentResult {
   const step = 2
   const vals: { r: number; g: number; b: number; s: number; l: number }[] = []
 
@@ -37,7 +37,7 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
       const l = (max + min) / 2
       const d = max - min
       const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-      if (s < 0.05 || l < 0.03 || l > 0.97) continue
+      if (s < satThreshold || l < 0.03 || l > 0.97) continue
       vals.push({ r: pixels[i], g: pixels[i + 1], b: pixels[i + 2], s, l })
     }
   }
