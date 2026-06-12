@@ -42,7 +42,7 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
     <filter id="${fid}" x="-10%" y="-20%" width="120%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(0,0,0,0.5)"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(0,0,0,0.5)"/>
     </filter>
   </defs>
   <text x="${pad}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">${escapeXml(genreName)}</text>
