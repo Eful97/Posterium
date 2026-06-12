@@ -32,7 +32,7 @@ async function extractAccentColor(imageUrl: string, genre: string): Promise<Acce
     i.src = imageUrl
   })
 
-  const MAX_W = 100
+  const MAX_W = 200
   const w = Math.min(img.naturalWidth, MAX_W)
   const h = Math.round(w * img.naturalHeight / img.naturalWidth)
   const canvas = document.createElement("canvas")
@@ -42,7 +42,7 @@ async function extractAccentColor(imageUrl: string, genre: string): Promise<Acce
   ctx.drawImage(img, 0, 0, w, h)
 
   const pixels: { r: number; g: number; b: number; h: number; s: number; l: number }[] = []
-  const step = 2
+  const step = 4
   for (let y = 0; y < h; y += step) {
     for (let x = 0; x < w; x += step) {
       const p = ctx.getImageData(x, y, 1, 1).data
