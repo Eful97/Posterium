@@ -19,6 +19,81 @@ function adjustColor(hex: string, amount: number): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
+function hexToHsl(hex: string): [number, number, number] {
+  let r = parseInt(hex.slice(1, 3), 16) / 255
+  let g = parseInt(hex.slice(3, 5), 16) / 255
+  let b = parseInt(hex.slice(5, 7), 16) / 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  let h = 0, s = 0, l = (max + min) / 2
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+      case g: h = ((b - r) / d + 2) / 6; break
+      case b: h = ((r - g) / d + 4) / 6; break
+    }
+  }
+  return [h, s, l]
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  let r: number, g: number, b: number
+  if (s === 0) {
+    r = g = b = l
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1
+      if (t > 1) t -= 1
+      if (t < 1 / 6) return p + (q - p) * 6 * t
+      if (t < 1 / 2) return q
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
+      return p
+    }
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+    const p = 2 * l - q
+    r = hue2rgb(p, q, h + 1 / 3)
+    g = hue2rgb(p, q, h)
+    b = hue2rgb(p, q, h - 1 / 3)
+  }
+  const ri = Math.max(0, Math.min(255, Math.round(r * 255)))
+  const gi = Math.max(0, Math.min(255, Math.round(g * 255)))
+  const bi = Math.max(0, Math.min(255, Math.round(b * 255)))
+  return `#${ri.toString(16).padStart(2, '0')}${gi.toString(16).padStart(2, '0')}${bi.toString(16).padStart(2, '0')}`
+}
+
+function badgeColors(color: string, defaultDark: [string, string], defaultLight: [string, string]): { bgTop: string; bgBot: string; textFill: string; rimColor: string; textShadow: string } {
+  if (!color || !color.startsWith('#')) {
+    const isDark = defaultDark[0] !== '#e0e0e0'
+    return {
+      bgTop: isDark ? defaultDark[0] : defaultLight[0],
+      bgBot: isDark ? defaultDark[1] : defaultLight[1],
+      textFill: isDark ? '#fff' : '#111',
+      rimColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)',
+      textShadow: isDark ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)',
+    }
+  }
+
+  const lum = hexLuminance(color)
+  const [h, s, l] = hexToHsl(color)
+
+  // Shift hue by ~40° (split-complementary) for a harmonious contrast
+  let newH = (h + 0.11) % 1
+  // Boost saturation to at least 50% for a vibrant badge
+  const newS = Math.max(0.5, Math.min(0.7, s * 1.5))
+  // Invert lightness for contrast: dark poster → light badge, light poster → dark badge
+  const newL = lum < 0.5 ? Math.min(0.75, l + 0.4) : Math.max(0.25, l - 0.4)
+  const newL2 = lum < 0.5 ? Math.min(0.6, l + 0.25) : Math.max(0.35, l - 0.25)
+
+  const bgTop = hslToHex(newH, newS, newL)
+  const bgBot = hslToHex(newH, newS, newL2)
+  const textFill = newL > 0.5 ? '#111' : '#fff'
+  const rimColor = newL > 0.5 ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.08)'
+  const textShadow = newL > 0.5 ? 'rgba(255,255,255,0.40)' : 'rgba(0,0,0,0.40)'
+
+  return { bgTop, bgBot, textFill, rimColor, textShadow }
+}
+
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
   const voteStr = voteAverage.toFixed(1)
   const fontSize = Math.round(24 * pw / 380)
@@ -111,14 +186,8 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const svgH = fontSize + pt + pb
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
   const r = Math.round(pb * 1.0)
-  const lum = color.startsWith('#') ? hexLuminance(color) : 0.7
-  const isDark = lum >= 0.5
-  const bgTop = color && color.startsWith('#') ? color : (isDark ? '#2a2a2a' : '#e0e0e0')
-  const bgBot = color && color.startsWith('#') ? adjustColor(color, -0.12) : (isDark ? '#111111' : '#c0c0c0')
-  const textFill = isDark ? '#fff' : '#111'
-  const rimColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
+  const { bgTop, bgBot, textFill, rimColor, textShadow } = badgeColors(color, ['#2a2a2a', '#111111'], ['#e0e0e0', '#c0c0c0'])
   const shadowColor = 'rgba(0,0,0,0.30)'
-  const textShadow = isDark ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
   const fid = uid()
   const tid = uid()
 
@@ -155,14 +224,8 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const svgH = fontSize + pt + pb
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
   const r = Math.round(pb * 1.0)
-  const lum = color.startsWith('#') ? hexLuminance(color) : 0.7
-  const isDark = lum >= 0.5
-  const bgTop = color && color.startsWith('#') ? color : (isDark ? '#2a2a2a' : '#e0e0e0')
-  const bgBot = color && color.startsWith('#') ? adjustColor(color, -0.12) : (isDark ? '#111111' : '#c0c0c0')
-  const textFill = isDark ? '#fff' : '#111'
-  const rimColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
+  const { bgTop, bgBot, textFill, rimColor, textShadow } = badgeColors(color, ['#2a2a2a', '#111111'], ['#e0e0e0', '#c0c0c0'])
   const shadowColor = 'rgba(0,0,0,0.30)'
-  const textShadow = isDark ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
   const fid = uid()
   const tid = uid()
 
