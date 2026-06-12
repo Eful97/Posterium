@@ -374,7 +374,6 @@ export function usePosterium(): PosteriumCtx {
     }
     if (lang) params.push(`lang=${lang}`)
     if (badgeBgColor) params.push(`badgeColor=${encodeURIComponent(badgeBgColor)}`)
-    else params.push(`badgeColor=%23999999`)
     if (rankingBadges) {
       const currYear = new Date().getFullYear().toString()
       const isNewMovie = selected?.media_type === "movie" && selected?.release_date?.startsWith(currYear)
