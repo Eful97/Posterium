@@ -3,6 +3,27 @@
 import { useEffect, useState } from "react"
 import { posterUrl } from "@/lib/utils"
 
+const GENRE_FALLBACK: Record<string, string> = {
+  Action: '#D4A574', Azione: '#D4A574',
+  Horror: '#8B0000', Horreur: '#8B0000',
+  Comedy: '#F4D03F', Commedia: '#F4D03F', Comédie: '#F4D03F',
+  Drama: '#5D6D7E', Dramma: '#5D6D7E', Drame: '#5D6D7E',
+  Thriller: '#4A4A4A',
+  Adventure: '#2E86AB', Avventura: '#2E86AB', Aventure: '#2E86AB',
+  Animation: '#E67E22', Animazione: '#E67E22',
+  'Science Fiction': '#3498DB', 'Science-Fiction': '#3498DB', Fantascienza: '#3498DB',
+  Romance: '#E74C3C', Romantico: '#E74C3C',
+  Documentary: '#7F8C8D', Documentario: '#7F8C8D',
+  Mystery: '#6C3483', Mistero: '#6C3483',
+  Fantasy: '#8E44AD', Fantasia: '#8E44AD',
+  War: '#6B4226', Guerra: '#6B4226',
+  Western: '#A0522D',
+  Music: '#1ABC9C', Musica: '#1ABC9C',
+  Family: '#2ECC71', Famiglia: '#2ECC71',
+  History: '#A67B5B', Storico: '#A67B5B',
+  Crime: '#2C3E50', Crimine: '#2C3E50',
+}
+
 function relativeLuminance(hex: string): number {
   const r = parseInt(hex.slice(1, 3), 16) / 255
   const g = parseInt(hex.slice(3, 5), 16) / 255
@@ -61,9 +82,9 @@ function useDominantColor(posterPath: string | null | undefined, containerW: num
           const r = p[0] / 255, g = p[1] / 255, b = p[2] / 255
           const max = Math.max(r, g, b), min = Math.min(r, g, b)
           const l = (max + min) / 2
-          if (l < 0.1 || l > 0.9) continue
           const d = max - min
           const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+          if (s < 0.05 || l < 0.03 || l > 0.97) continue
           if (s > maxSat) {
             maxSat = s; mr = p[0]; mg = p[1]; mb = p[2]
           }
@@ -109,21 +130,25 @@ function badgeLayout(text: string, containerW: number) {
 }
 
 const BadgePill = ({ children, totalW, svgH, cornerR, bgColor }: { children: React.ReactNode; totalW: number; svgH: number; cornerR: number; bgColor: string }) => {
-  const textColor = bestTextColor(bgColor || "#222")
+  const safeBg = bgColor || "#333"
+  const textColor = bestTextColor(safeBg)
+  const borderColor = textColor === '#fff'
+    ? 'rgba(255,255,255,0.25)'
+    : 'rgba(0,0,0,0.10)'
   return (
     <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
-      <div style={{ width: "100%", height: "100%", background: `${bgColor}d9`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", color: textColor, fontWeight: 800, fontSize: `${Math.round(24 * totalW / 380 * 1.5)}px`, letterSpacing: "-0.01em", boxShadow: "0 4px 12px rgba(0,0,0,0.30)", borderTop: "1.5px solid rgba(255,255,255,0.10)" }}>
+      <div style={{ width: "100%", height: "100%", background: `${safeBg}d9`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", color: textColor, fontWeight: 800, fontSize: `${Math.round(24 * totalW / 380 * 1.5)}px`, letterSpacing: "-0.01em", boxShadow: "0 4px 12px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15)", borderTop: `1px solid ${borderColor}`, transition: "background-color 300ms ease, color 200ms ease" }}>
         {children}
       </div>
     </div>
   )
 }
 
-export function RankingBadge({ rank, containerW, containerH, color, posterPath }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null }) {
+export function RankingBadge({ rank, containerW, containerH, color, posterPath, genreName }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null }) {
   const extracted = useDominantColor(!color ? posterPath : null, containerW, containerH)
-  const bgColor = color || extracted
-  const periodText = "Oggi"
-  const fullText = `#${rank} ${periodText}`
+  const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
+  const bgColor = color || extracted || genreFallback || '#555'
+  const fullText = `#${rank} Oggi`
   const { totalW, svgH, cornerR, fontSize } = badgeLayout(fullText, containerW)
 
   return (
@@ -152,9 +177,10 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
   )
 }
 
-export function ExtraBadge({ label, containerW, containerH, color, posterPath }: { label: string; containerW: number; containerH: number; color?: string; posterPath?: string | null }) {
+export function ExtraBadge({ label, containerW, containerH, color, posterPath, genreName }: { label: string; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null }) {
   const extracted = useDominantColor(!color ? posterPath : null, containerW, containerH)
-  const bgColor = color || extracted
+  const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
+  const bgColor = color || extracted || genreFallback || '#555'
   const { totalW, svgH, cornerR, fontSize } = badgeLayout(label, containerW)
 
   return (
