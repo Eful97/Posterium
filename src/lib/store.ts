@@ -71,15 +71,16 @@ let fileCache: Record<string, Mapping> | null = null
 let cacheDirty = false
 
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true })
-  }
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true })
+    }
+  } catch {}
 }
 
 function loadFromDisk(): Record<string, Mapping> {
-  ensureDataDir()
-  if (!fs.existsSync(DATA_FILE)) return {}
   try {
+    if (!fs.existsSync(DATA_FILE)) return {}
     return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"))
   } catch {
     return {}
@@ -95,8 +96,10 @@ function getData(): Record<string, Mapping> {
 
 function persist() {
   if (!cacheDirty || fileCache === null) return
-  ensureDataDir()
-  fs.writeFileSync(DATA_FILE, JSON.stringify(fileCache, null, 2))
+  try {
+    ensureDataDir()
+    fs.writeFileSync(DATA_FILE, JSON.stringify(fileCache, null, 2))
+  } catch {}
   cacheDirty = false
 }
 
