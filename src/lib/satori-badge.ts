@@ -6,6 +6,7 @@ import path from "path"
 
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
+let _symbols: Buffer | null = null
 
 function fontRegular(): Buffer {
   if (!_regular)
@@ -23,10 +24,19 @@ function fontBold(): Buffer {
   return _bold
 }
 
+function fontSymbols(): Buffer {
+  if (!_symbols)
+    _symbols = fs.readFileSync(
+      path.join(process.cwd(), "node_modules", "@fontsource", "noto-sans-symbols-2", "files", "noto-sans-symbols-2-symbols-400-normal.woff")
+    )
+  return _symbols
+}
+
 function fonts() {
   return [
     { name: "Inter", data: fontRegular(), weight: 400 as const, style: "normal" as const },
     { name: "Inter", data: fontBold(), weight: 700 as const, style: "normal" as const },
+    { name: "Noto Sans Symbols 2", data: fontSymbols(), weight: 400 as const, style: "normal" as const },
   ]
 }
 
