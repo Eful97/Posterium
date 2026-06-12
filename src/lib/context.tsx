@@ -63,6 +63,7 @@ export interface PosteriumCtx {
   yearOf: (r: SearchResult) => string
   posterUrl: (path: string, size?: string) => string
   trending: (SearchResult & { rank: number })[]
+  mdblistAnimeList: any[]
   streamingCharts: Record<string, FlixPatrolChart>
   STREAMING_PLATFORMS: typeof STREAMING_PLATFORMS
   loadMappings: () => Promise<void>

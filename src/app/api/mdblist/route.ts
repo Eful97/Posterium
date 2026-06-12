@@ -4,9 +4,9 @@ import { cacheGet, cacheSet } from "@/lib/cache"
 import { MDBLISTS, MDBListEntry } from "@/lib/mdblist"
 
 const MDBLISTS_URL: Record<string, string> = {
-  mdblistMovie: 'https://mdblist.com/api/lists/snoak/trending-movies',
-  mdblistShow: 'https://mdblist.com/api/lists/snoak/trakt-s-trending-shows',
-  mdblistAnime: 'https://mdblist.com/api/lists/snoak/trending-anime-shows',
+  mdblistMovie: 'https://api.mdblist.com/lists/snoak/trending-movies',
+  mdblistShow: 'https://api.mdblist.com/lists/snoak/trakt-s-trending-shows',
+  mdblistAnime: 'https://api.mdblist.com/lists/snoak/trending-anime-shows',
 }
 
 export async function GET(req: NextRequest) {
@@ -24,8 +24,11 @@ export async function GET(req: NextRequest) {
     for (const list of MDBLISTS) {
       const url = MDBLISTS_URL[list.key]
       const apiKey = req.nextUrl.searchParams.get('api_key')
-      const fullUrl = apiKey ? `${url}?api_key=${apiKey}` : url
-      const res = await fetch(fullUrl, { signal: AbortSignal.timeout(10000) })
+      const fullUrl = `${url}/items?apikey=${apiKey}&limit=20`
+      const res = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(10000)
+      })
       if (!res.ok) continue
       const data = await res.json()
       const items: MDBListEntry[] = (data.items || data || []).slice(0, 20).map((item: any) => ({

@@ -15,14 +15,40 @@ export async function GET(req: NextRequest) {
   if (!mdblistKey || !tmdbKey) return Response.json([])
 
   try {
-    const url = `https://mdblist.com/api/lists/snoak/trending-anime-shows?api_key=${mdblistKey}`
-    const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+    const url = `https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${mdblistKey}&limit=20&offset=0`
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(10000)
+    })
     if (!res.ok) return Response.json([])
     const data = await res.json()
-    const rawItems = data?.items || data?.data || (Array.isArray(data) ? data : [])
+    let rawItems = data?.items || data?.data
+    if (Array.isArray(data) && !rawItems) rawItems = data
     const items = rawItems.slice(0, 10)
 
     const results = await Promise.all(items.map(async (item: any, idx: number) => {
+      // Try TMDB ID from MDBList first
+      const tmdbId = item.tmdb_id || item.tmdb
+      if (tmdbId) {
+        try {
+          const tmdbRes = await fetch(
+            `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${tmdbKey}`,
+            { signal: AbortSignal.timeout(5000) }
+          )
+          if (tmdbRes.ok) {
+            const found = await tmdbRes.json()
+            return {
+              id: found.id,
+              title: found.name || found.title || item.title || '',
+              poster_path: found.poster_path || '',
+              rank: idx + 1,
+              media_type: 'tv',
+            }
+          }
+        } catch {}
+      }
+
+      // Fallback: find by IMDB ID
       const imdbId = item.imdb_id || item.imdb || ''
       if (!imdbId) return null
       try {

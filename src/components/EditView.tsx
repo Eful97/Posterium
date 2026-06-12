@@ -184,6 +184,9 @@ export default function EditView() {
           <div className="flex items-center justify-center mb-4">
             <h2 className="text-xl font-bold">🔥 Top 10 Italia JustWatch</h2>
           </div>
+          <div className="p-2 bg-zinc-900 rounded text-xs text-zinc-500 mb-2">
+            mdblistKey={p.mdblistApiKey ? '✅' : '❌'} | animeList={p.mdblistAnimeList.length}
+          </div>
           {p.trending.length > 0 && (
             <div className="space-y-6">
               {(["movie", "tv"] as const).map((mediaType) => {
@@ -196,7 +199,7 @@ export default function EditView() {
           {p.mdblistAnimeList.length > 0 && (
             <div className="mt-10">
               <h2 className="text-xl font-bold mb-4 text-center">🎌 Top 10 Anime di tendenza</h2>
-              <RankRow label="ANIME" items={p.mdblistAnimeList} onItemClick={(item) => p.navigateToPoster({ id: item.id, media_type: item.media_type || 'tv', title: item.title ?? '', name: item.title ?? '', poster_path: item.poster_path ?? '' })} />
+              <RankRow label="ANIME" items={p.mdblistAnimeList} onItemClick={(item: any) => p.navigateToPoster({ id: item.id ?? 0, media_type: item.media_type || 'tv', title: item.title ?? '', name: item.title ?? '', poster_path: item.poster_path ?? '' })} />
             </div>
           )}
 
