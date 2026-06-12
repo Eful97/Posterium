@@ -62,7 +62,7 @@ export function limitBest(imgs: TMDBImage[], max = 15): TMDBImage[] {
 
 export const STREAMING_PLATFORMS = [
   { slug: "netflix", name: "Netflix", icon: "🎬" },
-  { slug: "disney", name: "Disney+", icon: "✨" },
+  { slug: "disney", name: "Disney+", icon: "🏰" },
   { slug: "amazon-prime", name: "Prime Video", icon: "📦" },
   { slug: "hbo-max", name: "HBO Max", icon: "⚡" },
   { slug: "apple-tv", name: "Apple TV+", icon: "🍎" },
