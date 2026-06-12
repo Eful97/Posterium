@@ -272,6 +272,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       composites.push({ input: Buffer.from(badgeSvg), top: badgeY, left: badgeLeft })
     }
 
+    // If rank is already provided via URL, skip extraLabel logic
     const extraLabel = req.nextUrl.searchParams.get("extra") || req.nextUrl.searchParams.has("rank") ? '' : (() => {
       if (!rankingEnabled) return ''
       const now = Date.now()
