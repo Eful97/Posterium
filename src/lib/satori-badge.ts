@@ -141,14 +141,15 @@ export async function renderGenreBadge(
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const voteStr = voteAverage.toFixed(1)
   const fontSize = Math.round(24 * pw / 380)
-  const smallFontSize = Math.round(20 * pw / 380)
+  const starFontSize = Math.round(20 * pw / 380)
   const charW = fontSize * 0.58
   const genreW = Math.round(genreName.length * charW)
-  const bulletW = Math.round(smallFontSize * 0.35)
-  const starW = Math.round(smallFontSize * 0.55)
+  const bulletW = Math.round(fontSize * 0.35)
+  const starW = Math.round(starFontSize * 0.55)
   const voteW = Math.round(voteStr.length * charW)
   const gap = Math.round(fontSize * 0.25)
-  const gapStar = Math.round(fontSize * 0.15)
+  const gapStar = Math.round(fontSize * 0.12)
+  const starPb = Math.round(Math.max(2 * pw / 380, 1))
   const pad = Math.round(fontSize * 0.35)
   const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + pad * 2
   const svgH = Math.round(fontSize * 1.6)
@@ -163,39 +164,30 @@ export async function renderGenreBadge(
         gap: `${gap}px`,
         width: `${totalW}px`,
         height: `${svgH}px`,
+        color: "#e5e7eb",
+        fontSize: `${fontSize}px`,
+        fontFamily: "Inter",
+        fontWeight: 700,
         textShadow: "0 4px 6px rgba(0,0,0,0.5)",
       },
     },
+    React.createElement("span", null, genreName),
+    React.createElement("span", null, "•"),
     React.createElement("span", {
       style: {
-        color: "#e5e7eb",
-        fontSize: `${fontSize}px`,
-        fontFamily: "Inter",
-        fontWeight: 700,
+        display: "flex",
+        alignItems: "center",
+        gap: `${gapStar}px`,
       },
-    }, genreName),
-    React.createElement("span", {
-      style: {
-        color: "#aaaaaa",
-        fontSize: `${smallFontSize}px`,
-        fontFamily: "Inter",
-      },
-    }, "•"),
-    React.createElement("span", {
-      style: {
-        color: "#e5e7eb",
-        fontSize: `${smallFontSize}px`,
-        fontFamily: "Inter",
-      },
-    }, "★"),
-    React.createElement("span", {
-      style: {
-        color: "#e5e7eb",
-        fontSize: `${fontSize}px`,
-        fontFamily: "Inter",
-        fontWeight: 700,
-      },
-    }, voteStr),
+    },
+      React.createElement("span", {
+        style: {
+          fontSize: `${starFontSize}px`,
+          paddingBottom: `${starPb}px`,
+        },
+      }, "★"),
+      React.createElement("span", null, voteStr),
+    ),
   )
 
   const svg = await satori(el, { width: totalW, height: svgH, fonts: fonts() })
