@@ -222,11 +222,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       if (pColor && lColor) {
         const pr = parseInt(pColor.slice(1,3),16), pg = parseInt(pColor.slice(3,5),16), pb = parseInt(pColor.slice(5,7),16)
         const lr = parseInt(lColor.slice(1,3),16), lg = parseInt(lColor.slice(3,5),16), lb = parseInt(lColor.slice(5,7),16)
-        let hex = `#${Math.round((pr+lr)/2).toString(16).padStart(2,'0')}${Math.round((pg+lg)/2).toString(16).padStart(2,'0')}${Math.round((pb+lb)/2).toString(16).padStart(2,'0')}`
-        const lum = simpleLum(hex)
-        if (lum < 0.4) hex = adjustColor(hex, 0.2)
-        else if (lum > 0.7) hex = adjustColor(hex, -0.15)
-        return hex
+        return `#${Math.round((pr+lr)/2).toString(16).padStart(2,'0')}${Math.round((pg+lg)/2).toString(16).padStart(2,'0')}${Math.round((pb+lb)/2).toString(16).padStart(2,'0')}`
       }
       return pColor || lColor || (fallbackGenre ? (GENRE_FALLBACK[fallbackGenre] || '#555') : '#555')
     }
