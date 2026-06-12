@@ -1,161 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { genreRatingSVG, rankingBadgeSVG, extraBadgeSVG, GENRE_FALLBACK } from "@/lib/badges"
-import { posterUrl } from "@/lib/utils"
+import { genreRatingSVG } from "@/lib/badges"
 
-function hexLuminanceRaw(hex: string): number {
-  const r = parseInt(hex.slice(1, 3), 16) / 255
-  const g = parseInt(hex.slice(3, 5), 16) / 255
-  const b = parseInt(hex.slice(5, 7), 16) / 255
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-
-function adjustHex(hex: string, ratio: number): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  const nr = Math.max(0, Math.min(255, Math.round(r + (ratio > 0 ? (255 - r) : r) * Math.abs(ratio))))
-  const ng = Math.max(0, Math.min(255, Math.round(g + (ratio > 0 ? (255 - g) : g) * Math.abs(ratio))))
-  const nb = Math.max(0, Math.min(255, Math.round(b + (ratio > 0 ? (255 - b) : b) * Math.abs(ratio))))
-  return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`
-}
-
-interface AccentResult { r: number; g: number; b: number; hsl: [number, number, number]; v: number; s: number; fb: boolean }
-
-async function extractAccentColor(imageUrl: string, genre: string): Promise<AccentResult> {
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image()
-    i.crossOrigin = "anonymous"
-    i.onload = () => resolve(i)
-    i.onerror = () => reject(new Error("CORS/load"))
-    i.src = imageUrl
-  })
-
-  const MAX_W = 342
-  const w = Math.min(img.naturalWidth, MAX_W)
-  const h = Math.round(w * img.naturalHeight / img.naturalWidth)
-  const canvas = document.createElement("canvas")
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext("2d")!
-  ctx.imageSmoothingEnabled = false
-  ctx.drawImage(img, 0, 0, w, h)
-
-  const pixels: { r: number; g: number; b: number; h: number; s: number; l: number }[] = []
-  const step = 2
-  for (let y = 0; y < h; y += step) {
-    for (let x = 0; x < w; x += step) {
-      const p = ctx.getImageData(x, y, 1, 1).data
-      const r = p[0] / 255, g = p[1] / 255, b = p[2] / 255
-      const max = Math.max(r, g, b), min = Math.min(r, g, b)
-      const l = (max + min) / 2
-      const d = max - min
-      const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-      if (s < 0.05 || l < 0.03 || l > 0.97) continue
-
-      let hue = 0
-      if (d !== 0) {
-        if (max === r) hue = ((g - b) / d + (g < b ? 6 : 0)) / 6
-        else if (max === g) hue = ((b - r) / d + 2) / 6
-        else hue = ((r - g) / d + 4) / 6
-      }
-      pixels.push({ r: p[0], g: p[1], b: p[2], h: hue, s, l })
-    }
-  }
-
-  // Fallback
-  if (pixels.length === 0) {
-    const fb = GENRE_FALLBACK[genre] || GENRE_FALLBACK[Object.keys(GENRE_FALLBACK)[0]] || '#C0C0C0'
-    return { r: parseInt(fb.slice(1,3),16), g: parseInt(fb.slice(3,5),16), b: parseInt(fb.slice(5,7),16), hsl: [0, 0, 0.5], v: 0, s: 0, fb: true }
-  }
-
-  // bgMean of valid pixels
-  const n = pixels.length
-  const bgMean = { r: pixels.reduce((a, p) => a + p.r, 0) / n, g: pixels.reduce((a, p) => a + p.g, 0) / n, b: pixels.reduce((a, p) => a + p.b, 0) / n }
-
-  let bestScore = -1, best = pixels[0]
-  for (const p of pixels) {
-    const chroma = p.s * (1 - Math.abs(p.l - 0.5))
-    const dr = p.r - bgMean.r, dg = p.g - bgMean.g, db = p.b - bgMean.b
-    const divergence = Math.sqrt(dr * dr + dg * dg + db * db) / 441.67
-    const score = chroma * divergence
-    if (score > bestScore) { bestScore = score; best = p }
-  }
-
-  // Lightness clamp
-  const clampLum = 0.2126 * best.r / 255 + 0.7152 * best.g / 255 + 0.0722 * best.b / 255
-  let cr = best.r, cg = best.g, cb = best.b
-  if (clampLum < 0.4) {
-    const ratio = 0.2
-    cr = Math.round(cr + (255 - cr) * ratio)
-    cg = Math.round(cg + (255 - cg) * ratio)
-    cb = Math.round(cb + (255 - cb) * ratio)
-  } else if (clampLum > 0.7) {
-    const ratio = -0.15
-    cr = Math.round(cr + cr * ratio)
-    cg = Math.round(cg + cg * ratio)
-    cb = Math.round(cb + cb * ratio)
-  }
-  cr = Math.max(0, Math.min(255, cr))
-  cg = Math.max(0, Math.min(255, cg))
-  cb = Math.max(0, Math.min(255, cb))
-
-  return { r: cr, g: cg, b: cb, hsl: [best.h, best.s, best.l], v: n, s: bestScore, fb: false }
-}
-
-function TopGradient({ containerW, svgH }: { containerW: number; svgH: number }) {
-  const gradH = Math.max(Math.round(svgH * 1.5), Math.round(containerW * 0.06))
+export function RankingBadge({ rank, label }: { rank: number; label?: string }) {
   return (
-    <div className="absolute z-[8] pointer-events-none" style={{ top: 0, left: 0, right: 0, height: `${gradH}px`, background: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)" }} />
-  )
-}
-
-export function RankingBadge({ rank, containerW, containerH, color, posterPath, genreName, logoPath, label }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null; label?: string }) {
-  const [extracted, setExtracted] = useState("")
-  const gn = genreName || ''
-  useEffect(() => {
-    const pp = !color ? posterPath : null
-    const lp = !color ? logoPath : null
-    if (!pp) { setExtracted(""); return }
-    let cancelled = false
-    const run = async () => {
-      try {
-        const sizes = ["w342", "w185", "original"]
-        let poster: AccentResult | null = null
-        for (const s of sizes) {
-          if (cancelled) return
-          try { poster = await extractAccentColor(posterUrl(pp, s), gn); break } catch {}
-        }
-        if (!poster) throw new Error()
-        if (cancelled) return
-        const ph = `#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`
-        if (!lp) { setExtracted(ph); return }
-        let logo: AccentResult | null = null
-        try { logo = await extractAccentColor(posterUrl(lp, "original"), gn) } catch {}
-        if (cancelled) return
-        if (logo) {
-          const r = Math.round((poster.r + logo.r) / 2)
-          const g = Math.round((poster.g + logo.g) / 2)
-          const b = Math.round((poster.b + logo.b) / 2)
-          setExtracted(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`)
-        } else { setExtracted(ph) }
-      } catch { if (!cancelled) setExtracted("") }
-    }
-    run()
-    return () => { cancelled = true }
-  }, [posterPath, color, logoPath, gn])
-  const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
-  const badgeColor = color || extracted || genreFallback || '#555'
-  const { svg, totalW, svgH, cornerR } = rankingBadgeSVG(rank, containerW, badgeColor, "day", label)
-
-  return (
-    <>
-      <TopGradient containerW={containerW} svgH={svgH} />
-      <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
-        <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
+    <div className="absolute z-10 pointer-events-none" style={{ top: "16px", left: "50%", transform: "translateX(-50%)" }}>
+      <div className="bg-neutral-900 px-6 py-2 rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-black/30">
+        <span className="text-white font-bold text-xl">#{rank}</span>
+        {label && <span className="text-white font-bold text-xl">{label}</span>}
       </div>
-    </>
+    </div>
   )
 }
 
@@ -175,50 +29,12 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
   )
 }
 
-export function ExtraBadge({ label, containerW, containerH, color, posterPath, genreName, logoPath }: { label: string; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null }) {
-  const [extracted, setExtracted] = useState("")
-  const gn = genreName || ''
-  useEffect(() => {
-    const pp = !color ? posterPath : null
-    const lp = !color ? logoPath : null
-    if (!pp) { setExtracted(""); return }
-    let cancelled = false
-    const run = async () => {
-      try {
-        const sizes = ["w342", "w185", "original"]
-        let poster: AccentResult | null = null
-        for (const s of sizes) {
-          if (cancelled) return
-          try { poster = await extractAccentColor(posterUrl(pp, s), gn); break } catch {}
-        }
-        if (!poster) throw new Error()
-        if (cancelled) return
-        const ph = `#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`
-        if (!lp) { setExtracted(ph); return }
-        let logo: AccentResult | null = null
-        try { logo = await extractAccentColor(posterUrl(lp, "original"), gn) } catch {}
-        if (cancelled) return
-        if (logo) {
-          const r = Math.round((poster.r + logo.r) / 2)
-          const g = Math.round((poster.g + logo.g) / 2)
-          const b = Math.round((poster.b + logo.b) / 2)
-          setExtracted(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`)
-        } else { setExtracted(ph) }
-      } catch { if (!cancelled) setExtracted("") }
-    }
-    run()
-    return () => { cancelled = true }
-  }, [posterPath, color, logoPath, gn])
-  const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
-  const badgeColor = color || extracted || genreFallback || '#555'
-  const { svg, totalW, svgH, cornerR } = extraBadgeSVG(label, containerW, badgeColor)
-
+export function ExtraBadge({ label }: { label: string }) {
   return (
-    <>
-      <TopGradient containerW={containerW} svgH={svgH} />
-      <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
-        <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
+    <div className="absolute z-10 pointer-events-none" style={{ top: "16px", left: "50%", transform: "translateX(-50%)" }}>
+      <div className="bg-neutral-900 px-6 py-2 rounded-2xl flex items-center justify-center shadow-lg shadow-black/30">
+        <span className="text-white font-bold text-xl">{label}</span>
       </div>
-    </>
+    </div>
   )
 }

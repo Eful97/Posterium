@@ -5,13 +5,6 @@ function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 }
 
-function hexLuminance(hex: string): number {
-  const r = parseInt(hex.slice(1, 3), 16) / 255
-  const g = parseInt(hex.slice(3, 5), 16) / 255
-  const b = parseInt(hex.slice(5, 7), 16) / 255
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-
 export function relativeLuminance(hex: string): number {
   const r = parseInt(hex.slice(1, 3), 16) / 255
   const g = parseInt(hex.slice(3, 5), 16) / 255
@@ -27,58 +20,6 @@ export function adjustColor(hex: string, amount: number): string {
   const g = Math.max(0, Math.min(255, parseInt(hex.slice(3, 5), 16) + Math.round(amount * 255)))
   const b = Math.max(0, Math.min(255, parseInt(hex.slice(5, 7), 16) + Math.round(amount * 255)))
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-}
-
-function hexToHsl(hex: string): [number, number, number] {
-  let r = parseInt(hex.slice(1, 3), 16) / 255
-  let g = parseInt(hex.slice(3, 5), 16) / 255
-  let b = parseInt(hex.slice(5, 7), 16) / 255
-  const max = Math.max(r, g, b), min = Math.min(r, g, b)
-  let h = 0, s = 0, l = (max + min) / 2
-  if (max !== min) {
-    const d = max - min
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-    switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
-      case g: h = ((b - r) / d + 2) / 6; break
-      case b: h = ((r - g) / d + 4) / 6; break
-    }
-  }
-  return [h, s, l]
-}
-
-function hslToHex(h: number, s: number, l: number): string {
-  let r: number, g: number, b: number
-  if (s === 0) {
-    r = g = b = l
-  } else {
-    const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1
-      if (t > 1) t -= 1
-      if (t < 1 / 6) return p + (q - p) * 6 * t
-      if (t < 1 / 2) return q
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
-      return p
-    }
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s
-    const p = 2 * l - q
-    r = hue2rgb(p, q, h + 1 / 3)
-    g = hue2rgb(p, q, h)
-    b = hue2rgb(p, q, h - 1 / 3)
-  }
-  const ri = Math.max(0, Math.min(255, Math.round(r * 255)))
-  const gi = Math.max(0, Math.min(255, Math.round(g * 255)))
-  const bi = Math.max(0, Math.min(255, Math.round(b * 255)))
-  return `#${ri.toString(16).padStart(2, '0')}${gi.toString(16).padStart(2, '0')}${bi.toString(16).padStart(2, '0')}`
-}
-
-function badgeColors(_color: string): { bgTop: string; bgBot: string; textFill: string; textShadow: string } {
-  return {
-    bgTop: '#ffffff',
-    bgBot: '#f0f0f0',
-    textFill: '#111111',
-    textShadow: 'rgba(0,0,0,0.10)',
-  }
 }
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
@@ -166,35 +107,24 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const fontSize = Math.round(24 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.round(rankStr.length * charW + fontSize * 0.35 + periodText.length * charW)
-  const px = Math.round(fontSize * 100 / 72) * 2
-  const pt = Math.round(fontSize * 12 / 72)
-  const pb = Math.round(fontSize * 56 / 72)
-  const totalW = textW + px
+  const px = Math.round(fontSize * 0.5)
+  const pt = Math.round(fontSize * 0.35)
+  const pb = Math.round(fontSize * 0.35)
+  const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
-  const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
-  const r = Math.round(pb * 1.0)
-  const { bgTop, bgBot, textFill, textShadow } = badgeColors(color)
+  const textY = Math.round(pt + fontSize * 0.7)
+  const r = Math.round(fontSize * 0.25)
   const shadowColor = 'rgba(0,0,0,0.30)'
   const fid = uid()
-  const tid = uid()
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${bgTop}" stop-opacity="0.85"/>
-      <stop offset="100%" stop-color="${bgBot}" stop-opacity="0.85"/>
-    </linearGradient>
-    <filter id="${fid}" x="-20%" y="-20%" width="140%" height="200%">
-      <feDropShadow dx="0" dy="${Math.round(fontSize * 5 / 72)}" stdDeviation="${Math.round(fontSize * 10 / 72)}" flood-color="${shadowColor}"/>
-    </filter>
-    <filter id="${tid}" x="-20%" y="-20%" width="140%" height="200%">
-      <feDropShadow dx="0" dy="${Math.round(fontSize * 1 / 72)}" stdDeviation="${Math.round(fontSize * 1 / 72)}" flood-color="${textShadow}"/>
+    <filter id="${fid}" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="${Math.round(fontSize * 0.08)}" stdDeviation="${Math.round(fontSize * 0.15)}" flood-color="${shadowColor}"/>
     </filter>
   </defs>
-  <g filter="url(#${fid})">
-    <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
-    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(fullText)}</text>
-  </g>
+  <rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" ry="${r}" fill="#171717" filter="url(#${fid})"/>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700">${escapeXml(fullText)}</text>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
 }
@@ -203,35 +133,24 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const fontSize = Math.round(24 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.max(Math.round(label.length * charW), fontSize)
-  const px = Math.max(Math.round(textW * 0.15), Math.round(fontSize * 40 / 72))
-  const pt = Math.round(fontSize * 12 / 72)
-  const pb = Math.round(fontSize * 56 / 72)
-  const totalW = textW + px
+  const px = Math.round(fontSize * 0.5)
+  const pt = Math.round(fontSize * 0.35)
+  const pb = Math.round(fontSize * 0.35)
+  const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
-  const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
-  const r = Math.round(pb * 1.0)
-  const { bgTop, bgBot, textFill, textShadow } = badgeColors(color)
+  const textY = Math.round(pt + fontSize * 0.7)
+  const r = Math.round(fontSize * 0.25)
   const shadowColor = 'rgba(0,0,0,0.30)'
   const fid = uid()
-  const tid = uid()
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" shape-rendering="geometricPrecision">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${bgTop}" stop-opacity="0.85"/>
-      <stop offset="100%" stop-color="${bgBot}" stop-opacity="0.85"/>
-    </linearGradient>
-    <filter id="${fid}" x="-20%" y="-20%" width="140%" height="200%">
-      <feDropShadow dx="0" dy="${Math.round(fontSize * 5 / 72)}" stdDeviation="${Math.round(fontSize * 10 / 72)}" flood-color="${shadowColor}"/>
-    </filter>
-    <filter id="${tid}" x="-20%" y="-20%" width="140%" height="200%">
-      <feDropShadow dx="0" dy="${Math.round(fontSize * 1 / 72)}" stdDeviation="${Math.round(fontSize * 1 / 72)}" flood-color="${textShadow}"/>
+    <filter id="${fid}" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="${Math.round(fontSize * 0.08)}" stdDeviation="${Math.round(fontSize * 0.15)}" flood-color="${shadowColor}"/>
     </filter>
   </defs>
-  <g filter="url(#${fid})">
-    <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
-    <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(label)}</text>
-  </g>
+  <rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" ry="${r}" fill="#171717" filter="url(#${fid})"/>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-family="sans-serif" font-weight="700">${escapeXml(label)}</text>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
 }
