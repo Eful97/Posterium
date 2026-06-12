@@ -16,10 +16,16 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
   const voteStr = voteAverage.toFixed(1)
   const fontSize = Math.round(60 * pw / 1000)
   const charW = fontSize * 0.58
-  const totalW = Math.round(genreName.length * charW + fontSize * 0.35 + fontSize * 0.30 + fontSize * 0.35 + fontSize * 1.0 + fontSize * 0.35 + voteStr.length * charW)
-  const svgH = Math.round(fontSize * 1.6)
-  const textY = Math.round(svgH * 0.72)
+  const leftText = `${genreName} •`
+  const leftW = leftText.length * charW
+  const rightW = voteStr.length * charW
   const starR = Math.round(fontSize * 0.45)
+  const starW = starR * 2
+  const gap = Math.round(fontSize * 0.5)
+  const pad = Math.round(fontSize * 0.5)
+  const totalW = Math.round(leftW + gap + starW + gap + rightW + pad * 2)
+  const svgH = Math.round(fontSize * 1.6)
+  const textY = Math.round(svgH / 2)
   const fid = uid()
 
   const starPts = []
@@ -30,17 +36,18 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
     starPts.push(`${(starR * 0.4 * Math.cos(ia)).toFixed(2)},${(starR * 0.4 * Math.sin(ia)).toFixed(2)}`)
   }
 
-  const cx = totalW / 2
-  const gap = Math.round(fontSize * 0.85)
+  const starX = pad + leftW + gap + starR
+  const rightX = pad + leftW + gap + starW + gap
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
     <filter id="${fid}" x="-10%" y="-20%" width="120%" height="140%">
       <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.12)"/>
     </filter>
   </defs>
-  <text x="${cx - gap}" y="${textY}" text-anchor="end" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(`${genreName} •`)}</text>
-  <polygon points="${starPts.join(' ')}" transform="translate(${cx}, ${textY})" fill="rgba(255,255,255,.90)"/>
-  <text x="${cx + gap}" y="${textY}" text-anchor="start" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(voteStr)}</text>
+  <text x="${pad}" y="${textY}" text-anchor="start" dominant-baseline="middle" alignment-baseline="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(leftText)}</text>
+  <polygon points="${starPts.join(' ')}" transform="translate(${starX}, ${textY})" fill="rgba(255,255,255,.90)"/>
+  <text x="${rightX}" y="${textY}" text-anchor="start" dominant-baseline="middle" alignment-baseline="middle" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(voteStr)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
