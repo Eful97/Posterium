@@ -9,8 +9,12 @@ let _bold: Buffer | null = null
 let _symbols: Buffer | null = null
 
 function fontPath(weight: 400 | 700): string {
-  const file = weight === 400 ? "inter-latin-400-normal.woff" : "inter-latin-700-normal.woff"
+  const file = weight === 400 ? "inter-latin-400-normal.woff2" : "inter-latin-700-normal.woff2"
   return path.join(process.cwd(), "node_modules", "@fontsource", "inter", "files", file)
+}
+
+function symbolsPath(): string {
+  return path.join(process.cwd(), "node_modules", "@fontsource", "noto-sans-symbols-2", "files", "noto-sans-symbols-2-symbols-400-normal.woff2")
 }
 
 function fontRegular(): Buffer {
@@ -24,10 +28,7 @@ function fontBold(): Buffer {
 }
 
 function fontSymbols(): Buffer {
-  if (!_symbols)
-    _symbols = fs.readFileSync(
-      path.join(process.cwd(), "node_modules", "@fontsource", "noto-sans-symbols-2", "files", "noto-sans-symbols-2-symbols-400-normal.woff")
-    )
+  if (!_symbols) _symbols = fs.readFileSync(symbolsPath())
   return _symbols
 }
 
@@ -39,19 +40,15 @@ function fonts() {
   ]
 }
 
-function embedFonts(svg: string): string {
-  const b64 = (buf: Buffer) => buf.toString("base64")
-  const css = `<style>
-@font-face{font-family:'Inter';src:url(data:font/woff;base64,${b64(fontRegular())});font-weight:400;font-style:normal}
-@font-face{font-family:'Inter';src:url(data:font/woff;base64,${b64(fontBold())});font-weight:700;font-style:normal}
-@font-face{font-family:'Noto Sans Symbols 2';src:url(data:font/woff;base64,${b64(fontSymbols())});font-weight:400;font-style:normal}
-</style>`
-  return svg.replace(">", `>${css}`)
-}
-
 async function render(el: ReturnType<typeof React.createElement>, w: number, h: number): Promise<Buffer> {
-  const svg = embedFonts(await satori(el, { width: w, height: h, fonts: fonts() }))
-  return Buffer.from(new Resvg(svg).render().asPng())
+  const svg = await satori(el, { width: w, height: h, fonts: fonts() })
+  const resvg = new Resvg(svg, {
+    font: {
+      fontFiles: [fontPath(400), fontPath(700), symbolsPath()],
+      loadSystemFonts: false,
+    },
+  })
+  return Buffer.from(resvg.render().asPng())
 }
 
 export async function renderRankingBadge(
@@ -163,6 +160,7 @@ export async function renderGenreBadge(
   const pad = Math.round(fontSize * 0.35)
   const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + pad * 2
   const svgH = Math.round(fontSize * 1.6)
+  const m = Math.round(fontSize * 0.17)
 
   const el = React.createElement(
     "div",
@@ -171,7 +169,6 @@ export async function renderGenreBadge(
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        gap: `${gap}px`,
         width: `${totalW}px`,
         height: `${svgH}px`,
         color: "#e5e7eb",
@@ -182,20 +179,22 @@ export async function renderGenreBadge(
       },
     },
     React.createElement("span", null, genreName),
-    React.createElement("span", null, "\u00A0\u2022\u00A0"),
+    React.createElement("span", {
+      style: { marginLeft: `${m}px`, marginRight: `${m}px` },
+    }, "\u2022"),
     React.createElement("span", {
       style: {
         display: "flex",
         alignItems: "center",
-        gap: `${gapStar}px`,
       },
     },
       React.createElement("span", {
         style: {
           fontSize: `${starFontSize}px`,
           paddingBottom: `${starPb}px`,
+          marginRight: `${gapStar}px`,
         },
-      }, "★"),
+      }, "\u2605"),
       React.createElement("span", null, voteStr),
     ),
   )
