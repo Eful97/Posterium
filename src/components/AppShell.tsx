@@ -35,7 +35,7 @@ export function AppShell() {
           </div>
         </div>
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
-          <img onClick={p.goHome} src="/posterium.svg" alt="Posterium" className="h-16 md:h-20 w-auto mb-5 md:mb-4 cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
+          <img onClick={p.goHome} src="/posterium.svg" alt="Posterium" decoding="async" className="h-16 md:h-20 w-auto mb-5 md:mb-4 cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
             <button onClick={(e) => { p.copyUrl() }} disabled={!p.urlPattern} className="h-9 px-3 bg-accent-orange hover:bg-accent-orange/90 active:scale-95 transition-all duration-150 text-[11px] font-semibold text-white rounded-xl shadow-lg shadow-accent-orange/25 disabled:opacity-40 disabled:shadow-none">{p.copied ? "✅ Copiato!" : "🔗 AIOmetadata URL"}</button>
             <button onClick={() => { if (p.view === "myposters") { history.back() } else { window.history.pushState({ view: p.view }, ""); p.setView("myposters") } }} className="h-9 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-xs font-medium rounded-xl text-zinc-300">📋 I miei poster ({p.mappings.length})</button>

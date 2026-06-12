@@ -402,10 +402,11 @@ export function usePosterium(): PosteriumCtx {
       if (isNewMovie) { params.push(`extra=${encodeURIComponent("Nuovo film")}`) }
       else if (isNewSeries) { params.push(`extra=${encodeURIComponent("Nuova serie")}`) }
       else if (award) { params.push(`extra=${encodeURIComponent(award)}`) }
-      else if (selected?.media_type === "movie" && metaInfo.status === "Released" && selected?.release_date && now - new Date(selected.release_date).getTime() < twoMonths) {
-        params.push(`extra=${encodeURIComponent("Al cinema")}`)
+      else if (selected?.media_type === "movie" && selected?.release_date) {
+        const rd = new Date(selected.release_date).getTime()
+        if (rd < now && now - rd < twoMonths) { params.push(`extra=${encodeURIComponent("Al cinema")}`) }
       }
-      else if (selected?.media_type === "tv" && (metaInfo.status === "Ended" || metaInfo.status === "Canceled") && metaInfo.last_air_date && now - new Date(metaInfo.last_air_date).getTime() < twoMonths) {
+      else if (selected?.media_type === "tv" && metaInfo.last_air_date && now - new Date(metaInfo.last_air_date).getTime() < twoMonths) {
         params.push(`extra=${encodeURIComponent("Finale stagione")}`)
       }
       else if (selected?.media_type === "tv" && metaInfo.next_episode_to_air?.air_date) {
@@ -415,8 +416,8 @@ export function usePosterium(): PosteriumCtx {
       else if (!trendRank && isTendenza) { params.push(`extra=${encodeURIComponent("Di Tendenza")}`) }
       else {
         const tvType = selected?.media_type === "tv" ? metaInfo.type : null
-        const status = selected?.media_type === "tv" ? metaInfo.status : null
-        const extra = tvType === "Miniseries" ? "Miniserie" : status === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8 ? "Da divorare" : null
+        const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
+        const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8 ? "Da divorare" : null
         if (extra) params.push(`extra=${encodeURIComponent(extra)}`)
       }
     }

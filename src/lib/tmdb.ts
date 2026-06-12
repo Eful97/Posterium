@@ -15,7 +15,7 @@ async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
     return cached.data
   }
 
-  const res = await fetch(cacheKey)
+  const res = await fetch(cacheKey, { signal: AbortSignal.timeout(30000) })
   if (!res.ok) throw new Error(`TMDB fetch failed: ${res.status}`)
   const data = await res.json()
 

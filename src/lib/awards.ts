@@ -18,7 +18,7 @@ const CACHE_TTL = 24 * 60 * 60 * 1000
 
 async function sparqlQuery(query: string): Promise<any[]> {
   const url = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(query)}`
-  const res = await fetch(url, { headers: { "User-Agent": "Posterium/1.0" }, signal: AbortSignal.timeout(10000) })
+  const res = await fetch(url, { headers: { "User-Agent": "Posterium/1.0" }, signal: AbortSignal.timeout(30000) })
   if (!res.ok) return []
   const json = await res.json()
   return json?.results?.bindings || []

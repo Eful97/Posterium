@@ -18,10 +18,10 @@ export async function GET(req: NextRequest) {
     if (found) {
       const body = { rank: found.rank, period: "day" }
       cacheSet(cacheKey, body, ["rank", "justwatch"])
-      return Response.json(body)
+      return Response.json(body, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })
     }
   } catch {}
   const body = { rank: null }
   cacheSet(cacheKey, body, ["rank", "justwatch"])
-  return Response.json(body)
+  return Response.json(body, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })
 }

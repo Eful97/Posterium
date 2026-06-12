@@ -43,7 +43,7 @@ export function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo,
                 const isActive = selectedLogo?.file_path === img.file_path
                 return (
                   <button key={`logo-${language}-${i}`} disabled={disabled} onClick={() => selectLogo(img)} className={`relative p-2 bg-black/40 backdrop-blur-sm rounded-xl border-2 transition-all duration-200 ease-out flex items-center justify-center h-20 shadow-md ${disabled ? "opacity-40 cursor-not-allowed" : "hover:shadow-accent/20 hover:-translate-y-1 hover:scale-[1.02]"} ${isActive ? "border-accent border-[3px] bg-accent/15 shadow-[0_0_15px_var(--color-accent)] ring-2 ring-accent/25" : "border-zinc-700 hover:border-accent/50 hover:shadow-lg"}`} title={isActive ? "Logo selezionato" : undefined}>
-                    <img src={posterUrl(img.file_path, "w154")} alt="" className="max-h-14 max-w-full object-contain transition-transform duration-200 group-hover:scale-110" />
+                    <img src={posterUrl(img.file_path, "w154")} alt="" loading="lazy" decoding="async" className="max-h-14 max-w-full object-contain transition-transform duration-200 group-hover:scale-110" />
                     {isActive && <div className="absolute top-1 right-1 w-5 h-5 bg-accent-orange rounded-full flex items-center justify-center shadow-lg shadow-accent-orange/30"><span className="text-[10px] font-bold text-white">✓</span></div>}
                   </button>
                 )

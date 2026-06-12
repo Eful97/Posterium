@@ -85,7 +85,7 @@ function saveCache(data: CacheData) {
 }
 
 async function fetchCatalog(): Promise<CatalogData> {
-  const res = await fetch(CATALOG_URL)
+  const res = await fetch(CATALOG_URL, { signal: AbortSignal.timeout(15000) })
   if (!res.ok) throw new Error(`Catalog fetch failed: ${res.status}`)
   return res.json()
 }
@@ -94,7 +94,7 @@ async function tmdbCachedFetch(url: string): Promise<unknown | null> {
   const cached = tmdbCache.get(url)
   if (cached && Date.now() - cached.timestamp < TMDB_CACHE_TTL) return cached.data
   try {
-    const res = await fetch(url)
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
     if (!res.ok) return null
     const data = await res.json()
     tmdbCache.set(url, { data, timestamp: Date.now() })

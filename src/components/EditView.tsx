@@ -29,14 +29,14 @@ export default function EditView() {
       <h3 className="text-base font-semibold text-zinc-200 mb-3 text-center">👁️ Anteprima</h3>
       <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
         <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
-          {p.previewPoster && <img src={p.posterUrl(p.previewPoster.file_path, "w500")} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+          {p.previewPoster && <img src={p.posterUrl(p.previewPoster.file_path, "w500")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" />}
           {p.previewPoster?.iso_639_1 === null && p.selectedLogo && (() => {
             const scale = 0.38
             const baseGap = 57
             const badgeAdj = badgesVisible ? 0 : 15.2
             const bottomPx = baseGap - p.logoOffsetY * scale - badgeAdj
             const maxLogoH = Math.round(380 * 1.5 * 0.30)
-            return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center" }}><div style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%" }}><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" className="w-full" style={{ objectFit: "contain", maxHeight: `${maxLogoH}px` }} /></div></div>
+            return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center" }}><div style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%" }}><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain", maxHeight: `${maxLogoH}px` }} /></div></div>
           })()}
           {p.rankingBadges && (() => {
             const currYear = new Date().getFullYear().toString()
@@ -51,13 +51,13 @@ export default function EditView() {
             if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
             if (award) return <div className="absolute inset-0"><ExtraBadge label={award} containerW={380} containerH={570} color={p.badgeBgColor} /></div>
 
-            if (p.selected?.media_type === "movie" && p.metaInfo.status === "Released" && p.selected?.release_date) {
+            if (p.selected?.media_type === "movie" && p.selected?.release_date) {
               const releaseTime = new Date(p.selected.release_date).getTime()
-              if (now - releaseTime < twoMonths) return <div className="absolute inset-0"><ExtraBadge label="Al cinema" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
+              if (releaseTime < now && now - releaseTime < twoMonths) return <div className="absolute inset-0"><ExtraBadge label="Al cinema" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
             }
 
             if (p.selected?.media_type === "tv") {
-              if ((p.metaInfo.status === "Ended" || p.metaInfo.status === "Canceled") && p.metaInfo.last_air_date) {
+              if (p.metaInfo.last_air_date) {
                 const lastAir = new Date(p.metaInfo.last_air_date).getTime()
                 if (now - lastAir < twoMonths) return <div className="absolute inset-0"><ExtraBadge label="Finale stagione" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
               }

@@ -10,7 +10,7 @@ async function tmdbFetch(path: string, apiKey?: string) {
   const url = new URL(`${TMDB_BASE}${path}`)
   url.searchParams.set("api_key", apiKey || TMDB_KEY)
   url.searchParams.set("language", "it-IT")
-  const res = await fetch(url.toString())
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(30000) })
   if (!res.ok) return null
   return res.json()
 }
@@ -79,9 +79,9 @@ export async function GET(req: NextRequest) {
     tvResults.sort((a, b) => a.rank - b.rank)
     const body = { movies: movieResults, tv: tvResults }
     cacheSet(cacheKey, body, ["tmdb", "trending", country])
-    return Response.json(body)
+    return Response.json(body, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })
   } catch (err) {
     console.error("Trending error:", err)
-    return Response.json({ movies: [], tv: [] })
+    return Response.json({ movies: [], tv: [] }, { headers: { "Cache-Control": "no-store" } })
   }
 }

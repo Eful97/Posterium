@@ -39,7 +39,7 @@ export function SearchView() {
             return (
               <button key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} className="group relative bg-surface rounded-xl overflow-hidden border border-zinc-800 hover:border-accent/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10 transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none">
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden flex items-center justify-center">
-                  {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} className="w-full h-full object-cover transition-transform duration-300" /> : <span className="text-3xl font-bold text-zinc-600">{titleOf(r).charAt(0)}</span>}
+                  {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300" /> : <span className="text-3xl font-bold text-zinc-600">{titleOf(r).charAt(0)}</span>}
                 </div>
                 <div className="px-2 py-2.5 text-center">
                   <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{titleOf(r)}</p>

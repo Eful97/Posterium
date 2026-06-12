@@ -4,7 +4,7 @@ import { getImages, getDetails } from "@/lib/tmdb"
 import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheGet, cacheSet } from "@/lib/cache"
+import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG } from "@/lib/badges"
 
 const RENDER_VERSION = 17
@@ -13,19 +13,19 @@ const IMG_BASE = "https://image.tmdb.org/t/p"
 type RouteParams = { type: string; id: string }
 
 async function fetchImg(url: string) {
-  const res = await fetch(url)
+  const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
   if (!res.ok) throw new Error(`fetch failed: ${res.status}`)
   return Buffer.from(await res.arrayBuffer())
 }
 
 function imgSrc(path: string): string {
-  return path.startsWith("http") ? path : `${IMG_BASE}/original${path}`
+  return path.startsWith("http") ? path : `${IMG_BASE}/w780${path}`
 }
 
 function etagHeaders(etag: string) {
   return {
     "Content-Type": "image/jpeg",
-    "Cache-Control": "no-store",
+    "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=300",
     "ETag": etag,
   }
 }
@@ -39,16 +39,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const mediaType = (type === "series" || type === "tv") ? "tv" : "movie"
   const tmdbId = Number(id)
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:${req.nextUrl.searchParams.toString()}`
-  const cached = cacheGet<Buffer>(cacheKey)
-  const cachedHeaders = cacheGet<{ etag: string }>(`${cacheKey}:headers`)
-  if (cached && cachedHeaders) {
-    const etag = cachedHeaders.etag
+  const cached = cacheGetStale<Buffer>(cacheKey)
+  const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
+  if (cached.data && cachedHeaders.data) {
+    const etag = cachedHeaders.data.etag
     if (req.headers.get("If-None-Match") === etag) {
-      return new Response(null, { status: 304 })
+      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=300" } })
     }
-    return new Response(new Uint8Array(cached), {
-      headers: etagHeaders(etag),
-    })
+    if (!cached.stale && !cachedHeaders.stale) {
+      return new Response(new Uint8Array(cached.data), {
+        headers: etagHeaders(etag),
+      })
+    }
   }
 
   let posterPath: string | null = null
@@ -108,7 +110,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const langPoster = images.posters.find((p: any) => p.iso_639_1 === preferredLanguage)
         const fallback = images.posters[0]
         const chosen = langPoster || fallback
-        if (chosen) return Response.redirect(`${IMG_BASE}/original${chosen.file_path}`)
+        if (chosen) return Response.redirect(`${IMG_BASE}/w780${chosen.file_path}`)
       }
     } catch {}
     etag = `"${Date.now()}"`
@@ -118,29 +120,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     return new Response("Poster not found", { status: 404 })
   }
 
-  let rankingRank: number | null = null
   try {
-    const rankings = await getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT", 100)
-    const found = rankings.find((r) => r.tmdbId === tmdbId)
-    rankingRank = found?.rank ?? mapping?.trendRank ?? null
-  } catch (e) { console.error("JustWatch rank error", e) }
-
-  try {
-    const posterBuf = await fetchImg(imgSrc(posterPath))
+    const [posterBuf, logoFetch, rankingResult] = await Promise.all([
+      fetchImg(imgSrc(posterPath)),
+      logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
+      (() => {
+        if (mapping?.trendRank) return Promise.resolve(mapping.trendRank)
+        return getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT", 100)
+          .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
+          .catch(() => null)
+      })(),
+    ]) as [Buffer, Buffer | null, number | null]
+    const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const posterMeta = await sharp(posterBuf).metadata()
     const pw = posterMeta.width || 1000
     const ph = posterMeta.height || 1500
     const composites: { input: Buffer; top: number; left: number }[] = []
-    let logoTop = 0
-    let logoH = 0
     const qBadges = req.nextUrl.searchParams.get("badges")
     const badgesEnabled = qBadges !== "0" && showBadges
     const qRanking = req.nextUrl.searchParams.get("ranking")
     const rankingEnabled = qRanking !== "0"
     const s = ph / 1500
 
-    if (logoPath) {
-      const logoBuf = await fetchImg(imgSrc(logoPath))
+    if (logoFetch) {
+      const logoBuf = logoFetch
       const logoMeta = await sharp(logoBuf).metadata()
       const lw = logoMeta.width || 200
       const lh = logoMeta.height || 100
@@ -155,16 +158,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const logoHval = Math.round(lh * (logoW / lw))
       const maxLogoH = Math.round(ph * 0.30)
       const finalLogoW = Math.min(logoW, pw)
-      logoH = Math.min(logoHval, ph, maxLogoH)
+      const logoH = Math.min(logoHval, ph, maxLogoH)
       const logoResized = await sharp(logoBuf).resize(finalLogoW, logoH, { fit: "inside" }).png().toBuffer()
       const resizedMeta = await sharp(logoResized).metadata()
       const actualLogoW = resizedMeta.width || finalLogoW
       const actualLogoH = resizedMeta.height || logoH
       const logoX = Math.round((pw - actualLogoW) / 2 + userOx)
       const logoBadgeOffset = (badgesEnabled && genreName && voteAverage && voteAverage > 0) ? 0 : Math.round(40 * s)
-      logoTop = Math.round(ph - actualLogoH - ph * 0.1 + userOy + logoBadgeOffset)
+      const logoTop = Math.round(ph - actualLogoH - ph * 0.1 + userOy + logoBadgeOffset)
       composites.push({ input: logoResized, top: logoTop, left: logoX })
-      }
+    }
 
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
       const { svg: gradSvg, top: gradTop } = bottomGradientSVG(pw, ph)
@@ -209,7 +212,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const composited = await sharp(posterBuf)
       .resize(pw, ph, { fit: "fill" })
       .composite(composites)
-      .jpeg({ quality: 92 })
+      .jpeg({ quality: 85 })
       .toBuffer()
 
     cacheSet(cacheKey, composited, ["poster"])

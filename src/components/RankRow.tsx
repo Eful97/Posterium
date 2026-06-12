@@ -50,6 +50,7 @@ function RankCard({ item, onClick, isFirst }: { item: RankItem; onClick: () => v
                 src={posterUrl(imgSrc, "w342")}
                 alt={label}
                 loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-300"
               />
             ) : (

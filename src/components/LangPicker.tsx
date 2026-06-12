@@ -7,7 +7,7 @@ export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
     <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
       <div className="w-full max-w-lg mx-4">
         <div className="text-center mb-10">
-          <img src="/posterium.svg" alt="Posterium" className="h-16 w-auto mx-auto mb-4" />
+          <img src="/posterium.svg" alt="Posterium" loading="lazy" decoding="async" className="h-16 w-auto mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-zinc-100">Benvenuto in Posterium</h2>
           <p className="text-sm text-zinc-400 mt-1.5">Scegli la tua lingua preferita</p>
         </div>

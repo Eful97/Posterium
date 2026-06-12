@@ -28,5 +28,5 @@ export async function GET(req: NextRequest) {
   const totalPages = Math.min(movies.total_pages, tv.total_pages)
   const body = { results: results.slice(0, 24), page, totalPages }
   cacheSet(cacheKey, body, ["tmdb", "popular"])
-  return Response.json(body)
+  return Response.json(body, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })
 }

@@ -20,6 +20,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     cacheSet(cacheKey, body, ["tmdb", "details"])
     return Response.json(body)
   } catch {
-    return Response.json({ genres: [], voteAverage: 0, voteCount: 0 })
+    return Response.json({ genres: [], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null })
   }
 }

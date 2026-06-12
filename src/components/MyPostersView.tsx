@@ -84,11 +84,11 @@ export function MyPostersView() {
           return (
             <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster({ id: m.tmdbId, media_type: m.mediaType as "movie" | "tv", title: m.title, name: m.title, poster_path: m.posterPath } as any) }} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10"}`}>
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden relative">
-                  <img src={posterUrl(m.posterPath, "w342")} alt={m.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                  <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                   {m.logoPath && (
                     <div className="absolute inset-x-0 flex items-center justify-center" style={{ bottom: "7.33%" }}>
                       <div style={{ transform: `translate(${m.logoOffsetX ?? 0}px, ${m.logoOffsetY ?? 0}px)`, width: `${m.logoScale ?? 75}%` }}>
-                        <img src={posterUrl(m.logoPath, "original")} alt="" className="w-full" style={{ objectFit: "contain" }} />
+                        <img src={posterUrl(m.logoPath, "original")} alt="" loading="lazy" decoding="async" className="w-full" style={{ objectFit: "contain" }} />
                       </div>
                     </div>
                   )}

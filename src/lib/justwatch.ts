@@ -33,6 +33,7 @@ export async function getJWRankings(objectType: "MOVIE" | "SHOW", country = "IT"
   const res = await fetch(JW_API, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Platform": "WEB" },
+    signal: AbortSignal.timeout(15000),
     body: JSON.stringify({
       operationName: "GetStreamingChartInfo",
       query: QUERY,
