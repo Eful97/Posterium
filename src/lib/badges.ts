@@ -95,7 +95,7 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const rankStr = String(rank)
   const fullText = `#${rankStr} ${periodText}`
   const s = pw / 1000
-  const fontSize = Math.round(72 * s)
+  const fontSize = Math.round(24 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.round(rankStr.length * charW + fontSize * 0.35 + periodText.length * charW)
   const px = Math.round(100 * s) * 2
@@ -140,7 +140,7 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
 
 export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: string; totalW: number; svgH: number; cornerR: number } {
   const s = pw / 1000
-  const fontSize = Math.round(72 * s)
+  const fontSize = Math.round(24 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.max(Math.round(label.length * charW), Math.round(72 * s))
   const px = Math.max(Math.round(textW * 0.15), Math.round(40 * s))
