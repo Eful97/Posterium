@@ -10,11 +10,12 @@ export async function GET(req: NextRequest) {
   const cached = cacheGet<any[]>(cacheKey)
   if (cached) return Response.json(cached)
 
-  const apiKey = req.nextUrl.searchParams.get("api_key")
-  if (!apiKey) return Response.json([])
+  const mdblistKey = req.nextUrl.searchParams.get("mdblist_key")
+  const tmdbKey = req.nextUrl.searchParams.get("api_key")
+  if (!mdblistKey || !tmdbKey) return Response.json([])
 
   try {
-    const url = `https://mdblist.com/api/lists/snoak/trending-anime-shows?api_key=${apiKey}`
+    const url = `https://mdblist.com/api/lists/snoak/trending-anime-shows?api_key=${mdblistKey}`
     const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) return Response.json([])
     const data = await res.json()
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
       if (!imdbId) return null
       try {
         const tmdbRes = await fetch(
-          `https://api.themoviedb.org/3/find/${imdbId}?external_source=imdb_id&api_key=${apiKey}`,
+          `https://api.themoviedb.org/3/find/${imdbId}?external_source=imdb_id&api_key=${tmdbKey}`,
           { signal: AbortSignal.timeout(5000) }
         )
         if (!tmdbRes.ok) return null

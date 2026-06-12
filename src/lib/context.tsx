@@ -254,7 +254,7 @@ export function usePosterium(): PosteriumCtx {
       setTrending([...(data.movies || []), ...(data.tv || [])])
     }).catch(() => {})
     if (mdblistApiKey) {
-      api(`/api/mdblist/anime?api_key=${mdblistApiKey}`).then(setMdblistAnimeList).catch(() => {})
+      api(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`).then(setMdblistAnimeList).catch(() => {})
     }
   }, [tmdbKey, mdblistApiKey])
 
