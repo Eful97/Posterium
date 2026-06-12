@@ -31,15 +31,16 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
   }
 
   const cx = totalW / 2
+  const gap = Math.round(fontSize * 0.85)
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
     <filter id="${fid}" x="-10%" y="-20%" width="120%" height="140%">
       <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.12)"/>
     </filter>
   </defs>
-  <text x="${cx - starR - Math.round(fontSize * 0.1)}" y="${textY}" text-anchor="end" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(`${genreName} •`)}</text>
+  <text x="${cx - gap}" y="${textY}" text-anchor="end" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(`${genreName} •`)}</text>
   <polygon points="${starPts.join(' ')}" transform="translate(${cx}, ${textY})" fill="rgba(255,255,255,.90)"/>
-  <text x="${cx + starR + Math.round(fontSize * 0.1)}" y="${textY}" text-anchor="start" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(`${voteStr}`)}</text>
+  <text x="${cx + gap}" y="${textY}" text-anchor="start" fill="rgba(255,255,255,.90)" font-size="${fontSize}" font-family="sans-serif" font-weight="650" letter-spacing="-0.02em" filter="url(#${fid})">${escapeXml(voteStr)}</text>
 </svg>`
   return { svg, totalW, svgH }
 }
