@@ -75,21 +75,24 @@ function hslToHex(h: number, s: number, l: number): string {
 function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: string; textShadow: string } {
   if (!color || !color.startsWith('#')) {
     return {
-      bgTop: '#2a2a2a',
-      bgBot: '#111111',
-      textFill: '#fff',
-      textShadow: 'rgba(0,0,0,0.40)',
+      bgTop: '#ffffff',
+      bgBot: '#f0f0f0',
+      textFill: '#1a1a1a',
+      textShadow: 'rgba(0,0,0,0.10)',
     }
   }
 
-  const bgTop = adjustColor(color, 0.15)
-  const bgBot = adjustColor(color, -0.06)
-  const bgLum = relativeLuminance(bgTop)
-  const textFill = (1.0 + 0.05) / (bgLum + 0.05) >= 3.0 ? '#fff' : '#1a1a1a'
-  const rimColor = textFill === '#fff' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
-  const textShadow = textFill === '#fff' ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
+  const lit = adjustColor(color, 0.15)
+  const bgLum = relativeLuminance(lit)
 
-  return { bgTop, bgBot, textFill, textShadow }
+  // If color is light enough, use it as background with dark text
+  // Otherwise use white background with dark text
+  if (bgLum > 0.5) {
+    const bgBot = adjustColor(lit, -0.06)
+    return { bgTop: lit, bgBot, textFill: '#1a1a1a', textShadow: 'rgba(0,0,0,0.10)' }
+  }
+
+  return { bgTop: '#ffffff', bgBot: '#f0f0f0', textFill: '#1a1a1a', textShadow: 'rgba(0,0,0,0.10)' }
 }
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
