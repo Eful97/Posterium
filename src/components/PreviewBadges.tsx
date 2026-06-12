@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { rankingBadgeSVG, extraBadgeSVG } from "@/lib/badges"
 import { posterUrl } from "@/lib/utils"
 
-function useTopAreaColor(posterPath: string | null | undefined, containerW: number, containerH: number): string {
+function usePosterColor(posterPath: string | null | undefined, containerW: number, containerH: number): string {
   const [color, setColor] = useState("")
   useEffect(() => {
     if (!posterPath) { setColor(""); return }
@@ -21,10 +21,10 @@ function useTopAreaColor(posterPath: string | null | undefined, containerW: numb
       if (!ctx) { setColor(""); return }
       ctx.drawImage(img, 0, 0, containerW, containerH)
 
-      const rh = Math.max(1, Math.round(containerH * 0.05))
       let r = 0, g = 0, b = 0, n = 0
-      for (let y = 0; y < rh; y += 2) {
-        for (let x = 0; x < containerW; x += 2) {
+      const step = 4
+      for (let y = 0; y < containerH; y += step) {
+        for (let x = 0; x < containerW; x += step) {
           const pixel = ctx.getImageData(x, y, 1, 1).data
           r += pixel[0]; g += pixel[1]; b += pixel[2]; n++
         }
@@ -49,7 +49,7 @@ function TopGradient({ containerW, svgH }: { containerW: number; svgH: number })
 }
 
 export function RankingBadge({ rank, containerW, containerH, color, posterPath }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null }) {
-  const avgColor = useTopAreaColor(!color ? posterPath : null, containerW, containerH)
+  const avgColor = usePosterColor(!color ? posterPath : null, containerW, containerH)
   const badgeColor = color || avgColor
   const { svg, totalW, svgH, cornerR } = rankingBadgeSVG(rank, containerW, badgeColor)
 
@@ -80,7 +80,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
 }
 
 export function ExtraBadge({ label, containerW, containerH, color, posterPath }: { label: string; containerW: number; containerH: number; color?: string; posterPath?: string | null }) {
-  const avgColor = useTopAreaColor(!color ? posterPath : null, containerW, containerH)
+  const avgColor = usePosterColor(!color ? posterPath : null, containerW, containerH)
   const badgeColor = color || avgColor
   const { svg, totalW, svgH, cornerR } = extraBadgeSVG(label, containerW, badgeColor)
 

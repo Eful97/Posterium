@@ -241,8 +241,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
       if (!badgeColor) {
         try {
-          const rh = Math.max(1, Math.round(ph * 0.05))
-          const buf = await sharp(posterBuf).extract({ left: 0, top: 0, width: pw, height: rh }).resize(1, 1).raw().toBuffer()
+          const buf = await sharp(posterBuf).resize(1, 1).raw().toBuffer()
           badgeColor = `#${buf[0].toString(16).padStart(2, '0')}${buf[1].toString(16).padStart(2, '0')}${buf[2].toString(16).padStart(2, '0')}`
         } catch {}
       }
