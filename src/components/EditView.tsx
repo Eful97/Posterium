@@ -65,7 +65,7 @@ export default function EditView() {
 
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
             const status = p.selected?.media_type === "tv" ? p.metaInfo.status : null
-            const extra = tvType === "Miniseries" ? "Miniserie" : status === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8 ? "Da divorare" : null
+            const extra = tvType === "Miniseries" ? "Miniserie" : status === "Returning Series" ? "Ritorna" : null
             if (extra) return <div className="absolute inset-0"><ExtraBadge label={extra} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
             return null
           })()}

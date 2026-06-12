@@ -286,7 +286,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
       if (tvType === "Miniseries") return "Miniserie"
       if (tvStatus === "Returning Series") return "Ritorna"
-      if (voteAverage && voteAverage >= 8) return "Da divorare"
 
       return ''
     })()
