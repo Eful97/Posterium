@@ -4,6 +4,43 @@ import { useEffect, useState } from "react"
 import { rankingBadgeSVG, extraBadgeSVG } from "@/lib/badges"
 import { posterUrl } from "@/lib/utils"
 
+function useTopAreaColor(posterPath: string | null | undefined, containerW: number, containerH: number): string {
+  const [color, setColor] = useState("")
+  useEffect(() => {
+    if (!posterPath) { setColor(""); return }
+    const url = posterUrl(posterPath, "w500")
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    let cancelled = false
+    img.onload = () => {
+      if (cancelled) return
+      const canvas = document.createElement("canvas")
+      canvas.width = containerW
+      canvas.height = containerH
+      const ctx = canvas.getContext("2d")
+      if (!ctx) { setColor(""); return }
+      ctx.drawImage(img, 0, 0, containerW, containerH)
+
+      const rh = Math.max(1, Math.round(containerH * 0.05))
+      let r = 0, g = 0, b = 0, n = 0
+      for (let y = 0; y < rh; y += 2) {
+        for (let x = 0; x < containerW; x += 2) {
+          const pixel = ctx.getImageData(x, y, 1, 1).data
+          r += pixel[0]; g += pixel[1]; b += pixel[2]; n++
+        }
+      }
+      if (n > 0) {
+        const rr = Math.round(r / n); const gg = Math.round(g / n); const bb = Math.round(b / n)
+        setColor(`#${rr.toString(16).padStart(2, '0')}${gg.toString(16).padStart(2, '0')}${bb.toString(16).padStart(2, '0')}`)
+      }
+    }
+    img.onerror = () => { if (!cancelled) setColor("") }
+    img.src = url
+    return () => { cancelled = true }
+  }, [posterPath, containerW, containerH])
+  return color
+}
+
 function TopGradient({ containerW, svgH }: { containerW: number; svgH: number }) {
   const gradH = Math.max(Math.round(svgH * 1.5), Math.round(containerW * 0.06))
   return (
@@ -11,8 +48,10 @@ function TopGradient({ containerW, svgH }: { containerW: number; svgH: number })
   )
 }
 
-export function RankingBadge({ rank, containerW, containerH, color }: { rank: number; containerW: number; containerH: number; color?: string }) {
-  const { svg, totalW, svgH, cornerR } = rankingBadgeSVG(rank, containerW, color)
+export function RankingBadge({ rank, containerW, containerH, color, posterPath }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null }) {
+  const avgColor = useTopAreaColor(!color ? posterPath : null, containerW, containerH)
+  const badgeColor = color || avgColor
+  const { svg, totalW, svgH, cornerR } = rankingBadgeSVG(rank, containerW, badgeColor)
 
   return (
     <>
@@ -24,61 +63,26 @@ export function RankingBadge({ rank, containerW, containerH, color }: { rank: nu
   )
 }
 
-export function GenreRatingBadges({ genreName, voteAverage, containerW, containerH, posterPath }: { genreName: string; voteAverage: number; containerW: number; containerH: number; posterPath?: string | null }) {
-  const [isLight, setIsLight] = useState(false)
-
-  useEffect(() => {
-    if (!posterPath) { setIsLight(false); return }
-    const url = posterUrl(posterPath, "w500")
-    const img = new Image()
-    img.crossOrigin = "anonymous"
-    let cancelled = false
-    img.onload = () => {
-      if (cancelled) return
-      const canvas = document.createElement("canvas")
-      canvas.width = containerW
-      canvas.height = containerH
-      const ctx = canvas.getContext("2d")
-      if (!ctx) { setIsLight(false); return }
-      ctx.drawImage(img, 0, 0, containerW, containerH)
-
-      const badgeY = containerH - 30
-      let totalLum = 0
-      let count = 0
-      for (let x = Math.round(containerW * 0.25); x <= Math.round(containerW * 0.75); x += 5) {
-        const pixel = ctx.getImageData(x, badgeY, 1, 1).data
-        totalLum += 0.2126 * pixel[0] + 0.7152 * pixel[1] + 0.0722 * pixel[2]
-        count++
-      }
-      const avgLum = totalLum / count
-      setIsLight(avgLum > 128)
-    }
-    img.onerror = () => { if (!cancelled) setIsLight(false) }
-    img.src = url
-    return () => { cancelled = true }
-  }, [posterPath, containerW, containerH])
-
-  const textColor = isLight ? "#111" : "#fff"
-  const bulletColor = isLight ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)"
-  const gradStrength = isLight ? "0.85" : "0.7"
-
+export function GenreRatingBadges({ genreName, voteAverage, containerW, containerH }: { genreName: string; voteAverage: number; containerW: number; containerH: number }) {
   return (
     <>
-      <div className="absolute z-[8] pointer-events-none" style={{ bottom: 0, left: 0, right: 0, height: `${Math.round(containerH * 0.18)}px`, background: `linear-gradient(to top, rgba(0,0,0,${gradStrength}) 0%, rgba(0,0,0,0) 40%)` }} />
+      <div className="absolute z-[8] pointer-events-none" style={{ bottom: 0, left: 0, right: 0, height: `${Math.round(containerH * 0.18)}px`, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 40%)" }} />
       <div className="absolute z-[11] pointer-events-none" style={{ bottom: "16px", left: 0, right: 0, display: "flex", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center" }}>
-          <span style={{ fontSize: "24px", fontWeight: 500, color: textColor, marginRight: "8px" }}>{genreName}</span>
-          <span style={{ fontSize: "19px", color: bulletColor, marginRight: "8px", lineHeight: 1 }}>•</span>
+          <span style={{ fontSize: "24px", fontWeight: 500, color: "#fff", marginRight: "8px" }}>{genreName}</span>
+          <span style={{ fontSize: "19px", color: "rgba(255,255,255,0.6)", marginRight: "8px", lineHeight: 1 }}>•</span>
           <span style={{ fontSize: "22px", color: "#F5C518", marginRight: "6px", lineHeight: 1, display: "inline-flex", alignItems: "center" }}>★</span>
-          <span style={{ fontSize: "24px", fontWeight: 600, color: textColor }}>{voteAverage.toFixed(1)}</span>
+          <span style={{ fontSize: "24px", fontWeight: 600, color: "#fff" }}>{voteAverage.toFixed(1)}</span>
         </div>
       </div>
     </>
   )
 }
 
-export function ExtraBadge({ label, containerW, containerH, color }: { label: string; containerW: number; containerH: number; color?: string }) {
-  const { svg, totalW, svgH, cornerR } = extraBadgeSVG(label, containerW, color)
+export function ExtraBadge({ label, containerW, containerH, color, posterPath }: { label: string; containerW: number; containerH: number; color?: string; posterPath?: string | null }) {
+  const avgColor = useTopAreaColor(!color ? posterPath : null, containerW, containerH)
+  const badgeColor = color || avgColor
+  const { svg, totalW, svgH, cornerR } = extraBadgeSVG(label, containerW, badgeColor)
 
   return (
     <>

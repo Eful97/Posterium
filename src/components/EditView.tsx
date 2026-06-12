@@ -54,29 +54,29 @@ export default function EditView() {
             const twoWeeks = 14 * 24 * 60 * 60 * 1000
             const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
 
-            if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
-            if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
-            if (award) return <div className="absolute inset-0"><ExtraBadge label={award} containerW={380} containerH={570} color={p.badgeBgColor} /></div>
+            if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" containerW={380} containerH={570} color={p.badgeBgColor} posterPath={p.previewPoster?.file_path} /></div>
+            if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" containerW={380} containerH={570} color={p.badgeBgColor} posterPath={p.previewPoster?.file_path} /></div>
+            if (award) return <div className="absolute inset-0"><ExtraBadge label={award} containerW={380} containerH={570} color={p.badgeBgColor} posterPath={p.previewPoster?.file_path} /></div>
 
             if (p.selected?.media_type === "movie" && p.selected?.release_date) {
               const releaseTime = new Date(p.selected.release_date).getTime()
-              if (releaseTime < now && now - releaseTime < twoMonths) return <div className="absolute inset-0"><ExtraBadge label="Al cinema" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
+              if (releaseTime < now && now - releaseTime < twoMonths) return <div className="absolute inset-0"><ExtraBadge label="Al cinema" containerW={380} containerH={570} color={p.badgeBgColor} posterPath={p.previewPoster?.file_path} /></div>
             }
 
             if (p.selected?.media_type === "tv" && p.metaInfo.next_episode_to_air?.air_date) {
               const nextAir = new Date(p.metaInfo.next_episode_to_air.air_date).getTime()
-              if (nextAir > now && nextAir - now < twoWeeks) return <div className="absolute inset-0"><ExtraBadge label="Nuova stagione" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
+              if (nextAir > now && nextAir - now < twoWeeks) return <div className="absolute inset-0"><ExtraBadge label="Nuova stagione" containerW={380} containerH={570} color={p.badgeBgColor} posterPath={p.previewPoster?.file_path} /></div>
             }
 
-            if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} containerW={380} containerH={570} color={p.badgeBgColor} /></div>
+            if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} containerW={380} containerH={570} color={p.badgeBgColor} posterPath={p.previewPoster?.file_path} /></div>
 
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
             const status = p.selected?.media_type === "tv" ? p.metaInfo.status : null
             const extra = tvType === "Miniseries" ? "Miniserie" : status === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8 ? "Da divorare" : null
-            if (extra) return <div className="absolute inset-0"><ExtraBadge label={extra} containerW={380} containerH={570} color={p.badgeBgColor} /></div>
+            if (extra) return <div className="absolute inset-0"><ExtraBadge label={extra} containerW={380} containerH={570} color={p.badgeBgColor} posterPath={p.previewPoster?.file_path} /></div>
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={380} containerH={570} posterPath={p.previewPoster?.file_path || null} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={380} containerH={570} /></div>}
         </div>
         </div>
       {p.selected && (
