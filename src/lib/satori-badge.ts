@@ -8,27 +8,20 @@ let _regular: Buffer | null = null
 let _bold: Buffer | null = null
 let _symbols: Buffer | null = null
 
-function fontPath(weight: 400 | 700): string {
-  const file = weight === 400 ? "inter-latin-400-normal.woff2" : "inter-latin-700-normal.woff2"
-  return path.join(process.cwd(), "node_modules", "@fontsource", "inter", "files", file)
-}
-
-function symbolsPath(): string {
-  return path.join(process.cwd(), "node_modules", "@fontsource", "noto-sans-symbols-2", "files", "noto-sans-symbols-2-symbols-400-normal.woff2")
-}
+const N = (s: string) => path.join(process.cwd(), "node_modules", "@fontsource", s)
 
 function fontRegular(): Buffer {
-  if (!_regular) _regular = fs.readFileSync(fontPath(400))
+  if (!_regular) _regular = fs.readFileSync(N("inter/files/inter-latin-400-normal.woff"))
   return _regular
 }
 
 function fontBold(): Buffer {
-  if (!_bold) _bold = fs.readFileSync(fontPath(700))
+  if (!_bold) _bold = fs.readFileSync(N("inter/files/inter-latin-700-normal.woff"))
   return _bold
 }
 
 function fontSymbols(): Buffer {
-  if (!_symbols) _symbols = fs.readFileSync(symbolsPath())
+  if (!_symbols) _symbols = fs.readFileSync(N("noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff"))
   return _symbols
 }
 
@@ -42,13 +35,10 @@ function fonts() {
 
 async function render(el: ReturnType<typeof React.createElement>, w: number, h: number): Promise<Buffer> {
   const svg = await satori(el, { width: w, height: h, fonts: fonts() })
-  const resvg = new Resvg(svg, {
-    font: {
-      fontFiles: [fontPath(400), fontPath(700), symbolsPath()],
-      loadSystemFonts: false,
-    },
-  })
-  return Buffer.from(resvg.render().asPng())
+  const b64 = (buf: Buffer) => buf.toString("base64")
+  const style = `<style>@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64(fontRegular())});font-weight:400;font-style:normal}@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64(fontBold())});font-weight:700;font-style:normal}@font-face{font-family:'Noto Sans Symbols 2';src:url(data:application/font-woff;base64,${b64(fontSymbols())});font-weight:400;font-style:normal}</style>`
+  const styledSvg = svg.replace(">", `>${style}`)
+  return Buffer.from(new Resvg(styledSvg).render().asPng())
 }
 
 export async function renderRankingBadge(
