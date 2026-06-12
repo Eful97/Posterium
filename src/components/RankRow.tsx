@@ -16,18 +16,20 @@ interface RankItem {
 
 function rankBadge(rank: number) {
   return (
-    <span
-      className="absolute top-[3%] left-[3%] text-xl md:text-4xl font-black leading-none"
-      style={{
-        background: "linear-gradient(180deg, #fff 0%, #f0f0f0 50%, #b0b8c4 100%)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text",
-        filter: "drop-shadow(3px 6px 8px rgba(0,0,0,0.50))",
-        WebkitTextStroke: "0.8px rgba(60,60,60,0.45)",
-      }}
-    >
-      {rank}
+    <span className="absolute top-[3%] left-[3%] flex items-center justify-center z-20">
+      <span className="absolute w-8 md:w-12 h-8 md:h-12 rounded-md bg-black/50 backdrop-blur-sm" />
+      <span className="relative text-xl md:text-4xl font-black leading-none"
+        style={{
+          background: "linear-gradient(180deg, #fff 0%, #f0f0f0 50%, #b0b8c4 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+          filter: "drop-shadow(3px 6px 8px rgba(0,0,0,0.50))",
+          WebkitTextStroke: "0.8px rgba(60,60,60,0.45)",
+        }}
+      >
+        {rank}
+      </span>
     </span>
   )
 }
