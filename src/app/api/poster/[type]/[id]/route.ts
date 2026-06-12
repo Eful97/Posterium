@@ -162,10 +162,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const composites: { input: Buffer; top: number; left: number }[] = []
 
     async function extractMostSaturated(buf: Buffer): Promise<string> {
-      const smallBuf = await sharp(buf).resize(8, 8, { fit: 'fill' }).raw().toBuffer()
+      const pixelBuf = await sharp(buf).resize(200, 300, { fit: 'fill' }).raw().toBuffer()
       let maxSat = -1, mr = 0, mg = 0, mb = 0
-      for (let i = 0; i < smallBuf.length; i += 4) {
-        const r = smallBuf[i], g = smallBuf[i + 1], b = smallBuf[i + 2]
+      for (let i = 0; i < pixelBuf.length; i += 4) {
+        const r = pixelBuf[i], g = pixelBuf[i + 1], b = pixelBuf[i + 2]
         const max = Math.max(r, g, b), min = Math.min(r, g, b)
         const l = (max + min) / 510
         if (l < 0.03 || l > 0.97) continue
