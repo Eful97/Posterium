@@ -4,7 +4,7 @@ import { genreRatingSVG } from "@/lib/badges"
 
 export function RankingBadge({ rank = "13", label = "Oggi" }: { rank?: number | string; label?: string }) {
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-neutral-900/95 px-6 py-2 rounded-2xl">
+    <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-neutral-900/95 px-6 py-1.5 rounded-2xl">
       <span className="text-white text-2xl font-bold tracking-wide">
         #{rank} {label}
       </span>
@@ -30,7 +30,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
 
 export function ExtraBadge({ label }: { label: string }) {
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-neutral-900/95 px-6 py-2 rounded-2xl">
+    <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-neutral-900/95 px-6 py-1.5 rounded-2xl">
       <span className="text-white text-2xl font-bold tracking-wide">{label}</span>
     </div>
   )
