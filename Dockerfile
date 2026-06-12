@@ -15,4 +15,5 @@ COPY --from=builder /app/next.config.ts ./
 
 EXPOSE 3000
 ENV PORT=3000
-CMD ["npm", "start"]
+ENV HOSTNAME=0.0.0.0
+CMD ["node", "node_modules/.bin/next", "start"]
