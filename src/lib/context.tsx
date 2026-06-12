@@ -90,6 +90,8 @@ export interface PosteriumCtx {
   showKey: boolean
   setShowKey: React.Dispatch<React.SetStateAction<boolean>>
   setTmdbKey: (v: string) => void
+  mdblistApiKey: string
+  setMdblistApiKey: (v: string) => void
   exportData: () => Promise<void>
   importData: () => void
   copyUrl: () => Promise<void>
@@ -141,6 +143,7 @@ export function usePosterium(): PosteriumCtx {
   const [streamingCharts, setStreamingCharts] = useState<Record<string, FlixPatrolChart>>({})
 
   const [tmdbKey, setTmdbKeyState] = useState("")
+  const [mdblistApiKey, setMdblistApiKey] = useState("")
   const [tmdbKeyInput, setTmdbKeyInput] = useState("")
   const [showKey, setShowKey] = useState(false)
   const [logoScale, setLogoScale] = useState(75)
@@ -199,12 +202,19 @@ export function usePosterium(): PosteriumCtx {
     const saved = localStorage.getItem("tmdb_key") || ""
     setTmdbKeyState(saved)
     setTmdbKeyInput(saved)
+    const mdblistKey = localStorage.getItem("mdblist_key") || ""
+    setMdblistApiKey(mdblistKey)
   }, [])
 
   const setTmdbKey = (val: string) => {
     setTmdbKeyState(val)
     setTmdbKeyInput(val)
     localStorage.setItem("tmdb_key", val)
+  }
+
+  const setMdblistApiKeyFn = (val: string) => {
+    setMdblistApiKey(val)
+    localStorage.setItem("mdblist_key", val)
   }
 
   useEffect(() => {
@@ -524,8 +534,8 @@ export function usePosterium(): PosteriumCtx {
       setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [] })
       setTrendRank(rankData.rank || null)
       const extImdbId = item.imdb_id || extIds.imdb_id
-      if (extImdbId) {
-        api(`/api/mdblist?imdb=${extImdbId}`).then((d) => {
+      if (extImdbId && mdblistApiKey) {
+        api(`/api/mdblist?imdb=${extImdbId}&api_key=${mdblistApiKey}`).then((d) => {
           if (d?.match) {
             setMdblistMatch(d.match)
           }
@@ -759,6 +769,7 @@ export function usePosterium(): PosteriumCtx {
     showLangPicker, setShowLangPicker,
     tmdbKeyInput, setTmdbKeyInput,
     showKey, setShowKey, setTmdbKey,
+    mdblistApiKey, setMdblistApiKey: setMdblistApiKeyFn,
     exportData, importData, removeRecentSearch,
     copyUrl, copied,
     accentColor,

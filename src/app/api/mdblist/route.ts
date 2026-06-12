@@ -23,7 +23,9 @@ export async function GET(req: NextRequest) {
   try {
     for (const list of MDBLISTS) {
       const url = MDBLISTS_URL[list.key]
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+      const apiKey = req.nextUrl.searchParams.get('api_key')
+      const fullUrl = apiKey ? `${url}?api_key=${apiKey}` : url
+      const res = await fetch(fullUrl, { signal: AbortSignal.timeout(10000) })
       if (!res.ok) continue
       const data = await res.json()
       const items: MDBListEntry[] = (data.items || data || []).slice(0, 20).map((item: any) => ({
