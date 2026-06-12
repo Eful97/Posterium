@@ -17,9 +17,9 @@ interface RankItem {
 function rankBadge(rank: number) {
   const twoDigit = rank >= 10
   return (
-    <span className="absolute top-[4%] left-[4%] flex items-center justify-center z-20" style={{ width: twoDigit ? '38px' : '30px', height: '30px' }}>
+    <span className="absolute top-[4%] left-[4%] flex items-center justify-center z-20" style={{ width: twoDigit ? '44px' : '34px', height: '34px' }}>
       <span className="absolute inset-0 rounded bg-black/50 backdrop-blur-sm" />
-      <span className="relative text-sm md:text-lg font-bold leading-none text-white"
+      <span className="relative text-base md:text-xl font-bold leading-none text-white"
         style={{ filter: "drop-shadow(1px 2px 3px rgba(0,0,0,0.50))" }}
       >
         {rank}
