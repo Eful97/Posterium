@@ -25,30 +25,33 @@ export function adjustColor(hex: string, amount: number): string {
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
   const voteStr = voteAverage.toFixed(1)
   const fontSize = Math.round(24 * pw / 380)
-  const starFontSize = Math.round(20 * pw / 380)
+  const smallFontSize = Math.round(20 * pw / 380)
   const charW = fontSize * 0.58
-  const starCharW = starFontSize * 0.58
   const genreW = Math.round(genreName.length * charW)
-  const bulletW = Math.round(starFontSize * 0.4)
-  const starW = Math.round(starFontSize * 0.75)
+  const bulletW = Math.round(smallFontSize * 0.35)
+  const starW = Math.round(smallFontSize * 0.55)
   const voteW = Math.round(voteStr.length * charW)
-  const gap = Math.round(fontSize * 0.33)
+  const gap = Math.round(fontSize * 0.25)
+  const gapStar = Math.round(fontSize * 0.15)
   const pad = Math.round(fontSize * 0.35)
-  const totalW = Math.round(genreW + gap + bulletW + gap + starW + gap + voteW + pad * 2)
+  const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + pad * 2
   const svgH = Math.round(fontSize * 1.6)
   const textY = Math.round(svgH * 0.72)
+  const alignDy = Math.round((fontSize - smallFontSize) * 0.25)
   const fid = uid()
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}">
   <defs>
     <filter id="${fid}" x="-10%" y="-20%" width="120%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(0,0,0,0.5)"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
     </filter>
   </defs>
-  <text x="${pad}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">${escapeXml(genreName)}</text>
-  <text x="${pad + genreW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${starFontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">•</text>
-  <text x="${pad + genreW + gap + bulletW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${starFontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">★</text>
-  <text x="${pad + genreW + gap + bulletW + gap + starW + gap}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-size="${fontSize}" font-family="sans-serif" font-weight="700" filter="url(#${fid})">${escapeXml(voteStr)}</text>
+  <text x="${pad}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-family="sans-serif" font-weight="700" filter="url(#${fid})">
+    <tspan font-size="${fontSize}">${escapeXml(genreName)}</tspan>
+    <tspan dx="${gap}" dy="${alignDy}" font-size="${smallFontSize}" fill="#aaaaaa">•</tspan>
+    <tspan dx="${gap}" dy="${alignDy}" font-size="${smallFontSize}">★</tspan>
+    <tspan dx="${gapStar}" font-size="${fontSize}">${escapeXml(voteStr)}</tspan>
+  </text>
 </svg>`
   return { svg, totalW, svgH }
 }
