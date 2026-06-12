@@ -272,8 +272,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       composites.push({ input: Buffer.from(badgeSvg), top: badgeY, left: badgeLeft })
     }
 
-    const extraLabel = req.nextUrl.searchParams.get("extra") || (() => {
+    const extraLabel = req.nextUrl.searchParams.get("extra") || req.nextUrl.searchParams.has("rank") ? '' : (() => {
       if (!rankingEnabled) return ''
+      const now = Date.now()
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
       const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < twoWeeks : false
