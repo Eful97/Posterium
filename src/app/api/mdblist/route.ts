@@ -26,13 +26,13 @@ export async function GET(req: NextRequest) {
       const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
       if (!res.ok) continue
       const data = await res.json()
-      const items: MDBListEntry[] = (data.items || data || []).map((item: any) => ({
+      const items: MDBListEntry[] = (data.items || data || []).slice(0, 20).map((item: any) => ({
         imdb: item.imdb_id || item.imdb || '',
         title: item.title || '',
         year: item.year || 0,
       }))
       const idx = items.findIndex(e => e.imdb === imdbId)
-      if (idx >= 0) {
+      if (idx >= 0 && idx < 20) {
         const match = { key: list.key, rank: idx + 1 }
         cacheSet(cacheKey, match, ["mdblist"])
         return Response.json({ match })
