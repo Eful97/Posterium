@@ -4,7 +4,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import type { SearchResult, TMDBImage, Mapping, FlixPatrolChart } from "./types"
 import { getDomain, posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from "./utils"
 import { extractColor } from "./color"
-import { GENRE_FALLBACK } from "./badges"
 import { getAwardBadgeLabel } from "./awards"
 
 export interface PosteriumCtx {
@@ -426,13 +425,11 @@ export function usePosterium(): PosteriumCtx {
   useEffect(() => {
     const root = document.documentElement
     if (!previewPoster) { root.style.setProperty("--color-accent", "#ffffff"); setAccentColor("#ffffff"); return }
-    const genreName = metaInfo.genres[0]?.name
-    const fb = GENRE_FALLBACK[genreName || ''] || GENRE_FALLBACK[Object.keys(GENRE_FALLBACK)[0]] || '#555'
     let cancelled = false
     const url = posterUrl(previewPoster.file_path, "w342")
     extractColor(url).then((color) => {
       if (!cancelled) {
-        const c = color || fb
+        const c = color || "#ffffff"
         root.style.setProperty("--color-accent", c)
         setAccentColor(c)
       }

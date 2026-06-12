@@ -53,7 +53,7 @@ export default function EditView() {
             const twoMonths = 60 * 24 * 60 * 60 * 1000
             const twoWeeks = 14 * 24 * 60 * 60 * 1000
             const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
-            const badgeColor = p.badgeBgColor || (p.accentColor && p.accentColor !== '#ffffff' ? p.accentColor : undefined)
+            const badgeColor = p.badgeBgColor || (p.accentColor !== '#ffffff' ? p.accentColor : undefined)
 
             if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
             if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
