@@ -46,10 +46,10 @@ export default function EditView() {
             return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center" }}><div style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%" }}><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain", maxHeight: `${maxLogoH}px` }} /></div></div>
           })()}
           {p.rankingBadges && (() => {
-            const currYear = new Date().getFullYear().toString()
-            const isNewMovie = p.selected?.media_type === "movie" && p.selected?.release_date?.startsWith(currYear)
-            const isNewSeries = p.selected?.media_type === "tv" && p.selected?.first_air_date?.startsWith(currYear)
             const now = Date.now()
+            const twoWeeks = 14 * 24 * 60 * 60 * 1000
+            const isNewMovie = p.selected?.media_type === "movie" && p.selected?.release_date ? (now - new Date(p.selected.release_date).getTime()) < twoWeeks : false
+            const isNewSeries = p.selected?.media_type === "tv" && p.selected?.first_air_date ? (now - new Date(p.selected.first_air_date).getTime()) < twoWeeks : false
             const twoMonths = 60 * 24 * 60 * 60 * 1000
             const twoWeeks = 14 * 24 * 60 * 60 * 1000
             const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
