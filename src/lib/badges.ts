@@ -84,9 +84,10 @@ function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: s
 
   const bgTop = adjustColor(color, 0.15)
   const bgBot = adjustColor(color, -0.06)
-  const textFill = '#fff'
-  const rimColor = 'rgba(255,255,255,0.08)'
-  const textShadow = 'rgba(0,0,0,0.40)'
+  const bgLum = relativeLuminance(bgTop)
+  const textFill = (1.0 + 0.05) / (bgLum + 0.05) >= 3.0 ? '#fff' : '#1a1a1a'
+  const rimColor = textFill === '#fff' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
+  const textShadow = textFill === '#fff' ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
 
   return { bgTop, bgBot, textFill, textShadow }
 }
