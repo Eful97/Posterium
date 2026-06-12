@@ -25,12 +25,12 @@ async function fetchImg(url: string) {
   return buf
 }
 
-function imgSrc(path: string, size = "w780"): string {
+function imgSrc(path: string): string {
   if (path.startsWith("http")) {
-    if (!path.startsWith(TMDB_IMG_HOST)) return `${IMG_BASE}/${size}${path}`
+    if (!path.startsWith(TMDB_IMG_HOST)) return `${IMG_BASE}/w780${path}`
     return path
   }
-  return `${IMG_BASE}/${size}${path}`
+  return `${IMG_BASE}/w780${path}`
 }
 
 function etagHeaders(etag: string) {
@@ -145,9 +145,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const STD_H = 1500
 
   try {
-    const [originalBuf, smallPosterBuf, logoFetch, rankingResult] = await Promise.all([
+    const [originalBuf, logoFetch, rankingResult] = await Promise.all([
       fetchImg(imgSrc(posterPath)),
-      fetchImg(imgSrc(posterPath, "w342")).catch(() => null),
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
       (() => {
         if (mapping?.trendRank) return Promise.resolve(mapping.trendRank)
@@ -155,28 +154,77 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
           .catch(() => null)
       })(),
-    ]) as [Buffer, Buffer | null, Buffer | null, number | null]
+    ]) as [Buffer, Buffer | null, number | null]
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'fill' }).toBuffer()
     const pw = STD_W
     const ph = STD_H
     const composites: { input: Buffer; top: number; left: number }[] = []
 
+    function simpleLum(hex: string): number {
+      const r = parseInt(hex.slice(1, 3), 16) / 255
+      const g = parseInt(hex.slice(3, 5), 16) / 255
+      const b = parseInt(hex.slice(5, 7), 16) / 255
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+
+    async function extractMostSaturated(buf: Buffer): Promise<string> {
+      const pixelBuf = await sharp(buf).resize(200, 300, { fit: 'fill', kernel: 'nearest' }).raw().toBuffer()
+
+      // Gather valid pixels and compute bgMean
+      const pixels: { r: number; g: number; b: number; s: number; l: number }[] = []
+      for (let i = 0; i < pixelBuf.length; i += 4) {
+        const r = pixelBuf[i] / 255, g = pixelBuf[i + 1] / 255, b = pixelBuf[i + 2] / 255
+        const max = Math.max(r, g, b), min = Math.min(r, g, b)
+        const l = (max + min) / 2
+        const d = max - min
+        const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+        if (s < 0.05 || l < 0.03 || l > 0.97) continue
+        pixels.push({ r: pixelBuf[i], g: pixelBuf[i + 1], b: pixelBuf[i + 2], s, l })
+      }
+      if (pixels.length === 0) return ''
+
+      const n = pixels.length
+      const bgMean = { r: pixels.reduce((a, p) => a + p.r, 0) / n, g: pixels.reduce((a, p) => a + p.g, 0) / n, b: pixels.reduce((a, p) => a + p.b, 0) / n }
+
+      let bestScore = -1, best = pixels[0]
+      for (const p of pixels) {
+        const chroma = p.s * (1 - Math.abs(p.l - 0.5))
+        const dr = p.r - bgMean.r, dg = p.g - bgMean.g, db = p.b - bgMean.b
+        const divergence = Math.sqrt(dr * dr + dg * dg + db * db) / 441.67
+        const score = chroma * divergence
+        if (score > bestScore) { bestScore = score; best = p }
+      }
+
+      let cr = best.r, cg = best.g, cb = best.b
+      const clampLum = 0.2126 * cr / 255 + 0.7152 * cg / 255 + 0.0722 * cb / 255
+      if (clampLum < 0.4) {
+        cr = Math.round(cr + (255 - cr) * 0.2)
+        cg = Math.round(cg + (255 - cg) * 0.2)
+        cb = Math.round(cb + (255 - cb) * 0.2)
+      } else if (clampLum > 0.7) {
+        cr = Math.round(cr * 0.85)
+        cg = Math.round(cg * 0.85)
+        cb = Math.round(cb * 0.85)
+      }
+      cr = Math.max(0, Math.min(255, cr))
+      cg = Math.max(0, Math.min(255, cg))
+      cb = Math.max(0, Math.min(255, cb))
+
+      return `#${cr.toString(16).padStart(2, '0')}${cg.toString(16).padStart(2, '0')}${cb.toString(16).padStart(2, '0')}`
+    }
+
     async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fallbackGenre?: string | null): Promise<string> {
-      const { findAccentColor, blendColors } = await import("@/lib/accent-color")
-      const posterMeta = await sharp(posterBuf).metadata()
-      const pw = posterMeta.width || 342
-      const ph = posterMeta.height || 513
-      const raw = await sharp(posterBuf).ensureAlpha().raw().toBuffer()
-      const pColor = findAccentColor(raw, pw, ph, fallbackGenre || '')
-      if (!logoBuf) return `#${pColor.r.toString(16).padStart(2, '0')}${pColor.g.toString(16).padStart(2, '0')}${pColor.b.toString(16).padStart(2, '0')}`
-      const logoMeta = await sharp(logoBuf).metadata()
-      const lw = logoMeta.width || 200
-      const lh = logoMeta.height || 100
-      const lRaw = await sharp(logoBuf).ensureAlpha().raw().toBuffer()
-      const lColor = findAccentColor(lRaw, lw, lh, fallbackGenre || '')
-      const blended = blendColors(pColor, lColor)
-      return `#${blended.r.toString(16).padStart(2, '0')}${blended.g.toString(16).padStart(2, '0')}${blended.b.toString(16).padStart(2, '0')}`
+      const [pColor, lColor] = await Promise.all([
+        extractMostSaturated(posterBuf),
+        logoBuf ? extractMostSaturated(logoBuf) : Promise.resolve(''),
+      ])
+      if (pColor && lColor) {
+        const pr = parseInt(pColor.slice(1,3),16), pg = parseInt(pColor.slice(3,5),16), pb = parseInt(pColor.slice(5,7),16)
+        const lr = parseInt(lColor.slice(1,3),16), lg = parseInt(lColor.slice(3,5),16), lb = parseInt(lColor.slice(5,7),16)
+        return `#${Math.round((pr+lr)/2).toString(16).padStart(2,'0')}${Math.round((pg+lg)/2).toString(16).padStart(2,'0')}${Math.round((pb+lb)/2).toString(16).padStart(2,'0')}`
+      }
+      return pColor || lColor || (fallbackGenre ? (GENRE_FALLBACK[fallbackGenre] || '#555') : '#555')
     }
     const qBadges = req.nextUrl.searchParams.get("badges")
     const badgesEnabled = qBadges !== "0" && showBadges
@@ -255,7 +303,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
       if (!badgeColor) {
         try {
-          badgeColor = await extractBadgeColor(smallPosterBuf || posterBuf, logoFetch, genreName || queryGenre)
+          badgeColor = await extractBadgeColor(posterBuf, logoFetch, genreName || queryGenre)
         } catch {}
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
@@ -269,7 +317,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       let badgeColor = req.nextUrl.searchParams.get("badgeColor") || ''
       if (!badgeColor) {
         try {
-          badgeColor = await extractBadgeColor(smallPosterBuf || posterBuf, logoFetch, genreName || queryGenre)
+          badgeColor = await extractBadgeColor(posterBuf, logoFetch, genreName || queryGenre)
         } catch {}
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
