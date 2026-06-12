@@ -189,7 +189,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
       let bestScore = -1, best = pixels[0]
       for (const p of pixels) {
-        const chroma = p.s * (1 - Math.abs(p.l - 0.5) * 2)
+        const chroma = p.s * (1 - Math.abs(p.l - 0.5))
         const dr = p.r - bgMean.r, dg = p.g - bgMean.g, db = p.b - bgMean.b
         const divergence = Math.sqrt(dr * dr + dg * dg + db * db) / 441.67
         const score = chroma * divergence
