@@ -5,7 +5,8 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
-import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG, topGradientSVG, adjustColor, GENRE_FALLBACK } from "@/lib/badges"
+import { bottomGradientSVG, topGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
+import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 
 const RENDER_VERSION = 22
 const IMG_BASE = "https://image.tmdb.org/t/p"
@@ -264,12 +265,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
       const { svg: gradSvg, top: gradTop } = bottomGradientSVG(pw, ph)
       composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
-      const { svg: badgeSvg, totalW } = genreRatingSVG(genreName, voteAverage, pw)
-      const badgeMeta = await sharp(Buffer.from(badgeSvg)).metadata()
-      const badgeH = badgeMeta.height || 38
-      const badgeY = ph - badgeH - Math.round(6 * ph / 570)
-      const badgeLeft = Math.round((pw - totalW) / 2)
-      composites.push({ input: Buffer.from(badgeSvg), top: badgeY, left: badgeLeft })
+      const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw)
+      const badgeY = ph - h - Math.round(6 * ph / 570)
+      const badgeLeft = Math.round((pw - w) / 2)
+      composites.push({ input: png, top: badgeY, left: badgeLeft })
     }
 
     // If rank is already provided via URL or mapping, skip extraLabel logic
@@ -293,34 +292,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     })()
 
     if (extraLabel) {
-      let badgeColor = req.nextUrl.searchParams.get("badgeColor") || mapping?.accentColor || ''
-      if (!badgeColor) {
-        try {
-          badgeColor = await extractBadgeColor(posterBuf, logoFetch, genreName || queryGenre)
-        } catch {}
-        if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
-      }
-      if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
-      const { svg: extraSvg, totalW, svgH } = extraBadgeSVG(extraLabel, pw, badgeColor)
-      const extraLeft = Math.round((pw - totalW) / 2)
-      const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
+      const { png: extraPng, w, h } = await renderExtraBadge(extraLabel, pw)
+      const extraLeft = Math.round((pw - w) / 2)
+      const { svg: gradSvg, h: gradH } = topGradientSVG(pw, h)
       composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
-      composites.push({ input: Buffer.from(extraSvg), top: 0, left: extraLeft })
+      composites.push({ input: extraPng, top: 0, left: extraLeft })
     } else if (rankingEnabled && finalRank) {
-      let badgeColor = req.nextUrl.searchParams.get("badgeColor") || mapping?.accentColor || ''
-      if (!badgeColor) {
-        try {
-          badgeColor = await extractBadgeColor(posterBuf, logoFetch, genreName || queryGenre)
-        } catch {}
-        if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
-      }
-      if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       const badgeLabel = req.nextUrl.searchParams.get("label") || "Oggi"
-      const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(finalRank, pw, badgeColor, mapping?.trendPeriod, badgeLabel)
-      const rankLeft = Math.round((pw - totalW) / 2)
-      const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
+      const { png: rankPng, w, h } = await renderRankingBadge(finalRank, pw, badgeLabel)
+      const rankLeft = Math.round((pw - w) / 2)
+      const { svg: gradSvg, h: gradH } = topGradientSVG(pw, h)
       composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
-      composites.push({ input: Buffer.from(rankSvg), top: 0, left: rankLeft })
+      composites.push({ input: rankPng, top: 0, left: rankLeft })
     }
 
     const composited = await sharp(posterBuf)
