@@ -1,6 +1,6 @@
 FROM node:20-bullseye AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY package.json ./
 RUN npm install --ignore-scripts && npm rebuild
 COPY . .
 RUN npm run build
