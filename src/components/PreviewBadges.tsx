@@ -166,12 +166,9 @@ function badgeLayout(text: string, containerW: number) {
 const BadgePill = ({ children, totalW, svgH, cornerR, bgColor }: { children: React.ReactNode; totalW: number; svgH: number; cornerR: number; bgColor: string }) => {
   const safeBg = bgColor || "#333"
   const textColor = bestTextColor(safeBg)
-  const borderColor = textColor === '#fff'
-    ? 'rgba(255,255,255,0.25)'
-    : 'rgba(0,0,0,0.10)'
   return (
     <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
-      <div style={{ width: "100%", height: "100%", background: `${safeBg}d9`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", color: textColor, fontWeight: 800, fontSize: `${Math.round(24 * totalW / 380 * 1.5)}px`, letterSpacing: "-0.01em", boxShadow: "0 4px 12px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15)", borderTop: `1px solid ${borderColor}`, transition: "background-color 300ms ease, color 200ms ease" }}>
+      <div style={{ width: "100%", height: "100%", background: `${safeBg}d9`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", color: textColor, fontWeight: 800, fontSize: `${Math.round(24 * totalW / 380 * 1.5)}px`, letterSpacing: "-0.01em", boxShadow: "0 4px 12px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15)", transition: "background-color 300ms ease, color 200ms ease" }}>
         {children}
       </div>
     </div>

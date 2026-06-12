@@ -72,13 +72,12 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${ri.toString(16).padStart(2, '0')}${gi.toString(16).padStart(2, '0')}${bi.toString(16).padStart(2, '0')}`
 }
 
-function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: string; rimColor: string; textShadow: string } {
+function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: string; textShadow: string } {
   if (!color || !color.startsWith('#')) {
     return {
       bgTop: '#2a2a2a',
       bgBot: '#111111',
       textFill: '#fff',
-      rimColor: 'rgba(255,255,255,0.08)',
       textShadow: 'rgba(0,0,0,0.40)',
     }
   }
@@ -98,10 +97,9 @@ function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: s
   const bgBot = hslToHex(newH, newS, newL2)
   const bgLum = relativeLuminance(bgTop)
   const textFill = (1.0 + 0.05) / (bgLum + 0.05) >= 4.5 ? '#fff' : '#1a1a1a'
-  const rimColor = textFill === '#fff' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'
   const textShadow = textFill === '#fff' ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
 
-  return { bgTop, bgBot, textFill, rimColor, textShadow }
+  return { bgTop, bgBot, textFill, textShadow }
 }
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
@@ -196,7 +194,7 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const svgH = fontSize + pt + pb
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
   const r = Math.round(pb * 1.0)
-  const { bgTop, bgBot, textFill, rimColor, textShadow } = badgeColors(color)
+  const { bgTop, bgBot, textFill, textShadow } = badgeColors(color)
   const shadowColor = 'rgba(0,0,0,0.30)'
   const fid = uid()
   const tid = uid()
@@ -216,7 +214,6 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   </defs>
   <g filter="url(#${fid})">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
-    <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(fontSize * 1.5 / 72)}" fill="none"/>
     <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(fullText)}</text>
   </g>
 </svg>`
@@ -234,7 +231,7 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   const svgH = fontSize + pt + pb
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
   const r = Math.round(pb * 1.0)
-  const { bgTop, bgBot, textFill, rimColor, textShadow } = badgeColors(color)
+  const { bgTop, bgBot, textFill, textShadow } = badgeColors(color)
   const shadowColor = 'rgba(0,0,0,0.30)'
   const fid = uid()
   const tid = uid()
@@ -254,7 +251,6 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   </defs>
   <g filter="url(#${fid})">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
-    <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(fontSize * 1.5 / 72)}" fill="none"/>
     <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(label)}</text>
   </g>
 </svg>`
