@@ -54,11 +54,11 @@ export async function renderRankingBadge(
   const charW = fontSize * 0.58
   const textW = Math.round(String(rank).length * charW + fontSize * 0.35 + periodText.length * charW)
   const px = Math.round(fontSize * 1.2)
-  const pt = Math.round(fontSize * 0.5)
-  const pb = Math.round(fontSize * 0.5)
+  const pt = Math.round(fontSize * 0.7)
+  const pb = Math.round(fontSize * 0.7)
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
-  const r = Math.round(fontSize * 0.67)
+  const r = Math.round(fontSize * 0.8)
   const bg = topLight ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.8)"
   const fg = topLight ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.8)"
 
@@ -100,11 +100,11 @@ export async function renderExtraBadge(
   const charW = fontSize * 0.58
   const textW = Math.max(Math.round(label.length * charW), fontSize)
   const px = Math.round(fontSize * 1.2)
-  const pt = Math.round(fontSize * 0.5)
-  const pb = Math.round(fontSize * 0.5)
+  const pt = Math.round(fontSize * 0.7)
+  const pb = Math.round(fontSize * 0.7)
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
-  const r = Math.round(fontSize * 0.67)
+  const r = Math.round(fontSize * 0.8)
   const bg = topLight ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.8)"
   const fg = topLight ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.8)"
 

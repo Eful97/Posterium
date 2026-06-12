@@ -28,8 +28,15 @@ bullet: rgba(255,255,255,0.6)        → rgba(255,255,255,0.6)
 star: #F5C518                       → #F5C518
 vote: #fff, w600                    → #fff, w600
 
-gradient: 0.7 at bottom, trasp 40%  → bottomGradientSVG: stop 60%=trasp, 100%=0.7
-gradient height: 18% containerH     → gh = 18% posterH
+gradient: 0.7 at bottom, trasp 50%  → bottomGradientSVG: stop 50%=trasp, 100%=0.7
+gradient height: 40% containerH     → gh = 40% posterH
+
+Ranking/Extra badge (PreviewBadges.tsx → satori-badge.ts):
+px-6 (24px)                         → px = round(fontSize * 1.2)
+py-2.5 (10px per side)             → pt = pb = round(fontSize * 0.7)   (compensates line-height)
+rounded-b-2xl (16px)               → r = round(fontSize * 0.8)
+text-xl (20px)                      → fontSize = round(20 * pw / 380)
+bottom-6 (24px) genre badge offset  → badgeY = ph - h - round(24 * ph / 570)
 ```
 
 Dove `X` = base font size del client (es. 24px).
@@ -37,5 +44,6 @@ Dove `X` = base font size del client (es. 24px).
 ## Files coinvolti
 
 - `src/components/PreviewBadges.tsx` — client-side preview (HTML flexbox)
-- `src/lib/badges.ts` — server-side SVG (genreRatingSVG + bottomGradientSVG)
+- `src/lib/badges.ts` — server-side SVG (bottomGradientSVG + topGradientSVG)
+- `src/lib/satori-badge.ts` — server-side Satori+Resvg (genreRatingBadge, rankingBadge, extraBadge)
 <!-- END:badge-sync -->

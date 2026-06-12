@@ -62,7 +62,7 @@ export function bottomGradientSVG(pw: number, ph: number): { svg: string; top: n
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}" viewBox="0 0 ${pw} ${gh}">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#000000" stop-opacity="0"/>
       <stop offset="100%" stop-color="#000000" stop-opacity="0.7"/>
     </linearGradient>
   </defs>

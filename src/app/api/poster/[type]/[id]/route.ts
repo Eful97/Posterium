@@ -8,7 +8,7 @@ import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { bottomGradientSVG, topGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 
-const RENDER_VERSION = 23
+const RENDER_VERSION = 24
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -277,7 +277,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const { svg: gradSvg, top: gradTop } = bottomGradientSVG(pw, ph)
       composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
       const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw)
-      const badgeY = ph - h - Math.round(6 * ph / 570)
+      const badgeY = ph - h - Math.round(24 * ph / 570)
       const badgeLeft = Math.round((pw - w) / 2)
       composites.push({ input: png, top: badgeY, left: badgeLeft })
     }
