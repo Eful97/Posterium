@@ -175,7 +175,7 @@ export async function renderGenreBadge(
     },
     React.createElement("span", null, genreName),
     React.createElement("span", {
-      style: { marginLeft: `${Math.round(fontSize * 0.50)}px`, transform: "translateY(4px)" },
+      style: { marginLeft: `${Math.round(fontSize * 1.0)}px`, transform: "translateY(4px)" },
     }, "\u2022"),
     React.createElement("span", {
       style: {
