@@ -2,13 +2,12 @@
 
 import { genreRatingSVG } from "@/lib/badges"
 
-export function RankingBadge({ rank, label }: { rank: number; label?: string }) {
+export function RankingBadge({ rank = "13", label = "Oggi" }: { rank?: number | string; label?: string }) {
   return (
-    <div className="absolute z-10 pointer-events-none" style={{ top: "16px", left: "50%", transform: "translateX(-50%)" }}>
-      <div className="bg-neutral-900 px-6 py-2 rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-black/30">
-        <span className="text-white font-bold text-xl">#{rank}</span>
-        {label && <span className="text-white font-bold text-xl">{label}</span>}
-      </div>
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-neutral-900/95 px-6 py-2 rounded-2xl">
+      <span className="text-white text-2xl font-bold tracking-wide">
+        #{rank} {label}
+      </span>
     </div>
   )
 }
@@ -31,10 +30,8 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
 
 export function ExtraBadge({ label }: { label: string }) {
   return (
-    <div className="absolute z-10 pointer-events-none" style={{ top: "16px", left: "50%", transform: "translateX(-50%)" }}>
-      <div className="bg-neutral-900 px-6 py-2 rounded-2xl flex items-center justify-center shadow-lg shadow-black/30">
-        <span className="text-white font-bold text-xl">{label}</span>
-      </div>
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-neutral-900/95 px-6 py-2 rounded-2xl">
+      <span className="text-white text-2xl font-bold tracking-wide">{label}</span>
     </div>
   )
 }
