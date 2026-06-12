@@ -160,6 +160,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qRank = req.nextUrl.searchParams.get("rank")
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
+    // Fetch missing tv/movie details when using mapping or query params
+    if (!releaseDate && !firstAirDate && !tvType) {
+      try {
+        const details = await getDetails(mediaType, tmdbId)
+        if (!releaseDate) releaseDate = details.release_date || null
+        if (!firstAirDate) firstAirDate = details.first_air_date || null
+        if (!tvType) tvType = details.type || null
+        if (!tvStatus) tvStatus = details.status || null
+      } catch {}
+    }
     const pw = STD_W
     const ph = STD_H
     const composites: { input: Buffer; top: number; left: number }[] = []
