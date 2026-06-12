@@ -159,7 +159,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
-    const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'fill' }).toBuffer()
+    const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
     const pw = STD_W
     const ph = STD_H
     const composites: { input: Buffer; top: number; left: number }[] = []
