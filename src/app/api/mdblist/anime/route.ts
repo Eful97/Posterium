@@ -17,19 +17,22 @@ export async function GET(req: NextRequest) {
   try {
     const url = `https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${mdblistKey}&limit=20&offset=0`
     const res = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
+      headers: { 'Accept': 'application/json', 'User-Agent': 'Posterium/1.0' },
       signal: AbortSignal.timeout(10000)
     })
     if (!res.ok) return Response.json([])
-    const data = await res.json()
-    let rawItems = data?.items || data?.data
-    if (Array.isArray(data) && !rawItems) rawItems = data
+    const body = await res.json()
+    const payload = body?.data || body
+    let rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
     const items = rawItems.slice(0, 10)
 
     const results = await Promise.all(items.map(async (item: any, idx: number) => {
-      // Try TMDB ID from MDBList first
-      const tmdbId = item.tmdb_id || item.tmdb
-      if (tmdbId) {
+      // IDs can be in different fields
+      const imdbId = item.imdb_id || item.imdb || item.ids?.imdb || ''
+      const tmdbId = item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id
+
+      // Try TMDB ID first
+      if (tmdbId && (typeof tmdbId === 'number' || (typeof tmdbId === 'string' && /^\d+$/.test(tmdbId)))) {
         try {
           const tmdbRes = await fetch(
             `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${tmdbKey}`,
@@ -49,7 +52,6 @@ export async function GET(req: NextRequest) {
       }
 
       // Fallback: find by IMDB ID
-      const imdbId = item.imdb_id || item.imdb || ''
       if (!imdbId) return null
       try {
         const tmdbRes = await fetch(
@@ -63,7 +65,7 @@ export async function GET(req: NextRequest) {
         return {
           id: found.id,
           title: found.name || found.title || item.title || '',
-          poster_path: found.poster_path || item.poster || '',
+          poster_path: found.poster_path || '',
           rank: idx + 1,
           media_type: found.media_type || 'tv',
         }
