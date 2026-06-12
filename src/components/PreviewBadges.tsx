@@ -1,9 +1,11 @@
 "use client"
 
-export function RankingBadge({ rank = "13", label = "Oggi" }: { rank?: number | string; label?: string }) {
+export function RankingBadge({ rank = "13", label = "Oggi", topLight }: { rank?: number | string; label?: string; topLight?: boolean }) {
+  const bg = topLight ? "bg-white/80" : "bg-black/60 backdrop-blur-sm"
+  const text = topLight ? "text-black/80" : "text-white/90"
   return (
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm px-6 py-2.5 rounded-b-2xl">
-      <span className="text-white/90 text-xl font-semibold tracking-wide">
+    <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} px-6 py-2.5 rounded-b-2xl`}>
+      <span className={`${text} text-xl font-semibold tracking-wide`}>
         #{rank} {label}
       </span>
     </div>
@@ -30,10 +32,12 @@ export function GenreRatingBadges({ genreName, voteAverage }: { genreName: strin
   )
 }
 
-export function ExtraBadge({ label }: { label: string }) {
+export function ExtraBadge({ label, topLight }: { label: string; topLight?: boolean }) {
+  const bg = topLight ? "bg-white/80" : "bg-black/60 backdrop-blur-sm"
+  const text = topLight ? "text-black/80" : "text-white/90"
   return (
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm px-6 py-2.5 rounded-b-2xl">
-      <span className="text-white/90 text-xl font-semibold tracking-wide">{label}</span>
+    <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} px-6 py-2.5 rounded-b-2xl`}>
+      <span className={`${text} text-xl font-semibold tracking-wide`}>{label}</span>
     </div>
   )
 }

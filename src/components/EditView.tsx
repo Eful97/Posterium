@@ -52,21 +52,29 @@ export default function EditView() {
             const isNewSeries = p.selected?.media_type === "tv" && p.selected?.first_air_date ? (now - new Date(p.selected.first_air_date).getTime()) < twoWeeks : false
             const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
 
-            const badgeColor = undefined
+            const edgeLum = (() => {
+              const h = p.topEdgeColor
+              if (h.length < 7 || h === "#ffffff") return null
+              const r = parseInt(h.slice(1, 3), 16) / 255
+              const g = parseInt(h.slice(3, 5), 16) / 255
+              const b = parseInt(h.slice(5, 7), 16) / 255
+              return 0.2126 * r + 0.7152 * g + 0.0722 * b
+            })()
+            const topLight = edgeLum !== null ? edgeLum > 0.55 : undefined
 
-            if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" /></div>
-            if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" /></div>
-            if (award) return <div className="absolute inset-0"><ExtraBadge label={award} /></div>
+            if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" topLight={topLight} /></div>
+            if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" topLight={topLight} /></div>
+            if (award) return <div className="absolute inset-0"><ExtraBadge label={award} topLight={topLight} /></div>
 
             const animeRank = p.mdblistAnimeList?.find((a: any) => a.id === p.selected?.id)
-            if (animeRank) return <div className="absolute inset-0"><RankingBadge rank={animeRank.rank} label="Anime" /></div>
+            if (animeRank) return <div className="absolute inset-0"><RankingBadge rank={animeRank.rank} label="Anime" topLight={topLight} /></div>
 
-            if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} /></div>
+            if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} topLight={topLight} /></div>
 
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
             const status = p.selected?.media_type === "tv" ? p.metaInfo.status : null
             const extra = tvType === "Miniseries" ? "Miniserie" : status === "Returning Series" ? "Ritorna" : null
-            if (extra) return <div className="absolute inset-0"><ExtraBadge label={extra} /></div>
+            if (extra) return <div className="absolute inset-0"><ExtraBadge label={extra} topLight={topLight} /></div>
             return null
           })()}
           {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={380} containerH={570} /></div>}

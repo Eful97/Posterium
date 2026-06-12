@@ -56,3 +56,16 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
   }
   return { r: Math.max(0, Math.min(255, cr)), g: Math.max(0, Math.min(255, cg)), b: Math.max(0, Math.min(255, cb)) }
 }
+
+export function topEdgeAverage(pixels: Uint8ClampedArray | Buffer, width: number, height: number): { r: number; g: number; b: number } {
+  const rowCount = Math.max(Math.round(height * 0.08), 3)
+  let r = 0, g = 0, b = 0, n = 0
+  for (let y = 0; y < rowCount; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4
+      r += pixels[i]; g += pixels[i + 1]; b += pixels[i + 2]
+      n++
+    }
+  }
+  return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) }
+}

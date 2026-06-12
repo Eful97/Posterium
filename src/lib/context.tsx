@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { SearchResult, TMDBImage, Mapping, FlixPatrolChart } from "./types"
 import { getDomain, posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from "./utils"
-import { findAccentColor } from "./accent-color"
+import { findAccentColor, topEdgeAverage } from "./accent-color"
 import { getAwardBadgeLabel } from "./awards"
 
 export interface PosteriumCtx {
@@ -98,6 +98,7 @@ export interface PosteriumCtx {
   copyUrl: () => Promise<void>
   copied: boolean
   accentColor: string
+  topEdgeColor: string
   badgeBgColor: string
 }
 
@@ -161,6 +162,7 @@ export function usePosterium(): PosteriumCtx {
   const [showLangPicker, setShowLangPicker] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
   const [accentColor, setAccentColor] = useState("#ffffff")
+  const [topEdgeColor, setTopEdgeColor] = useState("#ffffff")
   const keyInit = useRef(false)
   const langInit = useRef(false)
   const settingsRef = useRef<HTMLDivElement>(null)
@@ -434,7 +436,7 @@ export function usePosterium(): PosteriumCtx {
 
   useEffect(() => {
     const root = document.documentElement
-    if (!previewPoster) { root.style.setProperty("--color-accent", "#ffffff"); setAccentColor("#ffffff"); return }
+    if (!previewPoster) { root.style.setProperty("--color-accent", "#ffffff"); setAccentColor("#ffffff"); setTopEdgeColor("#ffffff"); return }
     const genreName = metaInfo.genres[0]?.name
     let cancelled = false
     const url = posterUrl(previewPoster.file_path, "w342")
@@ -454,8 +456,10 @@ export function usePosterium(): PosteriumCtx {
       const c = `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
       root.style.setProperty("--color-accent", c)
       setAccentColor(c)
+      const edge = topEdgeAverage(pixels, w, h)
+      setTopEdgeColor(`#${edge.r.toString(16).padStart(2, '0')}${edge.g.toString(16).padStart(2, '0')}${edge.b.toString(16).padStart(2, '0')}`)
     }
-    img.onerror = () => { if (!cancelled) { setAccentColor("#ffffff") } }
+    img.onerror = () => { if (!cancelled) { setAccentColor("#ffffff"); setTopEdgeColor("#ffffff") } }
     img.src = url
     return () => { cancelled = true }
   }, [previewPoster])
@@ -769,6 +773,7 @@ export function usePosterium(): PosteriumCtx {
     exportData, importData, removeRecentSearch,
     copyUrl, copied,
     accentColor,
+    topEdgeColor,
     badgeBgColor,
   }), [
     selected, view, posters, loadingImages, previewPoster, selectedLogo,
@@ -781,6 +786,7 @@ export function usePosterium(): PosteriumCtx {
     langOpen, settingsOpen, showLangPicker,
     tmdbKeyInput, showKey, copied,
     accentColor,
+    topEdgeColor,
     badgeBgColor,
     trending, streamingCharts, mdblistAnimeList,
   ])
