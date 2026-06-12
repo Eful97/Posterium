@@ -18,7 +18,7 @@ function rankBadge(rank: number) {
   const twoDigit = rank >= 10
   return (
     <span className="absolute top-[1%] left-[1%] flex items-center justify-center z-20" style={{ width: twoDigit ? '44px' : '34px', height: '34px' }}>
-      <span className="absolute inset-0 rounded bg-black/50 backdrop-blur-sm" />
+      <span className="absolute inset-0 rounded-xl bg-black/50 backdrop-blur-sm" />
       <span className="relative text-base md:text-xl font-bold leading-none text-white"
         style={{ filter: "drop-shadow(1px 2px 3px rgba(0,0,0,0.50))" }}
       >
