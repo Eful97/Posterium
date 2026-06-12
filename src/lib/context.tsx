@@ -397,7 +397,7 @@ export function usePosterium(): PosteriumCtx {
         if (nextAir > now && nextAir - now < twoWeeks) { params.push(`extra=${encodeURIComponent("Nuova stagione")}`) }
       }
       else if (trendRank) {
-        // skip - the server renders the ranking badge instead
+        params.push(`rank=${trendRank}`)
       }
       else {
         const tvType = selected?.media_type === "tv" ? metaInfo.type : null
