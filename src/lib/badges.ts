@@ -94,13 +94,12 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   const periodText = periodMap[period] || "Oggi"
   const rankStr = String(rank)
   const fullText = `#${rankStr} ${periodText}`
-  const s = pw / 1000
   const fontSize = Math.round(24 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.round(rankStr.length * charW + fontSize * 0.35 + periodText.length * charW)
-  const px = Math.round(100 * s) * 2
-  const pt = Math.round(12 * s)
-  const pb = Math.round(56 * s)
+  const px = Math.round(fontSize * 100 / 72) * 2
+  const pt = Math.round(fontSize * 12 / 72)
+  const pb = Math.round(fontSize * 56 / 72)
   const totalW = textW + px
   const svgH = fontSize + pt + pb
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
@@ -123,15 +122,15 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
       <stop offset="100%" stop-color="${bgBot}"/>
     </linearGradient>
     <filter id="${fid}" x="-20%" y="-20%" width="140%" height="200%">
-      <feDropShadow dx="0" dy="${Math.round(5 * s)}" stdDeviation="${Math.round(10 * s)}" flood-color="${shadowColor}"/>
+      <feDropShadow dx="0" dy="${Math.round(fontSize * 5 / 72)}" stdDeviation="${Math.round(fontSize * 10 / 72)}" flood-color="${shadowColor}"/>
     </filter>
     <filter id="${tid}" x="-20%" y="-20%" width="140%" height="200%">
-      <feDropShadow dx="0" dy="${Math.round(1 * s)}" stdDeviation="${Math.round(1 * s)}" flood-color="${textShadow}"/>
+      <feDropShadow dx="0" dy="${Math.round(fontSize * 1 / 72)}" stdDeviation="${Math.round(fontSize * 1 / 72)}" flood-color="${textShadow}"/>
     </filter>
   </defs>
   <g filter="url(#${fid})">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
-    <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
+    <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(fontSize * 1.5 / 72)}" fill="none"/>
     <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(fullText)}</text>
   </g>
 </svg>`
@@ -139,13 +138,12 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
 }
 
 export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: string; totalW: number; svgH: number; cornerR: number } {
-  const s = pw / 1000
   const fontSize = Math.round(24 * pw / 380)
   const charW = fontSize * 0.58
-  const textW = Math.max(Math.round(label.length * charW), Math.round(72 * s))
-  const px = Math.max(Math.round(textW * 0.15), Math.round(40 * s))
-  const pt = Math.round(12 * s)
-  const pb = Math.round(56 * s)
+  const textW = Math.max(Math.round(label.length * charW), fontSize)
+  const px = Math.max(Math.round(textW * 0.15), Math.round(fontSize * 40 / 72))
+  const pt = Math.round(fontSize * 12 / 72)
+  const pb = Math.round(fontSize * 56 / 72)
   const totalW = textW + px
   const svgH = fontSize + pt + pb
   const textY = Math.round((pt + fontSize + pb) / 2 + fontSize * 0.35)
@@ -168,15 +166,15 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
       <stop offset="100%" stop-color="${bgBot}"/>
     </linearGradient>
     <filter id="${fid}" x="-20%" y="-20%" width="140%" height="200%">
-      <feDropShadow dx="0" dy="${Math.round(5 * s)}" stdDeviation="${Math.round(10 * s)}" flood-color="${shadowColor}"/>
+      <feDropShadow dx="0" dy="${Math.round(fontSize * 5 / 72)}" stdDeviation="${Math.round(fontSize * 10 / 72)}" flood-color="${shadowColor}"/>
     </filter>
     <filter id="${tid}" x="-20%" y="-20%" width="140%" height="200%">
-      <feDropShadow dx="0" dy="${Math.round(1 * s)}" stdDeviation="${Math.round(1 * s)}" flood-color="${textShadow}"/>
+      <feDropShadow dx="0" dy="${Math.round(fontSize * 1 / 72)}" stdDeviation="${Math.round(fontSize * 1 / 72)}" flood-color="${textShadow}"/>
     </filter>
   </defs>
   <g filter="url(#${fid})">
     <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
-    <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
+    <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(fontSize * 1.5 / 72)}" fill="none"/>
     <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#${tid})">${escapeXml(label)}</text>
   </g>
 </svg>`
