@@ -21,7 +21,7 @@ function adjustHex(hex: string, ratio: number): string {
   return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`
 }
 
-interface AccentResult { r: number; g: number; b: number; hsl: [number, number, number] }
+interface AccentResult { r: number; g: number; b: number; hsl: [number, number, number]; v: number; s: number; fb: boolean }
 
 async function extractAccentColor(imageUrl: string, genre: string): Promise<AccentResult> {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -67,7 +67,7 @@ async function extractAccentColor(imageUrl: string, genre: string): Promise<Acce
   // Fallback
   if (pixels.length === 0) {
     const fb = GENRE_FALLBACK[genre] || GENRE_FALLBACK[Object.keys(GENRE_FALLBACK)[0]] || '#C0C0C0'
-    return { r: parseInt(fb.slice(1,3),16), g: parseInt(fb.slice(3,5),16), b: parseInt(fb.slice(5,7),16), hsl: [0, 0, 0.5] }
+    return { r: parseInt(fb.slice(1,3),16), g: parseInt(fb.slice(3,5),16), b: parseInt(fb.slice(5,7),16), hsl: [0, 0, 0.5], v: 0, s: 0, fb: true }
   }
 
   // bgMean of valid pixels
@@ -101,7 +101,7 @@ async function extractAccentColor(imageUrl: string, genre: string): Promise<Acce
   cg = Math.max(0, Math.min(255, cg))
   cb = Math.max(0, Math.min(255, cb))
 
-  return { r: cr, g: cg, b: cb, hsl: [best.h, best.s, best.l] }
+  return { r: cr, g: cg, b: cb, hsl: [best.h, best.s, best.l], v: n, s: bestScore, fb: false }
 }
 
 function useAccentColor(posterPath: string | null | undefined, genre: string, logoPath?: string | null): string {
@@ -145,7 +145,35 @@ function TopGradient({ containerW, svgH }: { containerW: number; svgH: number })
 }
 
 export function RankingBadge({ rank, containerW, containerH, color, posterPath, genreName, logoPath }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null }) {
-  const extracted = useAccentColor(!color ? posterPath : null, genreName || '', !color ? logoPath : null)
+  const [extracted, setExtracted] = useState("")
+  const [dbg, setDbg] = useState("")
+  const gn = genreName || ''
+  useEffect(() => {
+    const pp = !color ? posterPath : null
+    const lp = !color ? logoPath : null
+    if (!pp) { setExtracted(""); setDbg("no poster"); return }
+    let cancelled = false
+    const run = async () => {
+      try {
+        const poster = await extractAccentColor(posterUrl(pp, "w342"), gn)
+        if (cancelled) return
+        const ph = `#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`
+        setDbg(`px=${poster.v} sc=${poster.s.toFixed(3)}${poster.fb?' FALLBACK':''}`)
+        if (!lp) { setExtracted(ph); return }
+        let logo: AccentResult | null = null
+        try { logo = await extractAccentColor(posterUrl(lp, "original"), gn) } catch {}
+        if (cancelled) return
+        if (logo) {
+          const r = Math.round((poster.r + logo.r) / 2)
+          const g = Math.round((poster.g + logo.g) / 2)
+          const b = Math.round((poster.b + logo.b) / 2)
+          setExtracted(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`)
+        } else { setExtracted(ph) }
+      } catch { if (!cancelled) { setExtracted(""); setDbg("error") } }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [posterPath, color, logoPath, gn])
   const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
   const badgeColor = color || extracted || genreFallback || '#555'
   const { svg, totalW, svgH, cornerR } = rankingBadgeSVG(rank, containerW, badgeColor)
@@ -157,7 +185,7 @@ export function RankingBadge({ rank, containerW, containerH, color, posterPath, 
         <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
       </div>
       <div className="absolute z-20" style={{ top: `${svgH}px`, left: "50%", transform: "translateX(-50%)", fontSize: "9px", color: "#888", background: "rgba(0,0,0,0.5)", padding: "1px 4px", borderRadius: "4px", whiteSpace: "nowrap" }}>
-        {badgeColor}
+        {badgeColor} {dbg}
       </div>
     </>
   )
@@ -187,9 +215,6 @@ export function ExtraBadge({ label, containerW, containerH, color, posterPath, g
       <TopGradient containerW={containerW} svgH={svgH} />
       <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
         <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
-      </div>
-      <div className="absolute z-20" style={{ top: `${svgH}px`, left: "50%", transform: "translateX(-50%)", fontSize: "9px", color: "#888", background: "rgba(0,0,0,0.5)", padding: "1px 4px", borderRadius: "4px", whiteSpace: "nowrap" }}>
-        {badgeColor}
       </div>
     </>
   )
