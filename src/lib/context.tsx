@@ -47,7 +47,7 @@ export interface PosteriumCtx {
   setRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
-  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[] }
+  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[] }
   previewId: string | null
   setPreviewId: React.Dispatch<React.SetStateAction<string | null>>
   saveConfig: () => Promise<void>
@@ -137,7 +137,7 @@ export function usePosterium(): PosteriumCtx {
   const toastRef = useRef<HTMLDivElement>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
   const [previewPoster, setPreviewPoster] = useState<TMDBImage | null>(null)
-  const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[] }>({ genres: [], voteAverage: 0 })
+  const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[] }>({ genres: [], voteAverage: 0 })
   const [view, setView] = useState<"edit" | "search" | "myposters">("edit")
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
@@ -396,8 +396,8 @@ export function usePosterium(): PosteriumCtx {
     if (rankingBadges) {
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
-      const isNewMovie = selected?.media_type === "movie" && selected?.release_date ? (now - new Date(selected.release_date).getTime()) < twoWeeks : false
-      const isNewSeries = selected?.media_type === "tv" && selected?.first_air_date ? (now - new Date(selected.first_air_date).getTime()) < twoWeeks : false
+const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (now - new Date(metaInfo.release_date).getTime()) < twoWeeks : false
+        const isNewSeries = selected?.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
       const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards) : null
 
       if (isNewMovie) { params.push(`extra=${encodeURIComponent("Nuovo film")}`) }
@@ -530,7 +530,7 @@ export function usePosterium(): PosteriumCtx {
       setLogos(data.logos || [])
       if (details.title) setSelected((prev) => ({ ...prev!, title: details.title }))
       if (details.name) setSelected((prev) => ({ ...prev!, name: details.name }))
-      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [] })
+      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, first_air_date: details.first_air_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [] })
       setTrendRank(rankData.rank || null)
       const extImdbId = item.imdb_id || extIds.imdb_id
       if (extImdbId && mdblistApiKey) {

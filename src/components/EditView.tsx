@@ -48,8 +48,8 @@ export default function EditView() {
           {p.rankingBadges && (() => {
             const now = Date.now()
             const twoWeeks = 14 * 24 * 60 * 60 * 1000
-            const isNewMovie = p.selected?.media_type === "movie" && p.selected?.release_date ? (now - new Date(p.selected.release_date).getTime()) < twoWeeks : false
-            const isNewSeries = p.selected?.media_type === "tv" && p.selected?.first_air_date ? (now - new Date(p.selected.first_air_date).getTime()) < twoWeeks : false
+            const isNewMovie = p.selected?.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
+            const isNewSeries = p.selected?.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
             const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
 
             const edgeLum = (() => {
