@@ -171,15 +171,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     async function extractMostSaturated(buf: Buffer): Promise<string> {
       const pixelBuf = await sharp(buf).resize(200, 300, { fit: 'fill' }).raw().toBuffer()
 
-      // First pass: compute average
-      let ar = 0, ag = 0, ab = 0, an = 0
-      for (let i = 0; i < pixelBuf.length; i += 4) {
-        ar += pixelBuf[i]; ag += pixelBuf[i + 1]; ab += pixelBuf[i + 2]; an++
-      }
-      ar /= an; ag /= an; ab /= an
-
-      // Second pass: find pixel with highest sat * distance-from-average
-      let bestScore = -1, br = 0, bg = 0, bb = 0
+      // Gather valid pixels and compute bgMean
+      const pixels: { r: number; g: number; b: number; s: number; l: number }[] = []
       for (let i = 0; i < pixelBuf.length; i += 4) {
         const r = pixelBuf[i] / 255, g = pixelBuf[i + 1] / 255, b = pixelBuf[i + 2] / 255
         const max = Math.max(r, g, b), min = Math.min(r, g, b)
@@ -187,17 +180,38 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const d = max - min
         const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
         if (s < 0.05 || l < 0.03 || l > 0.97) continue
-        const dr = pixelBuf[i] - ar, dg = pixelBuf[i + 1] - ag, db = pixelBuf[i + 2] - ab
-        const dist = Math.sqrt(dr * dr + dg * dg + db * db)
-        const score = s * dist
-        if (score > bestScore) { bestScore = score; br = pixelBuf[i]; bg = pixelBuf[i + 1]; bb = pixelBuf[i + 2] }
+        pixels.push({ r: pixelBuf[i], g: pixelBuf[i + 1], b: pixelBuf[i + 2], s, l })
       }
-      if (bestScore < 0) return ''
-      let hex = `#${br.toString(16).padStart(2, '0')}${bg.toString(16).padStart(2, '0')}${bb.toString(16).padStart(2, '0')}`
-      const lum = simpleLum(hex)
-      if (lum < 0.4) hex = adjustColor(hex, 0.2)
-      else if (lum > 0.7) hex = adjustColor(hex, -0.15)
-      return hex
+      if (pixels.length === 0) return ''
+
+      const n = pixels.length
+      const bgMean = { r: pixels.reduce((a, p) => a + p.r, 0) / n, g: pixels.reduce((a, p) => a + p.g, 0) / n, b: pixels.reduce((a, p) => a + p.b, 0) / n }
+
+      let bestScore = -1, best = pixels[0]
+      for (const p of pixels) {
+        const chroma = p.s * (1 - Math.abs(p.l - 0.5) * 2)
+        const dr = p.r - bgMean.r, dg = p.g - bgMean.g, db = p.b - bgMean.b
+        const divergence = Math.sqrt(dr * dr + dg * dg + db * db) / 441.67
+        const score = chroma * divergence
+        if (score > bestScore) { bestScore = score; best = p }
+      }
+
+      let cr = best.r, cg = best.g, cb = best.b
+      const clampLum = 0.2126 * cr / 255 + 0.7152 * cg / 255 + 0.0722 * cb / 255
+      if (clampLum < 0.4) {
+        cr = Math.round(cr + (255 - cr) * 0.2)
+        cg = Math.round(cg + (255 - cg) * 0.2)
+        cb = Math.round(cb + (255 - cb) * 0.2)
+      } else if (clampLum > 0.7) {
+        cr = Math.round(cr * 0.85)
+        cg = Math.round(cg * 0.85)
+        cb = Math.round(cb * 0.85)
+      }
+      cr = Math.max(0, Math.min(255, cr))
+      cg = Math.max(0, Math.min(255, cg))
+      cb = Math.max(0, Math.min(255, cb))
+
+      return `#${cr.toString(16).padStart(2, '0')}${cg.toString(16).padStart(2, '0')}${cb.toString(16).padStart(2, '0')}`
     }
 
     async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fallbackGenre?: string | null): Promise<string> {
