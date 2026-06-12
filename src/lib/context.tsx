@@ -411,15 +411,15 @@ export function usePosterium(): PosteriumCtx {
         const nextAir = new Date(metaInfo.next_episode_to_air.air_date).getTime()
         if (nextAir > now && nextAir - now < twoWeeks) { params.push(`extra=${encodeURIComponent("Nuova stagione")}`) }
       }
-      else if (trendRank) {
-        // skip - the server renders the ranking badge instead
-      }
       else if (isTendenza) { params.push(`extra=${encodeURIComponent("Di Tendenza")}`) }
       else {
         const tvType = selected?.media_type === "tv" ? metaInfo.type : null
         const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
         const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8 ? "Da divorare" : null
         if (extra) params.push(`extra=${encodeURIComponent(extra)}`)
+        else if (trendRank) {
+          // skip - the server renders the ranking badge instead
+        }
       }
     }
     const v = Date.now()
