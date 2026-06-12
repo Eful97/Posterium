@@ -115,11 +115,10 @@ function useAccentColor(posterPath: string | null | undefined, genre: string, lo
       try {
         const poster = await extractAccentColor(posterUrl_, genre)
         if (cancelled) return
-        if (!logoUrl_) {
-          setHex(`#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`)
-          return
-        }
-        const logo = await extractAccentColor(logoUrl_, genre).catch(() => null)
+        const posterHex = `#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`
+        if (!logoUrl_) { setHex(posterHex); return }
+        let logo: AccentResult | null = null
+        try { logo = await extractAccentColor(logoUrl_, genre) } catch {}
         if (cancelled) return
         if (logo) {
           const r = Math.round((poster.r + logo.r) / 2)
@@ -127,7 +126,7 @@ function useAccentColor(posterPath: string | null | undefined, genre: string, lo
           const b = Math.round((poster.b + logo.b) / 2)
           setHex(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`)
         } else {
-          setHex(`#${poster.r.toString(16).padStart(2, '0')}${poster.g.toString(16).padStart(2, '0')}${poster.b.toString(16).padStart(2, '0')}`)
+          setHex(posterHex)
         }
       } catch { if (!cancelled) setHex("") }
     }
@@ -155,6 +154,9 @@ export function RankingBadge({ rank, containerW, containerH, color, posterPath, 
       <TopGradient containerW={containerW} svgH={svgH} />
       <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
         <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
+      </div>
+      <div className="absolute z-20" style={{ top: `${svgH}px`, left: "50%", transform: "translateX(-50%)", fontSize: "9px", color: "#888", background: "rgba(0,0,0,0.5)", padding: "1px 4px", borderRadius: "4px", whiteSpace: "nowrap" }}>
+        {badgeColor}
       </div>
     </>
   )
@@ -184,6 +186,9 @@ export function ExtraBadge({ label, containerW, containerH, color, posterPath, g
       <TopGradient containerW={containerW} svgH={svgH} />
       <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
         <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
+      </div>
+      <div className="absolute z-20" style={{ top: `${svgH}px`, left: "50%", transform: "translateX(-50%)", fontSize: "9px", color: "#888", background: "rgba(0,0,0,0.5)", padding: "1px 4px", borderRadius: "4px", whiteSpace: "nowrap" }}>
+        {badgeColor}
       </div>
     </>
   )
