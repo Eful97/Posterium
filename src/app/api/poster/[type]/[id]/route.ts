@@ -8,7 +8,7 @@ import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { bottomGradientSVG, topGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 
-const RENDER_VERSION = 22
+const RENDER_VERSION = 23
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -229,6 +229,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       }
       return pColor || lColor || (fallbackGenre ? (GENRE_FALLBACK[fallbackGenre] || '#555') : '#555')
     }
+
+    async function topLuminance(buf: Buffer): Promise<number> {
+      const sm = await sharp(buf).resize(100, 10, { fit: 'fill', kernel: 'nearest' }).raw().toBuffer()
+      let r = 0, g = 0, b = 0, n = 0
+      for (let i = 0; i < sm.length; i += 4) { r += sm[i]; g += sm[i + 1]; b += sm[i + 2]; n++ }
+      r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n)
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+    }
+
+    const topLum = await topLuminance(posterBuf)
+    const topLight = topLum > 0.55
     const qBadges = req.nextUrl.searchParams.get("badges")
     const badgesEnabled = qBadges !== "0" && showBadges
     const qRanking = req.nextUrl.searchParams.get("ranking")
@@ -292,14 +303,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     })()
 
     if (extraLabel) {
-      const { png: extraPng, w, h } = await renderExtraBadge(extraLabel, pw)
+      const { png: extraPng, w, h } = await renderExtraBadge(extraLabel, pw, topLight)
       const extraLeft = Math.round((pw - w) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, h)
       composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
       composites.push({ input: extraPng, top: 0, left: extraLeft })
     } else if (rankingEnabled && finalRank) {
       const badgeLabel = req.nextUrl.searchParams.get("label") || "Oggi"
-      const { png: rankPng, w, h } = await renderRankingBadge(finalRank, pw, badgeLabel)
+      const { png: rankPng, w, h } = await renderRankingBadge(finalRank, pw, badgeLabel, topLight)
       const rankLeft = Math.round((pw - w) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, h)
       composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })

@@ -44,7 +44,8 @@ async function render(el: ReturnType<typeof React.createElement>, w: number, h: 
 export async function renderRankingBadge(
   rank: number,
   pw: number,
-  label?: string
+  label?: string,
+  topLight?: boolean
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const periodMap: Record<string, string> = { day: "Oggi", week: "Settimana" }
   const periodText = label || periodMap["day"] || "Oggi"
@@ -58,6 +59,8 @@ export async function renderRankingBadge(
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
   const r = Math.round(fontSize * 0.67)
+  const bg = topLight ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.8)"
+  const fg = topLight ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.8)"
 
   const el = React.createElement(
     "div",
@@ -68,14 +71,14 @@ export async function renderRankingBadge(
         justifyContent: "center",
         width: `${totalW}px`,
         height: `${svgH}px`,
-        backgroundColor: "rgba(0,0,0,0.6)",
+        backgroundColor: bg,
         borderBottomLeftRadius: `${r}px`,
         borderBottomRightRadius: `${r}px`,
       },
     },
     React.createElement("span", {
       style: {
-        color: "rgba(255,255,255,0.9)",
+        color: fg,
         fontSize: `${fontSize}px`,
         fontFamily: "Inter",
         fontWeight: 600,
@@ -91,6 +94,7 @@ export async function renderRankingBadge(
 export async function renderExtraBadge(
   label: string,
   pw: number,
+  topLight?: boolean
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const fontSize = Math.round(20 * pw / 380)
   const charW = fontSize * 0.58
@@ -101,6 +105,8 @@ export async function renderExtraBadge(
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
   const r = Math.round(fontSize * 0.67)
+  const bg = topLight ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.8)"
+  const fg = topLight ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.8)"
 
   const el = React.createElement(
     "div",
@@ -111,14 +117,14 @@ export async function renderExtraBadge(
         justifyContent: "center",
         width: `${totalW}px`,
         height: `${svgH}px`,
-        backgroundColor: "rgba(0,0,0,0.6)",
+        backgroundColor: bg,
         borderBottomLeftRadius: `${r}px`,
         borderBottomRightRadius: `${r}px`,
       },
     },
     React.createElement("span", {
       style: {
-        color: "rgba(255,255,255,0.9)",
+        color: fg,
         fontSize: `${fontSize}px`,
         fontFamily: "Inter",
         fontWeight: 600,
