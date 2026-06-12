@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const body = await res.json()
     const payload = body?.data || body
     let rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
-    const items = rawItems.slice(0, 10)
+    const items = rawItems.slice(0, 20)
 
     const results = await Promise.all(items.map(async (item: any, idx: number) => {
       // IDs can be in different fields

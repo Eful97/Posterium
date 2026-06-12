@@ -215,7 +215,7 @@ export default function EditView() {
 
           {p.mdblistAnimeList.length > 0 && (
             <div className="mt-10">
-              <h2 className="text-xl font-bold mb-4 text-center">🎌 Top 10 Anime di tendenza</h2>
+              <h2 className="text-xl font-bold mb-4 text-center">🎌 Top 20 Anime di tendenza</h2>
               <RankRow label="ANIME" items={p.mdblistAnimeList} onItemClick={(item: any) => p.navigateToPoster({ id: item.id ?? 0, media_type: item.media_type || 'tv', title: item.title ?? '', name: item.title ?? '', poster_path: item.poster_path ?? '' })} />
             </div>
           )}
