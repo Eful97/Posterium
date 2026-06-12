@@ -140,6 +140,7 @@ export function usePosterium(): PosteriumCtx {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [trending, setTrending] = useState<Array<SearchResult & { rank: number }>>([])
+  const [mdblistAnimeList, setMdblistAnimeList] = useState<any[]>([])
   const [streamingCharts, setStreamingCharts] = useState<Record<string, FlixPatrolChart>>({})
 
   const [tmdbKey, setTmdbKeyState] = useState("")
@@ -252,6 +253,9 @@ export function usePosterium(): PosteriumCtx {
     api(`/api/tmdb/trending?api_key=${tmdbKey}`).then((data) => {
       setTrending([...(data.movies || []), ...(data.tv || [])])
     }).catch(() => {})
+    if (mdblistApiKey) {
+      api(`/api/mdblist/anime?api_key=${mdblistApiKey}`).then(setMdblistAnimeList).catch(() => {})
+    }
   }, [tmdbKey])
 
   useEffect(() => {
@@ -760,7 +764,7 @@ export function usePosterium(): PosteriumCtx {
     goHome, navigateToPoster,
     tmdbKey, setQuery, doSearch, loadMore,
     titleOf, yearOf, posterUrl,
-    trending, streamingCharts,
+    trending, streamingCharts, mdblistAnimeList,
     STREAMING_PLATFORMS, loadMappings,
     query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
     toastRef, settingsRef, langRef,
@@ -786,6 +790,6 @@ export function usePosterium(): PosteriumCtx {
     tmdbKeyInput, showKey, copied,
     accentColor,
     badgeBgColor,
-    trending, streamingCharts,
+    trending, streamingCharts, mdblistAnimeList,
   ])
 }
