@@ -391,7 +391,6 @@ export function usePosterium(): PosteriumCtx {
     }
     if (lang) params.push(`lang=${lang}`)
     if (badgeBgColor) params.push(`badgeColor=${encodeURIComponent(badgeBgColor)}`)
-    else if (accentColor && accentColor !== '#ffffff') params.push(`badgeColor=${encodeURIComponent(accentColor)}`)
     if (rankingBadges) {
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000

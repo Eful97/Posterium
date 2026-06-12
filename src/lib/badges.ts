@@ -72,28 +72,13 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${ri.toString(16).padStart(2, '0')}${gi.toString(16).padStart(2, '0')}${bi.toString(16).padStart(2, '0')}`
 }
 
-function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: string; textShadow: string } {
-  if (!color || !color.startsWith('#')) {
-    return {
-      bgTop: '#ffffff',
-      bgBot: '#f0f0f0',
-      textFill: '#1a1a1a',
-      textShadow: 'rgba(0,0,0,0.10)',
-    }
+function badgeColors(_color: string): { bgTop: string; bgBot: string; textFill: string; textShadow: string } {
+  return {
+    bgTop: '#ffffff',
+    bgBot: '#f0f0f0',
+    textFill: '#111111',
+    textShadow: 'rgba(0,0,0,0.10)',
   }
-
-  const lit = adjustColor(color, 0.15)
-  const bgLum = relativeLuminance(lit)
-
-  // If color is light, use a DARKENED version with white text
-  if (bgLum > 0.5) {
-    const dark = adjustColor(color, -0.4)
-    const bgBot = adjustColor(dark, -0.06)
-    return { bgTop: dark, bgBot, textFill: '#fff', textShadow: 'rgba(0,0,0,0.40)' }
-  }
-
-  // Otherwise default white bg, dark text
-  return { bgTop: '#ffffff', bgBot: '#f0f0f0', textFill: '#1a1a1a', textShadow: 'rgba(0,0,0,0.10)' }
 }
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {

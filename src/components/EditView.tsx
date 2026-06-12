@@ -52,7 +52,7 @@ export default function EditView() {
             const isNewSeries = p.selected?.media_type === "tv" && p.selected?.first_air_date ? (now - new Date(p.selected.first_air_date).getTime()) < twoWeeks : false
             const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
 
-            const badgeColor = p.badgeBgColor || (p.accentColor !== '#ffffff' ? p.accentColor : undefined)
+            const badgeColor = undefined
 
             if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
             if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
