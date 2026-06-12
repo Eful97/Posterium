@@ -54,8 +54,8 @@ export async function renderRankingBadge(
   const charW = fontSize * 0.58
   const textW = Math.round(String(rank).length * charW + fontSize * 0.35 + periodText.length * charW)
   const px = Math.round(fontSize * 1.2)
-  const pt = Math.round(fontSize * 0.25)
-  const pb = Math.round(fontSize * 0.25)
+  const pt = Math.round(fontSize * 0.5)
+  const pb = Math.round(fontSize * 0.5)
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
   const r = Math.round(fontSize * 0.67)
@@ -100,8 +100,8 @@ export async function renderExtraBadge(
   const charW = fontSize * 0.58
   const textW = Math.max(Math.round(label.length * charW), fontSize)
   const px = Math.round(fontSize * 1.2)
-  const pt = Math.round(fontSize * 0.25)
-  const pb = Math.round(fontSize * 0.25)
+  const pt = Math.round(fontSize * 0.5)
+  const pb = Math.round(fontSize * 0.5)
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
   const r = Math.round(fontSize * 0.67)
