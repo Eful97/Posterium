@@ -1,49 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { genreRatingSVG, rankingBadgeSVG, extraBadgeSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { posterUrl } from "@/lib/utils"
 
-const GENRE_FALLBACK: Record<string, string> = {
-  Action: '#D4A574', Azione: '#D4A574',
-  Horror: '#8B0000', Horreur: '#8B0000',
-  Comedy: '#F4D03F', Commedia: '#F4D03F', Comédie: '#F4D03F',
-  Drama: '#5D6D7E', Dramma: '#5D6D7E', Drame: '#5D6D7E',
-  Thriller: '#4A4A4A',
-  Adventure: '#2E86AB', Avventura: '#2E86AB', Aventure: '#2E86AB',
-  Animation: '#E67E22', Animazione: '#E67E22',
-  'Science Fiction': '#3498DB', 'Science-Fiction': '#3498DB', Fantascienza: '#3498DB',
-  Romance: '#E74C3C', Romantico: '#E74C3C',
-  Documentary: '#7F8C8D', Documentario: '#7F8C8D',
-  Mystery: '#6C3483', Mistero: '#6C3483',
-  Fantasy: '#8E44AD', Fantasia: '#8E44AD',
-  War: '#6B4226', Guerra: '#6B4226',
-  Western: '#A0522D',
-  Music: '#1ABC9C', Musica: '#1ABC9C',
-  Family: '#2ECC71', Famiglia: '#2ECC71',
-  History: '#A67B5B', Storico: '#A67B5B',
-  Crime: '#2C3E50', Crimine: '#2C3E50',
-}
-
-function relativeLuminance(hex: string): number {
+function hexLuminanceRaw(hex: string): number {
   const r = parseInt(hex.slice(1, 3), 16) / 255
   const g = parseInt(hex.slice(3, 5), 16) / 255
   const b = parseInt(hex.slice(5, 7), 16) / 255
-  const rs = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4)
-  const gs = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4)
-  const bs = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4)
-  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs
-}
-
-function contrastRatio(l1: number, l2: number): number {
-  const lighter = Math.max(l1, l2), darker = Math.min(l1, l2)
-  return (lighter + 0.05) / (darker + 0.05)
-}
-
-function bestTextColor(bgHex: string): string {
-  const bgLum = relativeLuminance(bgHex)
-  const whiteRatio = (1.0 + 0.05) / (bgLum + 0.05)
-  if (whiteRatio >= 4.5) return "#fff"
-  return "#1a1a1a"
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
 function adjustHex(hex: string, ratio: number): string {
@@ -82,7 +47,7 @@ function extractFromCanvas(containerW: number, containerH: number): { r: number;
 
 function processRgb(r: number, g: number, b: number): string {
   let hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-  const lum = relativeLuminance(hex)
+  const lum = hexLuminanceRaw(hex)
   if (lum < 0.4) hex = adjustHex(hex, 0.2)
   else if (lum > 0.7) hex = adjustHex(hex, -0.15)
   return hex
@@ -105,8 +70,6 @@ function useDominantColor(posterPath: string | null | undefined, containerW: num
       canvas.height = containerH
       const ctx = canvas.getContext("2d")
       if (!ctx) { setColor(""); return }
-
-      // Draw poster
       ctx.drawImage(posterImg, 0, 0, containerW, containerH)
 
       if (!logoUrl_) {
@@ -115,7 +78,6 @@ function useDominantColor(posterPath: string | null | undefined, containerW: num
         return
       }
 
-      // Load logo and draw on same canvas
       const logoImg = new Image()
       logoImg.crossOrigin = "anonymous"
       logoImg.onload = () => {
@@ -147,62 +109,30 @@ function TopGradient({ containerW, svgH }: { containerW: number; svgH: number })
   )
 }
 
-const BASE = 24
-const REF_W = 380
-
-function badgeLayout(text: string, containerW: number) {
-  const fontSize = Math.round(BASE * containerW / REF_W)
-  const charW = fontSize * 0.58
-  const textW = Math.round(text.length * charW)
-  const px = Math.round(fontSize * 100 / 72) * 2
-  const pt = Math.round(fontSize * 12 / 72)
-  const pb = Math.round(fontSize * 56 / 72)
-  const totalW = textW + px
-  const svgH = fontSize + pt + pb
-  const cornerR = Math.round(pb * 1.0)
-  return { totalW, svgH, cornerR, fontSize }
-}
-
-const BadgePill = ({ children, totalW, svgH, cornerR, bgColor }: { children: React.ReactNode; totalW: number; svgH: number; cornerR: number; bgColor: string }) => {
-  const safeBg = bgColor || "#333"
-  const textColor = bestTextColor(safeBg)
-  return (
-    <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px` }}>
-      <div style={{ width: "100%", height: "100%", background: `${safeBg}d9`, display: "flex", alignItems: "center", justifyContent: "center", color: textColor, fontWeight: 800, letterSpacing: "-0.01em", boxShadow: "0 4px 12px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15)", transition: "background-color 300ms ease, color 200ms ease" }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
 export function RankingBadge({ rank, containerW, containerH, color, posterPath, genreName, logoPath }: { rank: number; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null }) {
   const extracted = useDominantColor(!color ? posterPath : null, containerW, containerH, !color ? logoPath : null)
   const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
-  const bgColor = color || extracted || genreFallback || '#555'
-  const fullText = `#${rank} Oggi`
-  const { totalW, svgH, cornerR, fontSize } = badgeLayout(fullText, containerW)
+  const badgeColor = color || extracted || genreFallback || '#555'
+  const { svg, totalW, svgH, cornerR } = rankingBadgeSVG(rank, containerW, badgeColor)
 
   return (
     <>
       <TopGradient containerW={containerW} svgH={svgH} />
-      <BadgePill totalW={totalW} svgH={svgH} cornerR={cornerR} bgColor={bgColor}>
-        <span style={{ fontSize: `${fontSize}px` }}>{fullText}</span>
-      </BadgePill>
+      <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
+        <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
+      </div>
     </>
   )
 }
 
 export function GenreRatingBadges({ genreName, voteAverage, containerW, containerH }: { genreName: string; voteAverage: number; containerW: number; containerH: number }) {
+  const { svg, totalW, svgH } = genreRatingSVG(genreName, voteAverage, containerW)
+
   return (
     <>
       <div className="absolute z-[8] pointer-events-none" style={{ bottom: 0, left: 0, right: 0, height: `${Math.round(containerH * 0.18)}px`, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 40%)" }} />
       <div className="absolute z-[11] pointer-events-none" style={{ bottom: "16px", left: 0, right: 0, display: "flex", justifyContent: "center" }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <span style={{ fontSize: "24px", fontWeight: 500, color: "#fff", marginRight: "8px" }}>{genreName}</span>
-          <span style={{ fontSize: "19px", color: "rgba(255,255,255,0.6)", marginRight: "8px", lineHeight: 1 }}>•</span>
-          <span style={{ fontSize: "22px", color: "#F5C518", marginRight: "6px", lineHeight: 1, display: "inline-flex", alignItems: "center" }}>★</span>
-          <span style={{ fontSize: "24px", fontWeight: 600, color: "#fff" }}>{voteAverage.toFixed(1)}</span>
-        </div>
+        <div style={{ width: totalW, height: svgH }} dangerouslySetInnerHTML={{ __html: svg }} />
       </div>
     </>
   )
@@ -211,15 +141,15 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
 export function ExtraBadge({ label, containerW, containerH, color, posterPath, genreName, logoPath }: { label: string; containerW: number; containerH: number; color?: string; posterPath?: string | null; genreName?: string | null; logoPath?: string | null }) {
   const extracted = useDominantColor(!color ? posterPath : null, containerW, containerH, !color ? logoPath : null)
   const genreFallback = genreName ? (GENRE_FALLBACK[genreName] || GENRE_FALLBACK[genreName.toLowerCase()] || '') : ''
-  const bgColor = color || extracted || genreFallback || '#555'
-  const { totalW, svgH, cornerR, fontSize } = badgeLayout(label, containerW)
+  const badgeColor = color || extracted || genreFallback || '#555'
+  const { svg, totalW, svgH, cornerR } = extraBadgeSVG(label, containerW, badgeColor)
 
   return (
     <>
       <TopGradient containerW={containerW} svgH={svgH} />
-      <BadgePill totalW={totalW} svgH={svgH} cornerR={cornerR} bgColor={bgColor}>
-        <span style={{ fontSize: `${fontSize}px` }}>{label}</span>
-      </BadgePill>
+      <div className="absolute z-10 pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: totalW, height: svgH, borderRadius: `0 0 ${cornerR}px ${cornerR}px`, overflow: "hidden" }}>
+        <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: "100%", height: "100%" }} />
+      </div>
     </>
   )
 }
