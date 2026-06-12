@@ -191,7 +191,7 @@ export default function EditView() {
           {p.trending.length > 0 && (
             <div className="space-y-6">
               {(["movie", "tv"] as const).map((mediaType) => {
-                const items = p.trending.filter((r) => r.media_type === mediaType).slice(0, 10)
+                const items = p.trending.filter((r) => r.media_type === mediaType).slice(0, 20)
                 return <RankRow key={mediaType} label={mediaType === "movie" ? "FILM" : "SERIE TV"} items={items} onItemClick={(item) => p.navigateToPoster(item as any)} />
               })}
             </div>
