@@ -265,7 +265,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
       if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
-      console.log({ type, tmdbId, label: extraLabel, genre: genreName || queryGenre, badgeColor })
       const { svg: extraSvg, totalW, svgH } = extraBadgeSVG(extraLabel, pw, badgeColor)
       const extraLeft = Math.round((pw - totalW) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
@@ -280,7 +279,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
       if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
-      console.log({ type, tmdbId, rank: rankingRank, genre: genreName || queryGenre, badgeColor })
       const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(rankingRank, pw, badgeColor, mapping?.trendPeriod)
       const rankLeft = Math.round((pw - totalW) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
