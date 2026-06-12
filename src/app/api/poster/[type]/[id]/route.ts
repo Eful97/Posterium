@@ -7,7 +7,7 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { genreRatingSVG, rankingBadgeSVG, bottomGradientSVG, extraBadgeSVG } from "@/lib/badges"
 
-const RENDER_VERSION = 18
+const RENDER_VERSION = 19
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }

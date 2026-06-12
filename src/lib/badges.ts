@@ -82,7 +82,7 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
   </defs>
   <rect width="${totalW}" height="${svgH}" fill="${bgBot}" rx="0"/>
   <g filter="url(#s)">
-    <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} Q ${totalW},${svgH} ${totalW-r},${svgH} L ${r},${svgH} Q 0,${svgH} 0,${svgH-r} Z" fill="url(#g)"/>
+    <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
     <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   </g>
   <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(fullText)}</text>
@@ -126,7 +126,7 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
   </defs>
   <rect width="${totalW}" height="${svgH}" fill="${bgBot}" rx="0"/>
   <g filter="url(#s)">
-    <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} Q ${totalW},${svgH} ${totalW-r},${svgH} L ${r},${svgH} Q 0,${svgH} 0,${svgH-r} Z" fill="url(#g)"/>
+    <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="url(#g)"/>
     <path d="M ${r},0 L ${totalW - r},0" stroke="${rimColor}" stroke-width="${Math.round(1.5 * s)}" fill="none"/>
   </g>
   <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="${textFill}" font-size="${fontSize}" font-family="Noto Sans, sans-serif" font-weight="800" letter-spacing="-0.01em" filter="url(#t)">${escapeXml(label)}</text>
