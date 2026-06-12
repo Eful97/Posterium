@@ -313,7 +313,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (!badgeColor && (genreName || queryGenre)) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
       }
       if (!badgeColor) badgeColor = GENRE_FALLBACK[genreName || queryGenre || ''] || '#555'
-      const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(finalRank, pw, badgeColor, mapping?.trendPeriod)
+      const badgeLabel = req.nextUrl.searchParams.get("label") || "Oggi"
+      const { svg: rankSvg, totalW, svgH } = rankingBadgeSVG(finalRank, pw, badgeColor, mapping?.trendPeriod, badgeLabel)
       const rankLeft = Math.round((pw - totalW) / 2)
       const { svg: gradSvg, h: gradH } = topGradientSVG(pw, svgH)
       composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
