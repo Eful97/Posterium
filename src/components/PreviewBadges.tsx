@@ -105,32 +105,31 @@ function useDominantColor(posterPath: string | null | undefined, containerW: num
       canvas.height = containerH
       const ctx = canvas.getContext("2d")
       if (!ctx) { setColor(""); return }
-      ctx.drawImage(posterImg, 0, 0, containerW, containerH)
-      const posterResult = extractFromCanvas(containerW, containerH)
 
-      if (!logoUrl_ || !posterResult) {
-        if (posterResult) setColor(processRgb(posterResult.r, posterResult.g, posterResult.b))
-        else setColor("")
+      // Draw poster
+      ctx.drawImage(posterImg, 0, 0, containerW, containerH)
+
+      if (!logoUrl_) {
+        const r = extractFromCanvas(containerW, containerH)
+        setColor(r ? processRgb(r.r, r.g, r.b) : "")
         return
       }
 
+      // Load logo and draw on same canvas
       const logoImg = new Image()
       logoImg.crossOrigin = "anonymous"
       logoImg.onload = () => {
         if (cancelled) return
-        canvas.width = 100
-        canvas.height = Math.round(100 * logoImg.naturalHeight / logoImg.naturalWidth)
-        ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height)
-        const logoResult = extractFromCanvas(canvas.width, canvas.height)
-        if (!logoResult) { setColor(processRgb(posterResult.r, posterResult.g, posterResult.b)); return }
-
-        const r = Math.round((posterResult.r + logoResult.r) / 2)
-        const g = Math.round((posterResult.g + logoResult.g) / 2)
-        const b = Math.round((posterResult.b + logoResult.b) / 2)
-        setColor(processRgb(r, g, b))
+        const logoW = Math.round(containerW * 0.4)
+        const logoH = Math.round(logoW * logoImg.naturalHeight / logoImg.naturalWidth)
+        const logoX = Math.round((containerW - logoW) / 2)
+        const logoY = containerH - logoH - Math.round(containerH * 0.1)
+        ctx.drawImage(logoImg, logoX, logoY, logoW, logoH)
+        const r = extractFromCanvas(containerW, containerH)
+        setColor(r ? processRgb(r.r, r.g, r.b) : "")
       }
       logoImg.onerror = () => {
-        if (!cancelled && posterResult) setColor(processRgb(posterResult.r, posterResult.g, posterResult.b))
+        if (!cancelled) { const r = extractFromCanvas(containerW, containerH); setColor(r ? processRgb(r.r, r.g, r.b) : "") }
       }
       logoImg.src = logoUrl_
     }
