@@ -28,10 +28,10 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW, containe
       <div className="absolute z-[8] pointer-events-none" style={{ bottom: 0, left: 0, right: 0, height: `${Math.round(containerH * 0.18)}px`, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 40%)" }} />
       <div className="absolute z-[11] pointer-events-none" style={{ bottom: "16px", left: 0, right: 0, display: "flex", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center" }}>
-          <span style={{ fontSize: "18px", fontWeight: 500, color: "#fff", marginRight: "8px" }}>{genreName}</span>
-          <span style={{ fontSize: "14px", color: "rgba(255,255,255,0.6)", marginRight: "8px", lineHeight: 1 }}>•</span>
-          <span style={{ fontSize: "16px", color: "#F5C518", marginRight: "6px", lineHeight: 1, display: "inline-flex", alignItems: "center" }}>★</span>
-          <span style={{ fontSize: "18px", fontWeight: 600, color: "#fff" }}>{voteAverage.toFixed(1)}</span>
+          <span style={{ fontSize: "24px", fontWeight: 500, color: "#fff", marginRight: "8px" }}>{genreName}</span>
+          <span style={{ fontSize: "19px", color: "rgba(255,255,255,0.6)", marginRight: "8px", lineHeight: 1 }}>•</span>
+          <span style={{ fontSize: "22px", color: "#F5C518", marginRight: "6px", lineHeight: 1, display: "inline-flex", alignItems: "center" }}>★</span>
+          <span style={{ fontSize: "24px", fontWeight: 600, color: "#fff" }}>{voteAverage.toFixed(1)}</span>
         </div>
       </div>
     </>

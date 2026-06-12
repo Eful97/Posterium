@@ -14,10 +14,10 @@ function hexLuminance(hex: string): number {
 
 export function genreRatingSVG(genreName: string, voteAverage: number, pw: number): { svg: string; totalW: number; svgH: number } {
   const voteStr = voteAverage.toFixed(1)
-  const fontSize = Math.round(18 * pw / 380)
+  const fontSize = Math.round(24 * pw / 380)
   const charW = fontSize * 0.58
   const genreW = genreName.length * charW
-  const bulletFontSize = Math.round(fontSize * 14 / 18)
+  const bulletFontSize = Math.round(fontSize * 19 / 24)
   const bulletW = Math.round(fontSize * 0.3)
   const rightW = voteStr.length * fontSize * 0.55
   const starR = Math.round(fontSize * 0.45)
