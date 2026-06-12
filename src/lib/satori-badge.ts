@@ -149,7 +149,7 @@ export async function renderGenreBadge(
   const bulletW = Math.round(fontSize * 0.35)
   const starW = Math.round(fontSize * 0.55)
   const voteW = Math.round(voteStr.length * charW)
-  const gap = Math.round(fontSize * 0.42)
+  const gap = Math.round(fontSize * 0.33)
   const gapStar = Math.round(fontSize * 0.17)
   const pad = Math.round(fontSize * 0.35)
   const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + pad * 2
@@ -174,7 +174,9 @@ export async function renderGenreBadge(
       },
     },
     React.createElement("span", null, genreName),
-    React.createElement("span", null, "\u2022"),
+    React.createElement("span", {
+      style: { transform: "translateY(4px)" },
+    }, "\u2022"),
     React.createElement("span", {
       style: {
         display: "flex",
