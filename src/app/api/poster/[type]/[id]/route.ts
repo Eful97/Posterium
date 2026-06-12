@@ -162,19 +162,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const ph = STD_H
     const composites: { input: Buffer; top: number; left: number }[] = []
 
-    async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fallbackGenre?: string | null): Promise<string> {
+    async function extractBadgeColor(imgBuf: Buffer, logoBuf?: Buffer | null, fallbackGenre?: string | null): Promise<string> {
+      const { createCanvas, loadImage } = await import("canvas")
       const { findAccentColor, blendColors } = await import("@/lib/accent-color")
-      const posterMeta = await sharp(posterBuf).metadata()
-      const pw = posterMeta.width || 342
-      const ph = posterMeta.height || 513
-      const raw = await sharp(posterBuf).ensureAlpha().raw().toBuffer()
-      const pColor = findAccentColor(raw, pw, ph, fallbackGenre || '')
+
+      async function extractFrom(buf: Buffer, genre: string) {
+        const img = await loadImage(buf)
+        const w = Math.min(img.width, 342)
+        const h = Math.round(w * img.height / img.width)
+        const canvas = createCanvas(w, h)
+        const ctx = canvas.getContext("2d")
+        ctx.imageSmoothingEnabled = false
+        ctx.drawImage(img, 0, 0, w, h)
+        const pix = ctx.getImageData(0, 0, w, h).data
+        return findAccentColor(pix, w, h, genre)
+      }
+
+      const pColor = await extractFrom(imgBuf, fallbackGenre || '')
       if (!logoBuf) return `#${pColor.r.toString(16).padStart(2, '0')}${pColor.g.toString(16).padStart(2, '0')}${pColor.b.toString(16).padStart(2, '0')}`
-      const logoMeta = await sharp(logoBuf).metadata()
-      const lw = logoMeta.width || 200
-      const lh = logoMeta.height || 100
-      const lRaw = await sharp(logoBuf).ensureAlpha().raw().toBuffer()
-      const lColor = findAccentColor(lRaw, lw, lh, fallbackGenre || '')
+      const lColor = await extractFrom(logoBuf, fallbackGenre || '')
       const blended = blendColors(pColor, lColor)
       return `#${blended.r.toString(16).padStart(2, '0')}${blended.g.toString(16).padStart(2, '0')}${blended.b.toString(16).padStart(2, '0')}`
     }
