@@ -88,13 +88,9 @@ function badgeColors(color: string): { bgTop: string; bgBot: string; textFill: s
   // Keep the poster's hue, use as-is or slightly boost saturation
   const newH = h
   const newS = Math.max(0.15, Math.min(0.55, s * 1.2))
-  // Darken enough for white text visibility
-  const targetL = 0.08  // how much to approach darkness
-  const newL = l + (targetL - l) * 0.6
-  const newL2 = l + (targetL - 0.03 - l) * 0.6
 
-  const bgTop = hslToHex(newH, newS, newL)
-  const bgBot = hslToHex(newH, newS, newL2)
+  const bgTop = hslToHex(newH, newS, l)
+  const bgBot = hslToHex(newH, newS, Math.max(0, l - 0.03))
   const bgLum = relativeLuminance(bgTop)
   const textFill = (1.0 + 0.05) / (bgLum + 0.05) >= 4.5 ? '#fff' : '#1a1a1a'
   const textShadow = textFill === '#fff' ? 'rgba(0,0,0,0.40)' : 'rgba(255,255,255,0.40)'
