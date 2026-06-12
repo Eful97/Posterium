@@ -170,19 +170,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     async function extractMostSaturated(buf: Buffer): Promise<string> {
       const pixelBuf = await sharp(buf).resize(200, 300, { fit: 'fill' }).raw().toBuffer()
-      let maxSat = -1, mr = 0, mg = 0, mb = 0
+
+      // First pass: compute average
+      let ar = 0, ag = 0, ab = 0, an = 0
       for (let i = 0; i < pixelBuf.length; i += 4) {
-        const r = pixelBuf[i], g = pixelBuf[i + 1], b = pixelBuf[i + 2]
-        const max = Math.max(r, g, b), min = Math.min(r, g, b)
-        const l = (max + min) / 510
-        if (l < 0.03 || l > 0.97) continue
-        const d = max - min
-        const s = l > 0.5 ? d / (510 - max - min) : d / (max + min)
-        if (s < 0.05) continue
-        if (s > maxSat) { maxSat = s; mr = r; mg = g; mb = b }
+        ar += pixelBuf[i]; ag += pixelBuf[i + 1]; ab += pixelBuf[i + 2]; an++
       }
-      if (maxSat < 0) return ''
-      let hex = `#${mr.toString(16).padStart(2, '0')}${mg.toString(16).padStart(2, '0')}${mb.toString(16).padStart(2, '0')}`
+      ar /= an; ag /= an; ab /= an
+
+      // Second pass: find pixel with highest sat * distance-from-average
+      let bestScore = -1, br = 0, bg = 0, bb = 0
+      for (let i = 0; i < pixelBuf.length; i += 4) {
+        const r = pixelBuf[i] / 255, g = pixelBuf[i + 1] / 255, b = pixelBuf[i + 2] / 255
+        const max = Math.max(r, g, b), min = Math.min(r, g, b)
+        const l = (max + min) / 2
+        const d = max - min
+        const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+        if (s < 0.05 || l < 0.03 || l > 0.97) continue
+        const dr = pixelBuf[i] - ar, dg = pixelBuf[i + 1] - ag, db = pixelBuf[i + 2] - ab
+        const dist = Math.sqrt(dr * dr + dg * dg + db * db)
+        const score = s * dist
+        if (score > bestScore) { bestScore = score; br = pixelBuf[i]; bg = pixelBuf[i + 1]; bb = pixelBuf[i + 2] }
+      }
+      if (bestScore < 0) return ''
+      let hex = `#${br.toString(16).padStart(2, '0')}${bg.toString(16).padStart(2, '0')}${bb.toString(16).padStart(2, '0')}`
       const lum = simpleLum(hex)
       if (lum < 0.4) hex = adjustColor(hex, 0.2)
       else if (lum > 0.7) hex = adjustColor(hex, -0.15)

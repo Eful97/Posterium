@@ -27,8 +27,20 @@ function extractFromCanvas(containerW: number, containerH: number): { r: number;
   canvas.height = containerH
   const ctx = canvas.getContext("2d")
   if (!ctx) return null
-  let maxSat = -1, mr = 0, mg = 0, mb = 0
   const step = 4
+
+  // First pass: compute average
+  let ar = 0, ag = 0, ab = 0, an = 0
+  for (let y = 0; y < containerH; y += step) {
+    for (let x = 0; x < containerW; x += step) {
+      const p = ctx.getImageData(x, y, 1, 1).data
+      ar += p[0]; ag += p[1]; ab += p[2]; an++
+    }
+  }
+  ar /= an; ag /= an; ab /= an
+
+  // Second pass: find pixel with highest sat * distance-from-average
+  let bestScore = -1, br = 0, bg = 0, bb = 0
   for (let y = 0; y < containerH; y += step) {
     for (let x = 0; x < containerW; x += step) {
       const p = ctx.getImageData(x, y, 1, 1).data
@@ -38,11 +50,13 @@ function extractFromCanvas(containerW: number, containerH: number): { r: number;
       const d = max - min
       const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
       if (s < 0.05 || l < 0.03 || l > 0.97) continue
-      if (s > maxSat) { maxSat = s; mr = p[0]; mg = p[1]; mb = p[2] }
+      const dist = Math.sqrt((p[0] - ar) ** 2 + (p[1] - ag) ** 2 + (p[2] - ab) ** 2)
+      const score = s * dist
+      if (score > bestScore) { bestScore = score; br = p[0]; bg = p[1]; bb = p[2] }
     }
   }
-  if (maxSat < 0) return null
-  return { r: mr, g: mg, b: mb }
+  if (bestScore < 0) return null
+  return { r: br, g: bg, b: bb }
 }
 
 function processRgb(r: number, g: number, b: number): string {
