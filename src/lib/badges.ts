@@ -46,7 +46,7 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
       <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
     </filter>
   </defs>
-  <text x="${pad}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif" font-weight="700" filter="url(#${fid})">
+  <text x="${pad}" y="${textY}" text-anchor="start" fill="#e5e7eb" font-family="sans-serif" font-weight="700" filter="url(#${fid})">
     <tspan font-size="${fontSize}">${escapeXml(genreName)}</tspan>
     <tspan dx="${gap}" dy="${alignDy}" font-size="${smallFontSize}" fill="#aaaaaa">•</tspan>
     <tspan dx="${gap}" dy="${alignDy}" font-size="${smallFontSize}">★</tspan>
@@ -110,7 +110,7 @@ export function rankingBadgeSVG(rank: number, pw: number, color = '', period = "
     </filter>
   </defs>
   <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="#000000" fill-opacity="0.6" filter="url(#${fid})"/>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" fill-opacity="0.9" font-size="${fontSize}" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif" font-weight="600" letter-spacing="0.025em">${escapeXml(fullText)}</text>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" fill-opacity="0.9" font-size="${fontSize}" font-family="sans-serif" font-weight="600" letter-spacing="0.025em">${escapeXml(fullText)}</text>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
 }
@@ -136,7 +136,7 @@ export function extraBadgeSVG(label: string, pw: number, color = ''): { svg: str
     </filter>
   </defs>
   <path d="M 0,0 L ${totalW},0 L ${totalW},${svgH-r} A ${r} ${r} 0 0 1 ${totalW-r} ${svgH} L ${r},${svgH} A ${r} ${r} 0 0 1 0 ${svgH-r} Z" fill="#000000" fill-opacity="0.6" filter="url(#${fid})"/>
-  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" fill-opacity="0.9" font-size="${fontSize}" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif" font-weight="600" letter-spacing="0.025em">${escapeXml(label)}</text>
+  <text x="${totalW / 2}" y="${textY}" text-anchor="middle" fill="#fff" fill-opacity="0.9" font-size="${fontSize}" font-family="sans-serif" font-weight="600" letter-spacing="0.025em">${escapeXml(label)}</text>
 </svg>`
   return { svg, totalW, svgH, cornerR: r }
 }
