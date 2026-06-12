@@ -182,7 +182,7 @@ export async function renderGenreBadge(
       },
     },
       React.createElement("span", {
-        style: { marginRight: `${gapStar}px`, transform: `translateY(${Math.round(fontSize * 0.12)}px)` },
+        style: { marginRight: `${gapStar}px`, transform: `translateY(${Math.round(fontSize * 0.18)}px)` },
       }, "\u2605"),
       React.createElement("span", null, voteStr),
     ),
