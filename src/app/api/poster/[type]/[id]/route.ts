@@ -150,7 +150,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
       (() => {
         if (mapping?.trendRank) return Promise.resolve(mapping.trendRank)
-        return getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT", 100)
+        return getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
           .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
           .catch(() => null)
       })(),
