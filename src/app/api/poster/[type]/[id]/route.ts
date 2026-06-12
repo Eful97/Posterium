@@ -141,8 +141,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     return new Response("Poster not found", { status: 404 })
   }
 
+  const STD_W = 1000
+  const STD_H = 1500
+
   try {
-    const [posterBuf, logoFetch, rankingResult] = await Promise.all([
+    const [originalBuf, logoFetch, rankingResult] = await Promise.all([
       fetchImg(imgSrc(posterPath)),
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
       (() => {
@@ -153,9 +156,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       })(),
     ]) as [Buffer, Buffer | null, number | null]
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
-    const posterMeta = await sharp(posterBuf).metadata()
-    const pw = posterMeta.width || 1000
-    const ph = posterMeta.height || 1500
+    const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'fill' }).toBuffer()
+    const pw = STD_W
+    const ph = STD_H
     const composites: { input: Buffer; top: number; left: number }[] = []
 
     async function extractMostSaturated(buf: Buffer): Promise<string> {
@@ -299,7 +302,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     const composited = await sharp(posterBuf)
-      .resize(pw, ph, { fit: "fill" })
       .composite(composites)
       .jpeg({ quality: 85 })
       .toBuffer()
