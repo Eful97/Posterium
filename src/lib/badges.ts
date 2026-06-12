@@ -22,8 +22,8 @@ export function genreRatingSVG(genreName: string, voteAverage: number, pw: numbe
   const rightW = voteStr.length * fontSize * 0.55
   const starR = Math.round(fontSize * 0.45)
   const starW = starR * 2
-  const gap = Math.round(fontSize * 0.44)
-  const gap2 = Math.round(fontSize * 0.33)
+  const gap = Math.round(fontSize / 3)
+  const gap2 = Math.round(fontSize / 4)
   const pad = Math.round(fontSize * 0.5)
   const totalW = Math.round(genreW + gap + bulletW + gap + starW + gap2 + rightW + pad * 2)
   const svgH = Math.round(fontSize * 1.6)
@@ -66,8 +66,8 @@ export function bottomGradientSVG(pw: number, ph: number): { svg: string; top: n
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}" viewBox="0 0 ${pw} ${gh}">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
-      <stop offset="100%" stop-color="rgba(0,0,0,0.50)"/>
+      <stop offset="60%" stop-color="rgba(0,0,0,0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.7)"/>
     </linearGradient>
   </defs>
   <rect width="${pw}" height="${gh}" fill="url(#g)"/>
