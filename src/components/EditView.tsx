@@ -58,7 +58,8 @@ export default function EditView() {
             if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
             if (award) return <div className="absolute inset-0"><ExtraBadge label={award} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
 
-            if (p.mdblistMatch?.key === 'mdblistAnime') return <div className="absolute inset-0"><RankingBadge rank={p.mdblistMatch.rank} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} label="Anime" /></div>
+            const animeRank = p.mdblistAnimeList?.find((a: any) => a.id === p.selected?.id)
+            if (animeRank) return <div className="absolute inset-0"><RankingBadge rank={animeRank.rank} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} label="Anime" /></div>
 
             if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} containerW={380} containerH={570} color={badgeColor} posterPath={p.previewPoster?.file_path} logoPath={p.selectedLogo?.file_path || null} genreName={p.metaInfo.genres[0]?.name || null} /></div>
 

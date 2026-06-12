@@ -418,6 +418,10 @@ export function usePosterium(): PosteriumCtx {
       else if (mdblistMatch) {
         params.push(`rank=${mdblistMatch.rank}`)
       }
+      else if (selected && mdblistAnimeList.length > 0) {
+        const anime = mdblistAnimeList.find((a: any) => a.id === selected.id)
+        if (anime) params.push(`rank=${anime.rank}`)
+      }
       else {
         const tvType = selected?.media_type === "tv" ? metaInfo.type : null
         const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
