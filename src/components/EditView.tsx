@@ -56,15 +56,9 @@ export default function EditView() {
               if (releaseTime < now && now - releaseTime < twoMonths) return <div className="absolute inset-0"><ExtraBadge label="Al cinema" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
             }
 
-            if (p.selected?.media_type === "tv") {
-              if (p.metaInfo.last_air_date) {
-                const lastAir = new Date(p.metaInfo.last_air_date).getTime()
-                if (now - lastAir < twoMonths) return <div className="absolute inset-0"><ExtraBadge label="Finale stagione" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
-              }
-              if (p.metaInfo.next_episode_to_air?.air_date) {
-                const nextAir = new Date(p.metaInfo.next_episode_to_air.air_date).getTime()
-                if (nextAir > now && nextAir - now < twoWeeks) return <div className="absolute inset-0"><ExtraBadge label="Nuova stagione" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
-              }
+            if (p.selected?.media_type === "tv" && p.metaInfo.next_episode_to_air?.air_date) {
+              const nextAir = new Date(p.metaInfo.next_episode_to_air.air_date).getTime()
+              if (nextAir > now && nextAir - now < twoWeeks) return <div className="absolute inset-0"><ExtraBadge label="Nuova stagione" containerW={380} containerH={570} color={p.badgeBgColor} /></div>
             }
 
             if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} containerW={380} containerH={570} color={p.badgeBgColor} /></div>

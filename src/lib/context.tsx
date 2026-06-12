@@ -406,9 +406,6 @@ export function usePosterium(): PosteriumCtx {
         const rd = new Date(selected.release_date).getTime()
         if (rd < now && now - rd < twoMonths) { params.push(`extra=${encodeURIComponent("Al cinema")}`) }
       }
-      else if (selected?.media_type === "tv" && metaInfo.last_air_date && now - new Date(metaInfo.last_air_date).getTime() < twoMonths) {
-        params.push(`extra=${encodeURIComponent("Finale stagione")}`)
-      }
       else if (selected?.media_type === "tv" && metaInfo.next_episode_to_air?.air_date) {
         const nextAir = new Date(metaInfo.next_episode_to_air.air_date).getTime()
         if (nextAir > now && nextAir - now < twoWeeks) { params.push(`extra=${encodeURIComponent("Nuova stagione")}`) }
