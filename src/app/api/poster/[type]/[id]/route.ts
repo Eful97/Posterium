@@ -335,14 +335,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const awardBadge = awardResult.length ? getAwardBadgeLabel(awardResult) : null
 
     const topBadge = (() => {
-      const qExtra = req.nextUrl.searchParams.get("extra")
-      if (qExtra) return { type: "extra" as const, label: qExtra }
       if (!rankingEnabled) return null
-
-      if (qRank) return { type: "rank" as const, rank: Number(qRank) || finalRank || 0, label: qLabel || "Oggi" }
-
-      if (mapping?.badgeExtra) return { type: "extra" as const, label: mapping.badgeExtra }
-      if (mapping?.badgeRank) return { type: "rank" as const, rank: mapping.badgeRank, label: mapping.badgeLabel || "Oggi" }
 
       if (isNewMovie) return { type: "extra" as const, label: "Nuovo film" }
       if (isNewSeries) return { type: "extra" as const, label: "Nuova serie" }
