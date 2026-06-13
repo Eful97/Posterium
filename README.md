@@ -33,7 +33,7 @@ pinned: false
 ## 🚀 Quick Start
 
 ```bash
-git clone https://github.com/anomalyco/posterium
+git clone https://github.com/Eful97/Posterium
 cd posterium
 npm install
 echo TMDB_API_KEY=la_tua_chiave > .env.local
@@ -105,7 +105,7 @@ Genera un poster personalizzato via URL.
 2. 🏆 **Award** — Oscar, Cannes, Venezia, BAFTA, Emmy, David
 3. 🎌 **Anime rank** — MDBList top anime *(richiede `MDBLIST_API_KEY`)*
 4. 🔥 **Trend rank** — JustWatch Italia
-5. 📺 **Miniserie / Ritorna / Da divorare** — «Da divorare» con voto aggregato ≥ 8.5
+5. 📺 **Miniserie / Ritorna / Da divorare** — «Da divorare» con voto aggregato ≥ 8.7
 
 ### Badge genere/rating
 
