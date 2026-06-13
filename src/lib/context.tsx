@@ -617,7 +617,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           mediaType: selected.media_type,
           title: titleOf(selected),
           posterPath: previewPoster.file_path,
-          logoPath: previewPoster.iso_639_1 === null ? (selectedLogo?.file_path || null) : null,
+          logoPath: selectedLogo?.file_path || null,
           originalPosterPath: selected.poster_path,
           language: previewPoster.iso_639_1,
           logoScale, logoOffsetX, logoOffsetY,
