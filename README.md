@@ -150,4 +150,4 @@ Sfumatura nera 90% → trasparente con genere, •, ★ e voto aggregato (media 
 
 ## 🙏 Credits
 
-Ispirato da [erdb](https://github.com/realbestia1/erdb) di realbestia1.
+Ispirato da e basato su [erdb](https://github.com/realbestia1/erdb) di realbestia1, distribuito sotto licenza AGPL v3.
