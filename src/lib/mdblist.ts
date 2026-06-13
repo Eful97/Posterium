@@ -24,7 +24,8 @@ export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MD
     if (!res.ok) return []
     const data = await res.json()
     const payload = key ? (data?.data || data) : data
-    return ((payload?.items || payload || []) as any[]).map((item: any) => ({
+    const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
+    return rawItems.slice(0, 20).map((item: any) => ({
       imdb: item.imdb_id || item.imdb || '',
       title: item.title || '',
       year: item.year || 0,
