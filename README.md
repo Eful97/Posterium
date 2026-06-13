@@ -56,8 +56,8 @@ docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 | Variabile | Obbligatoria | Descrizione |
 |-----------|:----------:|-------------|
 | `TMDB_API_KEY` | ✅ | Chiave API TMDB v3 |
-| `OMDB_API_KEY` | ❌ | Chiave API OMDb — fallback rating IMDb quando MDBList non disponibile. Senza chiave, fallback su voto TMDB. |
-| `MDBLIST_API_KEY` | ❌ | Chiave API MDBList — rating aggregati (IMDb + Metacritic + RT + Letterboxd + Trakt...) e classifiche anime. |
+| `MDBLIST_API_KEY` | ❌ | Rating aggregati (IMDb + Metacritic + RT + Letterboxd + Trakt...) e classifiche anime. Priorità massima. |
+| `OMDB_API_KEY` | ❌ | Rating IMDb — fallback quando MDBList non disponibile. Senza chiave, fallback su voto TMDB. |
 | `KV_URL` | ❌ | Vercel KV per storage (altrimenti file JSON) |
 
 ---
