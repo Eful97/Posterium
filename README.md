@@ -56,8 +56,7 @@ docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 | Variabile | Obbligatoria | Descrizione |
 |-----------|:----------:|-------------|
 | `TMDB_API_KEY` | ✅ | Chiave API TMDB v3 |
-| `OMDB_API_KEY` | ❌ | Chiave OMDb per i voti IMDb (free su [omdbapi.com](https://www.omdbapi.com/apikey.aspx)). Senza chiave, fallback su voto TMDB. |
-| `MDBLIST_API_KEY` | ❌ | Chiave API MDBList (necessaria per classifiche anime) |
+| `MDBLIST_API_KEY` | ❌ | Chiave API MDBList — attiva rating aggregati (IMDb + Metacritic + RT + Letterboxd + Trakt...) e classifiche anime. Senza chiave, fallback su voto TMDB. |
 | `KV_URL` | ❌ | Vercel KV per storage (altrimenti file JSON) |
 
 ---
@@ -106,11 +105,11 @@ Genera un poster personalizzato via URL.
 2. 🏆 **Award** — Oscar, Cannes, Venezia, BAFTA, Emmy, David
 3. 🎌 **Anime rank** — MDBList top anime *(richiede `MDBLIST_API_KEY`)*
 4. 🔥 **Trend rank** — JustWatch Italia
-5. 📺 **Miniserie / Ritorna / Da divorare** — «Da divorare» con voto IMDb ≥ 8.5
+5. 📺 **Miniserie / Ritorna / Da divorare** — «Da divorare» con voto aggregato ≥ 8.5
 
 ### Badge genere/rating
 
-Sfumatura nera 90% → trasparente con genere, •, ★ e voto IMDb (o TMDB se `OMDB_API_KEY` non è impostata) centrato in basso.
+Sfumatura nera 90% → trasparente con genere, •, ★ e voto aggregato (media MDBList di IMDb, Metacritic, Rotten Tomatoes, Letterboxd, Trakt... o fallback TMDB) centrato in basso.
 
 ---
 
