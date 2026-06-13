@@ -43,7 +43,7 @@ export default function EditView() {
             const badgeAdj = badgesVisible ? 0 : 15.2
             const bottomPx = baseGap - p.logoOffsetY * scale - badgeAdj
             const maxLogoH = Math.round(380 * 1.5 * 0.30)
-            return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center" }}><div style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%" }}><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain", maxHeight: `${maxLogoH}px` }} /></div></div>
+            return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10 }}><div style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%" }}><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain", maxHeight: `${maxLogoH}px` }} /></div></div>
           })()}
           {p.rankingBadges && (() => {
             const now = Date.now()
@@ -60,7 +60,7 @@ export default function EditView() {
               const b = parseInt(h.slice(5, 7), 16) / 255
               return 0.2126 * r + 0.7152 * g + 0.0722 * b
             })()
-            const topLight = edgeLum !== null ? edgeLum > 0.55 : undefined
+            const topLight = edgeLum !== null ? edgeLum > 0.55 && edgeLum < 0.99 : undefined
 
             if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" topLight={topLight} /></div>
             if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" topLight={topLight} /></div>

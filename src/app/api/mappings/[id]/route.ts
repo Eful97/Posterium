@@ -46,6 +46,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     voteAverage: body.voteAverage ?? existing?.voteAverage ?? null,
     trendRank: body.trendRank ?? existing?.trendRank,
     trendPeriod: body.trendPeriod ?? existing?.trendPeriod,
+    tvType: body.tvType ?? existing?.tvType,
+    tvStatus: body.tvStatus ?? existing?.tvStatus,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")

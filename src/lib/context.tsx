@@ -99,7 +99,6 @@ export interface PosteriumCtx {
   copied: boolean
   accentColor: string
   topEdgeColor: string
-  badgeBgColor: string
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
@@ -367,11 +366,6 @@ export function usePosterium(): PosteriumCtx {
     setUrlPattern(url)
   }, [globalBadges, rankingBadges, tmdbKey, lang])
 
-  const [badgeBgColor, setBadgeBgColor] = useState("")
-
-  useEffect(() => {
-    if (!previewPoster) { setBadgeBgColor(""); return }
-  }, [previewPoster])
 
   const buildPreviewUrl = useCallback(() => {
     if (!selected) { setPreviewUrl(""); return }
@@ -392,7 +386,6 @@ export function usePosterium(): PosteriumCtx {
       params.push(`oy=${logoOffsetY}`)
     }
     if (lang) params.push(`lang=${lang}`)
-    if (badgeBgColor) params.push(`badgeColor=${encodeURIComponent(badgeBgColor)}`)
     if (rankingBadges) {
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
@@ -408,7 +401,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         if (anime) params.push(`rank=${anime.rank}&label=Anime`)
       }
       else if (trendRank) {
-        // skip - the server renders the ranking badge instead
+        params.push(`rank=${trendRank}`)
       }
       else {
         const tvType = selected?.media_type === "tv" ? metaInfo.type : null
@@ -421,7 +414,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     params.push(`v=${v}`)
     const qs = params.length > 0 ? "?" + params.join("&") : ""
     setPreviewUrl(`${getDomain()}/api/poster/${selected.media_type}/${selected.id}${qs}`)
-  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, badgeBgColor, accentColor, trendRank])
+  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, trendRank])
 
   useEffect(() => {
     if (!selected) { setPreviewUrl(""); return }
@@ -617,6 +610,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           trendPeriod: "day",
           accentColor: accentColor !== '#ffffff' ? accentColor : undefined,
           showBadges: globalBadges,
+          tvType: metaInfo.type || null,
+          tvStatus: metaInfo.status || null,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)
@@ -774,7 +769,6 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     copyUrl, copied,
     accentColor,
     topEdgeColor,
-    badgeBgColor,
   }), [
     selected, view, posters, loadingImages, previewPoster, selectedLogo,
     logos, posterActivePath, previewUrl, urlPattern, lang,
@@ -787,7 +781,6 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     tmdbKeyInput, showKey, copied,
     accentColor,
     topEdgeColor,
-    badgeBgColor,
     trending, streamingCharts, mdblistAnimeList,
   ])
 }

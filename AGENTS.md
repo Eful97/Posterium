@@ -36,7 +36,7 @@ px-6 (24px)                         → px = round(fontSize * 1.2)
 py-2.5 (10px per side)             → pt = pb = round(fontSize * 0.7)   (compensates line-height)
 rounded-b-2xl (16px)               → r = round(fontSize * 0.8)
 text-xl (20px)                      → fontSize = round(20 * pw / 380)
-bottom-6 (24px) genre badge offset  → badgeY = ph - h - round(24 * ph / 570)
+bottom-5 (20px) genre badge offset  → badgeY = ph - h - round(20 * ph / 570)
 ```
 
 Dove `X` = base font size del client (es. 24px).

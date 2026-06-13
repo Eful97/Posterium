@@ -19,6 +19,8 @@ export interface Mapping {
   trendRank?: number
   trendPeriod?: string
   accentColor?: string
+  tvType?: string
+  tvStatus?: string
 }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL

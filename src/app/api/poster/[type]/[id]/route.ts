@@ -5,7 +5,7 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
-import { bottomGradientSVG, topGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
+import { bottomGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 import { fetchAwards, getAwardBadgeLabel } from "@/lib/awards"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
@@ -52,6 +52,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const { type, id } = await params
   const mediaType = (type === "series" || type === "tv") ? "tv" : "movie"
   const tmdbId = Number(id)
+  if (isNaN(tmdbId) || tmdbId <= 0) return new Response("Invalid ID", { status: 400 })
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:${req.nextUrl.searchParams.toString()}`
   const cached = cacheGetStale<Buffer>(cacheKey)
   const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
@@ -170,8 +171,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     ]) as [Buffer, Buffer | null, number | null, number | null, string[]]
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
+    const qLabel = req.nextUrl.searchParams.get("label")
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
+    // Use cached type/status from mapping to avoid extra API call
+    if (mapping?.tvType) tvType = mapping.tvType
+    if (mapping?.tvStatus) tvStatus = mapping.tvStatus
     // Fetch missing tv/movie details when using mapping or query params
     const qApiKey = req.nextUrl.searchParams.get("api_key") || undefined
     if ((mediaType === "tv" && !tvType) || (mediaType === "movie" && !releaseDate)) {
@@ -258,11 +263,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const w = meta.width || STD_W
       const h = meta.height || STD_H
       const stripH = Math.max(Math.round(h * 0.08), 3)
-      const sm = await sharp(buf)
+      const extracted = await sharp(buf)
         .extract({ left: 0, top: 0, width: w, height: stripH })
-        .resize(100, 10, { fit: 'fill', kernel: 'nearest' }).raw().toBuffer()
+        .raw().toBuffer()
       let r = 0, g = 0, b = 0, n = 0
-      for (let i = 0; i < sm.length; i += 4) { r += sm[i]; g += sm[i + 1]; b += sm[i + 2]; n++ }
+      for (let i = 0; i < extracted.length; i += 4) { r += extracted[i]; g += extracted[i + 1]; b += extracted[i + 2]; n++ }
       r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n)
       return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
     }
@@ -274,6 +279,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qRanking = req.nextUrl.searchParams.get("ranking")
     const rankingEnabled = qRanking !== "0" && showBadges
     const s = ph / 1500
+
+    if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
+      const { svg: gradSvg, top: gradTop } = bottomGradientSVG(pw, ph)
+      composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
+      const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw)
+      const badgeY = ph - h - Math.round(20 * ph / 570)
+      const badgeLeft = Math.round((pw - w) / 2)
+      composites.push({ input: png, top: badgeY, left: badgeLeft })
+    }
 
     if (logoFetch) {
       const logoBuf = logoFetch
@@ -302,15 +316,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       composites.push({ input: logoResized, top: logoTop, left: logoX })
     }
 
-    if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
-      const { svg: gradSvg, top: gradTop } = bottomGradientSVG(pw, ph)
-      composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
-      const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw)
-      const badgeY = ph - h - Math.round(24 * ph / 570)
-      const badgeLeft = Math.round((pw - w) / 2)
-      composites.push({ input: png, top: badgeY, left: badgeLeft })
-    }
-
     // Badge priority (matches client EditView.tsx):
     // 1. Nuovo film / Nuova serie
     // 2. Award (Vincitore Oscar/Cannes/etc.)
@@ -328,11 +333,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       if (qExtra) return { type: "extra" as const, label: qExtra }
       if (!rankingEnabled) return null
 
+      if (qRank) return { type: "rank" as const, rank: Number(qRank) || finalRank || 0, label: qLabel || "Oggi" }
+
       if (isNewMovie) return { type: "extra" as const, label: "Nuovo film" }
       if (isNewSeries) return { type: "extra" as const, label: "Nuova serie" }
       if (awardBadge) return { type: "extra" as const, label: awardBadge }
       if (animeRankResult) return { type: "rank" as const, rank: animeRankResult, label: "Anime" }
-      if (finalRank) return { type: "rank" as const, rank: finalRank, label: req.nextUrl.searchParams.get("label") || "Oggi" }
+      if (finalRank) return { type: "rank" as const, rank: finalRank, label: "Oggi" }
 
       const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : (voteAverage && voteAverage >= 8) ? "Da divorare" : null
       if (extra) return { type: "extra" as const, label: extra }
@@ -343,14 +350,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       if (topBadge.type === "extra") {
         const { png: extraPng, w, h } = await renderExtraBadge(topBadge.label, pw, topLight)
         const extraLeft = Math.round((pw - w) / 2)
-        const { svg: gradSvg, h: gradH } = topGradientSVG(pw, h)
-        composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
         composites.push({ input: extraPng, top: 0, left: extraLeft })
       } else {
         const { png: rankPng, w, h } = await renderRankingBadge(topBadge.rank, pw, topBadge.label, topLight)
         const rankLeft = Math.round((pw - w) / 2)
-        const { svg: gradSvg, h: gradH } = topGradientSVG(pw, h)
-        composites.push({ input: Buffer.from(gradSvg), top: 0, left: 0 })
         composites.push({ input: rankPng, top: 0, left: rankLeft })
       }
     }

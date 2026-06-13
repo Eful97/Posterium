@@ -59,12 +59,23 @@ export async function renderRankingBadge(
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
   const r = Math.round(fontSize * 0.8)
-  const bg = topLight ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.8)"
+  const bg = topLight ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.8)"
   const fg = topLight ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.8)"
+  const shadowBlur = Math.round(fontSize * 0.6)
+  const shadowOff = Math.round(fontSize * 0.2)
 
   const el = React.createElement(
     "div",
     {
+      style: {
+        display: "flex",
+        justifyContent: "center",
+        paddingLeft: `${shadowBlur}px`,
+        paddingRight: `${shadowBlur}px`,
+        paddingBottom: `${shadowOff + shadowBlur}px`,
+      },
+    },
+    React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
@@ -74,21 +85,25 @@ export async function renderRankingBadge(
         backgroundColor: bg,
         borderBottomLeftRadius: `${r}px`,
         borderBottomRightRadius: `${r}px`,
+        boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
       },
     },
-    React.createElement("span", {
-      style: {
-        color: fg,
-        fontSize: `${fontSize}px`,
-        fontFamily: "Inter",
-        fontWeight: 600,
-        letterSpacing: "0.025em",
-      },
-    }, fullText)
+      React.createElement("span", {
+        style: {
+          color: fg,
+          fontSize: `${fontSize}px`,
+          fontFamily: "Inter",
+          fontWeight: 600,
+          letterSpacing: "0.025em",
+        },
+      }, fullText)
+    ),
   )
 
-  const png = await render(el, totalW, svgH)
-  return { png, w: totalW, h: svgH }
+  const renderW = totalW + shadowBlur * 2
+  const renderH = svgH + shadowOff + shadowBlur
+  const png = await render(el, renderW, renderH)
+  return { png, w: renderW, h: renderH }
 }
 
 export async function renderExtraBadge(
@@ -105,12 +120,23 @@ export async function renderExtraBadge(
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
   const r = Math.round(fontSize * 0.8)
-  const bg = topLight ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.8)"
+  const bg = topLight ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.8)"
   const fg = topLight ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.8)"
+  const shadowBlur = Math.round(fontSize * 0.6)
+  const shadowOff = Math.round(fontSize * 0.2)
 
   const el = React.createElement(
     "div",
     {
+      style: {
+        display: "flex",
+        justifyContent: "center",
+        paddingLeft: `${shadowBlur}px`,
+        paddingRight: `${shadowBlur}px`,
+        paddingBottom: `${shadowOff + shadowBlur}px`,
+      },
+    },
+    React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
@@ -120,21 +146,25 @@ export async function renderExtraBadge(
         backgroundColor: bg,
         borderBottomLeftRadius: `${r}px`,
         borderBottomRightRadius: `${r}px`,
+        boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
       },
     },
-    React.createElement("span", {
-      style: {
-        color: fg,
-        fontSize: `${fontSize}px`,
-        fontFamily: "Inter",
-        fontWeight: 600,
-        letterSpacing: "0.025em",
-      },
-    }, label)
+      React.createElement("span", {
+        style: {
+          color: fg,
+          fontSize: `${fontSize}px`,
+          fontFamily: "Inter",
+          fontWeight: 600,
+          letterSpacing: "0.025em",
+        },
+      }, label)
+    ),
   )
 
-  const png = await render(el, totalW, svgH)
-  return { png, w: totalW, h: svgH }
+  const renderW = totalW + shadowBlur * 2
+  const renderH = svgH + shadowOff + shadowBlur
+  const png = await render(el, renderW, renderH)
+  return { png, w: renderW, h: renderH }
 }
 
 export async function renderGenreBadge(
@@ -175,7 +205,7 @@ export async function renderGenreBadge(
     },
     React.createElement("span", null, genreName),
     React.createElement("span", {
-      style: { marginLeft: `${Math.round(fontSize * 2.0)}px`, transform: "translateY(4px)" },
+      style: { transform: "translateY(5px)" },
     }, "\u2022"),
     React.createElement("span", {
       style: {
@@ -187,7 +217,7 @@ export async function renderGenreBadge(
         style: { marginRight: `${gapStar}px`, transform: `translateY(${Math.round(fontSize * 0.23)}px)` },
       }, "\u2605"),
       React.createElement("span", {
-        style: { transform: "translateY(4px)" },
+        style: { transform: "translateY(5px)" },
       }, voteStr),
     ),
   )

@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
     voteAverage: body.voteAverage ?? null,
     trendRank: body.trendRank ?? undefined,
     trendPeriod: body.trendPeriod ?? undefined,
+    tvType: body.tvType ?? undefined,
+    tvStatus: body.tvStatus ?? undefined,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")
