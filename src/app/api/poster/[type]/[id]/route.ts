@@ -164,6 +164,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       })(),
       (() => {
         if (mediaType !== "tv") return Promise.resolve(null)
+        const cached = cacheGet<any[]>("mdblist:anime:top10")
+        if (cached) {
+          const idx = cached.findIndex((a: any) => a.id === tmdbId)
+          return Promise.resolve(idx >= 0 ? idx + 1 : null)
+        }
         return fetchMDBList("mdblistAnime")
           .then((entries) => {
             const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
