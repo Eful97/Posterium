@@ -406,7 +406,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       else {
         const tvType = selected?.media_type === "tv" ? metaInfo.type : null
         const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
-        const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8 ? "Da divorare" : null
+        const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8.5 ? "Da divorare" : null
         if (extra) params.push(`extra=${encodeURIComponent(extra)}`)
       }
     }
