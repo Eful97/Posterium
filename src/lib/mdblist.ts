@@ -11,16 +11,20 @@ export const MDBLISTS = [
   { key: 'mdblistAnime', label: 'Anime di tendenza', url: 'https://mdblist.com/lists/snoak/trending-anime-shows' },
 ] as const
 
-export async function fetchMDBList(listKey: string): Promise<MDBListEntry[]> {
+export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MDBListEntry[]> {
   const list = MDBLISTS.find(l => l.key === listKey)
   if (!list) return []
+  const key = apiKey || process.env.MDBLIST_API_KEY
   try {
-    const res = await fetch(`https://mdblist.com/api/lists/snoak/${list.url.split('/').pop()}`, {
-      signal: AbortSignal.timeout(10000),
-    })
+    const slug = list.url.split('/').pop()
+    const baseUrl = key
+      ? `https://api.mdblist.com/lists/snoak/${slug}/items?apikey=${encodeURIComponent(key)}&limit=20`
+      : `https://mdblist.com/api/lists/snoak/${slug}`
+    const res = await fetch(baseUrl, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) return []
     const data = await res.json()
-    return (data.items || data || []).map((item: any) => ({
+    const payload = key ? (data?.data || data) : data
+    return ((payload?.items || payload || []) as any[]).map((item: any) => ({
       imdb: item.imdb_id || item.imdb || '',
       title: item.title || '',
       year: item.year || 0,
