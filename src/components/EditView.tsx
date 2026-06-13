@@ -129,6 +129,7 @@ export default function EditView() {
               }
             }
             params.push(`v=${Date.now()}`)
+            p.saveConfig().catch(() => {})
             window.open(`/api/poster/${p.selected.media_type}/${p.selected.id}?${params.join("&")}`, "_blank")
           }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">🔍 Testa URL</button>
           {(() => {
