@@ -1,6 +1,7 @@
 import { cacheGet, cacheSet } from "./cache"
 
 const MDBLIST = "https://mdblist.com/api"
+const OMDB = "https://www.omdbapi.com"
 
 export interface AggregatedRatings {
   sources: Record<string, number>
@@ -17,71 +18,104 @@ function avg(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length
 }
 
+async function fetchOMDbRating(imdbId: string): Promise<number | null> {
+  const key = process.env.OMDB_API_KEY
+  if (!key) return null
+  try {
+    const res = await fetch(
+      `${OMDB}/?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(imdbId)}`,
+      { signal: AbortSignal.timeout(8000) }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const raw = data?.imdbRating
+    if (raw === "N/A" || raw === undefined) return null
+    const v = parseFloat(raw)
+    return isNaN(v) || v <= 0 ? null : v
+  } catch {
+    return null
+  }
+}
+
 export async function fetchAggregatedRating(
   imdbId: string,
   apiKey?: string
 ): Promise<AggregatedRatings | null> {
-  const key = apiKey || process.env.MDBLIST_API_KEY
-  if (!key || !imdbId) return null
+  if (!imdbId) return null
 
   const cacheKey = `mdb:ratings:${imdbId}`
   const cached = cacheGet<AggregatedRatings>(cacheKey)
   if (cached) return cached
 
+  const key = apiKey || process.env.MDBLIST_API_KEY
+  const qs = key ? `?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(imdbId)}` : `?i=${encodeURIComponent(imdbId)}`
+
   try {
     const res = await fetch(
-      `${MDBLIST}/?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(imdbId)}`,
+      `${MDBLIST}/${qs}`,
       { signal: AbortSignal.timeout(8000) }
     )
-    if (!res.ok) return null
-    const data = await res.json()
+    if (res.ok) {
+      const raw = await res.json()
+      const data = raw?.data ?? raw
 
-    const ratings = data?.ratings
-    if (!Array.isArray(ratings) || ratings.length === 0) return null
-
-    // Prefer MDBList's own weighted score (may be 0-100 or 0-10)
-    const mdbScore = data?.score ?? data?.mdblist_score ?? data?.mdblist
-    if (typeof mdbScore === "number" && mdbScore > 0) {
-      const normalized = toTen(mdbScore)
-      if (normalized > 0 && normalized <= 10) {
-        const result: AggregatedRatings = {
-          sources: { mdblist: normalized },
-          average: normalized,
-          count: 1,
+      const mdbScore = data?.score ?? data?.mdblist_score ?? data?.mdblist
+      if (typeof mdbScore === "number" && mdbScore > 0) {
+        const normalized = toTen(mdbScore)
+        if (normalized > 0 && normalized <= 10) {
+          const result: AggregatedRatings = {
+            sources: { mdblist: normalized },
+            average: normalized,
+            count: 1,
+          }
+          cacheSet(cacheKey, result, ["mdb"])
+          return result
         }
-        cacheSet(cacheKey, result, ["mdb"])
-        return result
+      }
+
+      const ratings = data?.ratings
+      if (Array.isArray(ratings) && ratings.length > 0) {
+        const MAJOR = new Set(["imdb", "tmdb", "metacritic", "rotten_tomatoes", "letterboxd", "trakt"])
+        const sources: Record<string, number> = {}
+        const values: number[] = []
+
+        for (const item of ratings) {
+          const src = (item?.source || item?.name || item?.provider || "").toLowerCase()
+          if (!MAJOR.has(src)) continue
+          const rawV = item?.value ?? item?.rating ?? item?.score
+          const v = typeof rawV === "number" ? rawV : parseFloat(rawV)
+          if (isNaN(v) || v <= 0) continue
+          if (!sources[src]) {
+            const normalized = toTen(v)
+            sources[src] = normalized
+            values.push(normalized)
+          }
+        }
+
+        if (values.length > 0) {
+          const result: AggregatedRatings = {
+            sources,
+            average: avg(values),
+            count: values.length,
+          }
+          cacheSet(cacheKey, result, ["mdb"])
+          return result
+        }
       }
     }
+  } catch {}
 
-    // Fallback: average of major sources only
-    const MAJOR = new Set(["imdb", "tmdb", "metacritic", "rotten_tomatoes", "letterboxd", "trakt"])
-    const sources: Record<string, number> = {}
-    const values: number[] = []
-
-    for (const item of ratings) {
-      const src = (item?.source || item?.name || item?.provider || "").toLowerCase()
-      if (!MAJOR.has(src)) continue
-      const raw = item?.value ?? item?.rating ?? item?.score
-      const v = typeof raw === "number" ? raw : parseFloat(raw)
-      if (isNaN(v) || v <= 0) continue
-      if (!sources[src]) {
-        const normalized = toTen(v)
-        sources[src] = normalized
-        values.push(normalized)
-      }
-    }
-
-    if (values.length === 0) return null
-
+  // Fallback to OMDb for IMDb rating
+  const omdbRating = await fetchOMDbRating(imdbId)
+  if (omdbRating !== null) {
     const result: AggregatedRatings = {
-      sources,
-      average: avg(values),
-      count: values.length,
+      sources: { imdb: omdbRating },
+      average: omdbRating,
+      count: 1,
     }
-    cacheSet(cacheKey, result, ["mdb"])
+    cacheSet(cacheKey, result, ["omdb"])
     return result
-  } catch {
-    return null
   }
+
+  return null
 }
