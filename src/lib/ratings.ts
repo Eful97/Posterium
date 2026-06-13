@@ -2,15 +2,14 @@ import { cacheGet, cacheSet } from "./cache"
 
 const MDBLIST = "https://mdblist.com/api"
 
-interface MdbListRating {
-  source: string
-  value: number
-}
-
 export interface AggregatedRatings {
   sources: Record<string, number>
   average: number
   count: number
+}
+
+function toTen(v: number): number {
+  return v > 10 ? v / 10 : v
 }
 
 function avg(values: number[]): number {
@@ -49,8 +48,9 @@ export async function fetchAggregatedRating(
       const v = typeof raw === "number" ? raw : parseFloat(raw)
       if (!src || isNaN(v) || v <= 0) continue
       if (!sources[src]) {
-        sources[src] = v
-        values.push(v)
+        const normalized = toTen(v)
+        sources[src] = normalized
+        values.push(normalized)
       }
     }
 

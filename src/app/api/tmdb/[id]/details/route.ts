@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server"
 import { getDetails, getExternalIds } from "@/lib/tmdb"
-import { fetchImdbRating } from "@/lib/omdb"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
@@ -22,15 +21,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       getDetails(mediaType, Number(id), language, apiKey),
       getExternalIds(mediaType, Number(id), apiKey).catch(() => ({ imdb_id: null })),
     ])
-    let rating: number | null = null
-    if (extIds.imdb_id) {
-      const aggregated = await fetchAggregatedRating(extIds.imdb_id, mdblistKey).catch(() => null)
-      rating = aggregated?.average ?? null
-      if (rating === null) {
-        rating = await fetchImdbRating(extIds.imdb_id).catch(() => null)
-      }
-    }
-    const body = { title: data.title, name: data.name, genres: data.genres, voteAverage: rating ?? data.vote_average ?? 0, voteCount: data.vote_count, type: data.type, status: data.status, release_date: data.release_date, last_air_date: data.last_air_date, next_episode_to_air: data.next_episode_to_air, number_of_seasons: data.number_of_seasons, number_of_episodes: data.number_of_episodes }
+    const rating = extIds.imdb_id
+      ? (await fetchAggregatedRating(extIds.imdb_id, mdblistKey).catch(() => null))?.average ?? data.vote_average ?? 0
+      : data.vote_average ?? 0
+    const body = { title: data.title, name: data.name, genres: data.genres, voteAverage: rating, voteCount: data.vote_count, type: data.type, status: data.status, release_date: data.release_date, last_air_date: data.last_air_date, next_episode_to_air: data.next_episode_to_air, number_of_seasons: data.number_of_seasons, number_of_episodes: data.number_of_episodes }
     cacheSet(cacheKey, body, ["tmdb", "details"])
     return Response.json(body)
   } catch {
