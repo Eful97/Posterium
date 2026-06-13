@@ -338,6 +338,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
       if (qRank) return { type: "rank" as const, rank: Number(qRank) || finalRank || 0, label: qLabel || "Oggi" }
 
+      if (mapping?.badgeExtra) return { type: "extra" as const, label: mapping.badgeExtra }
+      if (mapping?.badgeRank) return { type: "rank" as const, rank: mapping.badgeRank, label: mapping.badgeLabel || "Oggi" }
+
       if (isNewMovie) return { type: "extra" as const, label: "Nuovo film" }
       if (isNewSeries) return { type: "extra" as const, label: "Nuova serie" }
       if (awardBadge) return { type: "extra" as const, label: awardBadge }

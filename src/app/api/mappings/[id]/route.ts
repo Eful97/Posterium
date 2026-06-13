@@ -48,6 +48,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     trendPeriod: body.trendPeriod ?? existing?.trendPeriod,
     tvType: body.tvType ?? existing?.tvType,
     tvStatus: body.tvStatus ?? existing?.tvStatus,
+    accentColor: body.accentColor ?? existing?.accentColor,
+    badgeExtra: body.badgeExtra ?? existing?.badgeExtra,
+    badgeRank: body.badgeRank ?? existing?.badgeRank,
+    badgeLabel: body.badgeLabel ?? existing?.badgeLabel,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")

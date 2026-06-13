@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
     trendPeriod: body.trendPeriod ?? undefined,
     tvType: body.tvType ?? undefined,
     tvStatus: body.tvStatus ?? undefined,
+    accentColor: body.accentColor ?? undefined,
+    badgeExtra: body.badgeExtra ?? undefined,
+    badgeRank: body.badgeRank ?? undefined,
+    badgeLabel: body.badgeLabel ?? undefined,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")

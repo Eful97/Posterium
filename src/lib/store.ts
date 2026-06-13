@@ -21,6 +21,9 @@ export interface Mapping {
   accentColor?: string
   tvType?: string
   tvStatus?: string
+  badgeExtra?: string
+  badgeRank?: number
+  badgeLabel?: string
 }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL
