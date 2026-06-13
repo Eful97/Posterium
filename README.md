@@ -8,13 +8,11 @@ app_port: 3000
 pinned: false
 ---
 
-# Posterium 🎬
+<p align="center">
+  <img src="public/posterium.svg" alt="Posterium" width="400" />
+</p>
 
-<table align="center"><tr><td>
-
-**Genera poster personalizzati** di film e serie TV con loghi, badge trend, rating e classifiche — tutto renderizzato dinamicamente via API.
-
-</td></tr></table>
+<p align="center"><strong>Genera poster personalizzati</strong> di film e serie TV — loghi, badge trend, rating, premi e classifiche, renderizzati dinamicamente via API.</p>
 
 ---
 
@@ -22,32 +20,23 @@ pinned: false
 
 - 🔍 **Ricerca TMDB** — Cerca film e serie TV in italiano e inglese
 - 🎯 **Loghi** — Seleziona loghi ufficiali puliti e posizionali sul poster
-- 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, e badge adattivi (scuri su poster chiari, chiari su scuri)
-- 🏷️ **Badge genere/rating** — Genere, stella ★ e voto renderizzati in sovrimpressione
-- 🏆 **Badge premi** — Oscar, Cannes, Venezia, BAFTA, Emmy e altri da Wikidata
-- 🎌 **Anime rank** — Top trending anime da MDBList
-- 📐 **Server-side rendering** — Poster generati con Satori + Resvg via API
-- 🐳 **Docker** — Deployabile ovunque (Hugging Face Spaces, Vercel, server proprio)
-- ⚡ **Standalone output** — Next.js in standalone mode per immagini Docker minime
+- 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge adattivi (scuri su poster chiari, chiari su scuri)
+- 🏷️ **Badge genere/rating** — Genere, stella ★ e voto in sovrimpressione
+- 🏆 **Badge premi** — Oscar, Cannes, Venezia, BAFTA, Emmy da Wikidata
+- 🎌 **Anime rank** — Top trending anime da MDBList *(richiede chiave MDBList)*
+- 📐 **Server-side rendering** — Satori + Resvg (JSX → SVG → PNG)
+- 🐳 **Docker** — Deployabile su HF Spaces, Vercel, server proprio
+- ⚡ **Standalone output** — Next.js standalone per immagini Docker minime
 
 ---
 
 ## 🚀 Quick Start
 
-### Locale
-
 ```bash
-# Clona
 git clone https://github.com/anomalyco/posterium
 cd posterium
-
-# Installa
 npm install
-
-# Crea .env.local
 echo TMDB_API_KEY=la_tua_chiave > .env.local
-
-# Avvia
 npm run dev
 ```
 
@@ -67,9 +56,8 @@ docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 | Variabile | Obbligatoria | Descrizione |
 |-----------|:----------:|-------------|
 | `TMDB_API_KEY` | ✅ | Chiave API TMDB v3 |
-| `KV_URL` | ❌ | URL Vercel KV per storage (altrimenti file JSON) |
-| `KV_REST_API_URL` | ❌ | Vercel KV REST URL |
-| `KV_REST_API_TOKEN` | ❌ | Vercel KV REST token |
+| `MDBLIST_API_KEY` | ❌ | Chiave API MDBList (necessaria per classifiche anime) |
+| `KV_URL` | ❌ | Vercel KV per storage (altrimenti file JSON) |
 
 ---
 
@@ -77,17 +65,15 @@ docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 
 ### `GET /api/poster/[type]/[id]`
 
-Genera un poster personalizzato.
-
-**Parametri query:**
+Genera un poster personalizzato via URL.
 
 | Parametro | Descrizione | Esempio |
 |-----------|-------------|--------|
 | `api_key` | Chiave TMDB | `?api_key=xxx` |
 | `poster` | Percorso poster | `?poster=/abc123.jpg` |
 | `logo` | Percorso logo | `?logo=/logo123.png` |
-| `scale` | Scala logo (10-100) | `?scale=75` |
-| `ox` / `oy` | Offset logo X/Y | `?ox=10&oy=-5` |
+| `scale` | Scala logo (10–100) | `?scale=75` |
+| `ox` / `oy` | Offset logo | `?ox=10&oy=-5` |
 | `genreName` | Nome genere | `?genreName=Thriller` |
 | `voteAverage` | Voto medio | `?voteAverage=7.5` |
 | `rank` | Posizione classifica | `?rank=4` |
@@ -103,11 +89,27 @@ Genera un poster personalizzato.
 
 | Endpoint | Descrizione |
 |----------|-------------|
-| `GET /api/health` | Stato servizi (TMDB, cache, storage) |
+| `GET /api/health` | Stato servizi |
 | `GET /api/trending/rank` | Classifica JustWatch |
-| `GET /api/awards/[type]/[id]` | Premi da Wikidata |
+| `GET /api/awards/[type]/[id]` | Premi Wikidata |
 | `GET /api/mdblist/anime` | Top anime MDBList |
-| `POST /api/mappings` | Salva configurazione poster |
+| `POST /api/mappings` | Salva configurazione |
+
+---
+
+## 🎨 Badge System
+
+### Priorità badge top
+
+1. 🆕 **Nuovo film / Nuova serie** — <2 settimane
+2. 🏆 **Award** — Oscar, Cannes, Venezia, BAFTA, Emmy, David
+3. 🎌 **Anime rank** — MDBList top anime *(richiede `MDBLIST_API_KEY`)*
+4. 🔥 **Trend rank** — JustWatch Italia
+5. 📺 **Miniserie / Ritorna / Da divorare**
+
+### Badge genere/rating
+
+Sfumatura nera 90% → trasparente con genere, •, ★ e voto centrato in basso.
 
 ---
 
@@ -117,36 +119,7 @@ Genera un poster personalizzato.
 |-------|-----------|
 | Framework | Next.js 16 |
 | UI | React 19 + Tailwind CSS 4 |
-| Rendering server | Satori + Resvg (JSX → SVG → PNG) |
+| Rendering | Satori + Resvg (JSX → SVG → PNG) |
 | Immagini | Sharp |
 | Font | Inter + Noto Sans Symbols 2 |
-| Storage | Vercel KV / file JSON |
-
----
-
-## 🎨 Badge System
-
-Tutti i badge sono sincronizzati client↔server usando parametri condivisi.
-
-### Priorità badge top
-
-1. 🆕 **Nuovo film / Nuova serie** — uscito da meno di 2 settimane
-2. 🏆 **Award** — Vincitore Oscar, Cannes, Venezia, BAFTA, Emmy, David
-3. 🎌 **Anime rank** — Posizione nella top anime MDBList
-4. 🔥 **Trend rank** — Classifica JustWatch Italia
-5. 📺 **Miniserie / Ritorna / Da divorare** — basato su tipo/status TV e voto
-
-### Badge genere/rating
-
-Sfumatura nera al 90% con genere, pallino •, stella ★ e voto — centrati in basso.
-
----
-
-## 📁 Struttura
-
-```
-src/
-├── app/api/          # API routes (poster, mappings, awards, mdblist, health)
-├── components/       # Componenti React (EditView, PreviewBadges, SearchBar...)
-└── lib/              # Logica condivisa (badges, satori-badge, context, store, cache...)
-```
+| Storage | Vercel KV / JSON file |
