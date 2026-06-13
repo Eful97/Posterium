@@ -106,7 +106,7 @@ Genera un poster personalizzato via URL.
 2. 🏆 **Award** — Oscar, Cannes, Venezia, BAFTA, Emmy, David
 3. 🎌 **Anime rank** — MDBList top anime *(richiede `MDBLIST_API_KEY`)*
 4. 🔥 **Trend rank** — JustWatch Italia
-5. 📺 **Miniserie / Ritorna / Da divorare** — «Da divorare» con voto aggregato ≥ 8.7
+5. 📺 **Miniserie / Ritorna / Da divorare / Il più votato** — «Da divorare» (serie TV) e «Il più votato» (film) con voto aggregato ≥ 8.5
 
 ### Badge genere/rating
 
