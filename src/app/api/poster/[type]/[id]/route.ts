@@ -166,7 +166,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (mediaType !== "tv") return Promise.resolve(null)
         return fetchMDBList("mdblistAnime")
           .then((entries) => {
-            const idx = entries.findIndex((e) => e.tmdb === tmdbId)
+            const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
             return idx >= 0 ? idx + 1 : null
           })
           .catch(() => null)

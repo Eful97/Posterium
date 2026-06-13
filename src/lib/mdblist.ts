@@ -29,7 +29,7 @@ export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MD
       imdb: item.imdb_id || item.imdb || '',
       title: item.title || '',
       year: item.year || 0,
-      tmdb: item.tmdb_id || item.tmdb || undefined,
+      tmdb: item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id || undefined,
     }))
   } catch {
     return []
