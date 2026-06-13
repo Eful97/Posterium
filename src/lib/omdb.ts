@@ -22,29 +22,39 @@ async function fetchViaOMDb(imdbId: string): Promise<number | null> {
 async function fetchViaScrape(imdbId: string): Promise<number | null> {
   try {
     const res = await fetch(`https://www.imdb.com/title/${imdbId}/`, {
-      headers: { "User-Agent": "Mozilla/5.0", "Accept-Language": "en" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
       signal: AbortSignal.timeout(8000),
     })
     if (!res.ok) return null
     const html = await res.text()
-    // Try JSON-LD first
-    const jsonMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)
-    if (jsonMatch) {
+
+    // Try all JSON-LD blocks
+    const jsonMatches = html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)
+    for (const m of jsonMatches) {
       try {
-        const json = JSON.parse(jsonMatch[1])
-        const rating = json?.aggregateRating?.ratingValue
-        if (rating) {
-          const r = parseFloat(rating)
-          if (!isNaN(r)) return r
-        }
+        const json = JSON.parse(m[1])
+        const r = parseFloat(json?.aggregateRating?.ratingValue)
+        if (!isNaN(r)) return r
       } catch {}
     }
-    // Fallback: scrape rating from meta or span
-    const ratingMatch = html.match(/"ratingValue":\s*(\d+\.?\d*)/)
-    if (ratingMatch) {
-      const r = parseFloat(ratingMatch[1])
+
+    // Fallback: meta tag with ratingValue
+    const metaMatch = html.match(/<meta[^>]+itemprop="ratingValue"[^>]+content="(\d+\.?\d*)"/)
+    if (metaMatch) {
+      const r = parseFloat(metaMatch[1])
       if (!isNaN(r)) return r
     }
+
+    // Fallback: any "ratingValue" in a script context
+    const scriptMatch = html.match(/"ratingValue":\s*(\d+\.?\d*)/)
+    if (scriptMatch) {
+      const r = parseFloat(scriptMatch[1])
+      if (!isNaN(r)) return r
+    }
+
     return null
   } catch {
     return null
