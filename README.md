@@ -145,3 +145,9 @@ Sfumatura nera 90% → trasparente con genere, •, ★ e voto aggregato (media 
 | Immagini | Sharp |
 | Font | Inter + Noto Sans Symbols 2 |
 | Storage | Vercel KV / JSON file |
+
+---
+
+## 🙏 Credits
+
+Ispirato da [erdb](https://github.com/realbestia1/erdb) di realbestia1.
