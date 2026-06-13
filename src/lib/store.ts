@@ -70,9 +70,25 @@ async function kvImportMappings(mappings: Mapping[]) {
   await kv.hset("mappings", entries)
 }
 
-// ---- File-based helpers (HF) ----
+// ---- File-based helpers (HF / local) ----
 
-const DATA_DIR = path.join(process.cwd(), "data")
+const DATA_DIR = (() => {
+  const hfData = "/data"
+  try {
+    if (fs.existsSync(hfData)) {
+      const testFile = path.join(hfData, ".write_test")
+      fs.writeFileSync(testFile, "ok")
+      fs.unlinkSync(testFile)
+      console.log(`[store] Using persistent volume: ${hfData}`)
+      return hfData
+    }
+  } catch (e) {
+    console.log(`[store] /data exists but not writable: ${e}`)
+  }
+  const local = path.join(process.cwd(), "data")
+  console.log(`[store] Using local data dir: ${local}`)
+  return local
+})()
 const DATA_FILE = path.join(DATA_DIR, "mappings.json")
 
 let fileCache: Record<string, Mapping> | null = null
