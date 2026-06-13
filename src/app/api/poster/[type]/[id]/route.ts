@@ -10,6 +10,7 @@ import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/sa
 import { fetchAwards, getAwardBadgeLabel } from "@/lib/awards"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchImdbRating } from "@/lib/omdb"
+import { fetchAggregatedRating } from "@/lib/ratings"
 
 const RENDER_VERSION = 27
 const IMG_BASE = "https://image.tmdb.org/t/p"
@@ -112,9 +113,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         getDetails(mediaType, tmdbId, preferredLanguage, apiKey),
         getExternalIds(mediaType, tmdbId, apiKey).catch(() => ({ imdb_id: null })),
       ])
-      const imdbRating = extIds.imdb_id ? await fetchImdbRating(extIds.imdb_id).catch(() => null) : null
+      const imdbId = extIds.imdb_id
+      let rating: number | null = null
+      if (imdbId) {
+        const aggregated = await fetchAggregatedRating(imdbId).catch(() => null)
+        rating = aggregated?.average ?? null
+        if (rating === null) {
+          rating = await fetchImdbRating(imdbId).catch(() => null)
+        }
+      }
       genreName = details.genres[0]?.name || null
-      voteAverage = imdbRating ?? details.vote_average ?? 0
+      voteAverage = rating ?? details.vote_average ?? 0
       releaseDate = details.release_date || null
       firstAirDate = details.first_air_date || null
       nextEpisodeAir = details.next_episode_to_air?.air_date || null

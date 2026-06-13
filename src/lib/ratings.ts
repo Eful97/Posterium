@@ -1,0 +1,69 @@
+import { cacheGet, cacheSet } from "./cache"
+
+const MDBLIST = "https://mdblist.com/api"
+
+interface MdbListRating {
+  source: string
+  value: number
+}
+
+export interface AggregatedRatings {
+  sources: Record<string, number>
+  average: number
+  count: number
+}
+
+function avg(values: number[]): number {
+  if (values.length === 0) return 0
+  return values.reduce((a, b) => a + b, 0) / values.length
+}
+
+export async function fetchAggregatedRating(
+  imdbId: string,
+  apiKey?: string
+): Promise<AggregatedRatings | null> {
+  const key = apiKey || process.env.MDBLIST_API_KEY
+  if (!key || !imdbId) return null
+
+  const cacheKey = `mdb:ratings:${imdbId}`
+  const cached = cacheGet<AggregatedRatings>(cacheKey)
+  if (cached) return cached
+
+  try {
+    const res = await fetch(
+      `${MDBLIST}/?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(imdbId)}`,
+      { signal: AbortSignal.timeout(8000) }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+
+    const ratings = data?.ratings
+    if (!Array.isArray(ratings) || ratings.length === 0) return null
+
+    const sources: Record<string, number> = {}
+    const values: number[] = []
+
+    for (const item of ratings) {
+      const src = item?.source || item?.name || item?.provider || ""
+      const raw = item?.value ?? item?.rating ?? item?.score
+      const v = typeof raw === "number" ? raw : parseFloat(raw)
+      if (!src || isNaN(v) || v <= 0) continue
+      if (!sources[src]) {
+        sources[src] = v
+        values.push(v)
+      }
+    }
+
+    if (values.length === 0) return null
+
+    const result: AggregatedRatings = {
+      sources,
+      average: avg(values),
+      count: values.length,
+    }
+    cacheSet(cacheKey, result, ["mdb"])
+    return result
+  } catch {
+    return null
+  }
+}

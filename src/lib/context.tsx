@@ -513,7 +513,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       const [data, extIds, details, rankData, awardData] = await Promise.all([
         api(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${lang},en,null&api_key=${tmdbKey}`),
         api(`/api/tmdb/${itemId}/external_ids?type=${itemType}&api_key=${tmdbKey}`),
-        api(`/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}`),
+        api(`/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistApiKey ? `&mdblist_key=${encodeURIComponent(mdblistApiKey)}` : ""}`),
         api(`/api/trending/rank?type=${itemType}&id=${itemId}&api_key=${encodeURIComponent(tmdbKey)}`).catch(() => ({ rank: null })),
         api(`/api/awards/${itemType}/${itemId}`).catch(() => ({ awards: [] })),
       ])
