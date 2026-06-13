@@ -11,7 +11,7 @@ import { fetchAwards, getAwardBadgeLabel } from "@/lib/awards"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 30
+const RENDER_VERSION = 31
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -127,6 +127,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (queryLogo) {
           const exact = images.logos.find((l: any) => l.file_path === queryLogo)
           if (exact) logoPath = exact.file_path
+        }
+        if (!logoPath) {
+          const itLogo = images.logos.find((l: any) => l.iso_639_1 === "it")
+          const enLogo = images.logos.find((l: any) => l.iso_639_1 === "en")
+          const anyLogo = images.logos[0]
+          const chosenLogo = itLogo || enLogo || anyLogo
+          if (chosenLogo) logoPath = chosenLogo.file_path
         }
       } else {
         const langPoster = images.posters.find((p: any) => p.iso_639_1 === preferredLanguage)
