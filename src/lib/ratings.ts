@@ -39,14 +39,32 @@ export async function fetchAggregatedRating(
     const ratings = data?.ratings
     if (!Array.isArray(ratings) || ratings.length === 0) return null
 
+    // Prefer MDBList's own weighted score (may be 0-100 or 0-10)
+    const mdbScore = data?.score ?? data?.mdblist_score ?? data?.mdblist
+    if (typeof mdbScore === "number" && mdbScore > 0) {
+      const normalized = toTen(mdbScore)
+      if (normalized > 0 && normalized <= 10) {
+        const result: AggregatedRatings = {
+          sources: { mdblist: normalized },
+          average: normalized,
+          count: 1,
+        }
+        cacheSet(cacheKey, result, ["mdb"])
+        return result
+      }
+    }
+
+    // Fallback: average of major sources only
+    const MAJOR = new Set(["imdb", "tmdb", "metacritic", "rotten_tomatoes", "letterboxd", "trakt"])
     const sources: Record<string, number> = {}
     const values: number[] = []
 
     for (const item of ratings) {
-      const src = item?.source || item?.name || item?.provider || ""
+      const src = (item?.source || item?.name || item?.provider || "").toLowerCase()
+      if (!MAJOR.has(src)) continue
       const raw = item?.value ?? item?.rating ?? item?.score
       const v = typeof raw === "number" ? raw : parseFloat(raw)
-      if (!src || isNaN(v) || v <= 0) continue
+      if (isNaN(v) || v <= 0) continue
       if (!sources[src]) {
         const normalized = toTen(v)
         sources[src] = normalized
