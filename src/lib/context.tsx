@@ -406,7 +406,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       else {
         const tvType = selected?.media_type === "tv" ? metaInfo.type : null
         const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
-        const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8.5 ? "Da divorare" : null
+        const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8.7 ? "Da divorare" : null
         if (extra) params.push(`extra=${encodeURIComponent(extra)}`)
       }
     }
@@ -599,7 +599,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     const animeRank = mdblistAnimeList?.find((a: any) => a.id === selected.id)
     const tvType = selected.media_type === "tv" ? metaInfo.type : null
     const tvStatus = selected.media_type === "tv" ? metaInfo.status : null
-    const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8.5 ? "Da divorare" : null
+    const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8.7 ? "Da divorare" : null
     const badgeExtra = isNewMovie ? "Nuovo film" : isNewSeries ? "Nuova serie" : award || extra || null
     const badgeRank = (!badgeExtra && rankingBadges) ? (animeRank ? animeRank.rank : trendRank || undefined) : undefined
     const badgeLabel = (!badgeExtra && animeRank) ? "Anime" : (!badgeExtra && trendRank) ? "Oggi" : undefined

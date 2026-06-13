@@ -73,7 +73,7 @@ export default function EditView() {
 
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
             const status = p.selected?.media_type === "tv" ? p.metaInfo.status : null
-            const extra = tvType === "Miniseries" ? "Miniserie" : status === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8.5 ? "Da divorare" : null
+            const extra = tvType === "Miniseries" ? "Miniserie" : status === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8.7 ? "Da divorare" : null
             if (extra) return <div className="absolute inset-0"><ExtraBadge label={extra} topLight={topLight} /></div>
             return null
           })()}
@@ -123,7 +123,7 @@ export default function EditView() {
                 else {
                   const tvType = p.selected.media_type === "tv" ? p.metaInfo.type : null
                   const tvStatus = p.selected.media_type === "tv" ? p.metaInfo.status : null
-                  const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8.5 ? "Da divorare" : null
+                  const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8.7 ? "Da divorare" : null
                   if (extra) params.push(`extra=${encodeURIComponent(extra)}`)
                 }
               }

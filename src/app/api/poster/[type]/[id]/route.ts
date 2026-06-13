@@ -350,7 +350,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       if (animeRankResult) return { type: "rank" as const, rank: animeRankResult, label: "Anime" }
       if (finalRank) return { type: "rank" as const, rank: finalRank, label: "Oggi" }
 
-      const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : (voteAverage && voteAverage >= 8.5) ? "Da divorare" : null
+      const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : (voteAverage && voteAverage >= 8.7) ? "Da divorare" : null
       if (extra) return { type: "extra" as const, label: extra }
       return null
     })()
