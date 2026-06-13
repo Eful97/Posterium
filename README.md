@@ -49,6 +49,16 @@ docker build -t posterium .
 docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 ```
 
+### Hugging Face Spaces
+
+Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogni rebuild. Per la persistenza serve un **HF Storage Bucket**.
+
+1. Vai su [huggingface.co/new-storage](https://huggingface.co/new-storage) e crea un bucket (gratuito, 10 GB)
+2. Nelle **Settings** dello Space → **Storage** → collega il bucket appena creato
+3. HF lo monterà automaticamente a `/data` — Posterium rileva il volume e lo usa come DATA_DIR
+
+> **Nota:** senza bucket, i poster vengono persi ad ogni riavvio/rebuild dello Space.
+
 ---
 
 ## 🔑 Variabili d'ambiente
