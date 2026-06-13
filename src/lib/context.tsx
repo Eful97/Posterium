@@ -557,14 +557,18 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         const clean = data.posters?.find((p: TMDBImage) => p.iso_639_1 === null)
         const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
         const firstPoster = data.posters?.[0]
-        if (clean) setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
-        else if (langPoster) setPreviewPoster({ file_path: langPoster.file_path, iso_639_1: lang, vote_average: 0, width: 0, height: 0 })
-        else if (firstPoster) setPreviewPoster({ file_path: firstPoster.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
-        const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
-        const enLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en")
-        const firstLogo = data.logos?.[0]
-        const autoLogo = langLogo || enLogo || firstLogo
-        if (autoLogo) setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: 0, height: 0 })
+        if (clean) {
+          setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+          const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
+          const enLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en")
+          const firstLogo = data.logos?.[0]
+          const autoLogo = langLogo || enLogo || firstLogo
+          if (autoLogo) setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: 0, height: 0 })
+        } else if (langPoster) {
+          setPreviewPoster({ file_path: langPoster.file_path, iso_639_1: lang, vote_average: 0, width: 0, height: 0 })
+        } else if (firstPoster) {
+          setPreviewPoster({ file_path: firstPoster.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+        }
       }
     } finally {
       setLoadingImages(false)

@@ -100,7 +100,7 @@ export default function EditView() {
             const g = p.metaInfo.genres[0]?.name
             if (g) params.push(`genreName=${encodeURIComponent(g)}`)
             if (p.metaInfo.voteAverage > 0) params.push(`voteAverage=${p.metaInfo.voteAverage}`)
-            if (p.selectedLogo) {
+            if (p.selectedLogo && p.previewPoster?.iso_639_1 === null) {
               params.push(`logo=${encodeURIComponent(p.selectedLogo.file_path)}`)
               params.push(`scale=${p.logoScale}`)
               params.push(`ox=${p.logoOffsetX}`)
