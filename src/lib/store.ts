@@ -24,6 +24,8 @@ export interface Mapping {
   badgeExtra?: string
   badgeRank?: number
   badgeLabel?: string
+  releaseDate?: string
+  firstAirDate?: string
 }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL

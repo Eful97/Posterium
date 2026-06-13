@@ -52,6 +52,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     badgeExtra: body.badgeExtra ?? existing?.badgeExtra,
     badgeRank: body.badgeRank ?? existing?.badgeRank,
     badgeLabel: body.badgeLabel ?? existing?.badgeLabel,
+    releaseDate: body.releaseDate ?? existing?.releaseDate,
+    firstAirDate: body.firstAirDate ?? existing?.firstAirDate,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")

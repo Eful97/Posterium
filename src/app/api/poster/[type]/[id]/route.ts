@@ -178,12 +178,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qLabel = req.nextUrl.searchParams.get("label")
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
-    // Use cached type/status from mapping to avoid extra API call
+    // Use cached data from mapping to avoid extra API call
     if (mapping?.tvType) tvType = mapping.tvType
     if (mapping?.tvStatus) tvStatus = mapping.tvStatus
-    // Fetch missing tv/movie details when using mapping or query params
+    if (mapping?.releaseDate) releaseDate = mapping.releaseDate
+    if (mapping?.firstAirDate) firstAirDate = mapping.firstAirDate
+    // Fetch missing details when using mapping or query params
     const qApiKey = req.nextUrl.searchParams.get("api_key") || undefined
-    if ((mediaType === "tv" && !tvType) || (mediaType === "movie" && !releaseDate)) {
+    if ((mediaType === "tv" && (!tvType || !firstAirDate)) || (mediaType === "movie" && !releaseDate)) {
       try {
         const details = await getDetails(mediaType, tmdbId, "it-IT", qApiKey)
         if (!releaseDate) releaseDate = details.release_date || null

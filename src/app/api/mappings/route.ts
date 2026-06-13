@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
     badgeExtra: body.badgeExtra ?? undefined,
     badgeRank: body.badgeRank ?? undefined,
     badgeLabel: body.badgeLabel ?? undefined,
+    releaseDate: body.releaseDate ?? undefined,
+    firstAirDate: body.firstAirDate ?? undefined,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")

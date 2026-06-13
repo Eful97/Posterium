@@ -624,6 +624,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           showBadges: globalBadges,
           tvType: metaInfo.type || null,
           tvStatus: metaInfo.status || null,
+          releaseDate: metaInfo.release_date || null,
+          firstAirDate: metaInfo.first_air_date || null,
           badgeExtra,
           badgeRank,
           badgeLabel,
