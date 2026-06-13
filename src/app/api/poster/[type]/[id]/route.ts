@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import sharp from "sharp"
-import { getImages, getDetails } from "@/lib/tmdb"
+import { getImages, getDetails, getExternalIds } from "@/lib/tmdb"
 import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
@@ -9,6 +9,7 @@ import { bottomGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 import { fetchAwards, getAwardBadgeLabel } from "@/lib/awards"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
+import { fetchImdbRating } from "@/lib/omdb"
 
 const RENDER_VERSION = 27
 const IMG_BASE = "https://image.tmdb.org/t/p"
@@ -106,12 +107,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const preferredLanguage = req.nextUrl.searchParams.get("lang") || "it"
     const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
     try {
-      const [images, details] = await Promise.all([
+      const [images, details, extIds] = await Promise.all([
         getImages(mediaType, tmdbId, `${preferredLanguage},en,null`, apiKey),
         getDetails(mediaType, tmdbId, preferredLanguage, apiKey),
+        getExternalIds(mediaType, tmdbId, apiKey).catch(() => ({ imdb_id: null })),
       ])
+      const imdbRating = extIds.imdb_id ? await fetchImdbRating(extIds.imdb_id).catch(() => null) : null
       genreName = details.genres[0]?.name || null
-      voteAverage = details.vote_average
+      voteAverage = imdbRating ?? details.vote_average ?? 0
       releaseDate = details.release_date || null
       firstAirDate = details.first_air_date || null
       nextEpisodeAir = details.next_episode_to_air?.air_date || null
