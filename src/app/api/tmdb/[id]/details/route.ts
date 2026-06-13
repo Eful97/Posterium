@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const language = req.nextUrl.searchParams.get("language") || "it-IT"
   const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
   const mediaType = type === "tv" || type === "series" ? "tv" : "movie"
-  const cacheKey = `details:v3:${type}:${id}:${language}`
+  const cacheKey = `details:v4:${type}:${id}:${language}`
   const cached = cacheGet<{ title?: string; name?: string; genres: any[]; voteAverage: number; voteCount: number; type?: string; status?: string; release_date?: string; last_air_date?: string; next_episode_to_air?: any; number_of_seasons?: number; number_of_episodes?: number }>(cacheKey)
   if (cached) return Response.json(cached)
   try {

@@ -4,12 +4,11 @@ const OMDb = "https://www.omdbapi.com"
 
 export async function fetchImdbRating(imdbId: string): Promise<number | null> {
   if (!imdbId) return null
-  const cacheKey = `imdb:rating:${imdbId}`
-  const cached = cacheGet<number | null>(cacheKey)
-  if (cached !== undefined) return cached
-
   const key = process.env.OMDB_API_KEY
   if (!key) return null
+  const cacheKey = `imdb:rating:${imdbId}`
+  const cached = cacheGet<number>(cacheKey)
+  if (cached !== undefined && cached !== null) return cached
 
   try {
     const res = await fetch(`${OMDb}/?i=${imdbId}&apikey=${key}`, {
