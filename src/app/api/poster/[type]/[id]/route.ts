@@ -139,7 +139,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const langPoster = images.posters.find((p: any) => p.iso_639_1 === preferredLanguage)
         const fallback = images.posters[0]
         const chosen = langPoster || fallback
-        if (chosen) return Response.redirect(`${IMG_BASE}/w780${chosen.file_path}`)
+        if (chosen) posterPath = chosen.file_path
       }
     } catch {}
     etag = `"${Date.now()}"`
