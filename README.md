@@ -126,6 +126,12 @@ Sfumatura nera 90% → trasparente con genere, •, ★ e voto aggregato (media 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto3.png" alt="Posterium Badge" width="70%" />
 </p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto4.png" alt="Posterium Badge" width="70%" />
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto5.png" alt="Posterium Badge" width="70%" />
+</p>
 
 ---
 
