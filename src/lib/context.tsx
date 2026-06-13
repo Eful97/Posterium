@@ -414,7 +414,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     params.push(`v=${v}`)
     const qs = params.length > 0 ? "?" + params.join("&") : ""
     setPreviewUrl(`${getDomain()}/api/poster/${selected.media_type}/${selected.id}${qs}`)
-  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, trendRank])
+  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, trendRank, mdblistAnimeList])
 
   useEffect(() => {
     if (!selected) { setPreviewUrl(""); return }
