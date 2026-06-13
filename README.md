@@ -113,6 +113,16 @@ Sfumatura nera 90% → trasparente con genere, •, ★ e voto centrato in basso
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto1.png" alt="Posterium Home" width="32%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto2.png" alt="Posterium Editor" width="32%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto3.png" alt="Posterium Badge" width="32%" />
+</p>
+
+---
+
 ## 🏗️ Tech Stack
 
 | Layer | Tecnologia |
