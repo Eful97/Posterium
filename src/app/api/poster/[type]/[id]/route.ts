@@ -123,17 +123,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       tvStatus = details.status || null
       const clean = images.posters.find((p: any) => p.iso_639_1 === null)
       if (clean) {
-        posterPath = clean.file_path
         if (queryLogo) {
           const exact = images.logos.find((l: any) => l.file_path === queryLogo)
           if (exact) logoPath = exact.file_path
         }
         if (!logoPath) {
-          const itLogo = images.logos.find((l: any) => l.iso_639_1 === "it")
-          const enLogo = images.logos.find((l: any) => l.iso_639_1 === "en")
+          const langLogo = images.logos.find((l: any) => l.iso_639_1 === preferredLanguage)
+          const itLogo = preferredLanguage !== "it" ? images.logos.find((l: any) => l.iso_639_1 === "it") : undefined
+          const enLogo = preferredLanguage !== "en" ? images.logos.find((l: any) => l.iso_639_1 === "en") : undefined
           const anyLogo = images.logos[0]
-          const chosenLogo = itLogo || enLogo || anyLogo
+          const chosenLogo = langLogo || itLogo || enLogo || anyLogo
           if (chosenLogo) logoPath = chosenLogo.file_path
+        }
+        if (logoPath) {
+          posterPath = clean.file_path
+        } else {
+          const itPoster = images.posters.find((p: any) => p.iso_639_1 === "it")
+          const enPoster = images.posters.find((p: any) => p.iso_639_1 === "en")
+          const chosen = itPoster || enPoster || images.posters[0]
+          if (chosen) posterPath = chosen.file_path
         }
       } else {
         const langPoster = images.posters.find((p: any) => p.iso_639_1 === preferredLanguage)

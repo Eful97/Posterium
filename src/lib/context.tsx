@@ -340,16 +340,32 @@ export function usePosterium(): PosteriumCtx {
           const clean = data.posters?.find((p: TMDBImage) => p.iso_639_1 === null)
           const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
           const firstPoster = data.posters?.[0]
-          setPreviewPoster(clean || langPoster || firstPoster || previewPoster)
+          if (clean) {
+            const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
+            const itLogo = lang !== "it" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
+            const enLogo = lang !== "en" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
+            const firstLogo = data.logos?.[0]
+            const autoLogo = langLogo || itLogo || enLogo || firstLogo
+            if (autoLogo) {
+              setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+            } else {
+              const itPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "it")
+              const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")
+              setPreviewPoster(itPoster || enPoster || langPoster || firstPoster || previewPoster)
+            }
+          } else {
+            setPreviewPoster(langPoster || firstPoster || previewPoster)
+          }
         }
       }
     if (previewPoster?.iso_639_1 === null && selectedLogo) {
         const match = (data.logos || []).find((l: TMDBImage) => l.file_path === selectedLogo.file_path)
         if (!match) {
           const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
-          const enLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en")
+          const itLogo = lang !== "it" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
+          const enLogo = lang !== "en" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
           const firstLogo = data.logos?.[0]
-          setSelectedLogo(langLogo || enLogo || firstLogo || selectedLogo)
+          setSelectedLogo(langLogo || itLogo || enLogo || firstLogo || selectedLogo)
         }
       }
     }).catch(() => {})
@@ -559,12 +575,20 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
         const firstPoster = data.posters?.[0]
         if (clean) {
-          setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
           const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
-          const enLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en")
+          const itLogo = lang !== "it" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
+          const enLogo = lang !== "en" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
           const firstLogo = data.logos?.[0]
-          const autoLogo = langLogo || enLogo || firstLogo
-          if (autoLogo) setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: 0, height: 0 })
+          const autoLogo = langLogo || itLogo || enLogo || firstLogo
+          if (autoLogo) {
+            setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+            setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: 0, height: 0 })
+          } else {
+            const itPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "it")
+            const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")
+            const fallbackPoster = itPoster || enPoster || firstPoster
+            if (fallbackPoster) setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
+          }
         } else if (langPoster) {
           setPreviewPoster({ file_path: langPoster.file_path, iso_639_1: lang, vote_average: 0, width: 0, height: 0 })
         } else if (firstPoster) {
