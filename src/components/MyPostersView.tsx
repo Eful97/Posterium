@@ -14,8 +14,10 @@ export function MyPostersView() {
   const [showDeleteAll, setShowDeleteAll] = useState(false)
   const [sortBy, setSortBy] = useState<"updated" | "alpha">("updated")
   const [sortOpen, setSortOpen] = useState(false)
+  const [typeOpen, setTypeOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
+  const typeRef = useRef<HTMLDivElement>(null)
 
   const toggleSelect = (key: string) => {
     setSelected((prev) => {
@@ -59,15 +61,14 @@ export function MyPostersView() {
   }, [mappings, filter, sortBy, typeFilter])
 
   useEffect(() => {
-    if (!sortOpen) return
+    if (!sortOpen && !typeOpen) return
     const handler = (e: MouseEvent) => {
-      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
-        setSortOpen(false)
-      }
+      if (sortOpen && sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
+      if (typeOpen && typeRef.current && !typeRef.current.contains(e.target as Node)) setTypeOpen(false)
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
-  }, [sortOpen])
+  }, [sortOpen, typeOpen])
 
   return (
     <div className="pt-4 animate-fade-scale-in">
@@ -91,12 +92,19 @@ export function MyPostersView() {
               </div>
             )}
         </div>
-        <div className="flex items-center gap-1.5">
-          {(["all", "movie", "tv", "anime"] as const).map((t) => (
-            <button key={t} onClick={() => setTypeFilter(t)} className={`px-3 h-8 rounded-lg text-[11px] font-medium border transition-all duration-150 ${typeFilter === t ? "bg-accent/15 border-accent/40 text-accent" : "bg-black/30 border-zinc-700/60 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"}`}>
-              {t === "all" ? "Tutti" : t === "movie" ? "🎬 Film" : t === "tv" ? "📺 Serie TV" : "🎌 Anime"}
-            </button>
-          ))}
+        <div className="relative" ref={typeRef}>
+          <button onClick={() => setTypeOpen((o) => !o)} className="flex items-center gap-1 px-3 h-9 md:h-10 rounded-lg text-xs font-medium bg-black/40 border border-zinc-700 text-zinc-400 hover:border-zinc-500 transition-all duration-150">
+            {typeFilter === "all" ? "Tutti" : typeFilter === "movie" ? "🎬 Film" : typeFilter === "tv" ? "📺 Serie TV" : "🎌 Anime"} <span className="text-[10px]">▼</span>
+          </button>
+          {typeOpen && (
+            <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1 shadow-2xl shadow-black/50 z-50 min-w-40 animate-fade-scale-in">
+              {(["all", "movie", "tv", "anime"] as const).map((t) => (
+                <button key={t} onClick={() => { setTypeFilter(t); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left transition-all duration-150 ${typeFilter === t ? "bg-accent/10 text-accent font-medium" : "text-zinc-300 hover:bg-zinc-800"}`}>
+                  {t === "all" ? "Tutti" : t === "movie" ? "🎬 Film" : t === "tv" ? "📺 Serie TV" : "🎌 Anime"}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="relative" ref={sortRef}>
           <button onClick={() => setSortOpen((o) => !o)} className="flex items-center gap-1 px-3 h-9 md:h-10 rounded-lg text-xs font-medium bg-black/40 border border-zinc-700 text-zinc-400 hover:border-zinc-500 transition-all duration-150">
