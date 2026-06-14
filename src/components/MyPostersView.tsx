@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog"
 export function MyPostersView() {
   const { mappings, goHome, navigateToPoster, removeMapping } = useP()
   const [filter, setFilter] = useState("")
+  const [typeFilter, setTypeFilter] = useState<"all" | "movie" | "tv" | "anime">("all")
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showDeleteAll, setShowDeleteAll] = useState(false)
@@ -46,9 +47,16 @@ export function MyPostersView() {
 
   const filtered = useMemo(() => {
     return mappings
-      .filter((m) => m.title.toLowerCase().includes(filter.toLowerCase()))
+      .filter((m) => {
+        if (!m.title.toLowerCase().includes(filter.toLowerCase())) return false
+        if (typeFilter === "all") return true
+        if (typeFilter === "movie") return m.mediaType === "movie"
+        if (typeFilter === "tv") return m.mediaType === "tv" && !(m.genreName || "").toLowerCase().includes("anim")
+        if (typeFilter === "anime") return m.mediaType === "tv" && (m.genreName || "").toLowerCase().includes("anim")
+        return true
+      })
       .sort((a, b) => sortBy === "updated" ? b.updatedAt.localeCompare(a.updatedAt) : a.title.localeCompare(b.title))
-  }, [mappings, filter, sortBy])
+  }, [mappings, filter, sortBy, typeFilter])
 
   useEffect(() => {
     if (!sortOpen) return
@@ -82,6 +90,13 @@ export function MyPostersView() {
                 <ConfirmDialog open={showDeleteAll} title="Eliminare tutti i poster?" message={`Questa azione rimuoverà tutti i ${mappings.length} poster personalizzati. Non può essere annullata.`} confirmLabel="Elimina tutto" onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
               </div>
             )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          {(["all", "movie", "tv", "anime"] as const).map((t) => (
+            <button key={t} onClick={() => setTypeFilter(t)} className={`px-3 h-8 rounded-lg text-[11px] font-medium border transition-all duration-150 ${typeFilter === t ? "bg-accent/15 border-accent/40 text-accent" : "bg-black/30 border-zinc-700/60 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"}`}>
+              {t === "all" ? "Tutti" : t === "movie" ? "🎬 Film" : t === "tv" ? "📺 Serie TV" : "🎌 Anime"}
+            </button>
+          ))}
         </div>
         <div className="relative" ref={sortRef}>
           <button onClick={() => setSortOpen((o) => !o)} className="flex items-center gap-1 px-3 h-9 md:h-10 rounded-lg text-xs font-medium bg-black/40 border border-zinc-700 text-zinc-400 hover:border-zinc-500 transition-all duration-150">
