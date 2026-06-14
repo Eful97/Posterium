@@ -1,8 +1,8 @@
 FROM node:20-bullseye AS builder
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+RUN git clone https://github.com/Eful97/Posterium.git /app
 WORKDIR /app
-COPY package.json ./
 RUN npm install
-COPY . .
 RUN npm run build
 
 FROM node:20-bullseye AS runner
@@ -19,7 +19,7 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY entrypoint.sh /entrypoint.sh
+COPY --from=builder /app/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && mkdir -p data && chown nextjs:nodejs data
 
 EXPOSE 3000

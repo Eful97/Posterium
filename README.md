@@ -51,7 +51,23 @@ docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 
 ### Hugging Face Spaces
 
-Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogni rebuild. Per la persistenza serve un **HF Storage Bucket**.
+Deploy Docker-only: su HF Spaces carichi solo **2 file** (`Dockerfile` + `README.md`), il codice viene clonato da GitHub durante la build.
+
+#### Setup iniziale
+
+1. Crea uno Space su [huggingface.co/new-space](https://huggingface.co/new-space) con SDK **Docker**
+2. Carica solo questi 2 file:
+   - `Dockerfile` — clona il repo da GitHub, builda Next.js, deploya
+   - `README.md` — frontmatter HF (`sdk: docker`, `app_port: 3000`)
+3. Nelle **Settings** dello Space → **Variables and secrets** → aggiungi `TMDB_API_KEY` come secret
+
+#### Aggiornamenti
+
+Ogni volta che pushi su GitHub, basta fare **Factory rebuild** nello Space HF per deployare la latest version.
+
+#### Persistenza poster
+
+Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogni rebuild. Per la persistenza serve un **HF Storage Bucket**:
 
 1. Vai su [huggingface.co/new-storage](https://huggingface.co/new-storage) e crea un bucket (gratuito, 10 GB)
 2. Nelle **Settings** dello Space → **Storage** → collega il bucket appena creato
