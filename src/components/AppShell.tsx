@@ -13,6 +13,7 @@ import type { SearchResult } from "@/lib/types"
 export function AppShell() {
   const p = useP()
   const [refreshing, setRefreshing] = useState(false)
+  const [showMdb, setShowMdb] = useState(false)
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
@@ -86,6 +87,13 @@ export function AppShell() {
               <div className="flex gap-1">
                 <input type={p.showKey ? "text" : "password"} value={p.tmdbKeyInput} onChange={(e) => p.setTmdbKeyInput(e.target.value)} onBlur={() => p.setTmdbKey(p.tmdbKeyInput)} onKeyDown={(e) => { if (e.key === "Enter") { p.setTmdbKey(p.tmdbKeyInput); p.setSettingsOpen(false) } }} placeholder="Inserisci la tua chiave" className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-600" />
                 <button onClick={(e) => { e.stopPropagation(); p.setShowKey((s) => !s) }} className="px-2 bg-zinc-800 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150">{p.showKey ? "🙈" : "👁️"}</button>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] text-zinc-400 font-medium">Chiave MDBList</label>
+              <div className="flex gap-1">
+                <input type={showMdb ? "text" : "password"} defaultValue={p.mdblistApiKey} onChange={(e) => { p.setMdblistApiKey(e.target.value); localStorage.setItem("mdblist_key", e.target.value) }} placeholder="Inserisci la chiave MDBList" className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-600" />
+                <button onClick={(e) => { e.stopPropagation(); setShowMdb(!showMdb) }} className="px-2 bg-zinc-800 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150">{showMdb ? "🙈" : "👁️"}</button>
               </div>
             </div>
             <button onClick={() => { p.exportData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">Esporta JSON</button>
