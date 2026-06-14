@@ -55,6 +55,7 @@ export interface PosteriumCtx {
   mappingsMap: Map<string, Mapping>
   goHome: () => void
   navigateToPoster: (item: SearchResult) => void
+  refreshLists: () => Promise<void>
   tmdbKey: string
   setQuery: React.Dispatch<React.SetStateAction<string>>
   doSearch: (q?: string, page?: number) => Promise<void>
@@ -249,6 +250,32 @@ export function usePosterium(): PosteriumCtx {
   }, [])
 
   useEffect(() => { loadMappings() }, [loadMappings])
+
+  const lastRefreshRef = useRef(0)
+
+  const refreshLists = useCallback(async () => {
+    if (!tmdbKey) return
+    const now = Date.now()
+    if (now - lastRefreshRef.current < 10 * 60 * 1000) {
+      showToast("Aggiornamento disponibile ogni 10 minuti")
+      return
+    }
+    lastRefreshRef.current = now
+    try {
+      const [trendingData, animeData] = await Promise.all([
+        api(`/api/tmdb/trending?api_key=${tmdbKey}`),
+        mdblistApiKey ? api(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`).catch(() => null) : Promise.resolve(null),
+      ])
+      setTrending([...(trendingData.movies || []), ...(trendingData.tv || [])])
+      if (animeData) setMdblistAnimeList(animeData)
+    } catch {}
+    for (const p of STREAMING_PLATFORMS) {
+      api(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`).then((data) => {
+        setStreamingCharts((prev) => ({ ...prev, [p.slug]: data }))
+      }).catch(() => {})
+    }
+    showToast("Liste aggiornate ✓")
+  }, [tmdbKey, mdblistApiKey])
 
   useEffect(() => {
     if (!tmdbKey) return
@@ -800,6 +827,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     previewId, setPreviewId,
     saveConfig, removeMapping, mappingsMap,
     goHome, navigateToPoster,
+    refreshLists,
     tmdbKey, setQuery, doSearch, loadMore,
     titleOf, yearOf, posterUrl,
     trending, streamingCharts, mdblistAnimeList,
@@ -829,5 +857,6 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     accentColor,
     topEdgeColor,
     trending, streamingCharts, mdblistAnimeList,
+    refreshLists,
   ])
 }

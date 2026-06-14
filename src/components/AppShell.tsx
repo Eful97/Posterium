@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useP } from "@/lib/context"
 import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
@@ -11,6 +12,7 @@ import type { SearchResult } from "@/lib/types"
 
 export function AppShell() {
   const p = useP()
+  const [refreshing, setRefreshing] = useState(false)
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
@@ -47,6 +49,14 @@ export function AppShell() {
         </div>
       </div>
 
+      <button
+        onClick={async () => { setRefreshing(true); await p.refreshLists(); setRefreshing(false) }}
+        disabled={refreshing}
+        title="Aggiorna liste"
+        className="fixed bottom-5 right-[7rem] z-50 h-8 w-8 flex items-center justify-center bg-surface rounded-xl hover:bg-surface2 active:scale-90 transition-all duration-150 text-sm shadow-lg shadow-black/30"
+      >
+        <span className={refreshing ? "animate-spin" : ""}>↻</span>
+      </button>
       <a href="/status" className="fixed bottom-5 right-[4rem] z-50 h-8 w-8 flex items-center justify-center bg-surface rounded-xl hover:bg-surface2 active:scale-90 transition-all duration-150 text-sm shadow-lg shadow-black/30">🏥</a>
       <div className="fixed bottom-5 right-5 z-50" ref={p.langRef}>
         <button onClick={() => p.setLangOpen((o) => !o)} className="h-8 w-8 flex items-center justify-center bg-surface rounded-xl hover:bg-surface2 active:scale-90 transition-all duration-150 text-sm shadow-lg shadow-black/30" title={LANG_NAMES[p.lang]}>{LANG_FLAGS[p.lang] || "🌐"}</button>
