@@ -59,23 +59,9 @@ export async function fetchAggregatedRating(
       const raw = await res.json()
       const data = raw?.data ?? raw
 
-      const mdbScore = data?.score ?? data?.mdblist_score ?? data?.mdblist
-      if (typeof mdbScore === "number" && mdbScore > 0) {
-        const normalized = toTen(mdbScore)
-        if (normalized > 0 && normalized <= 10) {
-          const result: AggregatedRatings = {
-            sources: { mdblist: normalized },
-            average: normalized,
-            count: 1,
-          }
-          cacheSet(cacheKey, result, ["mdb"])
-          return result
-        }
-      }
-
       const ratings = data?.ratings
       if (Array.isArray(ratings) && ratings.length > 0) {
-        const MAJOR = new Set(["imdb", "tmdb", "metacritic", "rotten_tomatoes", "letterboxd", "trakt"])
+        const MAJOR = new Set(["imdb", "tmdb", "metacritic", "tomatoes", "tomatoesaudience", "letterboxd", "trakt", "myanimelist", "kitsu"])
         const sources: Record<string, number> = {}
         const values: number[] = []
 
@@ -86,7 +72,8 @@ export async function fetchAggregatedRating(
           const v = typeof rawV === "number" ? rawV : parseFloat(rawV)
           if (isNaN(v) || v <= 0) continue
           if (!sources[src]) {
-            const normalized = toTen(v)
+            let normalized = toTen(v)
+            if (src === "letterboxd" && normalized <= 5) normalized *= 2
             sources[src] = normalized
             values.push(normalized)
           }
