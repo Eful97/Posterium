@@ -54,7 +54,7 @@ export interface PosteriumCtx {
   removeMapping: (m: Mapping) => void
   mappingsMap: Map<string, Mapping>
   goHome: () => void
-  navigateToPoster: (item: SearchResult) => void
+  navigateToPoster: (item: SearchResult, source?: string) => void
   refreshLists: () => Promise<void>
   tmdbKey: string
   setQuery: React.Dispatch<React.SetStateAction<string>>
@@ -298,15 +298,19 @@ export function usePosterium(): PosteriumCtx {
 
   useEffect(() => {
     const handler = (e: PopStateEvent) => {
-      const view = e.state?.view
-      if (view === "search") {
+      const source = e.state?.source
+      if (source === "myposters") {
+        setView("myposters")
+        setSelected(null)
+        setPreviewPoster(null)
+        setSelectedLogo(null)
+        setPreviewId(null)
+      } else if (e.state?.view === "search") {
         setView("search")
         setSelected(null)
         setPreviewPoster(null)
         setSelectedLogo(null)
         setPreviewId(null)
-      } else if (view === "myposters") {
-        setView("myposters")
       } else {
         ++fetchIdRef.current
         setView("edit")
@@ -502,8 +506,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     return () => { cancelled = true }
   }, [previewPoster])
 
-  const navigateToPoster = (item: SearchResult) => {
-    window.history.pushState({ view }, "", window.location.href)
+  const navigateToPoster = (item: SearchResult, source?: string) => {
+    window.history.pushState({ source: source || null }, "", window.location.href)
     openPosterBrowser(item)
   }
 

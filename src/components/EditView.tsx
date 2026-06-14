@@ -186,14 +186,13 @@ export default function EditView() {
             <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
             {searchFocused && p.recentSearches.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
-                <p className="text-[10px] text-zinc-500 font-medium px-2 py-1">Ricerche recenti</p>
+                <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">Ricerche recenti</p>
                 {p.recentSearches.map((s) => (
-                  <div key={s} className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-zinc-800 group transition-all duration-150">
-                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="flex-1 flex items-center gap-2 text-xs text-zinc-300 hover:text-accent transition-all duration-150 text-left">
-                      <span className="text-zinc-500">🕐</span> {s}
-                    </button>
-                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => p.removeRecentSearch(s)} className="text-red-400 hover:text-red-300 transition-all duration-150 text-xs px-1">✕</button>
-                  </div>
+                  <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
+                    <span className="text-zinc-500 shrink-0">🕐</span>
+                    <span className="flex-1 truncate">{s}</span>
+                    <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0">✕</span>
+                  </button>
                 ))}
               </div>
             )}
@@ -210,14 +209,13 @@ export default function EditView() {
           <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
             {searchFocused && p.recentSearches.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
-                <p className="text-[10px] text-zinc-500 font-medium px-2 py-1">Ricerche recenti</p>
+                <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">Ricerche recenti</p>
                 {p.recentSearches.map((s) => (
-                  <div key={s} className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-zinc-800 group transition-all duration-150">
-                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="flex-1 flex items-center gap-2 text-xs text-zinc-300 hover:text-accent transition-all duration-150 text-left">
-                      <span className="text-zinc-500">🕐</span> {s}
-                    </button>
-                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => p.removeRecentSearch(s)} className="text-red-400 hover:text-red-300 transition-all duration-150 text-xs px-1">✕</button>
-                  </div>
+                  <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
+                    <span className="text-zinc-500 shrink-0">🕐</span>
+                    <span className="flex-1 truncate">{s}</span>
+                    <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0">✕</span>
+                  </button>
                 ))}
               </div>
             )}

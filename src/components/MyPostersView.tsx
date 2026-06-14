@@ -72,7 +72,7 @@ export function MyPostersView() {
               <span className="shrink-0 pl-3 md:pl-3.5 text-zinc-500 group-focus-within:text-accent transition-colors duration-300 text-xs md:text-sm">🔍</span>
               <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Cerca poster..." className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-500 focus:placeholder:text-zinc-400 px-2 h-full transition-colors duration-200" />
               {filter.length > 0 && (
-                <button onClick={() => setFilter("")} className="shrink-0 w-6 h-6 md:w-8 md:h-8 mr-1.5 flex items-center justify-center bg-accent text-white rounded-full text-[10px] md:text-sm hover:shadow-lg hover:shadow-accent/30 active:scale-90 transition-all duration-200">✕</button>
+                <button onClick={() => setFilter("")} className="shrink-0 w-6 h-6 md:w-8 md:h-8 mr-1.5 flex items-center justify-center bg-red-500/80 text-white rounded-full text-[10px] md:text-sm hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/30 active:scale-90 transition-all duration-200">✕</button>
               )}
             </div>
             <button onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-lg text-xs font-medium transition-all duration-150 flex items-center justify-center md:inline-flex ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-black/40 border border-zinc-700 text-zinc-400 hover:border-blue-500/50 hover:text-blue-400"}`}>✎</button>
@@ -115,7 +115,7 @@ export function MyPostersView() {
         {filtered.map((m) => {
           const key = `${m.mediaType}:${m.tmdbId}`
           return (
-            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster({ id: m.tmdbId, media_type: m.mediaType as "movie" | "tv", title: m.title, name: m.title, poster_path: m.posterPath } as any) }} aria-label={m.title} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10"}`}>
+            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster({ id: m.tmdbId, media_type: m.mediaType as "movie" | "tv", title: m.title, name: m.title, poster_path: m.posterPath } as any, "myposters") }} aria-label={m.title} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10"}`}>
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden relative">
                   {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" /> : <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-600">{m.title.charAt(0)}</div>}
                   {m.logoPath && (
