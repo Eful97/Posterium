@@ -13,10 +13,8 @@ export function MyPostersView() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showDeleteAll, setShowDeleteAll] = useState(false)
   const [sortBy, setSortBy] = useState<"updated" | "alpha">("updated")
-  const [sortOpen, setSortOpen] = useState(false)
   const [typeOpen, setTypeOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const sortRef = useRef<HTMLDivElement>(null)
   const typeRef = useRef<HTMLDivElement>(null)
 
   const toggleSelect = (key: string) => {
@@ -61,61 +59,50 @@ export function MyPostersView() {
   }, [mappings, filter, sortBy, typeFilter])
 
   useEffect(() => {
-    if (!sortOpen && !typeOpen) return
+    if (!typeOpen) return
     const handler = (e: MouseEvent) => {
-      if (sortOpen && sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
-      if (typeOpen && typeRef.current && !typeRef.current.contains(e.target as Node)) setTypeOpen(false)
+      if (typeRef.current && !typeRef.current.contains(e.target as Node)) setTypeOpen(false)
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
-  }, [sortOpen, typeOpen])
+  }, [typeOpen])
 
   return (
     <div className="pt-4 animate-fade-scale-in">
-      <div className="text-center mb-4">
-        <h2 className="text-xl font-bold">📋 I miei poster <span className="text-xs text-zinc-500 font-normal">({mappings.length})</span></h2>
-      </div>
-      <div className="flex flex-col md:flex-row items-center md:justify-center gap-2 mb-4">
-          <div className="flex md:flex-row items-center gap-2 w-full md:w-auto justify-center relative">
-            <div className="flex items-center h-10 md:h-12 bg-black/50 backdrop-blur-sm border border-zinc-700/80 focus-within:border-accent/60 focus-within:shadow-lg focus-within:shadow-accent/10 rounded-2xl transition-all duration-300 group flex-1 max-w-xs md:w-80">
-              <span className="shrink-0 pl-3 md:pl-3.5 text-zinc-500 group-focus-within:text-accent transition-colors duration-300 text-xs md:text-sm">🔍</span>
-              <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Cerca poster..." className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-500 focus:placeholder:text-zinc-400 px-2 h-full transition-colors duration-200" />
-              {filter.length > 0 && (
-                <button onClick={() => setFilter("")} className="shrink-0 w-6 h-6 md:w-8 md:h-8 mr-1.5 flex items-center justify-center bg-red-500/80 text-white rounded-full text-[10px] md:text-sm hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/30 active:scale-90 transition-all duration-200">✕</button>
-              )}
+      <h2 className="text-xl font-bold text-center mb-4">📋 I miei poster <span className="text-xs text-zinc-500 font-normal">({mappings.length})</span></h2>
+      <div className="flex items-center gap-2 mb-4 px-4 max-w-7xl mx-auto md:justify-center md:relative">
+        <div className="flex items-center h-9 md:h-12 bg-black/50 backdrop-blur-sm border border-zinc-700/80 focus-within:border-accent/60 focus-within:shadow-lg focus-within:shadow-accent/10 rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
+          <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-accent transition-colors duration-300 text-xs md:text-sm">🔍</span>
+          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Cerca..." className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-500 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
+          {filter.length > 0 && (
+            <button onClick={() => setFilter("")} className="shrink-0 w-5 h-5 md:w-8 md:h-8 mr-1 flex items-center justify-center bg-red-500/80 text-white rounded-full text-[10px] md:text-sm hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/30 active:scale-90 transition-all duration-200">✕</button>
+          )}
+        </div>
+        <div className="flex items-center gap-1 md:gap-1.5 md:absolute md:right-0 shrink-0">
+          <button onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:h-10 md:px-3 rounded-lg text-xs font-medium transition-all duration-150 flex items-center justify-center ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-black/40 border border-zinc-700 text-zinc-400 hover:border-blue-500/50 hover:text-blue-400"}`}>✎</button>
+          {mappings.length > 0 && (
+            <div className="relative">
+              <button onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:h-10 md:px-3 rounded-lg text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center">🗑️</button>
+              <ConfirmDialog open={showDeleteAll} title="Eliminare tutti i poster?" message={`Questa azione rimuoverà tutti i ${mappings.length} poster personalizzati. Non può essere annullata.`} confirmLabel="Elimina tutto" onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
             </div>
-            <button onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-lg text-xs font-medium transition-all duration-150 flex items-center justify-center md:inline-flex ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-black/40 border border-zinc-700 text-zinc-400 hover:border-blue-500/50 hover:text-blue-400"}`}>✎</button>
-            {mappings.length > 0 && (
-              <div className="relative">
-                <button onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-lg text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center md:inline-flex">🗑️</button>
-                <ConfirmDialog open={showDeleteAll} title="Eliminare tutti i poster?" message={`Questa azione rimuoverà tutti i ${mappings.length} poster personalizzati. Non può essere annullata.`} confirmLabel="Elimina tutto" onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
+          )}
+          <div className="relative" ref={typeRef}>
+            <button onClick={() => setTypeOpen((o) => !o)} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-1.5 rounded-lg text-xs font-medium bg-black/40 border border-zinc-700 text-zinc-400 hover:border-zinc-500 transition-all duration-150 overflow-hidden min-w-0 shrink-0 px-1.5">
+              <span className="shrink-0">{typeFilter === "movie" ? "🎬" : typeFilter === "tv" ? "📺" : typeFilter === "anime" ? "🎌" : ""}</span><span className="hidden md:inline truncate">{typeFilter === "all" ? "Tutti" : typeFilter === "movie" ? "Film" : typeFilter === "tv" ? "Serie TV" : "Anime"}</span> <span className="text-[10px] shrink-0">▼</span>
+            </button>
+            {typeOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1.5 shadow-2xl shadow-black/50 z-50 min-w-52 animate-fade-scale-in">
+                <button onClick={() => { setSortBy("updated"); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>📅 Più recenti</button>
+                <button onClick={() => { setSortBy("alpha"); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>🔤 A-Z</button>
+                <div className="border-t border-zinc-700 my-1" />
+                {(["all", "movie", "tv", "anime"] as const).map((t) => (
+                  <button key={t} onClick={() => { setTypeFilter(t); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${typeFilter === t ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>
+                    {t === "all" ? "Tutti" : t === "movie" ? "🎬 Film" : t === "tv" ? "📺 Serie TV" : "🎌 Anime"}
+                  </button>
+                ))}
               </div>
             )}
-        </div>
-        <div className="relative" ref={typeRef}>
-          <button onClick={() => setTypeOpen((o) => !o)} className="flex items-center gap-1 px-3 h-9 md:h-10 rounded-lg text-xs font-medium bg-black/40 border border-zinc-700 text-zinc-400 hover:border-zinc-500 transition-all duration-150">
-            {typeFilter === "all" ? "Tutti" : typeFilter === "movie" ? "🎬 Film" : typeFilter === "tv" ? "📺 Serie TV" : "🎌 Anime"} <span className="text-[10px]">▼</span>
-          </button>
-          {typeOpen && (
-            <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1 shadow-2xl shadow-black/50 z-50 min-w-40 animate-fade-scale-in">
-              {(["all", "movie", "tv", "anime"] as const).map((t) => (
-                <button key={t} onClick={() => { setTypeFilter(t); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left transition-all duration-150 ${typeFilter === t ? "bg-accent/10 text-accent font-medium" : "text-zinc-300 hover:bg-zinc-800"}`}>
-                  {t === "all" ? "Tutti" : t === "movie" ? "🎬 Film" : t === "tv" ? "📺 Serie TV" : "🎌 Anime"}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="relative" ref={sortRef}>
-          <button onClick={() => setSortOpen((o) => !o)} className="flex items-center gap-1 px-3 h-9 md:h-10 rounded-lg text-xs font-medium bg-black/40 border border-zinc-700 text-zinc-400 hover:border-zinc-500 transition-all duration-150">
-            {sortBy === "updated" ? "📅 Più recenti" : "🔤 A-Z"} <span className="text-[10px]">▼</span>
-          </button>
-          {sortOpen && (
-            <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1 shadow-2xl shadow-black/50 z-50 min-w-40 animate-fade-scale-in">
-              <button onClick={() => { setSortBy("updated"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-300 hover:bg-zinc-800"}`}>📅 Più recenti</button>
-              <button onClick={() => { setSortBy("alpha"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-300 hover:bg-zinc-800"}`}>🔤 A-Z</button>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
