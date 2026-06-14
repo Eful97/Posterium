@@ -2,6 +2,7 @@ FROM node:20-bullseye AS builder
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 RUN git clone https://github.com/Eful97/Posterium.git /app
 WORKDIR /app
+RUN rm -rf node_modules package-lock.json
 RUN npm install
 RUN npm run build
 
