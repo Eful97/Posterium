@@ -322,7 +322,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const scalePct = userScale / 100
       const logoW = Math.round(pw * scalePct)
       const logoHval = Math.round(lh * (logoW / lw))
-      const maxLogoH = Math.round(ph * 0.30)
+      const maxLogoH = Math.round(ph * 0.25)
       const finalLogoW = Math.min(logoW, pw)
       const logoH = Math.min(logoHval, ph, maxLogoH)
       const logoResized = await sharp(logoBuf).resize(finalLogoW, logoH, { fit: "inside" }).png().toBuffer()

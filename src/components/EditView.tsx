@@ -16,6 +16,24 @@ export default function EditView() {
   const [searchFocused, setSearchFocused] = useState(false)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const defaultLogoScale = () => {
+    const l = p.selectedLogo
+    if (!l) { p.setLogoScale(75); return }
+    const lw = l.width || 1
+    const lh = l.height || 1
+    const maxH = Math.round(1500 * 0.25)
+    // Testa da 75 fino a 10: trova la scala più alta che rispetta il limite
+    for (let s = 75; s >= 10; s--) {
+      const desiredW = Math.round(1000 * s / 100)
+      const desiredH = Math.round(lh * (desiredW / lw))
+      if (desiredH <= maxH) {
+        p.setLogoScale(s)
+        return
+      }
+    }
+    p.setLogoScale(10)
+  }
+
   useEffect(() => {
     return () => {
       if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
@@ -42,7 +60,7 @@ export default function EditView() {
             const baseGap = 57
             const badgeAdj = badgesVisible ? 0 : 15.2
             const bottomPx = baseGap - p.logoOffsetY * scale - badgeAdj
-            const maxLogoH = Math.round(380 * 1.5 * 0.30)
+            const maxLogoH = Math.round(380 * 1.5 * 0.25)
             return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10 }}><div style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%" }}><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain", maxHeight: `${maxLogoH}px` }} /></div></div>
           })()}
           {p.rankingBadges && (() => {
@@ -145,10 +163,10 @@ export default function EditView() {
         <div className="mt-3 bg-[#141414] border border-zinc-700/40 rounded-xl p-4 shadow-lg shadow-black/30 pb-5">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-xs font-semibold text-zinc-300">🔄 Trasforma</h4>
-            <button onClick={() => { p.setLogoScale(75); p.setLogoOffsetX(0); p.setLogoOffsetY(0) }} className="text-[10px] text-zinc-500 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">Reset</button>
+            <button onClick={() => { defaultLogoScale(); p.setLogoOffsetX(0); p.setLogoOffsetY(0) }} className="text-[10px] text-zinc-500 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">Reset</button>
           </div>
           <div className="space-y-2.5">
-            <SliderRow icon="🔍" label="Scala" value={p.logoScale} min={10} max={100} boundsMin={10} boundsMax={100} onChange={p.setLogoScale} onDoubleClick={() => p.setLogoScale(75)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="scale" />
+            <SliderRow icon="🔍" label="Scala" value={p.logoScale} min={10} max={100} boundsMin={10} boundsMax={100} onChange={p.setLogoScale} onDoubleClick={defaultLogoScale} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="scale" />
             <SliderRow icon="↔️" label="X" value={p.logoOffsetX} min={p.logoBounds.minX} max={p.logoBounds.maxX} boundsMin={p.logoBounds.minX} boundsMax={p.logoBounds.maxX} onChange={p.setLogoOffsetX} onDoubleClick={() => p.setLogoOffsetX(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="ox" />
             <SliderRow icon="↕️" label="Y" value={p.logoOffsetY} min={p.logoBounds.minY} max={p.logoBounds.maxY} boundsMin={p.logoBounds.minY} boundsMax={p.logoBounds.maxY} onChange={p.setLogoOffsetY} onDoubleClick={() => p.setLogoOffsetY(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="oy" />
           </div>
