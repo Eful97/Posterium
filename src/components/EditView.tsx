@@ -18,20 +18,12 @@ export default function EditView() {
 
   const defaultLogoScale = () => {
     const l = p.selectedLogo
-    if (!l) { p.setLogoScale(75); return }
-    const lw = l.width || 1
-    const lh = l.height || 1
+    if (!l || !l.width || !l.height) { p.setLogoScale(75); return }
+    const lw = l.width
+    const lh = l.height
     const maxH = Math.round(1500 * 0.25)
-    // Testa da 75 fino a 10: trova la scala più alta che rispetta il limite
-    for (let s = 75; s >= 10; s--) {
-      const desiredW = Math.round(1000 * s / 100)
-      const desiredH = Math.round(lh * (desiredW / lw))
-      if (desiredH <= maxH) {
-        p.setLogoScale(s)
-        return
-      }
-    }
-    p.setLogoScale(10)
+    const effW = Math.round(maxH * lw / lh)
+    p.setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
   }
 
   useEffect(() => {
@@ -60,8 +52,7 @@ export default function EditView() {
             const baseGap = 57
             const badgeAdj = badgesVisible ? 0 : 15.2
             const bottomPx = baseGap - p.logoOffsetY * scale - badgeAdj
-            const maxLogoH = Math.round(380 * 1.5 * 0.25)
-            return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10 }}><div style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%" }}><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain", maxHeight: `${maxLogoH}px` }} /></div></div>
+            return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10 }}><div style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%" }}><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain" }} /></div></div>
           })()}
           {p.rankingBadges && (() => {
             const now = Date.now()

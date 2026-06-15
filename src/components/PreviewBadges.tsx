@@ -4,8 +4,8 @@ export function RankingBadge({ rank = "13", label = "Oggi", topLight }: { rank?:
   const bg = topLight ? "bg-black/80 backdrop-blur-sm" : "bg-white/80"
   const text = topLight ? "text-white/80" : "text-black/80"
   return (
-    <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} px-[26px] py-[15px] rounded-b-[18px] shadow-lg shadow-black/30`}>
-      <span className={`${text} text-[22px] font-semibold tracking-wide whitespace-nowrap`}>
+    <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} px-[23px] py-[12px] rounded-b-[16px] shadow-lg shadow-black/30`}>
+      <span className={`${text} text-[23px] font-semibold tracking-wide whitespace-nowrap`}>
         #{rank} {label}
       </span>
     </div>
@@ -37,8 +37,8 @@ export function ExtraBadge({ label, topLight }: { label: string; topLight?: bool
   const bg = topLight ? "bg-black/80 backdrop-blur-sm" : "bg-white/80"
   const text = topLight ? "text-white/80" : "text-black/80"
   return (
-    <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} px-[26px] py-[15px] rounded-b-[18px] shadow-lg shadow-black/30`}>
-      <span className={`${text} text-[22px] font-semibold tracking-wide whitespace-nowrap`}>{label}</span>
+    <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} px-[23px] py-[12px] rounded-b-[16px] shadow-lg shadow-black/30`}>
+      <span className={`${text} text-[23px] font-semibold tracking-wide whitespace-nowrap`}>{label}</span>
     </div>
   )
 }

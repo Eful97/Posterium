@@ -190,8 +190,7 @@ export function usePosterium(): PosteriumCtx {
     const lh = selectedLogo.height || 1
     const finW = Math.min(Math.round(pw * logoScale / 100), pw)
     const hVal = Math.round(lh * (finW / lw))
-    const maxLogoH = Math.round(ph * 0.25)
-    const logoH = Math.min(hVal, ph, maxLogoH)
+    const logoH = Math.min(hVal, ph)
     const s = ph / 1500
     const badgeOff = hasBadges ? 0 : Math.round(40 * s)
     const halfX = Math.round((pw - finW) / 2)
@@ -591,23 +590,17 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       if (existing) {
         const foundPoster = (data.posters || []).find((p: TMDBImage) => p.file_path === existing.posterPath)
         setPreviewPoster(foundPoster ? { file_path: foundPoster.file_path, iso_639_1: existing.language, vote_average: 0, width: foundPoster.width, height: foundPoster.height } : { file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
+        let foundLogo: TMDBImage | undefined
         if (existing.logoPath) {
-          const foundLogo = (data.logos || []).find((l: TMDBImage) => l.file_path === existing.logoPath)
+          foundLogo = (data.logos || []).find((l: TMDBImage) => l.file_path === existing.logoPath)
           setSelectedLogo(foundLogo ? { file_path: foundLogo.file_path, iso_639_1: existing.language, vote_average: 0, width: foundLogo.width, height: foundLogo.height } : { file_path: existing.logoPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
-          if (foundLogo) {
-            const lw = foundLogo.width || 1
-            const lh = foundLogo.height || 1
-            const rawScale = existing.logoScale ?? 75
-            const desiredW = Math.round(1000 * rawScale / 100)
-            const desiredH = Math.round(lh * (desiredW / lw))
-            const maxH = Math.round(1500 * 0.25)
-            const effH = Math.min(desiredH, maxH)
-            const effW = Math.round(effH * lw / lh)
-            const effScale = Math.round(effW / 1000 * 100)
-            setLogoScale(effScale)
-          } else {
-            setLogoScale(existing.logoScale ?? 75)
-          }
+        }
+        if (foundLogo?.width && foundLogo?.height) {
+          const lw = foundLogo.width
+          const lh = foundLogo.height
+          const maxH = Math.round(1500 * 0.25)
+          const effW = Math.round(maxH * lw / lh)
+          setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
         } else {
           setLogoScale(existing.logoScale ?? 75)
         }
@@ -630,15 +623,13 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           if (autoLogo) {
             setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
             setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
-            const alw = autoLogo.width || 1
-            const alh = autoLogo.height || 1
-            const aRawScale = 75
-            const aDesiredW = Math.round(1000 * aRawScale / 100)
-            const aDesiredH = Math.round(alh * (aDesiredW / alw))
-            const aMaxH = Math.round(1500 * 0.25)
-            const aEffH = Math.min(aDesiredH, aMaxH)
-            const aEffW = Math.round(aEffH * alw / alh)
-            setLogoScale(Math.round(aEffW / 1000 * 100))
+            if (autoLogo.width && autoLogo.height) {
+              const alw = autoLogo.width
+              const alh = autoLogo.height
+              const maxH = Math.round(1500 * 0.25)
+              const effW = Math.round(maxH * alw / alh)
+              setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
+            }
           } else {
             const itPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "it")
             const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")

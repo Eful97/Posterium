@@ -50,15 +50,15 @@ export async function renderRankingBadge(
   const periodMap: Record<string, string> = { day: "Oggi", week: "Settimana" }
   const periodText = label || periodMap["day"] || "Oggi"
   const fullText = `#${rank} ${periodText}`
-  const fontSize = Math.round(22 * pw / 380)
+  const fontSize = Math.round(23 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.round(String(rank).length * charW + fontSize * 0.35 + periodText.length * charW)
-  const px = Math.round(fontSize * 1.2)
-  const pt = Math.round(fontSize * 0.7)
-  const pb = Math.round(fontSize * 0.7)
+  const px = Math.round(fontSize * 1.0)
+  const pt = Math.round(fontSize * 0.5)
+  const pb = Math.round(fontSize * 0.5)
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
-  const r = Math.round(fontSize * 0.8)
+  const r = Math.round(fontSize * 0.7)
   const bg = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
   const fg = topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"
   const shadowBlur = Math.round(fontSize * 0.6)
@@ -111,15 +111,15 @@ export async function renderExtraBadge(
   pw: number,
   topLight?: boolean
 ): Promise<{ png: Buffer; w: number; h: number }> {
-  const fontSize = Math.round(22 * pw / 380)
+  const fontSize = Math.round(23 * pw / 380)
   const charW = fontSize * 0.58
   const textW = Math.max(Math.round(label.length * charW), fontSize)
-  const px = Math.round(fontSize * 1.2)
-  const pt = Math.round(fontSize * 0.7)
-  const pb = Math.round(fontSize * 0.7)
+  const px = Math.round(fontSize * 1.0)
+  const pt = Math.round(fontSize * 0.5)
+  const pb = Math.round(fontSize * 0.5)
   const totalW = textW + px * 2
   const svgH = fontSize + pt + pb
-  const r = Math.round(fontSize * 0.8)
+  const r = Math.round(fontSize * 0.7)
   const bg = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
   const fg = topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"
   const shadowBlur = Math.round(fontSize * 0.6)
