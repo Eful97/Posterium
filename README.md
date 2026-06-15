@@ -19,9 +19,11 @@ pinned: false
 ## ✨ Features
 
 - 🔍 **Ricerca TMDB** — Cerca film e serie TV in italiano e inglese
-- 🎯 **Loghi** — Seleziona loghi ufficiali puliti e posizionali sul poster
-- 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge adattivi (scuri su poster chiari, chiari su scuri)
-- 🏷️ **Badge genere/rating** — Genere, stella ★ e voto in sovrimpressione
+- 🎯 **Loghi** — Seleziona loghi ufficiali puliti e posizionali sul poster (max 25% altezza, scala dinamica)
+- 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi (scuri su poster chiari, chiari su scuri)
+- 🏷️ **Badge genere/rating** — Genere, stella ★ e voto aggregato in sovrimpressione
+- 📊 **Rating** — Media da 9 fonti: IMDb, TMDb, Metacritic, Rotten Tomatoes (critica + pubblico), Letterboxd, Trakt, MyAnimeList, Kitsu via MDBList
+- 📋 **I miei poster** — Filtri per tipo (Film/Serie TV/Anime), ordinamento, ricerca, layout responsive
 - 🏆 **Badge premi** — Oscar, Cannes, Venezia, BAFTA, Emmy da Wikidata
 - 🎌 **Anime rank** — Top trending anime da MDBList *(richiede chiave MDBList)*
 - 📐 **Server-side rendering** — Satori + Resvg (JSX → SVG → PNG)
@@ -82,7 +84,7 @@ Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogn
 | Variabile | Obbligatoria | Descrizione |
 |-----------|:----------:|-------------|
 | `TMDB_API_KEY` | ✅ | Chiave API TMDB v3 |
-| `MDBLIST_API_KEY` | ❌ | Rating aggregati (IMDb + Metacritic + RT + Letterboxd + Trakt...) e classifiche anime. Priorità massima. |
+| `MDBLIST_API_KEY` | ❌ | Rating aggregati da 9 fonti (IMDb, TMDb, Metacritic, Rotten Tomatoes, Letterboxd, Trakt, MyAnimeList, Kitsu) e classifiche anime. Priorità massima. |
 | `OMDB_API_KEY` | ❌ | Rating IMDb — fallback quando MDBList non disponibile. Senza chiave, fallback su voto TMDB. |
 | `KV_URL` | ❌ | Vercel KV per storage (altrimenti file JSON) |
 
@@ -136,7 +138,11 @@ Genera un poster personalizzato via URL.
 
 ### Badge genere/rating
 
-Sfumatura nera 90% → trasparente con genere, •, ★ e voto aggregato (media MDBList di IMDb, Metacritic, Rotten Tomatoes, Letterboxd, Trakt... o fallback TMDB) centrato in basso.
+Sfumatura nera 90% → trasparente con genere, •, ★ e voto aggregato (media da 9 fonti via MDBList o fallback OMDb/TMDB) centrato in basso.
+
+### Logo
+
+Massimo 25% dell'altezza del poster. Scala dinamica nello slider che riflette il limite reale. Posizionamento libero con offset X/Y.
 
 ---
 
