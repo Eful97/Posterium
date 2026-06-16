@@ -3,8 +3,10 @@
 @theme inline {
   --color-background: #0a0a0a;
   --color-foreground: #ededed;
-  --color-surface: #1a1a2e;
-  --color-surface2: #16213e;
+  --color-surface: #18181b;
+  --color-surface2: #27272a;
+  --color-border: #3f3f46;
+  --color-muted: #a1a1aa;
   --color-accent-orange: #ff6430;
   --color-accent: #ffffff;
   --font-sans: var(--font-geist-sans);
@@ -106,6 +108,16 @@ input[type="range"]::-moz-range-thumb {
 .animate-slide-up { animation: slide-up 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 .animate-slide-in-right { animation: slide-in-right 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 .animate-pulse-ring { animation: pulse-ring 2s infinite; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+.animate-toast-in { animation: toast-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-xl bg-accent-orange text-white font-semibold text-sm shadow-lg shadow-accent-orange/25 hover:bg-accent-orange/90 active:scale-95 transition-all duration-200 disabled:opacity-40 disabled:shadow-none disabled:active:scale-100;
+}
 
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }

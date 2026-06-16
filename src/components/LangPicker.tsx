@@ -7,7 +7,7 @@ export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
     <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
       <div className="w-full max-w-lg mx-4">
         <div className="text-center mb-10">
-          <img src="/posterium.svg" alt="Posterium" loading="eager" decoding="async" className="h-16 w-auto mx-auto mb-4" />
+          <img src="/posterium.svg" alt="Posterium" loading="eager" decoding="async" className="h-16 w-auto mx-auto mb-4 hover:brightness-110 transition-all duration-150" />
           <h2 className="text-2xl font-bold text-zinc-100">Benvenuto in Posterium</h2>
           <p className="text-sm text-zinc-400 mt-1.5">Scegli la tua lingua preferita</p>
         </div>
@@ -17,7 +17,7 @@ export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
               <span className="text-2xl shrink-0">{LANG_FLAGS[l.code] || "🌐"}</span>
               <div>
                 <p className="text-sm font-medium text-zinc-200 group-hover:text-accent transition-colors">{l.name}</p>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{l.code}</p>
+                <p className="text-xs text-zinc-400 uppercase tracking-wider">{l.code}</p>
               </div>
             </button>
           ))}

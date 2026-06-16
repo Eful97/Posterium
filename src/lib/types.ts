@@ -45,7 +45,10 @@ export interface Mapping {
   logoScale?: number
   logoOffsetX?: number
   logoOffsetY?: number
-
+  backdropPath?: string | null
+  backdropScale?: number
+  backdropOffsetX?: number
+  backdropOffsetY?: number
   genreName?: string
   voteAverage?: number
   trendRank?: number

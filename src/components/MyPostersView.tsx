@@ -14,8 +14,10 @@ export function MyPostersView() {
   const [showDeleteAll, setShowDeleteAll] = useState(false)
   const [sortBy, setSortBy] = useState<"updated" | "alpha">("updated")
   const [typeOpen, setTypeOpen] = useState(false)
+  const [sortOpen, setSortOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const typeRef = useRef<HTMLDivElement>(null)
+  const sortRef = useRef<HTMLDivElement>(null)
 
   const toggleSelect = (key: string) => {
     setSelected((prev) => {
@@ -67,37 +69,58 @@ export function MyPostersView() {
     return () => document.removeEventListener("mousedown", handler)
   }, [typeOpen])
 
+  useEffect(() => {
+    if (!sortOpen) return
+    const handler = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [sortOpen])
+
   return (
     <div className="pt-4 animate-fade-scale-in">
-      <h2 className="text-xl font-bold text-center mb-4">📋 I miei poster <span className="text-xs text-zinc-500 font-normal">({mappings.length})</span></h2>
+      <h2 className="text-xl font-bold text-center mb-4">📋 I miei poster <span className="text-xs text-zinc-400 font-normal">({mappings.length})</span></h2>
       <div className="flex items-center gap-2 mb-4 px-4 max-w-7xl mx-auto md:justify-center md:relative">
         <div className="flex items-center h-9 md:h-12 bg-black/50 backdrop-blur-sm border border-zinc-700/80 focus-within:border-accent/60 focus-within:shadow-lg focus-within:shadow-accent/10 rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
           <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-accent transition-colors duration-300 text-xs md:text-sm">🔍</span>
-          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Cerca..." className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-500 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
+          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Cerca..." className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
           {filter.length > 0 && (
-            <button onClick={() => setFilter("")} className="shrink-0 w-5 h-5 md:w-8 md:h-8 mr-1 flex items-center justify-center bg-red-500/80 text-white rounded-full text-[10px] md:text-sm hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/30 active:scale-90 transition-all duration-200">✕</button>
+            <button onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-red-500/80 text-white rounded-full text-sm hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/30 active:scale-90 transition-all duration-200">✕</button>
           )}
         </div>
-        <div className="flex items-center gap-1 md:gap-1.5 md:absolute md:right-0 shrink-0">
-          <button onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:h-10 md:px-3 rounded-lg text-xs font-medium transition-all duration-150 flex items-center justify-center ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-black/40 border border-zinc-700 text-zinc-400 hover:border-blue-500/50 hover:text-blue-400"}`}>✎</button>
+        <div className="flex items-center gap-1 md:gap-2 md:absolute md:right-0 shrink-0">
+          <button onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-zinc-400 hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? "✕" : "☐"}</span><span className="hidden md:inline">{selectMode ? "Annulla" : "Seleziona"}</span></button>
           {mappings.length > 0 && (
             <div className="relative">
-              <button onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:h-10 md:px-3 rounded-lg text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center">🗑️</button>
+              <button onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center">🗑️</button>
               <ConfirmDialog open={showDeleteAll} title="Eliminare tutti i poster?" message={`Questa azione rimuoverà tutti i ${mappings.length} poster personalizzati. Non può essere annullata.`} confirmLabel="Elimina tutto" onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
             </div>
           )}
+          <div className="relative" ref={sortRef}>
+            <button onClick={() => { setSortOpen((o) => !o); setTypeOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2">
+              <span className="shrink-0">{sortBy === "updated" ? "📅" : "🔤"}</span>
+              <span className="hidden md:inline truncate">{sortBy === "updated" ? "Recenti" : "A-Z"}</span>
+              <span className="text-[10px] shrink-0">▼</span>
+            </button>
+            {sortOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1.5 shadow-2xl shadow-black/50 z-50 min-w-44 animate-fade-scale-in">
+                <button onClick={() => { setSortBy("updated"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>📅 Più recenti</button>
+                <button onClick={() => { setSortBy("alpha"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>🔤 A-Z</button>
+              </div>
+            )}
+          </div>
           <div className="relative" ref={typeRef}>
-            <button onClick={() => setTypeOpen((o) => !o)} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-1.5 rounded-lg text-xs font-medium bg-black/40 border border-zinc-700 text-zinc-400 hover:border-zinc-500 transition-all duration-150 overflow-hidden min-w-0 shrink-0 px-1.5">
-              <span className="shrink-0">{typeFilter === "movie" ? "🎬" : typeFilter === "tv" ? "📺" : typeFilter === "anime" ? "🎌" : ""}</span><span className="hidden md:inline truncate">{typeFilter === "all" ? "Tutti" : typeFilter === "movie" ? "Film" : typeFilter === "tv" ? "Serie TV" : "Anime"}</span> <span className="text-[10px] shrink-0">▼</span>
+            <button onClick={() => { setTypeOpen((o) => !o); setSortOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2">
+              <span className="shrink-0">{typeFilter === "movie" ? "🎬" : typeFilter === "tv" ? "📺" : typeFilter === "anime" ? "🎌" : "📋"}</span>
+              <span className="hidden md:inline truncate">{typeFilter === "all" ? "Tutti" : typeFilter === "movie" ? "Film" : typeFilter === "tv" ? "Serie TV" : "Anime"}</span>
+              <span className="text-[10px] shrink-0">▼</span>
             </button>
             {typeOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1.5 shadow-2xl shadow-black/50 z-50 min-w-52 animate-fade-scale-in">
-                <button onClick={() => { setSortBy("updated"); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>📅 Più recenti</button>
-                <button onClick={() => { setSortBy("alpha"); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>🔤 A-Z</button>
-                <div className="border-t border-zinc-700 my-1" />
+              <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1.5 shadow-2xl shadow-black/50 z-50 min-w-44 animate-fade-scale-in">
                 {(["all", "movie", "tv", "anime"] as const).map((t) => (
                   <button key={t} onClick={() => { setTypeFilter(t); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${typeFilter === t ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>
-                    {t === "all" ? "Tutti" : t === "movie" ? "🎬 Film" : t === "tv" ? "📺 Serie TV" : "🎌 Anime"}
+                    {t === "all" ? "📋 Tutti" : t === "movie" ? "🎬 Film" : t === "tv" ? "📺 Serie TV" : "🎌 Anime"}
                   </button>
                 ))}
               </div>
@@ -113,9 +136,9 @@ export function MyPostersView() {
       )}
       {filtered.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-sm text-zinc-500 mb-4">{mappings.length === 0 ? "Nessun poster personalizzato" : "Nessun risultato"}</p>
+          <p className="text-sm text-zinc-400 mb-4">{mappings.length === 0 ? "Nessun poster personalizzato" : "Nessun risultato"}</p>
           {mappings.length === 0 && (
-            <button onClick={goHome} className="px-6 py-3 rounded-xl text-sm font-medium bg-accent-orange text-white hover:bg-accent-orange/90 active:scale-95 transition-all duration-150 shadow-lg shadow-accent-orange/25">
+            <button onClick={goHome} className="px-6 py-3 btn-primary font-medium">
               🔍 Cerca un film o una serie
             </button>
           )}
@@ -125,9 +148,9 @@ export function MyPostersView() {
         {filtered.map((m) => {
           const key = `${m.mediaType}:${m.tmdbId}`
           return (
-            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster({ id: m.tmdbId, media_type: m.mediaType as "movie" | "tv", title: m.title, name: m.title, poster_path: m.posterPath } as any, "myposters") }} aria-label={m.title} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10"}`}>
+            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster({ id: m.tmdbId, media_type: m.mediaType as "movie" | "tv", title: m.title, name: m.title, poster_path: m.posterPath } as any, "myposters") }} aria-label={m.title} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/10"}`}>
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden relative">
-                  {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" /> : <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-600">{m.title.charAt(0)}</div>}
+                  {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" /> : <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-500">{m.title.charAt(0)}</div>}
                   {m.logoPath && (
                     <div className="absolute inset-x-0 flex items-center justify-center" style={{ bottom: "7.33%" }}>
                       <div style={{ transform: `translate(${m.logoOffsetX ?? 0}px, ${m.logoOffsetY ?? 0}px)`, width: `${m.logoScale ?? 75}%` }}>
@@ -143,7 +166,7 @@ export function MyPostersView() {
               </div>
               <div className="px-2 py-2.5 text-center">
                 <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{m.title}</p>
-                <p className="text-[11px] text-zinc-500">{m.language ? LANG_NAMES[m.language] || m.language : "Clean"}{m.logoPath ? " + logo" : ""}</p>
+                <p className="text-xs text-zinc-400">{m.language ? LANG_NAMES[m.language] || m.language : "Clean"}{m.logoPath ? " + logo" : ""}</p>
               </div>
               {!selectMode && (
                 <span onClick={(e) => { e.stopPropagation(); removeMapping(m) }} className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-red-900/60 flex items-center justify-center text-[10px] text-red-300 hover:bg-red-800 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 cursor-pointer">✕</span>

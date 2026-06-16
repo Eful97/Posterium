@@ -40,7 +40,7 @@ export function CollapsibleSection({
             {label}
           </span>
           <span
-            className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full transition-all duration-200 ${
+            className={`text-xs font-medium px-1.5 py-0.5 rounded-full transition-all duration-200 ${
               isOpen
                 ? "bg-accent/20 text-accent"
                 : "bg-zinc-700 text-zinc-400"

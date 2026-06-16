@@ -51,7 +51,7 @@ function RankCard({ item, onClick, isFirst }: { item: RankItem; onClick: () => v
                 className="w-full h-full object-cover transition-transform duration-300"
               />
             ) : (
-              <div className="w-full h-full bg-zinc-700 flex items-center justify-center text-2xl font-bold text-zinc-600">
+              <div className="w-full h-full bg-zinc-700 flex items-center justify-center text-2xl font-bold text-zinc-500">
                 {item.rank}
               </div>
             )}

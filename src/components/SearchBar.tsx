@@ -35,7 +35,7 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
         onBlur={() => { setFocused(false); onBlur?.() }}
         onKeyDown={(e) => { if (e.key === "Enter" && text.length >= 2 && tmdbKey) { onSearch(text) } }}
         placeholder={large ? "Cerca un film o una serie TV..." : "Cerca..."}
-        className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-500 focus:placeholder:text-zinc-400 px-2 h-full transition-colors duration-200"
+        className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-2 h-full transition-colors duration-200"
       />
       {text.length > 0 && (
         <button

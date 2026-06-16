@@ -50,13 +50,13 @@ export function SearchView() {
           {results.map((r) => {
             const mapping = mappingsMap.get(`${r.media_type}:${r.id}`)
             return (
-              <button key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="group relative bg-surface rounded-xl overflow-hidden border border-zinc-800 hover:border-accent/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10 transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none">
+              <button key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="group relative bg-surface rounded-xl overflow-hidden border border-zinc-800 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/10 transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none">
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden flex items-center justify-center">
-                  {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300" /> : <span className="text-3xl font-bold text-zinc-600">{titleOf(r).charAt(0)}</span>}
+                  {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300" /> : <span className="text-3xl font-bold text-zinc-500">{titleOf(r).charAt(0)}</span>}
                 </div>
                 <div className="px-2 py-2.5 text-center">
                   <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{titleOf(r)}</p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">{yearOf(r)} {r.media_type === "tv" ? "• TV" : ""}</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">{yearOf(r)} {r.media_type === "tv" ? "• TV" : ""}</p>
                 </div>
                 {mapping && <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-accent-orange flex items-center justify-center text-[10px] font-bold text-black shadow-lg shadow-accent-orange/30" title="Custom poster set">✓</div>}
                 {mapping && <div className="absolute inset-0 bg-accent-orange/10 border border-accent-orange/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl pointer-events-none" />}

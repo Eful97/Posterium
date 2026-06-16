@@ -71,6 +71,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   let posterPath: string | null = null
   let logoPath: string | null = null
+  let backdropPath: string | null = null
+  let backdropScale = 100
+  let backdropOffsetX = 0
+  let backdropOffsetY = 0
   let etag: string
   let genreName: string | null = null
   let voteAverage: number | null = null
@@ -82,6 +86,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let tvStatus: string | null = null
   const queryPoster = req.nextUrl.searchParams.get("poster")
   const queryLogo = req.nextUrl.searchParams.get("logo")
+  const queryBackdrop = req.nextUrl.searchParams.get("backdrop")
   const queryGenre = req.nextUrl.searchParams.get("genreName")
   const queryVote = req.nextUrl.searchParams.get("voteAverage")
   const mapping = await getById(mediaType, tmdbId)
@@ -89,6 +94,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   if (queryPoster) {
     posterPath = queryPoster
     logoPath = queryLogo || null
+    backdropPath = queryBackdrop || null
+    if (queryBackdrop) {
+      backdropScale = Number(req.nextUrl.searchParams.get("bscale") || "100")
+      backdropOffsetX = Number(req.nextUrl.searchParams.get("box") || "0")
+      backdropOffsetY = Number(req.nextUrl.searchParams.get("boy") || "0")
+    }
     if (queryGenre) genreName = queryGenre
     if (queryVote) voteAverage = Number(queryVote)
     showBadges = true
@@ -96,6 +107,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   } else if (mapping) {
     posterPath = mapping.posterPath
     logoPath = queryLogo || mapping.logoPath
+    backdropPath = queryBackdrop || (mapping as any).backdropPath || null
+    backdropScale = (mapping as any).backdropScale ?? 100
+    backdropOffsetX = (mapping as any).backdropOffsetX ?? 0
+    backdropOffsetY = (mapping as any).backdropOffsetY ?? 0
     genreName = mapping.genreName ?? null
     voteAverage = mapping.voteAverage ?? null
     showBadges = mapping.showBadges ?? true
@@ -161,9 +176,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const STD_H = 1500
 
   try {
-    const [originalBuf, logoFetch, rankingResult, animeRankResult, awardResult] = await Promise.all([
+    const [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult, awardResult] = await Promise.all([
       fetchImg(imgSrc(posterPath)),
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
+      backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
       (() => {
         if (mapping?.trendRank) return Promise.resolve(mapping.trendRank)
         return getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
@@ -185,12 +201,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           .catch(() => null)
       })(),
       fetchAwards(tmdbId, mediaType).catch(() => []),
-    ]) as [Buffer, Buffer | null, number | null, number | null, string[]]
+    ]) as [Buffer, Buffer | null, Buffer | null, number | null, number | null, string[]]
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
+    const composites: { input: Buffer; top: number; left: number }[] = []
+
+    // Composite backdrop behind the poster
+    if (backdropFetch) {
+      const bMeta = await sharp(backdropFetch).metadata()
+      const bw = bMeta.width || 1920
+      const bh = bMeta.height || 1080
+      const bScale = backdropScale / 100
+      const bResizedW = Math.round(STD_W * bScale)
+      const bResizedH = Math.round(bh * (bResizedW / bw))
+      const bX = Math.round((STD_W - bResizedW) / 2 + backdropOffsetX)
+      const bY = Math.round((STD_H - bResizedH) / 2 + backdropOffsetY)
+      const backdropBuf = await sharp(backdropFetch).resize(bResizedW, bResizedH, { fit: 'fill' }).toBuffer()
+      composites.push({ input: backdropBuf, top: bY, left: bX })
+    }
+
     // Use cached data from mapping to avoid extra API call
     if (mapping?.tvType) tvType = mapping.tvType
     if (mapping?.tvStatus) tvStatus = mapping.tvStatus
@@ -209,7 +241,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
     const pw = STD_W
     const ph = STD_H
-    const composites: { input: Buffer; top: number; left: number }[] = []
 
     function simpleLum(hex: string): number {
       const r = parseInt(hex.slice(1, 3), 16) / 255

@@ -37,6 +37,17 @@ export interface PosteriumCtx {
   setLogoOffsetX: React.Dispatch<React.SetStateAction<number>>
   logoOffsetY: number
   setLogoOffsetY: React.Dispatch<React.SetStateAction<number>>
+  backdrops: TMDBImage[]
+  selectedBackdrop: TMDBImage | null
+  setSelectedBackdrop: React.Dispatch<React.SetStateAction<TMDBImage | null>>
+  backdropScale: number
+  setBackdropScale: React.Dispatch<React.SetStateAction<number>>
+  backdropOffsetX: number
+  setBackdropOffsetX: React.Dispatch<React.SetStateAction<number>>
+  backdropOffsetY: number
+  setBackdropOffsetY: React.Dispatch<React.SetStateAction<number>>
+  selectBackdrop: (img: TMDBImage) => void
+  removeBackdrop: () => void
   editingValue: string | null
   setEditingValue: React.Dispatch<React.SetStateAction<string | null>>
   editText: string
@@ -152,6 +163,11 @@ export function usePosterium(): PosteriumCtx {
   const [logoScale, setLogoScale] = useState(75)
   const [logoOffsetX, setLogoOffsetX] = useState(0)
   const [logoOffsetY, setLogoOffsetY] = useState(0)
+  const [backdrops, setBackdrops] = useState<TMDBImage[]>([])
+  const [selectedBackdrop, setSelectedBackdrop] = useState<TMDBImage | null>(null)
+  const [backdropScale, setBackdropScale] = useState(100)
+  const [backdropOffsetX, setBackdropOffsetX] = useState(0)
+  const [backdropOffsetY, setBackdropOffsetY] = useState(0)
   const [editingValue, setEditingValue] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
 
@@ -365,6 +381,7 @@ export function usePosterium(): PosteriumCtx {
       if (fetchIdRef.current !== fetchId) return
       setPosters(data.posters || [])
       setLogos(data.logos || [])
+      setBackdrops(data.backdrops || [])
       if (previewPoster) {
         const match = (data.posters || []).find((p: TMDBImage) => p.file_path === previewPoster.file_path)
         if (!match) {
@@ -553,6 +570,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     const fetchId = ++fetchIdRef.current
     setSelected(item)
     setSelectedLogo(null)
+    setSelectedBackdrop(null)
     setPreviewPoster(null)
     setLoadingImages(true)
     setOpenSections({})
@@ -570,6 +588,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       setSelected({ ...item, imdb_id: extIds.imdb_id })
       setPosters(data.posters || [])
       setLogos(data.logos || [])
+      setBackdrops(data.backdrops || [])
       if (details.title) setSelected((prev) => ({ ...prev!, title: details.title }))
       if (details.name) setSelected((prev) => ({ ...prev!, name: details.name }))
       setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, first_air_date: details.first_air_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [] })
@@ -606,11 +625,22 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         }
         setLogoOffsetX(existing.logoOffsetX ?? 0)
         setLogoOffsetY(existing.logoOffsetY ?? 0)
+        if (existing.backdropPath) {
+          const foundBackdrop = (data.backdrops || []).find((b: TMDBImage) => b.file_path === existing.backdropPath)
+          setSelectedBackdrop(foundBackdrop || { file_path: existing.backdropPath, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+          setBackdropScale(existing.backdropScale ?? 100)
+          setBackdropOffsetX(existing.backdropOffsetX ?? 0)
+          setBackdropOffsetY(existing.backdropOffsetY ?? 0)
+        }
         setTrendRank(rankData.rank ?? existing.trendRank ?? null)
       } else {
         setLogoScale(75)
         setLogoOffsetX(0)
         setLogoOffsetY(0)
+        setSelectedBackdrop(null)
+        setBackdropScale(100)
+        setBackdropOffsetX(0)
+        setBackdropOffsetY(0)
         const clean = data.posters?.find((p: TMDBImage) => p.iso_639_1 === null)
         const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
         const firstPoster = data.posters?.[0]
@@ -693,6 +723,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           originalPosterPath: selected.poster_path,
           language: previewPoster.iso_639_1,
           logoScale, logoOffsetX, logoOffsetY,
+          backdropPath: selectedBackdrop?.file_path || null,
+          backdropScale, backdropOffsetX, backdropOffsetY,
           genreName: metaInfo.genres[0]?.name || null,
           voteAverage: metaInfo.voteAverage || null,
           trendRank: trendRank ?? undefined,
@@ -742,6 +774,17 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     loadMappings()
     if (selected) setPreviewId(`${selected.media_type}:${selected.id}`)
   }, [selected, previewPoster, logoScale, logoOffsetX, logoOffsetY, metaInfo, trendRank, mappingsMap, loadMappings])
+
+  const selectBackdrop = useCallback((img: TMDBImage) => {
+    setSelectedBackdrop(img)
+    setBackdropScale(100)
+    setBackdropOffsetX(0)
+    setBackdropOffsetY(0)
+  }, [])
+
+  const removeBackdrop = useCallback(() => {
+    setSelectedBackdrop(null)
+  }, [])
 
   const removeMapping = useCallback(async (m: Mapping) => {
     await api(`/api/mappings/${m.mediaType}:${m.tmdbId}`, { method: "DELETE" })
@@ -809,13 +852,13 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     const el = toastRef.current
     if (el) {
       el.textContent = msg
-      el.classList.remove("opacity-0", "animate-slide-up")
+      el.classList.remove("opacity-0", "animate-toast-in")
       el.classList.add("opacity-100")
       void el.offsetWidth
-      el.classList.add("animate-slide-up")
+      el.classList.add("animate-toast-in")
       if (el.dataset.timer) clearTimeout(Number(el.dataset.timer))
       const timer = window.setTimeout(() => {
-        el.classList.remove("opacity-100", "animate-slide-up")
+        el.classList.remove("opacity-100", "animate-toast-in")
         el.classList.add("opacity-0")
       }, 2500)
       el.dataset.timer = String(timer)
@@ -838,6 +881,11 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     selectPoster, selectLogo, removeLogo,
     logoBounds, logoScale, setLogoScale,
     logoOffsetX, setLogoOffsetX, logoOffsetY, setLogoOffsetY,
+    backdrops, selectedBackdrop, setSelectedBackdrop,
+    backdropScale, setBackdropScale,
+    backdropOffsetX, setBackdropOffsetX,
+    backdropOffsetY, setBackdropOffsetY,
+    selectBackdrop, removeBackdrop,
     editingValue, setEditingValue, editText, setEditText,
     globalBadges, setGlobalBadges,
     rankingBadges, setRankingBadges,

@@ -56,7 +56,7 @@ export default function StatusPage() {
     <div className="flex items-center gap-2 py-2 px-3 even:bg-white/[0.03] rounded-lg text-sm">
       {badge(ok)}
       <span className="text-zinc-300">{label}</span>
-      {extra && <span className="text-xs text-zinc-500 ml-auto">{extra}</span>}
+      {extra && <span className="text-xs text-zinc-400 ml-auto">{extra}</span>}
     </div>
   )
 
@@ -73,7 +73,7 @@ export default function StatusPage() {
               <div className="flex items-center gap-2 mb-3">
                 {badge(data.tmdb.apiKey)}
                 <h2 className="text-base font-semibold">TMDB</h2>
-                {data.tmdb.apiKey && <span className="text-xs text-zinc-500">({data.tmdb.apiKeyLength} caratteri)</span>}
+                {data.tmdb.apiKey && <span className="text-xs text-zinc-400">({data.tmdb.apiKeyLength} caratteri)</span>}
               </div>
               <div className="space-y-1">
                 <Row label="Trending" ok={data.tmdb.trending.ok} extra={<>{data.tmdb.trending.status} — {data.tmdb.trending.time}ms</>} />
@@ -109,7 +109,7 @@ export default function StatusPage() {
               </div>
             </div>
 
-            <p className="text-[11px] text-zinc-600 text-center">Ultimo aggiornamento: {new Date(data.timestamp).toLocaleString("it-IT")}</p>
+            <p className="text-xs text-zinc-500 text-center">Ultimo aggiornamento: {new Date(data.timestamp).toLocaleString("it-IT")}</p>
           </div>
         )}
       </div>

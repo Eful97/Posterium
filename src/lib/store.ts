@@ -13,6 +13,10 @@ export interface Mapping {
   logoScale?: number
   logoOffsetX?: number
   logoOffsetY?: number
+  backdropPath?: string | null
+  backdropScale?: number
+  backdropOffsetX?: number
+  backdropOffsetY?: number
   showBadges?: boolean
   genreName?: string
   voteAverage?: number

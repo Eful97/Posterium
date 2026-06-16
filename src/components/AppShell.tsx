@@ -30,17 +30,17 @@ export function AppShell() {
       {p.showLangPicker && <LangPicker onPick={p.pickLang} />}
       <div className="max-w-full px-4 pt-5 md:pt-3 pb-20 md:pb-3">
         <div className="hidden md:flex justify-end items-center gap-2 mb-4">
-          <button onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="h-10 px-4 bg-accent-orange hover:bg-accent-orange/90 active:scale-95 transition-all duration-150 text-sm font-semibold text-white rounded-xl shadow-lg shadow-accent-orange/25 disabled:opacity-40 disabled:shadow-none">{p.copied ? "✅ Copiato!" : "🔗 AIOmetadata URL"}</button>
+          <button onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="h-10 px-4 btn-primary">{p.copied ? "✅ Copiato!" : "🔗 AIOmetadata URL"}</button>
           <button onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.pushState({ view: p.view }, ""); p.setView("myposters") } }} className="h-10 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm font-medium rounded-xl text-zinc-300">📋 I miei poster ({p.mappings.length})</button>
           <div className="relative" ref={p.settingsRef}>
-            <button onClick={(e) => { e.stopPropagation(); p.setSettingsOpen((o) => !o) }} className="h-10 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm flex items-center gap-1.5 rounded-xl text-zinc-300">⚙️ Impostazioni</button>
+            <button onClick={(e) => { e.stopPropagation(); p.setSettingsOpen((o) => !o) }} className="h-10 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm flex items-center gap-2 rounded-xl text-zinc-300">⚙️ Impostazioni</button>
             <div className="hidden md:block">{p.settingsOpen && <SettingsPanel showKey={p.showKey} tmdbKeyInput={p.tmdbKeyInput} setTmdbKeyInput={p.setTmdbKeyInput} setTmdbKey={p.setTmdbKey} setShowKey={p.setShowKey} setSettingsOpen={p.setSettingsOpen} exportData={p.exportData} importData={p.importData} mdblistApiKey={p.mdblistApiKey} setMdblistApiKey={p.setMdblistApiKey} />}</div>
           </div>
         </div>
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
           <img onClick={p.goHome} src="/posterium.svg" alt="Posterium" decoding="async" className="h-16 md:h-20 w-auto mb-5 md:mb-4 cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
-            <button onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="h-9 px-3 bg-accent-orange hover:bg-accent-orange/90 active:scale-95 transition-all duration-150 text-[11px] font-semibold text-white rounded-xl shadow-lg shadow-accent-orange/25 disabled:opacity-40 disabled:shadow-none">{p.copied ? "✅ Copiato!" : "🔗 AIOmetadata URL"}</button>
+            <button onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="h-9 px-3 btn-primary text-xs">{p.copied ? "✅ Copiato!" : "🔗 AIOmetadata URL"}</button>
             <button onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.pushState({ view: p.view }, ""); p.setView("myposters") } }} className="h-9 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-xs font-medium rounded-xl text-zinc-300">📋 I miei poster ({p.mappings.length})</button>
             <button onClick={() => p.setSettingsOpen(true)} className="h-8 w-8 flex items-center justify-center bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm rounded-xl text-zinc-300">⚙️</button>
           </div>
@@ -72,7 +72,7 @@ export function AppShell() {
           </div>
         )}
       </div>
-      <div ref={p.toastRef} className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-accent-orange text-white px-4 py-2 rounded-lg text-sm font-medium z-[60] shadow-lg shadow-accent-orange/30 transition-all duration-300 opacity-0 pointer-events-none"></div>
+      <div ref={p.toastRef} className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-accent-orange text-white px-4 py-2 rounded-lg text-sm font-medium z-[60] shadow-lg shadow-accent-orange/30 transition-all duration-300 opacity-0 scale-95 pointer-events-none"></div>
 
       {p.settingsOpen && (
         <div className="fixed inset-0 z-[70] bg-background md:hidden animate-fade-scale-in overflow-y-auto">
@@ -83,16 +83,16 @@ export function AppShell() {
           </div>
           <div className="p-4 space-y-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-zinc-400 font-medium">Chiave TMDB personale</label>
+              <label className="text-xs text-zinc-400 font-medium">Chiave TMDB personale</label>
               <div className="flex gap-1">
-                <input type={p.showKey ? "text" : "password"} value={p.tmdbKeyInput} onChange={(e) => p.setTmdbKeyInput(e.target.value)} onBlur={() => p.setTmdbKey(p.tmdbKeyInput)} onKeyDown={(e) => { if (e.key === "Enter") { p.setTmdbKey(p.tmdbKeyInput); p.setSettingsOpen(false) } }} placeholder="Inserisci la tua chiave" className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-600" />
+                <input type={p.showKey ? "text" : "password"} value={p.tmdbKeyInput} onChange={(e) => p.setTmdbKeyInput(e.target.value)} onBlur={() => p.setTmdbKey(p.tmdbKeyInput)} onKeyDown={(e) => { if (e.key === "Enter") { p.setTmdbKey(p.tmdbKeyInput); p.setSettingsOpen(false) } }} placeholder="Inserisci la tua chiave" className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500" />
                 <button onClick={(e) => { e.stopPropagation(); p.setShowKey((s) => !s) }} className="px-2 bg-zinc-800 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150">{p.showKey ? "🙈" : "👁️"}</button>
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-zinc-400 font-medium">Chiave MDBList</label>
+              <label className="text-xs text-zinc-400 font-medium">Chiave MDBList</label>
               <div className="flex gap-1">
-                <input type={showMdb ? "text" : "password"} defaultValue={p.mdblistApiKey} onChange={(e) => { p.setMdblistApiKey(e.target.value); localStorage.setItem("mdblist_key", e.target.value) }} placeholder="Inserisci la chiave MDBList" className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-600" />
+                <input type={showMdb ? "text" : "password"} defaultValue={p.mdblistApiKey} onChange={(e) => { p.setMdblistApiKey(e.target.value); localStorage.setItem("mdblist_key", e.target.value) }} placeholder="Inserisci la chiave MDBList" className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500" />
                 <button onClick={(e) => { e.stopPropagation(); setShowMdb(!showMdb) }} className="px-2 bg-zinc-800 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150">{showMdb ? "🙈" : "👁️"}</button>
               </div>
             </div>

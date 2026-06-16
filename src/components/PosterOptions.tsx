@@ -33,7 +33,7 @@ export function PosterOptions({ posters, posterActivePath, selected, lang, openS
         const isOpen = openSections["clean"] !== false
         return (
           <CollapsibleSection isOpen={isOpen} onToggle={() => toggleSection("clean")} label="Clean" count={cleanPosters.length}>
-            <div className="grid grid-cols-3 md:grid-cols-2 gap-1.5 md:gap-2">
+            <div className="grid grid-cols-3 md:grid-cols-2 gap-2">
               {cleanPosters.map((img) => {
                 const stagger = idx++
                 return <PosterBtn key={img.file_path} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
@@ -48,7 +48,7 @@ export function PosterOptions({ posters, posterActivePath, selected, lang, openS
         const isOpen = language === primaryLang ? openSections[language] !== false : openSections[language]
         return (
           <CollapsibleSection key={language} isOpen={isOpen} onToggle={() => toggleSection(language)} label={LANG_NAMES[language] || language} count={imgs.length}>
-            <div className="grid grid-cols-3 md:grid-cols-2 gap-1.5 md:gap-2">
+            <div className="grid grid-cols-3 md:grid-cols-2 gap-2">
               {imgs.map((img) => {
                 const stagger = idx++
                 return <PosterBtn key={img.file_path} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
