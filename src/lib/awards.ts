@@ -71,16 +71,18 @@ export function matchTMDBStudios(names: string[]): string[] {
 
 const FRANCHISES = [
   "Marvel Cinematic Universe", "DC Extended Universe",
-  "Star Wars", "Star Trek", "James Bond", "Harry Potter", "Wizarding World",
-  "The Lord of the Rings", "Middle-earth", "Jurassic Park", "Jurassic World",
+  "Star Wars", "Star Trek",
+  "Harry Potter", "Wizarding World", "The Lord of the Rings", "Middle-earth",
+  "James Bond", "Jurassic Park", "Jurassic World",
   "Fast & Furious", "Mission: Impossible", "John Wick",
   "The Hunger Games", "Twilight",
   "Pirates of the Caribbean", "Indiana Jones",
-  "The Conjuring Universe", "Alien", "Predator",
+  "The Conjuring Universe",
+  "Godzilla", "King Kong", "MonsterVerse",
   "Toy Story", "Shrek", "How to Train Your Dragon",
   "Despicable Me", "Minions", "Ice Age", "Madagascar",
   "The Matrix", "Terminator", "Die Hard", "Rocky", "Rambo",
-  "Godzilla", "King Kong", "MonsterVerse",
+  "Alien", "Predator",
   "X-Men", "The Avengers", "Spider-Man", "Batman", "Superman",
   "The Witcher", "Game of Thrones", "Breaking Bad", "The Walking Dead",
   "Scream", "Halloween", "Ghostbusters", "Back to the Future",
@@ -88,10 +90,10 @@ const FRANCHISES = [
 ]
 
 function matchFranchise(labels: string[]): string | null {
-  for (const label of labels) {
-    const lower = label.toLowerCase().trim()
-    for (const fr of FRANCHISES) {
-      const fLower = fr.toLowerCase()
+  for (const fr of FRANCHISES) {
+    const fLower = fr.toLowerCase()
+    for (const label of labels) {
+      const lower = label.toLowerCase().trim()
       if (lower === fLower || lower.includes(fLower) || fLower.includes(lower)) {
         return fr
       }
