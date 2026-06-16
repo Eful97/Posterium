@@ -118,6 +118,8 @@ export interface TMDBDetails {
   next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null
   number_of_seasons?: number
   number_of_episodes?: number
+  networks?: { id: number; name: string; logo_path: string | null; origin_country: string }[]
+  production_companies?: { id: number; name: string; logo_path: string | null; origin_country: string }[]
 }
 
 export async function getDetails(mediaType: "movie" | "tv", id: number, language = "it-IT", apiKey?: string): Promise<TMDBDetails> {

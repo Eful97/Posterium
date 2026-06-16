@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import type { SearchResult, TMDBImage, Mapping, FlixPatrolChart } from "./types"
 import { getDomain, posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from "./utils"
 import { findAccentColor, topEdgeAverage } from "./accent-color"
-import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
+import { getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "./awards"
 
 export interface PosteriumCtx {
   selected: SearchResult | null
@@ -598,7 +598,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       setBackdrops(data.backdrops || [])
       if (details.title) setSelected((prev) => ({ ...prev!, title: details.title }))
       if (details.name) setSelected((prev) => ({ ...prev!, name: details.name }))
-      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, first_air_date: details.first_air_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: awardData?.studios || [], franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null })
+      const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: any) => n.name) : (details.production_companies || []).map((c: any) => c.name)
+      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, first_air_date: details.first_air_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null })
       setTrendRank(rankData.rank || null)
       const extImdbId = item.imdb_id || extIds.imdb_id
       if (extImdbId && mdblistApiKey) {

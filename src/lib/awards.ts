@@ -54,6 +54,21 @@ const NETWORKS = [
   "Studio Ghibli", "Sony Pictures",
 ]
 
+export function matchTMDBStudios(names: string[]): string[] {
+  const found = new Set<string>()
+  for (const name of names) {
+    const lower = name.toLowerCase().trim()
+    for (const net of NETWORKS) {
+      const nLower = net.toLowerCase()
+      if (lower === nLower || lower.includes(nLower) || nLower.includes(lower)) {
+        found.add(net)
+        break
+      }
+    }
+  }
+  return [...found]
+}
+
 const FRANCHISES = [
   "Marvel Cinematic Universe", "DC Extended Universe",
   "Star Wars", "Star Trek", "James Bond", "Harry Potter", "Wizarding World",
@@ -119,12 +134,12 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data
 
   const tmdbProp = mediaType === "movie" ? "P4947" : "P4983"
-  const networkProp = mediaType === "movie" ? "P750" : "P449"
+  const networkQuery = mediaType === "tv" ? `OPTIONAL { ?item wdt:P449 ?network . ?network rdfs:label ?networkLabel . FILTER(LANG(?networkLabel) = "en") }` : ""
   const query = `SELECT ?awardLabel ?nominationLabel ?networkLabel ?franchiseLabel ?basedOnLabel WHERE {
     ?item wdt:${tmdbProp} "${tmdbId}" .
     OPTIONAL { ?item wdt:P166 ?award . ?award rdfs:label ?awardLabel . FILTER(LANG(?awardLabel) = "en") }
     OPTIONAL { ?item wdt:P1411 ?nomination . ?nomination rdfs:label ?nominationLabel . FILTER(LANG(?nominationLabel) = "en") }
-    OPTIONAL { ?item wdt:${networkProp} ?network . ?network rdfs:label ?networkLabel . FILTER(LANG(?networkLabel) = "en") }
+    ${networkQuery}
     OPTIONAL { ?item wdt:P179 ?franchise . ?franchise rdfs:label ?franchiseLabel . FILTER(LANG(?franchiseLabel) = "en") }
     OPTIONAL { ?item wdt:P144 ?basedOn . ?basedOn rdfs:label ?basedOnLabel . FILTER(LANG(?basedOnLabel) = "en") }
   }`
