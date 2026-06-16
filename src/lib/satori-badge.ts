@@ -51,18 +51,23 @@ export async function renderRankingBadge(
   const periodText = label || periodMap["day"] || "Oggi"
   const fullText = `#${rank} ${periodText}`
   const fontSize = Math.round(23 * pw / 380)
-  const charW = fontSize * 0.58
-  const textW = Math.round(String(rank).length * charW + fontSize * 0.35 + periodText.length * charW)
   const px = Math.round(fontSize * 1.0)
   const pt = Math.round(fontSize * 0.5)
   const pb = Math.round(fontSize * 0.5)
+  const maxTextW = pw - 40 - px * 2
+  let textW = Math.round(String(rank).length * fontSize * 0.58 + fontSize * 0.35 + periodText.length * fontSize * 0.58)
+  let finalFontSize = fontSize
+  if (textW > maxTextW) {
+    finalFontSize = Math.round(maxTextW / ((String(rank).length + periodText.length) * 0.58 + 0.35))
+    textW = Math.round(String(rank).length * finalFontSize * 0.58 + finalFontSize * 0.35 + periodText.length * finalFontSize * 0.58)
+  }
   const totalW = textW + px * 2
-  const svgH = fontSize + pt + pb
-  const r = Math.round(fontSize * 0.7)
+  const svgH = finalFontSize + pt + pb
+  const r = Math.round(finalFontSize * 0.7)
   const bg = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
   const fg = topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"
-  const shadowBlur = Math.round(fontSize * 0.6)
-  const shadowOff = Math.round(fontSize * 0.2)
+  const shadowBlur = Math.round(finalFontSize * 0.6)
+  const shadowOff = Math.round(finalFontSize * 0.2)
 
   const el = React.createElement(
     "div",
@@ -91,7 +96,7 @@ export async function renderRankingBadge(
       React.createElement("span", {
         style: {
           color: fg,
-          fontSize: `${fontSize}px`,
+          fontSize: `${finalFontSize}px`,
           fontFamily: "Inter",
           fontWeight: 600,
           letterSpacing: "0.025em",
@@ -113,17 +118,24 @@ export async function renderExtraBadge(
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const fontSize = Math.round(23 * pw / 380)
   const charW = fontSize * 0.58
-  const textW = Math.max(Math.round(label.length * charW), fontSize)
   const px = Math.round(fontSize * 1.0)
   const pt = Math.round(fontSize * 0.5)
   const pb = Math.round(fontSize * 0.5)
+  const maxTextW = pw - 40 - px * 2
+  let textW = Math.round(label.length * charW)
+  let finalFontSize = fontSize
+  if (textW > maxTextW) {
+    finalFontSize = Math.round(maxTextW / (label.length * 0.58))
+    textW = Math.round(label.length * finalFontSize * 0.58)
+  }
+  textW = Math.max(textW, finalFontSize)
   const totalW = textW + px * 2
-  const svgH = fontSize + pt + pb
-  const r = Math.round(fontSize * 0.7)
+  const svgH = finalFontSize + pt + pb
+  const r = Math.round(finalFontSize * 0.7)
   const bg = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
   const fg = topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"
-  const shadowBlur = Math.round(fontSize * 0.6)
-  const shadowOff = Math.round(fontSize * 0.2)
+  const shadowBlur = Math.round(finalFontSize * 0.6)
+  const shadowOff = Math.round(finalFontSize * 0.2)
 
   const el = React.createElement(
     "div",
@@ -152,7 +164,7 @@ export async function renderExtraBadge(
       React.createElement("span", {
         style: {
           color: fg,
-          fontSize: `${fontSize}px`,
+          fontSize: `${finalFontSize}px`,
           fontFamily: "Inter",
           fontWeight: 600,
           letterSpacing: "0.025em",
@@ -174,17 +186,23 @@ export async function renderGenreBadge(
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const voteStr = voteAverage.toFixed(1)
   const fontSize = Math.round(24 * pw / 380)
-  const charW = fontSize * 0.58
-  const genreW = Math.round(genreName.length * charW)
-  const bulletW = Math.round(fontSize * 0.35)
-  const starW = Math.round(fontSize * 0.55)
-  const voteW = Math.round(voteStr.length * charW)
   const gap = Math.round(fontSize * 0.33)
   const gapStar = Math.round(fontSize * 0.17)
   const pad = Math.round(fontSize * 0.35)
+  const bulletW = Math.round(fontSize * 0.35)
+  const starW = Math.round(fontSize * 0.55)
+  const maxGenreW = pw - 40 - pad * 2 - bulletW - gap * 2 - starW - gapStar - voteStr.length * fontSize * 0.58
+  let finalFontSize = fontSize
+  let genreW = Math.round(genreName.length * finalFontSize * 0.58)
+  let voteW = Math.round(voteStr.length * finalFontSize * 0.58)
+  if (genreW > maxGenreW) {
+    finalFontSize = Math.round(maxGenreW / (genreName.length * 0.58))
+    genreW = Math.round(genreName.length * finalFontSize * 0.58)
+    voteW = Math.round(voteStr.length * finalFontSize * 0.58)
+  }
   const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + pad * 2
-  const svgH = Math.round(fontSize * 1.6)
-  const m = Math.round(fontSize * 0.17)
+  const svgH = Math.round(finalFontSize * 1.6)
+  const m = Math.round(finalFontSize * 0.17)
 
   const el = React.createElement(
     "div",
@@ -197,7 +215,7 @@ export async function renderGenreBadge(
         width: `${totalW}px`,
         height: `${svgH}px`,
         color: "#e5e7eb",
-        fontSize: `${fontSize}px`,
+        fontSize: `${finalFontSize}px`,
         fontFamily: "Inter",
         fontWeight: 700,
         textShadow: "0 4px 6px rgba(0,0,0,0.5)",
@@ -214,7 +232,7 @@ export async function renderGenreBadge(
       },
     },
       React.createElement("span", {
-        style: { marginRight: `${gapStar}px`, transform: `translateY(${Math.round(fontSize * 0.23)}px)` },
+        style: { marginRight: `${gapStar}px`, transform: `translateY(${Math.round(finalFontSize * 0.23)}px)` },
       }, "\u2605"),
       React.createElement("span", {
         style: { transform: "translateY(5px)" },

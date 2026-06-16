@@ -11,7 +11,7 @@ import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel } from "@
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 31
+const RENDER_VERSION = 32
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -404,14 +404,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     })()
 
     if (topBadge) {
-      if (topBadge.type === "extra") {
-        const { png: extraPng, w, h } = await renderExtraBadge(topBadge.label, pw, topLight)
-        const extraLeft = Math.round((pw - w) / 2)
-        composites.push({ input: extraPng, top: 0, left: extraLeft })
-      } else {
-        const { png: rankPng, w, h } = await renderRankingBadge(topBadge.rank, pw, topBadge.label, topLight)
-        const rankLeft = Math.round((pw - w) / 2)
-        composites.push({ input: rankPng, top: 0, left: rankLeft })
+      try {
+        if (topBadge.type === "extra") {
+          const { png: extraPng, w, h } = await renderExtraBadge(topBadge.label, pw, topLight)
+          const extraLeft = Math.round((pw - w) / 2)
+          composites.push({ input: extraPng, top: 0, left: extraLeft })
+        } else {
+          const { png: rankPng, w, h } = await renderRankingBadge(topBadge.rank, pw, topBadge.label, topLight)
+          const rankLeft = Math.round((pw - w) / 2)
+          composites.push({ input: rankPng, top: 0, left: rankLeft })
+        }
+      } catch {
+        // badge rendering failed, skip it
       }
     }
 

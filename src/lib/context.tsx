@@ -426,7 +426,7 @@ export function usePosterium(): PosteriumCtx {
     if (!globalBadges) params.push("badges=0")
     if (!rankingBadges) params.push("ranking=0")
     if (lang) params.push(`lang=${encodeURIComponent(lang)}`)
-    params.push("rv=30")
+    params.push("rv=31")
     url += "?" + params.join("&")
     setUrlPattern(url)
   }, [globalBadges, rankingBadges, tmdbKey, lang])
