@@ -331,12 +331,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const s = ph / 1500
 
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
-      const { svg: gradSvg, top: gradTop } = bottomGradientSVG(pw, ph)
-      composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
-      const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw)
-      const badgeY = ph - h - Math.round(20 * ph / 570)
-      const badgeLeft = Math.round((pw - w) / 2)
-      composites.push({ input: png, top: badgeY, left: badgeLeft })
+      try {
+        const { svg: gradSvg, top: gradTop } = bottomGradientSVG(pw, ph)
+        composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
+        const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw)
+        const badgeY = ph - h - Math.round(20 * ph / 570)
+        const badgeLeft = Math.round((pw - w) / 2)
+        composites.push({ input: png, top: badgeY, left: badgeLeft })
+      } catch {
+        // genre badge rendering failed, skip it
+      }
     }
 
     if (logoFetch) {
@@ -429,7 +433,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     return new Response(new Uint8Array(composited), {
       headers: etagHeaders(etag),
     })
-  } catch {
+  } catch (e) {
+    console.error("Poster generation failed:", e)
     return new Response("Poster generation failed", { status: 500 })
   }
 }

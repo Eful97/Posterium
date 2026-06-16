@@ -50,17 +50,16 @@ export async function renderRankingBadge(
   const periodMap: Record<string, string> = { day: "Oggi", week: "Settimana" }
   const periodText = label || periodMap["day"] || "Oggi"
   const fullText = `#${rank} ${periodText}`
-  const fontSize = Math.round(23 * pw / 380)
-  const px = Math.round(fontSize * 1.0)
-  const pt = Math.round(fontSize * 0.5)
-  const pb = Math.round(fontSize * 0.5)
+  let finalFontSize = Math.round(23 * pw / 380)
+  let px = Math.round(finalFontSize * 1.0)
   const maxTextW = pw - 40 - px * 2
-  let textW = Math.round(String(rank).length * fontSize * 0.58 + fontSize * 0.35 + periodText.length * fontSize * 0.58)
-  let finalFontSize = fontSize
-  if (textW > maxTextW) {
-    finalFontSize = Math.round(maxTextW / ((String(rank).length + periodText.length) * 0.58 + 0.35))
-    textW = Math.round(String(rank).length * finalFontSize * 0.58 + finalFontSize * 0.35 + periodText.length * finalFontSize * 0.58)
+  if (Math.round((String(rank).length + periodText.length) * finalFontSize * 0.58 + finalFontSize * 0.35) > maxTextW) {
+    finalFontSize = Math.round((pw - 40) / ((String(rank).length + periodText.length) * 0.58 + 0.35 + 2.0))
+    px = Math.round(finalFontSize * 1.0)
   }
+  const pt = Math.round(finalFontSize * 0.5)
+  const pb = Math.round(finalFontSize * 0.5)
+  const textW = Math.round(String(rank).length * finalFontSize * 0.58 + finalFontSize * 0.35 + periodText.length * finalFontSize * 0.58)
   const totalW = textW + px * 2
   const svgH = finalFontSize + pt + pb
   const r = Math.round(finalFontSize * 0.7)
@@ -116,19 +115,16 @@ export async function renderExtraBadge(
   pw: number,
   topLight?: boolean
 ): Promise<{ png: Buffer; w: number; h: number }> {
-  const fontSize = Math.round(23 * pw / 380)
-  const charW = fontSize * 0.58
-  const px = Math.round(fontSize * 1.0)
-  const pt = Math.round(fontSize * 0.5)
-  const pb = Math.round(fontSize * 0.5)
+  let finalFontSize = Math.round(23 * pw / 380)
+  let px = Math.round(finalFontSize * 1.0)
   const maxTextW = pw - 40 - px * 2
-  let textW = Math.round(label.length * charW)
-  let finalFontSize = fontSize
-  if (textW > maxTextW) {
-    finalFontSize = Math.round(maxTextW / (label.length * 0.58))
-    textW = Math.round(label.length * finalFontSize * 0.58)
+  if (Math.round(label.length * finalFontSize * 0.58) > maxTextW) {
+    finalFontSize = Math.round((pw - 40) / (label.length * 0.58 + 2.0))
+    px = Math.round(finalFontSize * 1.0)
   }
-  textW = Math.max(textW, finalFontSize)
+  const pt = Math.round(finalFontSize * 0.5)
+  const pb = Math.round(finalFontSize * 0.5)
+  const textW = Math.max(Math.round(label.length * finalFontSize * 0.58), finalFontSize)
   const totalW = textW + px * 2
   const svgH = finalFontSize + pt + pb
   const r = Math.round(finalFontSize * 0.7)
@@ -185,23 +181,29 @@ export async function renderGenreBadge(
   pw: number,
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const voteStr = voteAverage.toFixed(1)
-  const fontSize = Math.round(24 * pw / 380)
-  const gap = Math.round(fontSize * 0.33)
-  const gapStar = Math.round(fontSize * 0.17)
-  const pad = Math.round(fontSize * 0.35)
-  const bulletW = Math.round(fontSize * 0.35)
-  const starW = Math.round(fontSize * 0.55)
-  const maxGenreW = pw - 40 - pad * 2 - bulletW - gap * 2 - starW - gapStar - voteStr.length * fontSize * 0.58
-  let finalFontSize = fontSize
-  let genreW = Math.round(genreName.length * finalFontSize * 0.58)
-  let voteW = Math.round(voteStr.length * finalFontSize * 0.58)
-  if (genreW > maxGenreW) {
-    finalFontSize = Math.round(maxGenreW / (genreName.length * 0.58))
-    genreW = Math.round(genreName.length * finalFontSize * 0.58)
-    voteW = Math.round(voteStr.length * finalFontSize * 0.58)
+  let finalFontSize = Math.round(24 * pw / 380)
+  let gap = Math.round(finalFontSize * 0.33)
+  let gapStar = Math.round(finalFontSize * 0.17)
+  let pad = Math.round(finalFontSize * 0.35)
+  let bulletW = Math.round(finalFontSize * 0.35)
+  let starW = Math.round(finalFontSize * 0.55)
+  const maxGenreW = pw - 40 - pad * 2 - bulletW - gap * 2 - starW - gapStar - voteStr.length * finalFontSize * 0.58
+  if (Math.round(genreName.length * finalFontSize * 0.58) > maxGenreW) {
+    const charWidthFactor = 0.58
+    const genreChars = genreName.length
+    const voteChars = voteStr.length
+    finalFontSize = Math.round((pw - 40) / (genreChars * charWidthFactor + voteChars * charWidthFactor + 0.33 + 0.17 + 0.35 * 2 + 0.35 + 0.33 + 0.55))
+    finalFontSize = Math.max(finalFontSize, 12)
+    gap = Math.round(finalFontSize * 0.33)
+    gapStar = Math.round(finalFontSize * 0.17)
+    pad = Math.round(finalFontSize * 0.35)
+    bulletW = Math.round(finalFontSize * 0.35)
+    starW = Math.round(finalFontSize * 0.55)
   }
+  const genreW = Math.round(genreName.length * finalFontSize * 0.58)
+  const voteW = Math.round(voteStr.length * finalFontSize * 0.58)
   const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + pad * 2
-  const svgH = Math.round(finalFontSize * 1.6)
+  const svgH = Math.max(Math.round(finalFontSize * 1.6), 24)
   const m = Math.round(finalFontSize * 0.17)
 
   const el = React.createElement(
