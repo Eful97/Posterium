@@ -7,7 +7,7 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { bottomGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
-import { fetchAwards, getAwardBadgeLabel } from "@/lib/awards"
+import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel } from "@/lib/awards"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
@@ -176,7 +176,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const STD_H = 1500
 
   try {
-    const [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult, awardResult] = await Promise.all([
+    const [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult, wikidataResult] = await Promise.all([
       fetchImg(imgSrc(posterPath)),
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
       backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
@@ -200,8 +200,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           })
           .catch(() => null)
       })(),
-      fetchAwards(tmdbId, mediaType).catch(() => []),
-    ]) as [Buffer, Buffer | null, Buffer | null, number | null, number | null, string[]]
+      fetchAllWikidata(tmdbId, mediaType).catch(() => ({ awards: [], nominations: [], studios: [] })),
+    ]) as [Buffer, Buffer | null, Buffer | null, number | null, number | null, { awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null }]
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
@@ -375,16 +375,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const twoWeeks = 14 * 24 * 60 * 60 * 1000
     const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < twoWeeks : false
     const isNewSeries = mediaType === "tv" && firstAirDate ? (now - new Date(firstAirDate).getTime()) < twoWeeks : false
-    const awardBadge = awardResult.length ? getAwardBadgeLabel(awardResult) : null
+    const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards) : null
+    const nominationBadge = !awardBadge && wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null
+    const franchiseBadge = !awardBadge && !nominationBadge ? wikidataResult.franchise : null
+    const studioBadge = !awardBadge && !nominationBadge && !franchiseBadge && wikidataResult.studios.length ? wikidataResult.studios[0] : null
+    const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
 
     const topBadge = (() => {
       if (!rankingEnabled) return null
 
+      if (queryExtra) return { type: "extra" as const, label: queryExtra }
+
       if (isNewMovie) return { type: "extra" as const, label: "Nuovo film" }
       if (isNewSeries) return { type: "extra" as const, label: "Nuova serie" }
       if (awardBadge) return { type: "extra" as const, label: awardBadge }
+      if (nominationBadge) return { type: "extra" as const, label: nominationBadge }
+      if (franchiseBadge) return { type: "extra" as const, label: franchiseBadge }
       if (animeRankResult) return { type: "rank" as const, rank: animeRankResult, label: "Anime" }
       if (finalRank) return { type: "rank" as const, rank: finalRank, label: "Oggi" }
+      if (studioBadge) return { type: "extra" as const, label: studioBadge }
 
       const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : (voteAverage && voteAverage >= 8.5) ? "Da divorare" : null
       if (mediaType === "movie" && voteAverage && voteAverage >= 8.5) {
