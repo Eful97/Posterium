@@ -7,7 +7,7 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { bottomGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
-import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel } from "@/lib/awards"
+import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
@@ -84,6 +84,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let nextEpisodeAir: string | null = null
   let tvType: string | null = null
   let tvStatus: string | null = null
+  let tmdbStudios: string[] = []
   const queryPoster = req.nextUrl.searchParams.get("poster")
   const queryLogo = req.nextUrl.searchParams.get("logo")
   const queryBackdrop = req.nextUrl.searchParams.get("backdrop")
@@ -133,6 +134,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       voteAverage = aggregated?.average ?? details.vote_average ?? 0
       releaseDate = details.release_date || null
       firstAirDate = details.first_air_date || null
+      const tmdbNetworks = mediaType === "tv" ? (details.networks || []).map((n: any) => n.name) : (details.production_companies || []).map((c: any) => c.name)
+      tmdbStudios = matchTMDBStudios(tmdbNetworks)
       nextEpisodeAir = details.next_episode_to_air?.air_date || null
       tvType = details.type || null
       tvStatus = details.status || null
@@ -384,7 +387,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards) : null
     const franchiseBadge = !awardBadge ? wikidataResult.franchise : null
     const nominationBadge = !awardBadge && !franchiseBadge && wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null
-    const studioBadge = !awardBadge && !franchiseBadge && !nominationBadge && wikidataResult.studios.length ? wikidataResult.studios[0] : null
+    const studioBadge = !awardBadge && !franchiseBadge && !nominationBadge && (tmdbStudios.length ? tmdbStudios[0] : wikidataResult.studios.length ? wikidataResult.studios[0] : null)
     const directorBadge = !awardBadge && !franchiseBadge && !nominationBadge && !studioBadge ? wikidataResult.director : null
     const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
 
