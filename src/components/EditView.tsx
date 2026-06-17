@@ -84,18 +84,19 @@ export default function EditView() {
               return 0.2126 * r + 0.7152 * g + 0.0722 * b
             })()
             const topLight = edgeLum !== null ? edgeLum > 0.55 && edgeLum < 0.99 : undefined
-
             if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" topLight={topLight} containerW={previewDims.w} /></div>
             if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" topLight={topLight} containerW={previewDims.w} /></div>
-            if (award) return <div className="absolute inset-0"><ExtraBadge label={award} topLight={topLight} containerW={previewDims.w} /></div>
-            if (nomination) return <div className="absolute inset-0"><ExtraBadge label={nomination} topLight={topLight} containerW={previewDims.w} /></div>
-            if (p.metaInfo.franchise) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.franchise} topLight={topLight} containerW={previewDims.w} /></div>
-            if (p.metaInfo.director) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.director} topLight={topLight} containerW={previewDims.w} /></div>
 
             const animeRank = p.mdblistAnimeList?.find((a: any) => a.id === p.selected?.id)
             if (animeRank) return <div className="absolute inset-0"><RankingBadge rank={animeRank.rank} label="Anime" topLight={topLight} containerW={previewDims.w} /></div>
 
             if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} topLight={topLight} containerW={previewDims.w} /></div>
+
+            if (award) return <div className="absolute inset-0"><ExtraBadge label={award} topLight={topLight} containerW={previewDims.w} /></div>
+
+            if (p.metaInfo.franchise) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.franchise} topLight={topLight} containerW={previewDims.w} /></div>
+            if (p.metaInfo.director) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.director} topLight={topLight} containerW={previewDims.w} /></div>
+            if (nomination) return <div className="absolute inset-0"><ExtraBadge label={nomination} topLight={topLight} containerW={previewDims.w} /></div>
 
             const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
             if (studio) return <div className="absolute inset-0"><ExtraBadge label={studio} topLight={topLight} containerW={previewDims.w} /></div>
@@ -145,14 +146,14 @@ export default function EditView() {
             const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations) : null
               if (isNewMovie) params.push(`extra=${encodeURIComponent("Nuovo film")}`)
               else if (isNewSeries) params.push(`extra=${encodeURIComponent("Nuova serie")}`)
-              else if (award) params.push(`extra=${encodeURIComponent(award)}`)
-              else if (nomination) params.push(`extra=${encodeURIComponent(nomination)}`)
-              else if (p.metaInfo.franchise) params.push(`extra=${encodeURIComponent(p.metaInfo.franchise)}`)
-              else if (p.metaInfo.director) params.push(`extra=${encodeURIComponent(p.metaInfo.director)}`)
               else {
                 const animeRank = p.mdblistAnimeList?.find((a: any) => a.id === p.selected!.id)
                 if (animeRank) params.push(`rank=${animeRank.rank}&label=Anime`)
                 else if (p.trendRank) params.push(`rank=${p.trendRank}`)
+                else if (award) params.push(`extra=${encodeURIComponent(award)}`)
+                else if (p.metaInfo.franchise) params.push(`extra=${encodeURIComponent(p.metaInfo.franchise)}`)
+                else if (p.metaInfo.director) params.push(`extra=${encodeURIComponent(p.metaInfo.director)}`)
+                else if (nomination) params.push(`extra=${encodeURIComponent(nomination)}`)
                 else {
                   const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
                   if (studio) params.push(`extra=${encodeURIComponent(studio)}`)

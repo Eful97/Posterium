@@ -380,10 +380,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < twoWeeks : false
     const isNewSeries = mediaType === "tv" && firstAirDate ? (now - new Date(firstAirDate).getTime()) < twoWeeks : false
     const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards) : null
-    const nominationBadge = !awardBadge && wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null
-    const franchiseBadge = !awardBadge && !nominationBadge ? wikidataResult.franchise : null
-    const directorBadge = !awardBadge && !nominationBadge && !franchiseBadge ? wikidataResult.director : null
-    const studioBadge = !awardBadge && !nominationBadge && !franchiseBadge && !directorBadge && wikidataResult.studios.length ? wikidataResult.studios[0] : null
+    const franchiseBadge = !awardBadge ? wikidataResult.franchise : null
+    const directorBadge = !awardBadge && !franchiseBadge ? wikidataResult.director : null
+    const nominationBadge = !awardBadge && !franchiseBadge && !directorBadge && wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null
+    const studioBadge = !awardBadge && !franchiseBadge && !directorBadge && !nominationBadge && wikidataResult.studios.length ? wikidataResult.studios[0] : null
     const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
 
     const topBadge = (() => {
@@ -393,12 +393,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
       if (isNewMovie) return { type: "extra" as const, label: "Nuovo film" }
       if (isNewSeries) return { type: "extra" as const, label: "Nuova serie" }
-      if (awardBadge) return { type: "extra" as const, label: awardBadge }
-      if (nominationBadge) return { type: "extra" as const, label: nominationBadge }
-      if (franchiseBadge) return { type: "extra" as const, label: franchiseBadge }
-      if (directorBadge) return { type: "extra" as const, label: directorBadge }
       if (animeRankResult) return { type: "rank" as const, rank: animeRankResult, label: "Anime" }
       if (finalRank) return { type: "rank" as const, rank: finalRank, label: "Oggi" }
+      if (awardBadge) return { type: "extra" as const, label: awardBadge }
+      if (franchiseBadge) return { type: "extra" as const, label: franchiseBadge }
+      if (directorBadge) return { type: "extra" as const, label: directorBadge }
+      if (nominationBadge) return { type: "extra" as const, label: nominationBadge }
       if (studioBadge) return { type: "extra" as const, label: studioBadge }
 
       const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : (voteAverage && voteAverage >= 8.5) ? "Da divorare" : null
