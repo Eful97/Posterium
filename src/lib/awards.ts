@@ -120,6 +120,38 @@ function matchStudios(labels: string[]): string[] {
   return [...found]
 }
 
+const DIRECTORS = [
+  "Alfred Hitchcock", "Orson Welles", "John Ford", "Akira Kurosawa",
+  "Charles Chaplin", "Federico Fellini", "Ingmar Bergman", "Steven Spielberg",
+  "Stanley Kubrick", "D.W. Griffith", "William Wyler", "Howard Hawks",
+  "David Lean", "Martin Scorsese", "Jean Renoir", "Robert Bresson",
+  "Jean-Luc Godard", "Frank Capra", "Andrei Tarkovsky", "Luis Buñuel",
+  "Michael Powell", "John Huston", "Michael Curtiz", "Billy Wilder",
+  "Carl Theodor Dreyer", "Yasujirō Ozu", "Woody Allen", "Abel Gance",
+  "Ernst Lubitsch", "Paul Thomas Anderson", "Francis Ford Coppola",
+  "Michelangelo Antonioni", "Sergio Leone", "F.W. Murnau", "Ridley Scott",
+  "David Lynch", "George Stevens", "Fritz Lang", "Roman Polanski",
+  "Miloš Forman", "James Cameron", "Tim Burton", "Elia Kazan",
+  "François Truffaut", "George Cukor", "Buster Keaton", "Werner Herzog",
+  "Sergei Eisenstein", "Cecil B. DeMille", "Kenji Mizoguchi", "Nicholas Ray",
+  "Tod Browning", "John Sturges", "Otto Preminger", "Victor Fleming",
+  "Carol Reed", "Roberto Rossellini", "Fred Zinnemann", "Sidney Lumet",
+  "Marcel Carné", "Quentin Tarantino", "Raoul Walsh", "Henry King",
+  "Dziga Vertov", "Lewis Milestone", "Rex Ingram", "Christopher Nolan",
+  "Max Ophüls",
+]
+
+function matchDirector(name: string | null): string | null {
+  if (!name) return null
+  const lower = name.toLowerCase().trim()
+  for (const d of DIRECTORS) {
+    if (lower === d.toLowerCase() || lower.includes(d.toLowerCase()) || d.toLowerCase().includes(lower)) {
+      return `Di ${d}`
+    }
+  }
+  return null
+}
+
 function categorizeBasedOn(label: string): string | null {
   const lower = label.toLowerCase()
   if (/novel|book|romanzo|novella/.test(lower)) return "Dal romanzo"
@@ -173,7 +205,7 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
     const basedOn = rawBasedOn ? categorizeBasedOn(rawBasedOn) : null
 
     const director = [...directorLabels][0] || null
-    const directorBadge = director ? `Di ${director}` : null
+    const directorBadge = matchDirector(director)
 
     const result: WikidataResult = {
       awards: matchRules([...awardLabels]),
