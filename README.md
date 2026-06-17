@@ -19,7 +19,7 @@ pinned: false
 ## ✨ Features
 
 - 🔍 **Ricerca TMDB** — Cerca film e serie TV in italiano e inglese
-- 🎯 **Loghi** — Seleziona loghi ufficiali puliti e posizionali sul poster (max 25% altezza, scala dinamica)
+- 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y
 - 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi (scuri su poster chiari, chiari su scuri)
 - 🏷️ **Badge genere/rating** — Genere, stella ★ e voto aggregato in sovrimpressione
 - 📊 **Rating** — Media da 9 fonti: IMDb, TMDb, Metacritic, Rotten Tomatoes (critica + pubblico), Letterboxd, Trakt, MyAnimeList, Kitsu via MDBList
@@ -150,7 +150,7 @@ Sfumatura nera 90% → trasparente con genere, •, ★ e voto aggregato (media 
 
 ### Logo
 
-Massimo 25% dell'altezza del poster. Scala dinamica nello slider che riflette il limite reale. Posizionamento libero con offset X/Y.
+Massimo 25% dell'altezza del poster, scala dinamica. Trascinabile con il mouse nell'anteprima (drag & drop). Slider Scala/X/Y per regolazioni fini, doppio click per reset.
 
 ---
 
