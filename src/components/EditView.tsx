@@ -17,6 +17,8 @@ export default function EditView() {
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [previewDims, setPreviewDims] = useState({ w: 380, h: 570 })
   const previewRef = useRef<HTMLDivElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const dragRef = useRef({ startX: 0, startY: 0, startOX: 0, startOY: 0, active: false })
 
   const defaultLogoScale = () => {
     const l = p.selectedLogo
@@ -65,7 +67,30 @@ export default function EditView() {
             const baseGap = 57
             const badgeAdj = badgesVisible ? 0 : 15.2
             const bottomPx = baseGap - p.logoOffsetY * scale - badgeAdj
-            return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10 }}><div style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%" }}><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain" }} /></div></div>
+            return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10, pointerEvents: "auto" }}>
+              <div
+                style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%", cursor: dragging ? "grabbing" : "grab" }}
+                onPointerDown={(e) => {
+                  e.preventDefault(); e.stopPropagation()
+                  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+                  dragRef.current = { startX: e.clientX, startY: e.clientY, startOX: p.logoOffsetX, startOY: p.logoOffsetY, active: true }
+                  setDragging(false)
+                }}
+                onPointerMove={(e) => {
+                  if (!dragRef.current.active) return
+                  const dx = e.clientX - dragRef.current.startX
+                  const dy = e.clientY - dragRef.current.startY
+                  if (!dragging && Math.abs(dx) + Math.abs(dy) < 4) return
+                  if (!dragging) { setDragging(true); return }
+                  p.setLogoOffsetX(dragRef.current.startOX + Math.round(dx / scale))
+                  p.setLogoOffsetY(dragRef.current.startOY + Math.round(dy / scale))
+                }}
+                onPointerUp={(e) => {
+                  ;(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId)
+                  setDragging(false); dragRef.current.active = false
+                }}
+                onPointerLeave={() => { setDragging(false); dragRef.current.active = false }}
+              ><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain" }} /></div></div>
           })()}
           {p.rankingBadges && (() => {
             const now = Date.now()

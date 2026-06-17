@@ -585,15 +585,14 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     setPreviewId(`${itemType}:${itemId}`)
     setView("edit")
     try {
-      const [data, extIds, details, rankData, awardData] = await Promise.all([
+      const [data, details, rankData, awardData] = await Promise.all([
         api(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${lang},en,null&api_key=${tmdbKey}`),
-        api(`/api/tmdb/${itemId}/external_ids?type=${itemType}&api_key=${tmdbKey}`),
         api(`/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistApiKey ? `&mdblist_key=${encodeURIComponent(mdblistApiKey)}` : ""}`),
         api(`/api/trending/rank?type=${itemType}&id=${itemId}&api_key=${encodeURIComponent(tmdbKey)}`).catch(() => ({ rank: null })),
         api(`/api/awards/${itemType}/${itemId}`).catch(() => ({ awards: [] })),
       ])
       if (fetchIdRef.current !== fetchId) return
-      setSelected({ ...item, imdb_id: extIds.imdb_id })
+      setSelected({ ...item, imdb_id: details.imdb_id })
       setPosters(data.posters || [])
       setLogos(data.logos || [])
       setBackdrops(data.backdrops || [])
@@ -602,7 +601,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: any) => n.name) : (details.production_companies || []).map((c: any) => c.name)
       setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, first_air_date: details.first_air_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null, director: awardData?.director || null })
       setTrendRank(rankData.rank || null)
-      const extImdbId = item.imdb_id || extIds.imdb_id
+      const extImdbId = item.imdb_id || details.imdb_id
       if (extImdbId && mdblistApiKey) {
         api(`/api/mdblist?imdb=${extImdbId}&api_key=${mdblistApiKey}`).then((d) => {
           if (d?.match) {
