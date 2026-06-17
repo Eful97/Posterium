@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react"
 
-const CURRENT_VERSION = "0.1.13"
+const CURRENT_VERSION = "0.1.14"
 const REPO = "Eful97/Posterium"
 const CHECK_TTL = 60 * 60 * 1000
 
-async function getLatestTag(): Promise<string | null> {
+async function getLatestVersion(): Promise<string | null> {
   try {
-    const cached = localStorage.getItem("posterium:tag")
+    const cached = localStorage.getItem("posterium:latest")
     if (cached) {
       const { tag, ts } = JSON.parse(cached)
       if (Date.now() - ts < CHECK_TTL) return tag
@@ -17,10 +17,22 @@ async function getLatestTag(): Promise<string | null> {
       headers: { Accept: "application/vnd.github.v3+json" },
       signal: AbortSignal.timeout(5000),
     })
-    if (!res.ok) return null
-    const data = await res.json()
-    const tag = data[0]?.name?.replace(/^v/, "") || null
-    if (tag) localStorage.setItem("posterium:tag", JSON.stringify({ tag, ts: Date.now() }))
+    let tag: string | null = null
+    if (res.ok) {
+      const data = await res.json()
+      tag = data?.[0]?.name?.replace(/^v/, "") || null
+    }
+    if (!tag) {
+      const rel = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+        headers: { Accept: "application/vnd.github.v3+json" },
+        signal: AbortSignal.timeout(5000),
+      })
+      if (rel.ok) {
+        const data = await rel.json()
+        tag = data?.tag_name?.replace(/^v/, "") || null
+      }
+    }
+    if (tag) localStorage.setItem("posterium:latest", JSON.stringify({ tag, ts: Date.now() }))
     return tag
   } catch {
     return null
@@ -31,7 +43,8 @@ export function VersionBadge() {
   const [updateTag, setUpdateTag] = useState<string | null>(null)
 
   useEffect(() => {
-    getLatestTag().then((tag) => {
+    localStorage.removeItem("posterium:tag")
+    getLatestVersion().then((tag) => {
       if (tag && tag !== CURRENT_VERSION) setUpdateTag(tag)
     })
   }, [])
