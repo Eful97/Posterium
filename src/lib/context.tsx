@@ -327,6 +327,8 @@ export function usePosterium(): PosteriumCtx {
         setPreviewPoster(null)
         setSelectedLogo(null)
         setPreviewId(null)
+      } else if (e.state?.view === "myposters") {
+        setView("myposters")
       } else {
         ++fetchIdRef.current
         setView("edit")
