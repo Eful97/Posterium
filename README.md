@@ -151,7 +151,7 @@ Sfumatura nera 90% → trasparente con genere, •, ★ e voto aggregato (media 
 
 ### Logo
 
-Massimo 25% dell'altezza del poster, scala dinamica. Trascinabile con il mouse nell'anteprima (drag & drop). Slider Scala/X/Y per regolazioni fini, doppio click per reset.
+Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabile con il mouse (drag & drop). Slider Scala/X/Y per regolazioni fini, doppio click per reset.
 
 ---
 
