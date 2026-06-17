@@ -4,12 +4,11 @@ export async function GET(req: NextRequest) {
   const domain = req.nextUrl.origin
   return Response.json({
     id: "org.posterium",
-    version: "0.2.0",
+    version: "0.2.9",
     name: "Posterium",
     description: "Custom poster manager for Stremio — loghi, badge trend, premi e rating",
     resources: ["catalog", "poster"],
     types: ["movie", "series"],
-    idPrefixes: ["tt"],
     logo: `${domain}/App.png`,
     addonCatalogs: [],
     manifestVersion: 1,

@@ -10,6 +10,7 @@ const MAX_TTL = 30 * 60 * 1000
 
 const TAG_TTL: Record<string, number> = {
   poster: 24 * 60 * 60 * 1000,
+  catalog: 2 * 60 * 60 * 1000,
 }
 
 function ttlForTags(tags: string[]): number {

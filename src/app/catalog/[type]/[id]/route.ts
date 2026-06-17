@@ -3,8 +3,6 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { getTop10 } from "@/lib/flixpatrol"
 
-const IMG_BASE = "https://image.tmdb.org/t/p/w342"
-
 interface StremioMeta {
   id: string
   type: string
@@ -46,11 +44,9 @@ const PLATFORM_SLUGS: Record<string, string> = {
   apple: "apple-tv", hbo: "hbo-max", paramount: "paramount-plus",
 }
 
-function posteriumPoster(domain: string, tmdbId: number, mediaType: string, posterPath?: string | null): string {
+function posteriumPoster(domain: string, tmdbId: number, mediaType: string): string {
   const apiKey = process.env.TMDB_API_KEY
-  const params = [`api_key=${apiKey}`, "lang=it"]
-  if (posterPath) params.push(`poster=${encodeURIComponent(posterPath)}`)
-  return `${domain}/api/poster/${mediaType}/${tmdbId}?${params.join("&")}`
+  return `${domain}/api/poster/${mediaType}/${tmdbId}?api_key=${encodeURIComponent(apiKey!)}&lang=it`
 }
 
 type RouteParams = { type: string; id: string }
@@ -75,23 +71,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const ids = await getJustWatchRankings(mediaType === "movie" ? "MOVIE" : "SHOW")
       const apiKey = process.env.TMDB_API_KEY!
       const pathTmdb = mediaType === "movie" ? "/movie" : "/tv"
-      for (const id of ids.slice(0, 20)) {
+      const results = await Promise.all(ids.slice(0, 20).map(async (id) => {
         try {
           const url = `https://api.themoviedb.org/3${pathTmdb}/${id}?api_key=${apiKey}&language=it-IT`
           const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
-          if (!res.ok) continue
+          if (!res.ok) return null
           const d = await res.json()
-          if (d?.id) {
-            metas.push({
-              id: d.imdb_id || id.toString(),
-              type: stType,
-              name: d.title || d.name || "",
-              poster: posteriumPoster(domain, id, mediaType, d.poster_path),
-              releaseInfo: (d.release_date || d.first_air_date || "").slice(0, 4) || undefined,
-            })
+          if (!d?.id) return null
+          return {
+            id: d.imdb_id || id.toString(),
+            type: stType,
+            name: d.title || d.name || "",
+            poster: posteriumPoster(domain, id, mediaType),
+            releaseInfo: (d.release_date || d.first_air_date || "").slice(0, 4) || undefined,
           }
-        } catch {}
-      }
+        } catch { return null }
+      }))
+      metas = results.filter(Boolean) as StremioMeta[]
     } else if (catalogId.startsWith("posterium-anime")) {
       const key = process.env.MDBLIST_API_KEY
       if (key) {
@@ -112,7 +108,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                     id: d.imdb_id || item.imdb || tmdbId.toString(),
                     type: "series",
                     name: d.name || item.title || "",
-                    poster: posteriumPoster(domain, tmdbId, "series", d.poster_path),
+                    poster: posteriumPoster(domain, tmdbId, "series"),
                     releaseInfo: (d.first_air_date || "").slice(0, 4) || undefined,
                   })
                 }
@@ -137,7 +133,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                 id: item.tmdbId.toString(),
                 type: stType,
                 name: item.title,
-                poster: posteriumPoster(domain, item.tmdbId, mediaType, item.posterPath),
+                poster: posteriumPoster(domain, item.tmdbId, mediaType),
                 releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
               })
             }

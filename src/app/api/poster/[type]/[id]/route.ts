@@ -204,7 +204,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           })
           .catch(() => null)
       })(),
-      fetchAllWikidata(tmdbId, mediaType).catch(() => ({ awards: [], nominations: [], studios: [] })),
+      fetchAllWikidata(tmdbId, mediaType).catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null })),
     ]) as [Buffer, Buffer | null, Buffer | null, number | null, number | null, { awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }]
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
@@ -376,10 +376,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     // Badge priority (matches client EditView.tsx):
     // 1. Nuovo film / Nuova serie
-    // 2. Award (Vincitore Oscar/Cannes/etc.)
-    // 3. Anime rank
-    // 4. Trend rank
-    // 5. Miniserie / Ritorna / Da divorare
+    // 2. Anime rank (MDBList)
+    // 3. Trend rank (JustWatch)
+    // 4. Award (Vincitore)
+    // 5. Franchise
+    // 6. Nomination (Candidato)
+    // 7. Studio (TMDB)
+    // 8. Director (Wikidata)
+    // 9. Miniserie / Ritorna / Da divorare / Il più votato
     const now = Date.now()
     const twoWeeks = 14 * 24 * 60 * 60 * 1000
     const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < twoWeeks : false
