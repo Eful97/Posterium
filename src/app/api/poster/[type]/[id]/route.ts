@@ -326,9 +326,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const topLum = await topLuminance(posterBuf)
     const topLight = topLum > 0.55
     const qBadges = req.nextUrl.searchParams.get("badges")
-    const badgesEnabled = qBadges !== "0" && showBadges
     const qRanking = req.nextUrl.searchParams.get("ranking")
-    const rankingEnabled = qRanking !== "0" && showBadges
+    const hasQuery = !!queryPoster || !!mapping
+    const badgesEnabled = hasQuery ? qBadges !== "0" && showBadges : true
+    const rankingEnabled = hasQuery ? qRanking !== "0" && showBadges : true
     const s = ph / 1500
 
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
