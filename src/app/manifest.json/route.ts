@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
     id: "org.posterium",
     version: "0.1.0",
     name: "Posterium",
-    description: "Custom poster manager for Stremio via AIOmetadata",
+    description: "Custom poster manager for Stremio — loghi, badge trend, premi e rating",
     resources: ["poster"],
     types: ["movie", "series"],
     idPrefixes: ["tt"],
@@ -16,6 +16,19 @@ export async function GET(req: NextRequest) {
     behaviorHints: {
       adult: false,
     },
-    catalogs: [],
+    catalogs: [
+      {
+        id: "posterium-movies",
+        name: "Posterium - Film",
+        type: "movie",
+        extra: [{ name: "skip" }],
+      },
+      {
+        id: "posterium-series",
+        name: "Posterium - Serie TV",
+        type: "series",
+        extra: [{ name: "skip" }],
+      },
+    ],
   })
 }
