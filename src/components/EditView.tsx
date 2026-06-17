@@ -19,6 +19,7 @@ export default function EditView() {
   const previewRef = useRef<HTMLDivElement>(null)
   const [dragging, setDragging] = useState(false)
   const dragRef = useRef({ startX: 0, startY: 0, startOX: 0, startOY: 0, active: false })
+  const logoWheelRef = useRef<HTMLDivElement>(null)
 
   const defaultLogoScale = () => {
     const l = p.selectedLogo
@@ -35,6 +36,18 @@ export default function EditView() {
       if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    const el = logoWheelRef.current
+    if (!el) return
+    const fn = (e: WheelEvent) => {
+      if (!e.shiftKey) return
+      e.preventDefault()
+      p.setLogoScale((s) => Math.max(10, Math.min(100, s - Math.sign(e.deltaY) * 20)))
+    }
+    el.addEventListener("wheel", fn, { passive: false })
+    return () => el.removeEventListener("wheel", fn)
+  })
 
   useEffect(() => {
     const el = previewRef.current
@@ -67,7 +80,7 @@ export default function EditView() {
             const baseGap = 57
             const badgeAdj = badgesVisible ? 0 : 15.2
             const bottomPx = baseGap - p.logoOffsetY * scale - badgeAdj
-            return <div style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10, pointerEvents: "auto" }}>
+            return <div ref={logoWheelRef} style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10, pointerEvents: "auto" }}>
               <div
                 style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%", cursor: dragging ? "grabbing" : "grab" }}
                 onPointerDown={(e) => {
@@ -90,6 +103,18 @@ export default function EditView() {
                   setDragging(false); dragRef.current.active = false
                 }}
                 onPointerLeave={() => { setDragging(false); dragRef.current.active = false }}
+                onDoubleClick={() => {
+                  const l = p.selectedLogo
+                  if (l && l.width && l.height) {
+                    const maxH = Math.round(1500 * 0.25)
+                    const effW = Math.round(maxH * l.width / l.height)
+                    p.setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
+                  } else {
+                    p.setLogoScale(75)
+                  }
+                  p.setLogoOffsetX(0)
+                  p.setLogoOffsetY(0)
+                }}
               ><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain" }} /></div></div>
           })()}
           {p.rankingBadges && (() => {
