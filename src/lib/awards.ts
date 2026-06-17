@@ -23,6 +23,7 @@ export interface WikidataResult {
   studios: string[]
   franchise: string | null
   basedOn: string | null
+  director: string | null
 }
 
 async function sparqlQuery(query: string): Promise<any[]> {
@@ -70,7 +71,7 @@ export function matchTMDBStudios(names: string[]): string[] {
 }
 
 const FRANCHISES = [
-  "Marvel Cinematic Universe", "DC Extended Universe",
+  "MCU", "DC Extended Universe",
   "Star Wars", "Star Trek",
   "Harry Potter", "Wizarding World", "The Lord of the Rings", "Middle-earth",
   "James Bond", "Jurassic Park", "Jurassic World",
@@ -97,6 +98,7 @@ function matchFranchise(labels: string[]): string | null {
       if (lower === fLower || lower.includes(fLower) || fLower.includes(lower)) {
         return fr
       }
+      if (fr === "MCU" && lower.includes("marvel cinematic")) return "MCU"
     }
   }
   return null
@@ -137,13 +139,14 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
 
   const tmdbProp = mediaType === "movie" ? "P4947" : "P4983"
   const networkQuery = mediaType === "tv" ? `OPTIONAL { ?item wdt:P449 ?network . ?network rdfs:label ?networkLabel . FILTER(LANG(?networkLabel) = "en") }` : ""
-  const query = `SELECT ?awardLabel ?nominationLabel ?networkLabel ?franchiseLabel ?basedOnLabel WHERE {
+  const query = `SELECT ?awardLabel ?nominationLabel ?networkLabel ?franchiseLabel ?basedOnLabel ?directorLabel WHERE {
     ?item wdt:${tmdbProp} "${tmdbId}" .
     OPTIONAL { ?item wdt:P166 ?award . ?award rdfs:label ?awardLabel . FILTER(LANG(?awardLabel) = "en") }
     OPTIONAL { ?item wdt:P1411 ?nomination . ?nomination rdfs:label ?nominationLabel . FILTER(LANG(?nominationLabel) = "en") }
     ${networkQuery}
     OPTIONAL { ?item wdt:P179 ?franchise . ?franchise rdfs:label ?franchiseLabel . FILTER(LANG(?franchiseLabel) = "en") }
     OPTIONAL { ?item wdt:P144 ?basedOn . ?basedOn rdfs:label ?basedOnLabel . FILTER(LANG(?basedOnLabel) = "en") }
+    OPTIONAL { ?item wdt:P57 ?director . ?director rdfs:label ?directorLabel . FILTER(LANG(?directorLabel) = "en") }
   }`
 
   try {
@@ -154,6 +157,7 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
     const networkLabels = new Set<string>()
     const franchiseLabels = new Set<string>()
     const basedOnLabels = new Set<string>()
+    const directorLabels = new Set<string>()
 
     for (const b of bindings) {
       if (b.awardLabel?.value) awardLabels.add(b.awardLabel.value)
@@ -161,11 +165,15 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
       if (b.networkLabel?.value) networkLabels.add(b.networkLabel.value)
       if (b.franchiseLabel?.value) franchiseLabels.add(b.franchiseLabel.value)
       if (b.basedOnLabel?.value) basedOnLabels.add(b.basedOnLabel.value)
+      if (b.directorLabel?.value) directorLabels.add(b.directorLabel.value)
     }
 
     const franchise = matchFranchise([...franchiseLabels])
     const rawBasedOn = [...basedOnLabels][0]
     const basedOn = rawBasedOn ? categorizeBasedOn(rawBasedOn) : null
+
+    const director = [...directorLabels][0] || null
+    const directorBadge = director ? `Di ${director}` : null
 
     const result: WikidataResult = {
       awards: matchRules([...awardLabels]),
@@ -173,13 +181,14 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
       studios: matchStudios([...networkLabels]),
       franchise,
       basedOn,
+      director: directorBadge,
     }
 
     if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value!)
     CACHE.set(cacheKey, { data: result, timestamp: Date.now() })
     return result
   } catch {
-    return { awards: [], nominations: [], studios: [], franchise: null, basedOn: null }
+    return { awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }
   }
 }
 

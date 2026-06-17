@@ -201,7 +201,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           .catch(() => null)
       })(),
       fetchAllWikidata(tmdbId, mediaType).catch(() => ({ awards: [], nominations: [], studios: [] })),
-    ]) as [Buffer, Buffer | null, Buffer | null, number | null, number | null, { awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null }]
+    ]) as [Buffer, Buffer | null, Buffer | null, number | null, number | null, { awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }]
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
@@ -382,7 +382,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards) : null
     const nominationBadge = !awardBadge && wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null
     const franchiseBadge = !awardBadge && !nominationBadge ? wikidataResult.franchise : null
-    const studioBadge = !awardBadge && !nominationBadge && !franchiseBadge && wikidataResult.studios.length ? wikidataResult.studios[0] : null
+    const directorBadge = !awardBadge && !nominationBadge && !franchiseBadge ? wikidataResult.director : null
+    const studioBadge = !awardBadge && !nominationBadge && !franchiseBadge && !directorBadge && wikidataResult.studios.length ? wikidataResult.studios[0] : null
     const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
 
     const topBadge = (() => {
@@ -395,6 +396,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       if (awardBadge) return { type: "extra" as const, label: awardBadge }
       if (nominationBadge) return { type: "extra" as const, label: nominationBadge }
       if (franchiseBadge) return { type: "extra" as const, label: franchiseBadge }
+      if (directorBadge) return { type: "extra" as const, label: directorBadge }
       if (animeRankResult) return { type: "rank" as const, rank: animeRankResult, label: "Anime" }
       if (finalRank) return { type: "rank" as const, rank: finalRank, label: "Oggi" }
       if (studioBadge) return { type: "extra" as const, label: studioBadge }

@@ -58,7 +58,7 @@ export interface PosteriumCtx {
   setRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
-  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null }
+  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }
   previewId: string | null
   setPreviewId: React.Dispatch<React.SetStateAction<string | null>>
   saveConfig: () => Promise<void>
@@ -148,7 +148,7 @@ export function usePosterium(): PosteriumCtx {
   const toastRef = useRef<HTMLDivElement>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
   const [previewPoster, setPreviewPoster] = useState<TMDBImage | null>(null)
-  const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null }>({ genres: [], voteAverage: 0 })
+  const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }>({ genres: [], voteAverage: 0 })
   const [view, setView] = useState<"edit" | "search" | "myposters">("edit")
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
@@ -464,6 +464,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       else if (award) { params.push(`extra=${encodeURIComponent(award)}`) }
       else if (nomination) { params.push(`extra=${encodeURIComponent(nomination)}`) }
       else if (metaInfo.franchise) { params.push(`extra=${encodeURIComponent(metaInfo.franchise)}`) }
+      else if (metaInfo.director) { params.push(`extra=${encodeURIComponent(metaInfo.director)}`) }
       else if (selected && mdblistAnimeList.length > 0) {
         const anime = mdblistAnimeList.find((a: any) => a.id === selected.id)
         if (anime) params.push(`rank=${anime.rank}&label=Anime`)
@@ -599,7 +600,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       if (details.title) setSelected((prev) => ({ ...prev!, title: details.title }))
       if (details.name) setSelected((prev) => ({ ...prev!, name: details.name }))
       const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: any) => n.name) : (details.production_companies || []).map((c: any) => c.name)
-      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, first_air_date: details.first_air_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null })
+      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, first_air_date: details.first_air_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null, director: awardData?.director || null })
       setTrendRank(rankData.rank || null)
       const extImdbId = item.imdb_id || extIds.imdb_id
       if (extImdbId && mdblistApiKey) {
@@ -717,7 +718,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     const tvStatus = selected.media_type === "tv" ? metaInfo.status : null
     const extra = selected.media_type === "movie" ? (metaInfo.voteAverage >= 8.5 ? "Il più votato" : null) : (tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8.5 ? "Da divorare" : null)
     const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
-    const badgeExtra = isNewMovie ? "Nuovo film" : isNewSeries ? "Nuova serie" : award || nomination || metaInfo.franchise || studio || extra || null
+    const badgeExtra = isNewMovie ? "Nuovo film" : isNewSeries ? "Nuova serie" : award || nomination || metaInfo.franchise || metaInfo.director || studio || extra || null
     const badgeRank = (!badgeExtra && rankingBadges) ? (animeRank ? animeRank.rank : trendRank || undefined) : undefined
     const badgeLabel = (!badgeExtra && animeRank) ? "Anime" : (!badgeExtra && trendRank) ? "Oggi" : undefined
     try {

@@ -90,6 +90,7 @@ export default function EditView() {
             if (award) return <div className="absolute inset-0"><ExtraBadge label={award} topLight={topLight} containerW={previewDims.w} /></div>
             if (nomination) return <div className="absolute inset-0"><ExtraBadge label={nomination} topLight={topLight} containerW={previewDims.w} /></div>
             if (p.metaInfo.franchise) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.franchise} topLight={topLight} containerW={previewDims.w} /></div>
+            if (p.metaInfo.director) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.director} topLight={topLight} containerW={previewDims.w} /></div>
 
             const animeRank = p.mdblistAnimeList?.find((a: any) => a.id === p.selected?.id)
             if (animeRank) return <div className="absolute inset-0"><RankingBadge rank={animeRank.rank} label="Anime" topLight={topLight} containerW={previewDims.w} /></div>
@@ -147,6 +148,7 @@ export default function EditView() {
               else if (award) params.push(`extra=${encodeURIComponent(award)}`)
               else if (nomination) params.push(`extra=${encodeURIComponent(nomination)}`)
               else if (p.metaInfo.franchise) params.push(`extra=${encodeURIComponent(p.metaInfo.franchise)}`)
+              else if (p.metaInfo.director) params.push(`extra=${encodeURIComponent(p.metaInfo.director)}`)
               else {
                 const animeRank = p.mdblistAnimeList?.find((a: any) => a.id === p.selected!.id)
                 if (animeRank) params.push(`rank=${animeRank.rank}&label=Anime`)
