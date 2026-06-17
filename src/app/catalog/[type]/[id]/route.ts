@@ -1,10 +1,9 @@
 import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
-import { getRawCatalog } from "@/lib/flixpatrol"
+import { getTop10 } from "@/lib/flixpatrol"
 
 const IMG_BASE = "https://image.tmdb.org/t/p/w342"
-const TMDB_BASE = "https://api.themoviedb.org/3"
 
 interface StremioMeta {
   id: string
@@ -12,16 +11,6 @@ interface StremioMeta {
   name: string
   poster: string | null
   releaseInfo?: string
-}
-
-async function tmdbFetch(path: string, params: Record<string, string> = {}) {
-  const apiKey = process.env.TMDB_API_KEY!
-  const url = new URL(`${TMDB_BASE}${path}`)
-  url.searchParams.set("api_key", apiKey)
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) })
-  if (!res.ok) return null
-  return res.json()
 }
 
 async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<number[]> {
@@ -38,6 +27,11 @@ async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<number[]> {
   } catch { return [] }
 }
 
+const PLATFORM_SLUGS: Record<string, string> = {
+  netflix: "netflix", prime: "amazon-prime", disney: "disney",
+  apple: "apple-tv", hbo: "hbo-max", paramount: "paramount-plus",
+}
+
 type RouteParams = { type: string; id: string }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
@@ -52,40 +46,80 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   if (cached) return Response.json(cached)
 
   try {
-    let tmdbIds: number[] = []
+    let metas: StremioMeta[] = []
 
     if (catalogId.startsWith("posterium-jw")) {
-      tmdbIds = await getJustWatchRankings(mediaType === "movie" ? "MOVIE" : "SHOW")
+      const ids = await getJustWatchRankings(mediaType === "movie" ? "MOVIE" : "SHOW")
+      const apiKey = process.env.TMDB_API_KEY!
+      const pathTmdb = mediaType === "movie" ? "/movie" : "/tv"
+      for (const id of ids.slice(0, 20)) {
+        try {
+          const url = `https://api.themoviedb.org/3${pathTmdb}/${id}?api_key=${apiKey}&language=it-IT`
+          const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+          if (!res.ok) continue
+          const d = await res.json()
+          if (d?.id) {
+            metas.push({
+              id: d.imdb_id || id.toString(),
+              type: mediaType === "series" ? "series" : "movie",
+              name: d.title || d.name || "",
+              poster: d.poster_path ? `${IMG_BASE}${d.poster_path}` : null,
+              releaseInfo: (d.release_date || d.first_air_date || "").slice(0, 4) || undefined,
+            })
+          }
+        } catch {}
+      }
     } else if (catalogId.startsWith("posterium-anime")) {
       const key = process.env.MDBLIST_API_KEY
       if (key) {
-        const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${key}`, { signal: AbortSignal.timeout(10000) })
-        if (res.ok) tmdbIds = ((await res.json()) || []).map((i: any) => i.tmdb).filter(Boolean).map(Number)
+        try {
+          const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${key}`, { signal: AbortSignal.timeout(10000) })
+          if (res.ok) {
+            const data = await res.json()
+            for (const item of (data || []).slice(0, 20)) {
+              const tmdbId = item.tmdb
+              if (!tmdbId) continue
+              try {
+                const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${process.env.TMDB_API_KEY}&language=it-IT`
+                const r2 = await fetch(url, { signal: AbortSignal.timeout(10000) })
+                if (!r2.ok) continue
+                const d = await r2.json()
+                if (d?.id) {
+                  metas.push({
+                    id: d.imdb_id || item.imdb || tmdbId.toString(),
+                    type: "series",
+                    name: d.name || item.title || "",
+                    poster: d.poster_path ? `${IMG_BASE}${d.poster_path}` : null,
+                    releaseInfo: (d.first_air_date || "").slice(0, 4) || undefined,
+                  })
+                }
+              } catch {}
+            }
+          }
+        } catch {}
       }
     } else {
-      const slugMap: Record<string, string> = { netflix: "Netflix", prime: "Amazon Prime", disney: "Disney+", apple: "Apple TV", hbo: "HBO Max", paramount: "Paramount+" }
-      let platformName = ""
-      for (const [k, v] of Object.entries(slugMap)) { if (catalogId.includes(k)) { platformName = v; break } }
-      if (platformName) {
-        const catalog = getRawCatalog()
-        const cat = mediaType === "movie" ? "movies" : "tv shows"
-        const chart = catalog?.charts?.find((c) => c.platform === platformName && c.category === cat)
-        tmdbIds = (chart?.entries || []).map((e) => e.tmdb?.id).filter((id): id is number => id != null)
+      let slug = ""
+      for (const [k, v] of Object.entries(PLATFORM_SLUGS)) {
+        if (catalogId.includes(k)) { slug = v; break }
       }
-    }
-
-    const metas: StremioMeta[] = []
-    for (const id of tmdbIds.slice(0, 20)) {
-      const pathTmdb = mediaType === "series" ? "/tv" : "/movie"
-      const detail = await tmdbFetch(`${pathTmdb}/${id}`, { language: "it-IT" })
-      if (detail?.id) {
-        metas.push({
-          id: detail.imdb_id || id.toString(),
-          type: mediaType === "series" ? "series" : "movie",
-          name: detail.title || detail.name || "",
-          poster: detail.poster_path ? `${IMG_BASE}${detail.poster_path}` : null,
-          releaseInfo: (detail.release_date || detail.first_air_date || "").slice(0, 4) || undefined,
-        })
+      if (slug) {
+        const apiKey = process.env.TMDB_API_KEY
+        const data = apiKey ? await getTop10(slug, "italy", apiKey).catch(() => null) : null
+        if (data) {
+          const items = mediaType === "movie" ? data.movies : data.tv
+          for (const item of items.slice(0, 10)) {
+            if (item.tmdbId) {
+              metas.push({
+                id: item.tmdbId.toString(),
+                type: mediaType === "series" ? "series" : "movie",
+                name: item.title,
+                poster: item.posterPath ? `${IMG_BASE}${item.posterPath}` : null,
+                releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
+              })
+            }
+          }
+        }
       }
     }
 
