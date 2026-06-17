@@ -38,13 +38,13 @@ async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<number[]> {
   } catch { return [] }
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+type RouteParams = { type: string; id: string }
+
+export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const rl = rateLimit(rateLimitKey(req), "catalog")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
-  const { path } = await params
-  const mediaType = path[0] === "series" ? "series" : "movie"
-  const rawId = path[path.length - 1] || ""
+  const { type: mediaType, id: rawId } = await params
   const catalogId = rawId.replace(/\.json$/, "")
 
   const cacheKey = `stremio:catalog:${mediaType}:${catalogId}`
@@ -92,7 +92,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
     const body = { metas }
     if (metas.length > 0) cacheSet(cacheKey, body, ["stremio", "catalog"])
     return Response.json(body)
-  } catch {
+  } catch (e) {
+    console.error("Catalog error:", e)
     return Response.json({ metas: [] })
   }
 }
