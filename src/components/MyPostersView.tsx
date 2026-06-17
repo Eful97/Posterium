@@ -152,8 +152,8 @@ export function MyPostersView() {
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden relative">
                   {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" /> : <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-500">{m.title.charAt(0)}</div>}
                   {m.logoPath && (
-                    <div className="absolute inset-x-0 flex items-center justify-center" style={{ bottom: "7.33%" }}>
-                      <div style={{ transform: `translate(${m.logoOffsetX ?? 0}px, ${m.logoOffsetY ?? 0}px)`, width: `${m.logoScale ?? 75}%` }}>
+                    <div className="absolute inset-x-0 bottom-[7.33%] flex items-center justify-center">
+                      <div style={{ width: `${m.logoScale ?? 75}%` }}>
                         <img src={posterUrl(m.logoPath, "w154")} alt="" loading="lazy" decoding="async" className="w-full" style={{ objectFit: "contain" }} />
                       </div>
                     </div>
