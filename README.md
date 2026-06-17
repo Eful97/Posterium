@@ -24,6 +24,7 @@ pinned: false
 - 🏷️ **Badge genere/rating** — Genere, stella ★ e voto aggregato in sovrimpressione
 - 📊 **Rating** — Media da 9 fonti: IMDb, TMDb, Metacritic, Rotten Tomatoes (critica + pubblico), Letterboxd, Trakt, MyAnimeList, Kitsu via MDBList
 - 📋 **I miei poster** — Filtri per tipo (Film/Serie TV/Anime), ordinamento, ricerca, layout responsive
+- 🔔 **Aggiornamenti automatici** — Badge versione in alto a sinistra, notifica nuove release da GitHub
 - 🏆 **Badge premi** — Vincitore e Candidato Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David da Wikidata
 - 🎬 **Badge franchise** — Marvel Cinematic Universe, Harry Potter, James Bond e 50+ franchige da Wikidata
 - 🎥 **Badge regista** — Di Hitchcock, Di Nolan, Di Fellini e 66 registi IMDb Top 70 da Wikidata

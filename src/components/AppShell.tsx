@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useP } from "@/lib/context"
 import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
+import { VersionBadge } from "@/components/VersionBadge"
 import { SettingsPanel } from "@/components/SettingsPanel"
 import { SearchView } from "@/components/SearchView"
 import { MyPostersView } from "@/components/MyPostersView"
@@ -17,7 +18,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
-      {p.previewPoster && (
+      <VersionBadge />{p.previewPoster && (
         <div
           className="fixed inset-0 -z-10 bg-cover bg-center transition-all duration-700"
           style={{
