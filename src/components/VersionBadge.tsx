@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 
-const CURRENT_VERSION = "0.1.19"
+const CURRENT_VERSION = "0.2.0"
 const REPO = "Eful97/Posterium"
 const CHECK_TTL = 60 * 60 * 1000
 
