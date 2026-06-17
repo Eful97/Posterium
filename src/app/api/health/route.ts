@@ -4,7 +4,10 @@ import path from "node:path"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 
-const DATA_FILE = path.join(process.cwd(), "data", "mappings.json")
+const DATA_FILE = path.join((() => {
+  try { if (fs.existsSync("/data")) return "/data" } catch {}
+  return path.join(process.cwd(), "data")
+})(), "mappings.json")
 
 async function checkEndpoint(url: string): Promise<{ ok: boolean; status: number; time: number }> {
   const start = performance.now()

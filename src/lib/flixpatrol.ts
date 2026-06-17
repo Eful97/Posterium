@@ -4,7 +4,11 @@ import path from "node:path"
 const CATALOG_URL = "https://raw.githubusercontent.com/0xConstant1/fp-crawler/main/catalogs/italy.json"
 const TMDB_BASE = "https://api.themoviedb.org/3"
 
-const CACHE_FILE = path.join(process.cwd(), "data", "flixpatrol_cache.json")
+const DATA_DIR = (() => {
+  try { if (fs.existsSync("/data")) return "/data" } catch {}
+  return path.join(process.cwd(), "data")
+})()
+const CACHE_FILE = path.join(DATA_DIR, "flixpatrol_cache.json")
 
 const tmdbCache = new Map<string, { data: unknown; timestamp: number }>()
 const TMDB_CACHE_TTL = 5 * 60 * 1000

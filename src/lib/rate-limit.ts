@@ -24,6 +24,7 @@ const limits: Record<string, BucketConfig> = {
   poster:  { maxTokens: 100, refillRate: 10, refillWindow: 1000 },
   search:  { maxTokens: 30,  refillRate: 3,  refillWindow: 1000 },
   mappings: { maxTokens: 120, refillRate: 10, refillWindow: 1000 },
+  catalog:  { maxTokens: 60,  refillRate: 5,  refillWindow: 1000 },
 }
 
 export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter: number } {
