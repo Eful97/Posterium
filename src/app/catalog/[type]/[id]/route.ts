@@ -46,9 +46,10 @@ const PLATFORM_SLUGS: Record<string, string> = {
   apple: "apple-tv", hbo: "hbo-max", paramount: "paramount-plus",
 }
 
-function posteriumPoster(domain: string, tmdbId: number, mediaType: string): string {
+function posteriumPoster(domain: string, tmdbId: number, mediaType: string, posterPath?: string | null): string {
   const apiKey = process.env.TMDB_API_KEY
-  const params = [`api_key=${apiKey}`, "lang=it", "badges=1", "ranking=1"]
+  const params = [`api_key=${apiKey}`, "lang=it"]
+  if (posterPath) params.push(`poster=${encodeURIComponent(posterPath)}`)
   return `${domain}/api/poster/${mediaType}/${tmdbId}?${params.join("&")}`
 }
 
@@ -81,12 +82,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (!res.ok) continue
           const d = await res.json()
           if (d?.id) {
-            const fallback = d.poster_path ? `${IMG_BASE}${d.poster_path}` : null
             metas.push({
               id: d.imdb_id || id.toString(),
               type: stType,
               name: d.title || d.name || "",
-              poster: posteriumPoster(domain, id, mediaType) || fallback,
+              poster: posteriumPoster(domain, id, mediaType, d.poster_path),
               releaseInfo: (d.release_date || d.first_air_date || "").slice(0, 4) || undefined,
             })
           }
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                     id: d.imdb_id || item.imdb || tmdbId.toString(),
                     type: "series",
                     name: d.name || item.title || "",
-                    poster: posteriumPoster(domain, tmdbId, "series"),
+                    poster: posteriumPoster(domain, tmdbId, "series", d.poster_path),
                     releaseInfo: (d.first_air_date || "").slice(0, 4) || undefined,
                   })
                 }
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                 id: item.tmdbId.toString(),
                 type: stType,
                 name: item.title,
-                poster: posteriumPoster(domain, item.tmdbId, mediaType),
+                poster: posteriumPoster(domain, item.tmdbId, mediaType, item.posterPath),
                 releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
               })
             }
