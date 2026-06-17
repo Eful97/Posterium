@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     resources: ["poster"],
     types: ["movie", "series"],
     idPrefixes: ["tt"],
-    logo: `${domain}/posterium.svg`,
+    logo: `${domain}/App.png`,
     addonCatalogs: [],
     manifestVersion: 1,
     behaviorHints: {
