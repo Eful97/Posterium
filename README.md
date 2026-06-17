@@ -26,6 +26,7 @@ pinned: false
 - 📋 **I miei poster** — Filtri per tipo (Film/Serie TV/Anime), ordinamento, ricerca, layout responsive
 - 🏆 **Badge premi** — Vincitore e Candidato Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David da Wikidata
 - 🎬 **Badge franchise** — Marvel Cinematic Universe, Harry Potter, James Bond e 50+ franchige da Wikidata
+- 🎥 **Badge regista** — Di Hitchcock, Di Nolan, Di Fellini e 66 registi IMDb Top 70 da Wikidata
 - 📡 **Badge network** — Netflix, HBO, Disney+, Prime Video, Apple TV+, Rai, Mediaset e altri da TMDB
 - 🎌 **Anime rank** — Top trending anime da MDBList *(richiede chiave MDBList)*
 - 📐 **Server-side rendering** — Satori + Resvg (JSX → SVG → PNG)
@@ -133,14 +134,15 @@ Genera un poster personalizzato via URL.
 ### Priorità badge top
 
 1. 🆕 **Nuovo film / Nuova serie** — <2 settimane
-2. 🏆 **Vincitore** — Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David (Wikidata P166)
-3. 🏅 **Candidato** — Stessi premi, nomination (Wikidata P1411)
-4. 🎬 **Franchise** — Marvel, Harry Potter, James Bond, Star Wars e 50+ saghe (Wikidata P179)
-5. 🎌 **Anime rank** — MDBList top anime *(richiede `MDBLIST_API_KEY`)*
-6. 🔥 **Trend rank** — JustWatch Italia
+2. 🎌 **Anime rank** — MDBList top anime *(richiede `MDBLIST_API_KEY`)*
+3. 🔥 **Trend rank** — JustWatch Italia
+4. 🏆 **Vincitore** — Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David (Wikidata P166)
+5. 🎬 **Franchise** — MCU, Harry Potter, James Bond, Star Wars e 50+ saghe (Wikidata P179)
+6. 🏅 **Candidato** — Stessi premi, nomination (Wikidata P1411)
 7. 📡 **Network / Studio** — Netflix, HBO, Disney+, Warner Bros., Pixar, Studio Ghibli e altri (TMDB)
-8. 📺 **Miniserie / Ritorna**
-9. ⭐ **Da divorare / Il più votato** — voto aggregato ≥ 8.5
+8. 🎥 **Di [Regista]** — 66 registi IMDb Top 70 (Wikidata P57)
+9. 📺 **Miniserie / Ritorna**
+10. ⭐ **Da divorare / Il più votato** — voto aggregato ≥ 8.5
 
 ### Badge genere/rating
 
