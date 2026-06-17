@@ -46,6 +46,10 @@ const PLATFORM_SLUGS: Record<string, string> = {
   apple: "apple-tv", hbo: "hbo-max", paramount: "paramount-plus",
 }
 
+function posteriumPoster(domain: string, tmdbId: number, mediaType: string): string {
+  return `${domain}/api/poster/${mediaType}/${tmdbId}?lang=it&badges=1&ranking=1`
+}
+
 type RouteParams = { type: string; id: string }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
@@ -54,6 +58,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   const { type: mediaType, id: rawId } = await params
   const catalogId = rawId.replace(/\.json$/, "")
+  const domain = req.nextUrl.origin
 
   const cacheKey = `stremio:catalog:${mediaType}:${catalogId}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
@@ -61,6 +66,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   try {
     let metas: StremioMeta[] = []
+    const stType = mediaType === "series" ? "series" : "movie"
 
     if (catalogId.startsWith("posterium-jw")) {
       const ids = await getJustWatchRankings(mediaType === "movie" ? "MOVIE" : "SHOW")
@@ -73,11 +79,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (!res.ok) continue
           const d = await res.json()
           if (d?.id) {
+            const fallback = d.poster_path ? `${IMG_BASE}${d.poster_path}` : null
             metas.push({
               id: d.imdb_id || id.toString(),
-              type: mediaType === "series" ? "series" : "movie",
+              type: stType,
               name: d.title || d.name || "",
-              poster: d.poster_path ? `${IMG_BASE}${d.poster_path}` : null,
+              poster: posteriumPoster(domain, id, mediaType) || fallback,
               releaseInfo: (d.release_date || d.first_air_date || "").slice(0, 4) || undefined,
             })
           }
@@ -103,7 +110,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                     id: d.imdb_id || item.imdb || tmdbId.toString(),
                     type: "series",
                     name: d.name || item.title || "",
-                    poster: d.poster_path ? `${IMG_BASE}${d.poster_path}` : null,
+                    poster: posteriumPoster(domain, tmdbId, "series"),
                     releaseInfo: (d.first_air_date || "").slice(0, 4) || undefined,
                   })
                 }
@@ -126,9 +133,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             if (item.tmdbId) {
               metas.push({
                 id: item.tmdbId.toString(),
-                type: mediaType === "series" ? "series" : "movie",
+                type: stType,
                 name: item.title,
-                poster: item.posterPath ? `${IMG_BASE}${item.posterPath}` : null,
+                poster: posteriumPoster(domain, item.tmdbId, mediaType),
                 releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
               })
             }
