@@ -14,9 +14,12 @@ interface StremioMeta {
   releaseInfo?: string
 }
 
-async function tmdbFetch(path: string) {
+async function tmdbFetch(path: string, params: Record<string, string> = {}) {
   const apiKey = process.env.TMDB_API_KEY!
-  const res = await fetch(`${TMDB_BASE}${path}?api_key=${apiKey}`, { signal: AbortSignal.timeout(10000) })
+  const url = new URL(`${TMDB_BASE}${path}`)
+  url.searchParams.set("api_key", apiKey)
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) })
   if (!res.ok) return null
   return res.json()
 }
@@ -65,14 +68,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
       for (const [k, v] of Object.entries(slugMap)) { if (catalogId.includes(k)) { platformName = v; break } }
       if (platformName) {
         const catalog = getRawCatalog()
-        const chart = catalog?.charts?.find((c) => c.platform === platformName && c.category === (mediaType === "movie" ? "movies" : "tv shows"))
-        tmdbIds = (chart?.entries || []).map((e) => e.tmdb?.id).filter(Boolean) as number[]
+        const cat = mediaType === "movie" ? "movies" : "tv shows"
+        const chart = catalog?.charts?.find((c) => c.platform === platformName && c.category === cat)
+        tmdbIds = (chart?.entries || []).map((e) => e.tmdb?.id).filter((id): id is number => id != null)
       }
     }
 
     const metas: StremioMeta[] = []
     for (const id of tmdbIds.slice(0, 20)) {
-      const detail = await tmdbFetch(`/${mediaType}/${id}?language=it-IT`)
+      const pathTmdb = mediaType === "series" ? "/tv" : "/movie"
+      const detail = await tmdbFetch(`${pathTmdb}/${id}`, { language: "it-IT" })
       if (detail?.id) {
         metas.push({
           id: detail.imdb_id || id.toString(),
