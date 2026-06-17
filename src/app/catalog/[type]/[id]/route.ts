@@ -47,7 +47,9 @@ const PLATFORM_SLUGS: Record<string, string> = {
 }
 
 function posteriumPoster(domain: string, tmdbId: number, mediaType: string): string {
-  return `${domain}/api/poster/${mediaType}/${tmdbId}?lang=it&badges=1&ranking=1`
+  const apiKey = process.env.TMDB_API_KEY
+  const params = [`api_key=${apiKey}`, "lang=it", "badges=1", "ranking=1"]
+  return `${domain}/api/poster/${mediaType}/${tmdbId}?${params.join("&")}`
 }
 
 type RouteParams = { type: string; id: string }
