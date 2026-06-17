@@ -381,9 +381,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const isNewSeries = mediaType === "tv" && firstAirDate ? (now - new Date(firstAirDate).getTime()) < twoWeeks : false
     const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards) : null
     const franchiseBadge = !awardBadge ? wikidataResult.franchise : null
-    const directorBadge = !awardBadge && !franchiseBadge ? wikidataResult.director : null
-    const nominationBadge = !awardBadge && !franchiseBadge && !directorBadge && wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null
-    const studioBadge = !awardBadge && !franchiseBadge && !directorBadge && !nominationBadge && wikidataResult.studios.length ? wikidataResult.studios[0] : null
+    const nominationBadge = !awardBadge && !franchiseBadge && wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null
+    const studioBadge = !awardBadge && !franchiseBadge && !nominationBadge && wikidataResult.studios.length ? wikidataResult.studios[0] : null
+    const directorBadge = !awardBadge && !franchiseBadge && !nominationBadge && !studioBadge ? wikidataResult.director : null
     const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
 
     const topBadge = (() => {
@@ -397,9 +397,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       if (finalRank) return { type: "rank" as const, rank: finalRank, label: "Oggi" }
       if (awardBadge) return { type: "extra" as const, label: awardBadge }
       if (franchiseBadge) return { type: "extra" as const, label: franchiseBadge }
-      if (directorBadge) return { type: "extra" as const, label: directorBadge }
       if (nominationBadge) return { type: "extra" as const, label: nominationBadge }
       if (studioBadge) return { type: "extra" as const, label: studioBadge }
+      if (directorBadge) return { type: "extra" as const, label: directorBadge }
 
       const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : (voteAverage && voteAverage >= 8.5) ? "Da divorare" : null
       if (mediaType === "movie" && voteAverage && voteAverage >= 8.5) {

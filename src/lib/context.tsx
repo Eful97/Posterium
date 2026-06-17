@@ -470,11 +470,11 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       }
       else if (award) { params.push(`extra=${encodeURIComponent(award)}`) }
       else if (metaInfo.franchise) { params.push(`extra=${encodeURIComponent(metaInfo.franchise)}`) }
-      else if (metaInfo.director) { params.push(`extra=${encodeURIComponent(metaInfo.director)}`) }
       else if (nomination) { params.push(`extra=${encodeURIComponent(nomination)}`) }
       else {
         const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
         if (studio) params.push(`extra=${encodeURIComponent(studio)}`)
+        else if (metaInfo.director) { params.push(`extra=${encodeURIComponent(metaInfo.director)}`) }
         else {
           const tvType = selected?.media_type === "tv" ? metaInfo.type : null
           const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
@@ -718,7 +718,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     const tvStatus = selected.media_type === "tv" ? metaInfo.status : null
     const extra = selected.media_type === "movie" ? (metaInfo.voteAverage >= 8.5 ? "Il più votato" : null) : (tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8.5 ? "Da divorare" : null)
     const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
-    const badgeExtra = isNewMovie ? "Nuovo film" : isNewSeries ? "Nuova serie" : award || metaInfo.franchise || metaInfo.director || nomination || studio || extra || null
+    const badgeExtra = isNewMovie ? "Nuovo film" : isNewSeries ? "Nuova serie" : award || metaInfo.franchise || nomination || studio || metaInfo.director || extra || null
     const badgeRank = (!badgeExtra && rankingBadges) ? (animeRank ? animeRank.rank : trendRank || undefined) : undefined
     const badgeLabel = (!badgeExtra && animeRank) ? "Anime" : (!badgeExtra && trendRank) ? "Oggi" : undefined
     try {

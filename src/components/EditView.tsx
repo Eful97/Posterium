@@ -95,11 +95,11 @@ export default function EditView() {
             if (award) return <div className="absolute inset-0"><ExtraBadge label={award} topLight={topLight} containerW={previewDims.w} /></div>
 
             if (p.metaInfo.franchise) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.franchise} topLight={topLight} containerW={previewDims.w} /></div>
-            if (p.metaInfo.director) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.director} topLight={topLight} containerW={previewDims.w} /></div>
             if (nomination) return <div className="absolute inset-0"><ExtraBadge label={nomination} topLight={topLight} containerW={previewDims.w} /></div>
 
             const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
             if (studio) return <div className="absolute inset-0"><ExtraBadge label={studio} topLight={topLight} containerW={previewDims.w} /></div>
+            if (p.metaInfo.director) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.director} topLight={topLight} containerW={previewDims.w} /></div>
 
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
             const status = p.selected?.media_type === "tv" ? p.metaInfo.status : null
@@ -152,11 +152,11 @@ export default function EditView() {
                 else if (p.trendRank) params.push(`rank=${p.trendRank}`)
                 else if (award) params.push(`extra=${encodeURIComponent(award)}`)
                 else if (p.metaInfo.franchise) params.push(`extra=${encodeURIComponent(p.metaInfo.franchise)}`)
-                else if (p.metaInfo.director) params.push(`extra=${encodeURIComponent(p.metaInfo.director)}`)
                 else if (nomination) params.push(`extra=${encodeURIComponent(nomination)}`)
                 else {
                   const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
                   if (studio) params.push(`extra=${encodeURIComponent(studio)}`)
+                  else if (p.metaInfo.director) params.push(`extra=${encodeURIComponent(p.metaInfo.director)}`)
                   else {
                     const tvType = p.selected.media_type === "tv" ? p.metaInfo.type : null
                     const tvStatus = p.selected.media_type === "tv" ? p.metaInfo.status : null
