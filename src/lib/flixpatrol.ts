@@ -173,6 +173,10 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
   return { platform: platformSlug, platformName, country, movies, tv }
 }
 
+export function getRawCatalog(): CatalogData | null {
+  return loadCache().catalog
+}
+
 export function getSupportedPlatforms(): { slug: string; name: string }[] {
   return Object.entries(SLUG_TO_PLATFORM).map(([slug, name]) => ({ slug, name }))
 }

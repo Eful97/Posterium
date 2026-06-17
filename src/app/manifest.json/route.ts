@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     version: "0.1.0",
     name: "Posterium",
     description: "Custom poster manager for Stremio — loghi, badge trend, premi e rating",
-    resources: ["poster"],
+    resources: ["catalog", "poster"],
     types: ["movie", "series"],
     idPrefixes: ["tt"],
     logo: `${domain}/App.png`,
