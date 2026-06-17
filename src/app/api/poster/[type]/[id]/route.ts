@@ -155,13 +155,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         } else {
           const itPoster = images.posters.find((p: any) => p.iso_639_1 === "it")
           const enPoster = images.posters.find((p: any) => p.iso_639_1 === "en")
-          const chosen = itPoster || enPoster || images.posters[0]
+          const origPoster = details.original_language ? images.posters.find((p: any) => p.iso_639_1 === details.original_language) : undefined
+          const chosen = itPoster || enPoster || origPoster || images.posters[0]
           if (chosen) posterPath = chosen.file_path
         }
       } else {
         const langPoster = images.posters.find((p: any) => p.iso_639_1 === preferredLanguage)
-        const fallback = images.posters[0]
-        const chosen = langPoster || fallback
+        const origPoster = details.original_language ? images.posters.find((p: any) => p.iso_639_1 === details.original_language) : undefined
+        const chosen = langPoster || origPoster || images.posters[0]
         if (chosen) posterPath = chosen.file_path
       }
     } catch {}

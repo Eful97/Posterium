@@ -671,13 +671,16 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           } else {
             const itPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "it")
             const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")
-            const fallbackPoster = itPoster || enPoster || firstPoster
+            const origPoster = details.original_language ? data.posters?.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
+            const fallbackPoster = itPoster || enPoster || origPoster || firstPoster
             if (fallbackPoster) setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
           }
         } else if (langPoster) {
           setPreviewPoster({ file_path: langPoster.file_path, iso_639_1: lang, vote_average: 0, width: 0, height: 0 })
-        } else if (firstPoster) {
-          setPreviewPoster({ file_path: firstPoster.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+        } else {
+          const origPoster = details.original_language ? data.posters?.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
+          const fallbackPoster = origPoster || firstPoster
+          if (fallbackPoster) setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
         }
       }
     } finally {
