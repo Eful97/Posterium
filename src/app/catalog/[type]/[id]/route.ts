@@ -14,16 +14,30 @@ interface StremioMeta {
 }
 
 async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<number[]> {
-  const query = `query($country:Country!,$objectType:ObjectType!,$category:PopularityCategory!){streamingChartInfo(country:$country,objectType:$objectType,category:$category){edges{node{content{tmdbId}}}}}`
+  const query = `query GetStreamingChartInfo($country: Country!, $language: Language!, $filter: StreamingChartsFilter, $first: Int!) {
+    streamingCharts(country: $country, filter: $filter, first: $first) {
+      edges {
+        streamingChartInfo { rank }
+        node { ... on MovieOrShowOrSeason { content(country: $country, language: $language) { externalIds { tmdbId } } } }
+      }
+    }
+  }`
   try {
     const res = await fetch("https://apis.justwatch.com/graphql", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, variables: { country: "IT", objectType: type, category: "DAILY_POPULARITY_SAME_CONTENT_TYPE" } }),
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Platform": "WEB" },
+      body: JSON.stringify({
+        operationName: "GetStreamingChartInfo",
+        query,
+        variables: { country: "IT", language: "it-IT", filter: { objectType: type, category: "DAILY_POPULARITY_SAME_CONTENT_TYPE" }, first: 20 },
+      }),
       signal: AbortSignal.timeout(10000),
     })
     if (!res.ok) return []
     const json = await res.json()
-    return json?.data?.streamingChartInfo?.edges?.map((e: any) => e.node.content.tmdbId).filter(Boolean) || []
+    return (json?.data?.streamingCharts?.edges || [])
+      .map((e: any) => Number(e?.node?.content?.externalIds?.tmdbId))
+      .filter((id: number) => id > 0)
   } catch { return [] }
 }
 
