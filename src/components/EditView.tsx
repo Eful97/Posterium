@@ -108,7 +108,7 @@ export default function EditView() {
               const b = parseInt(h.slice(5, 7), 16) / 255
               return 0.2126 * r + 0.7152 * g + 0.0722 * b
             })()
-            const topLight = edgeLum !== null ? edgeLum > 0.55 && edgeLum < 0.99 : undefined
+            const topLight = edgeLum !== null ? edgeLum > 0.55 : true
             if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" topLight={topLight} containerW={previewDims.w} /></div>
             if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" topLight={topLight} containerW={previewDims.w} /></div>
 

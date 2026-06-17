@@ -323,7 +323,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     const topLum = await topLuminance(posterBuf)
-    const topLight = topLum > 0.55 && topLum < 0.99
+    const topLight = topLum > 0.55
     const qBadges = req.nextUrl.searchParams.get("badges")
     const badgesEnabled = qBadges !== "0" && showBadges
     const qRanking = req.nextUrl.searchParams.get("ranking")

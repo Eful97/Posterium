@@ -693,6 +693,15 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
 
   const selectLogo = useCallback(async (logo: TMDBImage) => {
     setSelectedLogo(logo)
+    if (logo.width && logo.height) {
+      const maxH = Math.round(1500 * 0.25)
+      const effW = Math.round(maxH * logo.width / logo.height)
+      setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
+    } else {
+      setLogoScale(75)
+    }
+    setLogoOffsetX(0)
+    setLogoOffsetY(0)
     if (!previewPoster && selected) {
       const existing = mappingsMap.get(`${selected.media_type}:${selected.id}`)
       if (existing) {
