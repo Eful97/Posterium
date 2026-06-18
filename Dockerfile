@@ -15,7 +15,7 @@ ENV HOSTNAME=0.0.0.0
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 
 RUN addgroup --system nodejs
-RUN adduser --system --uid 1000 nextjs
+RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
