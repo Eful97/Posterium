@@ -3,6 +3,7 @@ import { getAll, upsert, removeAll } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheInvalidate } from "@/lib/cache"
 import { mappingSchema } from "@/lib/validation"
+import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
@@ -14,6 +15,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
+  if (!checkAdminToken(req)) return adminAuthResponse()
   const body = await req.json()
   const parsed = mappingSchema.safeParse(body)
   if (!parsed.success) {
@@ -34,6 +36,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
+  if (!checkAdminToken(req)) return adminAuthResponse()
   await removeAll()
   cacheInvalidate("poster")
   return Response.json({ ok: true })

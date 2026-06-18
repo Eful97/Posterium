@@ -3,6 +3,7 @@ import { getById, remove, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheInvalidate } from "@/lib/cache"
 import { mappingUpdateSchema } from "@/lib/validation"
+import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 
 type RouteParams = { id: string }
 
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 export async function PUT(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
+  if (!checkAdminToken(req)) return adminAuthResponse()
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
@@ -47,6 +49,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
 export async function DELETE(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
+  if (!checkAdminToken(req)) return adminAuthResponse()
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
