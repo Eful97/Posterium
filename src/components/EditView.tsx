@@ -19,6 +19,7 @@ export default function EditView() {
   const [previewDims, setPreviewDims] = useState({ w: 380, h: 570 })
   const previewRef = useRef<HTMLDivElement>(null)
   const [dragging, setDragging] = useState(false)
+  const [imageError, setImageError] = useState(false)
   const dragRef = useRef({ startX: 0, startY: 0, startOX: 0, startOY: 0, active: false })
   const logoWheelRef = useRef<HTMLDivElement>(null)
 
@@ -31,6 +32,10 @@ export default function EditView() {
     const effW = Math.round(maxH * lw / lh)
     p.setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
   }
+
+  useEffect(() => {
+    setImageError(false)
+  }, [p.previewPoster])
 
   useEffect(() => {
     return () => {
@@ -75,7 +80,15 @@ export default function EditView() {
       <h3 className="text-base font-semibold text-zinc-200 mb-3 text-center">👁️ Anteprima</h3>
       <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
         <div ref={previewRef} className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
-          {p.previewPoster && <img src={p.posterUrl(p.previewPoster.file_path, "w500")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" />}
+          {p.previewPoster && !imageError && <img src={p.posterUrl(p.previewPoster.file_path, "w500")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onError={() => setImageError(true)} />}
+          {imageError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 text-center p-8">
+              <span className="text-4xl mb-3">🖼️</span>
+              <p className="text-sm text-zinc-400 font-medium">Immagine non disponibile</p>
+              <p className="text-xs text-zinc-500 mt-1">Il poster non può essere caricato da TMDB</p>
+              <button onClick={() => setImageError(false)} className="mt-3 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg transition-all duration-150">Riprova</button>
+            </div>
+          )}
           {p.previewPoster?.iso_639_1 === null && p.selectedLogo && (() => {
             const scale = 0.38
             const baseGap = 57
