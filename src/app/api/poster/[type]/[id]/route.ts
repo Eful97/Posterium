@@ -192,17 +192,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       })(),
       (() => {
         if (mediaType !== "tv") return Promise.resolve(null)
-        const cached = cacheGet<any[]>("mdblist:anime:top10")
-        if (cached) {
-          const idx = cached.findIndex((a: any) => a.id === tmdbId)
-          return Promise.resolve(idx >= 0 ? idx + 1 : null)
-        }
-        return fetchMDBList("mdblistAnime")
-          .then((entries) => {
-            const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
-            return idx >= 0 ? idx + 1 : null
-          })
-          .catch(() => null)
+        try {
+          const cached = cacheGet<any[]>("mdblist:anime:top10")
+          if (cached && Array.isArray(cached)) {
+            const idx = cached.findIndex((a: any) => a.id === tmdbId)
+            return Promise.resolve(idx >= 0 ? idx + 1 : null)
+          }
+          return fetchMDBList("mdblistAnime")
+            .then((entries) => {
+              if (!Array.isArray(entries)) return null
+              const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
+              return idx >= 0 ? idx + 1 : null
+            })
+            .catch(() => null)
+        } catch { return Promise.resolve(null) }
       })(),
       fetchAllWikidata(tmdbId, mediaType).catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null })),
     ]) as [Buffer, Buffer | null, Buffer | null, number | null, number | null, { awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }]
