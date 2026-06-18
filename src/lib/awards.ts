@@ -28,7 +28,7 @@ export interface WikidataResult {
 
 async function sparqlQuery(query: string): Promise<any[]> {
   const url = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(query)}`
-  const res = await fetch(url, { headers: { "User-Agent": "Posterium/1.0" }, signal: AbortSignal.timeout(15000) })
+  const res = await fetch(url, { headers: { "User-Agent": "Posterium/1.0" }, signal: AbortSignal.timeout(5000) })
   if (!res.ok) return []
   const json = await res.json()
   return json?.results?.bindings || []

@@ -58,7 +58,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     console.log(`[poster] Invalid ID: type=${type} id=${id}`)
     return new Response("Invalid ID", { status: 400 })
   }
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:${req.nextUrl.searchParams.toString()}`
+  const cacheParams = new URLSearchParams(req.nextUrl.searchParams)
+  cacheParams.delete("rv")
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:${cacheParams.toString()}`
   const cached = cacheGetStale<Buffer>(cacheKey)
   const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
   if (cached.data && cachedHeaders.data) {
@@ -184,7 +186,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const STD_H = 1500
 
   try {
-    const [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult, wikidataResult] = await Promise.all([
+    const [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult] = await Promise.all([
       fetchImg(imgSrc(posterPath)),
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
       backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
@@ -211,8 +213,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             .catch(() => null)
         } catch { return Promise.resolve(null) }
       })(),
-      fetchAllWikidata(tmdbId, mediaType).catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null })),
-    ]) as [Buffer, Buffer | null, Buffer | null, number | null, number | null, { awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }]
+    ])
+    const wikidataPromise = fetchAllWikidata(tmdbId, mediaType).catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }))
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
@@ -395,6 +397,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const twoWeeks = 14 * 24 * 60 * 60 * 1000
     const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < twoWeeks : false
     const isNewSeries = mediaType === "tv" && firstAirDate ? (now - new Date(firstAirDate).getTime()) < twoWeeks : false
+    // Try to get Wikidata data, but don't block poster generation for more than 3s
+    const wikidataResult = await Promise.race([
+      wikidataPromise,
+      new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>((resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), 3000))
+    ])
+
     const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards) : null
     const franchiseBadge = !awardBadge ? wikidataResult.franchise : null
     const nominationBadge = !awardBadge && !franchiseBadge && wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null
