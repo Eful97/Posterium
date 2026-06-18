@@ -51,9 +51,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const rl = rateLimit(rateLimitKey(req), "poster")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { type, id } = await params
+  console.log(`[poster] type=${type} id=${id} mediaType=${["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "") ? "tv" : "movie"}`)
   const mediaType = (["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "")) ? "tv" : "movie"
   const tmdbId = Number(id)
-  if (isNaN(tmdbId) || tmdbId <= 0) return new Response("Invalid ID", { status: 400 })
+  if (isNaN(tmdbId) || tmdbId <= 0) {
+    console.log(`[poster] Invalid ID: type=${type} id=${id}`)
+    return new Response("Invalid ID", { status: 400 })
+  }
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:${req.nextUrl.searchParams.toString()}`
   const cached = cacheGetStale<Buffer>(cacheKey)
   const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
