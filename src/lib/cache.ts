@@ -7,6 +7,7 @@ interface CacheEntry<T> {
 const store = new Map<string, CacheEntry<unknown>>()
 
 const MAX_TTL = 30 * 60 * 1000
+const MAX_ENTRIES = 1000
 
 const TAG_TTL: Record<string, number> = {
   poster: 24 * 60 * 60 * 1000,
@@ -59,6 +60,10 @@ export function cacheGetStale<T>(key: string): { data: T | null; stale: boolean 
 
 export function cacheSet<T>(key: string, data: T, tags: string[] = []): void {
   startCleanup()
+  if (store.size >= MAX_ENTRIES && !store.has(key)) {
+    const first = store.keys().next().value
+    if (first) store.delete(first)
+  }
   store.set(key, { data, timestamp: Date.now(), tags })
 }
 
