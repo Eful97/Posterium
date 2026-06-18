@@ -58,8 +58,9 @@ export function useSearch(tmdbKey: string, lang: string) {
 
   return {
     query, setQuery,
-    results, searching,
-    totalResults, totalPages, searchPage,
+    results, setResults,
+    searching,
+    totalResults, totalPages, searchPage, setSearchPage,
     recentSearches,
     doSearch, loadMore, removeRecentSearch,
   }

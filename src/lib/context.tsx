@@ -6,6 +6,7 @@ import { getDomain, posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from 
 import { findAccentColor, topEdgeAverage } from "./accent-color"
 import { getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "./awards"
 import { computeBadge, computeExtraFallback } from "./badge-priority"
+import type { EnrichedAnimeItem } from "./validation"
 
 export interface PosteriumCtx {
   selected: SearchResult | null
@@ -76,7 +77,7 @@ export interface PosteriumCtx {
   yearOf: (r: SearchResult) => string
   posterUrl: (path: string, size?: string) => string
   trending: (SearchResult & { rank: number })[]
-  mdblistAnimeList: any[]
+  mdblistAnimeList: EnrichedAnimeItem[]
   streamingCharts: Record<string, FlixPatrolChart>
   STREAMING_PLATFORMS: typeof STREAMING_PLATFORMS
   loadMappings: () => Promise<void>
@@ -154,7 +155,7 @@ export function usePosterium(): PosteriumCtx {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [trending, setTrending] = useState<Array<SearchResult & { rank: number }>>([])
-  const [mdblistAnimeList, setMdblistAnimeList] = useState<any[]>([])
+  const [mdblistAnimeList, setMdblistAnimeList] = useState<EnrichedAnimeItem[]>([])
   const [streamingCharts, setStreamingCharts] = useState<Record<string, FlixPatrolChart>>({})
 
   const [tmdbKey, setTmdbKeyState] = useState("")
@@ -478,7 +479,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         const isNewSeries = selected?.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
       const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards) : null
       const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations) : null
-      const animeRank = selected && mdblistAnimeList.length > 0 ? (mdblistAnimeList.find((a: any) => a.id === selected.id)?.rank ?? null) : null
+      const animeRank = selected && mdblistAnimeList.length > 0 ? (mdblistAnimeList.find((a) => a.id === selected.id)?.rank ?? null) : null
       const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
       const tvType = selected?.media_type === "tv" ? metaInfo.type : null
       const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
