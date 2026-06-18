@@ -63,13 +63,20 @@ Deploy Docker-only: su HF Spaces carichi solo **2 file** (`Dockerfile` + `README
 
 1. Crea uno Space su [huggingface.co/new-space](https://huggingface.co/new-space) con SDK **Docker**
 2. Carica solo questi 2 file:
-   - `Dockerfile` — clona il repo da GitHub, builda Next.js, deploya
-   - `README.md` — frontmatter HF (`sdk: docker`, `app_port: 3000`)
-3. Nelle **Settings** dello Space → **Variables and secrets** → aggiungi `TMDB_API_KEY` come secret
+    - `Dockerfile` — clona il repo da GitHub a un commit specifico (`POSTERIUM_COMMIT`), builda Next.js, deploya
+    - `README.md` — frontmatter HF (`sdk: docker`, `app_port: 3000`)
+ 3. Nelle **Settings** dello Space → **Variables and secrets** → aggiungi `TMDB_API_KEY` come secret
 
 #### Aggiornamenti
 
-Ogni volta che pushi su GitHub, basta fare **Factory rebuild** nello Space HF per deployare la latest version.
+Per aggiornare lo Space HF:
+
+1. Pusha le modifiche su GitHub
+2. Modifica l'`ARG POSTERIUM_COMMIT` nel `Dockerfile` con l'ultimo commit hash (`git rev-parse HEAD`)
+3. Pusha il `Dockerfile` aggiornato
+4. Fai **Factory rebuild** nello Space HF
+
+> **Nota:** il deploy è **deterministico** — builda sempre lo stesso commit. Per aggiornare, devi cambiare il pin del commit nel Dockerfile.
 
 #### Persistenza poster
 

@@ -105,12 +105,12 @@ export function cacheGetDisk(key: string): Buffer | null {
   return null
 }
 
-let diskCleanupDone = false
-const DISK_MAX_AGE = 48 * 60 * 60 * 1000 // 48 hours
+let diskWriteCount = 0
+const DISK_MAX_AGE = 48 * 60 * 60 * 1000
+const DISK_CLEANUP_EVERY = 50
 
 function cleanupDiskCache() {
-  if (diskCleanupDone) return
-  diskCleanupDone = true
+  diskWriteCount = 0
   try {
     if (!fs.existsSync(DISK_DIR)) return
     const files = fs.readdirSync(DISK_DIR)
@@ -130,7 +130,7 @@ function cleanupDiskCache() {
 export function cacheSetDisk(key: string, data: Buffer): void {
   try {
     if (!fs.existsSync(DISK_DIR)) fs.mkdirSync(DISK_DIR, { recursive: true })
-    cleanupDiskCache()
+    if (++diskWriteCount >= DISK_CLEANUP_EVERY) cleanupDiskCache()
     fs.writeFileSync(diskKey(key), data)
   } catch {}
 }
