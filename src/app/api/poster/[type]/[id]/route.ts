@@ -8,6 +8,7 @@ import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { bottomGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
+import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
@@ -250,7 +251,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (!firstAirDate) firstAirDate = details.first_air_date || null
         if (!tvType) tvType = details.type || null
         if (!tvStatus) tvStatus = details.status || null
-      } catch {}
+    } catch (e) { console.error("[poster] Details fetch failed:", e) }
     }
     const pw = STD_W
     const ph = STD_H
@@ -404,32 +405,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     ])
 
     const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards) : null
-    const franchiseBadge = !awardBadge ? wikidataResult.franchise : null
-    const nominationBadge = !awardBadge && !franchiseBadge && wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null
-    const studioBadge = !awardBadge && !franchiseBadge && !nominationBadge && (tmdbStudios.length ? tmdbStudios[0] : wikidataResult.studios.length ? wikidataResult.studios[0] : null)
-    const directorBadge = !awardBadge && !franchiseBadge && !nominationBadge && !studioBadge ? wikidataResult.director : null
+    const studioBadge = tmdbStudios.length ? tmdbStudios[0] : wikidataResult.studios.length ? wikidataResult.studios[0] : null
+    const extraFallback = computeExtraFallback({ mediaType: mediaType as "movie" | "tv", voteAverage: voteAverage ?? 0, tvType, tvStatus })
     const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
 
     const topBadge = (() => {
       if (!rankingEnabled) return null
-
       if (queryExtra) return { type: "extra" as const, label: queryExtra }
 
-      if (isNewMovie) return { type: "extra" as const, label: "Nuovo film" }
-      if (isNewSeries) return { type: "extra" as const, label: "Nuova serie" }
-      if (animeRankResult) return { type: "rank" as const, rank: animeRankResult, label: "Anime" }
-      if (finalRank) return { type: "rank" as const, rank: finalRank, label: "Oggi" }
-      if (awardBadge) return { type: "extra" as const, label: awardBadge }
-      if (franchiseBadge) return { type: "extra" as const, label: franchiseBadge }
-      if (nominationBadge) return { type: "extra" as const, label: nominationBadge }
-      if (studioBadge) return { type: "extra" as const, label: studioBadge }
-      if (directorBadge) return { type: "extra" as const, label: directorBadge }
-
-      const extra = tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : (voteAverage && voteAverage >= 8.5) ? "Da divorare" : null
-      if (mediaType === "movie" && voteAverage && voteAverage >= 8.5) {
-        return { type: "extra" as const, label: "Il più votato" }
+      const badge = computeBadge({
+        isNewMovie, isNewSeries,
+        animeRank: animeRankResult,
+        trendRank: finalRank,
+        award: awardBadge,
+        franchise: wikidataResult.franchise,
+        nomination: wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null,
+        studio: studioBadge,
+        director: wikidataResult.director,
+        extra: extraFallback,
+      })
+      if (badge) {
+        if (badge.type === "extra") return { type: "extra" as const, label: badge.label }
+        return { type: "rank" as const, rank: badge.rank!, label: badge.rankLabel || badge.label }
       }
-      if (extra) return { type: "extra" as const, label: extra }
       return null
     })()
 

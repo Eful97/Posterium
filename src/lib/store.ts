@@ -103,7 +103,7 @@ function ensureDataDir() {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true })
     }
-  } catch {}
+  } catch (e) { console.error("[store] Failed to create data dir:", e) }
 }
 
 function loadFromDisk(): Record<string, Mapping> {
@@ -127,7 +127,7 @@ function persist() {
   try {
     ensureDataDir()
     fs.writeFileSync(DATA_FILE, JSON.stringify(fileCache, null, 2))
-  } catch {}
+  } catch (e) { console.error("[store] Failed to write mappings:", e) }
   cacheDirty = false
 }
 

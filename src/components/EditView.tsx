@@ -7,6 +7,7 @@ import { LogoOptions } from "@/components/LogoOptions"
 import { Toggle } from "@/components/Toggle"
 import { SliderRow } from "@/components/SliderRow"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "@/lib/awards"
+import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { SearchBar } from "@/components/SearchBar"
 import { RankRow } from "@/components/RankRow"
 import { RankingBadge, GenreRatingBadges, ExtraBadge } from "@/components/PreviewBadges"
@@ -134,27 +135,17 @@ export default function EditView() {
               return 0.2126 * r + 0.7152 * g + 0.0722 * b
             })()
             const topLight = edgeLum !== null ? edgeLum > 0.55 : true
-            if (isNewMovie) return <div className="absolute inset-0"><ExtraBadge label="Nuovo film" topLight={topLight} containerW={previewDims.w} /></div>
-            if (isNewSeries) return <div className="absolute inset-0"><ExtraBadge label="Nuova serie" topLight={topLight} containerW={previewDims.w} /></div>
-
-            const animeRank = p.mdblistAnimeList?.find((a: any) => a.id === p.selected?.id)
-            if (animeRank) return <div className="absolute inset-0"><RankingBadge rank={animeRank.rank} label="Anime" topLight={topLight} containerW={previewDims.w} /></div>
-
-            if (p.trendRank) return <div className="absolute inset-0"><RankingBadge rank={p.trendRank} topLight={topLight} containerW={previewDims.w} /></div>
-
-            if (award) return <div className="absolute inset-0"><ExtraBadge label={award} topLight={topLight} containerW={previewDims.w} /></div>
-
-            if (p.metaInfo.franchise) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.franchise} topLight={topLight} containerW={previewDims.w} /></div>
-            if (nomination) return <div className="absolute inset-0"><ExtraBadge label={nomination} topLight={topLight} containerW={previewDims.w} /></div>
-
+            const animeRankData = p.mdblistAnimeList?.find((a: any) => a.id === p.selected?.id)
+            const animeRank = animeRankData ? animeRankData.rank : null
             const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
-            if (studio) return <div className="absolute inset-0"><ExtraBadge label={studio} topLight={topLight} containerW={previewDims.w} /></div>
-            if (p.metaInfo.director) return <div className="absolute inset-0"><ExtraBadge label={p.metaInfo.director} topLight={topLight} containerW={previewDims.w} /></div>
-
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
-            const status = p.selected?.media_type === "tv" ? p.metaInfo.status : null
-            const extra = p.selected?.media_type === "movie" ? (p.metaInfo.voteAverage >= 8.5 ? "Il più votato" : null) : (tvType === "Miniseries" ? "Miniserie" : status === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8.5 ? "Da divorare" : null)
-            if (extra) return <div className="absolute inset-0"><ExtraBadge label={extra} topLight={topLight} containerW={previewDims.w} /></div>
+            const tvStatus = p.selected?.media_type === "tv" ? p.metaInfo.status : null
+            const extra = computeExtraFallback({ mediaType: p.selected?.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus })
+            const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank, award, franchise: p.metaInfo.franchise || null, nomination, studio, director: p.metaInfo.director || null, extra })
+            if (badge) {
+              if (badge.type === "extra") return <div className="absolute inset-0"><ExtraBadge label={badge.label} topLight={topLight} containerW={previewDims.w} /></div>
+              return <div className="absolute inset-0"><RankingBadge rank={badge.rank!} label={badge.rankLabel || badge.label} topLight={topLight} containerW={previewDims.w} /></div>
+            }
             return null
           })()}
           {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} /></div>}
@@ -192,28 +183,18 @@ export default function EditView() {
               const twoWeeks = 14 * 24 * 60 * 60 * 1000
               const isNewMovie = p.selected.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
               const isNewSeries = p.selected.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
-            const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
-            const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations) : null
-              if (isNewMovie) params.push(`extra=${encodeURIComponent("Nuovo film")}`)
-              else if (isNewSeries) params.push(`extra=${encodeURIComponent("Nuova serie")}`)
-              else {
-                const animeRank = p.mdblistAnimeList?.find((a: any) => a.id === p.selected!.id)
-                if (animeRank) params.push(`rank=${animeRank.rank}&label=Anime`)
-                else if (p.trendRank) params.push(`rank=${p.trendRank}`)
-                else if (award) params.push(`extra=${encodeURIComponent(award)}`)
-                else if (p.metaInfo.franchise) params.push(`extra=${encodeURIComponent(p.metaInfo.franchise)}`)
-                else if (nomination) params.push(`extra=${encodeURIComponent(nomination)}`)
-                else {
-                  const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
-                  if (studio) params.push(`extra=${encodeURIComponent(studio)}`)
-                  else if (p.metaInfo.director) params.push(`extra=${encodeURIComponent(p.metaInfo.director)}`)
-                  else {
-                    const tvType = p.selected.media_type === "tv" ? p.metaInfo.type : null
-                    const tvStatus = p.selected.media_type === "tv" ? p.metaInfo.status : null
-                    const extra = p.selected.media_type === "movie" ? (p.metaInfo.voteAverage >= 8.5 ? "Il più votato" : null) : (tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : p.metaInfo.voteAverage >= 8.5 ? "Da divorare" : null)
-                    if (extra) params.push(`extra=${encodeURIComponent(extra)}`)
-                  }
-                }
+              const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
+              const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations) : null
+              const animeRankData = p.mdblistAnimeList?.find((a: any) => a.id === p.selected!.id)
+              const animeRank = animeRankData ? animeRankData.rank : null
+              const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
+              const tvType = p.selected.media_type === "tv" ? p.metaInfo.type : null
+              const tvStatus = p.selected.media_type === "tv" ? p.metaInfo.status : null
+              const extra = computeExtraFallback({ mediaType: p.selected.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus })
+              const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank, award, franchise: p.metaInfo.franchise || null, nomination, studio, director: p.metaInfo.director || null, extra })
+              if (badge) {
+                if (badge.type === "extra") params.push(`extra=${encodeURIComponent(badge.label)}`)
+                else params.push(`rank=${badge.rank}&label=${encodeURIComponent(badge.rankLabel || badge.label)}`)
               }
             }
             params.push(`v=${Date.now()}`)

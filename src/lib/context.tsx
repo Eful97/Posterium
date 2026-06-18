@@ -5,6 +5,7 @@ import type { SearchResult, TMDBImage, Mapping, FlixPatrolChart } from "./types"
 import { getDomain, posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from "./utils"
 import { findAccentColor, topEdgeAverage } from "./accent-color"
 import { getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "./awards"
+import { computeBadge, computeExtraFallback } from "./badge-priority"
 
 export interface PosteriumCtx {
   selected: SearchResult | null
@@ -262,12 +263,29 @@ export function usePosterium(): PosteriumCtx {
     try {
       const data = await api("/api/mappings")
       setMappings(data.mappings)
-    } catch {}
+    } catch (e) { console.error("[posterium] Failed to load mappings:", e) }
   }, [])
 
   useEffect(() => { loadMappings() }, [loadMappings])
 
   const lastRefreshRef = useRef(0)
+
+  const showToast = (msg: string) => {
+    const el = toastRef.current
+    if (el) {
+      el.textContent = msg
+      el.classList.remove("opacity-0", "animate-toast-in")
+      el.classList.add("opacity-100")
+      void el.offsetWidth
+      el.classList.add("animate-toast-in")
+      if (el.dataset.timer) clearTimeout(Number(el.dataset.timer))
+      const timer = window.setTimeout(() => {
+        el.classList.remove("opacity-100", "animate-toast-in")
+        el.classList.add("opacity-0")
+      }, 2500)
+      el.dataset.timer = String(timer)
+    }
+  }
 
   const refreshLists = useCallback(async () => {
     if (!tmdbKey) return
@@ -284,14 +302,14 @@ export function usePosterium(): PosteriumCtx {
       ])
       setTrending([...(trendingData.movies || []), ...(trendingData.tv || [])])
       if (animeData) setMdblistAnimeList(animeData)
-    } catch {}
+    } catch (e) { console.error("[posterium] Failed to load trending:", e) }
     for (const p of STREAMING_PLATFORMS) {
       api(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`).then((data) => {
         setStreamingCharts((prev) => ({ ...prev, [p.slug]: data }))
       }).catch(() => {})
     }
     showToast("Liste aggiornate ✓")
-  }, [tmdbKey, mdblistApiKey])
+  }, [tmdbKey, mdblistApiKey, showToast])
 
   useEffect(() => {
     if (!tmdbKey) return
@@ -460,30 +478,15 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         const isNewSeries = selected?.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
       const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards) : null
       const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations) : null
-
-      if (isNewMovie) { params.push(`extra=${encodeURIComponent("Nuovo film")}`) }
-      else if (isNewSeries) { params.push(`extra=${encodeURIComponent("Nuova serie")}`) }
-      else if (selected && mdblistAnimeList.length > 0) {
-        const anime = mdblistAnimeList.find((a: any) => a.id === selected.id)
-        if (anime) params.push(`rank=${anime.rank}&label=Anime`)
-      }
-      else if (trendRank) {
-        params.push(`rank=${trendRank}`)
-      }
-      else if (award) { params.push(`extra=${encodeURIComponent(award)}`) }
-      else if (metaInfo.franchise) { params.push(`extra=${encodeURIComponent(metaInfo.franchise)}`) }
-      else if (nomination) { params.push(`extra=${encodeURIComponent(nomination)}`) }
-      else {
-        const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
-        if (studio) params.push(`extra=${encodeURIComponent(studio)}`)
-        else if (metaInfo.director) { params.push(`extra=${encodeURIComponent(metaInfo.director)}`) }
-        else {
-          const tvType = selected?.media_type === "tv" ? metaInfo.type : null
-          const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
-          const isMovie = selected?.media_type === "movie"
-          const extra = isMovie ? (metaInfo.voteAverage >= 8.5 ? "Il più votato" : null) : (tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8.5 ? "Da divorare" : null)
-          if (extra) params.push(`extra=${encodeURIComponent(extra)}`)
-        }
+      const animeRank = selected && mdblistAnimeList.length > 0 ? (mdblistAnimeList.find((a: any) => a.id === selected.id)?.rank ?? null) : null
+      const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
+      const tvType = selected?.media_type === "tv" ? metaInfo.type : null
+      const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
+      const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus })
+      const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra })
+      if (badge) {
+        if (badge.type === "extra") params.push(`extra=${encodeURIComponent(badge.label)}`)
+        else params.push(`rank=${badge.rank}&label=${encodeURIComponent(badge.rankLabel || badge.label)}`)
       }
     }
     const v = Date.now()
@@ -726,14 +729,15 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     const isNewSeries = selected.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
     const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards) : null
     const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations) : null
-    const animeRank = mdblistAnimeList?.find((a: any) => a.id === selected.id)
+    const animeRankData = mdblistAnimeList?.find((a: any) => a.id === selected.id)
     const tvType = selected.media_type === "tv" ? metaInfo.type : null
     const tvStatus = selected.media_type === "tv" ? metaInfo.status : null
-    const extra = selected.media_type === "movie" ? (metaInfo.voteAverage >= 8.5 ? "Il più votato" : null) : (tvType === "Miniseries" ? "Miniserie" : tvStatus === "Returning Series" ? "Ritorna" : metaInfo.voteAverage >= 8.5 ? "Da divorare" : null)
+    const extra = computeExtraFallback({ mediaType: selected.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus })
     const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
-    const badgeExtra = isNewMovie ? "Nuovo film" : isNewSeries ? "Nuova serie" : award || metaInfo.franchise || nomination || studio || metaInfo.director || extra || null
-    const badgeRank = (!badgeExtra && rankingBadges) ? (animeRank ? animeRank.rank : trendRank || undefined) : undefined
-    const badgeLabel = (!badgeExtra && animeRank) ? "Anime" : (!badgeExtra && trendRank) ? "Oggi" : undefined
+    const badge = computeBadge({ isNewMovie, isNewSeries, animeRank: animeRankData?.rank ?? null, trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra })
+    const badgeExtra = badge?.type === "extra" ? badge.label : undefined
+    const badgeRank = (!badgeExtra && rankingBadges) ? (badge?.type === "rank" ? badge.rank : trendRank || undefined) : undefined
+    const badgeLabel = (!badgeExtra && animeRankData) ? "Anime" : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || "Oggi") : undefined
     try {
       await api("/api/mappings", {
         method: "POST",
@@ -870,23 +874,6 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       localStorage.setItem("recent_searches", JSON.stringify(next))
       return next
     })
-  }
-
-  const showToast = (msg: string) => {
-    const el = toastRef.current
-    if (el) {
-      el.textContent = msg
-      el.classList.remove("opacity-0", "animate-toast-in")
-      el.classList.add("opacity-100")
-      void el.offsetWidth
-      el.classList.add("animate-toast-in")
-      if (el.dataset.timer) clearTimeout(Number(el.dataset.timer))
-      const timer = window.setTimeout(() => {
-        el.classList.remove("opacity-100", "animate-toast-in")
-        el.classList.add("opacity-0")
-      }, 2500)
-      el.dataset.timer = String(timer)
-    }
   }
 
   const posterActivePath = previewPoster?.file_path

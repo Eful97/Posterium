@@ -5,7 +5,7 @@ const CATALOG_URL = "https://raw.githubusercontent.com/0xConstant1/fp-crawler/ma
 const TMDB_BASE = "https://api.themoviedb.org/3"
 
 const DATA_DIR = (() => {
-  try { if (fs.existsSync("/data")) return "/data" } catch {}
+  try { if (fs.existsSync("/data")) return "/data" } catch (e) { console.error("[flixpatrol] Failed to check /data:", e) }
   return path.join(process.cwd(), "data")
 })()
 const CACHE_FILE = path.join(DATA_DIR, "flixpatrol_cache.json")
@@ -78,7 +78,7 @@ function loadCache(): CacheData {
         return raw as CacheData
       }
     }
-  } catch {}
+  } catch (e) { console.error("[flixpatrol] Failed to load cache:", e) }
   return { timestamp: 0, catalog: null }
 }
 
