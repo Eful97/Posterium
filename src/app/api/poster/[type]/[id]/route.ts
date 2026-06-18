@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const rl = rateLimit(rateLimitKey(req), "poster")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { type, id } = await params
-  const mediaType = (type === "series" || type === "tv") ? "tv" : "movie"
+  const mediaType = (["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "")) ? "tv" : "movie"
   const tmdbId = Number(id)
   if (isNaN(tmdbId) || tmdbId <= 0) return new Response("Invalid ID", { status: 400 })
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:${req.nextUrl.searchParams.toString()}`
