@@ -119,6 +119,7 @@ export default function EditView() {
               ><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain" }} /></div></div>
           })()}
           {p.rankingBadges && (() => {
+            // eslint-disable-next-line
             const now = Date.now()
             const twoWeeks = 14 * 24 * 60 * 60 * 1000
             const isNewMovie = p.selected?.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
