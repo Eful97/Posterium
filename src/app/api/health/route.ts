@@ -61,7 +61,19 @@ export async function GET(request: Request) {
     timestamp: new Date().toISOString(),
     tmdb: { apiKey: !!apiKey, apiKeyLength: apiKey.length, trending: tmdbTrending, search: tmdbSearch, popular: tmdbPopular, externalIds },
     streaming: { justwatch, flixpatrol },
-    storage: { mappingsCount, dataFileExists: fs.existsSync(DATA_FILE) },
+    storage: {
+      mappingsCount,
+      dataFileExists: fs.existsSync(DATA_FILE),
+      diskPosterCount: (() => {
+        try {
+          const dir = process.env.DATA_DIR || "/data/posters"
+          if (fs.existsSync(dir)) return fs.readdirSync(dir).length
+          const local = path.join(process.cwd(), "data", "posters")
+          if (fs.existsSync(local)) return fs.readdirSync(local).length
+        } catch {}
+        return 0
+      })(),
+    },
     system: { node: process.version, platform: process.platform, env: process.env.NODE_ENV },
   }
   cacheSet("health", health, ["health"])

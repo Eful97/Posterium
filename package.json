@@ -1,6 +1,6 @@
 {
     "name":  "posterium",
-    "version":  "0.4.5",
+    "version":  "0.4.6",
     "license":  "AGPL-3.0-only",
     "private":  true,
     "scripts":  {
@@ -8,7 +8,8 @@
                     "build":  "next build",
                     "start":  "next start",
                     "lint":  "eslint",
-                    "test":  "vitest run"
+                    "test":  "vitest run",
+                    "verify":  "npx tsc --noEmit \u0026\u0026 npx eslint . \u0026\u0026 npx vitest run \u0026\u0026 next build"
                 },
     "dependencies":  {
                          "@fontsource/inter":  "^5.2.8",
