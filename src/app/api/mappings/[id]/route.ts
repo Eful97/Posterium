@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { getById, remove, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheInvalidate } from "@/lib/cache"
+import { mappingUpdateSchema } from "@/lib/validation"
 
 type RouteParams = { id: string }
 
@@ -27,33 +28,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     req.json(),
     getById(type as "movie" | "tv", tmdbId),
   ])
-  if (!body || typeof body !== "object") {
-    return Response.json({ error: "Invalid body" }, { status: 400 })
+  const parsed = mappingUpdateSchema.safeParse(body)
+  if (!parsed.success) {
+    return Response.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
   }
+  if (!existing) return Response.json({ error: "not found" }, { status: 404 })
   await upsert({
-    tmdbId,
-    mediaType: type as "movie" | "tv",
-    title: String(body.title || existing?.title || ""),
-    posterPath: body.posterPath ? String(body.posterPath) : existing?.posterPath || "",
-    logoPath: body.logoPath ?? null,
-    originalPosterPath: body.originalPosterPath ?? null,
-    language: body.language ?? null,
-    logoScale: body.logoScale ?? existing?.logoScale,
-    logoOffsetX: body.logoOffsetX ?? existing?.logoOffsetX,
-    logoOffsetY: body.logoOffsetY ?? existing?.logoOffsetY,
-    showBadges: body.showBadges ?? existing?.showBadges,
-    genreName: body.genreName ?? existing?.genreName ?? null,
-    voteAverage: body.voteAverage ?? existing?.voteAverage ?? null,
-    trendRank: body.trendRank ?? existing?.trendRank,
-    trendPeriod: body.trendPeriod ?? existing?.trendPeriod,
-    tvType: body.tvType ?? existing?.tvType,
-    tvStatus: body.tvStatus ?? existing?.tvStatus,
-    accentColor: body.accentColor ?? existing?.accentColor,
-    badgeExtra: body.badgeExtra ?? existing?.badgeExtra,
-    badgeRank: body.badgeRank ?? existing?.badgeRank,
-    badgeLabel: body.badgeLabel ?? existing?.badgeLabel,
-    releaseDate: body.releaseDate ?? existing?.releaseDate,
-    firstAirDate: body.firstAirDate ?? existing?.firstAirDate,
+    ...existing,
+    ...parsed.data,
+    tmdbId: existing.tmdbId,
+    mediaType: existing.mediaType,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")

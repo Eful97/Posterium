@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { getAll, upsert, removeAll } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheInvalidate } from "@/lib/cache"
+import { mappingSchema } from "@/lib/validation"
 
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
@@ -14,33 +15,16 @@ export async function POST(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const body = await req.json()
-  if (!body || typeof body !== "object" || !body.tmdbId || !body.mediaType || !body.posterPath) {
-    return Response.json({ error: "Missing required fields: tmdbId, mediaType, posterPath" }, { status: 400 })
+  const parsed = mappingSchema.safeParse(body)
+  if (!parsed.success) {
+    return Response.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
   }
   await upsert({
-    tmdbId: Number(body.tmdbId),
-    mediaType: body.mediaType,
-    title: String(body.title || ""),
-    posterPath: String(body.posterPath),
-    logoPath: body.logoPath ?? null,
-    originalPosterPath: body.originalPosterPath ?? null,
-    language: body.language ?? null,
-    logoScale: body.logoScale ?? undefined,
-    logoOffsetX: body.logoOffsetX ?? undefined,
-    logoOffsetY: body.logoOffsetY ?? undefined,
-    showBadges: body.showBadges ?? undefined,
-    genreName: body.genreName ?? null,
-    voteAverage: body.voteAverage ?? null,
-    trendRank: body.trendRank ?? undefined,
-    trendPeriod: body.trendPeriod ?? undefined,
-    tvType: body.tvType ?? undefined,
-    tvStatus: body.tvStatus ?? undefined,
-    accentColor: body.accentColor ?? undefined,
-    badgeExtra: body.badgeExtra ?? undefined,
-    badgeRank: body.badgeRank ?? undefined,
-    badgeLabel: body.badgeLabel ?? undefined,
-    releaseDate: body.releaseDate ?? undefined,
-    firstAirDate: body.firstAirDate ?? undefined,
+    ...parsed.data,
+    logoPath: parsed.data.logoPath ?? null,
+    originalPosterPath: parsed.data.originalPosterPath ?? null,
+    language: parsed.data.language ?? null,
+    backdropPath: parsed.data.backdropPath ?? null,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")
