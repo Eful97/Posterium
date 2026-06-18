@@ -44,11 +44,6 @@ const PLATFORM_SLUGS: Record<string, string> = {
   apple: "apple-tv", hbo: "hbo-max", paramount: "paramount-plus",
 }
 
-function posteriumPoster(domain: string, tmdbId: number, mediaType: string): string {
-  const apiKey = process.env.TMDB_API_KEY
-  return `${domain}/api/poster/${mediaType}/${tmdbId}?api_key=${encodeURIComponent(apiKey!)}&lang=it`
-}
-
 type RouteParams = { type: string; id: string }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
@@ -57,7 +52,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   const { type: mediaType, id: rawId } = await params
   const catalogId = rawId.replace(/\.json$/, "")
-  const domain = req.nextUrl.origin
 
   const cacheKey = `stremio:catalog:${mediaType}:${catalogId}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
@@ -72,50 +66,43 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const apiKey = process.env.TMDB_API_KEY!
       const pathTmdb = mediaType === "movie" ? "/movie" : "/tv"
       const results = await Promise.all(ids.slice(0, 20).map(async (id) => {
-        try {
-          const url = `https://api.themoviedb.org/3${pathTmdb}/${id}?api_key=${apiKey}&language=it-IT`
-          const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
-          if (!res.ok) return null
-          const d = await res.json()
-          if (!d?.id) return null
-          return {
-            id: d.imdb_id || id.toString(),
-            type: stType,
-            name: d.title || d.name || "",
-            poster: posteriumPoster(domain, id, mediaType),
-            releaseInfo: (d.release_date || d.first_air_date || "").slice(0, 4) || undefined,
-          }
-        } catch { return null }
+        const url = `https://api.themoviedb.org/3${pathTmdb}/${id}?api_key=${apiKey}&language=it-IT`
+        const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+        if (!res.ok) return null
+        const d = await res.json()
+        if (!d?.id) return null
+        return { d, tmdbId: id }
       }))
-      metas = results.filter(Boolean) as StremioMeta[]
+      metas = results.filter(Boolean).map((r) => ({
+        id: r!.d.imdb_id || r!.tmdbId.toString(),
+        type: stType,
+        name: r!.d.title || r!.d.name || "",
+        poster: r!.d.poster_path ? `https://image.tmdb.org/t/p/w500${r!.d.poster_path}` : null,
+        releaseInfo: (r!.d.release_date || r!.d.first_air_date || "").slice(0, 4) || undefined,
+      }))
     } else if (catalogId.startsWith("posterium-anime")) {
       const key = process.env.MDBLIST_API_KEY
       if (key) {
-        try {
-          const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${key}`, { signal: AbortSignal.timeout(10000) })
-          if (res.ok) {
-            const data = await res.json()
-            for (const item of (data || []).slice(0, 20)) {
-              const tmdbId = item.tmdb
-              if (!tmdbId) continue
-              try {
-                const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${process.env.TMDB_API_KEY}&language=it-IT`
-                const r2 = await fetch(url, { signal: AbortSignal.timeout(10000) })
-                if (!r2.ok) continue
-                const d = await r2.json()
-                if (d?.id) {
-                  metas.push({
-                    id: d.imdb_id || item.imdb || tmdbId.toString(),
-                    type: "series",
-                    name: d.name || item.title || "",
-                    poster: posteriumPoster(domain, tmdbId, "series"),
-                    releaseInfo: (d.first_air_date || "").slice(0, 4) || undefined,
-                  })
-                }
-              } catch {}
-            }
-          }
-        } catch {}
+        const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${key}`, { signal: AbortSignal.timeout(10000) })
+        if (res.ok) {
+          const data = await res.json()
+          const results = await Promise.all((data || []).slice(0, 20).map(async (item: any) => {
+            if (!item.tmdb) return null
+            const url = `https://api.themoviedb.org/3/tv/${item.tmdb}?api_key=${process.env.TMDB_API_KEY}&language=it-IT`
+            const r2 = await fetch(url, { signal: AbortSignal.timeout(10000) })
+            if (!r2.ok) return null
+            const d = await r2.json()
+            if (!d?.id) return null
+            return { d, tmdbId: item.tmdb, imdb: item.imdb }
+          }))
+          metas = results.filter(Boolean).map((r) => ({
+            id: r!.d.imdb_id || r!.imdb || r!.tmdbId.toString(),
+            type: "series",
+            name: r!.d.name || "",
+            poster: r!.d.poster_path ? `https://image.tmdb.org/t/p/w500${r!.d.poster_path}` : null,
+            releaseInfo: (r!.d.first_air_date || "").slice(0, 4) || undefined,
+          }))
+        }
       }
     } else {
       let slug = ""
@@ -127,17 +114,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const data = apiKey ? await getTop10(slug, "italy", apiKey).catch(() => null) : null
         if (data) {
           const items = mediaType === "movie" ? data.movies : data.tv
-          for (const item of items.slice(0, 10)) {
-            if (item.tmdbId) {
-              metas.push({
-                id: item.tmdbId.toString(),
-                type: stType,
-                name: item.title,
-                poster: posteriumPoster(domain, item.tmdbId, mediaType),
-                releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
-              })
-            }
-          }
+          metas = items.slice(0, 10).filter((i) => i.tmdbId).map((item) => ({
+            id: item.tmdbId!.toString(),
+            type: stType,
+            name: item.title,
+            poster: item.posterPath ? `https://image.tmdb.org/t/p/w500${item.posterPath}` : null,
+            releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
+          }))
         }
       }
     }
