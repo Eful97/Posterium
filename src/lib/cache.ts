@@ -1,3 +1,7 @@
+import fs from "node:fs"
+import path from "node:path"
+import crypto from "node:crypto"
+
 interface CacheEntry<T> {
   data: T
   timestamp: number
@@ -75,4 +79,35 @@ export function cacheInvalidate(tag: string): void {
 
 export function cacheClear(): void {
   store.clear()
+}
+
+// Disk cache for poster images (survives container restarts on HF)
+const DISK_DIR = (() => {
+  try { if (fs.existsSync("/data")) return path.join("/data", "posters") } catch {}
+  return path.join(process.cwd(), "data", "posters")
+})()
+
+function diskKey(key: string): string {
+  return path.join(DISK_DIR, crypto.createHash("sha256").update(key).digest("hex").slice(0, 16))
+}
+
+export function cacheGetDisk(key: string): Buffer | null {
+  try {
+    const f = diskKey(key)
+    if (fs.existsSync(f)) {
+      const stat = fs.statSync(f)
+      if (Date.now() - stat.mtimeMs < TAG_TTL.poster) {
+        return fs.readFileSync(f)
+      }
+      fs.unlinkSync(f)
+    }
+  } catch {}
+  return null
+}
+
+export function cacheSetDisk(key: string, data: Buffer): void {
+  try {
+    if (!fs.existsSync(DISK_DIR)) fs.mkdirSync(DISK_DIR, { recursive: true })
+    fs.writeFileSync(diskKey(key), data)
+  } catch {}
 }
