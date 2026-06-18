@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import sharp from "sharp"
-import { getImages, getDetails, getExternalIds } from "@/lib/tmdb"
+import { getImages, getDetails, getExternalIds, type TMDBImage, type TMDBCompany } from "@/lib/tmdb"
 import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
@@ -9,6 +9,7 @@ import { bottomGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
+import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
@@ -151,21 +152,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       voteAverage = aggregated?.average ?? details.vote_average ?? 0
       releaseDate = details.release_date || null
       firstAirDate = details.first_air_date || null
-      const tmdbNetworks = mediaType === "tv" ? (details.networks || []).map((n: any) => n.name) : (details.production_companies || []).map((c: any) => c.name)
+      const tmdbNetworks = mediaType === "tv" ? (details.networks || []).map((n: TMDBCompany) => n.name) : (details.production_companies || []).map((c: TMDBCompany) => c.name)
       tmdbStudios = matchTMDBStudios(tmdbNetworks)
       nextEpisodeAir = details.next_episode_to_air?.air_date || null
       tvType = details.type || null
       tvStatus = details.status || null
-      const clean = images.posters.find((p: any) => p.iso_639_1 === null)
+      const clean = images.posters.find((p: TMDBImage) => p.iso_639_1 === null)
       if (clean) {
         if (queryLogo) {
-          const exact = images.logos.find((l: any) => l.file_path === queryLogo)
+          const exact = images.logos.find((l: TMDBImage) => l.file_path === queryLogo)
           if (exact) logoPath = exact.file_path
         }
         if (!logoPath) {
-          const langLogo = images.logos.find((l: any) => l.iso_639_1 === preferredLanguage)
-          const itLogo = preferredLanguage !== "it" ? images.logos.find((l: any) => l.iso_639_1 === "it") : undefined
-          const enLogo = preferredLanguage !== "en" ? images.logos.find((l: any) => l.iso_639_1 === "en") : undefined
+          const langLogo = images.logos.find((l: TMDBImage) => l.iso_639_1 === preferredLanguage)
+          const itLogo = preferredLanguage !== "it" ? images.logos.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
+          const enLogo = preferredLanguage !== "en" ? images.logos.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
           const anyLogo = images.logos[0]
           const chosenLogo = langLogo || itLogo || enLogo || anyLogo
           if (chosenLogo) logoPath = chosenLogo.file_path
@@ -173,15 +174,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (logoPath) {
           posterPath = clean.file_path
         } else {
-          const itPoster = images.posters.find((p: any) => p.iso_639_1 === "it")
-          const enPoster = images.posters.find((p: any) => p.iso_639_1 === "en")
-          const origPoster = details.original_language ? images.posters.find((p: any) => p.iso_639_1 === details.original_language) : undefined
+          const itPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === "it")
+          const enPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === "en")
+          const origPoster = details.original_language ? images.posters.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
           const chosen = itPoster || enPoster || origPoster || images.posters[0]
           if (chosen) posterPath = chosen.file_path
         }
       } else {
-        const langPoster = images.posters.find((p: any) => p.iso_639_1 === preferredLanguage)
-        const origPoster = details.original_language ? images.posters.find((p: any) => p.iso_639_1 === details.original_language) : undefined
+        const langPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === preferredLanguage)
+        const origPoster = details.original_language ? images.posters.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
         const chosen = langPoster || origPoster || images.posters[0]
         if (chosen) posterPath = chosen.file_path
       }
@@ -212,7 +213,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         try {
           const cached = cacheGet<any[]>("mdblist:anime:top10")
           if (cached && Array.isArray(cached)) {
-            const idx = cached.findIndex((a: any) => a.id === tmdbId)
+            const idx = cached.findIndex((a: EnrichedAnimeItem) => a.id === tmdbId)
             return Promise.resolve(idx >= 0 ? idx + 1 : null)
           }
           return fetchMDBList("mdblistAnime")

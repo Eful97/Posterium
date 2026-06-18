@@ -35,6 +35,13 @@ export interface TMDBImage {
   width: number
 }
 
+export interface TMDBCompany {
+  id: number
+  name: string
+  logo_path: string | null
+  origin_country: string
+}
+
 export interface TMDBImagesResponse {
   id: number
   backdrops: TMDBImage[]

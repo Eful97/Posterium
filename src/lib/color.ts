@@ -4,7 +4,8 @@ const CACHE_MAX = 200
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
-  let h = 0, s = 0, l = (mx + mn) / 2
+  let h = 0, s = 0
+  const l = (mx + mn) / 2
   if (mx !== mn) {
     const d = mx - mn
     s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn)

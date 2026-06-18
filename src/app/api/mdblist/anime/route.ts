@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     if (!res.ok) return Response.json([])
     const body = await res.json()
     const payload = body?.data || body
-    let rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
+    const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
     const items = rawItems.slice(0, 20)
 
     const results = await Promise.all(items.map(async (item: any, idx: number) => {
