@@ -126,10 +126,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   } else if (mapping) {
     posterPath = mapping.posterPath
     logoPath = queryLogo || mapping.logoPath
-    backdropPath = queryBackdrop || (mapping as any).backdropPath || null
-    backdropScale = (mapping as any).backdropScale ?? 100
-    backdropOffsetX = (mapping as any).backdropOffsetX ?? 0
-    backdropOffsetY = (mapping as any).backdropOffsetY ?? 0
+    backdropPath = queryBackdrop || mapping?.backdropPath || null
+    backdropScale = mapping?.backdropScale ?? 100
+    backdropOffsetX = mapping?.backdropOffsetX ?? 0
+    backdropOffsetY = mapping?.backdropOffsetY ?? 0
     genreName = mapping.genreName ?? null
     voteAverage = mapping.voteAverage ?? null
     showBadges = mapping.showBadges ?? true
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const chosen = langPoster || origPoster || images.posters[0]
         if (chosen) posterPath = chosen.file_path
       }
-    } catch {}
+    } catch (e) { console.error("[poster] Auto image fetch failed:", e) }
     etag = `"${Date.now()}"`
   }
 
