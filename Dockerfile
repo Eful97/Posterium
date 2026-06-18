@@ -1,7 +1,6 @@
 FROM node:20-bullseye AS builder
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
-ARG POSTERIUM_COMMIT=5de555a
-RUN git clone https://github.com/Eful97/Posterium.git /app && cd /app && git checkout ${POSTERIUM_COMMIT}
+RUN git clone https://github.com/Eful97/Posterium.git /app
 WORKDIR /app
 RUN rm -rf node_modules package-lock.json
 RUN npm install
