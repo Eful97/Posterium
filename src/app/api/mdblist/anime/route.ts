@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
               media_type: 'tv',
             }
           }
-        } catch {}
+        } catch (e) { console.error("[mdblist:anime] TMDB lookup failed:", e) }
       }
 
       // Fallback: find by IMDB ID
@@ -75,5 +75,5 @@ export async function GET(req: NextRequest) {
     const filtered = results.filter(Boolean)
     if (filtered.length > 0) cacheSet(cacheKey, filtered, ["mdblist"])
     return Response.json(filtered)
-  } catch { return Response.json([]) }
+  } catch (e) { console.error("[mdblist:anime] Fetch failed:", e); return Response.json([]) }
 }

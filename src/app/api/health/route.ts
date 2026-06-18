@@ -5,7 +5,7 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 
 const DATA_FILE = path.join((() => {
-  try { if (fs.existsSync("/data")) return "/data" } catch {}
+  try { if (fs.existsSync("/data")) return "/data" } catch (e) { console.error("[health] Failed to detect /data:", e) }
   return path.join(process.cwd(), "data")
 })(), "mappings.json")
 
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
           if (fs.existsSync(dir)) return fs.readdirSync(dir).length
           const local = path.join(process.cwd(), "data", "posters")
           if (fs.existsSync(local)) return fs.readdirSync(local).length
-        } catch {}
+        } catch (e) { console.error("[health] Disk poster count failed:", e) }
         return 0
       })(),
     },

@@ -14,7 +14,7 @@ async function warmPosters(mappings: { tmdbId: number; mediaType: string }[]) {
       const url = `http://localhost:${process.env.PORT || 3000}/api/poster/${type}/${m.tmdbId}?api_key=${apiKey}&lang=it`
       const res = await fetch(url, { signal: AbortSignal.timeout(30000) })
       if (res.ok) done++
-    } catch {}
+    } catch (e) { console.error("[cache-warmer] Error:", e) }
     if (done % 10 === 0) await new Promise((r) => setTimeout(r, 1000))
   }
   console.log(`[cache-warmer] Done: ${done}/${count}`)

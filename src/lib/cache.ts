@@ -83,7 +83,7 @@ export function cacheClear(): void {
 
 // Disk cache for poster images (survives container restarts on HF)
 const DISK_DIR = (() => {
-  try { if (fs.existsSync("/data")) return path.join("/data", "posters") } catch {}
+  try { if (fs.existsSync("/data")) return path.join("/data", "posters") } catch (e) { console.error("[cache] Failed to detect /data:", e) }
   return path.join(process.cwd(), "data", "posters")
 })()
 
@@ -101,7 +101,7 @@ export function cacheGetDisk(key: string): Buffer | null {
       }
       fs.unlinkSync(f)
     }
-  } catch {}
+  } catch (e) { console.error("[cache] Disk read failed:", e) }
   return null
 }
 
@@ -124,7 +124,7 @@ function cleanupDiskCache() {
       fs.unlinkSync(path.join(DISK_DIR, item.name))
       files.length--
     }
-  } catch {}
+  } catch (e) { console.error("[cache] Disk cleanup failed:", e) }
 }
 
 export function cacheSetDisk(key: string, data: Buffer): void {
@@ -132,5 +132,5 @@ export function cacheSetDisk(key: string, data: Buffer): void {
     if (!fs.existsSync(DISK_DIR)) fs.mkdirSync(DISK_DIR, { recursive: true })
     if (++diskWriteCount >= DISK_CLEANUP_EVERY) cleanupDiskCache()
     fs.writeFileSync(diskKey(key), data)
-  } catch {}
+  } catch (e) { console.error("[cache] Disk write failed:", e) }
 }

@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       cacheSet(cacheKey, body, ["rank", "justwatch"])
       return Response.json(body, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })
     }
-  } catch {}
+  } catch (e) { console.error("[trending/rank] Fetch failed:", e) }
   const body = { rank: null }
   cacheSet(cacheKey, body, ["rank", "justwatch"])
   return Response.json(body, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })

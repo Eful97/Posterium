@@ -90,7 +90,7 @@ export async function fetchAggregatedRating(
         }
       }
     }
-  } catch {}
+  } catch (e) { console.error("[ratings] MDBList fetch failed:", e) }
 
   // Fallback to OMDb for IMDb rating
   const omdbRating = await fetchOMDbRating(imdbId)

@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
         return Response.json({ match })
       }
     }
-  } catch {}
+  } catch (e) { console.error("[mdblist] Fetch failed:", e) }
   cacheSet(cacheKey, null, ["mdblist"])
   return Response.json({ match: null })
 }
