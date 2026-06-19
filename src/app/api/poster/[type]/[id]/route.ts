@@ -4,7 +4,7 @@ import { getImages, getDetails, getExternalIds, type TMDBImage, type TMDBCompany
 import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheGet, cacheGetStale, cacheSet, cacheGetDisk, cacheSetDisk } from "@/lib/cache"
+import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { bottomGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
@@ -73,16 +73,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     if (!cached.stale && !cachedHeaders.stale) {
       return new Response(new Uint8Array(cached.data), {
         headers: etagHeaders(etag),
-      })
-    }
-  }
-  // Fallback to disk cache
-  if (!cached.data) {
-    const diskBuf = cacheGetDisk(cacheKey)
-    if (diskBuf) {
-      cacheSet(cacheKey, Buffer.from(diskBuf), ["poster"])
-      return new Response(new Uint8Array(diskBuf), {
-        headers: etagHeaders(`"disk:${cacheKey}"`),
       })
     }
   }
@@ -464,7 +454,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       .toBuffer()
 
     cacheSet(cacheKey, composited, ["poster"])
-    cacheSetDisk(cacheKey, composited)
     cacheSet(`${cacheKey}:headers`, { etag }, ["poster"])
     return new Response(new Uint8Array(composited), {
       headers: etagHeaders(etag),

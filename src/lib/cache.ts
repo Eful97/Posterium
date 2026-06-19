@@ -1,7 +1,3 @@
-import fs from "node:fs"
-import path from "node:path"
-import crypto from "node:crypto"
-
 interface CacheEntry<T> {
   data: T
   timestamp: number
@@ -79,58 +75,4 @@ export function cacheInvalidate(tag: string): void {
 
 export function cacheClear(): void {
   store.clear()
-}
-
-// Disk cache for poster images (survives container restarts on HF)
-const DISK_DIR = (() => {
-  try { if (fs.existsSync("/data")) return path.join("/data", "posters") } catch (e) { console.error("[cache] Failed to detect /data:", e) }
-  return path.join(process.cwd(), "data", "posters")
-})()
-
-function diskKey(key: string): string {
-  return path.join(DISK_DIR, crypto.createHash("sha256").update(key).digest("hex").slice(0, 16))
-}
-
-export function cacheGetDisk(key: string): Buffer | null {
-  try {
-    const f = diskKey(key)
-    if (fs.existsSync(f)) {
-      const stat = fs.statSync(f)
-      if (Date.now() - stat.mtimeMs < TAG_TTL.poster) {
-        return fs.readFileSync(f)
-      }
-      fs.unlinkSync(f)
-    }
-  } catch (e) { console.error("[cache] Disk read failed:", e) }
-  return null
-}
-
-let diskWriteCount = 0
-const DISK_MAX_AGE = 48 * 60 * 60 * 1000
-const DISK_CLEANUP_EVERY = 50
-
-function cleanupDiskCache() {
-  diskWriteCount = 0
-  try {
-    if (!fs.existsSync(DISK_DIR)) return
-    const files = fs.readdirSync(DISK_DIR)
-    if (files.length <= 1000) return
-    const now = Date.now()
-    const items = files
-      .map((f) => ({ name: f, mtime: fs.statSync(path.join(DISK_DIR, f)).mtimeMs }))
-      .sort((a, b) => a.mtime - b.mtime)
-    for (const item of items) {
-      if (files.length <= 1000 && now - item.mtime < DISK_MAX_AGE) break
-      fs.unlinkSync(path.join(DISK_DIR, item.name))
-      files.length--
-    }
-  } catch (e) { console.error("[cache] Disk cleanup failed:", e) }
-}
-
-export function cacheSetDisk(key: string, data: Buffer): void {
-  try {
-    if (!fs.existsSync(DISK_DIR)) fs.mkdirSync(DISK_DIR, { recursive: true })
-    if (++diskWriteCount >= DISK_CLEANUP_EVERY) cleanupDiskCache()
-    fs.writeFileSync(diskKey(key), data)
-  } catch (e) { console.error("[cache] Disk write failed:", e) }
 }
