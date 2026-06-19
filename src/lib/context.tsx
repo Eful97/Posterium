@@ -628,15 +628,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           foundLogo = (data.logos || []).find((l: TMDBImage) => l.file_path === existing.logoPath)
           setSelectedLogo(foundLogo ? { file_path: foundLogo.file_path, iso_639_1: existing.language, vote_average: 0, width: foundLogo.width, height: foundLogo.height } : { file_path: existing.logoPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
         }
-        if (foundLogo?.width && foundLogo?.height) {
-          const lw = foundLogo.width
-          const lh = foundLogo.height
-          const maxH = Math.round(1500 * 0.25)
-          const effW = Math.round(maxH * lw / lh)
-          setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
-        } else {
-          setLogoScale(existing.logoScale ?? 75)
-        }
+        setLogoScale(existing.logoScale ?? 75)
         setLogoOffsetX(existing.logoOffsetX ?? 0)
         setLogoOffsetY(existing.logoOffsetY ?? 0)
         if (existing.backdropPath) {
