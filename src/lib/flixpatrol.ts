@@ -131,10 +131,15 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
   let catalog = cache.catalog
 
   if (!catalog || Date.now() - cache.timestamp > FOUR_HOURS) {
-    catalog = await fetchCatalog()
-    cache.catalog = catalog
-    cache.timestamp = Date.now()
-    saveCache(cache)
+    try {
+      catalog = await fetchCatalog()
+      cache.catalog = catalog
+      cache.timestamp = Date.now()
+      saveCache(cache)
+    } catch (e) {
+      console.error("[flixpatrol] Failed to fetch fresh catalog:", e)
+      if (!catalog) throw e
+    }
   }
 
   const movieChart = catalog.charts.find((c) => c.platform === platformName && c.category === "movies")

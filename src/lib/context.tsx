@@ -327,7 +327,7 @@ export function usePosterium(): PosteriumCtx {
     for (const p of STREAMING_PLATFORMS) {
       api(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`).then((data) => {
         setStreamingCharts((prev) => ({ ...prev, [p.slug]: data }))
-      }).catch(() => {})
+      }).catch((e) => { console.error("[posterium] FlixPatrol fetch failed for", p.slug, e) })
     }
   }, [tmdbKey])
 
@@ -613,7 +613,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           if (d?.match) {
             setMdblistMatch(d.match)
           }
-        }).catch(() => {})
+      }).catch(() => {})
       }
       if (!item.poster_path && data.posters?.length > 0) {
         const first = data.posters.find((p: TMDBImage) => p.iso_639_1) || data.posters[0]
