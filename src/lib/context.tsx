@@ -206,9 +206,14 @@ export function usePosterium(): PosteriumCtx {
     const ph = previewPoster.height || 1500
     const lw = selectedLogo.width || 1
     const lh = selectedLogo.height || 1
-    const finW = Math.min(Math.round(pw * logoScale / 100), pw)
-    const hVal = Math.round(lh * (finW / lw))
-    const logoH = Math.min(hVal, ph)
+    const maxLogoH = Math.round(ph * 0.25)
+    let finW = Math.min(Math.round(pw * logoScale / 100), pw)
+    let logoH = Math.round(lh * (finW / lw))
+    if (logoH > maxLogoH) {
+      const ratio = maxLogoH / logoH
+      finW = Math.round(finW * ratio)
+      logoH = maxLogoH
+    }
     const s = ph / 1500
     const badgeOff = hasBadges ? 0 : Math.round(40 * s)
     const halfX = Math.round((pw - finW) / 2)

@@ -371,9 +371,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const userOx = qOx ? (Number(qOx) || 0) : (mapping?.logoOffsetX ?? 0)
       const userOy = qOy ? (Number(qOy) || 0) : (mapping?.logoOffsetY ?? 0)
       const scalePct = userScale / 100
-      const logoW = Math.round(pw * scalePct)
-      const logoHval = Math.round(lh * (logoW / lw))
-      const logoH = Math.min(logoHval, ph)
+      const maxLogoH = Math.round(ph * 0.25)
+      let logoW = Math.round(pw * scalePct)
+      let logoH = Math.round(lh * (logoW / lw))
+      if (logoH > maxLogoH) {
+        const ratio = maxLogoH / logoH
+        logoW = Math.round(logoW * ratio)
+        logoH = maxLogoH
+      }
       const finalLogoW = Math.min(logoW, pw)
       const logoResized = await sharp(logoBuf).resize(finalLogoW, logoH, { fit: "inside" }).png().toBuffer()
       const resizedMeta = await sharp(logoResized).metadata()
