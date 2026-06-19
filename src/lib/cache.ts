@@ -8,10 +8,20 @@ const store = new Map<string, CacheEntry<unknown>>()
 
 const MAX_TTL = 30 * 60 * 1000
 const MAX_ENTRIES = 1000
+const REFRESH_HOUR = 3
 
-const TAG_TTL: Record<string, number> = {
-  poster: 24 * 60 * 60 * 1000,
-  catalog: 2 * 60 * 60 * 1000,
+const TAG_TTL: Record<string, number> = {}
+
+const SCHEDULED_REFRESH: Record<string, number> = {
+  poster: REFRESH_HOUR,
+  catalog: REFRESH_HOUR,
+}
+
+function isScheduledRefresh(tags: string[]): number | null {
+  for (const tag of tags) {
+    if (SCHEDULED_REFRESH[tag] !== undefined) return SCHEDULED_REFRESH[tag]
+  }
+  return null
 }
 
 function ttlForTags(tags: string[]): number {
@@ -22,6 +32,20 @@ function ttlForTags(tags: string[]): number {
 }
 
 function isExpired(entry: CacheEntry<unknown>): boolean {
+  const refreshHour = isScheduledRefresh(entry.tags)
+  if (refreshHour !== null) {
+    const now = new Date()
+    const todayRefresh = new Date(now)
+    todayRefresh.setHours(refreshHour, 0, 0, 0)
+
+    if (now >= todayRefresh) {
+      return entry.timestamp < todayRefresh.getTime()
+    } else {
+      const yesterdayRefresh = new Date(todayRefresh)
+      yesterdayRefresh.setDate(yesterdayRefresh.getDate() - 1)
+      return entry.timestamp < yesterdayRefresh.getTime()
+    }
+  }
   return Date.now() - entry.timestamp > ttlForTags(entry.tags)
 }
 
