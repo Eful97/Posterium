@@ -22,7 +22,7 @@ async function clearDiskPosters() {
   return count
 }
 
-export async function POST() {
+export async function GET() {
   cacheClear()
   const diskCount = await clearDiskPosters()
   return Response.json({ ok: true, memoryCleared: true, diskFilesRemoved: diskCount })
