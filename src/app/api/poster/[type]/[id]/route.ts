@@ -13,7 +13,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 32
+const RENDER_VERSION = 33
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -60,9 +60,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     console.log(`[poster] Invalid ID: type=${type} id=${id}`)
     return new Response("Invalid ID", { status: 400 })
   }
+  const earlyRank = await getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
+    .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
+    .catch(() => null)
   const cacheParams = new URLSearchParams(req.nextUrl.searchParams)
   cacheParams.delete("rv")
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:${cacheParams.toString()}`
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${earlyRank ?? "x"}:${cacheParams.toString()}`
   const cached = cacheGetStale<Buffer>(cacheKey)
   const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
   if (cached.data && cachedHeaders.data) {
@@ -193,10 +196,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
       backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
       (() => {
-        if (mapping?.trendRank) return Promise.resolve(mapping.trendRank)
-        return getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
-          .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
-          .catch(() => null)
+        return Promise.resolve(earlyRank)
       })(),
       (() => {
         if (mediaType !== "tv") return Promise.resolve(null)
