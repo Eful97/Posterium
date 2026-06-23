@@ -190,7 +190,7 @@ export async function renderGenreBadge(
   let finalFontSize = Math.round(24 * pw / 380)
   const maxBadgeW = pw - 20
   const totalLen = genreName.length + voteStr.length + (yearStr ? yearStr.length + 1 : 0)
-  const totalFactor = totalLen * 0.58 + 2.43
+  const totalFactor = totalLen * 0.58 + 2.43 + (yearStr ? 1.01 : 0)
   if (finalFontSize * totalFactor > maxBadgeW) {
     finalFontSize = Math.round(maxBadgeW / totalFactor)
   }

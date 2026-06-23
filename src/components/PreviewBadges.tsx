@@ -41,8 +41,8 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const maxBadgeW = containerW - 20
   let finalFs = base
   const totalLen = genreName.length + voteStr.length + (yearStr ? yearStr.length + 1 : 0)
-  if (finalFs * (totalLen * 0.58 + 2.43) > maxBadgeW) {
-    finalFs = Math.max(maxBadgeW / (totalLen * 0.58 + 2.43), 10)
+  if (finalFs * (totalLen * 0.58 + 2.43 + (yearStr ? 1.01 : 0)) > maxBadgeW) {
+    finalFs = Math.max(maxBadgeW / (totalLen * 0.58 + 2.43 + (yearStr ? 1.01 : 0)), 10)
   }
   const fs = Math.round(finalFs)
   const gap = Math.round(fs / 3)
