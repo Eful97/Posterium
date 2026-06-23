@@ -62,14 +62,14 @@ Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispetti
 | `tl` | `topLight ? "1" : "0"` (se rankingBadges attivi) | `qTopLight` — override se presente |
 | `rank` | `badge.rank` (se rankingBadges attivi) | `qRank` — override del ranking |
 | `label` | `badge.rankLabel \|\| badge.label` | `qLabel` — override label ranking |
-| `extra` | `badge.label` (se extra) | `queryExtra` — forza badge extra |
+| `extra` | `badge.label` (se extra) o `customBadge` | `queryExtra` — forza badge extra |
 
 ## Bordo poster
 
 | Parametro | Client (`EditView.tsx`) | Server (`route.ts`) |
 |---|---|---|
-| Bordo | `3px solid rgba(255,255,255,0.80)` | `<rect stroke="rgba(255,255,255,0.80)" stroke-width="3" rx="8"/>` |
-| Overlay | `absolute inset-0 pointer-events-none` (sopra ogni contenuto) | Composito per ultimo (sopra ogni layer) |
+| Bordo | `3px solid rgba(255,255,255,0.80)` | Rimosso (solo client) |
+| Overlay | `absolute inset-0 pointer-events-none` (sopra ogni contenuto) | — |
 
 ## Files coinvolti
 

@@ -58,6 +58,8 @@ export interface PosteriumCtx {
   setGlobalBadges: React.Dispatch<React.SetStateAction<boolean>>
   rankingBadges: boolean
   setRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
+  customBadge: string | null
+  setCustomBadge: React.Dispatch<React.SetStateAction<string | null>>
   gradientColor: string
   setGradientColor: React.Dispatch<React.SetStateAction<string>>
   gradientOpacity: number
@@ -183,6 +185,7 @@ export function usePosterium(): PosteriumCtx {
 
   const [globalBadges, setGlobalBadges] = useState(true)
   const [rankingBadges, setRankingBadges] = useState(true)
+  const [customBadge, setCustomBadge] = useState<string | null>(null)
   const [gradientColor, setGradientColor] = useState("#000000")
   const [gradientOpacity, setGradientOpacity] = useState(1)
   const [gradientHeight, setGradientHeight] = useState(85)
@@ -476,7 +479,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`gradOpacity=${gradientOpacity}`)
     params.push(`gradHeight=${gradientHeight}`)
     params.push(`gradFade=${gradientFade}`)
-    params.push("rv=33")
+    params.push("rv=34")
     url += "?" + params.join("&")
     setUrlPattern(url)
   }, [globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, tmdbKey, lang])
@@ -527,17 +530,21 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       const tvType = selected?.media_type === "tv" ? metaInfo.type : null
       const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
       const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus })
-      const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra })
-      if (badge) {
-        if (badge.type === "extra") params.push(`extra=${encodeURIComponent(badge.label)}`)
-        else params.push(`rank=${badge.rank}&label=${encodeURIComponent(badge.rankLabel || badge.label)}`)
+      if (customBadge) {
+        params.push(`extra=${encodeURIComponent(customBadge)}`)
+      } else {
+        const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra })
+        if (badge) {
+          if (badge.type === "extra") params.push(`extra=${encodeURIComponent(badge.label)}`)
+          else params.push(`rank=${badge.rank}&label=${encodeURIComponent(badge.rankLabel || badge.label)}`)
+        }
       }
     }
     const v = Date.now()
     params.push(`v=${v}`)
     const qs = params.length > 0 ? "?" + params.join("&") : ""
     setPreviewUrl(`${getDomain()}/api/poster/${selected.media_type}/${selected.id}${qs}`)
-  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, trendRank, mdblistAnimeList])
+  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, trendRank, mdblistAnimeList, customBadge])
 
   useEffect(() => {
     if (!selected) { setPreviewUrl(""); return }
@@ -936,6 +943,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     editingValue, setEditingValue, editText, setEditText,
     globalBadges, setGlobalBadges,
     rankingBadges, setRankingBadges,
+    customBadge, setCustomBadge,
     gradientColor, setGradientColor,
     gradientOpacity, setGradientOpacity,
     gradientHeight, setGradientHeight,

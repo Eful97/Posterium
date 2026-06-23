@@ -161,7 +161,8 @@ export default function EditView() {
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
             const tvStatus = p.selected?.media_type === "tv" ? p.metaInfo.status : null
             const extra = computeExtraFallback({ mediaType: p.selected?.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus })
-            const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank, award, franchise: p.metaInfo.franchise || null, nomination, studio, director: p.metaInfo.director || null, extra })
+            const autoBadge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank, award, franchise: p.metaInfo.franchise || null, nomination, studio, director: p.metaInfo.director || null, extra })
+            const badge = p.customBadge ? { type: "extra" as const, label: p.customBadge } : autoBadge
             if (badge) {
               if (badge.type === "extra") return <div className="absolute inset-0"><ExtraBadge label={badge.label} topLight={topLight} containerW={previewDims.w} /></div>
               return <div className="absolute inset-0"><RankingBadge rank={badge.rank!} label={badge.rankLabel || badge.label} topLight={topLight} containerW={previewDims.w} /></div>
@@ -268,6 +269,17 @@ export default function EditView() {
       <div className="flex items-center justify-between px-1 mt-2">
         <span className="text-xs text-zinc-400">🏷️ Genere / Rating</span>
         <Toggle value={p.globalBadges} onChange={(v) => { p.setGlobalBadges(v); localStorage.setItem("global_badges", v ? "1" : "0") }} />
+      </div>
+      <div className="flex items-center justify-between px-1 mt-1.5">
+        <span className="text-xs text-zinc-500">📝 Badge custom</span>
+        {p.editingValue === "customBadge" ? (
+          <input autoFocus value={p.editText} onChange={(e) => p.setEditText(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => { const v = p.editText.trim(); p.setCustomBadge(v || null); p.setEditingValue(null) }} onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }} className="w-28 text-right text-xs bg-background border border-zinc-700 rounded px-1 py-0.5 outline-none focus:border-accent" placeholder="Auto" />
+        ) : (
+          <span onClick={() => { p.setEditText(p.customBadge || ""); p.setEditingValue("customBadge") }} className="text-xs text-zinc-300 cursor-pointer hover:text-accent transition-colors truncate max-w-[140px] text-right">{p.customBadge || <span className="text-zinc-500">Auto</span>}</span>
+        )}
+        {p.customBadge && p.editingValue !== "customBadge" && (
+          <button onClick={() => { p.setCustomBadge(null) }} className="text-xs text-red-400 hover:text-red-300 ml-1 shrink-0">✕</button>
+        )}
       </div>
       <div className="space-y-1 mt-2">
         <div className="flex items-center gap-2">

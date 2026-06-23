@@ -13,7 +13,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 40
+const RENDER_VERSION = 41
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -504,12 +504,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         // badge rendering failed, skip it
       }
     }
-
-    // White frame border
-    const borderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${ph}">
-      <rect x="1.5" y="1.5" width="${pw - 3}" height="${ph - 3}" rx="8" ry="8" fill="none" stroke="rgba(255,255,255,0.80)" stroke-width="3"/>
-    </svg>`
-    composites.push({ input: Buffer.from(borderSvg), top: 0, left: 0 })
 
     const composited = await sharp(posterBuf)
       .composite(composites)
