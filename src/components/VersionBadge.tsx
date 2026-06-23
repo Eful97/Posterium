@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useP } from "@/lib/context"
 
-const CURRENT_VERSION = "0.7.1"
+const CURRENT_VERSION = "0.8.0"
 const REPO = "Eful97/Posterium"
 const CHECK_TTL = 60 * 60 * 1000
 

@@ -22,8 +22,8 @@ Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispetti
 | Altezza badge | (flex naturale) | `svgH = max(round(finalFontSize * 1.6), 24)` |
 | Colori testo | `text-gray-200` (≈ `#e5e7eb`) | `#e5e7eb` |
 | Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` | `"0 4px 6px rgba(0,0,0,0.5)"` |
-| Overflow protection | `fs` ridotto se `fs * ((genreLen + voteLen) * 0.58 + 2.43) > containerW - 20` | Stessa formula con `pw - 20` |
-| Allineamento verticale | Flex baseline naturale | Bullet `translateY(5px)`, Stella `translateY(fs * 0.23)`, Voto `translateY(5px)` |
+| Overflow protection | `fs` ridotto se `fs * (totalLen * 0.58 + 2.43) > containerW - 20`<br>`totalLen = genreName.length + voteStr.length + (yearStr.length ? 1 + yearStr.length : 0)` | Stessa formula con `pw - 20` |
+| Allineamento verticale | Flex baseline naturale | Bullet `translateY(5px)`, Stella `translateY(fs * 0.23)`, Voto `translateY(5px)`, Anno `translateY(5px)` |
 
 ## Badge Ranking/Extra
 

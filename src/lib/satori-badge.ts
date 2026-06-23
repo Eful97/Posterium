@@ -183,11 +183,14 @@ export async function renderGenreBadge(
   genreName: string,
   voteAverage: number,
   pw: number,
+  year?: string,
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const voteStr = voteAverage.toFixed(1)
+  const yearStr = year || ""
   let finalFontSize = Math.round(24 * pw / 380)
   const maxBadgeW = pw - 20
-  const totalFactor = (genreName.length + voteStr.length) * 0.58 + 2.43
+  const totalLen = genreName.length + voteStr.length + (yearStr ? yearStr.length + 1 : 0)
+  const totalFactor = totalLen * 0.58 + 2.43
   if (finalFontSize * totalFactor > maxBadgeW) {
     finalFontSize = Math.round(maxBadgeW / totalFactor)
   }
@@ -199,9 +202,23 @@ export async function renderGenreBadge(
   const starW = Math.round(finalFontSize * 0.55)
   const genreW = Math.round(genreName.length * finalFontSize * 0.58)
   const voteW = Math.round(voteStr.length * finalFontSize * 0.58)
-  const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + pad * 2
+  const yearW = yearStr ? Math.round(yearStr.length * finalFontSize * 0.58) : 0
+  const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + (yearStr ? gap + bulletW + gap + yearW : 0) + pad * 2
   const svgH = Math.max(Math.round(finalFontSize * 1.6), 24)
   const m = Math.round(finalFontSize * 0.17)
+
+  const children: any[] = [
+    React.createElement("span", null, genreName),
+    React.createElement("span", { style: { transform: "translateY(5px)" } }, "\u2022"),
+    React.createElement("span", { style: { display: "flex", alignItems: "center" } },
+      React.createElement("span", { style: { marginRight: `${gapStar}px`, transform: `translateY(${Math.round(finalFontSize * 0.23)}px)` } }, "\u2605"),
+      React.createElement("span", { style: { transform: "translateY(5px)" } }, voteStr),
+    ),
+  ]
+  if (yearStr) {
+    children.push(React.createElement("span", { style: { transform: "translateY(5px)" } }, "\u2022"))
+    children.push(React.createElement("span", { style: { transform: "translateY(5px)" } }, yearStr))
+  }
 
   const el = React.createElement(
     "div",
@@ -220,23 +237,7 @@ export async function renderGenreBadge(
         textShadow: "0 4px 6px rgba(0,0,0,0.5)",
       },
     },
-    React.createElement("span", null, genreName),
-    React.createElement("span", {
-      style: { transform: "translateY(5px)" },
-    }, "\u2022"),
-    React.createElement("span", {
-      style: {
-        display: "flex",
-        alignItems: "center",
-      },
-    },
-      React.createElement("span", {
-        style: { marginRight: `${gapStar}px`, transform: `translateY(${Math.round(finalFontSize * 0.23)}px)` },
-      }, "\u2605"),
-      React.createElement("span", {
-        style: { transform: "translateY(5px)" },
-      }, voteStr),
-    ),
+    ...children,
   )
 
   const png = await render(el, totalW, svgH)

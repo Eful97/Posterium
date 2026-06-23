@@ -357,7 +357,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
       try {
-        const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw)
+        const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
+        const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year)
         const badgeY = ph - h - Math.round(20 * ph / 570)
         const badgeLeft = Math.round((pw - w) / 2)
         const pad = 40

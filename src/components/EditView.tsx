@@ -177,7 +177,7 @@ export default function EditView() {
             }
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientColor={p.gradientColor} gradientOpacity={p.gradientOpacity} gradientHeight={p.gradientHeight} gradientFade={p.gradientFade} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientColor={p.gradientColor} gradientOpacity={p.gradientOpacity} gradientHeight={p.gradientHeight} gradientFade={p.gradientFade} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
           <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
