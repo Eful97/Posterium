@@ -69,6 +69,8 @@ export interface PosteriumCtx {
   setGradientHeight: React.Dispatch<React.SetStateAction<number>>
   gradientFade: number
   setGradientFade: React.Dispatch<React.SetStateAction<number>>
+  gradientDir: string
+  setGradientDir: React.Dispatch<React.SetStateAction<string>>
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
   metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }
@@ -190,8 +192,9 @@ export function usePosterium(): PosteriumCtx {
   const [customBadge, setCustomBadge] = useState<string | null>(null)
   const [gradientColor, setGradientColor] = useState("#000000")
   const [gradientOpacity, setGradientOpacity] = useState(1)
-  const [gradientHeight, setGradientHeight] = useState(85)
+  const [gradientHeight, setGradientHeight] = useState(50)
   const [gradientFade, setGradientFade] = useState(10)
+  const [gradientDir, setGradientDir] = useState("up")
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
@@ -282,6 +285,8 @@ export function usePosterium(): PosteriumCtx {
     if (gh !== null) setGradientHeight(Number(gh))
     const gf = localStorage.getItem("gradient_fade")
     if (gf !== null) setGradientFade(Number(gf))
+    const gd = localStorage.getItem("gradient_dir")
+    if (gd !== null) setGradientDir(gd)
   }, [])
 
   const pickLang = (l: string) => {
@@ -482,10 +487,11 @@ export function usePosterium(): PosteriumCtx {
     params.push(`gradOpacity=${gradientOpacity}`)
     params.push(`gradHeight=${gradientHeight}`)
     params.push(`gradFade=${gradientFade}`)
+    params.push(`gradDir=${gradientDir}`)
     params.push("rv=36")
     url += "?" + params.join("&")
     setUrlPattern(url)
-  }, [globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, tmdbKey, lang])
+  }, [globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientDir, tmdbKey, lang])
 
 
   const buildPreviewUrl = useCallback(() => {
@@ -511,6 +517,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`gradOpacity=${gradientOpacity}`)
     params.push(`gradHeight=${gradientHeight}`)
     params.push(`gradFade=${gradientFade}`)
+    params.push(`gradDir=${gradientDir}`)
     if (rankingBadges) {
       const edgeLum = (() => {
         const h = topEdgeColor
@@ -957,6 +964,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     gradientOpacity, setGradientOpacity,
     gradientHeight, setGradientHeight,
     gradientFade, setGradientFade,
+    gradientDir, setGradientDir,
     trendRank,
     mdblistMatch,
     metaInfo,
@@ -986,7 +994,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     logos, posterActivePath, previewUrl, urlPattern, lang,
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
-    globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, trendRank, mdblistMatch, metaInfo, previewId,
+    globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientDir, trendRank, mdblistMatch, metaInfo, previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,

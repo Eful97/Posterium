@@ -177,7 +177,7 @@ export default function EditView() {
             }
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientColor={p.gradientColor} gradientOpacity={p.gradientOpacity} gradientHeight={p.gradientHeight} gradientFade={p.gradientFade} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientColor={p.gradientColor} gradientOpacity={p.gradientOpacity} gradientHeight={p.gradientHeight} gradientFade={p.gradientFade} gradientDir={p.gradientDir} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
           <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
@@ -337,8 +337,15 @@ export default function EditView() {
           </div>
         </div>
         <SliderRow icon="🎨" label={p.t("ui.opacity")} value={Math.round(p.gradientOpacity * 100)} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setGradientOpacity(v / 100); localStorage.setItem("gradient_opacity", String(v / 100)) }} onDoubleClick={() => { p.setGradientOpacity(1); localStorage.setItem("gradient_opacity", "1") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradOpacity" suffix="%" />
-        <SliderRow icon="📏" label={p.t("ui.height")} value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setGradientHeight(v); localStorage.setItem("gradient_height", String(v)) }} onDoubleClick={() => { p.setGradientHeight(85); localStorage.setItem("gradient_height", "85") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
+        <SliderRow icon="📏" label={p.t("ui.height")} value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setGradientHeight(v); localStorage.setItem("gradient_height", String(v)) }} onDoubleClick={() => { p.setGradientHeight(50); localStorage.setItem("gradient_height", "50") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
         <SliderRow icon="🌫️" label={p.t("ui.fade")} value={p.gradientFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setGradientFade(v); localStorage.setItem("gradient_fade", String(v)) }} onDoubleClick={() => { p.setGradientFade(10); localStorage.setItem("gradient_fade", "10") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradFade" suffix="%" />
+        <div className="flex items-center gap-2 pt-1">
+          <span className="text-sm text-zinc-400 w-6 shrink-0 text-center">↕️</span>
+          <div className="flex gap-1">
+            <button onClick={() => { p.setGradientDir("up"); localStorage.setItem("gradient_dir", "up") }} className={`px-2.5 py-1 text-xs rounded-lg transition-all ${p.gradientDir === "up" ? "bg-accent-orange/20 text-accent-orange" : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"}`}>↑ Basso</button>
+            <button onClick={() => { p.setGradientDir("down"); localStorage.setItem("gradient_dir", "down") }} className={`px-2.5 py-1 text-xs rounded-lg transition-all ${p.gradientDir === "down" ? "bg-accent-orange/20 text-accent-orange" : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"}`}>↓ Alto</button>
+          </div>
+        </div>
       </div>
     </div>
   )

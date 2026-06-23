@@ -349,11 +349,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qGradOpacity = req.nextUrl.searchParams.get("gradOpacity")
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qGradFade = req.nextUrl.searchParams.get("gradFade")
+    const qGradDir = req.nextUrl.searchParams.get("gradDir")
     const hasQuery = !!queryPoster || !!mapping
     const badgesEnabled = hasQuery ? qBadges !== "0" && showBadges : true
     const rankingEnabled = hasQuery ? qRanking !== "0" && showBadges : true
     const s = ph / 1500
-    const { svg: gradSvg, top: gradTop, height: gradH } = bottomGradientSVG(pw, ph, qGradColor || undefined, qGradOpacity ? Number(qGradOpacity) : undefined, qGradHeight ? Number(qGradHeight) : undefined, qGradFade ? Number(qGradFade) : undefined)
+    const { svg: gradSvg, top: gradTop, height: gradH } = bottomGradientSVG(pw, ph, qGradColor || undefined, qGradOpacity ? Number(qGradOpacity) : undefined, qGradHeight ? Number(qGradHeight) : undefined, qGradFade ? Number(qGradFade) : undefined, qGradDir || undefined)
 
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
       try {

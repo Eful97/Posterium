@@ -45,6 +45,8 @@ Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispetti
 |---|---|---|
 | Altezza | `height: gradientHeight%`, `minHeight: 100 * containerH / 570` | `gh = max(round(ph * pct / 100), 100)` |
 | Colore | `gradientColor` → `rgba(r,g,b,gradientOpacity)` | `color` + `opacity` |
+| Direzione | `dirCSS = gradientDir === "down" ? "to bottom" : "to top"` | `y1 = dir === "up" ? "0" : "1"`, `y2 = dir === "up" ? "1" : "0"` |
+| Posizione | `posClass = gradientDir === "down" ? "top-0" : "bottom-0"` | `top = dir === "up" ? ph - gh : 0` |
 | Fade (client: bottom→top) | `0% opaco → gf% opaco → fadeEnd% trasp → 100% trasp` <br>`gf = min(gradientFade, 100)`, `fadeEnd = min(gf + 20, 100)` | `0% trasp → svgFadeEnd% trasp → svgSolidPct% opaco → 100% opaco` <br>`svgSolidPct = 100 - cappedFade`, `svgFadeEnd = max(100 - min(cappedFade + 20, 100), 0)` |
 | Note | Gradiente CSS `to top` (0% = bottom) | Gradiente SVG `y1=0 y2=1` (0% = top) — valori invertiti |
 | Posizione badge genere | `bottom: 20 * containerH / 570 + bottomOffset` | `badgeY = ph - h - round(20 * ph / 570)` |
@@ -59,6 +61,7 @@ Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispetti
 | `gradOpacity` | `gradientOpacity` | `qGradOpacity` |
 | `gradHeight` | `gradientHeight` | `qGradHeight` |
 | `gradFade` | `gradientFade` | `qGradFade` |
+| `gradDir` | `gradientDir` | `qGradDir` — "up" o "down" |
 | `tl` | `topLight ? "1" : "0"` (se rankingBadges attivi) | `qTopLight` — override se presente |
 | `rank` | `badge.rank` (se rankingBadges attivi) | `qRank` — override del ranking |
 | `label` | `badge.rankLabel \|\| badge.label` | `qLabel` — override label ranking |
