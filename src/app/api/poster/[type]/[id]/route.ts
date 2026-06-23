@@ -14,7 +14,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 41
+const RENDER_VERSION = 42
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -34,10 +34,10 @@ async function fetchImg(url: string) {
 
 function imgSrc(path: string): string {
   if (path.startsWith("http")) {
-    if (!path.startsWith(TMDB_IMG_HOST)) return `${IMG_BASE}/w780${path}`
+    if (!path.startsWith(TMDB_IMG_HOST)) return `${IMG_BASE}/w500${path}`
     return path
   }
-  return `${IMG_BASE}/w780${path}`
+  return `${IMG_BASE}/w500${path}`
 }
 
 function etagHeaders(etag: string) {

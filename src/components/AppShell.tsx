@@ -23,7 +23,7 @@ export function AppShell() {
         <div
           className="fixed inset-0 -z-10 bg-cover bg-center transition-all duration-700"
           style={{
-            backgroundImage: `url(${p.posterUrl(p.previewPoster.file_path, "w780")})`,
+            backgroundImage: `url(${p.posterUrl(p.previewPoster.file_path, "w342")})`,
             filter: "blur(80px)",
             opacity: 0.15,
           }}

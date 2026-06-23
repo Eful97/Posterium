@@ -482,7 +482,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`gradOpacity=${gradientOpacity}`)
     params.push(`gradHeight=${gradientHeight}`)
     params.push(`gradFade=${gradientFade}`)
-    params.push("rv=34")
+    params.push("rv=35")
     url += "?" + params.join("&")
     setUrlPattern(url)
   }, [globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, tmdbKey, lang])

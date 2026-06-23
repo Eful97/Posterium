@@ -81,7 +81,7 @@ export default function EditView() {
       <h3 className="text-base font-semibold text-zinc-200 mb-3 text-center">{p.t("ui.previewSection")}</h3>
       <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
         <div ref={previewRef} className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
-          {p.previewPoster && !imageError && <img src={p.posterUrl(p.previewPoster.file_path, "w500")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onError={() => setImageError(true)} />}
+          {p.previewPoster && !imageError && <img src={p.posterUrl(p.previewPoster.file_path, "w342")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onError={() => setImageError(true)} />}
           {imageError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 text-center p-8">
               <span className="text-4xl mb-3">🖼️</span>
