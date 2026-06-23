@@ -9,6 +9,7 @@ import { bottomGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
+import { createT } from "@/lib/i18n"
 import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
@@ -102,6 +103,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const queryGenre = req.nextUrl.searchParams.get("genreName")
   const queryVote = req.nextUrl.searchParams.get("voteAverage")
   const mapping = await getById(mediaType, tmdbId)
+
+  const t = createT(req.nextUrl.searchParams.get("lang") || mapping?.language || "it")
 
   if (queryPoster) {
     posterPath = queryPoster
@@ -216,7 +219,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         } catch { return Promise.resolve(null) }
       })(),
     ])
-    const wikidataPromise = fetchAllWikidata(tmdbId, mediaType).catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }))
+    const wikidataPromise = fetchAllWikidata(tmdbId, mediaType, t).catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }))
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
@@ -462,9 +465,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>((resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), 3000))
     ])
 
-    const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards) : null
+    const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards, t) : null
     const studioBadge = tmdbStudios.length ? tmdbStudios[0] : wikidataResult.studios.length ? wikidataResult.studios[0] : null
-    const extraFallback = computeExtraFallback({ mediaType: mediaType as "movie" | "tv", voteAverage: voteAverage ?? 0, tvType, tvStatus })
+    const extraFallback = computeExtraFallback({ mediaType: mediaType as "movie" | "tv", voteAverage: voteAverage ?? 0, tvType, tvStatus }, t)
     const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
 
     const topBadge = (() => {
@@ -477,11 +480,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         trendRank: finalRank,
         award: awardBadge,
         franchise: wikidataResult.franchise,
-        nomination: wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations) : null,
+        nomination: wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations, t) : null,
         studio: studioBadge,
         director: wikidataResult.director,
         extra: extraFallback,
-      })
+      }, t)
       if (badge) {
         if (badge.type === "extra") return { type: "extra" as const, label: badge.label }
         return { type: "rank" as const, rank: badge.rank!, label: qLabel || badge.rankLabel || badge.label }

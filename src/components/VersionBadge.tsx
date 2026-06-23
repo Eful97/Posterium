@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useP } from "@/lib/context"
 
 const CURRENT_VERSION = "0.5.9"
 const REPO = "Eful97/Posterium"
@@ -42,6 +43,7 @@ async function getLatestVersion(force = false): Promise<string | null> {
 }
 
 export function VersionBadge() {
+  const p = useP()
   const [updateTag, setUpdateTag] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
 
@@ -65,7 +67,7 @@ export function VersionBadge() {
       <span className="text-xs text-zinc-400 font-mono bg-black/40 backdrop-blur-sm px-2 py-1 rounded-lg">v{CURRENT_VERSION}</span>
       <button
         onClick={handleCheck}
-        title="Controlla aggiornamenti"
+        title={p.t("ui.checkUpdates")}
         className={`text-xs text-zinc-500 hover:text-accent active:scale-90 transition-all duration-150 ${checking ? "animate-spin" : ""}`}
       >
         ↻
@@ -77,7 +79,7 @@ export function VersionBadge() {
           rel="noopener noreferrer"
           className="text-xs font-semibold bg-accent-orange text-white hover:bg-accent-orange/90 px-2 py-1 rounded-lg transition-all duration-150 shadow-lg shadow-accent-orange/25"
         >
-          v{updateTag} disponibile
+          {p.t("ui.updateAvailable", { version: updateTag })}
         </a>
       )}
     </div>

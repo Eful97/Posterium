@@ -1,5 +1,7 @@
 "use client"
 
+import { useP } from "@/lib/context"
+
 export function ConfirmDialog({
   open,
   title,
@@ -19,6 +21,7 @@ export function ConfirmDialog({
   onCancel: () => void
   inline?: boolean
 }) {
+  const p = useP()
   if (!open) return null
   if (inline) {
     return (
@@ -28,7 +31,7 @@ export function ConfirmDialog({
         <h3 className="text-sm font-semibold text-zinc-100 mb-2">{title}</h3>
         <p className="text-xs text-zinc-300 mb-4">{message}</p>
         <div className="flex gap-2 justify-end">
-          <button onClick={onCancel} className="px-3 py-1.5 rounded-xl text-xs font-medium bg-zinc-700 text-zinc-200 hover:bg-zinc-600 active:scale-[0.97] transition-all duration-150">Annulla</button>
+          <button onClick={onCancel} className="px-3 py-1.5 rounded-xl text-xs font-medium bg-zinc-700 text-zinc-200 hover:bg-zinc-600 active:scale-[0.97] transition-all duration-150">{p.t("ui.cancelAction")}</button>
           <button onClick={onConfirm} className={`px-3 py-1.5 rounded-xl text-xs font-medium active:scale-[0.97] transition-all duration-150 ${confirmClass || "bg-red-600 text-white hover:bg-red-500"}`}>{confirmLabel}</button>
         </div>
         </div>
@@ -51,7 +54,7 @@ export function ConfirmDialog({
             onClick={onCancel}
             className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-700 text-zinc-200 hover:bg-zinc-600 active:scale-[0.97] transition-all duration-150"
           >
-            Annulla
+            {p.t("ui.cancelAction")}
           </button>
           <button
             onClick={onConfirm}

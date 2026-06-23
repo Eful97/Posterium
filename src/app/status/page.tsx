@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
+import { t } from "@/lib/i18n"
 
 interface CheckResult {
   ok: boolean
@@ -67,53 +68,53 @@ export default function StatusPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-accent transition-colors mb-6">← Torna alla home</Link>
-        <h1 className="text-2xl font-bold mb-1">🏥 Stato servizi</h1>
-        {loading && <p className="text-zinc-400 mt-4">Caricamento...</p>}
-        {error && <p className="text-red-400 mt-4">Errore: {error}</p>}
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-accent transition-colors mb-6">{t("ui.statusBack")}</Link>
+        <h1 className="text-2xl font-bold mb-1">{t("ui.statusTitle")}</h1>
+        {loading && <p className="text-zinc-400 mt-4">{t("ui.statusLoading")}</p>}
+        {error && <p className="text-red-400 mt-4">{t("ui.statusError", { msg: error })}</p>}
         {data && (
           <div className="mt-6 space-y-6">
             <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <StatusBadge ok={data.tmdb.apiKey} />
-                <h2 className="text-base font-semibold">TMDB</h2>
+                <h2 className="text-base font-semibold">{t("ui.statusTmdb")}</h2>
                 {data.tmdb.apiKey && <span className="text-xs text-zinc-400">({data.tmdb.apiKeyLength} caratteri)</span>}
               </div>
               <div className="space-y-1">
-                <StatusRow label="Trending" ok={data.tmdb.trending.ok} extra={<>{data.tmdb.trending.status} — {data.tmdb.trending.time}ms</>} />
-                <StatusRow label="Ricerca" ok={data.tmdb.search.ok} extra={<>{data.tmdb.search.status} — {data.tmdb.search.time}ms</>} />
-                <StatusRow label="Popolari" ok={data.tmdb.popular.ok} extra={<>{data.tmdb.popular.status} — {data.tmdb.popular.time}ms</>} />
-                <StatusRow label="External IDs" ok={data.tmdb.externalIds.ok} extra={<>{data.tmdb.externalIds.status} — {data.tmdb.externalIds.time}ms</>} />
+                <StatusRow label={t("ui.statusTrending")} ok={data.tmdb.trending.ok} extra={<>{data.tmdb.trending.status} — {data.tmdb.trending.time}ms</>} />
+                <StatusRow label={t("ui.statusSearch")} ok={data.tmdb.search.ok} extra={<>{data.tmdb.search.status} — {data.tmdb.search.time}ms</>} />
+                <StatusRow label={t("ui.statusPopular")} ok={data.tmdb.popular.ok} extra={<>{data.tmdb.popular.status} — {data.tmdb.popular.time}ms</>} />
+                <StatusRow label={t("ui.statusExternalIds")} ok={data.tmdb.externalIds.ok} extra={<>{data.tmdb.externalIds.status} — {data.tmdb.externalIds.time}ms</>} />
               </div>
             </div>
 
             <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
-              <h2 className="text-base font-semibold mb-3">📺 Streaming</h2>
+              <h2 className="text-base font-semibold mb-3">{t("ui.statusStreaming")}</h2>
               <div className="space-y-1">
-                <StatusRow label="JustWatch" ok={data.streaming.justwatch.ok} extra={<>{data.streaming.justwatch.status} — {data.streaming.justwatch.time}ms</>} />
-                <StatusRow label="FlixPatrol" ok={data.streaming.flixpatrol.ok} extra={<>{data.streaming.flixpatrol.status} — {data.streaming.flixpatrol.time}ms</>} />
+                <StatusRow label={t("ui.statusJustwatch")} ok={data.streaming.justwatch.ok} extra={<>{data.streaming.justwatch.status} — {data.streaming.justwatch.time}ms</>} />
+                <StatusRow label={t("ui.statusFlixpatrol")} ok={data.streaming.flixpatrol.ok} extra={<>{data.streaming.flixpatrol.status} — {data.streaming.flixpatrol.time}ms</>} />
               </div>
             </div>
 
             <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
-              <h2 className="text-base font-semibold mb-3">💾 Storage</h2>
+              <h2 className="text-base font-semibold mb-3">{t("ui.statusStorage")}</h2>
               <div className="space-y-1">
-                <StatusRow label="File dati" ok={data.storage.dataFileExists} extra={data.storage.dataFileExists ? "mappings.json" : "non trovato"} />
-                <StatusRow label="Poster salvati" ok={data.storage.mappingsCount > 0 || !data.storage.dataFileExists} extra={<>{data.storage.mappingsCount} poster</>} />
+                <StatusRow label={t("ui.statusDataFile")} ok={data.storage.dataFileExists} extra={data.storage.dataFileExists ? t("ui.statusDataFileName") : t("ui.statusNotFound")} />
+                <StatusRow label={t("ui.statusSavedPosters")} ok={data.storage.mappingsCount > 0 || !data.storage.dataFileExists} extra={<>{t("ui.statusPosterCount", { count: data.storage.mappingsCount })}</>} />
               </div>
             </div>
 
             <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
-              <h2 className="text-base font-semibold mb-3">⚙️ Sistema</h2>
+              <h2 className="text-base font-semibold mb-3">{t("ui.statusSystem")}</h2>
               <div className="space-y-1">
-                <StatusRow label="Node.js" ok extra={<>{data.system.node}</>} />
-                <StatusRow label="Piattaforma" ok extra={<>{data.system.platform}</>} />
-                <StatusRow label="Ambiente" ok extra={<>{data.system.env}</>} />
-                <StatusRow label="Stato generale" ok={data.status === "healthy"} extra={data.status === "healthy" ? "✅ Tutto ok" : "⚠️ Degradato"} />
+                <StatusRow label={t("ui.statusNode")} ok extra={<>{data.system.node}</>} />
+                <StatusRow label={t("ui.statusPlatform")} ok extra={<>{data.system.platform}</>} />
+                <StatusRow label={t("ui.statusEnvironment")} ok extra={<>{data.system.env}</>} />
+                <StatusRow label={t("ui.statusOverall")} ok={data.status === "healthy"} extra={data.status === "healthy" ? t("ui.statusHealthy") : t("ui.statusDegraded")} />
               </div>
             </div>
 
-            <p className="text-xs text-zinc-500 text-center">Ultimo aggiornamento: {new Date(data.timestamp).toLocaleString("it-IT")}</p>
+            <p className="text-xs text-zinc-500 text-center">{t("ui.statusUpdated", { time: new Date(data.timestamp).toLocaleString("it-IT") })}</p>
           </div>
         )}
       </div>

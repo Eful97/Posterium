@@ -53,4 +53,5 @@ export interface Mapping {
   voteAverage?: number
   trendRank?: number
   trendPeriod?: string
+  customBadge?: string | null
 }

@@ -3,6 +3,7 @@
 import React from "react"
 import type { TMDBImage } from "@/lib/types"
 import { posterUrl } from "@/lib/utils"
+import { useP } from "@/lib/context"
 
 interface Props {
   img: TMDBImage
@@ -20,6 +21,7 @@ interface PosterBtnProps {
 }
 
 export const PosterBtn = React.memo(function PosterBtn({ img, active, onSelect, title, staggerIndex }: PosterBtnProps) {
+  const p = useP()
   return (
     <button
       onClick={() => onSelect(img)}
@@ -35,7 +37,7 @@ export const PosterBtn = React.memo(function PosterBtn({ img, active, onSelect, 
             <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-accent-orange rounded-full flex items-center justify-center shadow-lg shadow-accent-orange/40">
               <span className="text-[8px] font-bold text-white">✓</span>
             </div>
-            <span className="absolute bottom-0 left-0 right-0 text-[8px] font-semibold text-accent-orange text-center py-0.5 bg-accent-orange/15 backdrop-blur-sm">Selezionato</span>
+            <span className="absolute bottom-0 left-0 right-0 text-[8px] font-semibold text-accent-orange text-center py-0.5 bg-accent-orange/15 backdrop-blur-sm">{p.t("ui.selected")}</span>
           </>
         )}
         {!active && <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-white/5 transition-opacity duration-300" />}

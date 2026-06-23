@@ -2,6 +2,7 @@
 
 import type { TMDBImage } from "@/lib/types"
 import { LANG_NAMES, groupBy, limitBest, posterUrl } from "@/lib/utils"
+import { useP } from "@/lib/context"
 
 interface Props {
   logos: TMDBImage[]
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo, disabled }: Props) {
+  const p = useP()
   if (logos.length === 0) return (
     <div className="grid grid-cols-2 gap-2">
       {[1, 2, 3, 4].map((i) => (
@@ -42,7 +44,7 @@ export function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo,
               {best.map((img, i) => {
                 const isActive = selectedLogo?.file_path === img.file_path
                 return (
-                  <button key={img.file_path} disabled={disabled} onClick={() => selectLogo(img)} className={`group relative p-2 bg-black/40 backdrop-blur-sm rounded-xl border-2 transition-all duration-200 ease-out flex items-center justify-center h-20 shadow-md ${disabled ? "opacity-40 cursor-not-allowed" : "hover:shadow-accent/20 hover:scale-[1.02]"} ${isActive ? "border-accent-orange border-[3px] bg-accent-orange/15 shadow-[0_0_15px_var(--color-accent-orange)] ring-2 ring-accent-orange/25" : "border-zinc-700 hover:border-accent/50 hover:shadow-lg"}`} title={isActive ? "Logo selezionato" : undefined}>
+                  <button key={img.file_path} disabled={disabled} onClick={() => selectLogo(img)} className={`group relative p-2 bg-black/40 backdrop-blur-sm rounded-xl border-2 transition-all duration-200 ease-out flex items-center justify-center h-20 shadow-md ${disabled ? "opacity-40 cursor-not-allowed" : "hover:shadow-accent/20 hover:scale-[1.02]"} ${isActive ? "border-accent-orange border-[3px] bg-accent-orange/15 shadow-[0_0_15px_var(--color-accent-orange)] ring-2 ring-accent-orange/25" : "border-zinc-700 hover:border-accent/50 hover:shadow-lg"}`} title={isActive ? p.t("ui.logoSelected") : undefined}>
                     <img src={posterUrl(img.file_path, "w154")} alt="" loading="lazy" decoding="async" className="max-h-14 max-w-full object-contain transition-transform duration-200 group-hover:scale-110" />
                     {isActive && <div className="absolute top-1 right-1 w-5 h-5 bg-accent-orange rounded-full flex items-center justify-center shadow-lg shadow-accent-orange/30"><span className="text-[10px] font-bold text-white">✓</span></div>}
                   </button>
@@ -52,7 +54,7 @@ export function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo,
           </div>
         )
       })}
-      {selectedLogo && <button disabled={disabled} onClick={removeLogo} className={`w-full mt-2 py-2 rounded-lg text-sm font-medium ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed" : "bg-red-900/30 text-red-400 hover:bg-red-900/50 active:scale-[0.98]"} transition-all duration-150 border border-red-900/50`}>Rimuovi logo</button>}
+      {selectedLogo && <button disabled={disabled} onClick={removeLogo} className={`w-full mt-2 py-2 rounded-lg text-sm font-medium ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed" : "bg-red-900/30 text-red-400 hover:bg-red-900/50 active:scale-[0.98]"} transition-all duration-150 border border-red-900/50`}>{p.t("ui.removeLogo")}</button>}
     </div>
   )
 }

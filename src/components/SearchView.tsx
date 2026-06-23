@@ -6,7 +6,7 @@ import { posterUrl, titleOf, yearOf } from "@/lib/utils"
 import { SearchBar } from "@/components/SearchBar"
 
 export function SearchView() {
-  const { tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappingsMap, setQuery, doSearch, loadMore, navigateToPoster, removeRecentSearch } = useP()
+  const { t, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappingsMap, setQuery, doSearch, loadMore, navigateToPoster, removeRecentSearch } = useP()
   const [searchFocused, setSearchFocused] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -31,7 +31,7 @@ export function SearchView() {
         <SearchBar tmdbKey={tmdbKey} value={query} onChange={setQuery} onSearch={(q) => { setQuery(q); doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
         {showRecent && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
-            <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">Ricerche recenti</p>
+            <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
             {recentSearches.map((s) => (
               <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { setQuery(s); doSearch(s); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
                 <span className="text-zinc-500 shrink-0">🕐</span>
@@ -45,7 +45,7 @@ export function SearchView() {
 
       {results.length > 0 && (
         <div className="relative animate-fade-scale-in">
-          {searching && <div className="absolute inset-0 bg-background/60 backdrop-blur-sm z-20 rounded-2xl flex items-center justify-center"><p className="text-sm text-zinc-400 animate-pulse">Ricerca in corso...</p></div>}
+          {searching && <div className="absolute inset-0 bg-background/60 backdrop-blur-sm z-20 rounded-2xl flex items-center justify-center"><p className="text-sm text-zinc-400 animate-pulse">{t("ui.searching")}</p></div>}
           <div className="mx-auto grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] lg:grid-cols-5 gap-3 sm:gap-4 max-w-7xl justify-items-center">
           {results.map((r) => {
             const mapping = mappingsMap.get(`${r.media_type}:${r.id}`)
@@ -56,9 +56,9 @@ export function SearchView() {
                 </div>
                 <div className="px-2 py-2.5 text-center">
                   <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{titleOf(r)}</p>
-                  <p className="text-xs text-zinc-400 mt-0.5">{yearOf(r)} {r.media_type === "tv" ? "• TV" : ""}</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">{yearOf(r)} {r.media_type === "tv" ? t("ui.mediaTv") : ""}</p>
                 </div>
-                {mapping && <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-accent-orange flex items-center justify-center text-[10px] font-bold text-black shadow-lg shadow-accent-orange/30" title="Custom poster set">✓</div>}
+                {mapping && <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-accent-orange flex items-center justify-center text-[10px] font-bold text-black shadow-lg shadow-accent-orange/30" title={t("ui.customPosterSet")}>✓</div>}
                 {mapping && <div className="absolute inset-0 bg-accent-orange/10 border border-accent-orange/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl pointer-events-none" />}
               </button>
             )
@@ -67,14 +67,14 @@ export function SearchView() {
           {searchPage < totalPages && (
             <div className="flex justify-center mt-6">
               <button disabled={loadingMore || searching} onClick={handleLoadMore} className="px-6 py-3 rounded-xl text-sm font-medium bg-zinc-800 border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
-                {loadingMore ? "Caricamento..." : "Mostra più risultati"}
+                {loadingMore ? t("ui.loading") : t("ui.showMore")}
               </button>
             </div>
           )}
         </div>
       )}
-      {!tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">Inserisci la chiave TMDB in ⚙️ per cercare</p>}
-      {results.length === 0 && !searching && !showRecent && query.length >= 2 && tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">Nessun risultato trovato</p>}
+      {!tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">{t("ui.noKey")}</p>}
+      {results.length === 0 && !searching && !showRecent && query.length >= 2 && tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">{t("ui.noResults")}</p>}
     </div>
   )
 }

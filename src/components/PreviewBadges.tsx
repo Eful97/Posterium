@@ -1,6 +1,10 @@
 "use client"
 
-export function RankingBadge({ rank = "13", label = "Oggi", topLight, containerW = 380 }: { rank?: number | string; label?: string; topLight?: boolean; containerW?: number }) {
+import { useP } from "@/lib/context"
+
+export function RankingBadge({ rank = "13", label: labelProp, topLight, containerW = 380 }: { rank?: number | string; label?: string; topLight?: boolean; containerW?: number }) {
+  const p = useP()
+  const label = labelProp ?? p.t("ui.today") ?? "Oggi"
   const base = 23 * containerW / 380
   const textLen = String(rank).length + label.length
   const maxBadgeW = containerW - 20

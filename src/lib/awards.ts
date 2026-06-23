@@ -141,30 +141,30 @@ const DIRECTORS = [
   "Max Ophüls",
 ]
 
-function matchDirector(name: string | null): string | null {
+function matchDirector(name: string | null, t?: (key: string, params?: Record<string, string | number>) => string): string | null {
   if (!name) return null
   const lower = name.toLowerCase().trim()
   for (const d of DIRECTORS) {
     if (lower === d.toLowerCase() || lower.includes(d.toLowerCase()) || d.toLowerCase().includes(lower)) {
-      return `Di ${d}`
+      return t ? t("badge.director", { name: d }) : `Di ${d}`
     }
   }
   return null
 }
 
-function categorizeBasedOn(label: string): string | null {
+function categorizeBasedOn(label: string, t?: (key: string, params?: Record<string, string | number>) => string): string | null {
   const lower = label.toLowerCase()
-  if (/novel|book|romanzo|novella/.test(lower)) return "Dal romanzo"
-  if (/comic|graphic novel|manga|fumetto|graphic/.test(lower)) return "Dal fumetto"
-  if (/video game|videogame|videogioco/.test(lower)) return "Dal videogioco"
-  if (/true story|memoir|biography|autobiography|based on actual events|real life/.test(lower)) return "Tratto da una storia vera"
-  if (/short story|tale|fairy tale|fiaba|folklore|legend|myth/.test(lower)) return "Da un racconto"
-  if (/play|theatre|theater|musical|opera/.test(lower)) return "Dal teatro"
-  if (/poem|poetry|poesia/.test(lower)) return "Dalla poesia"
-  return "Tratto da"
+  if (/novel|book|romanzo|novella/.test(lower)) return t ? t("badge.basedOn.novel") : "Dal romanzo"
+  if (/comic|graphic novel|manga|fumetto|graphic/.test(lower)) return t ? t("badge.basedOn.comic") : "Dal fumetto"
+  if (/video game|videogame|videogioco/.test(lower)) return t ? t("badge.basedOn.videogame") : "Dal videogioco"
+  if (/true story|memoir|biography|autobiography|based on actual events|real life/.test(lower)) return t ? t("badge.basedOn.trueStory") : "Tratto da una storia vera"
+  if (/short story|tale|fairy tale|fiaba|folklore|legend|myth/.test(lower)) return t ? t("badge.basedOn.story") : "Da un racconto"
+  if (/play|theatre|theater|musical|opera/.test(lower)) return t ? t("badge.basedOn.theater") : "Dal teatro"
+  if (/poem|poetry|poesia/.test(lower)) return t ? t("badge.basedOn.poetry") : "Dalla poesia"
+  return t ? t("badge.basedOn.fallback") : "Tratto da"
 }
 
-export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"): Promise<WikidataResult> {
+export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv", t?: (key: string, params?: Record<string, string | number>) => string): Promise<WikidataResult> {
   const cacheKey = `${mediaType}:${tmdbId}`
   const cached = CACHE.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data
@@ -202,10 +202,10 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
 
     const franchise = matchFranchise([...franchiseLabels])
     const rawBasedOn = [...basedOnLabels][0]
-    const basedOn = rawBasedOn ? categorizeBasedOn(rawBasedOn) : null
+    const basedOn = rawBasedOn ? categorizeBasedOn(rawBasedOn, t) : null
 
     const director = [...directorLabels][0] || null
-    const directorBadge = matchDirector(director)
+    const directorBadge = matchDirector(director, t)
 
     const result: WikidataResult = {
       awards: matchRules([...awardLabels]),
@@ -229,18 +229,18 @@ export async function fetchAwards(tmdbId: number, mediaType: "movie" | "tv"): Pr
   return data.awards
 }
 
-export function getAwardBadgeLabel(awards: string[]): string | null {
+export function getAwardBadgeLabel(awards: string[], t?: (key: string, params?: Record<string, string | number>) => string): string | null {
   const priority = ["Oscar", "Cannes", "Venezia", "BAFTA", "Golden Globe", "Emmy", "David"]
   for (const a of priority) {
-    if (awards.includes(a)) return `Vincitore ${a}`
+    if (awards.includes(a)) return t ? t("badge.winner", { name: t(`award.${a.toLowerCase().replace(/ /g, "_")}`) }) : `Vincitore ${a}`
   }
   return null
 }
 
-export function getNominationBadgeLabel(nominations: string[]): string | null {
+export function getNominationBadgeLabel(nominations: string[], t?: (key: string, params?: Record<string, string | number>) => string): string | null {
   const priority = ["Oscar", "Cannes", "Venezia", "BAFTA", "Golden Globe", "Emmy", "David"]
   for (const a of priority) {
-    if (nominations.includes(a)) return `Candidato ${a}`
+    if (nominations.includes(a)) return t ? t("badge.nominee", { name: t(`award.${a.toLowerCase().replace(/ /g, "_")}`) }) : `Candidato ${a}`
   }
   return null
 }

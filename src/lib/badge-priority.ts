@@ -1,9 +1,15 @@
+import { BADGE_KEY_PREFIX } from "./i18n"
+
 export interface BadgeResult {
   type: "extra" | "rank"
   label: string
   rank?: number
   rankLabel?: string
 }
+
+type T = (key: string, params?: Record<string, string | number>) => string
+
+const _idT: T = (k) => k
 
 export function computeBadge(params: {
   isNewMovie: boolean
@@ -16,11 +22,12 @@ export function computeBadge(params: {
   studio: string | null
   director: string | null
   extra: string | null
-}): BadgeResult | null {
-  if (params.isNewMovie) return { type: "extra", label: "Nuovo film" }
-  if (params.isNewSeries) return { type: "extra", label: "Nuova serie" }
-  if (params.animeRank) return { type: "rank", label: "Anime", rank: params.animeRank }
-  if (params.trendRank) return { type: "rank", label: "Oggi", rank: params.trendRank }
+}, _t?: T): BadgeResult | null {
+  const t = _t || _idT
+  if (params.isNewMovie) return { type: "extra", label: t("badge.newMovie") }
+  if (params.isNewSeries) return { type: "extra", label: t("badge.newSeries") }
+  if (params.animeRank) return { type: "rank", label: t("badge.anime"), rank: params.animeRank }
+  if (params.trendRank) return { type: "rank", label: t("badge.today"), rank: params.trendRank }
   if (params.award) return { type: "extra", label: params.award }
   if (params.franchise) return { type: "extra", label: params.franchise }
   if (params.nomination) return { type: "extra", label: params.nomination }
@@ -35,14 +42,19 @@ export function computeExtraFallback(params: {
   voteAverage: number
   tvType: string | null | undefined
   tvStatus: string | null | undefined
-}): string | null {
+}, _t?: T): string | null {
+  const t = _t || _idT
   if (params.mediaType === "movie") {
-    return params.voteAverage >= 8.5 ? "Il più votato" : null
+    return params.voteAverage >= 8.5 ? t("badge.topRated") : null
   }
-  if (params.tvType === "Miniseries") return "Miniserie"
-  if (params.tvStatus === "Returning Series") return "Ritorna"
-  if (params.voteAverage >= 8.5) return "Da divorare"
+  if (params.tvType === "Miniseries") return t("badge.miniseries")
+  if (params.tvStatus === "Returning Series") return t("badge.returning")
+  if (params.voteAverage >= 8.5) return t("badge.bingeWorthy")
   return null
+}
+
+function keyed(key: string): string {
+  return `${BADGE_KEY_PREFIX}${key}`
 }
 
 export function getAllBadgeOptions(params: {
@@ -62,21 +74,21 @@ export function getAllBadgeOptions(params: {
   tvStatus: string | null | undefined
 }): string[] {
   const options = new Set<string>()
-  if (params.isNewMovie) options.add("Nuovo film")
-  if (params.isNewSeries) options.add("Nuova serie")
-  if (params.trendRank) options.add("Oggi")
-  if (params.animeRank) options.add("Anime")
+  if (params.isNewMovie) options.add(keyed("badge.newMovie"))
+  if (params.isNewSeries) options.add(keyed("badge.newSeries"))
+  if (params.trendRank) options.add(keyed("badge.today"))
+  if (params.animeRank) options.add(keyed("badge.anime"))
   if (params.award) options.add(params.award)
   if (params.franchise) options.add(params.franchise)
   if (params.nomination) options.add(params.nomination)
   if (params.studio) options.add(params.studio)
   if (params.director) options.add(params.director)
   if (params.extra) options.add(params.extra)
-  if (params.mediaType === "movie" && params.voteAverage >= 8.5) options.add("Il più votato")
+  if (params.mediaType === "movie" && params.voteAverage >= 8.5) options.add(keyed("badge.topRated"))
   if (params.mediaType === "tv") {
-    if (params.tvType === "Miniseries") options.add("Miniserie")
-    if (params.tvStatus === "Returning Series") options.add("Ritorna")
-    if (params.voteAverage >= 8.5) options.add("Da divorare")
+    if (params.tvType === "Miniseries") options.add(keyed("badge.miniseries"))
+    if (params.tvStatus === "Returning Series") options.add(keyed("badge.returning"))
+    if (params.voteAverage >= 8.5) options.add(keyed("badge.bingeWorthy"))
   }
   options.delete("")
   return [...options]

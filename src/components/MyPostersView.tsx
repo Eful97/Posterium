@@ -6,7 +6,8 @@ import { posterUrl, LANG_NAMES } from "@/lib/utils"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 
 export function MyPostersView() {
-  const { mappings, goHome, navigateToPoster, removeMapping } = useP()
+  const p = useP()
+  const { mappings, goHome, navigateToPoster, removeMapping } = p
   const [filter, setFilter] = useState("")
   const [typeFilter, setTypeFilter] = useState<"all" | "movie" | "tv" | "anime">("all")
   const [selectMode, setSelectMode] = useState(false)
@@ -80,47 +81,47 @@ export function MyPostersView() {
 
   return (
     <div className="pt-4 animate-fade-scale-in">
-      <h2 className="text-xl font-bold text-center mb-4">📋 I miei poster <span className="text-xs text-zinc-400 font-normal">({mappings.length})</span></h2>
+      <h2 className="text-xl font-bold text-center mb-4">{p.t("ui.myPostersTitle")} <span className="text-xs text-zinc-400 font-normal">({mappings.length})</span></h2>
       <div className="flex items-center gap-2 mb-4 px-4 max-w-7xl mx-auto md:justify-center md:relative">
         <div className="flex items-center h-9 md:h-12 bg-black/50 backdrop-blur-sm border border-zinc-700/80 focus-within:border-accent/60 focus-within:shadow-lg focus-within:shadow-accent/10 rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
           <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-accent transition-colors duration-300 text-xs md:text-sm">🔍</span>
-          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Cerca..." className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
+          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={p.t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
           {filter.length > 0 && (
             <button onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-red-500/80 text-white rounded-full text-sm hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/30 active:scale-90 transition-all duration-200">✕</button>
           )}
         </div>
         <div className="flex items-center gap-1 md:gap-2 md:absolute md:right-0 shrink-0">
-          <button onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-zinc-400 hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? "✕" : "☐"}</span><span className="hidden md:inline">{selectMode ? "Annulla" : "Seleziona"}</span></button>
+          <button onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-zinc-400 hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? "✕" : "☐"}</span><span className="hidden md:inline">{selectMode ? p.t("ui.cancel") : p.t("ui.select")}</span></button>
           {mappings.length > 0 && (
             <div className="relative">
               <button onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center">🗑️</button>
-              <ConfirmDialog open={showDeleteAll} title="Eliminare tutti i poster?" message={`Questa azione rimuoverà tutti i ${mappings.length} poster personalizzati. Non può essere annullata.`} confirmLabel="Elimina tutto" onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
+              <ConfirmDialog open={showDeleteAll} title={p.t("ui.confirmDeleteAll")} message={p.t("ui.confirmDeleteAllMsg", { count: mappings.length })} confirmLabel={p.t("ui.deleteAll")} onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
             </div>
           )}
           <div className="relative" ref={sortRef}>
             <button onClick={() => { setSortOpen((o) => !o); setTypeOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2">
               <span className="shrink-0">{sortBy === "updated" ? "📅" : "🔤"}</span>
-              <span className="hidden md:inline truncate">{sortBy === "updated" ? "Recenti" : "A-Z"}</span>
+              <span className="hidden md:inline truncate">{sortBy === "updated" ? p.t("ui.recent") : p.t("ui.sortAZ")}</span>
               <span className="text-[10px] shrink-0">▼</span>
             </button>
             {sortOpen && (
               <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1.5 shadow-2xl shadow-black/50 z-50 min-w-44 animate-fade-scale-in">
-                <button onClick={() => { setSortBy("updated"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>📅 Più recenti</button>
-                <button onClick={() => { setSortBy("alpha"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>🔤 A-Z</button>
+                <button onClick={() => { setSortBy("updated"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>{p.t("ui.sortRecent")}</button>
+                <button onClick={() => { setSortBy("alpha"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>{p.t("ui.sortAlpha")}</button>
               </div>
             )}
           </div>
           <div className="relative" ref={typeRef}>
             <button onClick={() => { setTypeOpen((o) => !o); setSortOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2">
               <span className="shrink-0">{typeFilter === "movie" ? "🎬" : typeFilter === "tv" ? "📺" : typeFilter === "anime" ? "🎌" : "📋"}</span>
-              <span className="hidden md:inline truncate">{typeFilter === "all" ? "Tutti" : typeFilter === "movie" ? "Film" : typeFilter === "tv" ? "Serie TV" : "Anime"}</span>
+              <span className="hidden md:inline truncate">{typeFilter === "all" ? p.t("ui.all") : typeFilter === "movie" ? p.t("ui.filterMovie") : typeFilter === "tv" ? p.t("ui.filterSeries") : p.t("ui.filterAnime")}</span>
               <span className="text-[10px] shrink-0">▼</span>
             </button>
             {typeOpen && (
               <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1.5 shadow-2xl shadow-black/50 z-50 min-w-44 animate-fade-scale-in">
                 {(["all", "movie", "tv", "anime"] as const).map((t) => (
                   <button key={t} onClick={() => { setTypeFilter(t); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${typeFilter === t ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>
-                    {t === "all" ? "📋 Tutti" : t === "movie" ? "🎬 Film" : t === "tv" ? "📺 Serie TV" : "🎌 Anime"}
+                    {t === "all" ? p.t("ui.all") : t === "movie" ? <>🎬 {p.t("ui.filterMovie")}</> : t === "tv" ? <>📺 {p.t("ui.filterSeries")}</> : <>🎌 {p.t("ui.filterAnime")}</>}
                   </button>
                 ))}
               </div>
@@ -131,15 +132,15 @@ export function MyPostersView() {
 
       {selected.size > 0 && (
         <button disabled={deleting} onClick={deleteSelected} className="mb-4 py-3 px-4 rounded-lg text-xs font-medium text-red-400 border border-red-400/40 bg-red-900/15 hover:text-red-300 hover:border-red-400/70 hover:bg-red-900/30 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
-          {deleting ? "Eliminazione..." : `Elimina ${selected.size} selezionat${selected.size === 1 ? "o" : "i"}`}
+          {deleting ? p.t("ui.deleting") : p.t("ui.deleteSelected", { count: selected.size })}
         </button>
       )}
       {filtered.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-sm text-zinc-400 mb-4">{mappings.length === 0 ? "Nessun poster personalizzato" : "Nessun risultato"}</p>
+          <p className="text-sm text-zinc-400 mb-4">{mappings.length === 0 ? p.t("ui.emptyPosters") : p.t("ui.noFilteredResults")}</p>
           {mappings.length === 0 && (
             <button onClick={goHome} className="px-6 py-3 btn-primary font-medium">
-              🔍 Cerca un film o una serie
+              {p.t("ui.searchCta")}
             </button>
           )}
         </div>
@@ -166,7 +167,7 @@ export function MyPostersView() {
               </div>
               <div className="px-2 py-2.5 text-center">
                 <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{m.title}</p>
-                <p className="text-xs text-zinc-400">{m.language ? LANG_NAMES[m.language] || m.language : "Clean"}{m.logoPath ? " + logo" : ""}</p>
+                <p className="text-xs text-zinc-400">{m.language ? LANG_NAMES[m.language] || m.language : p.t("ui.clean")}{m.logoPath ? " + logo" : ""}</p>
               </div>
               {!selectMode && (
                 <span onClick={(e) => { e.stopPropagation(); removeMapping(m) }} className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-red-900/60 flex items-center justify-center text-[10px] text-red-300 hover:bg-red-800 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 cursor-pointer">✕</span>

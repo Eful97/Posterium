@@ -22,6 +22,7 @@ export const mappingSchema = z.object({
   badgeExtra: z.string().nullable().optional(),
   badgeRank: z.number().int().positive().nullable().optional(),
   badgeLabel: z.string().nullable().optional(),
+  customBadge: z.string().nullable().optional(),
   releaseDate: z.string().nullable().optional(),
   firstAirDate: z.string().nullable().optional(),
   backdropPath: z.string().nullable().optional(),

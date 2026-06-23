@@ -51,6 +51,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     badgeExtra: parsed.data.badgeExtra ?? existing.badgeExtra,
     badgeRank: parsed.data.badgeRank ?? existing.badgeRank,
     badgeLabel: parsed.data.badgeLabel ?? existing.badgeLabel,
+    customBadge: parsed.data.customBadge ?? existing.customBadge,
     releaseDate: parsed.data.releaseDate ?? existing.releaseDate,
     firstAirDate: parsed.data.firstAirDate ?? existing.firstAirDate,
     backdropPath: parsed.data.backdropPath ?? existing.backdropPath,

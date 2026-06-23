@@ -6,6 +6,7 @@ import { getDomain, posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from 
 import { findAccentColor, topEdgeAverage } from "./accent-color"
 import { getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "./awards"
 import { computeBadge, computeExtraFallback } from "./badge-priority"
+import { setLang as setI18nLang, getLang, t, resolveLabel, isRankKey, isPrefixedKey, badgeKey } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
 
 export interface PosteriumCtx {
@@ -110,6 +111,7 @@ export interface PosteriumCtx {
   setSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>
   showLangPicker: boolean
   setShowLangPicker: React.Dispatch<React.SetStateAction<boolean>>
+  t: (key: string, params?: Record<string, string | number>) => string
   tmdbKeyInput: string
   setTmdbKeyInput: React.Dispatch<React.SetStateAction<string>>
   showKey: boolean
@@ -284,6 +286,7 @@ export function usePosterium(): PosteriumCtx {
 
   const pickLang = (l: string) => {
     setLang(l)
+    setI18nLang(l)
     localStorage.setItem("preferred_lang", l)
     setShowLangPicker(false)
   }
@@ -320,7 +323,7 @@ export function usePosterium(): PosteriumCtx {
     if (!tmdbKey) return
     const now = Date.now()
     if (now - lastRefreshRef.current < 10 * 60 * 1000) {
-      showToast("Aggiornamento disponibile ogni 10 minuti")
+      showToast(t("ui.refreshRateLimit"))
       return
     }
     lastRefreshRef.current = now
@@ -337,7 +340,7 @@ export function usePosterium(): PosteriumCtx {
         setStreamingCharts((prev) => ({ ...prev, [p.slug]: data }))
       }).catch(() => {})
     }
-    showToast("Liste aggiornate ✓")
+    showToast(t("ui.listsRefreshed"))
   }, [tmdbKey, mdblistApiKey, showToast])
 
   useEffect(() => {
@@ -531,9 +534,12 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
       const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus })
       if (customBadge) {
-        params.push(`extra=${encodeURIComponent(customBadge)}`)
+        const rankKey = isRankKey(customBadge)
+        if (rankKey === "badge.today" && trendRank) params.push(`rank=${trendRank}&label=${encodeURIComponent(t("badge.today"))}`)
+        else if (rankKey === "badge.anime" && animeRank) params.push(`rank=${animeRank}&label=${encodeURIComponent(t("badge.anime"))}`)
+        else params.push(`extra=${encodeURIComponent(resolveLabel(customBadge))}`)
       } else {
-        const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra })
+        const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra }, t)
         if (badge) {
           if (badge.type === "extra") params.push(`extra=${encodeURIComponent(badge.label)}`)
           else params.push(`rank=${badge.rank}&label=${encodeURIComponent(badge.rankLabel || badge.label)}`)
@@ -688,8 +694,10 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           setBackdropOffsetX(existing.backdropOffsetX ?? 0)
           setBackdropOffsetY(existing.backdropOffsetY ?? 0)
         }
+        setCustomBadge(existing.customBadge ?? null)
         setTrendRank(rankData.rank ?? existing.trendRank ?? null)
       } else {
+        setCustomBadge(null)
         setLogoScale(75)
         setLogoOffsetX(0)
         setLogoOffsetY(0)
@@ -770,17 +778,17 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     const twoWeeks = 14 * 24 * 60 * 60 * 1000
     const isNewMovie = selected.media_type === "movie" && metaInfo.release_date ? (now - new Date(metaInfo.release_date).getTime()) < twoWeeks : false
     const isNewSeries = selected.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
-    const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards) : null
-    const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations) : null
+    const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards, t) : null
+    const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations, t) : null
     const animeRankData = mdblistAnimeList?.find((a: any) => a.id === selected.id)
     const tvType = selected.media_type === "tv" ? metaInfo.type : null
     const tvStatus = selected.media_type === "tv" ? metaInfo.status : null
-    const extra = computeExtraFallback({ mediaType: selected.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus })
+    const extra = computeExtraFallback({ mediaType: selected.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus }, t)
     const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
-    const badge = computeBadge({ isNewMovie, isNewSeries, animeRank: animeRankData?.rank ?? null, trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra })
+    const badge = computeBadge({ isNewMovie, isNewSeries, animeRank: animeRankData?.rank ?? null, trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra }, t)
     const badgeExtra = badge?.type === "extra" ? badge.label : undefined
     const badgeRank = (!badgeExtra && rankingBadges) ? (badge?.type === "rank" ? badge.rank : trendRank || undefined) : undefined
-    const badgeLabel = (!badgeExtra && animeRankData) ? "Anime" : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || "Oggi") : undefined
+    const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || t("badge.today")) : undefined
     try {
       await api("/api/mappings", {
         method: "POST",
@@ -809,15 +817,16 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           badgeExtra,
           badgeRank,
           badgeLabel,
+          customBadge,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)
-      showToast("Configurazione salvata!")
+      showToast(t("ui.saveSuccess"))
       loadMappings()
     } catch {
-      showToast("Errore nel salvataggio")
+      showToast(t("ui.saveError"))
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings])
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge])
 
   const removeLogo = useCallback(async () => {
     setSelectedLogo(null)
@@ -825,7 +834,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     const key = `${selected.media_type}:${selected.id}`
     const existing = mappingsMap.get(key)
     if (!existing) {
-      showToast("Nessun mapping da aggiornare")
+      showToast(t("ui.noMappingUpdate"))
       return
     }
     await api(`/api/mappings/${key}`, {
@@ -841,7 +850,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         trendRank: trendRank ?? null,
       }),
     })
-    showToast("Logo rimosso!")
+    showToast(t("ui.logoRemoved"))
     loadMappings()
     if (selected) setPreviewId(`${selected.media_type}:${selected.id}`)
   }, [selected, previewPoster, logoScale, logoOffsetX, logoOffsetY, metaInfo, trendRank, mappingsMap, loadMappings])
@@ -860,7 +869,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
   const removeMapping = useCallback(async (m: Mapping) => {
     await api(`/api/mappings/${m.mediaType}:${m.tmdbId}`, { method: "DELETE" })
     setMappings((prev) => prev.filter((x) => !(x.tmdbId === m.tmdbId && x.mediaType === m.mediaType)))
-    showToast("Rimosso")
+    showToast(t("ui.mappingRemoved"))
   }, [])
 
   const exportData = async () => {
@@ -887,9 +896,9 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           body: JSON.stringify({ mappings: data.mappings || data }),
         })
         loadMappings()
-        showToast(`Importati ${data.mappings?.length || data.length} poster`)
+        showToast(t("ui.importSuccess", { count: data.mappings?.length || data.length }))
       } catch {
-        showToast("File JSON non valido")
+        showToast(t("ui.importError"))
       }
     }
     input.click()
@@ -971,6 +980,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     copyUrl, copied,
     accentColor,
     topEdgeColor,
+    t,
   }), [
     selected, view, posters, loadingImages, previewPoster, selectedLogo,
     logos, posterActivePath, previewUrl, urlPattern, lang,

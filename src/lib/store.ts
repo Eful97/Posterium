@@ -28,6 +28,7 @@ export interface Mapping {
   badgeExtra?: string
   badgeRank?: number
   badgeLabel?: string
+  customBadge?: string | null
   releaseDate?: string
   firstAirDate?: string
 }
