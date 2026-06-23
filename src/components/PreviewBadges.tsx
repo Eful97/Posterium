@@ -44,11 +44,12 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
     const gap = Math.round(fs / 3)
     const gap2 = Math.round(fs / 6)
     const bulletW = Math.round(fs * 0.35)
-    const starW = Math.round(fs * 0.55)
+    const starW = Math.round(fs * 0.92)
     const genreW = Math.round(genreName.length * fs * 0.58)
     const voteW = Math.round(voteStr.length * fs * 0.58)
     const yearW = yearStr ? Math.round(yearStr.length * fs * 0.58) : 0
-    const totalW = genreW + gap + bulletW + gap + starW + gap2 + voteW + (yearStr ? gap + bulletW + gap + yearW : 0) + 6
+    const buf = Math.round(fs * 0.25)
+    const totalW = genreW + gap + bulletW + gap + starW + gap2 + voteW + (yearStr ? gap + bulletW + gap + yearW : 0) + buf
     return { totalW, gap, gap2 }
   }
   let dims = genreClientDims(finalFs)

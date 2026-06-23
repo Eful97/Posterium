@@ -18,11 +18,11 @@ Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispetti
 | Gap stella→voto | `round(fs / 6)` ≈ `fs * 0.17` | `round(finalFontSize * 0.17)` |
 | Padding orizzontale | (flex naturale) | `pad = round(finalFontSize * 0.35)` × 2 |
 | Larghezza bullet | (naturale) | `bulletW = round(finalFontSize * 0.35)` |
-| Larghezza stella | (naturale) | `starW = round(finalFontSize * 0.55)` |
+| Larghezza stella | (naturale) | `starW = round(finalFontSize * 0.92)` |
 | Altezza badge | (flex naturale) | `svgH = max(round(finalFontSize * 1.6), 24)` |
 | Colori testo | `text-gray-200` (≈ `#e5e7eb`) | `#e5e7eb` |
 | Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` | `"0 4px 6px rgba(0,0,0,0.5)"` |
-| Overflow protection | `fs` ridotto se `fs * (totalLen * 0.58 + 2.43) > containerW - 20`<br>`totalLen = genreName.length + voteStr.length + (yearStr.length ? 1 + yearStr.length : 0)` | Stessa formula con `pw - 20` |
+| Overflow protection | `fs` ridotto se `totalW > containerW - 20`, calcolato con `genreClientDims()` | Stessa logica: `totalW > pw - 20`, usa `genreBadgeDims()` riproporziona `fs` |
 | Allineamento verticale | Flex baseline naturale | Bullet `translateY(5px)`, Stella `translateY(fs * 0.23)`, Voto `translateY(5px)`, Anno `translateY(5px)` |
 
 ## Badge Ranking/Extra
