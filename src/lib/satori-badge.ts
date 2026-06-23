@@ -179,6 +179,20 @@ export async function renderExtraBadge(
   return { png, w: renderW, h: renderH }
 }
 
+function genreBadgeDims(fs: number, genreName: string, voteStr: string, yearStr: string) {
+  const gap = Math.round(fs * 0.33)
+  const gapStar = Math.round(fs * 0.17)
+  const pad = Math.round(fs * 0.35)
+  const bulletW = Math.round(fs * 0.35)
+  const starW = Math.round(fs * 0.55)
+  const genreW = Math.round(genreName.length * fs * 0.58)
+  const voteW = Math.round(voteStr.length * fs * 0.58)
+  const yearW = yearStr ? Math.round(yearStr.length * fs * 0.58) : 0
+  const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + (yearStr ? gap + bulletW + gap + yearW : 0) + pad * 2 + 6
+  const svgH = Math.max(Math.round(fs * 1.6), 24)
+  return { genreW, voteW, yearW, bulletW, starW, gap, gapStar, pad, totalW, svgH }
+}
+
 export async function renderGenreBadge(
   genreName: string,
   voteAverage: number,
@@ -189,22 +203,13 @@ export async function renderGenreBadge(
   const yearStr = year || ""
   let finalFontSize = Math.round(24 * pw / 380)
   const maxBadgeW = pw - 20
-  const totalLen = genreName.length + voteStr.length + (yearStr ? yearStr.length + 1 : 0)
-  const totalFactor = totalLen * 0.58 + 2.43 + (yearStr ? 1.01 : 0)
-  if (finalFontSize * totalFactor > maxBadgeW) {
-    finalFontSize = Math.round(maxBadgeW / totalFactor)
+  let dims = genreBadgeDims(finalFontSize, genreName, voteStr, yearStr)
+  if (dims.totalW > maxBadgeW) {
+    const ratio = maxBadgeW / dims.totalW
+    finalFontSize = Math.max(Math.round(finalFontSize * ratio), 10)
+    dims = genreBadgeDims(finalFontSize, genreName, voteStr, yearStr)
   }
-  finalFontSize = Math.max(finalFontSize, 10)
-  const gap = Math.round(finalFontSize * 0.33)
-  const gapStar = Math.round(finalFontSize * 0.17)
-  const pad = Math.round(finalFontSize * 0.35)
-  const bulletW = Math.round(finalFontSize * 0.35)
-  const starW = Math.round(finalFontSize * 0.55)
-  const genreW = Math.round(genreName.length * finalFontSize * 0.58)
-  const voteW = Math.round(voteStr.length * finalFontSize * 0.58)
-  const yearW = yearStr ? Math.round(yearStr.length * finalFontSize * 0.58) : 0
-  const totalW = genreW + gap + bulletW + gap + starW + gapStar + voteW + (yearStr ? gap + bulletW + gap + yearW : 0) + pad * 2
-  const svgH = Math.max(Math.round(finalFontSize * 1.6), 24)
+  const { genreW, voteW, yearW, bulletW, starW, gap, gapStar, pad, totalW, svgH } = dims
   const m = Math.round(finalFontSize * 0.17)
 
   const children: any[] = [

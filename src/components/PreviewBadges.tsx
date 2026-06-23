@@ -40,13 +40,25 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const base = 24 * containerW / 380
   const maxBadgeW = containerW - 20
   let finalFs = base
-  const totalLen = genreName.length + voteStr.length + (yearStr ? yearStr.length + 1 : 0)
-  if (finalFs * (totalLen * 0.58 + 2.43 + (yearStr ? 1.01 : 0)) > maxBadgeW) {
-    finalFs = Math.max(maxBadgeW / (totalLen * 0.58 + 2.43 + (yearStr ? 1.01 : 0)), 10)
+  function genreClientDims(fs: number) {
+    const gap = Math.round(fs / 3)
+    const gap2 = Math.round(fs / 6)
+    const bulletW = Math.round(fs * 0.35)
+    const starW = Math.round(fs * 0.55)
+    const genreW = Math.round(genreName.length * fs * 0.58)
+    const voteW = Math.round(voteStr.length * fs * 0.58)
+    const yearW = yearStr ? Math.round(yearStr.length * fs * 0.58) : 0
+    const totalW = genreW + gap + bulletW + gap + starW + gap2 + voteW + (yearStr ? gap + bulletW + gap + yearW : 0) + 6
+    return { totalW, gap, gap2 }
+  }
+  let dims = genreClientDims(finalFs)
+  if (dims.totalW > maxBadgeW) {
+    finalFs = Math.max(maxBadgeW / dims.totalW * finalFs, 10)
+    dims = genreClientDims(finalFs)
   }
   const fs = Math.round(finalFs)
-  const gap = Math.round(fs / 3)
-  const gap2 = Math.round(fs / 6)
+  const gap = dims.gap
+  const gap2 = dims.gap2
   const bottom = 20 * containerH / 570 + bottomOffset
   const minH = 100 * containerH / 570
   const hex = gradientColor.replace("#", "")
