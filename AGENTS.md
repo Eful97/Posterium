@@ -5,45 +5,79 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:badge-sync -->
-# Badge Genere/Rating — Parametri sincronizzati
+# Parametri sincronizzati Client ↔ Server
 
-Quando l'utente modifica l'anteprima client (`PreviewBadges.tsx`), aggiornare anche il server (`badges.ts`).
+Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
-## Parametri da sincronizzare
+## Badge Genere/Rating (GenreRatingBadges)
 
-```
-Client (PreviewBadges.tsx)          → Server (badges.ts)
-────────────────────────────────────────────────────────────────────
-genre: fontSize                      → fontSize = X * pw / 380
-bullet: fontSize (es. 19px)         → bulletFontSize = fontSize * 19 / X
-star: fontSize (es. 22px)           → starR = fontSize * 0.45  (restituisce 2*starR ≈ stella client a 380px)
-vote: fontSize (es. 24px)           → stesso fontSize
+| Parametro | Client (`PreviewBadges.tsx`) | Server (`satori-badge.ts:renderGenreBadge`) |
+|---|---|---|
+| Font size | `fs = round(finalFs)` da `24 * containerW / 380` | `finalFontSize = round(24 * pw / 380)` |
+| Gap genere→bullet | `round(fs / 3)` ≈ `fs * 0.33` | `round(finalFontSize * 0.33)` |
+| Gap stella→voto | `round(fs / 6)` ≈ `fs * 0.17` | `round(finalFontSize * 0.17)` |
+| Padding orizzontale | (flex naturale) | `pad = round(finalFontSize * 0.35)` × 2 |
+| Larghezza bullet | (naturale) | `bulletW = round(finalFontSize * 0.35)` |
+| Larghezza stella | (naturale) | `starW = round(finalFontSize * 0.55)` |
+| Altezza badge | (flex naturale) | `svgH = max(round(finalFontSize * 1.6), 24)` |
+| Colori testo | `text-gray-200` (≈ `#e5e7eb`) | `#e5e7eb` |
+| Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` | `"0 4px 6px rgba(0,0,0,0.5)"` |
+| Overflow protection | `fs` ridotto se `fs * ((genreLen + voteLen) * 0.58 + 2.43) > containerW - 20` | Stessa formula con `pw - 20` |
+| Allineamento verticale | Flex baseline naturale | Bullet `translateY(5px)`, Stella `translateY(fs * 0.23)`, Voto `translateY(5px)` |
 
-gap genre→bullet (es. 8px)          → gap = round(fontSize * 8 / X)
-gap bullet→star (es. 8px)           → gap (stesso valore, riusato)
-gap star→vote (es. 6px)             → gap2 = round(fontSize * 6 / X)
+## Badge Ranking/Extra
 
-genre: #fff, w500                   → #fff, w500
-bullet: rgba(255,255,255,0.6)        → rgba(255,255,255,0.6)
-star: #F5C518                       → #F5C518
-vote: #fff, w600                    → #fff, w600
+| Parametro | Client (`PreviewBadges.tsx`) | Server (`satori-badge.ts:renderRankingBadge/renderExtraBadge`) |
+|---|---|---|
+| Font size base | `23 * containerW / 380` | `23 * pw / 380` |
+| Padding X | `px = round(fs)` | `px = round(finalFontSize * 1.0)` |
+| Padding Y | `py = round(fs * 0.5)` | `pt = pb = round(finalFontSize * 0.5)` |
+| Border radius | `r = round(fs * 0.7)` | `r = round(finalFontSize * 0.7)` |
+| Ombra | `shadowOff = round(fs * 0.2)`, `shadowBlur = round(fs * 0.6)`, `boxShadow: "0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)"` | `shadowBlur = round(fs * 0.6)`, `shadowOff = round(fs * 0.2)` (stessa formula scalata) |
+| Sfondo | `topLight ? "bg-black/80" : "bg-white/80"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
+| Testo | `topLight ? "text-white/80" : "text-black/80"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
+| Overflow protection | `fs` ridotto se `fs * (textLen * 0.58 + 2.35) > containerW - 20` (ranking, 2.35 = hash + px*2) o `fs * (labelLen * 0.58 + 2.0) > containerW - 20` (extra) | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
+| Posizione | `top-0 left-1/2 -translate-x-1/2` | Composito a `top: 0, left: round((pw - w) / 2)` |
 
-gradient: 0.7 at bottom, trasp 50%  → bottomGradientSVG: stop 50%=trasp, 100%=0.7
-gradient height: 40% containerH     → gh = 40% posterH
+## Gradiente fondo poster
 
-Ranking/Extra badge (PreviewBadges.tsx → satori-badge.ts):
-px-6 (24px)                         → px = round(fontSize * 1.2)
-py-2.5 (10px per side)             → pt = pb = round(fontSize * 0.7)   (compensates line-height)
-rounded-b-2xl (16px)               → r = round(fontSize * 0.8)
-text-xl (20px)                      → fontSize = round(20 * pw / 380)
-bottom-5 (20px) genre badge offset  → badgeY = ph - h - round(20 * ph / 570)
-```
+| Parametro | Client (`PreviewBadges.tsx`) | Server (`badges.ts:bottomGradientSVG`) |
+|---|---|---|
+| Altezza | `height: gradientHeight%`, `minHeight: 100 * containerH / 570` | `gh = max(round(ph * pct / 100), 100)` |
+| Colore | `gradientColor` → `rgba(r,g,b,gradientOpacity)` | `color` + `opacity` |
+| Fade (client: bottom→top) | `0% opaco → gf% opaco → fadeEnd% trasp → 100% trasp` <br>`gf = min(gradientFade, 100)`, `fadeEnd = min(gf + 20, 100)` | `0% trasp → svgFadeEnd% trasp → svgSolidPct% opaco → 100% opaco` <br>`svgSolidPct = 100 - cappedFade`, `svgFadeEnd = max(100 - min(cappedFade + 20, 100), 0)` |
+| Note | Gradiente CSS `to top` (0% = bottom) | Gradiente SVG `y1=0 y2=1` (0% = top) — valori invertiti |
+| Posizione badge genere | `bottom: 20 * containerH / 570 + bottomOffset` | `badgeY = ph - h - round(20 * ph / 570)` |
 
-Dove `X` = base font size del client (es. 24px).
+## Parametri URL (query string)
+
+| Parametro | Inviato da client (`context.tsx`) | Letto da server (`route.ts`) |
+|---|---|---|
+| `badges` | `globalBadges ? null : "0"` | `qBadges !== "0"` |
+| `ranking` | `rankingBadges ? null : "0"` | `qRanking !== "0"` |
+| `gradColor` | `gradientColor` | `qGradColor` |
+| `gradOpacity` | `gradientOpacity` | `qGradOpacity` |
+| `gradHeight` | `gradientHeight` | `qGradHeight` |
+| `gradFade` | `gradientFade` | `qGradFade` |
+| `tl` | `topLight ? "1" : "0"` (se rankingBadges attivi) | `qTopLight` — override se presente |
+| `rank` | `badge.rank` (se rankingBadges attivi) | `qRank` — override del ranking |
+| `label` | `badge.rankLabel \|\| badge.label` | `qLabel` — override label ranking |
+| `extra` | `badge.label` (se extra) | `queryExtra` — forza badge extra |
+
+## Bordo poster
+
+| Parametro | Client (`EditView.tsx`) | Server (`route.ts`) |
+|---|---|---|
+| Bordo | `3px solid rgba(255,255,255,0.80)` | `<rect stroke="rgba(255,255,255,0.80)" stroke-width="3" rx="8"/>` |
+| Overlay | `absolute inset-0 pointer-events-none` (sopra ogni contenuto) | Composito per ultimo (sopra ogni layer) |
 
 ## Files coinvolti
 
-- `src/components/PreviewBadges.tsx` — client-side preview (HTML flexbox)
-- `src/lib/badges.ts` — server-side SVG (bottomGradientSVG + topGradientSVG)
-- `src/lib/satori-badge.ts` — server-side Satori+Resvg (genreRatingBadge, rankingBadge, extraBadge)
+- `src/components/PreviewBadges.tsx` — client-side preview (React)
+- `src/components/EditView.tsx` — orchestratore preview client
+- `src/lib/context.tsx` — stato, URL builder, localStorage
+- `src/lib/badges.ts` — server-side SVG (bottomGradientSVG)
+- `src/lib/satori-badge.ts` — server-side Satori+Resvg (renderGenreBadge, renderRankingBadge, renderExtraBadge)
+- `src/lib/badge-priority.ts` — logica priorità badge (condivisa)
+- `src/app/api/poster/[type]/[id]/route.ts` — composizione poster finale
 <!-- END:badge-sync -->

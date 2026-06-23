@@ -13,7 +13,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 33
+const RENDER_VERSION = 40
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -338,21 +338,72 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     const topLum = await topLuminance(posterBuf)
-    const topLight = topLum > 0.55
+    const qTopLight = req.nextUrl.searchParams.get("tl")
+    const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.55
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
+    const qGradColor = req.nextUrl.searchParams.get("gradColor")
+    const qGradOpacity = req.nextUrl.searchParams.get("gradOpacity")
+    const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
+    const qGradFade = req.nextUrl.searchParams.get("gradFade")
     const hasQuery = !!queryPoster || !!mapping
     const badgesEnabled = hasQuery ? qBadges !== "0" && showBadges : true
     const rankingEnabled = hasQuery ? qRanking !== "0" && showBadges : true
     const s = ph / 1500
+    const { svg: gradSvg, top: gradTop, height: gradH } = bottomGradientSVG(pw, ph, qGradColor || undefined, qGradOpacity ? Number(qGradOpacity) : undefined, qGradHeight ? Number(qGradHeight) : undefined, qGradFade ? Number(qGradFade) : undefined)
 
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
       try {
-        const { svg: gradSvg, top: gradTop } = bottomGradientSVG(pw, ph)
-        composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
         const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw)
         const badgeY = ph - h - Math.round(20 * ph / 570)
         const badgeLeft = Math.round((pw - w) / 2)
+        const pad = 40
+        const bLeft = Math.max(0, badgeLeft - pad)
+        const bTop = Math.max(0, badgeY - pad)
+        const bRight = Math.min(pw, badgeLeft + w + pad)
+        const bBottom = Math.min(ph, badgeY + h + pad)
+        const bW = bRight - bLeft
+        const bH = bBottom - bTop
+        if (bW > 20 && bH > 20) {
+          const blurred = await sharp(posterBuf)
+            .extract({ left: bLeft, top: bTop, width: bW, height: bH })
+            .blur(20)
+            .ensureAlpha()
+            .png()
+            .toBuffer()
+          const padPctX = Math.round(pad / bW * 100)
+          const padPctY = Math.round(pad / bH * 100)
+          const maskXSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${bW}" height="${bH}">
+            <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="white" stop-opacity="1"/>
+              <stop offset="${padPctX}%" stop-color="white" stop-opacity="0"/>
+              <stop offset="${100 - padPctX}%" stop-color="white" stop-opacity="0"/>
+              <stop offset="100%" stop-color="white" stop-opacity="1"/>
+            </linearGradient></defs>
+            <rect width="${bW}" height="${bH}" fill="url(#g)"/>
+          </svg>`
+          const maskYSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${bW}" height="${bH}">
+            <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="white" stop-opacity="1"/>
+              <stop offset="${padPctY}%" stop-color="white" stop-opacity="0"/>
+              <stop offset="${100 - padPctY}%" stop-color="white" stop-opacity="0"/>
+              <stop offset="100%" stop-color="white" stop-opacity="1"/>
+            </linearGradient></defs>
+            <rect width="${bW}" height="${bH}" fill="url(#g)"/>
+          </svg>`
+          const maskXBuf = await sharp(Buffer.from(maskXSvg)).png().toBuffer()
+          const maskYBuf = await sharp(Buffer.from(maskYSvg)).png().toBuffer()
+          const fadedBlur = await sharp(blurred)
+            .composite([{ input: maskXBuf, blend: 'dest-out' }])
+            .png()
+            .toBuffer()
+          const fadedBlur2 = await sharp(fadedBlur)
+            .composite([{ input: maskYBuf, blend: 'dest-out' }])
+            .png()
+            .toBuffer()
+          composites.push({ input: fadedBlur2, top: bTop, left: bLeft })
+        }
+        composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
         composites.push({ input: png, top: badgeY, left: badgeLeft })
       } catch {
         // genre badge rendering failed, skip it
@@ -387,6 +438,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const logoX = Math.round((pw - actualLogoW) / 2 + userOx)
       const logoBadgeOffset = (badgesEnabled && genreName && voteAverage && voteAverage > 0) ? 0 : Math.round(40 * s)
       const logoTop = Math.round(ph - actualLogoH - ph * 0.1 + userOy + logoBadgeOffset)
+
       composites.push({ input: logoResized, top: logoTop, left: logoX })
     }
 
@@ -432,7 +484,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       })
       if (badge) {
         if (badge.type === "extra") return { type: "extra" as const, label: badge.label }
-        return { type: "rank" as const, rank: badge.rank!, label: badge.rankLabel || badge.label }
+        return { type: "rank" as const, rank: badge.rank!, label: qLabel || badge.rankLabel || badge.label }
       }
       return null
     })()
@@ -452,6 +504,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         // badge rendering failed, skip it
       }
     }
+
+    // White frame border
+    const borderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${ph}">
+      <rect x="1.5" y="1.5" width="${pw - 3}" height="${ph - 3}" rx="8" ry="8" fill="none" stroke="rgba(255,255,255,0.80)" stroke-width="3"/>
+    </svg>`
+    composites.push({ input: Buffer.from(borderSvg), top: 0, left: 0 })
 
     const composited = await sharp(posterBuf)
       .composite(composites)

@@ -1,16 +1,25 @@
-export function bottomGradientSVG(pw: number, ph: number): { svg: string; top: number } {
-  const gh = Math.max(Math.round(ph * 0.4), 100)
+export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opacity = 1, pct = 50, fade = 0): { svg: string; top: number; height: number } {
+  const gh = Math.max(Math.round(ph * pct / 100), 100)
   const top = ph - gh
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}" viewBox="0 0 ${pw} ${gh}">
+  const hex = color.replace("#", "")
+  const r = parseInt(hex.substring(0, 2), 16) || 0
+  const g = parseInt(hex.substring(2, 4), 16) || 0
+  const b = parseInt(hex.substring(4, 6), 16) || 0
+  const cappedFade = Math.min(fade, 100)
+  const svgSolidPct = 100 - cappedFade
+  const svgFadeEnd = Math.max(100 - Math.min(cappedFade + 20, 100), 0)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="50%" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.9"/>
+      <stop offset="0%" stop-color="rgba(${r},${g},${b},0)"/>
+      <stop offset="${svgFadeEnd}%" stop-color="rgba(${r},${g},${b},0)"/>
+      <stop offset="${svgSolidPct}%" stop-color="rgba(${r},${g},${b},${opacity})"/>
+      <stop offset="100%" stop-color="rgba(${r},${g},${b},${opacity})"/>
     </linearGradient>
   </defs>
   <rect width="${pw}" height="${gh}" fill="url(#g)"/>
 </svg>`
-  return { svg, top }
+  return { svg, top, height: gh }
 }
 
 export const GENRE_FALLBACK: Record<string, string> = {

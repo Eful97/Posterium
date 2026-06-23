@@ -58,6 +58,14 @@ export interface PosteriumCtx {
   setGlobalBadges: React.Dispatch<React.SetStateAction<boolean>>
   rankingBadges: boolean
   setRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
+  gradientColor: string
+  setGradientColor: React.Dispatch<React.SetStateAction<string>>
+  gradientOpacity: number
+  setGradientOpacity: React.Dispatch<React.SetStateAction<number>>
+  gradientHeight: number
+  setGradientHeight: React.Dispatch<React.SetStateAction<number>>
+  gradientFade: number
+  setGradientFade: React.Dispatch<React.SetStateAction<number>>
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
   metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }
@@ -175,6 +183,10 @@ export function usePosterium(): PosteriumCtx {
 
   const [globalBadges, setGlobalBadges] = useState(true)
   const [rankingBadges, setRankingBadges] = useState(true)
+  const [gradientColor, setGradientColor] = useState("#000000")
+  const [gradientOpacity, setGradientOpacity] = useState(1)
+  const [gradientHeight, setGradientHeight] = useState(85)
+  const [gradientFade, setGradientFade] = useState(10)
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
@@ -257,6 +269,14 @@ export function usePosterium(): PosteriumCtx {
     if (gb !== null) setGlobalBadges(gb === "1")
     const rb = localStorage.getItem("ranking_badges")
     if (rb !== null) setRankingBadges(rb === "1")
+    const gc = localStorage.getItem("gradient_color")
+    if (gc !== null) setGradientColor(gc)
+    const go = localStorage.getItem("gradient_opacity")
+    if (go !== null) setGradientOpacity(Number(go))
+    const gh = localStorage.getItem("gradient_height")
+    if (gh !== null) setGradientHeight(Number(gh))
+    const gf = localStorage.getItem("gradient_fade")
+    if (gf !== null) setGradientFade(Number(gf))
   }, [])
 
   const pickLang = (l: string) => {
@@ -452,10 +472,14 @@ export function usePosterium(): PosteriumCtx {
     if (!globalBadges) params.push("badges=0")
     if (!rankingBadges) params.push("ranking=0")
     if (lang) params.push(`lang=${encodeURIComponent(lang)}`)
-    params.push("rv=31")
+    params.push(`gradColor=${encodeURIComponent(gradientColor)}`)
+    params.push(`gradOpacity=${gradientOpacity}`)
+    params.push(`gradHeight=${gradientHeight}`)
+    params.push(`gradFade=${gradientFade}`)
+    params.push("rv=33")
     url += "?" + params.join("&")
     setUrlPattern(url)
-  }, [globalBadges, rankingBadges, tmdbKey, lang])
+  }, [globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, tmdbKey, lang])
 
 
   const buildPreviewUrl = useCallback(() => {
@@ -477,7 +501,21 @@ export function usePosterium(): PosteriumCtx {
       params.push(`oy=${logoOffsetY}`)
     }
     if (lang) params.push(`lang=${lang}`)
+    params.push(`gradColor=${encodeURIComponent(gradientColor)}`)
+    params.push(`gradOpacity=${gradientOpacity}`)
+    params.push(`gradHeight=${gradientHeight}`)
+    params.push(`gradFade=${gradientFade}`)
     if (rankingBadges) {
+      const edgeLum = (() => {
+        const h = topEdgeColor
+        if (h.length < 7 || h === "#ffffff") return null
+        const r = parseInt(h.slice(1, 3), 16) / 255
+        const g = parseInt(h.slice(3, 5), 16) / 255
+        const b = parseInt(h.slice(5, 7), 16) / 255
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+      })()
+      const topLight = edgeLum !== null ? edgeLum > 0.55 : true
+      params.push(`tl=${topLight ? "1" : "0"}`)
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
 const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (now - new Date(metaInfo.release_date).getTime()) < twoWeeks : false
@@ -898,6 +936,10 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     editingValue, setEditingValue, editText, setEditText,
     globalBadges, setGlobalBadges,
     rankingBadges, setRankingBadges,
+    gradientColor, setGradientColor,
+    gradientOpacity, setGradientOpacity,
+    gradientHeight, setGradientHeight,
+    gradientFade, setGradientFade,
     trendRank,
     mdblistMatch,
     metaInfo,
@@ -926,7 +968,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     logos, posterActivePath, previewUrl, urlPattern, lang,
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
-    globalBadges, rankingBadges, trendRank, mdblistMatch, metaInfo, previewId,
+    globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, trendRank, mdblistMatch, metaInfo, previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,

@@ -96,7 +96,13 @@ export default function EditView() {
             const bottomPx = baseGap - p.logoOffsetY * scale - badgeAdj
             return <div ref={logoWheelRef} style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10, pointerEvents: "auto" }}>
               <div
-                style={{ transform: `translateX(${p.logoOffsetX * scale}px)`, width: `${p.logoScale}%`, maxWidth: "100%", cursor: dragging ? "grabbing" : "grab" }}
+                style={{
+                  transform: `translateX(${p.logoOffsetX * scale}px)`,
+                  width: `${p.logoScale}%`,
+                  maxWidth: "100%",
+                  cursor: dragging ? "grabbing" : "grab",
+                  position: "relative",
+                }}
                 onPointerDown={(e) => {
                   e.preventDefault(); e.stopPropagation()
                   ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -129,7 +135,7 @@ export default function EditView() {
                   p.setLogoOffsetX(0)
                   p.setLogoOffsetY(0)
                 }}
-              ><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full" style={{ objectFit: "contain" }} /></div></div>
+                ><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full relative" style={{ objectFit: "contain" }} /></div></div>
           })()}
           {p.rankingBadges && (() => {
             // eslint-disable-next-line
@@ -162,7 +168,8 @@ export default function EditView() {
             }
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientColor={p.gradientColor} gradientOpacity={p.gradientOpacity} gradientHeight={p.gradientHeight} gradientFade={p.gradientFade} /></div>}
+          <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
       {p.selected && (
@@ -192,6 +199,10 @@ export default function EditView() {
               params.push(`oy=${p.logoOffsetY}`)
             }
             if (p.lang) params.push(`lang=${p.lang}`)
+            params.push(`gradColor=${encodeURIComponent(p.gradientColor)}`)
+            params.push(`gradOpacity=${p.gradientOpacity}`)
+            params.push(`gradHeight=${p.gradientHeight}`)
+            params.push(`gradFade=${p.gradientFade}`)
             if (p.rankingBadges) {
               const now = Date.now()
               const twoWeeks = 14 * 24 * 60 * 60 * 1000
@@ -257,6 +268,18 @@ export default function EditView() {
       <div className="flex items-center justify-between px-1 mt-2">
         <span className="text-xs text-zinc-400">🏷️ Genere / Rating</span>
         <Toggle value={p.globalBadges} onChange={(v) => { p.setGlobalBadges(v); localStorage.setItem("global_badges", v ? "1" : "0") }} />
+      </div>
+      <div className="space-y-1 mt-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-zinc-400 w-6 shrink-0 text-center">🎨</span>
+          <span className="text-[12px] text-zinc-400 w-14 shrink-0 font-medium">Colore</span>
+          <div className="flex-1 min-w-0 flex justify-end">
+            <input type="color" value={p.gradientColor} onDoubleClick={() => { p.setGradientColor("#000000"); localStorage.setItem("gradient_color", "#000000") }} onChange={(e) => { p.setGradientColor(e.target.value); localStorage.setItem("gradient_color", e.target.value) }} className="w-6 h-6 rounded cursor-pointer border-0 p-0" style={{ background: "none" }} />
+          </div>
+        </div>
+        <SliderRow icon="🎨" label="Opacità" value={Math.round(p.gradientOpacity * 100)} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setGradientOpacity(v / 100); localStorage.setItem("gradient_opacity", String(v / 100)) }} onDoubleClick={() => { p.setGradientOpacity(1); localStorage.setItem("gradient_opacity", "1") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradOpacity" suffix="%" />
+        <SliderRow icon="📏" label="Altezza" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setGradientHeight(v); localStorage.setItem("gradient_height", String(v)) }} onDoubleClick={() => { p.setGradientHeight(85); localStorage.setItem("gradient_height", "85") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
+        <SliderRow icon="🌫️" label="Sfumatura" value={p.gradientFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setGradientFade(v); localStorage.setItem("gradient_fade", String(v)) }} onDoubleClick={() => { p.setGradientFade(10); localStorage.setItem("gradient_fade", "10") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradFade" suffix="%" />
       </div>
     </div>
   )
