@@ -648,8 +648,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     setView("edit")
     try {
       const [data, details, rankData, awardData] = await Promise.all([
-        api(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${lang},en,null&api_key=${tmdbKey}`),
-        api(`/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistApiKey ? `&mdblist_key=${encodeURIComponent(mdblistApiKey)}` : ""}`),
+        api(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${lang},en,null&api_key=${tmdbKey}`).catch(() => ({ posters: [], logos: [], backdrops: [] })),
+        api(`/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistApiKey ? `&mdblist_key=${encodeURIComponent(mdblistApiKey)}` : ""}`).catch(() => ({ genres: [], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null, networks: [], production_companies: [], original_language: "en" })),
         api(`/api/trending/rank?type=${itemType}&id=${itemId}&api_key=${encodeURIComponent(tmdbKey)}`).catch(() => ({ rank: null })),
         api(`/api/awards/${itemType}/${itemId}`).catch(() => ({ awards: [] })),
       ])

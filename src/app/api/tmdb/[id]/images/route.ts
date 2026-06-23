@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const cacheKey = `images:${type}:${id}:${languages}`
   const cached = cacheGet(cacheKey)
   if (cached) return Response.json(cached)
-  const data = await getImages(type as "movie" | "tv", Number(id), languages, apiKey)
+  const data = await getImages(type as "movie" | "tv", Number(id), languages, apiKey).catch(() => ({ posters: [], logos: [], backdrops: [] }))
   cacheSet(cacheKey, data, ["tmdb", "images"])
   return Response.json(data)
 }
