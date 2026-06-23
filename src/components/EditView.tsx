@@ -7,7 +7,7 @@ import { LogoOptions } from "@/components/LogoOptions"
 import { Toggle } from "@/components/Toggle"
 import { SliderRow } from "@/components/SliderRow"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "@/lib/awards"
-import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
+import { computeBadge, computeExtraFallback, getAllBadgeOptions } from "@/lib/badge-priority"
 import { SearchBar } from "@/components/SearchBar"
 import { RankRow } from "@/components/RankRow"
 import { RankingBadge, GenreRatingBadges, ExtraBadge } from "@/components/PreviewBadges"
@@ -271,14 +271,43 @@ export default function EditView() {
         <Toggle value={p.globalBadges} onChange={(v) => { p.setGlobalBadges(v); localStorage.setItem("global_badges", v ? "1" : "0") }} />
       </div>
       <div className="flex items-center justify-between px-1 mt-1.5">
-        <span className="text-xs text-zinc-500">📝 Badge custom</span>
+        <span className="text-xs text-zinc-500">📝 Badge</span>
         {p.editingValue === "customBadge" ? (
-          <input autoFocus value={p.editText} onChange={(e) => p.setEditText(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => { const v = p.editText.trim(); p.setCustomBadge(v || null); p.setEditingValue(null) }} onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }} className="w-28 text-right text-xs bg-background border border-zinc-700 rounded px-1 py-0.5 outline-none focus:border-accent" placeholder="Auto" />
+          <input autoFocus value={p.editText} onChange={(e) => p.setEditText(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => { const v = p.editText.trim(); p.setCustomBadge(v || null); p.setEditingValue(null) }} onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }} className="w-28 text-right text-xs bg-background border border-zinc-700 rounded px-1 py-0.5 outline-none focus:border-accent" placeholder="Scrivi badge..." />
         ) : (
-          <span onClick={() => { p.setEditText(p.customBadge || ""); p.setEditingValue("customBadge") }} className="text-xs text-zinc-300 cursor-pointer hover:text-accent transition-colors truncate max-w-[140px] text-right">{p.customBadge || <span className="text-zinc-500">Auto</span>}</span>
-        )}
-        {p.customBadge && p.editingValue !== "customBadge" && (
-          <button onClick={() => { p.setCustomBadge(null) }} className="text-xs text-red-400 hover:text-red-300 ml-1 shrink-0">✕</button>
+          <select value={p.customBadge ?? "__auto__"} onChange={(e) => {
+            const v = e.target.value
+            if (v === "__custom__") { p.setEditText(""); p.setEditingValue("customBadge") }
+            else if (v === "__auto__") p.setCustomBadge(null)
+            else p.setCustomBadge(v)
+          }} className="w-28 text-right text-xs bg-background border border-zinc-700 rounded px-1 py-0.5 outline-none focus:border-accent cursor-pointer">
+            <option value="__auto__">Auto</option>
+            {(() => {
+              const s = p.selected
+              if (!s) return null
+              const now = Date.now()
+              const twoWeeks = 14 * 24 * 60 * 60 * 1000
+              const isNewMovie = s.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
+              const isNewSeries = s.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
+              const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards) : null
+              const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations) : null
+              const animeRankData = p.mdblistAnimeList?.find((a: any) => a.id === s.id)
+              const animeRank = animeRankData ? animeRankData.rank : null
+              const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
+              const tvType = s.media_type === "tv" ? p.metaInfo.type : null
+              const tvStatus = s.media_type === "tv" ? p.metaInfo.status : null
+              const extra = computeExtraFallback({ mediaType: s.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus })
+              const options = getAllBadgeOptions({
+                isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank,
+                award, franchise: p.metaInfo.franchise || null, nomination, studio,
+                director: p.metaInfo.director || null, extra,
+                mediaType: s.media_type === "tv" ? "tv" : "movie",
+                voteAverage: p.metaInfo.voteAverage, tvType, tvStatus,
+              })
+              return options.map((o) => <option key={o} value={o}>{o}</option>)
+            })()}
+            <option value="__custom__">✏️ Personalizzato...</option>
+          </select>
         )}
       </div>
       <div className="space-y-1 mt-2">

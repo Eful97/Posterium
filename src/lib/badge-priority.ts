@@ -44,3 +44,40 @@ export function computeExtraFallback(params: {
   if (params.voteAverage >= 8.5) return "Da divorare"
   return null
 }
+
+export function getAllBadgeOptions(params: {
+  isNewMovie: boolean
+  isNewSeries: boolean
+  animeRank: number | null
+  trendRank: number | null
+  award: string | null
+  franchise: string | null
+  nomination: string | null
+  studio: string | null
+  director: string | null
+  extra: string | null
+  mediaType: "movie" | "tv"
+  voteAverage: number
+  tvType: string | null | undefined
+  tvStatus: string | null | undefined
+}): string[] {
+  const options = new Set<string>()
+  if (params.isNewMovie) options.add("Nuovo film")
+  if (params.isNewSeries) options.add("Nuova serie")
+  if (params.trendRank) options.add("Oggi")
+  if (params.animeRank) options.add("Anime")
+  if (params.award) options.add(params.award)
+  if (params.franchise) options.add(params.franchise)
+  if (params.nomination) options.add(params.nomination)
+  if (params.studio) options.add(params.studio)
+  if (params.director) options.add(params.director)
+  if (params.extra) options.add(params.extra)
+  if (params.mediaType === "movie" && params.voteAverage >= 8.5) options.add("Il più votato")
+  if (params.mediaType === "tv") {
+    if (params.tvType === "Miniseries") options.add("Miniserie")
+    if (params.tvStatus === "Returning Series") options.add("Ritorna")
+    if (params.voteAverage >= 8.5) options.add("Da divorare")
+  }
+  options.delete("")
+  return [...options]
+}
