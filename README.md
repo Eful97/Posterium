@@ -20,8 +20,9 @@ pinned: false
 
 - 🔍 **Ricerca TMDB** — Cerca film e serie TV in italiano e inglese
 - 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y
-- 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi (scuri su poster chiari, chiari su scuri)
-- 🏷️ **Badge genere/rating** — Genere, stella ★ e voto aggregato in sovrimpressione
+- 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi con ombra proporzionale e text-shadow sincronizzato
+- 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, con overflow protection e sfumatura personalizzabile
+- 🎨 **Gradiente fondo** — Colore, opacità, altezza e sfumatura regolabili, sincronizzato client ↔ server
 - 📊 **Rating** — Media da 9 fonti: IMDb, TMDb, Metacritic, Rotten Tomatoes (critica + pubblico), Letterboxd, Trakt, MyAnimeList, Kitsu via MDBList
 - 📋 **I miei poster** — Filtri per tipo (Film/Serie TV/Anime), ordinamento, ricerca, layout responsive
 - 🔔 **Aggiornamenti automatici** — Badge versione in alto a sinistra, notifica nuove release da GitHub
@@ -122,6 +123,11 @@ Genera un poster personalizzato via URL.
 | `badges` | Mostra badge genere | `?badges=1` |
 | `ranking` | Mostra badge trend | `?ranking=1` |
 | `lang` | Lingua | `?lang=it` |
+| `gradColor` | Colore gradiente (hex) | `?gradColor=%23000000` |
+| `gradOpacity` | Opacità gradiente (0–1) | `?gradOpacity=0.9` |
+| `gradHeight` | Altezza gradiente (5–100%) | `?gradHeight=85` |
+| `gradFade` | Sfumatura gradiente (0–100%) | `?gradFade=10` |
+| `tl` | Forza tema chiaro (1/0) | `?tl=1` |
 
 **Esempio:** `/api/poster/tv/260592?api_key=xxx&rank=4&genreName=Animazione&voteAverage=8.2`
 
@@ -154,7 +160,7 @@ Genera un poster personalizzato via URL.
 
 ### Badge genere/rating
 
-Sfumatura nera 90% → trasparente con genere, •, ★ e voto aggregato (media da 9 fonti via MDBList o fallback OMDb/TMDB) centrato in basso.
+Badge con genere, •, ★ e voto aggregato centrato in basso, con sfumatura fondo personalizzabile (colore, opacità, altezza, fade) sincronizzata client ↔ server.
 
 ### Logo
 
