@@ -1,4 +1,4 @@
-export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opacity = 1, pct = 50, fade = 0, dir = "up"): { svg: string; top: number; height: number } {
+export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opacity = 1, pct = 50, fade = 0, dir = "up", fadeWidth = 20): { svg: string; top: number; height: number } {
   const gh = Math.max(Math.round(ph * pct / 100), 100)
   const top = dir === "up" ? ph - gh : 0
   const hex = color.replace("#", "")
@@ -7,7 +7,7 @@ export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opa
   const b = parseInt(hex.substring(4, 6), 16) || 0
   const cappedFade = Math.min(fade, 100)
   const svgSolidPct = 100 - cappedFade
-  const svgFadeEnd = Math.max(100 - Math.min(cappedFade + 20, 100), 0)
+  const svgFadeEnd = Math.max(100 - Math.min(cappedFade + fadeWidth, 100), 0)
   const y1 = dir === "up" ? "0" : "1"
   const y2 = dir === "up" ? "1" : "0"
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}">

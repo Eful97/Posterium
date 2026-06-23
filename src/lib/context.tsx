@@ -69,6 +69,8 @@ export interface PosteriumCtx {
   setGradientHeight: React.Dispatch<React.SetStateAction<number>>
   gradientFade: number
   setGradientFade: React.Dispatch<React.SetStateAction<number>>
+  gradientFadeWidth: number
+  setGradientFadeWidth: React.Dispatch<React.SetStateAction<number>>
   gradientDir: string
   setGradientDir: React.Dispatch<React.SetStateAction<string>>
   trendRank: number | null
@@ -194,6 +196,7 @@ export function usePosterium(): PosteriumCtx {
   const [gradientOpacity, setGradientOpacity] = useState(1)
   const [gradientHeight, setGradientHeight] = useState(50)
   const [gradientFade, setGradientFade] = useState(10)
+  const [gradientFadeWidth, setGradientFadeWidth] = useState(20)
   const [gradientDir, setGradientDir] = useState("up")
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
@@ -287,6 +290,8 @@ export function usePosterium(): PosteriumCtx {
     if (gf !== null) setGradientFade(Number(gf))
     const gd = localStorage.getItem("gradient_dir")
     if (gd !== null) setGradientDir(gd)
+    const gfw = localStorage.getItem("gradient_fade_width")
+    if (gfw !== null) setGradientFadeWidth(Number(gfw))
   }, [])
 
   const pickLang = (l: string) => {
@@ -487,11 +492,12 @@ export function usePosterium(): PosteriumCtx {
     params.push(`gradOpacity=${gradientOpacity}`)
     params.push(`gradHeight=${gradientHeight}`)
     params.push(`gradFade=${gradientFade}`)
+    params.push(`gradFadeWidth=${gradientFadeWidth}`)
     params.push(`gradDir=${gradientDir}`)
     params.push("rv=36")
     url += "?" + params.join("&")
     setUrlPattern(url)
-  }, [globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientDir, tmdbKey, lang])
+  }, [globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientFadeWidth, gradientDir, tmdbKey, lang])
 
 
   const buildPreviewUrl = useCallback(() => {
@@ -517,6 +523,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`gradOpacity=${gradientOpacity}`)
     params.push(`gradHeight=${gradientHeight}`)
     params.push(`gradFade=${gradientFade}`)
+    params.push(`gradFadeWidth=${gradientFadeWidth}`)
     params.push(`gradDir=${gradientDir}`)
     if (rankingBadges) {
       const edgeLum = (() => {
@@ -964,6 +971,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     gradientOpacity, setGradientOpacity,
     gradientHeight, setGradientHeight,
     gradientFade, setGradientFade,
+    gradientFadeWidth, setGradientFadeWidth,
     gradientDir, setGradientDir,
     trendRank,
     mdblistMatch,
@@ -994,7 +1002,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     logos, posterActivePath, previewUrl, urlPattern, lang,
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
-    globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientDir, trendRank, mdblistMatch, metaInfo, previewId,
+    globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientFadeWidth, gradientDir, trendRank, mdblistMatch, metaInfo, previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,

@@ -33,7 +33,7 @@ export function RankingBadge({ rank = "13", label: labelProp, topLight, containe
   )
 }
 
-export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientColor = "#000000", gradientOpacity = 1, gradientHeight = 50, gradientFade = 0, gradientDir = "up", releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientColor?: string; gradientOpacity?: number; gradientHeight?: number; gradientFade?: number; gradientDir?: string; releaseDate?: string | null }) {
+export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientColor = "#000000", gradientOpacity = 1, gradientHeight = 50, gradientFade = 0, gradientFadeWidth = 20, gradientDir = "up", releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientColor?: string; gradientOpacity?: number; gradientHeight?: number; gradientFade?: number; gradientFadeWidth?: number; gradientDir?: string; releaseDate?: string | null }) {
   const voteStr = voteAverage.toFixed(1)
   const year = releaseDate?.slice(0, 4)
   const yearStr = year || ""
@@ -67,7 +67,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const g = parseInt(hex.substring(2, 4), 16) || 0
   const b = parseInt(hex.substring(4, 6), 16) || 0
   const gf = Math.min(gradientFade, 100)
-  const fadeEnd = Math.min(gf + 20, 100)
+  const fadeEnd = Math.min(gf + gradientFadeWidth, 100)
   const dirCSS = gradientDir === "down" ? "to bottom" : "to top"
   const posClass = gradientDir === "down" ? "top-0" : "bottom-0"
   const bottomVal = gradientDir === "down" ? undefined : `${bottom}px`
@@ -76,7 +76,6 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
     <>
       <div className={`absolute ${posClass} left-0 right-0`} style={{
         background: `linear-gradient(${dirCSS}, rgba(${r},${g},${b},${gradientOpacity}) 0%, rgba(${r},${g},${b},${gradientOpacity}) ${gf}%, rgba(${r},${g},${b},0) ${fadeEnd}%, rgba(${r},${g},${b},0) 100%)`,
-
         height: `${gradientHeight}%`,
         minHeight: `${minH}px`,
         pointerEvents: "none",
