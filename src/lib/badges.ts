@@ -1,6 +1,6 @@
-export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opacity = 0.8, pct = 30, fade = 30, dir = "up", fadeWidth = 50): { svg: string; top: number; height: number } {
+export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opacity = 0.8, pct = 30, fade = 30, fadeWidth = 50): { svg: string; top: number; height: number } {
   const gh = Math.max(Math.round(ph * pct / 100), 100)
-  const top = dir === "up" ? ph - gh : 0
+  const top = ph - gh
   const hex = color.replace("#", "")
   const r = parseInt(hex.substring(0, 2), 16) || 0
   const g = parseInt(hex.substring(2, 4), 16) || 0
@@ -8,11 +8,9 @@ export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opa
   const cappedFade = Math.min(fade, 100)
   const svgSolidPct = 100 - cappedFade
   const svgFadeEnd = Math.max(100 - Math.min(cappedFade + fadeWidth, 100), 0)
-  const y1 = dir === "up" ? "0" : "1"
-  const y2 = dir === "up" ? "1" : "0"
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}">
   <defs>
-    <linearGradient id="g" x1="0" y1="${y1}" x2="0" y2="${y2}">
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="rgba(${r},${g},${b},0)"/>
       <stop offset="${svgFadeEnd}%" stop-color="rgba(${r},${g},${b},0)"/>
       <stop offset="${svgSolidPct}%" stop-color="rgba(${r},${g},${b},${opacity})"/>
