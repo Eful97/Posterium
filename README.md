@@ -19,9 +19,11 @@ pinned: false
 ## ✨ Features
 
 - 🔍 **Ricerca TMDB** — Cerca film e serie TV in italiano e inglese
+- 🌐 **Internazionalizzazione** — 5 lingue (Italiano, English, Français, Deutsch, Español) per badge e UI completa
 - 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y
 - 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi con ombra proporzionale e text-shadow sincronizzato
 - 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, con overflow protection e sfumatura personalizzabile
+- ✏️ **Badge personalizzato** — Sostituisci il badge automatico con testo libero, per ogni titolo individualmente
 - 🎨 **Gradiente fondo** — Colore, opacità, altezza e sfumatura regolabili, sincronizzato client ↔ server
 - 📊 **Rating** — Media da 9 fonti: IMDb, TMDb, Metacritic, Rotten Tomatoes (critica + pubblico), Letterboxd, Trakt, MyAnimeList, Kitsu via MDBList
 - 📋 **I miei poster** — Filtri per tipo (Film/Serie TV/Anime), ordinamento, ricerca, layout responsive
@@ -118,11 +120,11 @@ Genera un poster personalizzato via URL.
 | `genreName` | Nome genere | `?genreName=Thriller` |
 | `voteAverage` | Voto medio | `?voteAverage=7.5` |
 | `rank` | Posizione classifica | `?rank=4` |
-| `label` | Etichetta classifica | `?label=Anime` |
-| `extra` | Badge speciale | `?extra=Nuova+serie` |
+| `label` | Etichetta classifica | `?label=Today` |
+| `extra` | Badge speciale | `?extra=New+series` |
 | `badges` | Mostra badge genere | `?badges=1` |
 | `ranking` | Mostra badge trend | `?ranking=1` |
-| `lang` | Lingua | `?lang=it` |
+| `lang` | Lingua (it/en/fr/de/es) | `?lang=it` |
 | `gradColor` | Colore gradiente (hex) | `?gradColor=%23000000` |
 | `gradOpacity` | Opacità gradiente (0–1) | `?gradOpacity=0.9` |
 | `gradHeight` | Altezza gradiente (5–100%) | `?gradHeight=85` |
