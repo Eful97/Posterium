@@ -191,10 +191,10 @@ export function usePosterium(): PosteriumCtx {
   const [rankingBadges, setRankingBadges] = useState(true)
   const [customBadge, setCustomBadge] = useState<string | null>(null)
   const [gradientColor, setGradientColor] = useState("#000000")
-  const [gradientOpacity, setGradientOpacity] = useState(1)
-  const [gradientHeight, setGradientHeight] = useState(5)
-  const [gradientFade, setGradientFade] = useState(32)
-  const [gradientFadeWidth, setGradientFadeWidth] = useState(100)
+  const [gradientOpacity, setGradientOpacity] = useState(0.8)
+  const [gradientHeight, setGradientHeight] = useState(30)
+  const [gradientFade, setGradientFade] = useState(30)
+  const [gradientFadeWidth, setGradientFadeWidth] = useState(50)
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
@@ -760,6 +760,11 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       setGradientHeight(5)
       setGradientFade(32)
       setGradientFadeWidth(100)
+    } else {
+      setGradientOpacity(0.8)
+      setGradientHeight(30)
+      setGradientFade(30)
+      setGradientFadeWidth(50)
     }
   }, [selected])
 

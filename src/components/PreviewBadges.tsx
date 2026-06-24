@@ -33,7 +33,7 @@ export function RankingBadge({ rank = "13", label: labelProp, topLight, containe
   )
 }
 
-export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientColor = "#000000", gradientOpacity = 1, gradientHeight = 5, gradientFade = 32, gradientFadeWidth = 100, releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientColor?: string; gradientOpacity?: number; gradientHeight?: number; gradientFade?: number; gradientFadeWidth?: number; releaseDate?: string | null }) {
+export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientColor = "#000000", gradientOpacity = 0.8, gradientHeight = 30, gradientFade = 30, gradientFadeWidth = 50, releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientColor?: string; gradientOpacity?: number; gradientHeight?: number; gradientFade?: number; gradientFadeWidth?: number; releaseDate?: string | null }) {
   const voteStr = voteAverage.toFixed(1)
   const year = releaseDate?.slice(0, 4)
   const yearStr = year || ""
