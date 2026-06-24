@@ -488,7 +488,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`gradHeight=${gradientHeight}`)
     params.push(`gradFade=${gradientFade}`)
     params.push(`gradFadeWidth=${gradientFadeWidth}`)
-    params.push("rv=36")
+    params.push("rv=37")
     url += "?" + params.join("&")
     setUrlPattern(url)
   }, [globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientFadeWidth, tmdbKey, lang])
