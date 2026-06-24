@@ -356,6 +356,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const s = ph / 1500
     const { svg: gradSvg, top: gradTop, height: gradH } = bottomGradientSVG(pw, ph, qGradColor || undefined, qGradOpacity ? Number(qGradOpacity) : undefined, qGradHeight ? Number(qGradHeight) : undefined, qGradFade ? Number(qGradFade) : undefined, qGradFadeWidth ? Number(qGradFadeWidth) : undefined)
 
+    composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
+
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
       try {
         const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
@@ -408,7 +410,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             .toBuffer()
           composites.push({ input: fadedBlur2, top: bTop, left: bLeft })
         }
-        composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
         composites.push({ input: png, top: badgeY, left: badgeLeft })
       } catch {
         // genre badge rendering failed, skip it
