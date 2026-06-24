@@ -191,10 +191,10 @@ export function usePosterium(): PosteriumCtx {
   const [rankingBadges, setRankingBadges] = useState(true)
   const [customBadge, setCustomBadge] = useState<string | null>(null)
   const [gradientColor, setGradientColor] = useState("#000000")
-  const [gradientOpacity, setGradientOpacity] = useState(0.8)
-  const [gradientHeight, setGradientHeight] = useState(30)
-  const [gradientFade, setGradientFade] = useState(30)
-  const [gradientFadeWidth, setGradientFadeWidth] = useState(50)
+  const [gradientOpacity, setGradientOpacity] = useState(1)
+  const [gradientHeight, setGradientHeight] = useState(5)
+  const [gradientFade, setGradientFade] = useState(32)
+  const [gradientFadeWidth, setGradientFadeWidth] = useState(100)
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
@@ -755,6 +755,12 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     if (!selected) return
     setPreviewPoster(image)
     setPreviewId(`${selected.media_type}:${selected.id}`)
+    if (image.iso_639_1 !== null) {
+      setGradientOpacity(1)
+      setGradientHeight(5)
+      setGradientFade(32)
+      setGradientFadeWidth(100)
+    }
   }, [selected])
 
   const selectLogo = useCallback(async (logo: TMDBImage) => {
