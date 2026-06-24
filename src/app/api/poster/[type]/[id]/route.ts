@@ -364,52 +364,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year)
         const badgeY = ph - h - Math.round(20 * ph / 570)
         const badgeLeft = Math.round((pw - w) / 2)
-        const pad = 40
-        const bLeft = Math.max(0, badgeLeft - pad)
-        const bTop = Math.max(0, badgeY - pad)
-        const bRight = Math.min(pw, badgeLeft + w + pad)
-        const bBottom = Math.min(ph, badgeY + h + pad)
-        const bW = bRight - bLeft
-        const bH = bBottom - bTop
-        if (bW > 20 && bH > 20) {
-          const blurred = await sharp(posterBuf)
-            .extract({ left: bLeft, top: bTop, width: bW, height: bH })
-            .blur(20)
-            .ensureAlpha()
-            .png()
-            .toBuffer()
-          const padPctX = Math.round(pad / bW * 100)
-          const padPctY = Math.round(pad / bH * 100)
-          const maskXSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${bW}" height="${bH}">
-            <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="white" stop-opacity="1"/>
-              <stop offset="${padPctX}%" stop-color="white" stop-opacity="0"/>
-              <stop offset="${100 - padPctX}%" stop-color="white" stop-opacity="0"/>
-              <stop offset="100%" stop-color="white" stop-opacity="1"/>
-            </linearGradient></defs>
-            <rect width="${bW}" height="${bH}" fill="url(#g)"/>
-          </svg>`
-          const maskYSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${bW}" height="${bH}">
-            <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="white" stop-opacity="1"/>
-              <stop offset="${padPctY}%" stop-color="white" stop-opacity="0"/>
-              <stop offset="${100 - padPctY}%" stop-color="white" stop-opacity="0"/>
-              <stop offset="100%" stop-color="white" stop-opacity="1"/>
-            </linearGradient></defs>
-            <rect width="${bW}" height="${bH}" fill="url(#g)"/>
-          </svg>`
-          const maskXBuf = await sharp(Buffer.from(maskXSvg)).png().toBuffer()
-          const maskYBuf = await sharp(Buffer.from(maskYSvg)).png().toBuffer()
-          const fadedBlur = await sharp(blurred)
-            .composite([{ input: maskXBuf, blend: 'dest-out' }])
-            .png()
-            .toBuffer()
-          const fadedBlur2 = await sharp(fadedBlur)
-            .composite([{ input: maskYBuf, blend: 'dest-out' }])
-            .png()
-            .toBuffer()
-          composites.push({ input: fadedBlur2, top: bTop, left: bLeft })
-        }
         composites.push({ input: png, top: badgeY, left: badgeLeft })
       } catch {
         // genre badge rendering failed, skip it
