@@ -757,8 +757,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     setPreviewId(`${selected.media_type}:${selected.id}`)
     if (image.iso_639_1 !== null) {
       setGradientOpacity(1)
-      setGradientHeight(5)
-      setGradientFade(32)
+      setGradientHeight(15)
+      setGradientFade(55)
       setGradientFadeWidth(100)
     } else {
       setGradientOpacity(0.8)
