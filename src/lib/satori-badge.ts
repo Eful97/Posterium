@@ -225,7 +225,7 @@ export async function renderGenreBadge(
   }
   const { starW, gap, gapStar, pad, totalW, svgH } = dims
   const m = Math.round(finalFontSize * 0.17)
-  let textShadow = "0 4px 6px rgba(0,0,0,0.5)"
+  let textShadow = "0 5px 8px rgba(0,0,0,0.6)"
   if (s === "outline") {
     textShadow = "1px 1px 0 rgba(0,0,0,0.9), -1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9)"
   } else if (s !== "shadow") {
@@ -274,8 +274,9 @@ export async function renderGenreBadge(
           alignItems: "center",
           width: `${pw}px`,
           height: `${barH}px`,
-          backgroundColor: "rgba(0,0,0,0.65)",
+          backgroundColor: "rgba(0,0,0,0.70)",
           borderTop: "1px solid rgba(255,255,255,0.10)",
+          borderRadius: "10px 10px 0 0",
         },
       },
       React.createElement(

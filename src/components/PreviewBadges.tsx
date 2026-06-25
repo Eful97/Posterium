@@ -72,13 +72,16 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const pillR = Math.round(fs * 0.8)
   const isBarStyle = badgeStyle === "bar"
   const styleOffset = isPillLike ? -pillPad : 0
-  const bottom = isBarStyle ? 0 : 20 * containerH / 570 + bottomOffset + styleOffset
+  const shadowBottom = 20 * containerH / 570 + bottomOffset
+  const bottom = isBarStyle
+    ? Math.max(0, Math.round(shadowBottom + fs / 2 - (fs + Math.round(fs * 0.5) * 2) / 2))
+    : shadowBottom + styleOffset
   const minH = Math.round(100 * containerH / 1500)
   const opaquePct = Math.max(100 - blurFade, 0)
   const textShadow = badgeStyle === "outline"
     ? "1px 1px 0 rgba(0,0,0,0.9), -1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9)"
     : badgeStyle === "shadow"
-    ? "0 4px 6px rgba(0,0,0,0.5)"
+    ? "0 5px 8px rgba(0,0,0,0.6)"
     : "none"
   const textEls = (
     <>
@@ -106,8 +109,9 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
       {badgeStyle === "bar" ? (
         <div className="absolute bottom-0 left-0 right-0" style={{
           height: `${fs + Math.round(fs * 0.5) * 2}px`,
-          backgroundColor: "rgba(0,0,0,0.65)",
+          backgroundColor: "rgba(0,0,0,0.70)",
           borderTop: "1px solid rgba(255,255,255,0.10)",
+          borderRadius: "10px 10px 0 0",
           pointerEvents: "none",
         }}>
           <div className="w-full h-full flex justify-center items-center font-bold whitespace-nowrap" style={{

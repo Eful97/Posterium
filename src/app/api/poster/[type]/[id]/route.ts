@@ -410,7 +410,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const accentColor = genreColor || "#555555"
         const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor)
         if (badgeStyle === "bar") {
-          composites.push({ input: png, top: ph - h, left: 0 })
+          const margin = Math.round(20 * ph / 570)
+          const approxFs = Math.round(24 * pw / 380)
+          const svgH = Math.max(Math.round(approxFs * 1.6), 24)
+          const alignTopMargin = Math.round(margin + svgH / 2 - h / 2)
+          composites.push({ input: png, top: ph - h - alignTopMargin, left: 0 })
         } else {
           const badgeY = ph - h - Math.round(20 * ph / 570)
           const badgeLeft = Math.round((pw - w) / 2)
