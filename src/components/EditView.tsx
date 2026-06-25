@@ -72,7 +72,7 @@ export default function EditView() {
   const posterCol = (
     <div className="w-full md:w-72 xl:w-80 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1 space-y-4" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
-        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">{p.t("ui.posterSection")}</h3>
+        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.posterSection")}</h3>
         {p.loadingImages ? <div className="text-center py-12 text-zinc-400">{p.t("ui.loadingPoster")}</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} selected={p.selected} lang={p.lang} openSections={p.openSections} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} />}
       </div>
     </div>
@@ -83,7 +83,7 @@ export default function EditView() {
   const previewCol = (
     <div className="w-full max-w-[400px] md:w-[400px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
-        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">{p.t("ui.previewSection")}</h3>
+        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.previewSection")}</h3>
         <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
         <div ref={previewRef} className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
           {p.previewPoster && !imageError && <img src={p.posterUrl(p.previewPoster.file_path, "w342")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onError={() => setImageError(true)} />}
@@ -280,13 +280,13 @@ export default function EditView() {
   const logoCol = (
     <div className="w-full md:w-72 xl:w-80 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-3 space-y-4" style={{ animationDelay: "120ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
-        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">{p.t("ui.logoSection")}</h3>
+        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.logoSection")}</h3>
         <LogoOptions logos={p.logos} selectedLogo={p.selectedLogo} lang={p.lang} selectLogo={p.selectLogo} removeLogo={p.removeLogo} disabled={!cleanPoster} />
         {!cleanPoster && <p className="text-xs text-zinc-500 text-center mt-2 px-1">{p.t("ui.logoHint")}</p>}
       </div>
 
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
-        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">{p.t("ui.badgeSection")}</h3>
+        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.badgeSection")}</h3>
         <div className="space-y-2.5">
           <div className="flex items-center justify-between px-1">
             <span className="text-xs text-zinc-400">{p.t("ui.trendBadge")}</span>
