@@ -2,7 +2,7 @@
 
 import { useP } from "@/lib/context"
 
-export function RankingBadge({ rank = "13", label: labelProp, topLight, containerW = 380 }: { rank?: number | string; label?: string; topLight?: boolean; containerW?: number }) {
+export function RankingBadge({ rank = "13", label: labelProp, containerW = 380 }: { rank?: number | string; label?: string; containerW?: number }) {
   const p = useP()
   const label = labelProp ?? p.t("ui.today") ?? "Oggi"
   const base = 23 * containerW / 380
@@ -16,19 +16,17 @@ export function RankingBadge({ rank = "13", label: labelProp, topLight, containe
   const px = Math.round(fs)
   const py = Math.round(fs * 0.5)
   const r = Math.round(fs * 0.7)
-  const bg = topLight ? "bg-black/80" : "bg-white/80"
-  const text = topLight ? "text-white/80" : "text-black/80"
   const shadowBlur = Math.round(fs * 0.6)
   const shadowOff = Math.round(fs * 0.2)
   return (
-    <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} font-semibold tracking-wide whitespace-nowrap`} style={{
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 font-semibold tracking-wide whitespace-nowrap" style={{
       padding: `${py}px ${px}px`,
       borderBottomLeftRadius: `${r}px`,
       borderBottomRightRadius: `${r}px`,
       boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
       fontSize: `${fs}px`,
     }}>
-      <span className={text}>#{rank} {label}</span>
+      <span className="text-white/80">#{rank} {label}</span>
     </div>
   )
 }
@@ -168,7 +166,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   )
 }
 
-export function ExtraBadge({ label, topLight, containerW = 380 }: { label: string; topLight?: boolean; containerW?: number }) {
+export function ExtraBadge({ label, containerW = 380 }: { label: string; containerW?: number }) {
   const base = 23 * containerW / 380
   const maxBadgeW = containerW - 20
   let finalFs = base
@@ -179,19 +177,17 @@ export function ExtraBadge({ label, topLight, containerW = 380 }: { label: strin
   const px = Math.round(fs)
   const py = Math.round(fs * 0.5)
   const r = Math.round(fs * 0.7)
-  const bg = topLight ? "bg-black/80" : "bg-white/80"
-  const text = topLight ? "text-white/80" : "text-black/80"
   const shadowBlur = Math.round(fs * 0.6)
   const shadowOff = Math.round(fs * 0.2)
   return (
-    <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${bg} font-semibold tracking-wide whitespace-nowrap`} style={{
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 font-semibold tracking-wide whitespace-nowrap" style={{
       padding: `${py}px ${px}px`,
       borderBottomLeftRadius: `${r}px`,
       borderBottomRightRadius: `${r}px`,
       boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
       fontSize: `${fs}px`,
     }}>
-      <span className={text}>{label}</span>
+      <span className="text-white/80">{label}</span>
     </div>
   )
 }

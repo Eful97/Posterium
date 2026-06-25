@@ -294,23 +294,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return pColor || lColor || (fallbackGenre ? (GENRE_FALLBACK[fallbackGenre] || '#555') : '#555')
     }
 
-    async function topLuminance(buf: Buffer): Promise<number> {
-      const meta = await sharp(buf).metadata()
-      const w = meta.width || STD_W
-      const h = meta.height || STD_H
-      const stripH = Math.max(Math.round(h * 0.08), 3)
-      const extracted = await sharp(buf)
-        .extract({ left: 0, top: 0, width: w, height: stripH })
-        .raw().toBuffer()
-      let r = 0, g = 0, b = 0, n = 0
-      for (let i = 0; i < extracted.length; i += 4) { r += extracted[i]; g += extracted[i + 1]; b += extracted[i + 2]; n++ }
-      r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n)
-      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-    }
-
-    const topLum = await topLuminance(posterBuf)
-    const qTopLight = req.nextUrl.searchParams.get("tl")
-    const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.55
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
@@ -470,11 +453,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     if (topBadge) {
       try {
         if (topBadge.type === "extra") {
-          const { png: extraPng, w, h } = await renderExtraBadge(topBadge.label, pw, topLight)
+          const { png: extraPng, w, h } = await renderExtraBadge(topBadge.label, pw)
           const extraLeft = Math.round((pw - w) / 2)
           composites.push({ input: extraPng, top: 0, left: extraLeft })
         } else {
-          const { png: rankPng, w, h } = await renderRankingBadge(topBadge.rank, pw, topBadge.label, topLight)
+          const { png: rankPng, w, h } = await renderRankingBadge(topBadge.rank, pw, topBadge.label)
           const rankLeft = Math.round((pw - w) / 2)
           composites.push({ input: rankPng, top: 0, left: rankLeft })
         }

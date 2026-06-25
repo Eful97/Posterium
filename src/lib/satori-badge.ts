@@ -45,7 +45,6 @@ export async function renderRankingBadge(
   rank: number,
   pw: number,
   label?: string,
-  topLight?: boolean
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const periodMap: Record<string, string> = { day: "Oggi", week: "Settimana" }
   const periodText = label || periodMap["day"] || "Oggi"
@@ -65,8 +64,6 @@ export async function renderRankingBadge(
   const totalW = textW + px * 2
   const svgH = finalFontSize + pt + pb
   const r = Math.round(finalFontSize * 0.7)
-  const bg = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
-  const fg = topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"
   const shadowBlur = Math.round(finalFontSize * 0.6)
   const shadowOff = Math.round(finalFontSize * 0.2)
 
@@ -88,7 +85,7 @@ export async function renderRankingBadge(
         justifyContent: "center",
         width: `${totalW}px`,
         height: `${svgH}px`,
-        backgroundColor: bg,
+        backgroundColor: "rgba(0,0,0,0.80)",
         borderBottomLeftRadius: `${r}px`,
         borderBottomRightRadius: `${r}px`,
         boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
@@ -96,7 +93,7 @@ export async function renderRankingBadge(
     },
       React.createElement("span", {
         style: {
-          color: fg,
+          color: "rgba(255,255,255,0.80)",
           fontSize: `${finalFontSize}px`,
           fontFamily: "Inter",
           fontWeight: 600,
@@ -115,12 +112,9 @@ export async function renderRankingBadge(
 export async function renderExtraBadge(
   label: string,
   pw: number,
-  topLight?: boolean
 ): Promise<{ png: Buffer; w: number; h: number }> {
   let finalFontSize = Math.round(23 * pw / 380)
   const maxBadgeW = pw - 20
-  // renderW = label.length * fs * 0.58 + fs * 2.0 + fs * 0.6 * 2
-  //        = fs * (label.length * 0.58 + 3.2)
   if (finalFontSize * (label.length * 0.58 + 3.2) > maxBadgeW) {
     finalFontSize = Math.round(maxBadgeW / (label.length * 0.58 + 3.2))
   }
@@ -132,8 +126,6 @@ export async function renderExtraBadge(
   const totalW = textW + px * 2
   const svgH = finalFontSize + pt + pb
   const r = Math.round(finalFontSize * 0.7)
-  const bg = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
-  const fg = topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"
   const shadowBlur = Math.round(finalFontSize * 0.6)
   const shadowOff = Math.round(finalFontSize * 0.2)
 
@@ -155,7 +147,7 @@ export async function renderExtraBadge(
         justifyContent: "center",
         width: `${totalW}px`,
         height: `${svgH}px`,
-        backgroundColor: bg,
+        backgroundColor: "rgba(0,0,0,0.80)",
         borderBottomLeftRadius: `${r}px`,
         borderBottomRightRadius: `${r}px`,
         boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
@@ -163,7 +155,7 @@ export async function renderExtraBadge(
     },
       React.createElement("span", {
         style: {
-          color: fg,
+          color: "rgba(255,255,255,0.80)",
           fontSize: `${finalFontSize}px`,
           fontFamily: "Inter",
           fontWeight: 600,
