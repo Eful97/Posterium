@@ -6,6 +6,7 @@ import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { GENRE_FALLBACK } from "@/lib/badges"
+import { findAccentColor } from "@/lib/accent-color"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
@@ -272,56 +273,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return 0.2126 * r + 0.7152 * g + 0.0722 * b
     }
 
-    async function extractMostSaturated(buf: Buffer): Promise<string> {
-      const pixelBuf = await sharp(buf).resize(200, 300, { fit: 'fill', kernel: 'nearest' }).raw().toBuffer()
-
-      // Gather valid pixels and compute bgMean
-      const pixels: { r: number; g: number; b: number; s: number; l: number }[] = []
-      for (let i = 0; i < pixelBuf.length; i += 4) {
-        const r = pixelBuf[i] / 255, g = pixelBuf[i + 1] / 255, b = pixelBuf[i + 2] / 255
-        const max = Math.max(r, g, b), min = Math.min(r, g, b)
-        const l = (max + min) / 2
-        const d = max - min
-        const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-        if (s < 0.05 || l < 0.03 || l > 0.97) continue
-        pixels.push({ r: pixelBuf[i], g: pixelBuf[i + 1], b: pixelBuf[i + 2], s, l })
-      }
-      if (pixels.length === 0) return ''
-
-      const n = pixels.length
-      const bgMean = { r: pixels.reduce((a, p) => a + p.r, 0) / n, g: pixels.reduce((a, p) => a + p.g, 0) / n, b: pixels.reduce((a, p) => a + p.b, 0) / n }
-
-      let bestScore = -1, best = pixels[0]
-      for (const p of pixels) {
-        const chroma = p.s * (1 - Math.abs(p.l - 0.5))
-        const dr = p.r - bgMean.r, dg = p.g - bgMean.g, db = p.b - bgMean.b
-        const divergence = Math.sqrt(dr * dr + dg * dg + db * db) / 441.67
-        const score = chroma * divergence
-        if (score > bestScore) { bestScore = score; best = p }
-      }
-
-      let cr = best.r, cg = best.g, cb = best.b
-      const clampLum = 0.2126 * cr / 255 + 0.7152 * cg / 255 + 0.0722 * cb / 255
-      if (clampLum < 0.4) {
-        cr = Math.round(cr + (255 - cr) * 0.2)
-        cg = Math.round(cg + (255 - cg) * 0.2)
-        cb = Math.round(cb + (255 - cb) * 0.2)
-      } else if (clampLum > 0.7) {
-        cr = Math.round(cr * 0.85)
-        cg = Math.round(cg * 0.85)
-        cb = Math.round(cb * 0.85)
-      }
-      cr = Math.max(0, Math.min(255, cr))
-      cg = Math.max(0, Math.min(255, cg))
-      cb = Math.max(0, Math.min(255, cb))
-
-      return `#${cr.toString(16).padStart(2, '0')}${cg.toString(16).padStart(2, '0')}${cb.toString(16).padStart(2, '0')}`
-    }
-
     async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fallbackGenre?: string | null): Promise<string> {
+      async function extractFrom(buf: Buffer, genre: string): Promise<string> {
+        const meta = await sharp(buf).metadata()
+        const w = meta.width || 500
+        const h = meta.height || 750
+        const pixels = await sharp(buf).ensureAlpha().raw().toBuffer()
+        const result = findAccentColor(pixels, w, h, genre)
+        return `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
+      }
       const [pColor, lColor] = await Promise.all([
-        extractMostSaturated(posterBuf),
-        logoBuf ? extractMostSaturated(logoBuf) : Promise.resolve(''),
+        extractFrom(posterBuf, fallbackGenre || ''),
+        logoBuf ? extractFrom(logoBuf, '') : Promise.resolve(''),
       ])
       if (pColor && lColor) {
         const pr = parseInt(pColor.slice(1,3),16), pg = parseInt(pColor.slice(3,5),16), pb = parseInt(pColor.slice(5,7),16)
