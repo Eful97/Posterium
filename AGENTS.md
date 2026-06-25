@@ -24,7 +24,10 @@ Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispetti
 | Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` | `"0 4px 6px rgba(0,0,0,0.5)"` |
 | Overflow protection | `fs` ridotto se `totalW > containerW - 20`, calcolato con `genreClientDims()` | Stessa logica: `totalW > pw - 20`, usa `genreBadgeDims()` riproporziona `fs` |
 | Allineamento verticale | Flex baseline naturale | Bullet `translateY(5px)`, Stella `translateY(fs * 0.23)`, Voto `translateY(5px)`, Anno `translateY(5px)` |
-| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg accentColor + pill con testo scuro/chiaro automatico; `outline` — textShadow outline; `bar` — bg accentColor full-width + testo automatico | Stessi stili in SVG con Satori. Per `pill`/`bar` usa `accentColor` con `_pillTextCol()` per testo |
+| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg `tlBg` (black/white 80% in base a `topLight`) con testo `tlFg`; `outline` — textShadow outline; `bar` — bg `tlBg` full-width + testo `tlFg` | Stessi stili in SVG con Satori. Per `pill`/`bar` usa `tlBg`/`tlFg` in base a `topLight` (stessa soglia > 0.80) |
+| Sfondo pill/bar (`tlBg`) | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
+| Testo pill/bar (`tlFg`) | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
+| Bordo bar | `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}` | `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}` |
 
 ## Badge Ranking/Extra
 

@@ -80,6 +80,16 @@ export default function EditView() {
 
   const badgesVisible = p.globalBadges && p.metaInfo.genres.length > 0 && p.metaInfo.voteAverage > 0
 
+  const genreTopLight = (() => {
+    const h = p.topEdgeColor
+    if (h.length < 7) return true
+    if (h === "#555555") return true
+    const r = parseInt(h.slice(1, 3), 16) / 255
+    const g = parseInt(h.slice(3, 5), 16) / 255
+    const b = parseInt(h.slice(5, 7), 16) / 255
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.80
+  })()
+
   const previewCol = (
     <div className="w-full max-w-[400px] md:w-[400px] xl:max-w-[520px] 2xl:max-w-[600px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3 overflow-hidden">
@@ -151,15 +161,6 @@ export default function EditView() {
             const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards, p.t) : null
             const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations, p.t) : null
 
-            const edgeLum = (() => {
-              const h = p.topEdgeColor
-              if (h.length < 7 || h === "#ffffff") return null
-              const r = parseInt(h.slice(1, 3), 16) / 255
-              const g = parseInt(h.slice(3, 5), 16) / 255
-              const b = parseInt(h.slice(5, 7), 16) / 255
-              return 0.2126 * r + 0.7152 * g + 0.0722 * b
-            })()
-            const topLight = edgeLum !== null ? edgeLum > 0.20 : true
             const animeRankData = p.mdblistAnimeList?.find((a: any) => a.id === p.selected?.id)
             const animeRank = animeRankData ? animeRankData.rank : null
             const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
@@ -176,12 +177,12 @@ export default function EditView() {
                 })()
               : autoBadge
             if (badge) {
-              if (badge.type === "extra") return <div className="absolute inset-0"><ExtraBadge label={badge.label} topLight={topLight} containerW={previewDims.w} /></div>
-              return <div className="absolute inset-0"><RankingBadge rank={badge.rank!} label={badge.rankLabel || badge.label} topLight={topLight} containerW={previewDims.w} /></div>
+              if (badge.type === "extra") return <div className="absolute inset-0"><ExtraBadge label={badge.label} topLight={genreTopLight} containerW={previewDims.w} /></div>
+              return <div className="absolute inset-0"><RankingBadge rank={badge.rank!} label={badge.rankLabel || badge.label} topLight={genreTopLight} containerW={previewDims.w} /></div>
             }
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} blurEnabled={p.blurEnabled} badgeStyle={p.badgeStyle} accentColor={p.accentColor} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} blurEnabled={p.blurEnabled} badgeStyle={p.badgeStyle} accentColor={p.accentColor} topLight={genreTopLight} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
           <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
@@ -205,10 +206,10 @@ export default function EditView() {
             params.push(`poster=${encodeURIComponent(p.previewPoster.file_path)}`)
             if (p.accentColor) params.push(`ac=${encodeURIComponent(p.accentColor)}`)
             const _h = p.topEdgeColor
-            const _edgeLum = _h.length >= 7 && _h !== "#ffffff"
+            const _edgeLum = _h.length >= 7 && _h !== "#555555"
               ? 0.2126 * parseInt(_h.slice(1, 3), 16) / 255 + 0.7152 * parseInt(_h.slice(3, 5), 16) / 255 + 0.0722 * parseInt(_h.slice(5, 7), 16) / 255
               : null
-            params.push(`tl=${_edgeLum !== null ? (_edgeLum > 0.20 ? "1" : "0") : "1"}`)
+            params.push(`tl=${_edgeLum !== null ? (_edgeLum > 0.80 ? "1" : "0") : "1"}`)
             const g = p.metaInfo.genres[0]?.name
             if (g) params.push(`genreName=${encodeURIComponent(g)}`)
             if (p.metaInfo.voteAverage > 0) params.push(`voteAverage=${p.metaInfo.voteAverage}`)

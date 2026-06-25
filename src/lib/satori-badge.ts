@@ -199,6 +199,7 @@ export async function renderGenreBadge(
   style?: string,
   accentColor?: string,
   barHeight?: number,
+  topLight?: boolean,
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const voteStr = voteAverage.toFixed(1)
   const yearStr = year || ""
@@ -237,9 +238,11 @@ export async function renderGenreBadge(
     textShadow = "none"
   }
 
-  const hasInlineY = isPillStyle || isBarStyle
-  const bulletY = hasInlineY ? "0px" : "5px"
-  const starY = hasInlineY ? "0px" : `${Math.round(finalFontSize * 0.23)}px`
+  const useTopLight = topLight !== undefined
+  const tlBg = useTopLight ? (topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)") : (accentColor || "rgba(0,0,0,0.70)")
+  const tlFg = useTopLight ? (topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)") : _pillTextCol(accentColor || "rgba(0,0,0,0.70)")
+  const bulletY = "5px"
+  const starY = `${Math.round(finalFontSize * 0.23)}px`
   const children: any[] = [
     React.createElement("span", null, genreName),
     React.createElement("span", { style: { transform: `translateY(${bulletY})` } }, "\u2022"),
@@ -268,9 +271,7 @@ export async function renderGenreBadge(
   let el: any
 
   if (s === "bar" || s === "glass") {
-    const barBg = accentColor || "rgba(0,0,0,0.70)"
-    const barCol = _pillTextCol(barBg)
-    const barTextStyle = { ...sharedTextStyle, color: barCol }
+    const barTextStyle = { ...sharedTextStyle, color: tlFg }
     const barPad = Math.round(finalFontSize * 0.5)
     const barH = Math.max(barHeight || 0, finalFontSize + barPad * 2)
     el = React.createElement(
@@ -282,8 +283,8 @@ export async function renderGenreBadge(
           alignItems: "center",
           width: `${pw}px`,
           height: `${barH}px`,
-          backgroundColor: barBg,
-          borderTop: "1px solid rgba(255,255,255,0.10)",
+          backgroundColor: tlBg,
+          borderTop: `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}`,
           borderRadius: "10px 10px 0 0",
         },
       },
@@ -303,10 +304,8 @@ export async function renderGenreBadge(
     const png = await render(el, pw, barH)
     return { png, w: pw, h: barH }
   } else if (s === "pill") {
-    const bgColor = accentColor || "rgba(0,0,0,0.65)"
     const borderStyle = {}
-    const pillCol = _pillTextCol(bgColor)
-    const pillTextStyle = { ...sharedTextStyle, color: pillCol }
+    const pillTextStyle = { ...sharedTextStyle, color: tlFg }
     const pillH = finalFontSize + pillPad * 2
     el = React.createElement(
       "div",
@@ -328,7 +327,7 @@ export async function renderGenreBadge(
             gap: `${gap}px`,
             padding: `${pillPad}px ${pillPad * 1.5}px`,
             borderRadius: `${pillR}px`,
-            backgroundColor: bgColor,
+            backgroundColor: tlBg,
             ...borderStyle,
             ...pillTextStyle,
           },

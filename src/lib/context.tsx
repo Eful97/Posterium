@@ -227,7 +227,7 @@ export function usePosterium(): PosteriumCtx {
   const [showLangPicker, setShowLangPicker] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
   const [accentColor, setAccentColor] = useState("#555555")
-  const [topEdgeColor, setTopEdgeColor] = useState("#ffffff")
+  const [topEdgeColor, setTopEdgeColor] = useState("#555555")
   const keyInit = useRef(false)
   const langInit = useRef(false)
   const settingsRef = useRef<HTMLDivElement>(null)
@@ -562,7 +562,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`bf=${blurFade}`)
     params.push(`bd=${blurDarkness}`)
     params.push(`bs=${badgeStyle}`)
-    params.push("rv=53")
+    params.push("rv=54")
     url += "?" + params.join("&")
     setUrlPattern(url)
   }, [globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, tmdbKey, lang])
@@ -596,13 +596,14 @@ export function usePosterium(): PosteriumCtx {
     if (rankingBadges) {
       const edgeLum = (() => {
         const h = topEdgeColor
-        if (h.length < 7 || h === "#ffffff") return null
+        if (h.length < 7) return null
+        if (h === "#555555") return null
         const r = parseInt(h.slice(1, 3), 16) / 255
         const g = parseInt(h.slice(3, 5), 16) / 255
         const b = parseInt(h.slice(5, 7), 16) / 255
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
       })()
-      const topLight = edgeLum !== null ? edgeLum > 0.20 : true
+      const topLight = edgeLum !== null ? edgeLum > 0.80 : true
       params.push(`tl=${topLight ? "1" : "0"}`)
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
@@ -644,33 +645,35 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
   useEffect(() => {
     return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current) }
   }, [])
-
   useEffect(() => {
     const root = document.documentElement
-    if (!previewPoster) { root.style.setProperty("--color-accent", "#555555"); setAccentColor("#555555"); setTopEdgeColor("#ffffff"); return }
+    if (!previewPoster) { root.style.setProperty("--color-accent", "#555555"); setAccentColor("#555555"); setTopEdgeColor("#555555"); return }
     const genreName = metaInfo.genres[0]?.name
     let cancelled = false
-    const url = posterUrl(previewPoster.file_path, "w342")
+    const url = posterUrl(previewPoster.file_path, "w342") + `?cb=${Date.now()}`
     const img = new Image()
     img.crossOrigin = "anonymous"
     img.onload = () => {
       if (cancelled) return
-      const w = Math.min(img.naturalWidth, 342)
-      const h = Math.round(w * img.naturalHeight / img.naturalWidth)
-      const canvas = document.createElement("canvas")
-      canvas.width = w; canvas.height = h
-      const ctx = canvas.getContext("2d")!
-      ctx.imageSmoothingEnabled = false
-      ctx.drawImage(img, 0, 0, w, h)
-      const pixels = ctx.getImageData(0, 0, w, h).data
-      const result = findAccentColor(pixels, w, h, genreName || '')
-      const c = `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
-      root.style.setProperty("--color-accent", c)
-      setAccentColor(c)
-      const edge = topEdgeAverage(pixels, w, h)
-      setTopEdgeColor(`#${edge.r.toString(16).padStart(2, '0')}${edge.g.toString(16).padStart(2, '0')}${edge.b.toString(16).padStart(2, '0')}`)
+      try {
+        const w = Math.min(img.naturalWidth, 342)
+        const h = Math.round(w * img.naturalHeight / img.naturalWidth)
+        if (!w || !h) return
+        const canvas = document.createElement("canvas")
+        canvas.width = w; canvas.height = h
+        const ctx = canvas.getContext("2d")!
+        ctx.imageSmoothingEnabled = false
+        ctx.drawImage(img, 0, 0, w, h)
+        const pixels = ctx.getImageData(0, 0, w, h).data
+        const result = findAccentColor(pixels, w, h, genreName || '')
+        const c = `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
+        root.style.setProperty("--color-accent", c)
+        setAccentColor(c)
+        const edge = topEdgeAverage(pixels, w, h)
+        setTopEdgeColor(`#${edge.r.toString(16).padStart(2, '0')}${edge.g.toString(16).padStart(2, '0')}${edge.b.toString(16).padStart(2, '0')}`)
+      } catch {}
     }
-    img.onerror = () => { if (!cancelled) { setAccentColor("#555555"); setTopEdgeColor("#ffffff") } }
+    img.onerror = () => { if (!cancelled) { setAccentColor("#555555"); setTopEdgeColor("#555555") } }
     img.src = url
     return () => { cancelled = true }
   }, [previewPoster])
