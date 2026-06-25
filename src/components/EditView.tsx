@@ -70,7 +70,7 @@ export default function EditView() {
   }, [])
 
   const posterCol = (
-    <div className="w-full md:w-72 xl:w-80 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1 space-y-4" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
+    <div className="w-full md:w-72 xl:w-80 2xl:w-96 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1 space-y-4" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.posterSection")}</h3>
         {p.loadingImages ? <div className="text-center py-12 text-zinc-400">{p.t("ui.loadingPoster")}</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} selected={p.selected} lang={p.lang} openSections={p.openSections} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} />}
@@ -81,7 +81,7 @@ export default function EditView() {
   const badgesVisible = p.globalBadges && p.metaInfo.genres.length > 0 && p.metaInfo.voteAverage > 0
 
   const previewCol = (
-    <div className="w-full max-w-[400px] md:w-[400px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
+    <div className="w-full max-w-[400px] md:w-[400px] xl:max-w-[520px] 2xl:max-w-[600px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.previewSection")}</h3>
         <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
@@ -278,7 +278,7 @@ export default function EditView() {
   const cleanPoster = p.previewPoster?.iso_639_1 === null
 
   const logoCol = (
-    <div className="w-full md:w-72 xl:w-80 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-3 space-y-4" style={{ animationDelay: "120ms", animationFillMode: "backwards" }}>
+    <div className="w-full md:w-72 xl:w-80 2xl:w-96 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-3 space-y-4" style={{ animationDelay: "120ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.logoSection")}</h3>
         <LogoOptions logos={p.logos} selectedLogo={p.selectedLogo} lang={p.lang} selectLogo={p.selectLogo} removeLogo={p.removeLogo} disabled={!cleanPoster} />
@@ -379,7 +379,7 @@ export default function EditView() {
               </div>
             )}
           </div>
-          <div className="flex flex-col md:flex-row gap-6 md:gap-4 justify-center xl:justify-between items-start w-full max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row gap-6 md:gap-4 xl:gap-6 justify-center items-start w-full xl:px-6 2xl:px-16">
             {previewCol}
             {posterCol}
             {logoCol}
