@@ -63,7 +63,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const pillPad = Math.round(fs * 0.35)
   const pillR = Math.round(fs * 0.8)
   const isPillLike = badgeStyle === "pill" || badgeStyle === "colored" || badgeStyle === "glass"
-  const styleOffset = isPillLike ? pillPad : 0
+  const styleOffset = isPillLike ? -pillPad : 0
   const bottom = 20 * containerH / 570 + bottomOffset + styleOffset
   const minH = Math.round(100 * containerH / 1500)
   const opaquePct = Math.max(100 - blurFade, 0)
