@@ -14,7 +14,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 48
+const RENDER_VERSION = 57
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -408,15 +408,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         genreColor = qAc || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName] || "#555555"
         const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
         const accentColor = genreColor || "#555555"
-        const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor)
+        const targetCenter = Math.round(25 * ph / 570)
         if (badgeStyle === "bar") {
-          const margin = Math.round(20 * ph / 570)
-          const approxFs = Math.round(24 * pw / 380)
-          const svgH = Math.max(Math.round(approxFs * 1.6), 24)
-          const alignTopMargin = Math.round(margin + svgH / 2 - h / 2)
-          composites.push({ input: png, top: ph - h - alignTopMargin, left: 0 })
+          const { h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor)
+          const barVisualH = Math.max(Math.round(2 * targetCenter), h)
+          const { png } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor, barVisualH)
+          composites.push({ input: png, top: ph - barVisualH, left: 0 })
         } else {
-          const badgeY = ph - h - Math.round(20 * ph / 570)
+          const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor)
+          const badgeY = ph - h - Math.max(0, Math.round(targetCenter - h / 2))
           const badgeLeft = Math.round((pw - w) / 2)
           composites.push({ input: png, top: badgeY, left: badgeLeft })
         }

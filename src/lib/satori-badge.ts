@@ -201,6 +201,7 @@ export async function renderGenreBadge(
   year?: string,
   style?: string,
   accentColor?: string,
+  barHeight?: number,
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const voteStr = voteAverage.toFixed(1)
   const yearStr = year || ""
@@ -264,7 +265,7 @@ export async function renderGenreBadge(
 
   if (s === "bar" || s === "glass") {
     const barPad = Math.round(finalFontSize * 0.5)
-    const barH = finalFontSize + barPad * 2
+    const barH = Math.max(barHeight || 0, finalFontSize + barPad * 2)
     el = React.createElement(
       "div",
       {

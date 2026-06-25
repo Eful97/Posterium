@@ -71,11 +71,12 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const pillPad = Math.round(fs * 0.35)
   const pillR = Math.round(fs * 0.8)
   const isBarStyle = badgeStyle === "bar"
-  const styleOffset = isPillLike ? -pillPad : 0
-  const shadowBottom = 20 * containerH / 570 + bottomOffset
-  const bottom = isBarStyle
-    ? Math.max(0, Math.round(shadowBottom + fs / 2 - (fs + Math.round(fs * 0.5) * 2) / 2))
-    : shadowBottom + styleOffset
+  const isPillStyle = badgeStyle === "pill"
+  const barH = fs + Math.round(fs * 0.5) * 2
+  const targetCenter = 25 * containerH / 570 + bottomOffset
+  const barVisualH = Math.max(Math.round(2 * targetCenter), barH)
+  const badgeH = isPillStyle ? fs + Math.round(fs * 0.35) * 2 : Math.max(Math.round(fs * 1.6), 24)
+  const bottom = isBarStyle ? 0 : Math.round(targetCenter - badgeH / 2)
   const minH = Math.round(100 * containerH / 1500)
   const opaquePct = Math.max(100 - blurFade, 0)
   const textShadow = badgeStyle === "outline"
@@ -107,8 +108,9 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
         pointerEvents: "none",
       }} />}
       {badgeStyle === "bar" ? (
-        <div className="absolute bottom-0 left-0 right-0" style={{
-          height: `${fs + Math.round(fs * 0.5) * 2}px`,
+        <div className="absolute left-0 right-0" style={{
+          bottom: 0,
+          height: `${barVisualH}px`,
           backgroundColor: "rgba(0,0,0,0.70)",
           borderTop: "1px solid rgba(255,255,255,0.10)",
           borderRadius: "10px 10px 0 0",
@@ -136,7 +138,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
             gap: `${gap}px`,
             padding: `${pillPad}px ${pillPad * 1.5}px`,
             borderRadius: `${pillR}px`,
-          backgroundColor: "rgba(0,0,0,0.65)",
+            backgroundColor: "rgba(0,0,0,0.65)",
             fontSize: `${fs}px`,
             lineHeight: 1,
             color: "#e5e7eb",
@@ -146,6 +148,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
             display: "flex",
             alignItems: "center",
             gap: `${gap}px`,
+            height: `${badgeH}px`,
             fontSize: `${fs}px`,
             lineHeight: 1,
             color: "#e5e7eb",
