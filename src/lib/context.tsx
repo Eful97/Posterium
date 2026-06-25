@@ -458,13 +458,16 @@ export function usePosterium(): PosteriumCtx {
             const autoLogo = langLogo || itLogo || enLogo || firstLogo
             if (autoLogo) {
               setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+              setGradientHeight(30)
             } else {
               const itPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "it")
               const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")
               setPreviewPoster(itPoster || enPoster || langPoster || firstPoster || previewPoster)
+              setGradientHeight(15)
             }
           } else {
             setPreviewPoster(langPoster || firstPoster || previewPoster)
+            setGradientHeight(15)
           }
         }
       }
@@ -730,6 +733,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           const autoLogo = langLogo || itLogo || enLogo || firstLogo
           if (autoLogo) {
             setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+            setGradientHeight(30)
             setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
             if (autoLogo.width && autoLogo.height) {
               const alw = autoLogo.width
@@ -743,14 +747,21 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
             const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")
             const origPoster = details.original_language ? data.posters?.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
             const fallbackPoster = itPoster || enPoster || origPoster || firstPoster
-            if (fallbackPoster) setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
+            if (fallbackPoster) {
+              setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
+              setGradientHeight(15)
+            }
           }
         } else if (langPoster) {
           setPreviewPoster({ file_path: langPoster.file_path, iso_639_1: lang, vote_average: 0, width: 0, height: 0 })
+          setGradientHeight(15)
         } else {
           const origPoster = details.original_language ? data.posters?.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
           const fallbackPoster = origPoster || firstPoster
-          if (fallbackPoster) setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
+          if (fallbackPoster) {
+            setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
+            setGradientHeight(15)
+          }
         }
       }
     } finally {
