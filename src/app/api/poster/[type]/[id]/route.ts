@@ -347,14 +347,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qRanking = req.nextUrl.searchParams.get("ranking")
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
+    const qBlurFade = req.nextUrl.searchParams.get("bf")
     const hasQuery = !!queryPoster || !!mapping
     const badgesEnabled = hasQuery ? qBadges !== "0" && showBadges : true
     const rankingEnabled = hasQuery ? qRanking !== "0" && showBadges : true
     const s = ph / 1500
     const blurHeight = qGradHeight ? Math.max(Number(qGradHeight), 5) : 30
     const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 20
+    const blurFade = qBlurFade ? Math.max(Number(qBlurFade), 0) : 30
     const gh = Math.max(Math.round(ph * blurHeight / 100), 100)
     const gradTop = ph - gh
+    const fadedPct = Math.min(blurFade, 100)
+    const solidPct = 100 - fadedPct
     const blurredSection = await sharp(posterBuf)
       .extract({ left: 0, top: gradTop, width: pw, height: gh })
       .blur(blurIntensity)
@@ -365,7 +369,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       <defs>
         <linearGradient id="m" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="white" stop-opacity="0"/>
-          <stop offset="30%" stop-color="white" stop-opacity="1"/>
+          <stop offset="${fadedPct}%" stop-color="white" stop-opacity="1"/>
           <stop offset="100%" stop-color="white" stop-opacity="1"/>
         </linearGradient>
       </defs>
