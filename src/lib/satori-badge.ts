@@ -259,9 +259,10 @@ export async function renderGenreBadge(
     let borderStyle = {}
     if (s === "colored" && accentColor) {
       const hex = accentColor.replace("#", "")
-      const r = parseInt(hex.substring(0, 2), 16) || 0
-      const g = parseInt(hex.substring(2, 4), 16) || 0
-      const b = parseInt(hex.substring(4, 6), 16) || 0
+      let r = parseInt(hex.substring(0, 2), 16) || 0
+      let g = parseInt(hex.substring(2, 4), 16) || 0
+      let b = parseInt(hex.substring(4, 6), 16) || 0
+      if (r > 240 && g > 240 && b > 240) { r = 85; g = 85; b = 85 }
       bgColor = `rgba(${r},${g},${b},0.8)`
     } else if (s === "glass") {
       bgColor = "rgba(0,0,0,0.15)"

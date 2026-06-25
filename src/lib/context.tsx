@@ -202,7 +202,7 @@ export function usePosterium(): PosteriumCtx {
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
-  const [accentColor, setAccentColor] = useState("#ffffff")
+  const [accentColor, setAccentColor] = useState("#555555")
   const [topEdgeColor, setTopEdgeColor] = useState("#ffffff")
   const keyInit = useRef(false)
   const langInit = useRef(false)
@@ -579,7 +579,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
 
   useEffect(() => {
     const root = document.documentElement
-    if (!previewPoster) { root.style.setProperty("--color-accent", "#ffffff"); setAccentColor("#ffffff"); setTopEdgeColor("#ffffff"); return }
+    if (!previewPoster) { root.style.setProperty("--color-accent", "#555555"); setAccentColor("#555555"); setTopEdgeColor("#ffffff"); return }
     const genreName = metaInfo.genres[0]?.name
     let cancelled = false
     const url = posterUrl(previewPoster.file_path, "w342")
@@ -602,7 +602,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       const edge = topEdgeAverage(pixels, w, h)
       setTopEdgeColor(`#${edge.r.toString(16).padStart(2, '0')}${edge.g.toString(16).padStart(2, '0')}${edge.b.toString(16).padStart(2, '0')}`)
     }
-    img.onerror = () => { if (!cancelled) { setAccentColor("#ffffff"); setTopEdgeColor("#ffffff") } }
+    img.onerror = () => { if (!cancelled) { setAccentColor("#555555"); setTopEdgeColor("#ffffff") } }
     img.src = url
     return () => { cancelled = true }
   }, [previewPoster])

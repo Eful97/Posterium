@@ -60,11 +60,13 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const fs = Math.round(finalFs)
   const gap = dims.gap
   const gap2 = dims.gap2
-  const bottom = 20 * containerH / 570 + bottomOffset
-  const minH = Math.round(100 * containerH / 1500)
-  const opaquePct = Math.max(100 - blurFade, 0)
   const pillPad = Math.round(fs * 0.35)
   const pillR = Math.round(fs * 0.8)
+  const isPillLike = badgeStyle === "pill" || badgeStyle === "colored" || badgeStyle === "glass"
+  const styleOffset = isPillLike ? pillPad : 0
+  const bottom = 20 * containerH / 570 + bottomOffset + styleOffset
+  const minH = Math.round(100 * containerH / 1500)
+  const opaquePct = Math.max(100 - blurFade, 0)
   const textShadow = badgeStyle === "outline"
     ? "1px 1px 0 rgba(0,0,0,0.9), -1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9)"
     : badgeStyle === "shadow"
@@ -82,9 +84,10 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
     </>
   )
   const hex = accentColor.replace("#", "")
-  const ar = parseInt(hex.substring(0, 2), 16) || 0
-  const ag = parseInt(hex.substring(2, 4), 16) || 0
-  const ab = parseInt(hex.substring(4, 6), 16) || 0
+  let ar = parseInt(hex.substring(0, 2), 16) || 0
+  let ag = parseInt(hex.substring(2, 4), 16) || 0
+  let ab = parseInt(hex.substring(4, 6), 16) || 0
+  if (ar > 240 && ag > 240 && ab > 240) { ar = 85; ag = 85; ab = 85 }
   return (
     <>
       {blurEnabled && <div className="absolute bottom-0 left-0 right-0" style={{
