@@ -494,7 +494,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`bf=${blurFade}`)
     params.push(`bd=${blurDarkness}`)
     params.push(`bs=${badgeStyle}`)
-    params.push("rv=49")
+    params.push("rv=50")
     url += "?" + params.join("&")
     setUrlPattern(url)
   }, [globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, tmdbKey, lang])

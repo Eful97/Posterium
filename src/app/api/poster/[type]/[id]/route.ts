@@ -14,7 +14,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 57
+const RENDER_VERSION = 58
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -408,7 +408,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         genreColor = qAc || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName] || "#555555"
         const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
         const accentColor = genreColor || "#555555"
-        const targetCenter = Math.round(25 * ph / 570)
+        const targetCenter = Math.round(30 * ph / 570)
         if (badgeStyle === "bar") {
           const { h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor)
           const barVisualH = Math.max(Math.round(2 * targetCenter), h)
