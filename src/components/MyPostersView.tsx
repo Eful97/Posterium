@@ -131,8 +131,8 @@ export function MyPostersView() {
       </div>
 
       {selected.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-[env(safe-area-inset-bottom,8px)] pointer-events-none">
-          <div className="flex items-center gap-3 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 rounded-2xl px-5 py-3 shadow-2xl shadow-black/50 pointer-events-auto animate-fade-scale-in mb-3 mx-3">
+        <div className="fixed inset-0 z-50 flex justify-end flex-col items-center pb-[env(safe-area-inset-bottom,8px)] pointer-events-none" onClick={() => { setSelectMode(false); setSelected(new Set()) }}>
+          <div className="flex items-center gap-3 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 rounded-2xl px-5 py-3 shadow-2xl shadow-black/50 pointer-events-auto mb-3 mx-3 animate-fade-scale-in" onClick={(e) => e.stopPropagation()}>
             <span className="text-sm font-semibold text-zinc-200 tabular-nums">{selected.size} selezionat{selected.size === 1 ? "o" : "i"}</span>
             <div className="w-px h-5 bg-zinc-700/50" />
             <button onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-zinc-800 active:scale-95 transition-all duration-150">Annulla</button>
@@ -152,7 +152,7 @@ export function MyPostersView() {
           )}
         </div>
       )}
-      <div className="mx-auto grid grid-cols-3 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] lg:grid-cols-5 gap-3 md:gap-4 max-w-7xl justify-items-center">
+      <div className={`mx-auto grid grid-cols-3 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] lg:grid-cols-5 gap-3 md:gap-4 max-w-7xl justify-items-center ${selected.size > 0 ? "pb-24" : ""}`}>
         {filtered.map((m) => {
           const key = `${m.mediaType}:${m.tmdbId}`
           return (
