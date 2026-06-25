@@ -159,7 +159,7 @@ export default function EditView() {
               const b = parseInt(h.slice(5, 7), 16) / 255
               return 0.2126 * r + 0.7152 * g + 0.0722 * b
             })()
-            const topLight = edgeLum !== null ? edgeLum > 0.55 : true
+            const topLight = edgeLum !== null ? edgeLum > 0.20 : true
             const animeRankData = p.mdblistAnimeList?.find((a: any) => a.id === p.selected?.id)
             const animeRank = animeRankData ? animeRankData.rank : null
             const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
@@ -208,7 +208,7 @@ export default function EditView() {
             const _edgeLum = _h.length >= 7 && _h !== "#ffffff"
               ? 0.2126 * parseInt(_h.slice(1, 3), 16) / 255 + 0.7152 * parseInt(_h.slice(3, 5), 16) / 255 + 0.0722 * parseInt(_h.slice(5, 7), 16) / 255
               : null
-            params.push(`tl=${_edgeLum !== null ? (_edgeLum > 0.55 ? "1" : "0") : "1"}`)
+            params.push(`tl=${_edgeLum !== null ? (_edgeLum > 0.20 ? "1" : "0") : "1"}`)
             const g = p.metaInfo.genres[0]?.name
             if (g) params.push(`genreName=${encodeURIComponent(g)}`)
             if (p.metaInfo.voteAverage > 0) params.push(`voteAverage=${p.metaInfo.voteAverage}`)

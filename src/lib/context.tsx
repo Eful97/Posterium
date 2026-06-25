@@ -602,7 +602,7 @@ export function usePosterium(): PosteriumCtx {
         const b = parseInt(h.slice(5, 7), 16) / 255
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
       })()
-      const topLight = edgeLum !== null ? edgeLum > 0.55 : true
+      const topLight = edgeLum !== null ? edgeLum > 0.20 : true
       params.push(`tl=${topLight ? "1" : "0"}`)
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000

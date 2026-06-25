@@ -326,7 +326,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const blurDarkness = qBlurDarkness ? Math.max(Number(qBlurDarkness), 0) : 40
     const topLum = await topLuminance(posterBuf)
     const qTopLight = req.nextUrl.searchParams.get("tl")
-    const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.55
+    const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.20
     if (blurEnabled) {
     const gh = Math.max(Math.round(ph * blurHeight / 100), 100)
     const gradTop = ph - gh
