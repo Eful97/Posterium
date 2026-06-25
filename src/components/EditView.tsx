@@ -377,7 +377,7 @@ export default function EditView() {
               </div>
             )}
           </div>
-          <div className="flex flex-col md:flex-row gap-6 md:gap-8 justify-center items-start">
+          <div className="flex flex-col md:flex-row gap-6 md:gap-4 justify-center xl:justify-between items-start w-full max-w-7xl mx-auto">
             {previewCol}
             {posterCol}
             {logoCol}
