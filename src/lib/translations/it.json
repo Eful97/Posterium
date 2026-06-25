@@ -47,7 +47,7 @@
   "ui.logoHint": "Seleziona un poster clean per abilitare i loghi",
   "ui.badgeSection": "🏷️ Badge",
   "ui.trendBadge": "🔥 Trend",
-  "ui.genreRatingBadge": "🏷️ Genere / Rating",
+  "ui.genreRatingBadge": "Genere / Rating",
   "ui.customBadge": "📝 Badge",
   "ui.customBadgePlaceholder": "Scrivi badge...",
   "ui.auto": "Auto",

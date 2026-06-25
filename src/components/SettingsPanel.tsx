@@ -69,7 +69,7 @@ export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbK
         ))}
       </div>
       <div className="flex items-center justify-between mt-1">
-        <span className="text-xs text-zinc-400">🌫️ Sfocatura predefinita</span>
+        <span className="text-xs text-zinc-400">Sfocatura predefinita</span>
         <button onClick={() => p.setDefaultBlurEnabled(!p.defaultBlurEnabled)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultBlurEnabled ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultBlurEnabled ? "✅ Attiva" : "⛔ Disattivata"}</button>
       </div>
       {p.defaultBlurEnabled && <>

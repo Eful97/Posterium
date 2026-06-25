@@ -47,7 +47,7 @@
   "ui.logoHint": "Sélectionnez une affiche propre pour activer les logos",
   "ui.badgeSection": "🏷️ Badge",
   "ui.trendBadge": "🔥 Tendances",
-  "ui.genreRatingBadge": "🏷️ Genre / Note",
+  "ui.genreRatingBadge": "Genre / Note",
   "ui.customBadge": "📝 Badge",
   "ui.customBadgePlaceholder": "Écrire un badge...",
   "ui.auto": "Auto",

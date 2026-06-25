@@ -339,7 +339,7 @@ export default function EditView() {
       </div>
       <div className="space-y-1 mt-2">
         <div className="flex gap-2 items-center mb-1">
-          <button onClick={() => p.setBlurEnabled(!p.blurEnabled)} className={`flex-1 py-2 text-[12px] font-bold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}>{p.blurEnabled ? "🌫️ Sfocatura attiva" : "🌫️ Sfocatura disattivata"}</button>
+          <button onClick={() => p.setBlurEnabled(!p.blurEnabled)} className={`flex-1 py-2 text-[12px] font-bold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}>{p.blurEnabled ? "Sfocatura attiva" : "Sfocatura disattivata"}</button>
         </div>
         {p.blurEnabled && <><SliderRow icon="📏" label="Altezza blur" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setGradientHeight(v)} onDoubleClick={() => p.setGradientHeight(30)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
         <SliderRow icon="🌫️" label="Intensità blur" value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => p.setBlurIntensity(v)} onDoubleClick={() => p.setBlurIntensity(5)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />

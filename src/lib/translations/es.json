@@ -47,7 +47,7 @@
   "ui.logoHint": "Selecciona un póster limpio para activar los logos",
   "ui.badgeSection": "🏷️ Insignia",
   "ui.trendBadge": "🔥 Tendencia",
-  "ui.genreRatingBadge": "🏷️ Género / Puntuación",
+  "ui.genreRatingBadge": "Género / Puntuación",
   "ui.customBadge": "📝 Insignia",
   "ui.customBadgePlaceholder": "Escribe insignia...",
   "ui.auto": "Auto",
