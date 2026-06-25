@@ -118,7 +118,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
         <div className="absolute left-0 right-0" style={{
           bottom: 0,
           height: `${barVisualH}px`,
-          backgroundColor: "rgba(0,0,0,0.70)",
+          backgroundColor: accentColor,
           borderTop: "1px solid rgba(255,255,255,0.10)",
           borderRadius: "10px 10px 0 0",
           pointerEvents: "none",
@@ -126,7 +126,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
           <div className="w-full h-full flex justify-center items-center font-bold whitespace-nowrap" style={{
             fontSize: `${fs}px`,
             lineHeight: 1,
-            color: "#e5e7eb",
+            color: pillTextCol(accentColor),
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: `${gap}px` }}>
               {textEls}

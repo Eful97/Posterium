@@ -271,6 +271,9 @@ export async function renderGenreBadge(
   let el: any
 
   if (s === "bar" || s === "glass") {
+    const barBg = accentColor || "rgba(0,0,0,0.70)"
+    const barCol = _pillTextCol(barBg)
+    const barTextStyle = { ...sharedTextStyle, color: barCol }
     const barPad = Math.round(finalFontSize * 0.5)
     const barH = Math.max(barHeight || 0, finalFontSize + barPad * 2)
     el = React.createElement(
@@ -282,7 +285,7 @@ export async function renderGenreBadge(
           alignItems: "center",
           width: `${pw}px`,
           height: `${barH}px`,
-          backgroundColor: "rgba(0,0,0,0.70)",
+          backgroundColor: barBg,
           borderTop: "1px solid rgba(255,255,255,0.10)",
           borderRadius: "10px 10px 0 0",
         },
@@ -294,7 +297,7 @@ export async function renderGenreBadge(
             display: "flex",
             alignItems: "center",
             gap: `${gap}px`,
-            ...sharedTextStyle,
+            ...barTextStyle,
           },
         },
         ...children,
