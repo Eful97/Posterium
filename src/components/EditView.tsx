@@ -176,8 +176,8 @@ export default function EditView() {
                 })()
               : autoBadge
             if (badge) {
-              if (badge.type === "extra") return <div className="absolute inset-0"><ExtraBadge label={badge.label} containerW={previewDims.w} /></div>
-              return <div className="absolute inset-0"><RankingBadge rank={badge.rank!} label={badge.rankLabel || badge.label} containerW={previewDims.w} /></div>
+              if (badge.type === "extra") return <div className="absolute inset-0"><ExtraBadge label={badge.label} topLight={topLight} containerW={previewDims.w} /></div>
+              return <div className="absolute inset-0"><RankingBadge rank={badge.rank!} label={badge.rankLabel || badge.label} topLight={topLight} containerW={previewDims.w} /></div>
             }
             return null
           })()}
