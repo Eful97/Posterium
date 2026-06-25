@@ -274,7 +274,7 @@ export async function renderGenreBadge(
           alignItems: "center",
           width: `${pw}px`,
           height: `${barH}px`,
-          backgroundColor: "#000000",
+          backgroundColor: "rgba(0,0,0,0.65)",
           borderTop: "1px solid rgba(255,255,255,0.10)",
         },
       },

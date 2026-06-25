@@ -145,7 +145,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
             gap: `${gap}px`,
             padding: `${pillPad}px ${pillPad * 1.5}px`,
             borderRadius: `${pillR}px`,
-          backgroundColor: "#000000",
+          backgroundColor: "rgba(0,0,0,0.65)",
             fontSize: `${fs}px`,
             lineHeight: 1,
             color: "#e5e7eb",
