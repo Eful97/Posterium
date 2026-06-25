@@ -271,7 +271,7 @@ export async function renderGenreBadge(
       if (r > 240 && g > 240 && b > 240) { r = 85; g = 85; b = 85 }
       bgColor = `rgba(${r},${g},${b},0.8)`
     } else if (s === "glass") {
-      bgColor = "rgba(0,0,0,0.15)"
+      bgColor = "rgba(0,0,0,0.45)"
       borderStyle = { border: "1px solid rgba(255,255,255,0.08)" }
     }
     const pillH = finalFontSize + pillPad * 2
