@@ -1,3 +1,5 @@
+import { GENRE_FALLBACK } from "./badges"
+
 export interface AccentResult { r: number; g: number; b: number }
 
 export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: number, height: number, genre: string): AccentResult {
@@ -18,14 +20,7 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
   }
 
   if (vals.length === 0) {
-    const GENRE_FALLBACK: Record<string, string> = {
-      Action: '#D4A574', Azione: '#D4A574', Horror: '#8B0000', Commedia: '#F4D03F',
-      Dramma: '#5D6D7E', Thriller: '#4A4A4A', Avventura: '#2E86AB', Animazione: '#E67E22',
-      Fantascienza: '#3498DB', Romantico: '#E74C3C', Documentario: '#7F8C8D',
-      Mistero: '#6C3483', Fantasia: '#8E44AD', Guerra: '#6B4226', Western: '#A0522D',
-      Musica: '#1ABC9C', Famiglia: '#2ECC71', Storico: '#A67B5B', Crimine: '#2C3E50',
-    }
-    const fb = GENRE_FALLBACK[genre] || GENRE_FALLBACK[Object.keys(GENRE_FALLBACK)[0]] || '#C0C0C0'
+    const fb = GENRE_FALLBACK[genre] || '#C0C0C0'
     return { r: parseInt(fb.slice(1, 3), 16), g: parseInt(fb.slice(3, 5), 16), b: parseInt(fb.slice(5, 7), 16) }
   }
 
