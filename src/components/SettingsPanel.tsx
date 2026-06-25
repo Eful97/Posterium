@@ -33,6 +33,8 @@ function saveDefaults(p: ReturnType<typeof useP>) {
 export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setShowKey, setSettingsOpen, exportData, importData, mdblistApiKey, setMdblistApiKey }: Props) {
   const p = useP()
   const [showMdb, setShowMdb] = useState(false)
+  const [editVal, setEditVal] = useState<string | null>(null)
+  const [editTxt, setEditTxt] = useState("")
   return (
     <div className="absolute right-0 top-full mt-2 bg-black/60 backdrop-blur-xl border border-zinc-700/50 rounded-xl p-3 shadow-2xl shadow-black/50 z-50 min-w-56 flex flex-col gap-2 animate-fade-scale-in" onClick={(e) => e.stopPropagation()}>
       <div className="flex flex-col gap-1">
@@ -70,10 +72,10 @@ export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbK
         <button onClick={() => { p.setDefaultBlurEnabled(!p.defaultBlurEnabled); saveDefaults(p) }} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultBlurEnabled ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultBlurEnabled ? "Attiva" : "Disattivata"}</button>
       </div>
       {p.defaultBlurEnabled && <>
-        <SliderRow icon="📏" label="Altezza" value={p.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setDefaultGradientHeight(v); saveDefaults(p) }} onDoubleClick={() => { p.setDefaultGradientHeight(30); saveDefaults(p) }} editingValue={null} editText="" setEditingValue={() => {}} setEditText={() => {}} editingKey="" suffix="%" />
-        <SliderRow icon="🌫️" label="Intensità" value={p.defaultBlurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => { p.setDefaultBlurIntensity(v); saveDefaults(p) }} onDoubleClick={() => { p.setDefaultBlurIntensity(5); saveDefaults(p) }} editingValue={null} editText="" setEditingValue={() => {}} setEditText={() => {}} editingKey="" suffix="px" />
-        <SliderRow icon="〰️" label="Fade" value={p.defaultBlurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setDefaultBlurFade(v); saveDefaults(p) }} onDoubleClick={() => { p.setDefaultBlurFade(60); saveDefaults(p) }} editingValue={null} editText="" setEditingValue={() => {}} setEditText={() => {}} editingKey="" suffix="%" />
-        <SliderRow icon="🌑" label="Velatura" value={p.defaultBlurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setDefaultBlurDarkness(v); saveDefaults(p) }} onDoubleClick={() => { p.setDefaultBlurDarkness(40); saveDefaults(p) }} editingValue={null} editText="" setEditingValue={() => {}} setEditText={() => {}} editingKey="" suffix="%" />
+        <SliderRow icon="📏" label="Altezza" value={p.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setDefaultGradientHeight(v); saveDefaults(p) }} onDoubleClick={() => { p.setDefaultGradientHeight(30); saveDefaults(p) }} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="gh" suffix="%" />
+        <SliderRow icon="🌫️" label="Intensità" value={p.defaultBlurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => { p.setDefaultBlurIntensity(v); saveDefaults(p) }} onDoubleClick={() => { p.setDefaultBlurIntensity(5); saveDefaults(p) }} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bi" suffix="px" />
+        <SliderRow icon="〰️" label="Fade" value={p.defaultBlurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setDefaultBlurFade(v); saveDefaults(p) }} onDoubleClick={() => { p.setDefaultBlurFade(60); saveDefaults(p) }} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bf" suffix="%" />
+        <SliderRow icon="🌑" label="Velatura" value={p.defaultBlurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setDefaultBlurDarkness(v); saveDefaults(p) }} onDoubleClick={() => { p.setDefaultBlurDarkness(40); saveDefaults(p) }} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bd" suffix="%" />
       </>}
       <hr className="border-zinc-700 my-1" />
       <button onClick={(e) => { exportData(); setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">{p.t("ui.exportJson")}</button>
