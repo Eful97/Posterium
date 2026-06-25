@@ -215,8 +215,9 @@ export async function renderGenreBadge(
   const { starW, gap, gapStar, pad, totalW, svgH } = dims
   const m = Math.round(finalFontSize * 0.17)
   const s = style || "shadow"
-  const pillPad = Math.round(finalFontSize * 0.5)
-  const pillR = Math.round(finalFontSize * 0.4)
+  const pillPad = Math.round(finalFontSize * 0.35)
+  const pillR = Math.round(finalFontSize * 0.8)
+  const isPillStyle = s === "pill" || s === "colored" || s === "glass"
 
   let textShadow = "0 4px 6px rgba(0,0,0,0.5)"
   if (s === "outline") {
@@ -225,17 +226,19 @@ export async function renderGenreBadge(
     textShadow = "none"
   }
 
+  const bulletY = isPillStyle ? "0px" : "5px"
+  const starY = isPillStyle ? "0px" : `${Math.round(finalFontSize * 0.23)}px`
   const children: any[] = [
     React.createElement("span", null, genreName),
-    React.createElement("span", { style: { transform: "translateY(5px)" } }, "\u2022"),
+    React.createElement("span", { style: { transform: `translateY(${bulletY})` } }, "\u2022"),
     React.createElement("span", { style: { display: "flex", alignItems: "center" } },
-      React.createElement("span", { style: { marginRight: `${gapStar}px`, transform: `translateY(${Math.round(finalFontSize * 0.23)}px)` } }, "\u2605"),
-      React.createElement("span", { style: { transform: "translateY(5px)" } }, voteStr),
+      React.createElement("span", { style: { marginRight: `${gapStar}px`, transform: `translateY(${starY})` } }, "\u2605"),
+      React.createElement("span", { style: { transform: `translateY(${bulletY})` } }, voteStr),
     ),
   ]
   if (yearStr) {
-    children.push(React.createElement("span", { style: { transform: "translateY(5px)" } }, "\u2022"))
-    children.push(React.createElement("span", { style: { transform: "translateY(5px)" } }, yearStr))
+    children.push(React.createElement("span", { style: { transform: `translateY(${bulletY})` } }, "\u2022"))
+    children.push(React.createElement("span", { style: { transform: `translateY(${bulletY})` } }, yearStr))
   }
 
   const sharedTextStyle: Record<string, any> = {
@@ -253,14 +256,16 @@ export async function renderGenreBadge(
 
   if (s === "pill" || s === "colored" || s === "glass") {
     let bgColor = "rgba(0,0,0,0.65)"
+    let borderStyle = {}
     if (s === "colored" && accentColor) {
       const hex = accentColor.replace("#", "")
       const r = parseInt(hex.substring(0, 2), 16) || 0
       const g = parseInt(hex.substring(2, 4), 16) || 0
       const b = parseInt(hex.substring(4, 6), 16) || 0
-      bgColor = `rgba(${r},${g},${b},0.75)`
+      bgColor = `rgba(${r},${g},${b},0.8)`
     } else if (s === "glass") {
-      bgColor = "rgba(0,0,0,0.2)"
+      bgColor = "rgba(0,0,0,0.15)"
+      borderStyle = { border: "1px solid rgba(255,255,255,0.08)" }
     }
     el = React.createElement(
       "div",
@@ -283,7 +288,8 @@ export async function renderGenreBadge(
             padding: `${pillPad}px ${pillPad * 1.5}px`,
             borderRadius: `${pillR}px`,
             backgroundColor: bgColor,
-            ...(s === "glass" ? { backdropFilter: "blur(8px)" } : {}),
+            ...borderStyle,
+            ...(s === "glass" ? { backdropFilter: "blur(12px)" } : {}),
             ...sharedTextStyle,
           },
         },

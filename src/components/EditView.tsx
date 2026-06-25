@@ -177,7 +177,7 @@ export default function EditView() {
             }
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} badgeStyle={p.badgeStyle} accentColor={p.accentColor} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} blurEnabled={p.blurEnabled} badgeStyle={p.badgeStyle} accentColor={p.accentColor} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
           <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
@@ -212,6 +212,7 @@ export default function EditView() {
             params.push(`blur=${p.blurIntensity}`)
             params.push(`bf=${p.blurFade}`)
             params.push(`bd=${p.blurDarkness}`)
+            if (!p.blurEnabled) params.push("be=0")
             params.push(`bs=${p.badgeStyle}`)
             if (p.rankingBadges) {
               const now = Date.now()
@@ -338,10 +339,13 @@ export default function EditView() {
         </div>
       </div>
       <div className="space-y-1 mt-2">
-        <SliderRow icon="📏" label="Altezza blur" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setGradientHeight(v); localStorage.setItem("gradient_height", String(v)) }} onDoubleClick={() => { p.setGradientHeight(30); localStorage.setItem("gradient_height", "30") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
+        <div className="flex gap-2 items-center mb-1">
+          <button onClick={() => { p.setBlurEnabled(!p.blurEnabled); localStorage.setItem("blur_enabled", p.blurEnabled ? "0" : "1") }} className={`flex-1 py-2 text-[12px] font-bold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}>{p.blurEnabled ? "🌫️ Sfocatura attiva" : "🌫️ Sfocatura disattivata"}</button>
+        </div>
+        {p.blurEnabled && <><SliderRow icon="📏" label="Altezza blur" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setGradientHeight(v); localStorage.setItem("gradient_height", String(v)) }} onDoubleClick={() => { p.setGradientHeight(30); localStorage.setItem("gradient_height", "30") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
         <SliderRow icon="🌫️" label="Intensità blur" value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => { p.setBlurIntensity(v); localStorage.setItem("blur_intensity", String(v)) }} onDoubleClick={() => { p.setBlurIntensity(5); localStorage.setItem("blur_intensity", "5") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />
         <SliderRow icon="〰️" label="Fade blur" value={p.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setBlurFade(v); localStorage.setItem("blur_fade", String(v)) }} onDoubleClick={() => { p.setBlurFade(60); localStorage.setItem("blur_fade", "60") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurFade" suffix="%" />
-        <SliderRow icon="🌑" label="Velatura" value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setBlurDarkness(v); localStorage.setItem("blur_darkness", String(v)) }} onDoubleClick={() => { p.setBlurDarkness(40); localStorage.setItem("blur_darkness", "40") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" />
+        <SliderRow icon="🌑" label="Velatura" value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setBlurDarkness(v); localStorage.setItem("blur_darkness", String(v)) }} onDoubleClick={() => { p.setBlurDarkness(40); localStorage.setItem("blur_darkness", "40") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" /></>}
       </div>
     </div>
   )

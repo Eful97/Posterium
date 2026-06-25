@@ -349,14 +349,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qBlur = req.nextUrl.searchParams.get("blur")
     const qBlurFade = req.nextUrl.searchParams.get("bf")
     const qBlurDarkness = req.nextUrl.searchParams.get("bd")
+    const qBlurEnabled = req.nextUrl.searchParams.get("be")
     const hasQuery = !!queryPoster || !!mapping
     const badgesEnabled = hasQuery ? qBadges !== "0" && showBadges : true
     const rankingEnabled = hasQuery ? qRanking !== "0" && showBadges : true
+    const blurEnabled = qBlurEnabled !== "0"
     const s = ph / 1500
     const blurHeight = qGradHeight ? Math.max(Number(qGradHeight), 5) : 30
     const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 20
     const blurFade = qBlurFade ? Math.max(Number(qBlurFade), 0) : 30
     const blurDarkness = qBlurDarkness ? Math.max(Number(qBlurDarkness), 0) : 40
+    if (blurEnabled) {
     const gh = Math.max(Math.round(ph * blurHeight / 100), 100)
     const gradTop = ph - gh
     const fadedPct = Math.min(blurFade, 100)
@@ -391,6 +394,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       .png()
       .toBuffer()
     composites.push({ input: fadedBlur, top: gradTop, left: 0 })
+    }
 
     let extractedColor: string | undefined
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {

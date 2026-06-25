@@ -33,7 +33,7 @@ export function RankingBadge({ rank = "13", label: labelProp, topLight, containe
   )
 }
 
-export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientHeight = 30, blurIntensity = 5, blurFade = 60, blurDarkness = 40, badgeStyle = "shadow", accentColor = "#000000", releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientHeight?: number; blurIntensity?: number; blurFade?: number; blurDarkness?: number; badgeStyle?: string; accentColor?: string; releaseDate?: string | null }) {
+export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientHeight = 30, blurIntensity = 5, blurFade = 60, blurDarkness = 40, blurEnabled = true, badgeStyle = "shadow", accentColor = "#000000", releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientHeight?: number; blurIntensity?: number; blurFade?: number; blurDarkness?: number; blurEnabled?: boolean; badgeStyle?: string; accentColor?: string; releaseDate?: string | null }) {
   const voteStr = voteAverage.toFixed(1)
   const year = releaseDate?.slice(0, 4)
   const yearStr = year || ""
@@ -63,8 +63,8 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const bottom = 20 * containerH / 570 + bottomOffset
   const minH = Math.round(100 * containerH / 1500)
   const opaquePct = Math.max(100 - blurFade, 0)
-  const pillPad = Math.round(fs * 0.5)
-  const pillR = Math.round(fs * 0.4)
+  const pillPad = Math.round(fs * 0.35)
+  const pillR = Math.round(fs * 0.8)
   const textShadow = badgeStyle === "outline"
     ? "1px 1px 0 rgba(0,0,0,0.9), -1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9)"
     : badgeStyle === "shadow"
@@ -87,7 +87,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const ab = parseInt(hex.substring(4, 6), 16) || 0
   return (
     <>
-      <div className="absolute bottom-0 left-0 right-0" style={{
+      {blurEnabled && <div className="absolute bottom-0 left-0 right-0" style={{
         height: `${gradientHeight}%`,
         minHeight: `${minH}px`,
         backdropFilter: `blur(${blurIntensity}px)`,
@@ -96,7 +96,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
         maskImage: `linear-gradient(to top, black 0%, black ${opaquePct}%, transparent 100%)`,
         WebkitMaskImage: `linear-gradient(to top, black 0%, black ${opaquePct}%, transparent 100%)`,
         pointerEvents: "none",
-      }} />
+      }} />}
       <div className="absolute w-full flex justify-center items-center z-10 font-bold whitespace-nowrap" style={{
         bottom: `${bottom}px`,
         pointerEvents: "none",
@@ -120,7 +120,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
             gap: `${gap}px`,
             padding: `${pillPad}px ${pillPad * 1.5}px`,
             borderRadius: `${pillR}px`,
-            backgroundColor: `rgba(${ar},${ag},${ab},0.75)`,
+            backgroundColor: `rgba(${ar},${ag},${ab},0.8)`,
             fontSize: `${fs}px`,
             lineHeight: 1,
             color: "#e5e7eb",
@@ -132,9 +132,10 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
             gap: `${gap}px`,
             padding: `${pillPad}px ${pillPad * 1.5}px`,
             borderRadius: `${pillR}px`,
-            backgroundColor: "rgba(0,0,0,0.2)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            backgroundColor: "rgba(0,0,0,0.15)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.08)",
             fontSize: `${fs}px`,
             lineHeight: 1,
             color: "#e5e7eb",
