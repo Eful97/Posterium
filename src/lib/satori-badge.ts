@@ -315,6 +315,7 @@ export async function renderGenreBadge(
     )
   }
 
-  const png = await render(el, totalW + (s === "pill" || s === "colored" || s === "glass" ? pad * 2 + pillPad * 2 : 0), svgH)
-  return { png, w: totalW, h: svgH }
+  const renderW = totalW + (isPillStyle ? pad * 2 + pillPad * 2 : 0)
+  const png = await render(el, renderW, svgH)
+  return { png, w: renderW, h: svgH }
 }

@@ -396,15 +396,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     composites.push({ input: fadedBlur, top: gradTop, left: 0 })
     }
 
-    let extractedColor: string | undefined
+    let genreColor: string | undefined
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
       try {
-        extractedColor = await extractBadgeColor(posterBuf, logoFetch, genreName)
-        const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
         const qBs = req.nextUrl.searchParams.get("bs")
         const qAc = req.nextUrl.searchParams.get("ac")
         const badgeStyle = qBs || "shadow"
-        const accentColor = qAc || extractedColor || "#000000"
+        genreColor = qAc || GENRE_FALLBACK[genreName] || undefined
+        if (!genreColor) {
+          genreColor = await extractBadgeColor(posterBuf, logoFetch, genreName)
+        }
+        const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
+        const accentColor = genreColor || "#555555"
         const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor)
         const badgeY = ph - h - Math.round(20 * ph / 570)
         const badgeLeft = Math.round((pw - w) / 2)
