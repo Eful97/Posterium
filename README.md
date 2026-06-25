@@ -179,23 +179,15 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 
 ## 📸 Screenshots
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto1.png" alt="Posterium Home" width="100%" />
-</p>
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto2.png" alt="Posterium Editor" width="100%" />
-</p>
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto3.png" alt="Posterium Badge" width="100%" />
-</p>
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto4.png" alt="Posterium Badge" width="100%" />
-</p>
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto5.png" alt="Posterium Badge" width="100%" />
-</p>
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto1.png" alt="Home" width="32%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto2.png" alt="Editor" width="32%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto3.png" alt="Badge shadow" width="32%" />
+</div>
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto4.png" alt="Badge pill" width="32%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto5.png" alt="Badge bar" width="32%" />
+</div>
 <p align="left">
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto6.png" alt="Posterium Home" width="100%" />
 </p>
