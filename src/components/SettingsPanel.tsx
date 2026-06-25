@@ -51,11 +51,11 @@ export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbK
       </div>
       <hr className="border-zinc-700 my-1" />
       <div className="flex items-center justify-between">
-        <span className="text-xs text-zinc-400">Badge genere/rating</span>
+        <span className="text-xs text-zinc-400">⭐ Badge genere/rating</span>
         <button onClick={() => { p.setDefaultGlobalBadges(!p.defaultGlobalBadges); saveDefaults(p) }} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultGlobalBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultGlobalBadges ? "ON" : "OFF"}</button>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-zinc-400">Badge ranking/extra</span>
+        <span className="text-xs text-zinc-400">🏆 Badge ranking/extra</span>
         <button onClick={() => { p.setDefaultRankingBadges(!p.defaultRankingBadges); saveDefaults(p) }} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultRankingBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultRankingBadges ? "ON" : "OFF"}</button>
       </div>
       <hr className="border-zinc-700 my-1" />

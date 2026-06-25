@@ -105,11 +105,11 @@ export function AppShell() {
             <button onClick={() => { p.importData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">{p.t("ui.importJson")}</button>
             <hr className="border-zinc-700 my-2" />
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-zinc-400">Badge genere/rating</span>
+              <span className="text-xs text-zinc-400">⭐ Badge genere/rating</span>
               <button onClick={() => { p.setDefaultGlobalBadges(!p.defaultGlobalBadges); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), globalBadges: !p.defaultGlobalBadges })) }} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultGlobalBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultGlobalBadges ? "ON" : "OFF"}</button>
             </div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-zinc-400">Badge ranking/extra</span>
+              <span className="text-xs text-zinc-400">🏆 Badge ranking/extra</span>
               <button onClick={() => { p.setDefaultRankingBadges(!p.defaultRankingBadges); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), rankingBadges: !p.defaultRankingBadges })) }} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultRankingBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultRankingBadges ? "ON" : "OFF"}</button>
             </div>
             <hr className="border-zinc-700 my-2" />
