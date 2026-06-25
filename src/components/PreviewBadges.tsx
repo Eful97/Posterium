@@ -58,12 +58,19 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
     finalFs = Math.max(maxBadgeW / dims.totalW * finalFs, 10)
     dims = genreClientDims(finalFs)
   }
+  const isPillLike = badgeStyle === "pill" || badgeStyle === "colored" || badgeStyle === "glass"
+  if (isPillLike) {
+    const _pillPad = Math.round(finalFs * 0.35)
+    if (dims.totalW + _pillPad * 3 > maxBadgeW) {
+      finalFs = Math.max(maxBadgeW / (dims.totalW + _pillPad * 3) * finalFs, 10)
+      dims = genreClientDims(finalFs)
+    }
+  }
   const fs = Math.round(finalFs)
   const gap = dims.gap
   const gap2 = dims.gap2
   const pillPad = Math.round(fs * 0.35)
   const pillR = Math.round(fs * 0.8)
-  const isPillLike = badgeStyle === "pill" || badgeStyle === "colored" || badgeStyle === "glass"
   const styleOffset = isPillLike ? -pillPad : 0
   const bottom = 20 * containerH / 570 + bottomOffset + styleOffset
   const minH = Math.round(100 * containerH / 1500)
