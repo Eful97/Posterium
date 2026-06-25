@@ -185,13 +185,13 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto3.png" alt="Badge shadow" width="32%" />
 </div>
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto4.png" alt="Badge pill" width="32%" />
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto5.png" alt="Badge bar" width="32%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto4.png" alt="Badge pill" width="100%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto5.png" alt="Badge bar" width="100%" />
 </div>
-<p align="left">
+<p align="center">
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto6.png" alt="Posterium Home" width="32%" />
 </p>
-<p align="right">
+<p align="center">
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto7.png" alt="Posterium Home" width="32%" />
 ---
 
