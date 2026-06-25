@@ -131,9 +131,16 @@ export function MyPostersView() {
       </div>
 
       {selected.size > 0 && (
-        <button disabled={deleting} onClick={deleteSelected} className="mb-4 py-3 px-4 rounded-lg text-xs font-medium text-red-400 border border-red-400/40 bg-red-900/15 hover:text-red-300 hover:border-red-400/70 hover:bg-red-900/30 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
-          🗑️ {deleting ? p.t("ui.deleting") : p.t("ui.deleteSelected", { count: selected.size })}
-        </button>
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-[env(safe-area-inset-bottom,8px)] pointer-events-none">
+          <div className="flex items-center gap-3 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 rounded-2xl px-5 py-3 shadow-2xl shadow-black/50 pointer-events-auto animate-fade-scale-in mb-3 mx-3">
+            <span className="text-sm font-semibold text-zinc-200 tabular-nums">{selected.size} selezionat{selected.size === 1 ? "o" : "i"}</span>
+            <div className="w-px h-5 bg-zinc-700/50" />
+            <button onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-zinc-800 active:scale-95 transition-all duration-150">Annulla</button>
+            <button disabled={deleting} onClick={deleteSelected} className="flex items-center gap-1.5 text-xs font-semibold text-red-400 bg-red-900/25 border border-red-900/50 px-4 py-1.5 rounded-xl hover:bg-red-900/40 hover:border-red-500 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+              🗑️ {deleting ? p.t("ui.deleting") : `Elimina`}
+            </button>
+          </div>
+        </div>
       )}
       {filtered.length === 0 && (
         <div className="text-center py-12">
@@ -160,8 +167,8 @@ export function MyPostersView() {
                     </div>
                   )}
                 {selectMode && (
-                  <div className={`absolute top-1.5 right-1.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${selected.has(key) ? "bg-red-400 border-red-400" : "border-white/60 bg-black/40"}`}>
-                    {selected.has(key) && <span className="text-black text-[10px] font-bold">✓</span>}
+                  <div className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${selected.has(key) ? "bg-red-500 border-red-500 shadow-lg shadow-red-500/30 scale-110" : "border-white/40 bg-black/30 hover:border-white/60"}`}>
+                    {selected.has(key) && <span className="text-white text-xs font-bold drop-shadow">✓</span>}
                   </div>
                 )}
               </div>
@@ -170,7 +177,7 @@ export function MyPostersView() {
                 <p className="text-xs text-zinc-400">{m.language ? LANG_NAMES[m.language] || m.language : p.t("ui.clean")}{m.logoPath ? " + logo" : ""}</p>
               </div>
               {!selectMode && (
-                <span onClick={(e) => { e.stopPropagation(); removeMapping(m) }} className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-red-900/60 flex items-center justify-center text-[10px] text-red-300 hover:bg-red-800 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 cursor-pointer">✕</span>
+                <span onClick={(e) => { e.stopPropagation(); removeMapping(m) }} className="absolute top-1.5 left-1.5 w-6 h-6 rounded-lg bg-red-900/70 flex items-center justify-center text-xs text-red-300 hover:bg-red-800 hover:text-red-200 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg shadow-black/30">🗑️</span>
               )}
             </button>
           )
