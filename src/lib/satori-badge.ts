@@ -212,13 +212,18 @@ export async function renderGenreBadge(
     finalFontSize = Math.max(Math.round(finalFontSize * ratio), 10)
     dims = genreBadgeDims(finalFontSize, genreName, voteStr, yearStr)
   }
-  const { starW, gap, gapStar, pad, totalW, svgH } = dims
-  const m = Math.round(finalFontSize * 0.17)
   const s = style || "shadow"
   const pillPad = Math.round(finalFontSize * 0.35)
   const pillR = Math.round(finalFontSize * 0.8)
   const isPillStyle = s === "pill" || s === "colored" || s === "glass"
-
+  const pillExtra = isPillStyle ? dims.pad * 2 + pillPad * 2 : 0
+  if (dims.totalW + pillExtra > maxBadgeW) {
+    const ratio = maxBadgeW / (dims.totalW + pillExtra)
+    finalFontSize = Math.max(Math.round(finalFontSize * ratio), 10)
+    dims = genreBadgeDims(finalFontSize, genreName, voteStr, yearStr)
+  }
+  const { starW, gap, gapStar, pad, totalW, svgH } = dims
+  const m = Math.round(finalFontSize * 0.17)
   let textShadow = "0 4px 6px rgba(0,0,0,0.5)"
   if (s === "outline") {
     textShadow = "1px 1px 0 rgba(0,0,0,0.9), -1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9)"
