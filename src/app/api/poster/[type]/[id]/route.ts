@@ -369,8 +369,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       try {
         const qBs = req.nextUrl.searchParams.get("bs")
         const qAc = req.nextUrl.searchParams.get("ac")
-        const badgeStyle = qBs || "shadow"
-        genreColor = qAc || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName] || "#555555"
+        const badgeStyle = qBs || mapping?.badgeStyle || "shadow"
+        genreColor = qAc || mapping?.accentColor || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName] || "#555555"
         const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
         const accentColor = genreColor || "#555555"
         const targetCenter = Math.round(30 * ph / 570)
