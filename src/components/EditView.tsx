@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useP } from "@/lib/context"
 import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
-import { Toggle } from "@/components/Toggle"
+
 import { SliderRow } from "@/components/SliderRow"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "@/lib/awards"
 import { computeBadge, computeExtraFallback, getAllBadgeOptions } from "@/lib/badge-priority"
@@ -279,14 +279,6 @@ export default function EditView() {
       {!cleanPoster && <p className="text-xs text-zinc-400 text-center mt-1 mb-1 px-1 font-medium">{p.t("ui.logoHint")}</p>}
       <hr className="border-zinc-700 my-3" />
       <h4 className="text-sm font-semibold text-zinc-300 mb-2 px-1">{p.t("ui.badgeSection")}</h4>
-      <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-zinc-400">{p.t("ui.trendBadge")}</span>
-        <Toggle value={p.rankingBadges} onChange={(v) => { p.setRankingBadges(v) }} />
-      </div>
-      <div className="flex items-center justify-between px-1 mt-2">
-        <span className="text-xs text-zinc-400">{p.t("ui.genreRatingBadge")}</span>
-        <Toggle value={p.globalBadges} onChange={(v) => { p.setGlobalBadges(v) }} />
-      </div>
       <div className="flex items-center justify-between px-1 mt-1.5">
         <span className="text-xs text-zinc-500">{p.t("ui.customBadge")}</span>
         {p.editingValue === "customBadge" ? (
