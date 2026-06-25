@@ -3,6 +3,7 @@ import { Resvg } from "@resvg/resvg-js"
 import React from "react"
 import fs from "fs"
 import path from "path"
+import { GENRE_FALLBACK } from "./badges"
 
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
@@ -302,6 +303,18 @@ export async function renderGenreBadge(
       let g = parseInt(hex.substring(2, 4), 16) || 0
       let b = parseInt(hex.substring(4, 6), 16) || 0
       if (r > 240 && g > 240 && b > 240) { r = 85; g = 85; b = 85 }
+      const fb = GENRE_FALLBACK[genreName]
+      if (fb) {
+        const fr = parseInt(fb.slice(1, 3), 16) || r
+        const fg = parseInt(fb.slice(3, 5), 16) || g
+        const fbVal = parseInt(fb.slice(5, 7), 16) || b
+        const spread = Math.max(r, g, b) - Math.min(r, g, b)
+        if (spread < 40) {
+          r = Math.round(r * 0.3 + fr * 0.7)
+          g = Math.round(g * 0.3 + fg * 0.7)
+          b = Math.round(b * 0.3 + fbVal * 0.7)
+        }
+      }
       bgColor = `rgba(${r},${g},${b},0.8)`
     }
     const pillH = finalFontSize + pillPad * 2

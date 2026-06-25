@@ -1,6 +1,7 @@
 "use client"
 
 import { useP } from "@/lib/context"
+import { GENRE_FALLBACK } from "@/lib/badges"
 
 const BAR_BORDER = 3
 
@@ -98,6 +99,19 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   let ag = parseInt(hex.substring(2, 4), 16) || 0
   let ab = parseInt(hex.substring(4, 6), 16) || 0
   if (ar > 240 && ag > 240 && ab > 240) { ar = 85; ag = 85; ab = 85 }
+  const genreFallback = GENRE_FALLBACK[genreName]
+  if (genreFallback) {
+    const fh = genreFallback.replace("#", "")
+    const fr = parseInt(fh.substring(0, 2), 16) || ar
+    const fg = parseInt(fh.substring(2, 4), 16) || ag
+    const fb = parseInt(fh.substring(4, 6), 16) || ab
+    const spread = Math.max(ar, ag, ab) - Math.min(ar, ag, ab)
+    if (spread < 40) {
+      ar = Math.round(ar * 0.3 + fr * 0.7)
+      ag = Math.round(ag * 0.3 + fg * 0.7)
+      ab = Math.round(ab * 0.3 + fb * 0.7)
+    }
+  }
   return (
     <>
       {blurEnabled && <div className="absolute bottom-0 left-0 right-0" style={{
