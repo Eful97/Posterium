@@ -47,7 +47,7 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
           disabled={!tmdbKey}
           className="shrink-0 w-8 h-8 mr-1.5 flex items-center justify-center bg-accent-orange text-white rounded-full text-sm hover:shadow-lg hover:shadow-accent-orange/30 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-200"
         >
-          🔍
+          →
         </button>
       )}
     </div>

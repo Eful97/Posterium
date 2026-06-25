@@ -257,7 +257,7 @@ export default function EditView() {
         <div className="mt-3 bg-background border border-zinc-700/40 rounded-xl p-4 shadow-lg shadow-black/30 pb-5">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold text-zinc-300">{p.t("ui.transform")}</h4>
-            <button onClick={() => { defaultLogoScale(); p.setLogoOffsetX(0); p.setLogoOffsetY(0) }} className="text-xs text-zinc-400 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">🔄 {p.t("ui.reset")}</button>
+            <button onClick={() => { defaultLogoScale(); p.setLogoOffsetX(0); p.setLogoOffsetY(0) }} className="text-xs text-zinc-400 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">{p.t("ui.reset")}</button>
           </div>
           <div className="space-y-2">
             <SliderRow icon="🔍" label={p.t("ui.scale")} value={p.logoScale} min={10} max={100} boundsMin={10} boundsMax={100} onChange={p.setLogoScale} onDoubleClick={defaultLogoScale} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="scale" />
