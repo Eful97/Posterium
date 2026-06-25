@@ -1,6 +1,7 @@
 "use client"
 
 import { useP } from "@/lib/context"
+import { GENRE_FALLBACK } from "@/lib/badges"
 
 export function RankingBadge({ rank = "13", label: labelProp, topLight, containerW = 380 }: { rank?: number | string; label?: string; topLight?: boolean; containerW?: number }) {
   const p = useP()
@@ -88,6 +89,13 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   let ag = parseInt(hex.substring(2, 4), 16) || 0
   let ab = parseInt(hex.substring(4, 6), 16) || 0
   if (ar > 240 && ag > 240 && ab > 240) { ar = 85; ag = 85; ab = 85 }
+  const genreFallback = GENRE_FALLBACK[genreName] || null
+  if (genreFallback) {
+    const fh = genreFallback.replace("#", "")
+    ar = parseInt(fh.substring(0, 2), 16) || ar
+    ag = parseInt(fh.substring(2, 4), 16) || ag
+    ab = parseInt(fh.substring(4, 6), 16) || ab
+  }
   return (
     <>
       {blurEnabled && <div className="absolute bottom-0 left-0 right-0" style={{
