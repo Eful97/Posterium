@@ -74,7 +74,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const isPillStyle = badgeStyle === "pill"
   const barH = fs + Math.round(fs * 0.5) * 2
   const targetCenter = 30 * containerH / 570 + bottomOffset
-  const barVisualH = Math.max(Math.round(2 * targetCenter), barH)
+  const barVisualH = barH
   const badgeH = isPillStyle ? fs + Math.round(fs * 0.35) * 2 : Math.max(Math.round(fs * 1.6), 24)
   const bottom = isBarStyle ? 0 : Math.round(targetCenter - badgeH / 2)
   const minH = Math.round(100 * containerH / 1500)
