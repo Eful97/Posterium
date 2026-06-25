@@ -195,7 +195,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   try {
     const [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult] = await Promise.all([
-      fetchImg(imgSrc(posterPath)),
+      fetchImg(imgSrc(posterPath)).catch(() => null),
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
       backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
       (() => {
@@ -224,6 +224,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
+    if (!originalBuf) {
+      return new Response("Poster image not available", { status: 404 })
+    }
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
     const composites: { input: Buffer; top: number; left: number }[] = []
 
