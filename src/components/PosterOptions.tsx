@@ -30,7 +30,7 @@ export function PosterOptions({ posters, posterActivePath, selected, lang, openS
   let idx = 0
   return (
     <div className="relative">
-      <div ref={posterScrollRef} className="max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none">
+      <div ref={posterScrollRef} className="max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-none">
       {hasClean && (() => {
         const isOpen = openSections["clean"] !== false
         return (

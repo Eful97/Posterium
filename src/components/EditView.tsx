@@ -82,7 +82,7 @@ export default function EditView() {
 
   const previewCol = (
     <div className="w-full max-w-[400px] md:w-[400px] xl:max-w-[520px] 2xl:max-w-[600px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
-      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
+      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3 overflow-hidden">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.previewSection")}</h3>
         <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
         <div ref={previewRef} className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
