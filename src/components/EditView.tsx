@@ -82,8 +82,9 @@ export default function EditView() {
 
   const previewCol = (
     <div className="w-full max-w-[400px] md:w-[400px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
-      <h3 className="text-base font-semibold text-zinc-200 mb-3 text-center">{p.t("ui.previewSection")}</h3>
-      <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
+      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
+        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">{p.t("ui.previewSection")}</h3>
+        <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
         <div ref={previewRef} className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
           {p.previewPoster && !imageError && <img src={p.posterUrl(p.previewPoster.file_path, "w342")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onError={() => setImageError(true)} />}
           {imageError && (
@@ -184,6 +185,7 @@ export default function EditView() {
           <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
+      </div>
       {p.selected && (
         <div className="text-center select-text mt-3">
           <h2 className="text-xl font-bold [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_2px_8px_rgba(0,0,0,0.7)]">{p.titleOf(p.selected)}</h2>
