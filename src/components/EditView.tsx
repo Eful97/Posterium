@@ -333,8 +333,8 @@ export default function EditView() {
       <div className="mt-3">
         <label className="text-[12px] text-zinc-400 font-medium block mb-1.5">Stile badge</label>
         <div className="flex gap-1">
-          {(["shadow","pill","outline","colored","bar"] as const).map(s => (
-            <button key={s} onClick={() => { p.setBadgeStyle(s); localStorage.setItem("badge_style", s) }} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : s === "colored" ? "Colore" : "Barra"}</button>
+          {(["shadow","pill","outline","bar"] as const).map(s => (
+            <button key={s} onClick={() => { p.setBadgeStyle(s); localStorage.setItem("badge_style", s) }} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : "Barra"}</button>
           ))}
         </div>
       </div>

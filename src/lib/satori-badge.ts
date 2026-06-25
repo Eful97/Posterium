@@ -3,7 +3,6 @@ import { Resvg } from "@resvg/resvg-js"
 import React from "react"
 import fs from "fs"
 import path from "path"
-import { GENRE_FALLBACK } from "./badges"
 
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
@@ -216,7 +215,7 @@ export async function renderGenreBadge(
   const s = style || "shadow"
   const pillPad = Math.round(finalFontSize * 0.35)
   const pillR = Math.round(finalFontSize * 0.8)
-  const isPillStyle = s === "pill" || s === "colored"
+  const isPillStyle = s === "pill"
   const isBarStyle = s === "bar"
   const pillExtra = isPillStyle ? dims.pad * 2 + pillPad * 2 : 0
   if (isPillStyle && dims.totalW + pillExtra > maxBadgeW) {
@@ -294,29 +293,9 @@ export async function renderGenreBadge(
     )
     const png = await render(el, pw, barH)
     return { png, w: pw, h: barH }
-  } else if (s === "pill" || s === "colored") {
+  } else if (s === "pill") {
     let bgColor = "rgba(0,0,0,0.65)"
     let borderStyle = {}
-    if (s === "colored" && accentColor) {
-      const hex = accentColor.replace("#", "")
-      let r = parseInt(hex.substring(0, 2), 16) || 0
-      let g = parseInt(hex.substring(2, 4), 16) || 0
-      let b = parseInt(hex.substring(4, 6), 16) || 0
-      if (r > 240 && g > 240 && b > 240) { r = 85; g = 85; b = 85 }
-      const fb = GENRE_FALLBACK[genreName]
-      if (fb) {
-        const fr = parseInt(fb.slice(1, 3), 16) || r
-        const fg = parseInt(fb.slice(3, 5), 16) || g
-        const fbVal = parseInt(fb.slice(5, 7), 16) || b
-        const spread = Math.max(r, g, b) - Math.min(r, g, b)
-        if (spread < 40) {
-          r = Math.round(r * 0.3 + fr * 0.7)
-          g = Math.round(g * 0.3 + fg * 0.7)
-          b = Math.round(b * 0.3 + fbVal * 0.7)
-        }
-      }
-      bgColor = `rgba(${r},${g},${b},0.8)`
-    }
     const pillH = finalFontSize + pillPad * 2
     el = React.createElement(
       "div",

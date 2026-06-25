@@ -1,9 +1,6 @@
 "use client"
 
 import { useP } from "@/lib/context"
-import { GENRE_FALLBACK } from "@/lib/badges"
-
-const BAR_BORDER = 3
 
 export function RankingBadge({ rank = "13", label: labelProp, topLight, containerW = 380 }: { rank?: number | string; label?: string; topLight?: boolean; containerW?: number }) {
   const p = useP()
@@ -60,7 +57,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
     finalFs = Math.max(maxBadgeW / dims.totalW * finalFs, 10)
     dims = genreClientDims(finalFs)
   }
-  const isPillLike = badgeStyle === "pill" || badgeStyle === "colored"
+  const isPillLike = badgeStyle === "pill"
   if (isPillLike) {
     const _pillPad = Math.round(finalFs * 0.35)
     if (dims.totalW + _pillPad * 3 > maxBadgeW) {
@@ -94,24 +91,6 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
       {yearStr && <><span style={{ opacity: 0.6 }}>&bull;</span><span>{yearStr}</span></>}
     </>
   )
-  const hex = accentColor.replace("#", "")
-  let ar = parseInt(hex.substring(0, 2), 16) || 0
-  let ag = parseInt(hex.substring(2, 4), 16) || 0
-  let ab = parseInt(hex.substring(4, 6), 16) || 0
-  if (ar > 240 && ag > 240 && ab > 240) { ar = 85; ag = 85; ab = 85 }
-  const genreFallback = GENRE_FALLBACK[genreName]
-  if (genreFallback) {
-    const fh = genreFallback.replace("#", "")
-    const fr = parseInt(fh.substring(0, 2), 16) || ar
-    const fg = parseInt(fh.substring(2, 4), 16) || ag
-    const fb = parseInt(fh.substring(4, 6), 16) || ab
-    const spread = Math.max(ar, ag, ab) - Math.min(ar, ag, ab)
-    if (spread < 40) {
-      ar = Math.round(ar * 0.3 + fr * 0.7)
-      ag = Math.round(ag * 0.3 + fg * 0.7)
-      ab = Math.round(ab * 0.3 + fb * 0.7)
-    }
-  }
   return (
     <>
       {blurEnabled && <div className="absolute bottom-0 left-0 right-0" style={{
@@ -154,18 +133,6 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
             padding: `${pillPad}px ${pillPad * 1.5}px`,
             borderRadius: `${pillR}px`,
           backgroundColor: "rgba(0,0,0,0.65)",
-            fontSize: `${fs}px`,
-            lineHeight: 1,
-            color: "#e5e7eb",
-          }}>{textEls}</div>
-        ) : badgeStyle === "colored" ? (
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: `${gap}px`,
-            padding: `${pillPad}px ${pillPad * 1.5}px`,
-            borderRadius: `${pillR}px`,
-            backgroundColor: `rgba(${ar},${ag},${ab},0.8)`,
             fontSize: `${fs}px`,
             lineHeight: 1,
             color: "#e5e7eb",
