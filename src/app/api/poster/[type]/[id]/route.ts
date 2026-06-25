@@ -348,6 +348,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
     const qBlurFade = req.nextUrl.searchParams.get("bf")
+    const qBlurDarkness = req.nextUrl.searchParams.get("bd")
     const hasQuery = !!queryPoster || !!mapping
     const badgesEnabled = hasQuery ? qBadges !== "0" && showBadges : true
     const rankingEnabled = hasQuery ? qRanking !== "0" && showBadges : true
@@ -355,14 +356,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const blurHeight = qGradHeight ? Math.max(Number(qGradHeight), 5) : 30
     const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 20
     const blurFade = qBlurFade ? Math.max(Number(qBlurFade), 0) : 30
+    const blurDarkness = qBlurDarkness ? Math.max(Number(qBlurDarkness), 0) : 40
     const gh = Math.max(Math.round(ph * blurHeight / 100), 100)
     const gradTop = ph - gh
     const fadedPct = Math.min(blurFade, 100)
-    const solidPct = 100 - fadedPct
+    const darkAlpha = Math.min(blurDarkness / 100, 1)
     const blurredSection = await sharp(posterBuf)
       .extract({ left: 0, top: gradTop, width: pw, height: gh })
       .blur(blurIntensity)
       .ensureAlpha()
+      .png()
+      .toBuffer()
+    const overlaySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}">
+      <rect width="${pw}" height="${gh}" fill="rgba(0,0,0,${darkAlpha})"/>
+    </svg>`
+    const overlayBuf = await sharp(Buffer.from(overlaySvg)).png().toBuffer()
+    const darkenedBlur = await sharp(blurredSection)
+      .composite([{ input: overlayBuf, blend: 'over' }])
       .png()
       .toBuffer()
     const maskSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}">
@@ -376,7 +386,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       <rect width="${pw}" height="${gh}" fill="url(#m)"/>
     </svg>`
     const maskBuf = await sharp(Buffer.from(maskSvg)).png().toBuffer()
-    const fadedBlur = await sharp(blurredSection)
+    const fadedBlur = await sharp(darkenedBlur)
       .composite([{ input: maskBuf, blend: 'dest-out' }])
       .png()
       .toBuffer()

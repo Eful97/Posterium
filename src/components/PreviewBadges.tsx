@@ -33,7 +33,7 @@ export function RankingBadge({ rank = "13", label: labelProp, topLight, containe
   )
 }
 
-export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientHeight = 30, blurIntensity = 20, blurFade = 30, releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientHeight?: number; blurIntensity?: number; blurFade?: number; releaseDate?: string | null }) {
+export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientHeight = 30, blurIntensity = 20, blurFade = 30, blurDarkness = 40, releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientHeight?: number; blurIntensity?: number; blurFade?: number; blurDarkness?: number; releaseDate?: string | null }) {
   const voteStr = voteAverage.toFixed(1)
   const year = releaseDate?.slice(0, 4)
   const yearStr = year || ""
@@ -70,6 +70,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
         minHeight: `${minH}px`,
         backdropFilter: `blur(${blurIntensity}px)`,
         WebkitBackdropFilter: `blur(${blurIntensity}px)`,
+        backgroundColor: `rgba(0,0,0,${blurDarkness / 100})`,
         maskImage: `linear-gradient(to top, black 0%, black ${opaquePct}%, transparent 100%)`,
         WebkitMaskImage: `linear-gradient(to top, black 0%, black ${opaquePct}%, transparent 100%)`,
         pointerEvents: "none",
