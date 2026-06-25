@@ -54,7 +54,7 @@ export function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo,
           </div>
         )
       })}
-      {selectedLogo && <button disabled={disabled} onClick={removeLogo} className={`w-full mt-2 py-2 rounded-lg text-sm font-medium ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed" : "bg-red-900/30 text-red-400 hover:bg-red-900/50 active:scale-[0.98]"} transition-all duration-150 border border-red-900/50`}>{p.t("ui.removeLogo")}</button>}
+      {selectedLogo && <button disabled={disabled} onClick={removeLogo} className={`w-full mt-2 py-2 rounded-lg text-sm font-medium ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed" : "bg-red-900/30 text-red-400 hover:bg-red-900/50 active:scale-[0.98]"} transition-all duration-150 border border-red-900/50`}>🗑️ {p.t("ui.removeLogo")}</button>}
     </div>
   )
 }

@@ -87,7 +87,7 @@ export function MyPostersView() {
           <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-accent transition-colors duration-300 text-xs md:text-sm">🔍</span>
           <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={p.t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
           {filter.length > 0 && (
-            <button onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-red-500/80 text-white rounded-full text-sm hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/30 active:scale-90 transition-all duration-200">✕</button>
+            <button onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full text-sm hover:bg-zinc-600 hover:shadow-lg active:scale-90 transition-all duration-200">✕</button>
           )}
         </div>
         <div className="flex items-center gap-1 md:gap-2 md:absolute md:right-0 shrink-0">
@@ -132,7 +132,7 @@ export function MyPostersView() {
 
       {selected.size > 0 && (
         <button disabled={deleting} onClick={deleteSelected} className="mb-4 py-3 px-4 rounded-lg text-xs font-medium text-red-400 border border-red-400/40 bg-red-900/15 hover:text-red-300 hover:border-red-400/70 hover:bg-red-900/30 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
-          {deleting ? p.t("ui.deleting") : p.t("ui.deleteSelected", { count: selected.size })}
+          🗑️ {deleting ? p.t("ui.deleting") : p.t("ui.deleteSelected", { count: selected.size })}
         </button>
       )}
       {filtered.length === 0 && (

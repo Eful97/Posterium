@@ -67,7 +67,7 @@ export function SearchView() {
           {searchPage < totalPages && (
             <div className="flex justify-center mt-6">
               <button disabled={loadingMore || searching} onClick={handleLoadMore} className="px-6 py-3 rounded-xl text-sm font-medium bg-zinc-800 border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
-                {loadingMore ? t("ui.loading") : t("ui.showMore")}
+                {loadingMore ? t("ui.loading") : `⬇️ ${t("ui.showMore")}`}
               </button>
             </div>
           )}

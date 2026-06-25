@@ -88,7 +88,7 @@ export default function EditView() {
               <span className="text-4xl mb-3">🖼️</span>
               <p className="text-sm text-zinc-400 font-medium">{p.t("ui.imageNotAvailable")}</p>
               <p className="text-xs text-zinc-500 mt-1">{p.t("ui.posterLoadError")}</p>
-              <button onClick={() => setImageError(false)} className="mt-3 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg transition-all duration-150">{p.t("ui.retry")}</button>
+              <button onClick={() => setImageError(false)} className="mt-3 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg transition-all duration-150">🔄 {p.t("ui.retry")}</button>
             </div>
           )}
           {p.previewPoster?.iso_639_1 === null && p.selectedLogo && (() => {
@@ -190,7 +190,7 @@ export default function EditView() {
       )}
       {p.previewPoster && p.selected && (
         <div className="flex flex-wrap gap-2 mt-3">
-          <button onClick={p.saveConfig} className="flex-1 min-w-0 py-3 px-4 btn-primary font-bold active:scale-[0.97]">{p.t("ui.savePoster")}</button>
+          <button onClick={p.saveConfig} className="flex-1 min-w-0 py-3 px-4 btn-primary font-bold active:scale-[0.97]">💾 {p.t("ui.savePoster")}</button>
           <button onClick={() => {
             if (!p.selected || !p.previewPoster) return
             const params: string[] = []
@@ -242,13 +242,13 @@ export default function EditView() {
             }
             params.push(`v=${Date.now()}`)
             window.open(`/api/poster/${p.selected.media_type}/${p.selected.id}?${params.join("&")}`, "_blank")
-          }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">{p.t("ui.testUrl")}</button>
+          }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">🌐 {p.t("ui.testUrl")}</button>
           {(() => {
             const key = `${p.selected!.media_type}:${p.selected!.id}`
             const hasMapping = p.mappingsMap.get(key)
             if (!hasMapping) return null
             return (
-              <button onClick={() => { p.removeMapping(hasMapping); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.97] transition-all duration-200">{p.t("ui.remove")}</button>
+              <button onClick={() => { p.removeMapping(hasMapping); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.97] transition-all duration-200">🗑️ {p.t("ui.remove")}</button>
             )
           })()}
         </div>
@@ -257,7 +257,7 @@ export default function EditView() {
         <div className="mt-3 bg-background border border-zinc-700/40 rounded-xl p-4 shadow-lg shadow-black/30 pb-5">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold text-zinc-300">{p.t("ui.transform")}</h4>
-            <button onClick={() => { defaultLogoScale(); p.setLogoOffsetX(0); p.setLogoOffsetY(0) }} className="text-xs text-zinc-400 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">{p.t("ui.reset")}</button>
+            <button onClick={() => { defaultLogoScale(); p.setLogoOffsetX(0); p.setLogoOffsetY(0) }} className="text-xs text-zinc-400 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">🔄 {p.t("ui.reset")}</button>
           </div>
           <div className="space-y-2">
             <SliderRow icon="🔍" label={p.t("ui.scale")} value={p.logoScale} min={10} max={100} boundsMin={10} boundsMax={100} onChange={p.setLogoScale} onDoubleClick={defaultLogoScale} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="scale" />
@@ -333,7 +333,7 @@ export default function EditView() {
         <label className="text-[12px] text-zinc-400 font-medium block mb-1.5">Stile badge</label>
         <div className="flex gap-1">
           {(["shadow","pill","outline","bar"] as const).map(s => (
-            <button key={s} onClick={() => p.setBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : "Barra"}</button>
+            <button key={s} onClick={() => p.setBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "🌑 Ombra" : s === "pill" ? "💊 Pill" : s === "outline" ? "🔲 Outline" : "📊 Barra"}</button>
           ))}
         </div>
       </div>

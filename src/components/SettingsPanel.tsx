@@ -55,22 +55,22 @@ export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbK
       <hr className="border-zinc-700 my-1" />
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400">⭐ Badge genere/rating</span>
-        <button onClick={() => p.setDefaultGlobalBadges(!p.defaultGlobalBadges)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultGlobalBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultGlobalBadges ? "ON" : "OFF"}</button>
+        <button onClick={() => p.setDefaultGlobalBadges(!p.defaultGlobalBadges)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultGlobalBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultGlobalBadges ? "✅ ON" : "⛔ OFF"}</button>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400">🏆 Badge ranking/extra</span>
-        <button onClick={() => p.setDefaultRankingBadges(!p.defaultRankingBadges)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultRankingBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultRankingBadges ? "ON" : "OFF"}</button>
+        <button onClick={() => p.setDefaultRankingBadges(!p.defaultRankingBadges)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultRankingBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultRankingBadges ? "✅ ON" : "⛔ OFF"}</button>
       </div>
       <hr className="border-zinc-700 my-1" />
-      <label className="text-xs text-zinc-400 font-medium">Stile badge predefinito</label>
+      <label className="text-xs text-zinc-400 font-medium">🎨 Stile badge predefinito</label>
       <div className="flex gap-1">
         {(["shadow","pill","outline","bar"] as const).map(s => (
-          <button key={s} onClick={() => p.setDefaultBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.defaultBadgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : "Barra"}</button>
+          <button key={s} onClick={() => p.setDefaultBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.defaultBadgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "🌑 Ombra" : s === "pill" ? "💊 Pill" : s === "outline" ? "🔲 Outline" : "📊 Barra"}</button>
         ))}
       </div>
       <div className="flex items-center justify-between mt-1">
-        <span className="text-xs text-zinc-400">Sfocatura predefinita</span>
-        <button onClick={() => p.setDefaultBlurEnabled(!p.defaultBlurEnabled)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultBlurEnabled ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultBlurEnabled ? "Attiva" : "Disattivata"}</button>
+        <span className="text-xs text-zinc-400">🌫️ Sfocatura predefinita</span>
+        <button onClick={() => p.setDefaultBlurEnabled(!p.defaultBlurEnabled)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultBlurEnabled ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultBlurEnabled ? "✅ Attiva" : "⛔ Disattivata"}</button>
       </div>
       {p.defaultBlurEnabled && <>
         <SliderRow icon="📏" label="Altezza" value={p.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setDefaultGradientHeight(v)} onDoubleClick={() => p.setDefaultGradientHeight(30)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="gh" suffix="%" />
@@ -81,8 +81,8 @@ export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbK
       <hr className="border-zinc-700 my-1" />
       <button onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-white/10 text-white hover:bg-white/15 active:scale-[0.98] transition-all duration-150">{saved ? "✅ Salvato!" : "💾 Salva come predefiniti"}</button>
       <hr className="border-zinc-700 my-1" />
-      <button onClick={(e) => { exportData(); setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">{p.t("ui.exportJson")}</button>
-      <button onClick={(e) => { importData(); setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">{p.t("ui.importJson")}</button>
+      <button onClick={(e) => { exportData(); setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">📤 {p.t("ui.exportJson")}</button>
+      <button onClick={(e) => { importData(); setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">📥 {p.t("ui.importJson")}</button>
     </div>
   )
 }
