@@ -254,6 +254,7 @@ export async function renderGenreBadge(
     fontSize: `${finalFontSize}px`,
     fontFamily: "Inter",
     fontWeight: 700,
+    lineHeight: 1,
     textShadow,
   }
 
@@ -273,6 +274,7 @@ export async function renderGenreBadge(
       bgColor = "rgba(0,0,0,0.15)"
       borderStyle = { border: "1px solid rgba(255,255,255,0.08)" }
     }
+    const pillH = finalFontSize + pillPad * 2
     el = React.createElement(
       "div",
       {
@@ -281,7 +283,7 @@ export async function renderGenreBadge(
           justifyContent: "center",
           alignItems: "center",
           width: `${totalW + pad * 2 + pillPad * 2}px`,
-          height: `${svgH}px`,
+          height: `${pillH}px`,
         },
       },
       React.createElement(
@@ -321,6 +323,7 @@ export async function renderGenreBadge(
   }
 
   const renderW = totalW + (isPillStyle ? pad * 2 + pillPad * 2 : 0)
-  const png = await render(el, renderW, svgH)
-  return { png, w: renderW, h: svgH }
+  const renderH = isPillStyle ? finalFontSize + pillPad * 2 : svgH
+  const png = await render(el, renderW, renderH)
+  return { png, w: renderW, h: renderH }
 }
