@@ -70,7 +70,7 @@ export default function EditView() {
   }, [])
 
   const posterCol = (
-    <div className="w-full md:w-64 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1 space-y-4" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
+    <div className="w-full md:w-72 xl:w-80 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1 space-y-4" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">{p.t("ui.posterSection")}</h3>
         {p.loadingImages ? <div className="text-center py-12 text-zinc-400">{p.t("ui.loadingPoster")}</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} selected={p.selected} lang={p.lang} openSections={p.openSections} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} />}
@@ -81,7 +81,7 @@ export default function EditView() {
   const badgesVisible = p.globalBadges && p.metaInfo.genres.length > 0 && p.metaInfo.voteAverage > 0
 
   const previewCol = (
-    <div className="w-full max-w-[380px] md:w-[380px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
+    <div className="w-full max-w-[400px] md:w-[400px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
       <h3 className="text-base font-semibold text-zinc-200 mb-3 text-center">{p.t("ui.previewSection")}</h3>
       <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
         <div ref={previewRef} className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
@@ -276,7 +276,7 @@ export default function EditView() {
   const cleanPoster = p.previewPoster?.iso_639_1 === null
 
   const logoCol = (
-    <div className="w-full md:w-64 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-3 space-y-4" style={{ animationDelay: "120ms", animationFillMode: "backwards" }}>
+    <div className="w-full md:w-72 xl:w-80 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-3 space-y-4" style={{ animationDelay: "120ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">{p.t("ui.logoSection")}</h3>
         <LogoOptions logos={p.logos} selectedLogo={p.selectedLogo} lang={p.lang} selectLogo={p.selectLogo} removeLogo={p.removeLogo} disabled={!cleanPoster} />
@@ -340,7 +340,7 @@ export default function EditView() {
 
         <div className="mt-3 pt-3 border-t border-zinc-800/60">
           <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">Stile badge</label>
-          <div className="grid grid-cols-2 gap-1.5 px-1">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
             {(["shadow","pill","outline","bar"] as const).map(s => (
               <button key={s} title={s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : "Barra"} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> Ombra</> : s === "pill" ? <><Pill className="w-3 h-3" /> Pill</> : s === "outline" ? <><Square className="w-3 h-3" /> Outline</> : <><BarChart3 className="w-3 h-3" /> Barra</>}</button>
             ))}
