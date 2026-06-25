@@ -190,7 +190,7 @@ export default function EditView() {
       )}
       {p.previewPoster && p.selected && (
         <div className="flex flex-wrap gap-2 mt-3">
-          <button onClick={p.saveConfig} className="flex-1 min-w-0 py-3 px-4 btn-primary font-bold active:scale-[0.97]">💾 {p.t("ui.savePoster")}</button>
+          <button onClick={p.saveConfig} className="flex-1 min-w-0 py-3 px-4 btn-primary font-bold active:scale-[0.97]">{p.t("ui.savePoster")}</button>
           <button onClick={() => {
             if (!p.selected || !p.previewPoster) return
             const params: string[] = []
@@ -242,13 +242,13 @@ export default function EditView() {
             }
             params.push(`v=${Date.now()}`)
             window.open(`/api/poster/${p.selected.media_type}/${p.selected.id}?${params.join("&")}`, "_blank")
-          }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">🌐 {p.t("ui.testUrl")}</button>
+          }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">{p.t("ui.testUrl")}</button>
           {(() => {
             const key = `${p.selected!.media_type}:${p.selected!.id}`
             const hasMapping = p.mappingsMap.get(key)
             if (!hasMapping) return null
             return (
-              <button onClick={() => { p.removeMapping(hasMapping); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.97] transition-all duration-200">🗑️ {p.t("ui.remove")}</button>
+              <button onClick={() => { p.removeMapping(hasMapping); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.97] transition-all duration-200">{p.t("ui.remove")}</button>
             )
           })()}
         </div>
