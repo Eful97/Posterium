@@ -19,14 +19,14 @@ export function RankingBadge({ rank = "13", label: labelProp, containerW = 380 }
   const shadowBlur = Math.round(fs * 0.6)
   const shadowOff = Math.round(fs * 0.2)
   return (
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 font-semibold tracking-wide whitespace-nowrap" style={{
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-white/80 font-semibold tracking-wide whitespace-nowrap" style={{
       padding: `${py}px ${px}px`,
       borderBottomLeftRadius: `${r}px`,
       borderBottomRightRadius: `${r}px`,
       boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
       fontSize: `${fs}px`,
     }}>
-      <span className="text-white/80">#{rank} {label}</span>
+      <span className="text-black/80">#{rank} {label}</span>
     </div>
   )
 }
@@ -180,14 +180,14 @@ export function ExtraBadge({ label, containerW = 380 }: { label: string; contain
   const shadowBlur = Math.round(fs * 0.6)
   const shadowOff = Math.round(fs * 0.2)
   return (
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 font-semibold tracking-wide whitespace-nowrap" style={{
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-white/80 font-semibold tracking-wide whitespace-nowrap" style={{
       padding: `${py}px ${px}px`,
       borderBottomLeftRadius: `${r}px`,
       borderBottomRightRadius: `${r}px`,
       boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
       fontSize: `${fs}px`,
     }}>
-      <span className="text-white/80">{label}</span>
+      <span className="text-black/80">{label}</span>
     </div>
   )
 }

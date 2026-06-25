@@ -85,7 +85,7 @@ export async function renderRankingBadge(
         justifyContent: "center",
         width: `${totalW}px`,
         height: `${svgH}px`,
-        backgroundColor: "rgba(0,0,0,0.80)",
+        backgroundColor: "rgba(255,255,255,0.80)",
         borderBottomLeftRadius: `${r}px`,
         borderBottomRightRadius: `${r}px`,
         boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
@@ -93,7 +93,7 @@ export async function renderRankingBadge(
     },
       React.createElement("span", {
         style: {
-          color: "rgba(255,255,255,0.80)",
+          color: "rgba(0,0,0,0.80)",
           fontSize: `${finalFontSize}px`,
           fontFamily: "Inter",
           fontWeight: 600,
@@ -147,7 +147,7 @@ export async function renderExtraBadge(
         justifyContent: "center",
         width: `${totalW}px`,
         height: `${svgH}px`,
-        backgroundColor: "rgba(0,0,0,0.80)",
+        backgroundColor: "rgba(255,255,255,0.80)",
         borderBottomLeftRadius: `${r}px`,
         borderBottomRightRadius: `${r}px`,
         boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
@@ -155,7 +155,7 @@ export async function renderExtraBadge(
     },
       React.createElement("span", {
         style: {
-          color: "rgba(255,255,255,0.80)",
+          color: "rgba(0,0,0,0.80)",
           fontSize: `${finalFontSize}px`,
           fontFamily: "Inter",
           fontWeight: 600,
