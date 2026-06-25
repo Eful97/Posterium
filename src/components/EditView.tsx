@@ -12,6 +12,7 @@ import { resolveLabel, isRankKey, isPrefixedKey, badgeKey } from "@/lib/i18n"
 import { SearchBar } from "@/components/SearchBar"
 import { RankRow } from "@/components/RankRow"
 import { RankingBadge, GenreRatingBadges, ExtraBadge } from "@/components/PreviewBadges"
+import { RefreshCw, Search, Image, Ruler, Cloud, Minus, Circle, Moon, Pill, Square, BarChart3, Check, XCircle, ArrowLeftRight, ArrowUpDown, Clock, X } from "lucide-react"
 
 export default function EditView() {
   const p = useP()
@@ -85,10 +86,10 @@ export default function EditView() {
           {p.previewPoster && !imageError && <img src={p.posterUrl(p.previewPoster.file_path, "w342")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onError={() => setImageError(true)} />}
           {imageError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 text-center p-8">
-              <span className="text-4xl mb-3">🖼️</span>
+              <Image className="w-12 h-12 mb-3 text-zinc-500" />
               <p className="text-sm text-zinc-400 font-medium">{p.t("ui.imageNotAvailable")}</p>
               <p className="text-xs text-zinc-500 mt-1">{p.t("ui.posterLoadError")}</p>
-              <button onClick={() => setImageError(false)} className="mt-3 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg transition-all duration-150">🔄 {p.t("ui.retry")}</button>
+              <button onClick={() => setImageError(false)} className="mt-3 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg transition-all duration-150"><span className="flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />{p.t("ui.retry")}</span></button>
             </div>
           )}
           {p.previewPoster?.iso_639_1 === null && p.selectedLogo && (() => {
@@ -260,9 +261,9 @@ export default function EditView() {
             <button onClick={() => { defaultLogoScale(); p.setLogoOffsetX(0); p.setLogoOffsetY(0) }} className="text-xs text-zinc-400 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">{p.t("ui.reset")}</button>
           </div>
           <div className="space-y-2">
-            <SliderRow icon="🔍" label={p.t("ui.scale")} value={p.logoScale} min={10} max={100} boundsMin={10} boundsMax={100} onChange={p.setLogoScale} onDoubleClick={defaultLogoScale} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="scale" />
-            <SliderRow icon="↔️" label="X" value={p.logoOffsetX} min={p.logoBounds.minX} max={p.logoBounds.maxX} boundsMin={p.logoBounds.minX} boundsMax={p.logoBounds.maxX} onChange={p.setLogoOffsetX} onDoubleClick={() => p.setLogoOffsetX(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="ox" />
-            <SliderRow icon="↕️" label="Y" value={p.logoOffsetY} min={p.logoBounds.minY} max={p.logoBounds.maxY} boundsMin={p.logoBounds.minY} boundsMax={p.logoBounds.maxY} onChange={p.setLogoOffsetY} onDoubleClick={() => p.setLogoOffsetY(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="oy" />
+            <SliderRow icon={<Search className="w-3.5 h-3.5" />} label={p.t("ui.scale")} value={p.logoScale} min={10} max={100} boundsMin={10} boundsMax={100} onChange={p.setLogoScale} onDoubleClick={defaultLogoScale} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="scale" />
+            <SliderRow icon={<ArrowLeftRight className="w-3.5 h-3.5" />} label="X" value={p.logoOffsetX} min={p.logoBounds.minX} max={p.logoBounds.maxX} boundsMin={p.logoBounds.minX} boundsMax={p.logoBounds.maxX} onChange={p.setLogoOffsetX} onDoubleClick={() => p.setLogoOffsetX(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="ox" />
+            <SliderRow icon={<ArrowUpDown className="w-3.5 h-3.5" />} label="Y" value={p.logoOffsetY} min={p.logoBounds.minY} max={p.logoBounds.maxY} boundsMin={p.logoBounds.minY} boundsMax={p.logoBounds.maxY} onChange={p.setLogoOffsetY} onDoubleClick={() => p.setLogoOffsetY(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="oy" />
           </div>
         </div>
       )}
@@ -333,18 +334,18 @@ export default function EditView() {
         <label className="text-[12px] text-zinc-400 font-medium block mb-1.5">Stile badge</label>
         <div className="flex gap-1">
           {(["shadow","pill","outline","bar"] as const).map(s => (
-            <button key={s} onClick={() => p.setBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "🌑 Ombra" : s === "pill" ? "💊 Pill" : s === "outline" ? "🔲 Outline" : "📊 Barra"}</button>
+            <button key={s} onClick={() => p.setBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}><span className="flex items-center gap-1 justify-center">{s === "shadow" ? <><Moon className="w-3 h-3" /> Ombra</> : s === "pill" ? <><Pill className="w-3 h-3" /> Pill</> : s === "outline" ? <><Square className="w-3 h-3" /> Outline</> : <><BarChart3 className="w-3 h-3" /> Barra</>}</span></button>
           ))}
         </div>
       </div>
       <div className="space-y-1 mt-2">
         <div className="flex gap-2 items-center mb-1">
-          <button onClick={() => p.setBlurEnabled(!p.blurEnabled)} className={`flex-1 py-2 text-[12px] font-bold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}>{p.blurEnabled ? "Sfocatura attiva" : "Sfocatura disattivata"}</button>
+          <button onClick={() => p.setBlurEnabled(!p.blurEnabled)} className={`flex-1 py-2 text-[12px] font-bold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}><span className="flex items-center gap-1.5 justify-center">{p.blurEnabled ? <><Check className="w-3 h-3" /> Sfocatura attiva</> : <><XCircle className="w-3 h-3" /> Sfocatura disattivata</>}</span></button>
         </div>
-        {p.blurEnabled && <><SliderRow icon="📏" label="Altezza blur" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setGradientHeight(v)} onDoubleClick={() => p.setGradientHeight(30)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
-        <SliderRow icon="🌫️" label="Intensità blur" value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => p.setBlurIntensity(v)} onDoubleClick={() => p.setBlurIntensity(5)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />
-        <SliderRow icon="〰️" label="Fade blur" value={p.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurFade(v)} onDoubleClick={() => p.setBlurFade(60)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurFade" suffix="%" />
-        <SliderRow icon="🌑" label="Velatura" value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurDarkness(v)} onDoubleClick={() => p.setBlurDarkness(40)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" /></>}
+        {p.blurEnabled && <><SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label="Altezza blur" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setGradientHeight(v)} onDoubleClick={() => p.setGradientHeight(30)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
+        <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label="Intensità blur" value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => p.setBlurIntensity(v)} onDoubleClick={() => p.setBlurIntensity(5)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />
+        <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label="Fade blur" value={p.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurFade(v)} onDoubleClick={() => p.setBlurFade(60)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurFade" suffix="%" />
+        <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label="Velatura" value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurDarkness(v)} onDoubleClick={() => p.setBlurDarkness(40)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" /></>}
       </div>
     </div>
   )
@@ -360,9 +361,9 @@ export default function EditView() {
                 <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{p.t("ui.recentSearches")}</p>
                 {p.recentSearches.map((s) => (
                   <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
-                    <span className="text-zinc-500 shrink-0">🕐</span>
+                    <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
                     <span className="flex-1 truncate">{s}</span>
-                    <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0">✕</span>
+                    <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
                   </button>
                 ))}
               </div>
@@ -383,9 +384,9 @@ export default function EditView() {
                 <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{p.t("ui.recentSearches")}</p>
                 {p.recentSearches.map((s) => (
                   <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
-                    <span className="text-zinc-500 shrink-0">🕐</span>
+                    <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
                     <span className="flex-1 truncate">{s}</span>
-                    <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0">✕</span>
+                    <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
                   </button>
                 ))}
               </div>

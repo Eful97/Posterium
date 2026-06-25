@@ -1,7 +1,7 @@
 "use client"
 
 export function SliderRow({ icon, label, value, min, max, boundsMin, boundsMax, onChange, onDoubleClick, editingValue, editText, setEditingValue, setEditText, editingKey, suffix }: {
-  icon?: string; label: string; value: number; min: number; max: number; boundsMin: number; boundsMax: number;
+  icon?: React.ReactNode; label: string; value: number; min: number; max: number; boundsMin: number; boundsMax: number;
   onChange: (v: number) => void; onDoubleClick: () => void;
   editingValue: string | null; editText: string;
   setEditingValue: (v: string | null) => void; setEditText: (v: string) => void;

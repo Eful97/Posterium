@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useP } from "@/lib/context"
 import { posterUrl, titleOf, yearOf } from "@/lib/utils"
 import { SearchBar } from "@/components/SearchBar"
+import { Clock, X, Check, ChevronDown } from "lucide-react"
 
 export function SearchView() {
   const { t, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappingsMap, setQuery, doSearch, loadMore, navigateToPoster, removeRecentSearch } = useP()
@@ -34,9 +35,9 @@ export function SearchView() {
             <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
             {recentSearches.map((s) => (
               <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { setQuery(s); doSearch(s); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
-                <span className="text-zinc-500 shrink-0">🕐</span>
+                <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
                 <span className="flex-1 truncate">{s}</span>
-                <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0">✕</span>
+                <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
               </button>
             ))}
           </div>
@@ -58,7 +59,7 @@ export function SearchView() {
                   <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{titleOf(r)}</p>
                   <p className="text-xs text-zinc-400 mt-0.5">{yearOf(r)} {r.media_type === "tv" ? t("ui.mediaTv") : ""}</p>
                 </div>
-                {mapping && <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-accent-orange flex items-center justify-center text-[10px] font-bold text-black shadow-lg shadow-accent-orange/30" title={t("ui.customPosterSet")}>✓</div>}
+                {mapping && <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-accent-orange flex items-center justify-center shadow-lg shadow-accent-orange/30" title={t("ui.customPosterSet")}><Check className="w-3 h-3 text-black" /></div>}
                 {mapping && <div className="absolute inset-0 bg-accent-orange/10 border border-accent-orange/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl pointer-events-none" />}
               </button>
             )
@@ -67,7 +68,7 @@ export function SearchView() {
           {searchPage < totalPages && (
             <div className="flex justify-center mt-6">
               <button disabled={loadingMore || searching} onClick={handleLoadMore} className="px-6 py-3 rounded-xl text-sm font-medium bg-zinc-800 border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
-                {loadingMore ? t("ui.loading") : `⬇️ ${t("ui.showMore")}`}
+                {loadingMore ? t("ui.loading") : <><ChevronDown className="w-4 h-4" /> {t("ui.showMore")}</>}
               </button>
             </div>
           )}

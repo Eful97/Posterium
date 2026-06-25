@@ -2,6 +2,7 @@
 
 import { PICKER_LANGS, LANG_FLAGS } from "@/lib/utils"
 import { useP } from "@/lib/context"
+import { Globe } from "lucide-react"
 
 export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
   const p = useP()
@@ -16,7 +17,7 @@ export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
         <div className="grid grid-cols-2 gap-2">
           {PICKER_LANGS.map((l) => (
             <button key={l.code} onClick={() => onPick(l.code)} className="flex items-center gap-2 px-4 py-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-accent/50 hover:bg-zinc-800 active:scale-[0.97] transition-all duration-200 text-left group">
-              <span className="text-2xl shrink-0">{LANG_FLAGS[l.code] || "🌐"}</span>
+              <span className="text-2xl shrink-0">{LANG_FLAGS[l.code] || <Globe className="w-6 h-6" />}</span>
               <div>
                 <p className="text-sm font-medium text-zinc-200 group-hover:text-accent transition-colors">{l.name}</p>
                 <p className="text-xs text-zinc-400 uppercase tracking-wider">{l.code}</p>
