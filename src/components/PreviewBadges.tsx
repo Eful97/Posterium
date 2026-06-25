@@ -33,7 +33,7 @@ export function RankingBadge({ rank = "13", label: labelProp, topLight, containe
   )
 }
 
-export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientColor = "#000000", gradientOpacity = 0.8, gradientHeight = 30, gradientFade = 30, gradientFadeWidth = 50, releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientColor?: string; gradientOpacity?: number; gradientHeight?: number; gradientFade?: number; gradientFadeWidth?: number; releaseDate?: string | null }) {
+export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientHeight = 30, blurIntensity = 20, releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientHeight?: number; blurIntensity?: number; releaseDate?: string | null }) {
   const voteStr = voteAverage.toFixed(1)
   const year = releaseDate?.slice(0, 4)
   const yearStr = year || ""
@@ -62,18 +62,15 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const gap2 = dims.gap2
   const bottom = 20 * containerH / 570 + bottomOffset
   const minH = Math.round(100 * containerH / 1500)
-  const hex = gradientColor.replace("#", "")
-  const r = parseInt(hex.substring(0, 2), 16) || 0
-  const g = parseInt(hex.substring(2, 4), 16) || 0
-  const b = parseInt(hex.substring(4, 6), 16) || 0
-  const gf = Math.min(gradientFade, 100)
-  const fadeEnd = Math.min(gf + gradientFadeWidth, 100)
   return (
     <>
       <div className="absolute bottom-0 left-0 right-0" style={{
-        background: `linear-gradient(to top, rgba(${r},${g},${b},${gradientOpacity}) 0%, rgba(${r},${g},${b},${gradientOpacity}) ${gf}%, rgba(${r},${g},${b},0) ${fadeEnd}%, rgba(${r},${g},${b},0) 100%)`,
         height: `${gradientHeight}%`,
         minHeight: `${minH}px`,
+        backdropFilter: `blur(${blurIntensity}px)`,
+        WebkitBackdropFilter: `blur(${blurIntensity}px)`,
+        maskImage: `linear-gradient(to top, black 0%, black 70%, transparent 100%)`,
+        WebkitMaskImage: `linear-gradient(to top, black 0%, black 70%, transparent 100%)`,
         pointerEvents: "none",
       }} />
       <div className="absolute w-full flex justify-center items-center whitespace-nowrap z-10 font-bold" style={{

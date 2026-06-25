@@ -5,7 +5,7 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
-import { bottomGradientSVG, GENRE_FALLBACK } from "@/lib/badges"
+import { GENRE_FALLBACK } from "@/lib/badges"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
@@ -14,7 +14,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 44
+const RENDER_VERSION = 45
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -345,18 +345,38 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.55
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
-    const qGradColor = req.nextUrl.searchParams.get("gradColor")
-    const qGradOpacity = req.nextUrl.searchParams.get("gradOpacity")
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
-    const qGradFade = req.nextUrl.searchParams.get("gradFade")
-    const qGradFadeWidth = req.nextUrl.searchParams.get("gradFadeWidth")
+    const qBlur = req.nextUrl.searchParams.get("blur")
     const hasQuery = !!queryPoster || !!mapping
     const badgesEnabled = hasQuery ? qBadges !== "0" && showBadges : true
     const rankingEnabled = hasQuery ? qRanking !== "0" && showBadges : true
     const s = ph / 1500
-    const { svg: gradSvg, top: gradTop, height: gradH } = bottomGradientSVG(pw, ph, qGradColor || undefined, qGradOpacity ? Number(qGradOpacity) : undefined, qGradHeight ? Number(qGradHeight) : undefined, qGradFade ? Number(qGradFade) : undefined, qGradFadeWidth ? Number(qGradFadeWidth) : undefined)
-
-    composites.push({ input: Buffer.from(gradSvg), top: gradTop, left: 0 })
+    const blurHeight = qGradHeight ? Math.max(Number(qGradHeight), 5) : 30
+    const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 20
+    const gh = Math.max(Math.round(ph * blurHeight / 100), 100)
+    const gradTop = ph - gh
+    const blurredSection = await sharp(posterBuf)
+      .extract({ left: 0, top: gradTop, width: pw, height: gh })
+      .blur(blurIntensity)
+      .ensureAlpha()
+      .png()
+      .toBuffer()
+    const maskSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}">
+      <defs>
+        <linearGradient id="m" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="white" stop-opacity="0"/>
+          <stop offset="30%" stop-color="white" stop-opacity="1"/>
+          <stop offset="100%" stop-color="white" stop-opacity="1"/>
+        </linearGradient>
+      </defs>
+      <rect width="${pw}" height="${gh}" fill="url(#m)"/>
+    </svg>`
+    const maskBuf = await sharp(Buffer.from(maskSvg)).png().toBuffer()
+    const fadedBlur = await sharp(blurredSection)
+      .composite([{ input: maskBuf, blend: 'dest-out' }])
+      .png()
+      .toBuffer()
+    composites.push({ input: fadedBlur, top: gradTop, left: 0 })
 
     if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
       try {

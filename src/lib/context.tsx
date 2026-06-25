@@ -61,16 +61,10 @@ export interface PosteriumCtx {
   setRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
   customBadge: string | null
   setCustomBadge: React.Dispatch<React.SetStateAction<string | null>>
-  gradientColor: string
-  setGradientColor: React.Dispatch<React.SetStateAction<string>>
-  gradientOpacity: number
-  setGradientOpacity: React.Dispatch<React.SetStateAction<number>>
   gradientHeight: number
   setGradientHeight: React.Dispatch<React.SetStateAction<number>>
-  gradientFade: number
-  setGradientFade: React.Dispatch<React.SetStateAction<number>>
-  gradientFadeWidth: number
-  setGradientFadeWidth: React.Dispatch<React.SetStateAction<number>>
+  blurIntensity: number
+  setBlurIntensity: React.Dispatch<React.SetStateAction<number>>
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
   metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }
@@ -190,11 +184,8 @@ export function usePosterium(): PosteriumCtx {
   const [globalBadges, setGlobalBadges] = useState(true)
   const [rankingBadges, setRankingBadges] = useState(true)
   const [customBadge, setCustomBadge] = useState<string | null>(null)
-  const [gradientColor, setGradientColor] = useState("#000000")
-  const [gradientOpacity, setGradientOpacity] = useState(0.8)
   const [gradientHeight, setGradientHeight] = useState(30)
-  const [gradientFade, setGradientFade] = useState(30)
-  const [gradientFadeWidth, setGradientFadeWidth] = useState(50)
+  const [blurIntensity, setBlurIntensity] = useState(20)
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
@@ -277,16 +268,10 @@ export function usePosterium(): PosteriumCtx {
     if (gb !== null) setGlobalBadges(gb === "1")
     const rb = localStorage.getItem("ranking_badges")
     if (rb !== null) setRankingBadges(rb === "1")
-    const gc = localStorage.getItem("gradient_color")
-    if (gc !== null) setGradientColor(gc)
-    const go = localStorage.getItem("gradient_opacity")
-    if (go !== null) setGradientOpacity(Number(go))
     const gh = localStorage.getItem("gradient_height")
     if (gh !== null) setGradientHeight(Number(gh))
-    const gf = localStorage.getItem("gradient_fade")
-    if (gf !== null) setGradientFade(Number(gf))
-    const gfw = localStorage.getItem("gradient_fade_width")
-    if (gfw !== null) setGradientFadeWidth(Number(gfw))
+    const bi = localStorage.getItem("blur_intensity")
+    if (bi !== null) setBlurIntensity(Number(bi))
   }, [])
 
   const pickLang = (l: string) => {
@@ -483,15 +468,12 @@ export function usePosterium(): PosteriumCtx {
     if (!globalBadges) params.push("badges=0")
     if (!rankingBadges) params.push("ranking=0")
     if (lang) params.push(`lang=${encodeURIComponent(lang)}`)
-    params.push(`gradColor=${encodeURIComponent(gradientColor)}`)
-    params.push(`gradOpacity=${gradientOpacity}`)
     params.push(`gradHeight=${gradientHeight}`)
-    params.push(`gradFade=${gradientFade}`)
-    params.push(`gradFadeWidth=${gradientFadeWidth}`)
-    params.push("rv=37")
+    params.push(`blur=${blurIntensity}`)
+    params.push("rv=38")
     url += "?" + params.join("&")
     setUrlPattern(url)
-  }, [globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientFadeWidth, tmdbKey, lang])
+  }, [globalBadges, rankingBadges, gradientHeight, blurIntensity, tmdbKey, lang])
 
 
   const buildPreviewUrl = useCallback(() => {
@@ -513,11 +495,8 @@ export function usePosterium(): PosteriumCtx {
       params.push(`oy=${logoOffsetY}`)
     }
     if (lang) params.push(`lang=${lang}`)
-    params.push(`gradColor=${encodeURIComponent(gradientColor)}`)
-    params.push(`gradOpacity=${gradientOpacity}`)
     params.push(`gradHeight=${gradientHeight}`)
-    params.push(`gradFade=${gradientFade}`)
-    params.push(`gradFadeWidth=${gradientFadeWidth}`)
+    params.push(`blur=${blurIntensity}`)
     if (rankingBadges) {
       const edgeLum = (() => {
         const h = topEdgeColor
@@ -557,7 +536,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     params.push(`v=${v}`)
     const qs = params.length > 0 ? "?" + params.join("&") : ""
     setPreviewUrl(`${getDomain()}/api/poster/${selected.media_type}/${selected.id}${qs}`)
-  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, topEdgeColor, trendRank, mdblistAnimeList, customBadge, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientFadeWidth])
+  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, topEdgeColor, trendRank, mdblistAnimeList, customBadge, gradientHeight, blurIntensity])
 
   useEffect(() => {
     if (!selected) { setPreviewUrl(""); return }
@@ -756,15 +735,9 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     setPreviewPoster(image)
     setPreviewId(`${selected.media_type}:${selected.id}`)
     if (image.iso_639_1 !== null) {
-      setGradientOpacity(1)
       setGradientHeight(15)
-      setGradientFade(55)
-      setGradientFadeWidth(100)
     } else {
-      setGradientOpacity(0.8)
       setGradientHeight(30)
-      setGradientFade(30)
-      setGradientFadeWidth(50)
     }
   }, [selected])
 
@@ -971,11 +944,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     globalBadges, setGlobalBadges,
     rankingBadges, setRankingBadges,
     customBadge, setCustomBadge,
-    gradientColor, setGradientColor,
-    gradientOpacity, setGradientOpacity,
     gradientHeight, setGradientHeight,
-    gradientFade, setGradientFade,
-    gradientFadeWidth, setGradientFadeWidth,
+    blurIntensity, setBlurIntensity,
     trendRank,
     mdblistMatch,
     metaInfo,
@@ -1005,7 +975,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     logos, posterActivePath, previewUrl, urlPattern, lang,
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
-    globalBadges, rankingBadges, gradientColor, gradientOpacity, gradientHeight, gradientFade, gradientFadeWidth, trendRank, mdblistMatch, metaInfo, previewId,
+    globalBadges, rankingBadges, gradientHeight, blurIntensity, trendRank, mdblistMatch, metaInfo, previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
