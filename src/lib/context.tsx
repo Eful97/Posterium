@@ -764,7 +764,6 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     setPreviewId(`${selected.media_type}:${selected.id}`)
     if (image.iso_639_1 !== null) {
       setGradientHeight(15)
-      setBadgeStyle("bar")
     } else {
       setGradientHeight(30)
     }
