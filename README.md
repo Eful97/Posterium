@@ -169,7 +169,7 @@ Badge con genere, •, ★ e voto medio centrato in basso, con 5 stili:
 - **Bar** — barra full-width in basso con sfondo scuro e bordo superiore
 - **Blur** — sfocatura del poster sotto il testo (richiede blur fondo attivo)
 
-Il posizionamento del testo è unificato a 25px dal fondo del poster per tutti gli stili. Nella barra lo spazio sopra e sotto il testo è identico.
+Il centro testo è a 30px dal fondo del poster per shadow/pill/outline. La barra è alta quanto il contenuto (`barH`) e attaccata al fondo.
 
 ### Logo
 
