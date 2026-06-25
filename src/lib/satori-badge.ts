@@ -215,9 +215,10 @@ export async function renderGenreBadge(
   const s = style || "shadow"
   const pillPad = Math.round(finalFontSize * 0.35)
   const pillR = Math.round(finalFontSize * 0.8)
-  const isPillStyle = s === "pill" || s === "colored" || s === "glass"
+  const isPillStyle = s === "pill" || s === "colored"
+  const isBarStyle = s === "bar"
   const pillExtra = isPillStyle ? dims.pad * 2 + pillPad * 2 : 0
-  if (dims.totalW + pillExtra > maxBadgeW) {
+  if (isPillStyle && dims.totalW + pillExtra > maxBadgeW) {
     const ratio = maxBadgeW / (dims.totalW + pillExtra)
     finalFontSize = Math.max(Math.round(finalFontSize * ratio), 10)
     dims = genreBadgeDims(finalFontSize, genreName, voteStr, yearStr)
@@ -231,8 +232,9 @@ export async function renderGenreBadge(
     textShadow = "none"
   }
 
-  const bulletY = isPillStyle ? "0px" : "5px"
-  const starY = isPillStyle ? "0px" : `${Math.round(finalFontSize * 0.23)}px`
+  const hasInlineY = isPillStyle || isBarStyle
+  const bulletY = hasInlineY ? "0px" : "5px"
+  const starY = hasInlineY ? "0px" : `${Math.round(finalFontSize * 0.23)}px`
   const children: any[] = [
     React.createElement("span", null, genreName),
     React.createElement("span", { style: { transform: `translateY(${bulletY})` } }, "\u2022"),
@@ -260,7 +262,38 @@ export async function renderGenreBadge(
 
   let el: any
 
-  if (s === "pill" || s === "colored" || s === "glass") {
+  if (s === "bar" || s === "glass") {
+    const barPad = Math.round(finalFontSize * 0.5)
+    const barH = finalFontSize + barPad * 2
+    el = React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          width: `${pw}px`,
+          height: `${barH}px`,
+          backgroundColor: "rgba(0,0,0,0.65)",
+          borderTop: "1px solid rgba(255,255,255,0.10)",
+        },
+      },
+      React.createElement(
+        "div",
+        {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: `${gap}px`,
+            ...sharedTextStyle,
+          },
+        },
+        ...children,
+      ),
+    )
+    const png = await render(el, pw, barH)
+    return { png, w: pw, h: barH }
+  } else if (s === "pill" || s === "colored") {
     let bgColor = "rgba(0,0,0,0.65)"
     let borderStyle = {}
     if (s === "colored" && accentColor) {
@@ -270,9 +303,6 @@ export async function renderGenreBadge(
       let b = parseInt(hex.substring(4, 6), 16) || 0
       if (r > 240 && g > 240 && b > 240) { r = 85; g = 85; b = 85 }
       bgColor = `rgba(${r},${g},${b},0.8)`
-    } else if (s === "glass") {
-      bgColor = "rgba(0,0,0,0.45)"
-      borderStyle = { border: "1px solid rgba(255,255,255,0.08)" }
     }
     const pillH = finalFontSize + pillPad * 2
     el = React.createElement(
@@ -297,7 +327,6 @@ export async function renderGenreBadge(
             borderRadius: `${pillR}px`,
             backgroundColor: bgColor,
             ...borderStyle,
-            ...(s === "glass" ? { backdropFilter: "blur(12px)" } : {}),
             ...sharedTextStyle,
           },
         },

@@ -14,7 +14,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 47
+const RENDER_VERSION = 48
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -412,9 +412,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
         const accentColor = genreColor || "#555555"
         const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor)
-        const badgeY = ph - h - Math.round(20 * ph / 570)
-        const badgeLeft = Math.round((pw - w) / 2)
-        composites.push({ input: png, top: badgeY, left: badgeLeft })
+        if (badgeStyle === "bar") {
+          composites.push({ input: png, top: ph - h, left: 0 })
+        } else {
+          const badgeY = ph - h - Math.round(20 * ph / 570)
+          const badgeLeft = Math.round((pw - w) / 2)
+          composites.push({ input: png, top: badgeY, left: badgeLeft })
+        }
       } catch {
         // genre badge rendering failed, skip it
       }

@@ -58,7 +58,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
     finalFs = Math.max(maxBadgeW / dims.totalW * finalFs, 10)
     dims = genreClientDims(finalFs)
   }
-  const isPillLike = badgeStyle === "pill" || badgeStyle === "colored" || badgeStyle === "glass"
+  const isPillLike = badgeStyle === "pill" || badgeStyle === "colored"
   if (isPillLike) {
     const _pillPad = Math.round(finalFs * 0.35)
     if (dims.totalW + _pillPad * 3 > maxBadgeW) {
@@ -71,8 +71,9 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
   const gap2 = dims.gap2
   const pillPad = Math.round(fs * 0.35)
   const pillR = Math.round(fs * 0.8)
+  const isBarStyle = badgeStyle === "bar"
   const styleOffset = isPillLike ? -pillPad : 0
-  const bottom = 20 * containerH / 570 + bottomOffset + styleOffset
+  const bottom = isBarStyle ? 0 : 20 * containerH / 570 + bottomOffset + styleOffset
   const minH = Math.round(100 * containerH / 1500)
   const opaquePct = Math.max(100 - blurFade, 0)
   const textShadow = badgeStyle === "outline"
@@ -115,6 +116,24 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
         WebkitMaskImage: `linear-gradient(to top, black 0%, black ${opaquePct}%, transparent 100%)`,
         pointerEvents: "none",
       }} />}
+      {badgeStyle === "bar" ? (
+        <div className="absolute bottom-0 left-0 right-0 z-10" style={{
+          height: `${fs + Math.round(fs * 0.5) * 2}px`,
+          backgroundColor: "rgba(0,0,0,0.65)",
+          borderTop: "1px solid rgba(255,255,255,0.10)",
+          pointerEvents: "none",
+        }}>
+          <div className="w-full h-full flex justify-center items-center font-bold whitespace-nowrap" style={{
+            fontSize: `${fs}px`,
+            lineHeight: 1,
+            color: "#e5e7eb",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: `${gap}px` }}>
+              {textEls}
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="absolute w-full flex justify-center items-center z-10 font-bold whitespace-nowrap" style={{
         bottom: `${bottom}px`,
         pointerEvents: "none",
@@ -143,21 +162,6 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
             lineHeight: 1,
             color: "#e5e7eb",
           }}>{textEls}</div>
-        ) : badgeStyle === "glass" ? (
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: `${gap}px`,
-            padding: `${pillPad}px ${pillPad * 1.5}px`,
-            borderRadius: `${pillR}px`,
-            backgroundColor: "rgba(0,0,0,0.15)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            fontSize: `${fs}px`,
-            lineHeight: 1,
-            color: "#e5e7eb",
-          }}>{textEls}</div>
         ) : (
           <div style={{
             display: "flex",
@@ -170,6 +174,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
           }}>{textEls}</div>
         )}
       </div>
+      )}
     </>
   )
 }
