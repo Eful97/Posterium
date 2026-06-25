@@ -3,6 +3,8 @@
 import { useP } from "@/lib/context"
 import { GENRE_FALLBACK } from "@/lib/badges"
 
+const BAR_BORDER = 3
+
 export function RankingBadge({ rank = "13", label: labelProp, topLight, containerW = 380 }: { rank?: number | string; label?: string; topLight?: boolean; containerW?: number }) {
   const p = useP()
   const label = labelProp ?? p.t("ui.today") ?? "Oggi"
@@ -117,7 +119,7 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
         pointerEvents: "none",
       }} />}
       {badgeStyle === "bar" ? (
-        <div className="absolute bottom-0 left-0 right-0 z-10" style={{
+        <div className="absolute bottom-0 left-0 right-0" style={{
           height: `${fs + Math.round(fs * 0.5) * 2}px`,
           backgroundColor: "rgba(0,0,0,0.65)",
           borderTop: "1px solid rgba(255,255,255,0.10)",
