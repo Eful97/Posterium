@@ -57,6 +57,13 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
     finalFs = Math.max(maxBadgeW / dims.totalW * finalFs, 10)
     dims = genreClientDims(finalFs)
   }
+  function pillTextCol(hex: string): string {
+    if (hex.length < 7) return "#e5e7eb"
+    const r = parseInt(hex.slice(1, 3), 16) / 255
+    const g = parseInt(hex.slice(3, 5), 16) / 255
+    const b = parseInt(hex.slice(5, 7), 16) / 255
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? "#1a1a1a" : "#e5e7eb"
+  }
   const isPillLike = badgeStyle === "pill"
   if (isPillLike) {
     const _pillPad = Math.round(finalFs * 0.35)
@@ -138,10 +145,10 @@ export function GenreRatingBadges({ genreName, voteAverage, containerW = 380, co
             gap: `${gap}px`,
             padding: `${pillPad}px ${pillPad * 1.5}px`,
             borderRadius: `${pillR}px`,
-            backgroundColor: "rgba(0,0,0,0.65)",
+            backgroundColor: accentColor,
             fontSize: `${fs}px`,
             lineHeight: 1,
-            color: "#e5e7eb",
+            color: pillTextCol(accentColor),
           }}>{textEls}</div>
         ) : (
           <div style={{

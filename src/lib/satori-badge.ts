@@ -214,6 +214,13 @@ export async function renderGenreBadge(
     dims = genreBadgeDims(finalFontSize, genreName, voteStr, yearStr)
   }
   const s = style || "shadow"
+  function _pillTextCol(hex: string): string {
+    if (hex.length < 7) return "#e5e7eb"
+    const r = parseInt(hex.slice(1, 3), 16) / 255
+    const g = parseInt(hex.slice(3, 5), 16) / 255
+    const b = parseInt(hex.slice(5, 7), 16) / 255
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? "#1a1a1a" : "#e5e7eb"
+  }
   const pillPad = Math.round(finalFontSize * 0.35)
   const pillR = Math.round(finalFontSize * 0.8)
   const isPillStyle = s === "pill"
@@ -296,8 +303,10 @@ export async function renderGenreBadge(
     const png = await render(el, pw, barH)
     return { png, w: pw, h: barH }
   } else if (s === "pill") {
-    const bgColor = "rgba(0,0,0,0.65)"
+    const bgColor = accentColor || "rgba(0,0,0,0.65)"
     const borderStyle = {}
+    const pillCol = _pillTextCol(bgColor)
+    const pillTextStyle = { ...sharedTextStyle, color: pillCol }
     const pillH = finalFontSize + pillPad * 2
     el = React.createElement(
       "div",
@@ -321,7 +330,7 @@ export async function renderGenreBadge(
             borderRadius: `${pillR}px`,
             backgroundColor: bgColor,
             ...borderStyle,
-            ...sharedTextStyle,
+            ...pillTextStyle,
           },
         },
         ...children,

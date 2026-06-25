@@ -24,7 +24,7 @@ Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispetti
 | Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` | `"0 4px 6px rgba(0,0,0,0.5)"` |
 | Overflow protection | `fs` ridotto se `totalW > containerW - 20`, calcolato con `genreClientDims()` | Stessa logica: `totalW > pw - 20`, usa `genreBadgeDims()` riproporziona `fs` |
 | Allineamento verticale | Flex baseline naturale | Bullet `translateY(5px)`, Stella `translateY(fs * 0.23)`, Voto `translateY(5px)`, Anno `translateY(5px)` |
-| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg nero + pill; `outline` — textShadow outline; `colored` — bg accentColor; `glass` — bg trasp + blur | Stessi stili in SVG con Satori. Per `colored` legge `accentColor`; per `glass` usa `backgroundColor: rgba(0,0,0,0.2)` + `backdropFilter` |
+| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg accentColor + pill con testo scuro/chiaro automatico; `outline` — textShadow outline; `bar` — barra full-width nera | Stessi stili in SVG con Satori. Per `pill` usa `accentColor` con `_pillTextCol()` per testo; per `bar` usa `backgroundColor: rgba(0,0,0,0.70)` |
 
 ## Badge Ranking/Extra
 
