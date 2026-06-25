@@ -281,11 +281,11 @@ export default function EditView() {
       <h4 className="text-sm font-semibold text-zinc-300 mb-2 px-1">{p.t("ui.badgeSection")}</h4>
       <div className="flex items-center justify-between px-1">
         <span className="text-xs text-zinc-400">{p.t("ui.trendBadge")}</span>
-        <Toggle value={p.rankingBadges} onChange={(v) => { p.setRankingBadges(v) }} />
+        <Toggle value={p.rankingBadges} onChange={(v) => { p.setRankingBadges(v); p.setDefaultRankingBadges(v); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), rankingBadges: v })) }} />
       </div>
       <div className="flex items-center justify-between px-1 mt-2">
         <span className="text-xs text-zinc-400">{p.t("ui.genreRatingBadge")}</span>
-        <Toggle value={p.globalBadges} onChange={(v) => { p.setGlobalBadges(v) }} />
+        <Toggle value={p.globalBadges} onChange={(v) => { p.setGlobalBadges(v); p.setDefaultGlobalBadges(v); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), globalBadges: v })) }} />
       </div>
       <div className="flex items-center justify-between px-1 mt-1.5">
         <span className="text-xs text-zinc-500">{p.t("ui.customBadge")}</span>
