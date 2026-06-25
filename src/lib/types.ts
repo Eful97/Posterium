@@ -54,4 +54,12 @@ export interface Mapping {
   trendRank?: number
   trendPeriod?: string
   customBadge?: string | null
+  showBadges?: boolean
+  rankingBadges?: boolean
+  badgeStyle?: string
+  blurEnabled?: boolean
+  blurIntensity?: number
+  blurFade?: number
+  blurDarkness?: number
+  gradientHeight?: number
 }

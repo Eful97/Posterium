@@ -31,6 +31,13 @@ export interface Mapping {
   customBadge?: string | null
   releaseDate?: string
   firstAirDate?: string
+  rankingBadges?: boolean
+  badgeStyle?: string
+  blurEnabled?: boolean
+  blurIntensity?: number
+  blurFade?: number
+  blurDarkness?: number
+  gradientHeight?: number
 }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL

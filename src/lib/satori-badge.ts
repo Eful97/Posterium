@@ -296,8 +296,8 @@ export async function renderGenreBadge(
     const png = await render(el, pw, barH)
     return { png, w: pw, h: barH }
   } else if (s === "pill") {
-    let bgColor = "rgba(0,0,0,0.65)"
-    let borderStyle = {}
+    const bgColor = "rgba(0,0,0,0.65)"
+    const borderStyle = {}
     const pillH = finalFontSize + pillPad * 2
     el = React.createElement(
       "div",

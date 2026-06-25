@@ -73,6 +73,22 @@ export interface PosteriumCtx {
   setBlurEnabled: React.Dispatch<React.SetStateAction<boolean>>
   badgeStyle: string
   setBadgeStyle: React.Dispatch<React.SetStateAction<string>>
+  defaultBadgeStyle: string
+  setDefaultBadgeStyle: React.Dispatch<React.SetStateAction<string>>
+  defaultBlurEnabled: boolean
+  setDefaultBlurEnabled: React.Dispatch<React.SetStateAction<boolean>>
+  defaultBlurIntensity: number
+  setDefaultBlurIntensity: React.Dispatch<React.SetStateAction<number>>
+  defaultBlurFade: number
+  setDefaultBlurFade: React.Dispatch<React.SetStateAction<number>>
+  defaultBlurDarkness: number
+  setDefaultBlurDarkness: React.Dispatch<React.SetStateAction<number>>
+  defaultGradientHeight: number
+  setDefaultGradientHeight: React.Dispatch<React.SetStateAction<number>>
+  defaultGlobalBadges: boolean
+  setDefaultGlobalBadges: React.Dispatch<React.SetStateAction<boolean>>
+  defaultRankingBadges: boolean
+  setDefaultRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
   metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }
@@ -198,6 +214,14 @@ export function usePosterium(): PosteriumCtx {
   const [blurDarkness, setBlurDarkness] = useState(40)
   const [blurEnabled, setBlurEnabled] = useState(true)
   const [badgeStyle, setBadgeStyle] = useState("shadow")
+  const [defaultBadgeStyle, setDefaultBadgeStyle] = useState("shadow")
+  const [defaultBlurEnabled, setDefaultBlurEnabled] = useState(true)
+  const [defaultBlurIntensity, setDefaultBlurIntensity] = useState(5)
+  const [defaultBlurFade, setDefaultBlurFade] = useState(60)
+  const [defaultBlurDarkness, setDefaultBlurDarkness] = useState(40)
+  const [defaultGradientHeight, setDefaultGradientHeight] = useState(30)
+  const [defaultGlobalBadges, setDefaultGlobalBadges] = useState(true)
+  const [defaultRankingBadges, setDefaultRankingBadges] = useState(true)
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
@@ -267,6 +291,41 @@ export function usePosterium(): PosteriumCtx {
     localStorage.setItem("mdblist_key", val)
   }
 
+  const loadDefaultsToState = useCallback(() => {
+    try {
+      const raw = localStorage.getItem("badgeDefaults")
+      if (raw) {
+        const d = JSON.parse(raw)
+        setGlobalBadges(d.globalBadges ?? true)
+        setRankingBadges(d.rankingBadges ?? true)
+        setGradientHeight(d.gradientHeight ?? 30)
+        setBlurIntensity(d.blurIntensity ?? 5)
+        setBlurFade(d.blurFade ?? 60)
+        setBlurDarkness(d.blurDarkness ?? 40)
+        setBlurEnabled(d.blurEnabled ?? true)
+        setBadgeStyle(d.badgeStyle ?? "shadow")
+      } else {
+        setGlobalBadges(true)
+        setRankingBadges(true)
+        setGradientHeight(30)
+        setBlurIntensity(5)
+        setBlurFade(60)
+        setBlurDarkness(40)
+        setBlurEnabled(true)
+        setBadgeStyle("shadow")
+      }
+    } catch {
+      setGlobalBadges(true)
+      setRankingBadges(true)
+      setGradientHeight(30)
+      setBlurIntensity(5)
+      setBlurFade(60)
+      setBlurDarkness(40)
+      setBlurEnabled(true)
+      setBadgeStyle("shadow")
+    }
+  }, [])
+
   useEffect(() => {
     if (langInit.current) return
     langInit.current = true
@@ -276,22 +335,28 @@ export function usePosterium(): PosteriumCtx {
     } else {
       setShowLangPicker(true)
     }
-    const gb = localStorage.getItem("global_badges")
-    if (gb !== null) setGlobalBadges(gb === "1")
-    const rb = localStorage.getItem("ranking_badges")
-    if (rb !== null) setRankingBadges(rb === "1")
-    const gh = localStorage.getItem("gradient_height")
-    if (gh !== null) setGradientHeight(Number(gh))
-    const bi = localStorage.getItem("blur_intensity")
-    if (bi !== null) setBlurIntensity(Number(bi))
-    const bf = localStorage.getItem("blur_fade")
-    if (bf !== null) setBlurFade(Number(bf))
-    const bd = localStorage.getItem("blur_darkness")
-    if (bd !== null) setBlurDarkness(Number(bd))
-    const be = localStorage.getItem("blur_enabled")
-    if (be !== null) setBlurEnabled(be === "1")
-    const bs = localStorage.getItem("badge_style")
-    if (bs !== null) setBadgeStyle(bs)
+    try {
+      const raw = localStorage.getItem("badgeDefaults")
+      if (raw) {
+        const d = JSON.parse(raw)
+        setDefaultGlobalBadges(d.globalBadges ?? true)
+        setDefaultRankingBadges(d.rankingBadges ?? true)
+        setGlobalBadges(d.globalBadges ?? true)
+        setRankingBadges(d.rankingBadges ?? true)
+        setDefaultBadgeStyle(d.badgeStyle ?? "shadow")
+        setDefaultBlurEnabled(d.blurEnabled ?? true)
+        setDefaultBlurIntensity(d.blurIntensity ?? 5)
+        setDefaultBlurFade(d.blurFade ?? 60)
+        setDefaultBlurDarkness(d.blurDarkness ?? 40)
+        setDefaultGradientHeight(d.gradientHeight ?? 30)
+        setGradientHeight(d.gradientHeight ?? 30)
+        setBlurIntensity(d.blurIntensity ?? 5)
+        setBlurFade(d.blurFade ?? 60)
+        setBlurDarkness(d.blurDarkness ?? 40)
+        setBlurEnabled(d.blurEnabled ?? true)
+        setBadgeStyle(d.badgeStyle ?? "shadow")
+      }
+    } catch {}
   }, [])
 
   const pickLang = (l: string) => {
@@ -497,7 +562,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`bf=${blurFade}`)
     params.push(`bd=${blurDarkness}`)
     params.push(`bs=${badgeStyle}`)
-    params.push("rv=51")
+    params.push("rv=52")
     url += "?" + params.join("&")
     setUrlPattern(url)
   }, [globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, tmdbKey, lang])
@@ -713,6 +778,14 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         }
         setCustomBadge(existing.customBadge ?? null)
         setTrendRank(rankData.rank ?? existing.trendRank ?? null)
+        setGlobalBadges(existing.showBadges ?? true)
+        setRankingBadges(existing.rankingBadges ?? true)
+        setGradientHeight(existing.gradientHeight ?? defaultGradientHeight)
+        setBlurIntensity(existing.blurIntensity ?? defaultBlurIntensity)
+        setBlurFade(existing.blurFade ?? defaultBlurFade)
+        setBlurDarkness(existing.blurDarkness ?? defaultBlurDarkness)
+        setBlurEnabled(existing.blurEnabled ?? defaultBlurEnabled)
+        setBadgeStyle(existing.badgeStyle ?? defaultBadgeStyle)
       } else {
         setCustomBadge(null)
         setLogoScale(75)
@@ -733,7 +806,6 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           const autoLogo = langLogo || itLogo || enLogo || firstLogo
           if (autoLogo) {
             setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
-            setGradientHeight(30)
             setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
             if (autoLogo.width && autoLogo.height) {
               const alw = autoLogo.width
@@ -749,20 +821,18 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
             const fallbackPoster = itPoster || enPoster || origPoster || firstPoster
             if (fallbackPoster) {
               setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
-              setGradientHeight(15)
             }
           }
         } else if (langPoster) {
           setPreviewPoster({ file_path: langPoster.file_path, iso_639_1: lang, vote_average: 0, width: 0, height: 0 })
-          setGradientHeight(15)
         } else {
           const origPoster = details.original_language ? data.posters?.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
           const fallbackPoster = origPoster || firstPoster
           if (fallbackPoster) {
             setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
-            setGradientHeight(15)
           }
         }
+        loadDefaultsToState()
       }
     } finally {
       setLoadingImages(false)
@@ -773,11 +843,6 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     if (!selected) return
     setPreviewPoster(image)
     setPreviewId(`${selected.media_type}:${selected.id}`)
-    if (image.iso_639_1 !== null) {
-      setGradientHeight(15)
-    } else {
-      setGradientHeight(30)
-    }
   }, [selected])
 
   const selectLogo = useCallback(async (logo: TMDBImage) => {
@@ -840,6 +905,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           trendPeriod: "day",
           accentColor: accentColor !== '#ffffff' ? accentColor : undefined,
           showBadges: globalBadges,
+          rankingBadges,
           tvType: metaInfo.type || null,
           tvStatus: metaInfo.status || null,
           releaseDate: metaInfo.release_date || null,
@@ -848,6 +914,12 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           badgeRank,
           badgeLabel,
           customBadge,
+          badgeStyle,
+          blurEnabled,
+          blurIntensity,
+          blurFade,
+          blurDarkness,
+          gradientHeight,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)
@@ -856,7 +928,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     } catch {
       showToast(t("ui.saveError"))
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge])
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight])
 
   const removeLogo = useCallback(async () => {
     setSelectedLogo(null)
@@ -989,6 +1061,14 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     blurDarkness, setBlurDarkness,
     blurEnabled, setBlurEnabled,
     badgeStyle, setBadgeStyle,
+    defaultBadgeStyle, setDefaultBadgeStyle,
+    defaultBlurEnabled, setDefaultBlurEnabled,
+    defaultBlurIntensity, setDefaultBlurIntensity,
+    defaultBlurFade, setDefaultBlurFade,
+    defaultBlurDarkness, setDefaultBlurDarkness,
+    defaultGradientHeight, setDefaultGradientHeight,
+    defaultGlobalBadges, setDefaultGlobalBadges,
+    defaultRankingBadges, setDefaultRankingBadges,
     trendRank,
     mdblistMatch,
     metaInfo,
@@ -1018,7 +1098,10 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     logos, posterActivePath, previewUrl, urlPattern, lang,
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
-    globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, trendRank, mdblistMatch, metaInfo, previewId,
+    globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle,
+    defaultBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
+    defaultGlobalBadges, defaultRankingBadges,
+    trendRank, mdblistMatch, metaInfo, previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,

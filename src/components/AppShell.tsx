@@ -6,6 +6,7 @@ import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
 import { VersionBadge } from "@/components/VersionBadge"
 import { SettingsPanel } from "@/components/SettingsPanel"
+import { SliderRow } from "@/components/SliderRow"
 import { SearchView } from "@/components/SearchView"
 import { MyPostersView } from "@/components/MyPostersView"
 import EditView from "@/components/EditView"
@@ -102,6 +103,32 @@ export function AppShell() {
             </div>
             <button onClick={() => { p.exportData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">{p.t("ui.exportJson")}</button>
             <button onClick={() => { p.importData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150">{p.t("ui.importJson")}</button>
+            <hr className="border-zinc-700 my-2" />
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-zinc-400">Badge genere/rating</span>
+              <button onClick={() => { p.setDefaultGlobalBadges(!p.defaultGlobalBadges); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), globalBadges: !p.defaultGlobalBadges })) }} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultGlobalBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultGlobalBadges ? "ON" : "OFF"}</button>
+            </div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-zinc-400">Badge ranking/extra</span>
+              <button onClick={() => { p.setDefaultRankingBadges(!p.defaultRankingBadges); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), rankingBadges: !p.defaultRankingBadges })) }} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultRankingBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultRankingBadges ? "ON" : "OFF"}</button>
+            </div>
+            <hr className="border-zinc-700 my-2" />
+            <label className="text-xs text-zinc-400 font-medium block mb-2">Stile badge predefinito</label>
+            <div className="flex gap-1 mb-2">
+              {(["shadow","pill","outline","bar"] as const).map(s => (
+                <button key={s} onClick={() => { p.setDefaultBadgeStyle(s); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), badgeStyle: s })) }} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.defaultBadgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : "Barra"}</button>
+              ))}
+            </div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-zinc-400">Sfocatura predefinita</span>
+              <button onClick={() => { p.setDefaultBlurEnabled(!p.defaultBlurEnabled); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), blurEnabled: !p.defaultBlurEnabled })) }} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultBlurEnabled ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultBlurEnabled ? "Attiva" : "Disattivata"}</button>
+            </div>
+            {p.defaultBlurEnabled && <>
+              <SliderRow icon="📏" label="Altezza" value={p.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setDefaultGradientHeight(v); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), gradientHeight: v })) }} onDoubleClick={() => { p.setDefaultGradientHeight(30); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), gradientHeight: 30 })) }} editingValue={null} editText="" setEditingValue={() => {}} setEditText={() => {}} editingKey="" suffix="%" />
+              <SliderRow icon="🌫️" label="Intensità" value={p.defaultBlurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => { p.setDefaultBlurIntensity(v); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), blurIntensity: v })) }} onDoubleClick={() => { p.setDefaultBlurIntensity(5); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), blurIntensity: 5 })) }} editingValue={null} editText="" setEditingValue={() => {}} setEditText={() => {}} editingKey="" suffix="px" />
+              <SliderRow icon="〰️" label="Fade" value={p.defaultBlurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setDefaultBlurFade(v); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), blurFade: v })) }} onDoubleClick={() => { p.setDefaultBlurFade(60); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), blurFade: 60 })) }} editingValue={null} editText="" setEditingValue={() => {}} setEditText={() => {}} editingKey="" suffix="%" />
+              <SliderRow icon="🌑" label="Velatura" value={p.defaultBlurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setDefaultBlurDarkness(v); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), blurDarkness: v })) }} onDoubleClick={() => { p.setDefaultBlurDarkness(40); localStorage.setItem("badgeDefaults", JSON.stringify({ ...JSON.parse(localStorage.getItem("badgeDefaults") || "{}"), blurDarkness: 40 })) }} editingValue={null} editText="" setEditingValue={() => {}} setEditText={() => {}} editingKey="" suffix="%" />
+            </>}
           </div>
         </div>
       )}

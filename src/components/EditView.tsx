@@ -23,6 +23,7 @@ export default function EditView() {
   const [imageError, setImageError] = useState(false)
   const dragRef = useRef({ startX: 0, startY: 0, startOX: 0, startOY: 0, active: false })
   const logoWheelRef = useRef<HTMLDivElement>(null)
+  const [now] = useState(() => Date.now())
 
   const defaultLogoScale = () => {
     const l = p.selectedLogo
@@ -140,7 +141,6 @@ export default function EditView() {
           })()}
           {p.rankingBadges && (() => {
             // eslint-disable-next-line
-            const now = Date.now()
             const twoWeeks = 14 * 24 * 60 * 60 * 1000
             const isNewMovie = p.selected?.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
             const isNewSeries = p.selected?.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
@@ -281,11 +281,11 @@ export default function EditView() {
       <h4 className="text-sm font-semibold text-zinc-300 mb-2 px-1">{p.t("ui.badgeSection")}</h4>
       <div className="flex items-center justify-between px-1">
         <span className="text-xs text-zinc-400">{p.t("ui.trendBadge")}</span>
-        <Toggle value={p.rankingBadges} onChange={(v) => { p.setRankingBadges(v); localStorage.setItem("ranking_badges", v ? "1" : "0") }} />
+        <Toggle value={p.rankingBadges} onChange={(v) => { p.setRankingBadges(v) }} />
       </div>
       <div className="flex items-center justify-between px-1 mt-2">
         <span className="text-xs text-zinc-400">{p.t("ui.genreRatingBadge")}</span>
-        <Toggle value={p.globalBadges} onChange={(v) => { p.setGlobalBadges(v); localStorage.setItem("global_badges", v ? "1" : "0") }} />
+        <Toggle value={p.globalBadges} onChange={(v) => { p.setGlobalBadges(v) }} />
       </div>
       <div className="flex items-center justify-between px-1 mt-1.5">
         <span className="text-xs text-zinc-500">{p.t("ui.customBadge")}</span>
@@ -302,7 +302,6 @@ export default function EditView() {
             {(() => {
               const s = p.selected
               if (!s) return null
-              const now = Date.now()
               const twoWeeks = 14 * 24 * 60 * 60 * 1000
               const isNewMovie = s.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
               const isNewSeries = s.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
@@ -334,18 +333,18 @@ export default function EditView() {
         <label className="text-[12px] text-zinc-400 font-medium block mb-1.5">Stile badge</label>
         <div className="flex gap-1">
           {(["shadow","pill","outline","bar"] as const).map(s => (
-            <button key={s} onClick={() => { p.setBadgeStyle(s); localStorage.setItem("badge_style", s) }} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : "Barra"}</button>
+            <button key={s} onClick={() => p.setBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : "Barra"}</button>
           ))}
         </div>
       </div>
       <div className="space-y-1 mt-2">
         <div className="flex gap-2 items-center mb-1">
-          <button onClick={() => { p.setBlurEnabled(!p.blurEnabled); localStorage.setItem("blur_enabled", p.blurEnabled ? "0" : "1") }} className={`flex-1 py-2 text-[12px] font-bold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}>{p.blurEnabled ? "🌫️ Sfocatura attiva" : "🌫️ Sfocatura disattivata"}</button>
+          <button onClick={() => { p.setBlurEnabled(!p.blurEnabled) }} className={`flex-1 py-2 text-[12px] font-bold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}>{p.blurEnabled ? "🌫️ Sfocatura attiva" : "🌫️ Sfocatura disattivata"}</button>
         </div>
-        {p.blurEnabled && <><SliderRow icon="📏" label="Altezza blur" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setGradientHeight(v); localStorage.setItem("gradient_height", String(v)) }} onDoubleClick={() => { p.setGradientHeight(30); localStorage.setItem("gradient_height", "30") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
-        <SliderRow icon="🌫️" label="Intensità blur" value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => { p.setBlurIntensity(v); localStorage.setItem("blur_intensity", String(v)) }} onDoubleClick={() => { p.setBlurIntensity(5); localStorage.setItem("blur_intensity", "5") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />
-        <SliderRow icon="〰️" label="Fade blur" value={p.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setBlurFade(v); localStorage.setItem("blur_fade", String(v)) }} onDoubleClick={() => { p.setBlurFade(60); localStorage.setItem("blur_fade", "60") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurFade" suffix="%" />
-        <SliderRow icon="🌑" label="Velatura" value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setBlurDarkness(v); localStorage.setItem("blur_darkness", String(v)) }} onDoubleClick={() => { p.setBlurDarkness(40); localStorage.setItem("blur_darkness", "40") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" /></>}
+        {p.blurEnabled && <><SliderRow icon="📏" label="Altezza blur" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setGradientHeight(v) }} onDoubleClick={() => { p.setGradientHeight(30) }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
+        <SliderRow icon="🌫️" label="Intensità blur" value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => { p.setBlurIntensity(v) }} onDoubleClick={() => { p.setBlurIntensity(5) }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />
+        <SliderRow icon="〰️" label="Fade blur" value={p.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setBlurFade(v) }} onDoubleClick={() => { p.setBlurFade(60) }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurFade" suffix="%" />
+        <SliderRow icon="🌑" label="Velatura" value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { p.setBlurDarkness(v) }} onDoubleClick={() => { p.setBlurDarkness(40) }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" /></>}
       </div>
     </div>
   )

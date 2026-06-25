@@ -14,7 +14,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 59
+const RENDER_VERSION = 60
 const IMG_BASE = "https://image.tmdb.org/t/p"
 
 type RouteParams = { type: string; id: string }
@@ -91,6 +91,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let genreName: string | null = null
   let voteAverage: number | null = null
   let showBadges = true
+  let rankingBadges = true
   let releaseDate: string | null = null
   let firstAirDate: string | null = null
   let nextEpisodeAir: string | null = null
@@ -129,6 +130,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     genreName = mapping.genreName ?? null
     voteAverage = mapping.voteAverage ?? null
     showBadges = mapping.showBadges ?? true
+    rankingBadges = mapping.rankingBadges ?? true
     etag = `"v${RENDER_VERSION}:${mapping.updatedAt}"`
     if (req.headers.get("If-None-Match") === etag) {
       return new Response(null, { status: 304 })
@@ -354,8 +356,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qBlurDarkness = req.nextUrl.searchParams.get("bd")
     const qBlurEnabled = req.nextUrl.searchParams.get("be")
     const hasQuery = !!queryPoster || !!mapping
-    const badgesEnabled = hasQuery ? qBadges !== "0" && showBadges : true
-    const rankingEnabled = hasQuery ? qRanking !== "0" && showBadges : true
+    const badgesEnabled = hasQuery ? (qBadges !== null ? qBadges !== "0" : showBadges) : true
+    const rankingEnabled = hasQuery ? (qRanking !== null ? qRanking !== "0" : rankingBadges) : true
     const blurEnabled = qBlurEnabled !== "0"
     const s = ph / 1500
     const blurHeight = qGradHeight ? Math.max(Number(qGradHeight), 5) : 30
