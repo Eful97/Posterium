@@ -177,7 +177,7 @@ export default function EditView() {
             }
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} badgeStyle={p.badgeStyle} accentColor={p.accentColor} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
           <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
@@ -212,6 +212,7 @@ export default function EditView() {
             params.push(`blur=${p.blurIntensity}`)
             params.push(`bf=${p.blurFade}`)
             params.push(`bd=${p.blurDarkness}`)
+            params.push(`bs=${p.badgeStyle}`)
             if (p.rankingBadges) {
               const now = Date.now()
               const twoWeeks = 14 * 24 * 60 * 60 * 1000
@@ -327,6 +328,14 @@ export default function EditView() {
             <option value="__custom__">{p.t("ui.customOption")}</option>
           </select>
         )}
+      </div>
+      <div className="mt-3">
+        <label className="text-[12px] text-zinc-400 font-medium block mb-1.5">Stile badge</label>
+        <div className="flex gap-1">
+          {(["shadow","pill","outline","colored","glass"] as const).map(s => (
+            <button key={s} onClick={() => { p.setBadgeStyle(s); localStorage.setItem("badge_style", s) }} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : s === "colored" ? "Colore" : "Vetro"}</button>
+          ))}
+        </div>
       </div>
       <div className="space-y-1 mt-2">
         <SliderRow icon="📏" label="Altezza blur" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { p.setGradientHeight(v); localStorage.setItem("gradient_height", String(v)) }} onDoubleClick={() => { p.setGradientHeight(30); localStorage.setItem("gradient_height", "30") }} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />

@@ -199,6 +199,8 @@ export async function renderGenreBadge(
   voteAverage: number,
   pw: number,
   year?: string,
+  style?: string,
+  accentColor?: string,
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const voteStr = voteAverage.toFixed(1)
   const yearStr = year || ""
@@ -212,6 +214,16 @@ export async function renderGenreBadge(
   }
   const { starW, gap, gapStar, pad, totalW, svgH } = dims
   const m = Math.round(finalFontSize * 0.17)
+  const s = style || "shadow"
+  const pillPad = Math.round(finalFontSize * 0.5)
+  const pillR = Math.round(finalFontSize * 0.4)
+
+  let textShadow = "0 4px 6px rgba(0,0,0,0.5)"
+  if (s === "outline") {
+    textShadow = "1px 1px 0 rgba(0,0,0,0.9), -1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9)"
+  } else if (s !== "shadow") {
+    textShadow = "none"
+  }
 
   const children: any[] = [
     React.createElement("span", null, genreName),
@@ -226,26 +238,76 @@ export async function renderGenreBadge(
     children.push(React.createElement("span", { style: { transform: "translateY(5px)" } }, yearStr))
   }
 
-  const el = React.createElement(
-    "div",
-    {
-      style: {
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: `${gap}px`,
-        width: `${totalW}px`,
-        height: `${svgH}px`,
-        color: "#e5e7eb",
-        fontSize: `${finalFontSize}px`,
-        fontFamily: "Inter",
-        fontWeight: 700,
-        textShadow: "0 4px 6px rgba(0,0,0,0.5)",
-      },
-    },
-    ...children,
-  )
+  const sharedTextStyle: Record<string, any> = {
+    display: "flex",
+    alignItems: "center",
+    gap: `${gap}px`,
+    color: "#e5e7eb",
+    fontSize: `${finalFontSize}px`,
+    fontFamily: "Inter",
+    fontWeight: 700,
+    textShadow,
+  }
 
-  const png = await render(el, totalW, svgH)
+  let el: any
+
+  if (s === "pill" || s === "colored" || s === "glass") {
+    let bgColor = "rgba(0,0,0,0.65)"
+    if (s === "colored" && accentColor) {
+      const hex = accentColor.replace("#", "")
+      const r = parseInt(hex.substring(0, 2), 16) || 0
+      const g = parseInt(hex.substring(2, 4), 16) || 0
+      const b = parseInt(hex.substring(4, 6), 16) || 0
+      bgColor = `rgba(${r},${g},${b},0.75)`
+    } else if (s === "glass") {
+      bgColor = "rgba(0,0,0,0.2)"
+    }
+    el = React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          width: `${totalW + pad * 2 + pillPad * 2}px`,
+          height: `${svgH}px`,
+        },
+      },
+      React.createElement(
+        "div",
+        {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: `${gap}px`,
+            padding: `${pillPad}px ${pillPad * 1.5}px`,
+            borderRadius: `${pillR}px`,
+            backgroundColor: bgColor,
+            ...(s === "glass" ? { backdropFilter: "blur(8px)" } : {}),
+            ...sharedTextStyle,
+          },
+        },
+        ...children,
+      ),
+    )
+  } else {
+    el = React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: `${gap}px`,
+          width: `${totalW}px`,
+          height: `${svgH}px`,
+          ...sharedTextStyle,
+        },
+      },
+      ...children,
+    )
+  }
+
+  const png = await render(el, totalW + (s === "pill" || s === "colored" || s === "glass" ? pad * 2 + pillPad * 2 : 0), svgH)
   return { png, w: totalW, h: svgH }
 }

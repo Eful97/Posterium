@@ -69,6 +69,8 @@ export interface PosteriumCtx {
   setBlurFade: React.Dispatch<React.SetStateAction<number>>
   blurDarkness: number
   setBlurDarkness: React.Dispatch<React.SetStateAction<number>>
+  badgeStyle: string
+  setBadgeStyle: React.Dispatch<React.SetStateAction<string>>
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
   metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }
@@ -192,6 +194,7 @@ export function usePosterium(): PosteriumCtx {
   const [blurIntensity, setBlurIntensity] = useState(5)
   const [blurFade, setBlurFade] = useState(60)
   const [blurDarkness, setBlurDarkness] = useState(40)
+  const [badgeStyle, setBadgeStyle] = useState("shadow")
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
@@ -282,6 +285,8 @@ export function usePosterium(): PosteriumCtx {
     if (bf !== null) setBlurFade(Number(bf))
     const bd = localStorage.getItem("blur_darkness")
     if (bd !== null) setBlurDarkness(Number(bd))
+    const bs = localStorage.getItem("badge_style")
+    if (bs !== null) setBadgeStyle(bs)
   }, [])
 
   const pickLang = (l: string) => {
@@ -482,10 +487,11 @@ export function usePosterium(): PosteriumCtx {
     params.push(`blur=${blurIntensity}`)
     params.push(`bf=${blurFade}`)
     params.push(`bd=${blurDarkness}`)
+    params.push(`bs=${badgeStyle}`)
     params.push("rv=38")
     url += "?" + params.join("&")
     setUrlPattern(url)
-  }, [globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, tmdbKey, lang])
+  }, [globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, badgeStyle, tmdbKey, lang])
 
 
   const buildPreviewUrl = useCallback(() => {
@@ -511,6 +517,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`blur=${blurIntensity}`)
     params.push(`bf=${blurFade}`)
     params.push(`bd=${blurDarkness}`)
+    params.push(`bs=${badgeStyle}`)
     if (rankingBadges) {
       const edgeLum = (() => {
         const h = topEdgeColor
@@ -550,7 +557,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     params.push(`v=${v}`)
     const qs = params.length > 0 ? "?" + params.join("&") : ""
     setPreviewUrl(`${getDomain()}/api/poster/${selected.media_type}/${selected.id}${qs}`)
-  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, topEdgeColor, trendRank, mdblistAnimeList, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness])
+  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, topEdgeColor, trendRank, mdblistAnimeList, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, badgeStyle])
 
   useEffect(() => {
     if (!selected) { setPreviewUrl(""); return }
@@ -962,6 +969,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     blurIntensity, setBlurIntensity,
     blurFade, setBlurFade,
     blurDarkness, setBlurDarkness,
+    badgeStyle, setBadgeStyle,
     trendRank,
     mdblistMatch,
     metaInfo,
@@ -991,7 +999,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     logos, posterActivePath, previewUrl, urlPattern, lang,
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
-    globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, trendRank, mdblistMatch, metaInfo, previewId,
+    globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, badgeStyle, trendRank, mdblistMatch, metaInfo, previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
