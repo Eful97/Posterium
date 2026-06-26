@@ -158,5 +158,6 @@
   "ui.refreshRateLimit": "Mise à jour disponible toutes les 10 minutes",
   "ui.listsRefreshed": "Listes mises à jour",
   "ui.mediaTv": "TV",
-  "ui.group": "Groupe"
+  "ui.group": "Groupe",
+  "ui.today": "Aujourd'hui"
 }
