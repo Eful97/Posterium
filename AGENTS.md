@@ -9,6 +9,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
+App version: `0.9.9` — RENDER_VERSION: `62` — rv: `55`
+
 ## Badge Genere/Rating (GenreRatingBadges)
 
 | Parametro | Client (`PreviewBadges.tsx`) | Server (`satori-badge.ts:renderGenreBadge`) |
@@ -24,7 +26,7 @@ Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispetti
 | Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` | `"0 4px 6px rgba(0,0,0,0.5)"` |
 | Overflow protection | `fs` ridotto se `totalW > containerW - 20`, calcolato con `genreClientDims()` | Stessa logica: `totalW > pw - 20`, usa `genreBadgeDims()` riproporziona `fs` |
 | Allineamento verticale | Flex baseline naturale | Bullet `translateY(5px)`, Stella `translateY(fs * 0.23)`, Voto `translateY(5px)`, Anno `translateY(5px)` |
-| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg `tlBg` (black/white 80% in base a `topLight`) con testo `tlFg`; `outline` — textShadow outline; `bar` — bg `tlBg` full-width + testo `tlFg` | Stessi stili in SVG con Satori. Per `pill`/`bar` usa `tlBg`/`tlFg` in base a `topLight` (stessa soglia > 0.80) |
+| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg `tlBg` (black/white 80% in base a `topLight`) con testo `tlFg`; `outline` — textShadow outline; `bar` — bg `tlBg` full-width + testo `tlFg`; `colored` — bg `accentColor` + testo adattivo; `glass` — bar full-width effetto vetro | Stessi stili in SVG con Satori. Per `pill`/`bar` usa `tlBg`/`tlFg` in base a `topLight` (stessa soglia > 0.80). `colored` usa `textColorForBg()`. `glass` usa wrapper dark dietro. |
 | Sfondo pill/bar (`tlBg`) | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
 | Testo pill/bar (`tlFg`) | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
 | Bordo bar | `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}` | `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}` |
@@ -70,7 +72,8 @@ Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispetti
 | `rank` | `badge.rank` (se rankingBadges attivi) | `qRank` — override del ranking |
 | `label` | `badge.rankLabel \|\| badge.label` | `qLabel` — override label ranking |
 | `extra` | `badge.label` (se extra) o `customBadge` | `queryExtra` — forza badge extra |
-| `bs` | `badgeStyle` | `qBs` — "shadow"/"pill"/"outline"/"colored"/"glass" |
+| `bs` | `badgeStyle` | `qBs` — "shadow"/"pill"/"outline"/"bar"/"colored"/"glass" |
+| `rs` | `rankingBadgeStyle` | `qRs` — "default"/"bar"/"glass"/"colored" |
 | `ac` | `accentColor` (da `extractBadgeColor()`) | `qAc` — override colore accent |
 
 ## Bordo poster
