@@ -133,11 +133,11 @@ export function MyPostersView() {
 
       {selected.size > 0 && (
         <div className="flex items-center justify-between gap-3 mb-4 mx-auto max-w-7xl w-full px-4 animate-fade-scale-in">
-          <span className="text-sm font-semibold text-zinc-200 tabular-nums">{selected.size} selezionat{selected.size === 1 ? "o" : "i"}</span>
+          <span className="text-sm font-semibold text-zinc-200 tabular-nums">{p.t("ui.selectedCount", { count: selected.size })}</span>
           <div className="flex items-center gap-2">
-            <button onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-zinc-800 active:scale-95 transition-all duration-150">Annulla</button>
+            <button onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-zinc-800 active:scale-95 transition-all duration-150">{p.t("ui.cancel")}</button>
             <button disabled={deleting} onClick={deleteSelected} className="flex items-center gap-1.5 text-xs font-semibold text-red-400 bg-red-900/25 border border-red-900/50 px-4 py-1.5 rounded-xl hover:bg-red-900/40 hover:border-red-500 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
-              <Trash2 className="w-3.5 h-3.5" /> {deleting ? p.t("ui.deleting") : `Elimina`}
+              <Trash2 className="w-3.5 h-3.5" /> {deleting ? p.t("ui.deleting") : p.t("ui.delete")}
             </button>
           </div>
         </div>
@@ -174,7 +174,7 @@ export function MyPostersView() {
               </div>
               <div className="px-2 py-2.5 text-center">
                 <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{m.title}</p>
-                <p className="text-xs text-zinc-400">{m.language ? LANG_NAMES[m.language] || m.language : p.t("ui.clean")}{m.logoPath ? " + logo" : ""}</p>
+                <p className="text-xs text-zinc-400">{m.language ? LANG_NAMES[m.language] || m.language : p.t("ui.clean")}{m.logoPath ? p.t("ui.withLogo") : ""}</p>
               </div>
               {!selectMode && (
                 <span onClick={(e) => { e.stopPropagation(); removeMapping(m) }} className="absolute top-1.5 left-1.5 w-6 h-6 rounded-lg bg-red-900/70 flex items-center justify-center text-xs text-red-300 hover:bg-red-800 hover:text-red-200 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg shadow-black/30"><Trash2 className="w-3.5 h-3.5" /></span>

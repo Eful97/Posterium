@@ -311,7 +311,7 @@ export default function EditView() {
           </div>
         </div>
       )}
-      <p className="text-xs text-zinc-400 text-center mt-3">{p.selectedLogo ? p.t("ui.logoSelected") : p.previewPoster?.iso_639_1 === null ? `${p.t("ui.clean")} selezionato` : p.previewPoster ? p.t("ui.logoHint") : "Nessun poster selezionato"}</p>
+      <p className="text-xs text-zinc-400 text-center mt-3">{p.selectedLogo ? p.t("ui.logoSelected") : p.previewPoster?.iso_639_1 === null ? `${p.t("ui.clean")} ${p.t("ui.selected").toLowerCase()}` : p.previewPoster ? p.t("ui.logoHint") : p.t("ui.noPosterSelected")}</p>
     </div>
   )
 
@@ -333,10 +333,10 @@ export default function EditView() {
             <Toggle value={p.rankingBadges} onChange={(v) => p.setRankingBadges(v)} />
           </div>
           <div className="mt-2 pt-2 border-t border-zinc-800/60">
-            <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">Stile ranking/extra</label>
+            <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleRankingExtra")}</label>
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
                 {(["default","bar","glass","colored"] as const).map(s => (
-                  <button key={s} onClick={() => p.setRankingBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.rankingBadgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "default" ? <><Circle className="w-3 h-3" /> Default</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> Barra</> : s === "glass" ? <><Minus className="w-3 h-3" /> Vetro</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> Colore</>}</button>
+                  <button key={s} onClick={() => p.setRankingBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.rankingBadgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "default" ? <><Circle className="w-3 h-3" /> {p.t("ui.bsDefault")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : s === "glass" ? <><Minus className="w-3 h-3" /> {p.t("ui.glass")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</button>
                 ))}
             </div>
           </div>
@@ -389,20 +389,20 @@ export default function EditView() {
         </div>
 
         <div className="mt-3 pt-3 border-t border-zinc-800/60">
-          <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">Stile badge</label>
+          <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleGenreBadge")}</label>
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
             {(["shadow","pill","outline","bar","colored","glass"] as const).map(s => (
-              <button key={s} title={s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : s === "bar" ? "Barra" : s === "colored" ? "Colore" : "Vetro"} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> Ombra</> : s === "pill" ? <><Pill className="w-3 h-3" /> Pill</> : s === "outline" ? <><Square className="w-3 h-3" /> Outline</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> Barra</> : s === "colored" ? <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> Colore</> : <><Minus className="w-3 h-3" /> Vetro</>}</button>
+              <button key={s} title={s === "shadow" ? p.t("ui.shadow") : s === "pill" ? p.t("ui.pill") : s === "outline" ? p.t("ui.outline") : s === "bar" ? p.t("ui.bar") : s === "colored" ? p.t("ui.colored") : p.t("ui.glass")} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> {p.t("ui.shadow")}</> : s === "pill" ? <><Pill className="w-3 h-3" /> {p.t("ui.pill")}</> : s === "outline" ? <><Square className="w-3 h-3" /> {p.t("ui.outline")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : s === "colored" ? <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</> : <><Minus className="w-3 h-3" /> {p.t("ui.glass")}</>}</button>
             ))}
           </div>
         </div>
 
         <div className="mt-3 pt-3 border-t border-zinc-800/60">
-          <button onClick={() => p.setBlurEnabled(!p.blurEnabled)} className={`w-full mb-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/10 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}><span className="flex items-center gap-1.5 justify-center">{p.blurEnabled ? <><Check className="w-3 h-3" /> Sfocatura attiva</> : <><XCircle className="w-3 h-3" /> Sfocatura disattivata</>}</span></button>
-          {p.blurEnabled && <div className="space-y-1 px-1"><SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label="Altezza" value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setGradientHeight(v)} onDoubleClick={() => p.setGradientHeight(30)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
-          <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label="Intensità" value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => p.setBlurIntensity(v)} onDoubleClick={() => p.setBlurIntensity(5)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />
-          <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label="Fade" value={p.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurFade(v)} onDoubleClick={() => p.setBlurFade(60)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurFade" suffix="%" />
-          <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label="Velatura" value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurDarkness(v)} onDoubleClick={() => p.setBlurDarkness(40)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" /></div>}
+          <button onClick={() => p.setBlurEnabled(!p.blurEnabled)} className={`w-full mb-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/10 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}><span className="flex items-center gap-1.5 justify-center">{p.blurEnabled ? <><Check className="w-3 h-3" /> {p.t("ui.blurEnabled")}</> : <><XCircle className="w-3 h-3" /> {p.t("ui.blurDisabled")}</>}</span></button>
+          {p.blurEnabled && <div className="space-y-1 px-1"><SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={p.t("ui.height")} value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setGradientHeight(v)} onDoubleClick={() => p.setGradientHeight(30)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
+          <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={p.t("ui.intensity")} value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => p.setBlurIntensity(v)} onDoubleClick={() => p.setBlurIntensity(5)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />
+          <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={p.t("ui.fade")} value={p.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurFade(v)} onDoubleClick={() => p.setBlurFade(60)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurFade" suffix="%" />
+          <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={p.t("ui.darkness")} value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurDarkness(v)} onDoubleClick={() => p.setBlurDarkness(40)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" /></div>}
         </div>
       </div>
     </div>
