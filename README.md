@@ -22,7 +22,8 @@ pinned: false
 - 🌐 **Internazionalizzazione** — 5 lingue (Italiano, English, Français, Deutsch, Español) per badge e UI completa
 - 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y
 - 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi con ombra proporzionale e text-shadow sincronizzato
-- 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, 5 stili (shadow/pill/outline/bar/blur), con overflow protection, anno, posizionamento unificato a 25px dal fondo
+- 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, 6 stili (shadow/pill/outline/bar/colored/glass), con overflow protection, anno, accent color e text color adattivo
+- 🏆 **Badge ranking/extra** — Classifica JustWatch, tendenze MDBList, badge personalizzati, 4 stili (default/bar/glass/colored)
 - ✏️ **Badge personalizzato** — Sostituisci il badge automatico con testo libero, per ogni titolo individualmente
 - 🎨 **Blur fondo** — Intensità, fade, oscurità regolabili, sincronizzato client ↔ server (sostituisce il gradiente)
 - 📊 **Rating** — Media da 9 fonti: IMDb, TMDb, Metacritic, Rotten Tomatoes (critica + pubblico), Letterboxd, Trakt, MyAnimeList, Kitsu via MDBList
@@ -162,14 +163,23 @@ Genera un poster personalizzato via URL.
 
 ### Badge genere/rating
 
-Badge con genere, •, ★ e voto medio centrato in basso, con 5 stili:
+Badge con genere, •, ★ e voto medio centrato in basso, con 6 stili:
 - **Shadow** — testo con ombra pronunciata, nessuno sfondo
-- **Pill** — pillola nera semi-trasparente con angoli arrotondati
+- **Pill** — pillola bianca semi-trasparente con angoli arrotondati
 - **Outline** — contorno nero simulato da text-shadow multiplo
 - **Bar** — barra full-width in basso con sfondo scuro e bordo superiore
-- **Blur** — sfocatura del poster sotto il testo (richiede blur fondo attivo)
+- **Colored** — pillola colorata con il colore dominante del poster/logo, testo bianco/nero adattivo
+- **Glass** — barra full-width effetto vetro con sfocatura e bordo, disponibile anche senza blur fondo
 
-Il centro testo è a 30px dal fondo del poster per shadow/pill/outline. La barra è alta quanto il contenuto (`barH`) e attaccata al fondo.
+### Badge ranking/extra
+
+Badge in alto centrato, 4 stili:
+- **Default** — pillola semi-trasparente con ombra
+- **Bar** — barra full-width in alto, più sottile
+- **Glass** — barra effetto vetro con sfocatura e bordo
+- **Colored** — pillola colorata con il colore dominante, testo adattivo
+
+Il testo del badge ranking/extra si adatta automaticamente alla larghezza. Stili condivisi tra client (React) e server (Satori).
 
 ### Logo
 

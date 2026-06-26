@@ -2,6 +2,15 @@ import { GENRE_FALLBACK } from "./badges"
 
 export interface AccentResult { r: number; g: number; b: number }
 
+export function textColorForBg(hex: string, dark: string = "#ffffff", light: string = "rgba(0,0,0,0.80)"): string {
+  if (!hex || hex === "#555555") return light
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+  return lum > 0.5 ? light : dark
+}
+
 export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: number, height: number, genre: string): AccentResult {
   const step = 2
   const vals: { r: number; g: number; b: number; s: number; l: number }[] = []

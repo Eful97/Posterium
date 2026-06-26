@@ -33,6 +33,7 @@ export interface Mapping {
   firstAirDate?: string
   rankingBadges?: boolean
   badgeStyle?: string
+  rankingBadgeStyle?: string
   blurEnabled?: boolean
   blurIntensity?: number
   blurFade?: number

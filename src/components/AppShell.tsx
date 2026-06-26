@@ -18,6 +18,7 @@ function saveDefaults(p: ReturnType<typeof useP>) {
     globalBadges: p.defaultGlobalBadges,
     rankingBadges: p.defaultRankingBadges,
     badgeStyle: p.defaultBadgeStyle,
+    rankingBadgeStyle: p.defaultRankingBadgeStyle,
     blurEnabled: p.defaultBlurEnabled,
     blurIntensity: p.defaultBlurIntensity,
     blurFade: p.defaultBlurFade,
@@ -114,7 +115,7 @@ export function AppShell() {
             <div className="flex flex-col gap-1">
               <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Clipboard className="w-3 h-3" />{p.t("ui.mdblistKey")}</label>
               <div className="flex gap-1">
-                <input type={showMdb ? "text" : "password"} defaultValue={p.mdblistApiKey} onChange={(e) => { p.setMdblistApiKey(e.target.value); localStorage.setItem("mdblist_key", e.target.value) }} placeholder={p.t("ui.mdblistKeyPlaceholder")} className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500" />
+                <input type={showMdb ? "text" : "password"} value={p.mdblistApiKey} onChange={(e) => { p.setMdblistApiKey(e.target.value); localStorage.setItem("mdblist_key", e.target.value) }} placeholder={p.t("ui.mdblistKeyPlaceholder")} className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500" />
                 <button onClick={(e) => { e.stopPropagation(); setShowMdb(!showMdb) }} className="px-2 bg-zinc-800 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150">{showMdb ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
               </div>
             </div>
@@ -132,8 +133,14 @@ export function AppShell() {
             <hr className="border-zinc-700 my-2" />
             <label className="text-xs text-zinc-400 font-medium block mb-2 flex items-center gap-1.5"><Palette className="w-3 h-3" /> Stile badge predefinito</label>
             <div className="flex gap-1 mb-2">
-              {(["shadow","pill","outline","bar"] as const).map(s => (
-                <button key={s} onClick={() => p.setDefaultBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.defaultBadgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}><span className="flex items-center gap-1 justify-center">{s === "shadow" ? <><Moon className="w-3 h-3" /> Ombra</> : s === "pill" ? <><Pill className="w-3 h-3" /> Pill</> : s === "outline" ? <><Square className="w-3 h-3" /> Outline</> : <><BarChart3 className="w-3 h-3" /> Barra</>}</span></button>
+              {(["shadow","pill","outline","bar","colored","glass"] as const).map(s => (
+                <button key={s} onClick={() => p.setDefaultBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.defaultBadgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}><span className="flex items-center gap-1 justify-center">{s === "shadow" ? <><Moon className="w-3 h-3" /> Ombra</> : s === "pill" ? <><Pill className="w-3 h-3" /> Pill</> : s === "outline" ? <><Square className="w-3 h-3" /> Outline</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> Barra</> : s === "colored" ? <><Circle className="w-3 h-3" /> Colore</> : <><Minus className="w-3 h-3" /> Vetro</>}</span></button>
+              ))}
+            </div>
+            <label className="text-xs text-zinc-400 font-medium block mb-2 flex items-center gap-1.5"><BarChart3 className="w-3 h-3" /> Stile badge ranking predefinito</label>
+            <div className="flex gap-1 mb-2">
+              {(["default","bar","glass","colored"] as const).map(s => (
+                <button key={s} onClick={() => p.setDefaultRankingBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.defaultRankingBadgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}><span className="flex items-center gap-1 justify-center">{s === "default" ? <><Circle className="w-3 h-3" /> Default</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> Barra</> : s === "glass" ? <><Minus className="w-3 h-3" /> Vetro</> : <><Circle className="w-3 h-3" /> Colore</>}</span></button>
               ))}
             </div>
             <div className="flex items-center justify-between mb-2">

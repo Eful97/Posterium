@@ -73,8 +73,12 @@ export interface PosteriumCtx {
   setBlurEnabled: React.Dispatch<React.SetStateAction<boolean>>
   badgeStyle: string
   setBadgeStyle: React.Dispatch<React.SetStateAction<string>>
+  rankingBadgeStyle: string
+  setRankingBadgeStyle: React.Dispatch<React.SetStateAction<string>>
   defaultBadgeStyle: string
   setDefaultBadgeStyle: React.Dispatch<React.SetStateAction<string>>
+  defaultRankingBadgeStyle: string
+  setDefaultRankingBadgeStyle: React.Dispatch<React.SetStateAction<string>>
   defaultBlurEnabled: boolean
   setDefaultBlurEnabled: React.Dispatch<React.SetStateAction<boolean>>
   defaultBlurIntensity: number
@@ -214,6 +218,7 @@ export function usePosterium(): PosteriumCtx {
   const [blurDarkness, setBlurDarkness] = useState(40)
   const [blurEnabled, setBlurEnabled] = useState(true)
   const [badgeStyle, setBadgeStyle] = useState("shadow")
+  const [rankingBadgeStyle, setRankingBadgeStyle] = useState("default")
   const [defaultBadgeStyle, setDefaultBadgeStyle] = useState("shadow")
   const [defaultBlurEnabled, setDefaultBlurEnabled] = useState(true)
   const [defaultBlurIntensity, setDefaultBlurIntensity] = useState(5)
@@ -222,6 +227,7 @@ export function usePosterium(): PosteriumCtx {
   const [defaultGradientHeight, setDefaultGradientHeight] = useState(30)
   const [defaultGlobalBadges, setDefaultGlobalBadges] = useState(true)
   const [defaultRankingBadges, setDefaultRankingBadges] = useState(true)
+  const [defaultRankingBadgeStyle, setDefaultRankingBadgeStyle] = useState("default")
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
@@ -304,6 +310,7 @@ export function usePosterium(): PosteriumCtx {
         setBlurDarkness(d.blurDarkness ?? 40)
         setBlurEnabled(d.blurEnabled ?? true)
         setBadgeStyle(d.badgeStyle ?? "shadow")
+        setRankingBadgeStyle(d.rankingBadgeStyle ?? "default")
       } else {
         setGlobalBadges(true)
         setRankingBadges(true)
@@ -313,6 +320,7 @@ export function usePosterium(): PosteriumCtx {
         setBlurDarkness(40)
         setBlurEnabled(true)
         setBadgeStyle("shadow")
+        setRankingBadgeStyle("default")
       }
     } catch {
       setGlobalBadges(true)
@@ -323,6 +331,7 @@ export function usePosterium(): PosteriumCtx {
       setBlurDarkness(40)
       setBlurEnabled(true)
       setBadgeStyle("shadow")
+      setRankingBadgeStyle("default")
     }
   }, [])
 
@@ -344,6 +353,7 @@ export function usePosterium(): PosteriumCtx {
         setGlobalBadges(d.globalBadges ?? true)
         setRankingBadges(d.rankingBadges ?? true)
         setDefaultBadgeStyle(d.badgeStyle ?? "shadow")
+        setDefaultRankingBadgeStyle(d.rankingBadgeStyle ?? "default")
         setDefaultBlurEnabled(d.blurEnabled ?? true)
         setDefaultBlurIntensity(d.blurIntensity ?? 5)
         setDefaultBlurFade(d.blurFade ?? 60)
@@ -355,6 +365,7 @@ export function usePosterium(): PosteriumCtx {
         setBlurDarkness(d.blurDarkness ?? 40)
         setBlurEnabled(d.blurEnabled ?? true)
         setBadgeStyle(d.badgeStyle ?? "shadow")
+        setRankingBadgeStyle(d.rankingBadgeStyle ?? "default")
       }
     } catch {}
   }, [])
@@ -562,6 +573,7 @@ export function usePosterium(): PosteriumCtx {
     params.push(`bf=${blurFade}`)
     params.push(`bd=${blurDarkness}`)
     params.push(`bs=${badgeStyle}`)
+    params.push(`rs=${rankingBadgeStyle}`)
     params.push("rv=54")
     url += "?" + params.join("&")
     setUrlPattern(url)
@@ -586,12 +598,19 @@ export function usePosterium(): PosteriumCtx {
       params.push(`ox=${logoOffsetX}`)
       params.push(`oy=${logoOffsetY}`)
     }
+    if (selectedBackdrop) {
+      params.push(`backdrop=${encodeURIComponent(selectedBackdrop.file_path)}`)
+      params.push(`bscale=${backdropScale}`)
+      params.push(`box=${backdropOffsetX}`)
+      params.push(`boy=${backdropOffsetY}`)
+    }
     if (lang) params.push(`lang=${lang}`)
     params.push(`gradHeight=${gradientHeight}`)
     params.push(`blur=${blurIntensity}`)
     params.push(`bf=${blurFade}`)
     params.push(`bd=${blurDarkness}`)
     params.push(`bs=${badgeStyle}`)
+    params.push(`rs=${rankingBadgeStyle}`)
     if (!blurEnabled) params.push("be=0")
     if (rankingBadges) {
       const edgeLum = (() => {
@@ -603,7 +622,7 @@ export function usePosterium(): PosteriumCtx {
         const b = parseInt(h.slice(5, 7), 16) / 255
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
       })()
-      const topLight = edgeLum !== null ? edgeLum > 0.80 : true
+      const topLight = edgeLum !== null ? edgeLum > 0.60 : true
       params.push(`tl=${topLight ? "1" : "0"}`)
       const now = Date.now()
       const twoWeeks = 14 * 24 * 60 * 60 * 1000
@@ -615,7 +634,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
       const tvType = selected?.media_type === "tv" ? metaInfo.type : null
       const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
-      const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus })
+      const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus }, t)
       if (customBadge) {
         const rankKey = isRankKey(customBadge)
         if (rankKey === "badge.today" && trendRank) params.push(`rank=${trendRank}&label=${encodeURIComponent(t("badge.today"))}`)
@@ -633,7 +652,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     params.push(`v=${v}`)
     const qs = params.length > 0 ? "?" + params.join("&") : ""
     setPreviewUrl(`${getDomain()}/api/poster/${selected.media_type}/${selected.id}${qs}`)
-  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, lang, tmdbKey, accentColor, topEdgeColor, trendRank, mdblistAnimeList, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle])
+  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, selectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY, lang, tmdbKey, accentColor, topEdgeColor, trendRank, mdblistAnimeList, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle])
 
   useEffect(() => {
     if (!selected) { setPreviewUrl(""); return }
@@ -789,6 +808,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         setBlurDarkness(existing.blurDarkness ?? defaultBlurDarkness)
         setBlurEnabled(existing.blurEnabled ?? defaultBlurEnabled)
         setBadgeStyle(existing.badgeStyle ?? defaultBadgeStyle)
+        setRankingBadgeStyle((existing as any).rankingBadgeStyle ?? defaultRankingBadgeStyle)
       } else {
         setCustomBadge(null)
         setLogoScale(75)
@@ -918,6 +938,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           badgeLabel,
           customBadge,
           badgeStyle,
+          rankingBadgeStyle,
           blurEnabled,
           blurIntensity,
           blurFade,
@@ -931,7 +952,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     } catch {
       showToast(t("ui.saveError"))
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight])
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight])
 
   const removeLogo = useCallback(async () => {
     setSelectedLogo(null)
@@ -1064,7 +1085,9 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     blurDarkness, setBlurDarkness,
     blurEnabled, setBlurEnabled,
     badgeStyle, setBadgeStyle,
+    rankingBadgeStyle, setRankingBadgeStyle,
     defaultBadgeStyle, setDefaultBadgeStyle,
+    defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
     defaultBlurEnabled, setDefaultBlurEnabled,
     defaultBlurIntensity, setDefaultBlurIntensity,
     defaultBlurFade, setDefaultBlurFade,
@@ -1102,7 +1125,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
     globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle,
-    defaultBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
+    rankingBadgeStyle,
+    defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
     defaultGlobalBadges, defaultRankingBadges,
     trendRank, mdblistMatch, metaInfo, previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,

@@ -305,11 +305,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const lr = parseInt(lColor.slice(1,3),16), lg = parseInt(lColor.slice(3,5),16), lb = parseInt(lColor.slice(5,7),16)
         return `#${Math.round((pr+lr)/2).toString(16).padStart(2,'0')}${Math.round((pg+lg)/2).toString(16).padStart(2,'0')}${Math.round((pb+lb)/2).toString(16).padStart(2,'0')}`
       }
-      return pColor || lColor || (fallbackGenre ? (GENRE_FALLBACK[fallbackGenre] || '#555') : '#555')
+      return pColor || lColor || (fallbackGenre ? (GENRE_FALLBACK[fallbackGenre] || '#555555') : '#555555')
     }
 
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
+    const qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || "default"
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
     const qBlurFade = req.nextUrl.searchParams.get("bf")
@@ -321,12 +322,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const blurEnabled = qBlurEnabled !== "0"
     const s = ph / 1500
     const blurHeight = qGradHeight ? Math.max(Number(qGradHeight), 5) : 30
-    const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 20
-    const blurFade = qBlurFade ? Math.max(Number(qBlurFade), 0) : 30
+    const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 5
+    const blurFade = qBlurFade ? Math.max(Number(qBlurFade), 0) : 60
     const blurDarkness = qBlurDarkness ? Math.max(Number(qBlurDarkness), 0) : 40
     const topLum = await topLuminance(posterBuf)
     const qTopLight = req.nextUrl.searchParams.get("tl")
-    const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.80
+    const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.60
     if (blurEnabled) {
     const gh = Math.max(Math.round(ph * blurHeight / 100), 100)
     const gradTop = ph - gh
@@ -374,7 +375,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
         const accentColor = genreColor || "#555555"
         const targetCenter = Math.round(30 * ph / 570)
-        if (badgeStyle === "bar") {
+        if (badgeStyle === "bar" || badgeStyle === "glass") {
           const { png, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor, undefined, topLight)
           composites.push({ input: png, top: ph - h, left: 0 })
         } else {
@@ -469,13 +470,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     if (topBadge) {
       try {
+        const accentForBadge = genreColor || "#555555"
         if (topBadge.type === "extra") {
-          const { png: extraPng, w, h } = await renderExtraBadge(topBadge.label, pw, topLight)
-          const extraLeft = Math.round((pw - w) / 2)
+          const { png: extraPng, w, h } = await renderExtraBadge(topBadge.label, pw, topLight, qRankingBadgeStyle, accentForBadge)
+          const extraLeft = qRankingBadgeStyle === "bar" || qRankingBadgeStyle === "glass" ? 0 : Math.round((pw - w) / 2)
           composites.push({ input: extraPng, top: 0, left: extraLeft })
         } else {
-          const { png: rankPng, w, h } = await renderRankingBadge(topBadge.rank, pw, topBadge.label, topLight)
-          const rankLeft = Math.round((pw - w) / 2)
+          const { png: rankPng, w, h } = await renderRankingBadge(topBadge.rank, pw, topBadge.label, topLight, qRankingBadgeStyle, accentForBadge)
+          const rankLeft = qRankingBadgeStyle === "bar" || qRankingBadgeStyle === "glass" ? 0 : Math.round((pw - w) / 2)
           composites.push({ input: rankPng, top: 0, left: rankLeft })
         }
       } catch {

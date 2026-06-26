@@ -57,6 +57,7 @@ export interface Mapping {
   showBadges?: boolean
   rankingBadges?: boolean
   badgeStyle?: string
+  rankingBadgeStyle?: string
   blurEnabled?: boolean
   blurIntensity?: number
   blurFade?: number

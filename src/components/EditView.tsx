@@ -25,6 +25,7 @@ export default function EditView() {
   const dragRef = useRef({ startX: 0, startY: 0, startOX: 0, startOY: 0, active: false })
   const logoWheelRef = useRef<HTMLDivElement>(null)
   const [now] = useState(() => Date.now())
+  const [posterLoading, setPosterLoading] = useState(false)
 
   const defaultLogoScale = () => {
     const l = p.selectedLogo
@@ -38,7 +39,26 @@ export default function EditView() {
 
   useEffect(() => {
     setImageError(false)
+    setPosterLoading(true)
   }, [p.previewPoster])
+
+  const searchBar = (
+    <div className={p.selected ? "w-full max-w-lg mb-8 relative z-[100] isolate" : "max-w-lg mx-auto relative z-[100] isolate mb-8"}>
+      <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
+      {searchFocused && p.recentSearches.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
+          <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{p.t("ui.recentSearches")}</p>
+          {p.recentSearches.map((s) => (
+            <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
+              <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
+              <span className="flex-1 truncate">{s}</span>
+              <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 
   useEffect(() => {
     return () => {
@@ -69,6 +89,15 @@ export default function EditView() {
     return () => ro.disconnect()
   }, [])
 
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { p.setSettingsOpen(false); p.setShowLangPicker(false) }
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); p.saveConfig() }
+    }
+    addEventListener("keydown", fn)
+    return () => removeEventListener("keydown", fn)
+  }, [])
+
   const posterCol = (
     <div className="w-full md:w-72 xl:w-80 2xl:w-96 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1 space-y-4" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
@@ -87,7 +116,7 @@ export default function EditView() {
     const r = parseInt(h.slice(1, 3), 16) / 255
     const g = parseInt(h.slice(3, 5), 16) / 255
     const b = parseInt(h.slice(5, 7), 16) / 255
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.80
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.60
   })()
 
   const previewCol = (
@@ -96,7 +125,10 @@ export default function EditView() {
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.previewSection")}</h3>
         <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
         <div ref={previewRef} className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
-          {p.previewPoster && !imageError && <img src={p.posterUrl(p.previewPoster.file_path, "w342")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onError={() => setImageError(true)} />}
+          {p.previewPoster && !imageError && <>
+            {posterLoading && <div className="absolute inset-0 bg-zinc-800 animate-pulse rounded-2xl" />}
+            <img src={p.posterUrl(p.previewPoster.file_path, "w342")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onLoad={() => setPosterLoading(false)} onError={() => { setImageError(true); setPosterLoading(false) }} />
+          </>}
           {imageError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 text-center p-8">
               <Image className="w-12 h-12 mb-3 text-zinc-500" />
@@ -177,12 +209,12 @@ export default function EditView() {
                 })()
               : autoBadge
             if (badge) {
-              if (badge.type === "extra") return <div className="absolute inset-0"><ExtraBadge label={badge.label} topLight={genreTopLight} containerW={previewDims.w} /></div>
-              return <div className="absolute inset-0"><RankingBadge rank={badge.rank!} label={badge.rankLabel || badge.label} topLight={genreTopLight} containerW={previewDims.w} /></div>
+              if (badge.type === "extra") return <div className="absolute inset-0"><ExtraBadge label={badge.label} topLight={genreTopLight} containerW={previewDims.w} badgeStyle={p.rankingBadgeStyle} accentColor={p.accentColor} /></div>
+              return <div className="absolute inset-0"><RankingBadge rank={badge.rank!} label={badge.rankLabel || badge.label} topLight={genreTopLight} containerW={previewDims.w} badgeStyle={p.rankingBadgeStyle} accentColor={p.accentColor} /></div>
             }
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} blurEnabled={p.blurEnabled} badgeStyle={p.badgeStyle} accentColor={p.accentColor} topLight={genreTopLight} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} blurEnabled={p.blurEnabled} badgeStyle={p.badgeStyle} accentColor={p.accentColor} topLight={genreTopLight} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} rankingBadgeStyle={p.rankingBadgeStyle} /></div>}
           <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
@@ -209,7 +241,7 @@ export default function EditView() {
             const _edgeLum = _h.length >= 7 && _h !== "#555555"
               ? 0.2126 * parseInt(_h.slice(1, 3), 16) / 255 + 0.7152 * parseInt(_h.slice(3, 5), 16) / 255 + 0.0722 * parseInt(_h.slice(5, 7), 16) / 255
               : null
-            params.push(`tl=${_edgeLum !== null ? (_edgeLum > 0.80 ? "1" : "0") : "1"}`)
+            params.push(`tl=${_edgeLum !== null ? (_edgeLum > 0.60 ? "1" : "0") : "1"}`)
             const g = p.metaInfo.genres[0]?.name
             if (g) params.push(`genreName=${encodeURIComponent(g)}`)
             if (p.metaInfo.voteAverage > 0) params.push(`voteAverage=${p.metaInfo.voteAverage}`)
@@ -226,6 +258,7 @@ export default function EditView() {
             params.push(`bd=${p.blurDarkness}`)
             if (!p.blurEnabled) params.push("be=0")
             params.push(`bs=${p.badgeStyle}`)
+            params.push(`rs=${p.rankingBadgeStyle}`)
             if (p.rankingBadges) {
               const now = Date.now()
               const twoWeeks = 14 * 24 * 60 * 60 * 1000
@@ -299,6 +332,14 @@ export default function EditView() {
             <span className="text-xs text-zinc-400">{p.t("ui.trendBadge")}</span>
             <Toggle value={p.rankingBadges} onChange={(v) => p.setRankingBadges(v)} />
           </div>
+          <div className="mt-2 pt-2 border-t border-zinc-800/60">
+            <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">Stile ranking/extra</label>
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
+                {(["default","bar","glass","colored"] as const).map(s => (
+                  <button key={s} onClick={() => p.setRankingBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.rankingBadgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "default" ? <><Circle className="w-3 h-3" /> Default</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> Barra</> : s === "glass" ? <><Minus className="w-3 h-3" /> Vetro</> : <><Circle className="w-3 h-3" /> Colore</>}</button>
+                ))}
+            </div>
+          </div>
           <div className="flex items-center justify-between px-1">
             <span className="text-xs text-zinc-400">{p.t("ui.genreRatingBadge")}</span>
             <Toggle value={p.globalBadges} onChange={(v) => p.setGlobalBadges(v)} />
@@ -350,8 +391,8 @@ export default function EditView() {
         <div className="mt-3 pt-3 border-t border-zinc-800/60">
           <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">Stile badge</label>
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
-            {(["shadow","pill","outline","bar"] as const).map(s => (
-              <button key={s} title={s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : "Barra"} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> Ombra</> : s === "pill" ? <><Pill className="w-3 h-3" /> Pill</> : s === "outline" ? <><Square className="w-3 h-3" /> Outline</> : <><BarChart3 className="w-3 h-3" /> Barra</>}</button>
+            {(["shadow","pill","outline","bar","colored","glass"] as const).map(s => (
+              <button key={s} title={s === "shadow" ? "Ombra" : s === "pill" ? "Pill" : s === "outline" ? "Outline" : s === "bar" ? "Barra" : s === "colored" ? "Colore" : "Vetro"} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> Ombra</> : s === "pill" ? <><Pill className="w-3 h-3" /> Pill</> : s === "outline" ? <><Square className="w-3 h-3" /> Outline</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> Barra</> : s === "colored" ? <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> Colore</> : <><Minus className="w-3 h-3" /> Vetro</>}</button>
             ))}
           </div>
         </div>
@@ -371,21 +412,7 @@ export default function EditView() {
     <div>
       {p.selected && (
         <div className="flex flex-col items-center">
-          <div className="w-full max-w-lg mb-8 relative z-[100] isolate">
-            <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
-            {searchFocused && p.recentSearches.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
-                <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{p.t("ui.recentSearches")}</p>
-                {p.recentSearches.map((s) => (
-                  <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
-                    <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
-                    <span className="flex-1 truncate">{s}</span>
-                    <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {searchBar}
           <div className="flex flex-col md:flex-row gap-6 md:gap-4 xl:gap-6 justify-center items-start w-full xl:px-6 2xl:px-16">
             {previewCol}
             {posterCol}
@@ -394,21 +421,9 @@ export default function EditView() {
         </div>
       )}
       {!p.selected && (
-        <div className="max-w-lg mx-auto relative z-[100] isolate mb-8">
-          <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
-            {searchFocused && p.recentSearches.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
-                <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{p.t("ui.recentSearches")}</p>
-                {p.recentSearches.map((s) => (
-                  <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
-                    <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
-                    <span className="flex-1 truncate">{s}</span>
-                    <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        <div>
+          {searchBar}
+        </div>
       )}
       {!p.selected && !p.tmdbKey && (
         <div className="flex flex-col items-center justify-center pb-16 text-zinc-400">
