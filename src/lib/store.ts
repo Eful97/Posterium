@@ -39,6 +39,10 @@ export interface Mapping {
   blurFade?: number
   blurDarkness?: number
   gradientHeight?: number
+  cleanPosters?: string[]
+  cleanPosterIndex?: number
+  cleanPosterUpdatedAt?: string
+  autoRotateClean?: boolean
 }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL

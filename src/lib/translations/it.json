@@ -168,12 +168,13 @@
     "ui.bar":  "Barra",
     "ui.styleGenreBadge":  "Stile badge",
     "ui.saved":  "Salvato!",
-    "ui.intensity":  "Intensit�",
+    "ui.intensity":  "Intensità",
     "ui.glass":  "Vetro",
     "ui.blurEnabled":  "Sfocatura attiva",
     "ui.colored":  "Colore",
     "ui.darkness":  "Velatura",
     "ui.styleRankingExtra":  "Stile ranking/extra",
+    "ui.blurSection":  "Sfocatura",
     "ui.blurDefault":  "Sfocatura predefinita",
     "ui.shadow":  "Ombra",
     "ui.blurDisabled":  "Sfocatura disattivata",
@@ -182,5 +183,9 @@
     "ui.cleanSelected":  "selezionato",
     "ui.noPosterSelected":  "Nessun poster selezionato",
     "ui.withLogo":  " + logo",
-    "ui.delete":  "Elimina"
+    "ui.delete":  "Elimina",
+    "ui.autoRotate":  "Rotazione 24h",
+    "ui.autoRotateDefault":  "Rotazione poster ogni 24h",
+    "ui.addToRotation":  "Aggiungi a rotazione",
+    "ui.removeFromRotation":  "Rimuovi da rotazione"
 }

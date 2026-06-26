@@ -29,6 +29,10 @@ export const mappingSchema = z.object({
   backdropScale: z.number().int().optional(),
   backdropOffsetX: z.number().int().optional(),
   backdropOffsetY: z.number().int().optional(),
+  cleanPosters: z.array(z.string()).optional(),
+  cleanPosterIndex: z.number().int().min(0).optional(),
+  cleanPosterUpdatedAt: z.string().optional(),
+  autoRotateClean: z.boolean().optional(),
 })
 
 export type MappingInput = z.infer<typeof mappingSchema>

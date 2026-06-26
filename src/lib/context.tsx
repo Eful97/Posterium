@@ -93,6 +93,8 @@ export interface PosteriumCtx {
   setDefaultGlobalBadges: React.Dispatch<React.SetStateAction<boolean>>
   defaultRankingBadges: boolean
   setDefaultRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
+  defaultAutoRotateClean: boolean
+  setDefaultAutoRotateClean: React.Dispatch<React.SetStateAction<boolean>>
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
   metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }
@@ -149,6 +151,10 @@ export interface PosteriumCtx {
   copied: boolean
   accentColor: string
   topEdgeColor: string
+  rotationPosters: string[]
+  setRotationPosters: React.Dispatch<React.SetStateAction<string[]>>
+  autoRotateClean: boolean
+  setAutoRotateClean: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
@@ -228,12 +234,15 @@ export function usePosterium(): PosteriumCtx {
   const [defaultGlobalBadges, setDefaultGlobalBadges] = useState(true)
   const [defaultRankingBadges, setDefaultRankingBadges] = useState(true)
   const [defaultRankingBadgeStyle, setDefaultRankingBadgeStyle] = useState("default")
+  const [defaultAutoRotateClean, setDefaultAutoRotateClean] = useState(false)
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
   const [accentColor, setAccentColor] = useState("#555555")
   const [topEdgeColor, setTopEdgeColor] = useState("#555555")
+  const [rotationPosters, setRotationPosters] = useState<string[]>([])
+  const [autoRotateClean, setAutoRotateClean] = useState(false)
   const keyInit = useRef(false)
   const langInit = useRef(false)
   const settingsRef = useRef<HTMLDivElement>(null)
@@ -359,6 +368,7 @@ export function usePosterium(): PosteriumCtx {
         setDefaultBlurFade(d.blurFade ?? 60)
         setDefaultBlurDarkness(d.blurDarkness ?? 40)
         setDefaultGradientHeight(d.gradientHeight ?? 30)
+        setDefaultAutoRotateClean(d.autoRotateClean ?? false)
         setGradientHeight(d.gradientHeight ?? 30)
         setBlurIntensity(d.blurIntensity ?? 5)
         setBlurFade(d.blurFade ?? 60)
@@ -666,12 +676,35 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
   }, [])
   useEffect(() => {
     const root = document.documentElement
-    if (!previewPoster) { root.style.setProperty("--color-accent", "#555555"); setAccentColor("#555555"); setTopEdgeColor("#555555"); return }
+    if (!previewPoster) {
+      root.style.setProperty("--color-accent", "#555555")
+      root.style.setProperty("--color-accent-r", "85")
+      root.style.setProperty("--color-accent-g", "85")
+      root.style.setProperty("--color-accent-b", "85")
+      root.style.setProperty("--color-edge-r", "85")
+      root.style.setProperty("--color-edge-g", "85")
+      root.style.setProperty("--color-edge-b", "85")
+      setAccentColor("#555555"); setTopEdgeColor("#555555"); return
+    }
     const genreName = metaInfo.genres[0]?.name
     let cancelled = false
     const url = posterUrl(previewPoster.file_path, "w342") + `?cb=${Date.now()}`
     const img = new Image()
     img.crossOrigin = "anonymous"
+    const setRootColors = (r: number, g: number, b: number, edgeR: number, edgeG: number, edgeB: number) => {
+      const c = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+      root.style.setProperty("--color-accent", c)
+      root.style.setProperty("--color-accent-r", String(r))
+      root.style.setProperty("--color-accent-g", String(g))
+      root.style.setProperty("--color-accent-b", String(b))
+      const edgeC = `#${edgeR.toString(16).padStart(2, '0')}${edgeG.toString(16).padStart(2, '0')}${edgeB.toString(16).padStart(2, '0')}`
+      root.style.setProperty("--color-edge", edgeC)
+      root.style.setProperty("--color-edge-r", String(edgeR))
+      root.style.setProperty("--color-edge-g", String(edgeG))
+      root.style.setProperty("--color-edge-b", String(edgeB))
+      setAccentColor(c)
+      setTopEdgeColor(edgeC)
+    }
     img.onload = () => {
       if (cancelled) return
       try {
@@ -685,14 +718,11 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         ctx.drawImage(img, 0, 0, w, h)
         const pixels = ctx.getImageData(0, 0, w, h).data
         const result = findAccentColor(pixels, w, h, genreName || '')
-        const c = `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
-        root.style.setProperty("--color-accent", c)
-        setAccentColor(c)
         const edge = topEdgeAverage(pixels, w, h)
-        setTopEdgeColor(`#${edge.r.toString(16).padStart(2, '0')}${edge.g.toString(16).padStart(2, '0')}${edge.b.toString(16).padStart(2, '0')}`)
+        setRootColors(result.r, result.g, result.b, edge.r, edge.g, edge.b)
       } catch {}
     }
-    img.onerror = () => { if (!cancelled) { setAccentColor("#555555"); setTopEdgeColor("#555555") } }
+    img.onerror = () => { if (!cancelled) { setRootColors(85, 85, 85, 85, 85, 85) } }
     img.src = url
     return () => { cancelled = true }
   }, [previewPoster])
@@ -703,7 +733,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
   }
 
   const toggleSection = (key: string) => {
-    setOpenSections((prev) => ({ ...prev, [key]: prev[key] !== true }))
+    setOpenSections((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }))
   }
 
   const doSearch = useCallback(async (q?: string, page = 1) => {
@@ -809,8 +839,12 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         setBlurEnabled(existing.blurEnabled ?? defaultBlurEnabled)
         setBadgeStyle(existing.badgeStyle ?? defaultBadgeStyle)
         setRankingBadgeStyle((existing as any).rankingBadgeStyle ?? defaultRankingBadgeStyle)
+        setRotationPosters(existing.cleanPosters || [])
+        setAutoRotateClean(existing.autoRotateClean ?? false)
       } else {
         setCustomBadge(null)
+        setRotationPosters([])
+        setAutoRotateClean(false)
         setLogoScale(75)
         setLogoOffsetX(0)
         setLogoOffsetY(0)
@@ -907,6 +941,11 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     const badgeExtra = badge?.type === "extra" ? badge.label : undefined
     const badgeRank = (!badgeExtra && rankingBadges) ? (badge?.type === "rank" ? badge.rank : trendRank || undefined) : undefined
     const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || t("badge.today")) : undefined
+    const isClean = previewPoster.iso_639_1 === null
+    const isNewMapping = !mappingsMap.has(`${selected.media_type}:${selected.id}`)
+    const effectiveRotationPosters = defaultAutoRotateClean && isClean && isNewMapping
+      ? posters.filter(p => p.iso_639_1 === null).map(p => p.file_path)
+      : rotationPosters
     try {
       await api("/api/mappings", {
         method: "POST",
@@ -944,6 +983,10 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           blurFade,
           blurDarkness,
           gradientHeight,
+          cleanPosters: effectiveRotationPosters.length > 0 ? effectiveRotationPosters : undefined,
+          cleanPosterIndex: 0,
+          cleanPosterUpdatedAt: new Date().toISOString(),
+          autoRotateClean: effectiveRotationPosters.length > 1 ? (defaultAutoRotateClean && isClean && isNewMapping ? true : autoRotateClean) : undefined,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)
@@ -952,7 +995,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     } catch {
       showToast(t("ui.saveError"))
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight])
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, posters, mappingsMap])
 
   const removeLogo = useCallback(async () => {
     setSelectedLogo(null)
@@ -1095,6 +1138,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     defaultGradientHeight, setDefaultGradientHeight,
     defaultGlobalBadges, setDefaultGlobalBadges,
     defaultRankingBadges, setDefaultRankingBadges,
+    defaultAutoRotateClean, setDefaultAutoRotateClean,
     trendRank,
     mdblistMatch,
     metaInfo,
@@ -1118,6 +1162,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     copyUrl, copied,
     accentColor,
     topEdgeColor,
+    rotationPosters, setRotationPosters,
+    autoRotateClean, setAutoRotateClean,
     t,
   }), [
     selected, view, posters, loadingImages, previewPoster, selectedLogo,
@@ -1127,7 +1173,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle,
     rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
-    defaultGlobalBadges, defaultRankingBadges,
+    defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean,
     trendRank, mdblistMatch, metaInfo, previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
@@ -1135,6 +1181,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     tmdbKeyInput, showKey, copied,
     accentColor,
     topEdgeColor,
+    rotationPosters, autoRotateClean,
     trending, streamingCharts, mdblistAnimeList,
     refreshLists,
   ])

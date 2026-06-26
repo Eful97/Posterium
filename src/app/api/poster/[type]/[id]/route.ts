@@ -2,7 +2,7 @@ import { NextRequest } from "next/server"
 import sharp from "sharp"
 import { getImages, getDetails, getExternalIds, type TMDBImage, type TMDBCompany } from "@/lib/tmdb"
 import { getJWRankings } from "@/lib/justwatch"
-import { getById } from "@/lib/store"
+import { getById, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { GENRE_FALLBACK } from "@/lib/badges"
@@ -105,6 +105,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const queryGenre = req.nextUrl.searchParams.get("genreName")
   const queryVote = req.nextUrl.searchParams.get("voteAverage")
   const mapping = await getById(mediaType, tmdbId)
+
+  if (mapping && mapping.autoRotateClean && mapping.cleanPosters && mapping.cleanPosters.length > 1) {
+    const lastUpdate = mapping.cleanPosterUpdatedAt ? new Date(mapping.cleanPosterUpdatedAt).getTime() : 0
+    const now = Date.now()
+    if (now - lastUpdate > 24 * 60 * 60 * 1000) {
+      const newIndex = Math.floor(Math.random() * mapping.cleanPosters.length)
+      const newPosterPath = mapping.cleanPosters[newIndex]
+      if (newPosterPath !== mapping.posterPath) {
+        mapping.posterPath = newPosterPath
+        mapping.cleanPosterIndex = newIndex
+        mapping.cleanPosterUpdatedAt = new Date(now).toISOString()
+        await upsert(mapping).catch(() => {})
+      }
+    }
+  }
 
   const t = createT(req.nextUrl.searchParams.get("lang") || mapping?.language || "it")
 

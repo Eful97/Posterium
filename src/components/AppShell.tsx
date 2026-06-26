@@ -11,7 +11,7 @@ import { SearchView } from "@/components/SearchView"
 import { MyPostersView } from "@/components/MyPostersView"
 import EditView from "@/components/EditView"
 import type { SearchResult } from "@/lib/types"
-import { RefreshCw, Settings, Globe, Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, Save, Check, XCircle, Upload, Download, Eye, EyeOff, Key, Clipboard } from "lucide-react"
+import { RefreshCw, Settings, Globe, Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Eye, EyeOff, Key, Clipboard } from "lucide-react"
 
 function saveDefaults(p: ReturnType<typeof useP>) {
   localStorage.setItem("badgeDefaults", JSON.stringify({
@@ -24,6 +24,7 @@ function saveDefaults(p: ReturnType<typeof useP>) {
     blurFade: p.defaultBlurFade,
     blurDarkness: p.defaultBlurDarkness,
     gradientHeight: p.defaultGradientHeight,
+    autoRotateClean: p.defaultAutoRotateClean,
   }))
 }
 
@@ -121,14 +122,13 @@ export function AppShell() {
             </div>
             <button onClick={() => { p.exportData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Upload className="w-3 h-3" />{p.t("ui.exportJson")}</span></button>
             <button onClick={() => { p.importData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Download className="w-3 h-3" />{p.t("ui.importJson")}</span></button>
-            <hr className="border-zinc-700 my-2" />
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Star className="w-3 h-3" /> {p.t("ui.genreRatingBadge")}</span>
-              <button onClick={() => p.setDefaultGlobalBadges(!p.defaultGlobalBadges)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultGlobalBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultGlobalBadges ? <><Check className="w-3 h-3" /> ON</> : <><XCircle className="w-3 h-3" /> OFF</>}</button>
+              <button onClick={() => p.setDefaultGlobalBadges(!p.defaultGlobalBadges)} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultGlobalBadges ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultGlobalBadges ? "translate-x-4" : "translate-x-0"}`} /></button>
             </div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {p.t("ui.trendBadge")}</span>
-              <button onClick={() => p.setDefaultRankingBadges(!p.defaultRankingBadges)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultRankingBadges ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultRankingBadges ? <><Check className="w-3 h-3" /> ON</> : <><XCircle className="w-3 h-3" /> OFF</>}</button>
+              <button onClick={() => p.setDefaultRankingBadges(!p.defaultRankingBadges)} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultRankingBadges ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultRankingBadges ? "translate-x-4" : "translate-x-0"}`} /></button>
             </div>
             <hr className="border-zinc-700 my-2" />
             <label className="text-xs text-zinc-400 font-medium block mb-2 flex items-center gap-1.5"><Palette className="w-3 h-3" /> {p.t("ui.styleDefault")}</label>
@@ -143,9 +143,10 @@ export function AppShell() {
                 <button key={s} onClick={() => p.setDefaultRankingBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.defaultRankingBadgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}><span className="flex items-center gap-1 justify-center">{s === "default" ? <><Circle className="w-3 h-3" /> {p.t("ui.bsDefault")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : s === "glass" ? <><Minus className="w-3 h-3" /> {p.t("ui.glass")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</span></button>
               ))}
             </div>
+            <hr className="border-zinc-700 my-2" />
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-zinc-400">{p.t("ui.blurDefault")}</span>
-              <button onClick={() => p.setDefaultBlurEnabled(!p.defaultBlurEnabled)} className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.defaultBlurEnabled ? "bg-white/15 text-white" : "bg-white/5 text-zinc-400"}`}>{p.defaultBlurEnabled ? <><Check className="w-3 h-3" /> {p.t("ui.blurEnabled")}</> : <><XCircle className="w-3 h-3" /> {p.t("ui.blurDisabled")}</>}</button>
+              <button onClick={() => p.setDefaultBlurEnabled(!p.defaultBlurEnabled)} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultBlurEnabled ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultBlurEnabled ? "translate-x-4" : "translate-x-0"}`} /></button>
             </div>
             {p.defaultBlurEnabled && <>
               <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={p.t("ui.height")} value={p.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setDefaultGradientHeight(v)} onDoubleClick={() => p.setDefaultGradientHeight(30)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="gh" suffix="%" />
@@ -153,7 +154,11 @@ export function AppShell() {
               <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={p.t("ui.fade")} value={p.defaultBlurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setDefaultBlurFade(v)} onDoubleClick={() => p.setDefaultBlurFade(60)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bf" suffix="%" />
               <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={p.t("ui.darkness")} value={p.defaultBlurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setDefaultBlurDarkness(v)} onDoubleClick={() => p.setDefaultBlurDarkness(40)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bd" suffix="%" />
             </>}
-            <button onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full mt-2 text-center text-xs font-semibold py-2 rounded-lg bg-white/10 text-white hover:bg-white/15 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {p.t("ui.saved")}</> : <><Save className="w-3 h-3" /> {p.t("ui.saveDefaults")}</>}</span></button>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-zinc-400 flex items-center gap-1.5"><RotateCcw className="w-3 h-3" /> {p.t("ui.autoRotateDefault")}</span>
+              <button onClick={() => p.setDefaultAutoRotateClean(!p.defaultAutoRotateClean)} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultAutoRotateClean ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultAutoRotateClean ? "translate-x-4" : "translate-x-0"}`} /></button>
+            </div>
+            <button onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full mt-2 text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {p.t("ui.saved")}</> : <><Save className="w-3 h-3" /> {p.t("ui.saveDefaults")}</>}</span></button>
           </div>
         </div>
       )}
