@@ -64,7 +64,7 @@ export async function renderRankingBadge(
   const px = Math.round(displayFs * 1.0)
   const isBar = badgeStyle === "bar" || badgeStyle === "glass"
   const isColored = badgeStyle === "colored"
-  const pt = isBar ? Math.round(displayFs * 0.25) : Math.round(displayFs * 0.5)
+  const pt = isBar ? Math.round(displayFs * 0.35) : Math.round(displayFs * 0.5)
   const pb = pt
   const textW = Math.round(String(rank).length * displayFs * 0.58 + displayFs * 0.35 + periodText.length * displayFs * 0.58)
   const totalW = textW + px * 2
@@ -165,7 +165,7 @@ export async function renderExtraBadge(
   const px = Math.round(displayFs * 1.0)
   const isBar = badgeStyle === "bar" || badgeStyle === "glass"
   const isColored = badgeStyle === "colored"
-  const pt = isBar ? Math.round(displayFs * 0.25) : Math.round(displayFs * 0.5)
+  const pt = isBar ? Math.round(displayFs * 0.35) : Math.round(displayFs * 0.5)
   const pb = pt
   const textW = Math.max(Math.round(label.length * displayFs * 0.58), displayFs)
   const totalW = textW + px * 2

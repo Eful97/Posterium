@@ -23,7 +23,7 @@ export function RankingBadge({ rank = "13", label: labelProp, topLight, containe
   const isBar = badgeStyle === "bar" || badgeStyle === "glass"
   const isColored = badgeStyle === "colored"
   const px = Math.round(fs)
-  const bpy = isBar ? Math.round(fs * 0.25) : Math.round(fs * 0.5)
+  const bpy = isBar ? Math.round(fs * 0.35) : Math.round(fs * 0.5)
   const r = Math.round(fs * 0.7)
   const coloredBg = isColored && accentColor && accentColor !== "#555555" ? accentColor : undefined
   const badge = (
@@ -212,7 +212,7 @@ export function ExtraBadge({ label, topLight, containerW = 380, badgeStyle, acce
 
   const isBar = badgeStyle === "bar" || badgeStyle === "glass"
   const isColored = badgeStyle === "colored"
-  const bpy = isBar ? Math.round(fs * 0.25) : Math.round(fs * 0.5)
+  const bpy = isBar ? Math.round(fs * 0.35) : Math.round(fs * 0.5)
   const px = Math.round(fs)
   const r = Math.round(fs * 0.7)
   const coloredBg = isColored && accentColor && accentColor !== "#555555" ? accentColor : undefined
