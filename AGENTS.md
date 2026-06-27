@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
-App version: `0.11.7` — RENDER_VERSION: `62` — rv: `55`
+App version: `0.11.7` — RENDER_VERSION: `63` — rv: `56`
 
 ## Badge Genere/Rating (GenreRatingBadges)
 
@@ -37,7 +37,8 @@ App version: `0.11.7` — RENDER_VERSION: `62` — rv: `55`
 |---|---|---|
 | Font size base | `23 * containerW / 380` | `23 * pw / 380` |
 | Padding X | `px = round(fs)` | `px = round(finalFontSize * 1.0)` |
-| Padding Y | `py = round(fs * 0.5)` | `pt = pb = round(finalFontSize * 0.5)` |
+| Padding Y (bar) | `bpy = round(fs * 0.35)` | `pt = pb = round(displayFs * 0.35)` |
+| Padding Y (default) | `bpy = round(fs * 0.5)` | `pt = pb = round(displayFs * 0.5)` |
 | Border radius | `r = round(fs * 0.7)` | `r = round(finalFontSize * 0.7)` |
 | Ombra | `shadowOff = round(fs * 0.2)`, `shadowBlur = round(fs * 0.6)`, `boxShadow: "0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)"` | `shadowBlur = round(fs * 0.6)`, `shadowOff = round(fs * 0.2)` (stessa formula scalata) |
 | Sfondo | `topLight ? "bg-black/80" : "bg-white/80"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
