@@ -14,7 +14,7 @@ import type { SearchResult } from "@/lib/types"
 import { RefreshCw, Settings, Globe, Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Eye, EyeOff, Key, Clipboard, Trash2 } from "lucide-react"
 
 function saveDefaults(p: ReturnType<typeof useP>) {
-  localStorage.setItem("badgeDefaults", JSON.stringify({
+  const d = {
     globalBadges: p.defaultGlobalBadges,
     rankingBadges: p.defaultRankingBadges,
     badgeStyle: p.defaultBadgeStyle,
@@ -25,7 +25,9 @@ function saveDefaults(p: ReturnType<typeof useP>) {
     blurDarkness: p.defaultBlurDarkness,
     gradientHeight: p.defaultGradientHeight,
     autoRotateClean: p.defaultAutoRotateClean,
-  }))
+  }
+  localStorage.setItem("badgeDefaults", JSON.stringify(d))
+  fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) }).catch(() => {})
 }
 
 export function AppShell() {

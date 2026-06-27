@@ -6,6 +6,7 @@ import { getById, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { diskCacheGet, diskCacheSet, hashKey } from "@/lib/disk-cache"
+import { getServerDefaults } from "@/lib/server-defaults"
 import { GENRE_FALLBACK } from "@/lib/badges"
 import { findAccentColor } from "@/lib/accent-color"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
@@ -338,7 +339,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
-    const qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || mapping?.rankingBadgeStyle || mapping?.defaultRankingBadgeStyle || "default"
+    const sd = getServerDefaults()
+    const qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined) || sd.rankingBadgeStyle || "default"
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
     const qBlurFade = req.nextUrl.searchParams.get("bf")
@@ -398,7 +400,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       try {
         const qBs = req.nextUrl.searchParams.get("bs")
         const qAc = req.nextUrl.searchParams.get("ac")
-        const badgeStyle = qBs || mapping?.badgeStyle || mapping?.defaultBadgeStyle || "shadow"
+        const badgeStyle = qBs || (mapping?.badgeStyle && mapping.badgeStyle !== "shadow" ? mapping.badgeStyle : undefined) || sd.badgeStyle || "shadow"
         genreColor = qAc || mapping?.accentColor || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName] || "#555555"
         const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
         const accentColor = genreColor || "#555555"
