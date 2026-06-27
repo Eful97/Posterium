@@ -67,9 +67,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const earlyRank = await getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
     .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
     .catch(() => null)
+  const sd = getServerDefaults()
+  const sdHash = hashKey(JSON.stringify(sd))
   const cacheParams = new URLSearchParams(req.nextUrl.searchParams)
   cacheParams.delete("rv")
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${earlyRank ?? "x"}:${cacheParams.toString()}`
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${earlyRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}`
   const CACHE_TTL_24H = 24 * 60 * 60 * 1000
   const diskBuf = diskCacheGet("poster", cacheKey, CACHE_TTL_24H)
   if (diskBuf) {
@@ -339,7 +341,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
-    const sd = getServerDefaults()
     const qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined) || sd.rankingBadgeStyle || "default"
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
