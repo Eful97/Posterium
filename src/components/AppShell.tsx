@@ -28,6 +28,15 @@ function saveDefaults(p: ReturnType<typeof useP>) {
   }
   localStorage.setItem("badgeDefaults", JSON.stringify(d))
   fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) }).catch(() => {})
+  p.setBadgeStyle(d.badgeStyle)
+  p.setRankingBadgeStyle(d.rankingBadgeStyle)
+  p.setGlobalBadges(d.globalBadges)
+  p.setRankingBadges(d.rankingBadges)
+  p.setBlurEnabled(d.blurEnabled)
+  p.setBlurIntensity(d.blurIntensity)
+  p.setBlurFade(d.blurFade)
+  p.setBlurDarkness(d.blurDarkness)
+  p.setGradientHeight(d.gradientHeight)
 }
 
 export function AppShell() {
