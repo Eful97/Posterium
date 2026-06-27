@@ -97,14 +97,14 @@ export async function renderRankingBadge(
         alignItems: "center",
         width: `${pw}px`,
         height: `${svgH}px`,
-        backgroundColor: bg,
-        border: badgeStyle === "glass" ? "1px solid rgba(255,255,255,0.20)" : undefined,
+        backgroundColor: badgeStyle === "glass" ? "rgba(255,255,255,0.15)" : bg,
+        borderBottom: badgeStyle === "glass" ? "1px solid rgba(255,255,255,0.20)" : undefined,
         borderRadius: `0 0 ${r}px ${r}px`,
         boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
       },
     }, textEl)
     if (badgeStyle === "glass") {
-      const el = React.createElement("div", { style: { display: "flex", width: `${pw}px`, height: `${svgH}px`, backgroundColor: "rgba(0,0,0,0.35)", borderRadius: `0 0 ${r}px ${r}px` } },
+      const el = React.createElement("div", { style: { display: "flex", width: `${pw}px`, height: `${svgH}px`, backgroundColor: "rgba(0,0,0,0.35)", borderRadius: `0 0 ${r}px ${r}px`, overflow: "hidden" } },
         barContent,
       )
       const png = await render(el, pw, svgH)
@@ -187,8 +187,8 @@ export async function renderExtraBadge(
         alignItems: "center",
         width: `${pw}px`,
         height: `${svgH}px`,
-        backgroundColor: bg,
-        border: badgeStyle === "glass" ? "1px solid rgba(255,255,255,0.20)" : undefined,
+        backgroundColor: badgeStyle === "glass" ? "rgba(255,255,255,0.15)" : bg,
+        borderBottom: badgeStyle === "glass" ? "1px solid rgba(255,255,255,0.20)" : undefined,
         borderRadius: `0 0 ${r}px ${r}px`,
         boxShadow: `0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)`,
       },
@@ -205,7 +205,7 @@ export async function renderExtraBadge(
       }, label)
     )
     if (badgeStyle === "glass") {
-      const el = React.createElement("div", { style: { display: "flex", width: `${pw}px`, height: `${svgH}px`, backgroundColor: "rgba(0,0,0,0.35)", borderRadius: `0 0 ${r}px ${r}px` } },
+      const el = React.createElement("div", { style: { display: "flex", width: `${pw}px`, height: `${svgH}px`, backgroundColor: "rgba(0,0,0,0.35)", borderRadius: `0 0 ${r}px ${r}px`, overflow: "hidden" } },
         barContent,
       )
       const png = await render(el, pw, svgH)
