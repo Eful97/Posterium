@@ -32,6 +32,7 @@ export function RankingBadge({ rank = "13", label: labelProp, topLight, containe
       : "absolute top-0 left-1/2 -translate-x-1/2 font-semibold tracking-wide whitespace-nowrap"} style={{
         padding: `${bpy}px ${px}px`,
         fontSize: `${fs}px`,
+        lineHeight: 1,
         backgroundColor: coloredBg || (badgeStyle === "glass" ? "rgba(255,255,255,0.15)" : tlBg),
         backdropFilter: badgeStyle === "glass" ? "blur(12px)" : undefined,
         WebkitBackdropFilter: badgeStyle === "glass" ? "blur(12px)" : undefined,
@@ -221,6 +222,7 @@ export function ExtraBadge({ label, topLight, containerW = 380, badgeStyle, acce
       : "absolute top-0 left-1/2 -translate-x-1/2 font-semibold tracking-wide whitespace-nowrap"} style={{
         padding: `${bpy}px ${px}px`,
         fontSize: `${fs}px`,
+        lineHeight: 1,
         backgroundColor: coloredBg || (badgeStyle === "glass" ? "rgba(255,255,255,0.15)" : tlBg),
         backdropFilter: badgeStyle === "glass" ? "blur(12px)" : undefined,
         WebkitBackdropFilter: badgeStyle === "glass" ? "blur(12px)" : undefined,
