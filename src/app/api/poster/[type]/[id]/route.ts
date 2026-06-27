@@ -5,6 +5,7 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
+import { diskCacheGet, diskCacheSet, hashKey } from "@/lib/disk-cache"
 import { GENRE_FALLBACK } from "@/lib/badges"
 import { findAccentColor } from "@/lib/accent-color"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
@@ -44,7 +45,7 @@ function imgSrc(path: string): string {
 function etagHeaders(etag: string) {
   return {
     "Content-Type": "image/jpeg",
-    "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=300",
+    "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
     "ETag": etag,
   }
 }
@@ -68,12 +69,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const cacheParams = new URLSearchParams(req.nextUrl.searchParams)
   cacheParams.delete("rv")
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${earlyRank ?? "x"}:${cacheParams.toString()}`
+  const CACHE_TTL_24H = 24 * 60 * 60 * 1000
+  const diskBuf = diskCacheGet("poster", cacheKey, CACHE_TTL_24H)
+  if (diskBuf) {
+    cacheSet(cacheKey, diskBuf, ["poster"])
+    const diskEtag = `"d${hashKey(cacheKey)}"`
+    if (req.headers.get("If-None-Match") === diskEtag) {
+      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" } })
+    }
+    return new Response(new Uint8Array(diskBuf), {
+      headers: etagHeaders(diskEtag),
+    })
+  }
   const cached = cacheGetStale<Buffer>(cacheKey)
   const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
   if (cached.data && cachedHeaders.data) {
     const etag = cachedHeaders.data.etag
     if (req.headers.get("If-None-Match") === etag) {
-      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=300" } })
+      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" } })
     }
     if (!cached.stale && !cachedHeaders.stale) {
       return new Response(new Uint8Array(cached.data), {
@@ -507,6 +520,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     cacheSet(cacheKey, composited, ["poster"])
     cacheSet(`${cacheKey}:headers`, { etag }, ["poster"])
+    diskCacheSet("poster", cacheKey, composited)
     return new Response(new Uint8Array(composited), {
       headers: etagHeaders(etag),
     })

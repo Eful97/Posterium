@@ -39,6 +39,8 @@ pinned: false
 - 📐 **Server-side rendering** — Satori + Resvg (JSX → SVG → PNG)
 - 🐳 **Docker** — Deployabile su HF Spaces, Vercel, server proprio
 - ⚡ **Standalone output** — Next.js standalone per immagini Docker minime
+- 💾 **Cache su disco 24h** — Poster renderizzati e risposte TMDB cacheati su disco con TTL 24 ore, pre-generazione al salvataggio
+- 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia di cache disco e memoria
 
 ---
 

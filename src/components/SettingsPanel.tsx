@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useP } from "@/lib/context"
 import { SliderRow } from "@/components/SliderRow"
-import { Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Eye, EyeOff, Key, Clipboard } from "lucide-react"
+import { Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Eye, EyeOff, Key, Clipboard, Trash2 } from "lucide-react"
 
 interface Props {
   showKey: boolean
@@ -39,6 +39,7 @@ export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbK
   const [editVal, setEditVal] = useState<string | null>(null)
   const [editTxt, setEditTxt] = useState("")
   const [saved, setSaved] = useState(false)
+  const [clearing, setClearing] = useState(false)
   return (
     <div className="absolute right-0 top-full mt-2 bg-black/60 backdrop-blur-xl border border-zinc-700/50 rounded-xl p-3 shadow-2xl shadow-black/50 z-50 min-w-56 flex flex-col gap-2 animate-fade-scale-in" onClick={(e) => e.stopPropagation()}>
       <div className="flex flex-col gap-1">
@@ -96,6 +97,7 @@ export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbK
       <hr className="border-zinc-700 my-1" />
       <button onClick={(e) => { exportData(); setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Upload className="w-3 h-3" />{p.t("ui.exportJson")}</span></button>
       <button onClick={(e) => { importData(); setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Download className="w-3 h-3" />{p.t("ui.importJson")}</span></button>
+      <button onClick={async () => { setClearing(true); try { await fetch("/api/cache/clear") } catch {}; setTimeout(() => setClearing(false), 1500) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-red-900/50 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Trash2 className="w-3 h-3" />{clearing ? p.t("ui.saved") : p.t("ui.clearCache")}</span></button>
     </div>
   )
 }

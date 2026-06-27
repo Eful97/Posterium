@@ -113,6 +113,7 @@
     "ui.mdblistKeyPlaceholder":  "Inserisci la chiave MDBList",
     "ui.exportJson":  "Esporta JSON",
     "ui.importJson":  "Importa JSON",
+    "ui.clearCache":  "Svuota cache",
     "ui.welcome":  "Benvenuto in Posterium",
     "ui.welcomeSubtitle":  "Scegli la tua lingua preferita",
     "ui.chooseLanguage":  "Scegli la tua lingua preferita",

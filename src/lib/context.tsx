@@ -992,6 +992,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       setPreviewId(`${selected.media_type}:${selected.id}`)
       showToast(t("ui.saveSuccess"))
       loadMappings()
+      fetch(`/api/poster/${selected.media_type}/${selected.id}`, { signal: AbortSignal.timeout(30000) }).catch(() => {})
     } catch {
       showToast(t("ui.saveError"))
     }

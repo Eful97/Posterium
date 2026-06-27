@@ -11,7 +11,7 @@ import { SearchView } from "@/components/SearchView"
 import { MyPostersView } from "@/components/MyPostersView"
 import EditView from "@/components/EditView"
 import type { SearchResult } from "@/lib/types"
-import { RefreshCw, Settings, Globe, Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Eye, EyeOff, Key, Clipboard } from "lucide-react"
+import { RefreshCw, Settings, Globe, Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Eye, EyeOff, Key, Clipboard, Trash2 } from "lucide-react"
 
 function saveDefaults(p: ReturnType<typeof useP>) {
   localStorage.setItem("badgeDefaults", JSON.stringify({
@@ -36,6 +36,7 @@ export function AppShell() {
   const [editVal, setEditVal] = useState<string | null>(null)
   const [editTxt, setEditTxt] = useState("")
   const [saved, setSaved] = useState(false)
+  const [clearing, setClearing] = useState(false)
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
@@ -122,6 +123,7 @@ export function AppShell() {
             </div>
             <button onClick={() => { p.exportData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Upload className="w-3 h-3" />{p.t("ui.exportJson")}</span></button>
             <button onClick={() => { p.importData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Download className="w-3 h-3" />{p.t("ui.importJson")}</span></button>
+            <button onClick={async () => { setClearing(true); try { await fetch("/api/cache/clear") } catch {}; setTimeout(() => setClearing(false), 1500) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-red-900/50 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Trash2 className="w-3 h-3" />{clearing ? p.t("ui.saved") : p.t("ui.clearCache")}</span></button>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Star className="w-3 h-3" /> {p.t("ui.genreRatingBadge")}</span>
               <button onClick={() => p.setDefaultGlobalBadges(!p.defaultGlobalBadges)} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultGlobalBadges ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultGlobalBadges ? "translate-x-4" : "translate-x-0"}`} /></button>
