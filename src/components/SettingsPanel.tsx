@@ -33,8 +33,10 @@ function saveDefaults(p: ReturnType<typeof useP>) {
   }
   localStorage.setItem("badgeDefaults", JSON.stringify(d))
   fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) }).catch(() => {})
-  p.setBadgeStyle(d.badgeStyle)
-  p.setRankingBadgeStyle(d.rankingBadgeStyle)
+  const key = p.selected ? `${p.selected.media_type}:${p.selected.id}` : null
+  const mapping = key ? p.mappingsMap.get(key) : undefined
+  if (!mapping?.badgeStyle) p.setBadgeStyle(d.badgeStyle)
+  if (!mapping?.rankingBadgeStyle) p.setRankingBadgeStyle(d.rankingBadgeStyle)
   p.setGlobalBadges(d.globalBadges)
   p.setRankingBadges(d.rankingBadges)
   p.setBlurEnabled(d.blurEnabled)
