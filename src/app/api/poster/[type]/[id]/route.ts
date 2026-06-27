@@ -499,6 +499,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return null
     })()
 
+    console.log("[ranking] topBadge:", topBadge)
     if (topBadge) {
       try {
         const accentForBadge = genreColor || "#555555"
@@ -507,12 +508,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           const extraLeft = qRankingBadgeStyle === "bar" || qRankingBadgeStyle === "glass" ? 0 : Math.round((pw - w) / 2)
           composites.push({ input: extraPng, top: 0, left: extraLeft })
         } else {
+          console.log("[ranking] calling renderRankingBadge", { rank: topBadge.rank, pw, label: topBadge.label, topLight, style: qRankingBadgeStyle, accent: accentForBadge })
           const { png: rankPng, w, h } = await renderRankingBadge(topBadge.rank, pw, topBadge.label, topLight, qRankingBadgeStyle, accentForBadge)
+          console.log("[ranking] renderRankingBadge succeeded", { w, h, pngSize: rankPng.length })
           const rankLeft = qRankingBadgeStyle === "bar" || qRankingBadgeStyle === "glass" ? 0 : Math.round((pw - w) / 2)
           composites.push({ input: rankPng, top: 0, left: rankLeft })
         }
-      } catch {
-        // badge rendering failed, skip it
+      } catch (e) {
+        console.log("[ranking] badge rendering failed", e)
       }
     }
 
