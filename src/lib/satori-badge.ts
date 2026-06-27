@@ -104,7 +104,7 @@ export async function renderRankingBadge(
       },
     }, textEl)
     if (badgeStyle === "glass") {
-      const el = React.createElement("div", { style: { display: "flex", width: `${pw}px`, height: `${svgH}px`, backgroundColor: "rgba(0,0,0,0.35)", borderRadius: `0 0 ${r}px ${r}px`, overflow: "hidden" } },
+      const el = React.createElement("div", { style: { display: "flex", width: `${pw}px`, height: `${svgH}px`, backgroundColor: "rgba(0,0,0,0.35)", borderRadius: `0 0 ${r}px ${r}px` } },
         barContent,
       )
       const png = await render(el, pw, svgH)
@@ -205,7 +205,7 @@ export async function renderExtraBadge(
       }, label)
     )
     if (badgeStyle === "glass") {
-      const el = React.createElement("div", { style: { display: "flex", width: `${pw}px`, height: `${svgH}px`, backgroundColor: "rgba(0,0,0,0.35)", borderRadius: `0 0 ${r}px ${r}px`, overflow: "hidden" } },
+      const el = React.createElement("div", { style: { display: "flex", width: `${pw}px`, height: `${svgH}px`, backgroundColor: "rgba(0,0,0,0.35)", borderRadius: `0 0 ${r}px ${r}px` } },
         barContent,
       )
       const png = await render(el, pw, svgH)
