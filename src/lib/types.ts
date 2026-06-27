@@ -67,4 +67,6 @@ export interface Mapping {
   cleanPosterIndex?: number
   cleanPosterUpdatedAt?: string
   autoRotateClean?: boolean
+  defaultBadgeStyle?: string
+  defaultRankingBadgeStyle?: string
 }

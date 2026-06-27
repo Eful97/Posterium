@@ -978,6 +978,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           customBadge,
           badgeStyle,
           rankingBadgeStyle,
+          defaultBadgeStyle,
+          defaultRankingBadgeStyle,
           blurEnabled,
           blurIntensity,
           blurFade,
@@ -996,7 +998,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     } catch {
       showToast(t("ui.saveError"))
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, posters, mappingsMap])
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap])
 
   const removeLogo = useCallback(async () => {
     setSelectedLogo(null)

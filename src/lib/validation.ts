@@ -33,6 +33,8 @@ export const mappingSchema = z.object({
   cleanPosterIndex: z.number().int().min(0).optional(),
   cleanPosterUpdatedAt: z.string().optional(),
   autoRotateClean: z.boolean().optional(),
+  defaultBadgeStyle: z.string().optional(),
+  defaultRankingBadgeStyle: z.string().optional(),
 })
 
 export type MappingInput = z.infer<typeof mappingSchema>

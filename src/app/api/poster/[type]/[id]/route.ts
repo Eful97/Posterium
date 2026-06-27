@@ -338,7 +338,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
-    const qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || "default"
+    const qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || mapping?.rankingBadgeStyle || mapping?.defaultRankingBadgeStyle || "default"
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
     const qBlurFade = req.nextUrl.searchParams.get("bf")
@@ -398,7 +398,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       try {
         const qBs = req.nextUrl.searchParams.get("bs")
         const qAc = req.nextUrl.searchParams.get("ac")
-        const badgeStyle = qBs || mapping?.badgeStyle || "shadow"
+        const badgeStyle = qBs || mapping?.badgeStyle || mapping?.defaultBadgeStyle || "shadow"
         genreColor = qAc || mapping?.accentColor || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName] || "#555555"
         const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
         const accentColor = genreColor || "#555555"

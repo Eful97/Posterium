@@ -43,6 +43,8 @@ export interface Mapping {
   cleanPosterIndex?: number
   cleanPosterUpdatedAt?: string
   autoRotateClean?: boolean
+  defaultBadgeStyle?: string
+  defaultRankingBadgeStyle?: string
 }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL
