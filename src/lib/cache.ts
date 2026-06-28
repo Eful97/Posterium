@@ -54,9 +54,8 @@ let cleanupTimer: ReturnType<typeof setInterval> | null = null
 function startCleanup() {
   if (cleanupTimer) return
   cleanupTimer = setInterval(() => {
-    const now = Date.now()
     for (const [key, entry] of store) {
-      if (now - entry.timestamp > ttlForTags(entry.tags)) store.delete(key)
+      if (isExpired(entry)) store.delete(key)
     }
   }, 60_000)
 }

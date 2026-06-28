@@ -16,6 +16,7 @@ const root = (() => {
 })()
 
 const CACHE_DIR = path.join(root, "cache")
+const MAX_CACHE_SIZE = 500 * 1024 * 1024 // 500MB
 
 function ensureDir(dir: string) {
   try { fs.mkdirSync(dir, { recursive: true }) } catch {}
@@ -42,6 +43,23 @@ export function diskCacheSet(namespace: string, key: string, data: Buffer): void
   ensureDir(dir)
   const filePath = path.join(dir, `${hashKey(key)}.dat`)
   try { fs.writeFileSync(filePath, data) } catch {}
+  evictIfNeeded(dir)
+}
+
+function evictIfNeeded(dir: string): void {
+  try {
+    const files = fs.readdirSync(dir).map(f => {
+      const fp = path.join(dir, f)
+      const stat = fs.statSync(fp)
+      return { fp, mtime: stat.mtimeMs, size: stat.size }
+    }).sort((a, b) => a.mtime - b.mtime)
+    let totalSize = files.reduce((s, f) => s + f.size, 0)
+    for (const f of files) {
+      if (totalSize <= MAX_CACHE_SIZE) break
+      try { fs.unlinkSync(f.fp) } catch {}
+      totalSize -= f.size
+    }
+  } catch {}
 }
 
 export function diskCacheRemove(namespace: string, key: string): void {

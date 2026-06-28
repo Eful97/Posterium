@@ -36,10 +36,7 @@ async function fetchImg(url: string) {
 }
 
 function imgSrc(path: string): string {
-  if (path.startsWith("http")) {
-    if (!path.startsWith(TMDB_IMG_HOST)) return `${IMG_BASE}/w500${path}`
-    return path
-  }
+  if (path.startsWith("http")) return path
   return `${IMG_BASE}/w500${path}`
 }
 
@@ -145,6 +142,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     backdropPath = queryBackdrop || null
     if (queryBackdrop) {
       backdropScale = Number(req.nextUrl.searchParams.get("bscale") || "100")
+      if (!Number.isFinite(backdropScale) || backdropScale <= 0) backdropScale = 100
       backdropOffsetX = Number(req.nextUrl.searchParams.get("box") || "0")
       backdropOffsetY = Number(req.nextUrl.searchParams.get("boy") || "0")
     }
@@ -165,7 +163,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     rankingBadges = mapping.rankingBadges ?? true
     etag = `"v${RENDER_VERSION}:${mapping.updatedAt}"`
     if (req.headers.get("If-None-Match") === etag) {
-      return new Response(null, { status: 304 })
+      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800", "ETag": etag } })
     }
   } else {
     const preferredLanguage = req.nextUrl.searchParams.get("lang") || "it"
@@ -246,6 +244,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           return fetchMDBList("mdblistAnime")
             .then((entries) => {
               if (!Array.isArray(entries)) return null
+              cacheSet("mdblist:anime:top10", entries, ["mdblist"])
               const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
               return idx >= 0 ? idx + 1 : null
             })
@@ -287,7 +286,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qApiKey = req.nextUrl.searchParams.get("api_key") || undefined
     if ((mediaType === "tv" && (!tvType || !firstAirDate)) || (mediaType === "movie" && !releaseDate)) {
       try {
-        const details = await getDetails(mediaType, tmdbId, "it-IT", qApiKey)
+        const preferredLang = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
+        const details = await getDetails(mediaType, tmdbId, preferredLang, qApiKey)
         if (!releaseDate) releaseDate = details.release_date || null
         if (!firstAirDate) firstAirDate = details.first_air_date || null
         if (!tvType) tvType = details.type || null
@@ -407,16 +407,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const accentColor = genreColor || "#555555"
         const targetCenter = Math.round(30 * ph / 570)
         if (badgeStyle === "bar" || badgeStyle === "glass") {
-          const { png, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor, undefined, topLight)
+          const { png, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor, topLight)
           composites.push({ input: png, top: ph - h, left: 0 })
         } else {
-          const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor, undefined, topLight)
+          const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor, topLight)
           const badgeY = ph - h - Math.max(0, Math.round(targetCenter - h / 2))
           const badgeLeft = Math.round((pw - w) / 2)
           composites.push({ input: png, top: badgeY, left: badgeLeft })
         }
-      } catch {
-        // genre badge rendering failed, skip it
+      } catch (e) {
+        console.error("[poster] Genre badge rendering failed:", e)
       }
     }
 
@@ -447,7 +447,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const actualLogoH = resizedMeta.height || logoH
       const logoX = Math.round((pw - actualLogoW) / 2 + userOx)
       const logoBadgeOffset = (badgesEnabled && genreName && voteAverage && voteAverage > 0) ? 0 : Math.round(40 * s)
-      const logoTop = Math.round(ph - actualLogoH - ph * 0.1 + userOy + logoBadgeOffset)
+      const logoTop = Math.max(0, Math.round(ph - actualLogoH - ph * 0.1 + userOy + logoBadgeOffset))
 
       composites.push({ input: logoResized, top: logoTop, left: logoX })
     }
@@ -511,8 +511,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           const rankLeft = qRankingBadgeStyle === "bar" || qRankingBadgeStyle === "glass" ? 0 : Math.round((pw - w) / 2)
           composites.push({ input: rankPng, top: 0, left: rankLeft })
         }
-      } catch {
-        // badge rendering failed, skip it
+      } catch (e) {
+        console.error("[poster] Ranking badge rendering failed:", e)
       }
     }
 

@@ -38,7 +38,7 @@ async function render(el: ReturnType<typeof React.createElement>, w: number, h: 
   const svg = await satori(el, { width: w, height: h, fonts: fonts() })
   const b64 = (buf: Buffer) => buf.toString("base64")
   const style = `<style>@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64(fontRegular())});font-weight:400;font-style:normal}@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64(fontBold())});font-weight:700;font-style:normal}@font-face{font-family:'Noto Sans Symbols 2';src:url(data:application/font-woff;base64,${b64(fontSymbols())});font-weight:400;font-style:normal}</style>`
-  const styledSvg = svg.replace(">", `>${style}`)
+  const styledSvg = svg.replace(/<svg([^>]*)>/, `<svg$1>${style}`)
   return Buffer.from(new Resvg(styledSvg).render().asPng())
 }
 
@@ -281,7 +281,6 @@ export async function renderGenreBadge(
   year?: string,
   style?: string,
   accentColor?: string,
-  barHeight?: number,
   topLight?: boolean,
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const voteStr = voteAverage.toFixed(1)
@@ -302,7 +301,7 @@ export async function renderGenreBadge(
   const pillExtra = isPillStyle ? pillPad * 3 - dims.pad * 2 : 0
   if (isPillStyle && dims.totalW + pillExtra > maxBadgeW) {
     const ratio = maxBadgeW / (dims.totalW + pillExtra)
-    finalFontSize = Math.max(finalFontSize * ratio, 10)
+    finalFontSize = Math.max(Math.round(finalFontSize * ratio), 10)
     dims = genreBadgeDims(finalFontSize, genreName, voteStr, yearStr)
   }
   const { starW, gap, gapStar, pad, totalW, svgH } = dims
@@ -346,7 +345,7 @@ export async function renderGenreBadge(
   if (s === "bar" || s === "glass") {
     const barTextStyle = { ...sharedTextStyle, color: s === "glass" ? "#e5e7eb" : "rgba(0,0,0,0.80)" }
     const barPad = Math.round(finalFontSize * 0.5)
-    const barH = Math.max(barHeight || 0, finalFontSize + barPad * 2)
+    const barH = finalFontSize + barPad * 2
     const barShadowOff = Math.max(Math.round(barH * 0.2), 3)
     const barShadowBlur = Math.max(Math.round(barH * 0.5), 8)
     const barContent = React.createElement(
