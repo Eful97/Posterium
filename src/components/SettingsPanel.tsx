@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useP } from "@/lib/context"
+import { saveDefaults } from "@/lib/save-defaults"
 import { SliderRow } from "@/components/SliderRow"
 import { Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Eye, EyeOff, Key, Clipboard, Trash2 } from "lucide-react"
 
@@ -16,34 +17,6 @@ interface Props {
   importData: () => void
   mdblistApiKey: string
   setMdblistApiKey: (v: string) => void
-}
-
-function saveDefaults(p: ReturnType<typeof useP>) {
-  const d = {
-    globalBadges: p.defaultGlobalBadges,
-    rankingBadges: p.defaultRankingBadges,
-    badgeStyle: p.defaultBadgeStyle,
-    rankingBadgeStyle: p.defaultRankingBadgeStyle,
-    blurEnabled: p.defaultBlurEnabled,
-    blurIntensity: p.defaultBlurIntensity,
-    blurFade: p.defaultBlurFade,
-    blurDarkness: p.defaultBlurDarkness,
-    gradientHeight: p.defaultGradientHeight,
-    autoRotateClean: p.defaultAutoRotateClean,
-  }
-  localStorage.setItem("badgeDefaults", JSON.stringify(d))
-  fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) }).catch(() => {})
-  const key = p.selected ? `${p.selected.media_type}:${p.selected.id}` : null
-  const mapping = key ? p.mappingsMap.get(key) : undefined
-  if (!mapping?.badgeStyle) p.setBadgeStyle(d.badgeStyle)
-  if (!mapping?.rankingBadgeStyle) p.setRankingBadgeStyle(d.rankingBadgeStyle)
-  p.setGlobalBadges(d.globalBadges)
-  p.setRankingBadges(d.rankingBadges)
-  p.setBlurEnabled(d.blurEnabled)
-  p.setBlurIntensity(d.blurIntensity)
-  p.setBlurFade(d.blurFade)
-  p.setBlurDarkness(d.blurDarkness)
-  p.setGradientHeight(d.gradientHeight)
 }
 
 export function SettingsPanel({ showKey, tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setShowKey, setSettingsOpen, exportData, importData, mdblistApiKey, setMdblistApiKey }: Props) {

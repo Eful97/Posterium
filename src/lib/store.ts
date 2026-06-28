@@ -1,51 +1,8 @@
 import fs from "node:fs"
 import path from "node:path"
+import type { Mapping } from "@/lib/types"
 
-export interface Mapping {
-  tmdbId: number
-  mediaType: "movie" | "tv"
-  title: string
-  posterPath: string
-  logoPath: string | null
-  originalPosterPath: string | null
-  language: string | null
-  updatedAt: string
-  logoScale?: number
-  logoOffsetX?: number
-  logoOffsetY?: number
-  backdropPath?: string | null
-  backdropScale?: number
-  backdropOffsetX?: number
-  backdropOffsetY?: number
-  showBadges?: boolean
-  genreName?: string
-  voteAverage?: number
-  trendRank?: number
-  trendPeriod?: string
-  accentColor?: string
-  tvType?: string
-  tvStatus?: string
-  badgeExtra?: string
-  badgeRank?: number
-  badgeLabel?: string
-  customBadge?: string | null
-  releaseDate?: string
-  firstAirDate?: string
-  rankingBadges?: boolean
-  badgeStyle?: string
-  rankingBadgeStyle?: string
-  blurEnabled?: boolean
-  blurIntensity?: number
-  blurFade?: number
-  blurDarkness?: number
-  gradientHeight?: number
-  cleanPosters?: string[]
-  cleanPosterIndex?: number
-  cleanPosterUpdatedAt?: string
-  autoRotateClean?: boolean
-  defaultBadgeStyle?: string
-  defaultRankingBadgeStyle?: string
-}
+export type { Mapping }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL
 
@@ -98,14 +55,10 @@ const DATA_DIR = (() => {
       const testFile = path.join(hfData, ".write_test")
       fs.writeFileSync(testFile, "ok")
       fs.unlinkSync(testFile)
-      console.log(`[store] Using persistent volume: ${hfData}`)
       return hfData
     }
-  } catch (e) {
-    console.log(`[store] /data exists but not writable: ${e}`)
-  }
+  } catch {}
   const local = path.join(process.cwd(), "data")
-  console.log(`[store] Using local data dir: ${local}`)
   return local
 })()
 const DATA_FILE = path.join(DATA_DIR, "mappings.json")

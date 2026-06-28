@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import type { TMDBImage } from "@/lib/types"
 import { LANG_NAMES, groupBy, limitBest, posterUrl } from "@/lib/utils"
 import { useP } from "@/lib/context"
@@ -14,7 +15,7 @@ interface Props {
   disabled?: boolean
 }
 
-export function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo, disabled }: Props) {
+export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo, disabled }: Props) {
   const p = useP()
   if (logos.length === 0) return (
     <div className="grid grid-cols-2 gap-2">
@@ -58,4 +59,4 @@ export function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo,
       {selectedLogo && <button disabled={disabled} onClick={removeLogo} className={`w-full mt-2 py-2 rounded-lg text-sm font-medium transition-all duration-150 border ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : "bg-zinc-800/40 text-zinc-400 hover:text-red-400 hover:bg-red-900/15 hover:border-red-900/30 active:scale-[0.98] border-zinc-700/50 hover:border-red-900/30"}`}><span className="flex items-center justify-center gap-1.5"><Trash2 className="w-3.5 h-3.5" />{p.t("ui.removeLogo")}</span></button>}
     </div>
   )
-}
+})

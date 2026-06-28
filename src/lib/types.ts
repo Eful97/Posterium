@@ -49,12 +49,20 @@ export interface Mapping {
   backdropScale?: number
   backdropOffsetX?: number
   backdropOffsetY?: number
+  showBadges?: boolean
   genreName?: string
   voteAverage?: number
   trendRank?: number
   trendPeriod?: string
+  accentColor?: string
+  tvType?: string
+  tvStatus?: string
+  badgeExtra?: string
+  badgeRank?: number
+  badgeLabel?: string
   customBadge?: string | null
-  showBadges?: boolean
+  releaseDate?: string
+  firstAirDate?: string
   rankingBadges?: boolean
   badgeStyle?: string
   rankingBadgeStyle?: string

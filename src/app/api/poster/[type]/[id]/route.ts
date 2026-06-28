@@ -54,7 +54,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const rl = rateLimit(rateLimitKey(req), "poster")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { type, id } = await params
-  console.log(`[poster] type=${type} id=${id} mediaType=${["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "") ? "tv" : "movie"}`)
   const mediaType = (["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "")) ? "tv" : "movie"
   const tmdbId = Number(id)
   if (isNaN(tmdbId) || tmdbId <= 0) {

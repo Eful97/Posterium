@@ -32,9 +32,7 @@ export function MyPostersView() {
   const deleteSelected = async () => {
     const toDelete = mappings.filter((m) => selected.has(`${m.mediaType}:${m.tmdbId}`))
     setDeleting(true)
-    for (const m of toDelete) {
-      await removeMapping(m)
-    }
+    await Promise.all(toDelete.map((m) => removeMapping(m)))
     setDeleting(false)
     setSelected(new Set())
     setSelectMode(false)
@@ -42,9 +40,7 @@ export function MyPostersView() {
 
   const deleteAll = async () => {
     setDeleting(true)
-    for (const m of mappings) {
-      await removeMapping(m)
-    }
+    await Promise.all(mappings.map((m) => removeMapping(m)))
     setDeleting(false)
     setShowDeleteAll(false)
   }

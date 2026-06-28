@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useP } from "@/lib/context"
+import { saveDefaults } from "@/lib/save-defaults"
 import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
 import { VersionBadge } from "@/components/VersionBadge"
@@ -12,34 +13,6 @@ import { MyPostersView } from "@/components/MyPostersView"
 import EditView from "@/components/EditView"
 import type { SearchResult } from "@/lib/types"
 import { RefreshCw, Settings, Globe, Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Eye, EyeOff, Key, Clipboard, Trash2 } from "lucide-react"
-
-function saveDefaults(p: ReturnType<typeof useP>) {
-  const d = {
-    globalBadges: p.defaultGlobalBadges,
-    rankingBadges: p.defaultRankingBadges,
-    badgeStyle: p.defaultBadgeStyle,
-    rankingBadgeStyle: p.defaultRankingBadgeStyle,
-    blurEnabled: p.defaultBlurEnabled,
-    blurIntensity: p.defaultBlurIntensity,
-    blurFade: p.defaultBlurFade,
-    blurDarkness: p.defaultBlurDarkness,
-    gradientHeight: p.defaultGradientHeight,
-    autoRotateClean: p.defaultAutoRotateClean,
-  }
-  localStorage.setItem("badgeDefaults", JSON.stringify(d))
-  fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) }).catch(() => {})
-  const key = p.selected ? `${p.selected.media_type}:${p.selected.id}` : null
-  const mapping = key ? p.mappingsMap.get(key) : undefined
-  if (!mapping?.badgeStyle) p.setBadgeStyle(d.badgeStyle)
-  if (!mapping?.rankingBadgeStyle) p.setRankingBadgeStyle(d.rankingBadgeStyle)
-  p.setGlobalBadges(d.globalBadges)
-  p.setRankingBadges(d.rankingBadges)
-  p.setBlurEnabled(d.blurEnabled)
-  p.setBlurIntensity(d.blurIntensity)
-  p.setBlurFade(d.blurFade)
-  p.setBlurDarkness(d.blurDarkness)
-  p.setGradientHeight(d.gradientHeight)
-}
 
 export function AppShell() {
   const p = useP()

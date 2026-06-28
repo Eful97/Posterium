@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect } from "react"
+import React, { useRef, useEffect } from "react"
 import { posterUrl } from "@/lib/utils"
 import { ScrollButton } from "@/components/ScrollButton"
 
@@ -28,7 +28,7 @@ function rankBadge(rank: number) {
   )
 }
 
-function RankCard({ item, onClick, isFirst, staggerIndex }: { item: RankItem; onClick: () => void; isFirst?: boolean; staggerIndex?: number }) {
+const RankCard = React.memo(function RankCard({ item, onClick, isFirst, staggerIndex }: { item: RankItem; onClick: () => void; isFirst?: boolean; staggerIndex?: number }) {
   const imgSrc = item.poster_path || item.posterPath
   const label = item.title || item.name || ""
   return (
@@ -66,7 +66,7 @@ function RankCard({ item, onClick, isFirst, staggerIndex }: { item: RankItem; on
       </div>
     </button>
   )
-}
+})
 
 export function RankRow({
   label,
