@@ -14,16 +14,16 @@ import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMD
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { createT } from "@/lib/i18n"
 import type { EnrichedAnimeItem } from "@/lib/validation"
-import { fetchMDBList, MDBLISTS } from "@/lib/mdblist"
+import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 63
+const RENDER_VERSION = 64
 const IMG_BASE = "https://image.tmdb.org/t/p"
+const MAX_IMG_SIZE = 10 * 1024 * 1024
+const STD_W = 1000
+const STD_H = 1500
 
 type RouteParams = { type: string; id: string }
-
-const MAX_IMG_SIZE = 10 * 1024 * 1024
-const TMDB_IMG_HOST = "https://image.tmdb.org/t/p"
 
 async function fetchImg(url: string) {
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
@@ -48,7 +48,37 @@ function etagHeaders(etag: string) {
   }
 }
 
+async function topLuminance(buf: Buffer): Promise<number> {
+  const stripH = Math.max(Math.round(STD_H * 0.08), 3)
+  const extracted = await sharp(buf)
+    .extract({ left: 0, top: 0, width: STD_W, height: stripH })
+    .raw().toBuffer()
+  let r = 0, g = 0, b = 0, n = 0
+  for (let i = 0; i < extracted.length; i += 4) { r += extracted[i]; g += extracted[i + 1]; b += extracted[i + 2]; n++ }
+  r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n)
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+}
 
+async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fallbackGenre?: string | null): Promise<string> {
+  async function extractFrom(buf: Buffer, w: number, h: number, genre: string): Promise<string> {
+    const pixels = await sharp(buf).ensureAlpha().raw().toBuffer()
+    const result = findAccentColor(pixels, w, h, genre)
+    return `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
+  }
+  const [pColor, lColor] = await Promise.all([
+    extractFrom(posterBuf, STD_W, STD_H, fallbackGenre || ''),
+    logoBuf ? (async () => {
+      const meta = await sharp(logoBuf).metadata()
+      return extractFrom(logoBuf, meta.width || 200, meta.height || 100, '')
+    })() : Promise.resolve(''),
+  ])
+  if (pColor && lColor) {
+    const pr = parseInt(pColor.slice(1,3),16), pg = parseInt(pColor.slice(3,5),16), pb = parseInt(pColor.slice(5,7),16)
+    const lr = parseInt(lColor.slice(1,3),16), lg = parseInt(lColor.slice(3,5),16), lb = parseInt(lColor.slice(5,7),16)
+    return `#${Math.round((pr+lr)/2).toString(16).padStart(2,'0')}${Math.round((pg+lg)/2).toString(16).padStart(2,'0')}${Math.round((pb+lb)/2).toString(16).padStart(2,'0')}`
+  }
+  return pColor || lColor || (fallbackGenre ? (GENRE_FALLBACK[fallbackGenre] || '#555555') : '#555555')
+}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const rl = rateLimit(rateLimitKey(req), "poster")
@@ -57,67 +87,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const mediaType = (["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "")) ? "tv" : "movie"
   const tmdbId = Number(id)
   if (isNaN(tmdbId) || tmdbId <= 0) {
-    console.log(`[poster] Invalid ID: type=${type} id=${id}`)
     return new Response("Invalid ID", { status: 400 })
   }
-  const earlyRank = await getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
-    .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
-    .catch(() => null)
-  const sd = getServerDefaults()
-  const sdHash = hashKey(JSON.stringify(sd))
-  const cacheParams = new URLSearchParams(req.nextUrl.searchParams)
-  cacheParams.delete("rv")
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${earlyRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}`
-  const CACHE_TTL_24H = 24 * 60 * 60 * 1000
-  const diskBuf = diskCacheGet("poster", cacheKey, CACHE_TTL_24H)
-  if (diskBuf) {
-    cacheSet(cacheKey, diskBuf, ["poster"])
-    const diskEtag = `"d${hashKey(cacheKey)}"`
-    if (req.headers.get("If-None-Match") === diskEtag) {
-      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" } })
-    }
-    return new Response(new Uint8Array(diskBuf), {
-      headers: etagHeaders(diskEtag),
-    })
-  }
-  const cached = cacheGetStale<Buffer>(cacheKey)
-  const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
-  if (cached.data && cachedHeaders.data) {
-    const etag = cachedHeaders.data.etag
-    if (req.headers.get("If-None-Match") === etag) {
-      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" } })
-    }
-    if (!cached.stale && !cachedHeaders.stale) {
-      return new Response(new Uint8Array(cached.data), {
-        headers: etagHeaders(etag),
-      })
-    }
-  }
 
-  let posterPath: string | null = null
-  let logoPath: string | null = null
-  let backdropPath: string | null = null
-  let backdropScale = 100
-  let backdropOffsetX = 0
-  let backdropOffsetY = 0
-  let etag: string
-  let genreName: string | null = null
-  let voteAverage: number | null = null
-  let showBadges = true
-  let rankingBadges = true
-  let releaseDate: string | null = null
-  let firstAirDate: string | null = null
-  let nextEpisodeAir: string | null = null
-  let tvType: string | null = null
-  let tvStatus: string | null = null
-  let tmdbStudios: string[] = []
-  const queryPoster = req.nextUrl.searchParams.get("poster")
-  const queryLogo = req.nextUrl.searchParams.get("logo")
-  const queryBackdrop = req.nextUrl.searchParams.get("backdrop")
-  const queryGenre = req.nextUrl.searchParams.get("genreName")
-  const queryVote = req.nextUrl.searchParams.get("voteAverage")
+  // 1. Fast: get mapping + server defaults (no network)
+  const sd = getServerDefaults()
   const mapping = await getById(mediaType, tmdbId)
 
+  // Auto-rotate clean poster
   if (mapping && mapping.autoRotateClean && mapping.cleanPosters && mapping.cleanPosters.length > 1) {
     const lastUpdate = mapping.cleanPosterUpdatedAt ? new Date(mapping.cleanPosterUpdatedAt).getTime() : 0
     const now = Date.now()
@@ -132,6 +109,61 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       }
     }
   }
+
+  // 2. Build cache key using mapping's stored rank (skip JW network call)
+  const sdHash = hashKey(JSON.stringify(sd))
+  const cacheParams = new URLSearchParams(req.nextUrl.searchParams)
+  cacheParams.delete("rv")
+  const cachedRank = mapping?.trendRank ?? null
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}`
+
+  // 3. Disk cache check (no network, no await)
+  const CACHE_TTL_24H = 24 * 60 * 60 * 1000
+  const diskBuf = diskCacheGet("poster", cacheKey, CACHE_TTL_24H)
+  if (diskBuf) {
+    cacheSet(cacheKey, diskBuf, ["poster"])
+    const diskEtag = `"d${hashKey(cacheKey)}"`
+    if (req.headers.get("If-None-Match") === diskEtag) {
+      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" } })
+    }
+    return new Response(new Uint8Array(diskBuf), { headers: etagHeaders(diskEtag) })
+  }
+
+  // 4. Memory cache check (no network)
+  const cached = cacheGetStale<Buffer>(cacheKey)
+  const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
+  if (cached.data && cachedHeaders.data) {
+    const etag = cachedHeaders.data.etag
+    if (req.headers.get("If-None-Match") === etag) {
+      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" } })
+    }
+    if (!cached.stale && !cachedHeaders.stale) {
+      return new Response(new Uint8Array(cached.data), { headers: etagHeaders(etag) })
+    }
+  }
+
+  // 5. Cache miss — resolve posterPath from mapping, query, or TMDB
+  let posterPath: string | null = null
+  let logoPath: string | null = null
+  let backdropPath: string | null = null
+  let backdropScale = 100
+  let backdropOffsetX = 0
+  let backdropOffsetY = 0
+  let etag: string
+  let genreName: string | null = null
+  let voteAverage: number | null = null
+  let showBadges = true
+  let rankingBadges = true
+  let releaseDate: string | null = null
+  let firstAirDate: string | null = null
+  let tvType: string | null = null
+  let tvStatus: string | null = null
+  let tmdbStudios: string[] = []
+  const queryPoster = req.nextUrl.searchParams.get("poster")
+  const queryLogo = req.nextUrl.searchParams.get("logo")
+  const queryBackdrop = req.nextUrl.searchParams.get("backdrop")
+  const queryGenre = req.nextUrl.searchParams.get("genreName")
+  const queryVote = req.nextUrl.searchParams.get("voteAverage")
 
   const t = createT(req.nextUrl.searchParams.get("lang") || mapping?.language || "it")
 
@@ -181,7 +213,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       firstAirDate = details.first_air_date || null
       const tmdbNetworks = mediaType === "tv" ? (details.networks || []).map((n: TMDBCompany) => n.name) : (details.production_companies || []).map((c: TMDBCompany) => c.name)
       tmdbStudios = matchTMDBStudios(tmdbNetworks)
-      nextEpisodeAir = details.next_episode_to_air?.air_date || null
       tvType = details.type || null
       tvStatus = details.status || null
       const clean = images.posters.find((p: TMDBImage) => p.iso_639_1 === null)
@@ -221,123 +252,97 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     return new Response("Poster not found", { status: 404 })
   }
 
-  const STD_W = 1000
-  const STD_H = 1500
-
   try {
+    // 6. Parallel: fetch all images + JW rank + MDBList (network I/O)
     const [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult] = await Promise.all([
       fetchImg(imgSrc(posterPath)).catch(() => null),
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
       backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
-      (() => {
-        return Promise.resolve(earlyRank)
-      })(),
-      (() => {
-        if (mediaType !== "tv") return Promise.resolve(null)
-        try {
-          const cached = cacheGet<any[]>("mdblist:anime:top10")
-          if (cached && Array.isArray(cached)) {
-            const idx = cached.findIndex((a: EnrichedAnimeItem) => a.id === tmdbId)
-            return Promise.resolve(idx >= 0 ? idx + 1 : null)
-          }
-          return fetchMDBList("mdblistAnime")
-            .then((entries) => {
-              if (!Array.isArray(entries)) return null
-              cacheSet("mdblist:anime:top10", entries, ["mdblist"])
-              const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
-              return idx >= 0 ? idx + 1 : null
-            })
-            .catch(() => null)
-        } catch { return Promise.resolve(null) }
-      })(),
+      getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
+        .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
+        .catch(() => null),
+      (mediaType === "tv")
+        ? (() => {
+            try {
+              const cached = cacheGet<any[]>("mdblist:anime:top10")
+              if (cached && Array.isArray(cached)) {
+                const idx = cached.findIndex((a: EnrichedAnimeItem) => a.id === tmdbId)
+                return Promise.resolve(idx >= 0 ? idx + 1 : null)
+              }
+              return fetchMDBList("mdblistAnime")
+                .then((entries) => {
+                  if (!Array.isArray(entries)) return null
+                  cacheSet("mdblist:anime:top10", entries, ["mdblist"])
+                  const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
+                  return idx >= 0 ? idx + 1 : null
+                })
+                .catch(() => null)
+            } catch { return Promise.resolve(null) }
+          })()
+        : Promise.resolve(null),
     ])
+
     const wikidataPromise = fetchAllWikidata(tmdbId, mediaType, t).catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }))
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
+
     if (!originalBuf) {
       return new Response("Poster image not available", { status: 404 })
     }
-    const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
+
+    // 7. Resize poster + backdrop (parallel)
+    const [posterBuf, backdropBuf] = await Promise.all([
+      sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer(),
+      backdropFetch
+        ? (async () => {
+            const bMeta = await sharp(backdropFetch).metadata()
+            const bw = bMeta.width || 1920
+            const bh = bMeta.height || 1080
+            const bScale = backdropScale / 100
+            const bResizedW = Math.round(STD_W * bScale)
+            const bResizedH = Math.round(bh * (bResizedW / bw))
+            const bX = Math.round((STD_W - bResizedW) / 2 + backdropOffsetX)
+            const bY = Math.round((STD_H - bResizedH) / 2 + backdropOffsetY)
+            const backdropResized = await sharp(backdropFetch).resize(bResizedW, bResizedH, { fit: 'fill' }).toBuffer()
+            return { buf: backdropResized, top: bY, left: bX }
+          })()
+        : Promise.resolve(null),
+    ])
+
     const composites: { input: Buffer; top: number; left: number }[] = []
 
-    // Composite backdrop behind the poster
-    if (backdropFetch) {
-      const bMeta = await sharp(backdropFetch).metadata()
-      const bw = bMeta.width || 1920
-      const bh = bMeta.height || 1080
-      const bScale = backdropScale / 100
-      const bResizedW = Math.round(STD_W * bScale)
-      const bResizedH = Math.round(bh * (bResizedW / bw))
-      const bX = Math.round((STD_W - bResizedW) / 2 + backdropOffsetX)
-      const bY = Math.round((STD_H - bResizedH) / 2 + backdropOffsetY)
-      const backdropBuf = await sharp(backdropFetch).resize(bResizedW, bResizedH, { fit: 'fill' }).toBuffer()
-      composites.push({ input: backdropBuf, top: bY, left: bX })
+    if (backdropBuf) {
+      composites.push({ input: backdropBuf.buf, top: backdropBuf.top, left: backdropBuf.left })
     }
 
-    // Use cached data from mapping to avoid extra API call
-    if (mapping?.tvType) tvType = mapping.tvType
-    if (mapping?.tvStatus) tvStatus = mapping.tvStatus
-    if (mapping?.releaseDate) releaseDate = mapping.releaseDate
-    if (mapping?.firstAirDate) firstAirDate = mapping.firstAirDate
-    // Fetch missing details when using mapping or query params
-    const qApiKey = req.nextUrl.searchParams.get("api_key") || undefined
-    if ((mediaType === "tv" && (!tvType || !firstAirDate)) || (mediaType === "movie" && !releaseDate)) {
-      try {
-        const preferredLang = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
-        const details = await getDetails(mediaType, tmdbId, preferredLang, qApiKey)
-        if (!releaseDate) releaseDate = details.release_date || null
-        if (!firstAirDate) firstAirDate = details.first_air_date || null
-        if (!tvType) tvType = details.type || null
-        if (!tvStatus) tvStatus = details.status || null
-    } catch (e) { console.error("[poster] Details fetch failed:", e) }
-    }
-    const pw = STD_W
-    const ph = STD_H
+    // 7b. Luminance + missing details (parallel, both need posterBuf)
+    const [topLum] = await Promise.all([
+      topLuminance(posterBuf),
+      (async () => {
+        if (mapping?.tvType) tvType = mapping.tvType
+        if (mapping?.tvStatus) tvStatus = mapping.tvStatus
+        if (mapping?.releaseDate) releaseDate = mapping.releaseDate
+        if (mapping?.firstAirDate) firstAirDate = mapping.firstAirDate
+        if ((mediaType === "tv" && (!tvType || !firstAirDate)) || (mediaType === "movie" && !releaseDate)) {
+          try {
+            const qApiKey = req.nextUrl.searchParams.get("api_key") || undefined
+            const preferredLang = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
+            const details = await getDetails(mediaType, tmdbId, preferredLang, qApiKey)
+            if (!releaseDate) releaseDate = details.release_date || null
+            if (!firstAirDate) firstAirDate = details.first_air_date || null
+            if (!tvType) tvType = details.type || null
+            if (!tvStatus) tvStatus = details.status || null
+          } catch (e) { console.error("[poster] Details fetch failed:", e) }
+        }
+      })(),
+    ])
 
-    function simpleLum(hex: string): number {
-      const r = parseInt(hex.slice(1, 3), 16) / 255
-      const g = parseInt(hex.slice(3, 5), 16) / 255
-      const b = parseInt(hex.slice(5, 7), 16) / 255
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b
-    }
+    const qTopLight = req.nextUrl.searchParams.get("tl")
+    const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.60
 
-    async function topLuminance(buf: Buffer): Promise<number> {
-      const meta = await sharp(buf).metadata()
-      const w = meta.width || STD_W
-      const h = meta.height || STD_H
-      const stripH = Math.max(Math.round(h * 0.08), 3)
-      const extracted = await sharp(buf)
-        .extract({ left: 0, top: 0, width: w, height: stripH })
-        .raw().toBuffer()
-      let r = 0, g = 0, b = 0, n = 0
-      for (let i = 0; i < extracted.length; i += 4) { r += extracted[i]; g += extracted[i + 1]; b += extracted[i + 2]; n++ }
-      r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n)
-      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-    }
-
-    async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fallbackGenre?: string | null): Promise<string> {
-      async function extractFrom(buf: Buffer, genre: string): Promise<string> {
-        const meta = await sharp(buf).metadata()
-        const w = meta.width || 500
-        const h = meta.height || 750
-        const pixels = await sharp(buf).ensureAlpha().raw().toBuffer()
-        const result = findAccentColor(pixels, w, h, genre)
-        return `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
-      }
-      const [pColor, lColor] = await Promise.all([
-        extractFrom(posterBuf, fallbackGenre || ''),
-        logoBuf ? extractFrom(logoBuf, '') : Promise.resolve(''),
-      ])
-      if (pColor && lColor) {
-        const pr = parseInt(pColor.slice(1,3),16), pg = parseInt(pColor.slice(3,5),16), pb = parseInt(pColor.slice(5,7),16)
-        const lr = parseInt(lColor.slice(1,3),16), lg = parseInt(lColor.slice(3,5),16), lb = parseInt(lColor.slice(5,7),16)
-        return `#${Math.round((pr+lr)/2).toString(16).padStart(2,'0')}${Math.round((pg+lg)/2).toString(16).padStart(2,'0')}${Math.round((pb+lb)/2).toString(16).padStart(2,'0')}`
-      }
-      return pColor || lColor || (fallbackGenre ? (GENRE_FALLBACK[fallbackGenre] || '#555555') : '#555555')
-    }
-
+    // 8. Blur + badge color extraction + logo resize (parallel)
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
     const qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined) || sd.rankingBadgeStyle || "default"
@@ -350,122 +355,97 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const badgesEnabled = hasQuery ? (qBadges !== null ? qBadges !== "0" : showBadges) : true
     const rankingEnabled = hasQuery ? (qRanking !== null ? qRanking !== "0" : rankingBadges) : true
     const blurEnabled = qBlurEnabled !== "0"
-    const s = ph / 1500
     const blurHeight = qGradHeight ? Math.max(Number(qGradHeight), 5) : 30
     const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 5
     const blurFade = qBlurFade ? Math.max(Number(qBlurFade), 0) : 60
     const blurDarkness = qBlurDarkness ? Math.max(Number(qBlurDarkness), 0) : 40
-    const topLum = await topLuminance(posterBuf)
-    const qTopLight = req.nextUrl.searchParams.get("tl")
-    const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.60
-    if (blurEnabled) {
-    const gh = Math.max(Math.round(ph * blurHeight / 100), 100)
-    const gradTop = ph - gh
-    const fadedPct = Math.min(blurFade, 100)
-    const darkAlpha = Math.min(blurDarkness / 100, 1)
-    const blurredSection = await sharp(posterBuf)
-      .extract({ left: 0, top: gradTop, width: pw, height: gh })
-      .blur(blurIntensity)
-      .ensureAlpha()
-      .png()
-      .toBuffer()
-    const overlaySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}">
-      <rect width="${pw}" height="${gh}" fill="rgba(0,0,0,${darkAlpha})"/>
-    </svg>`
-    const overlayBuf = await sharp(Buffer.from(overlaySvg)).png().toBuffer()
-    const darkenedBlur = await sharp(blurredSection)
-      .composite([{ input: overlayBuf, blend: 'over' }])
-      .png()
-      .toBuffer()
-    const maskSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${gh}">
-      <defs>
-        <linearGradient id="m" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="white" stop-opacity="0"/>
-          <stop offset="${fadedPct}%" stop-color="white" stop-opacity="1"/>
-          <stop offset="100%" stop-color="white" stop-opacity="1"/>
-        </linearGradient>
-      </defs>
-      <rect width="${pw}" height="${gh}" fill="url(#m)"/>
-    </svg>`
-    const maskBuf = await sharp(Buffer.from(maskSvg)).png().toBuffer()
-    const fadedBlur = await sharp(darkenedBlur)
-      .composite([{ input: maskBuf, blend: 'dest-in' }])
-      .png()
-      .toBuffer()
-    composites.push({ input: fadedBlur, top: gradTop, left: 0 })
-    }
+    const s = STD_H / 1500
 
-    let genreColor: string | undefined
-    if (badgesEnabled && genreName && voteAverage && voteAverage > 0) {
-      try {
-        const qBs = req.nextUrl.searchParams.get("bs")
-        const qAc = req.nextUrl.searchParams.get("ac")
-        const badgeStyle = qBs || (mapping?.badgeStyle && mapping.badgeStyle !== "shadow" ? mapping.badgeStyle : undefined) || sd.badgeStyle || "shadow"
-        genreColor = qAc || mapping?.accentColor || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName] || "#555555"
-        const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
-        const accentColor = genreColor || "#555555"
-        const targetCenter = Math.round(30 * ph / 570)
-        if (badgeStyle === "bar" || badgeStyle === "glass") {
-          const { png, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor, topLight)
-          composites.push({ input: png, top: ph - h, left: 0 })
-        } else {
-          const { png, w, h } = await renderGenreBadge(genreName, voteAverage, pw, year, badgeStyle, accentColor, topLight)
-          const badgeY = ph - h - Math.max(0, Math.round(targetCenter - h / 2))
-          const badgeLeft = Math.round((pw - w) / 2)
-          composites.push({ input: png, top: badgeY, left: badgeLeft })
-        }
-      } catch (e) {
-        console.error("[poster] Genre badge rendering failed:", e)
-      }
-    }
+    const [blurComposite, genreColor, logoResult] = await Promise.all([
+      // Blur: single sharp pipeline instead of 4 separate ops
+      (async () => {
+        if (!blurEnabled) return null
+        const gh = Math.max(Math.round(STD_H * blurHeight / 100), 100)
+        const gradTop = STD_H - gh
+        const fadedPct = Math.min(blurFade, 100)
+        const darkAlpha = Math.min(blurDarkness / 100, 1)
+        const overlaySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${STD_W}" height="${gh}"><rect width="${STD_W}" height="${gh}" fill="rgba(0,0,0,${darkAlpha})"/></svg>`
+        const maskSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${STD_W}" height="${gh}">
+          <defs><linearGradient id="m" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="white" stop-opacity="0"/>
+            <stop offset="${fadedPct}%" stop-color="white" stop-opacity="1"/>
+            <stop offset="100%" stop-color="white" stop-opacity="1"/>
+          </linearGradient></defs>
+          <rect width="${STD_W}" height="${gh}" fill="url(#m)"/>
+        </svg>`
+        const [overlayBuf, maskBuf] = await Promise.all([
+          sharp(Buffer.from(overlaySvg)).png().toBuffer(),
+          sharp(Buffer.from(maskSvg)).png().toBuffer(),
+        ])
+        const fadedBlur = await sharp(posterBuf)
+          .extract({ left: 0, top: gradTop, width: STD_W, height: gh })
+          .blur(blurIntensity)
+          .ensureAlpha()
+          .composite([
+            { input: overlayBuf, blend: 'over' },
+            { input: maskBuf, blend: 'dest-in' },
+          ])
+          .png()
+          .toBuffer()
+        return { input: fadedBlur, top: gradTop, left: 0 } as const
+      })(),
+      // Badge color extraction
+      (badgesEnabled && genreName && voteAverage && voteAverage > 0)
+        ? (async () => {
+            const qAc = req.nextUrl.searchParams.get("ac")
+            return qAc || mapping?.accentColor || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName!] || "#555555"
+          })()
+        : Promise.resolve(undefined),
+      // Logo resize
+      logoFetch
+        ? (async () => {
+            const logoMeta = await sharp(logoFetch).metadata()
+            const lw = logoMeta.width || 200
+            const lh = logoMeta.height || 100
+            const qScale = req.nextUrl.searchParams.get("scale")
+            const qOx = req.nextUrl.searchParams.get("ox")
+            const qOy = req.nextUrl.searchParams.get("oy")
+            const userScale = qScale ? (Number(qScale) || 75) : (mapping?.logoScale ?? 75)
+            const userOx = qOx ? (Number(qOx) || 0) : (mapping?.logoOffsetX ?? 0)
+            const userOy = qOy ? (Number(qOy) || 0) : (mapping?.logoOffsetY ?? 0)
+            const scalePct = userScale / 100
+            const maxLogoH = Math.round(STD_H * 0.25)
+            let logoW = Math.round(STD_W * scalePct)
+            let logoH = Math.round(lh * (logoW / lw))
+            if (logoH > maxLogoH) { const ratio = maxLogoH / logoH; logoW = Math.round(logoW * ratio); logoH = maxLogoH }
+            const finalLogoW = Math.min(logoW, STD_W)
+            const logoResized = await sharp(logoFetch).resize(finalLogoW, logoH, { fit: "inside" }).png().toBuffer()
+            const resizedMeta = await sharp(logoResized).metadata()
+            const actualLogoW = resizedMeta.width || finalLogoW
+            const actualLogoH = resizedMeta.height || logoH
+            const logoX = Math.round((STD_W - actualLogoW) / 2 + userOx)
+            const logoBadgeOffset = (badgesEnabled && genreName && voteAverage && voteAverage > 0) ? 0 : Math.round(40 * s)
+            const logoTop = Math.max(0, Math.round(STD_H - actualLogoH - STD_H * 0.1 + userOy + logoBadgeOffset))
+            return { input: logoResized, top: logoTop, left: logoX } as const
+          })()
+        : Promise.resolve(null),
+    ])
 
-    if (logoFetch) {
-      const logoBuf = logoFetch
-      const logoMeta = await sharp(logoBuf).metadata()
-      const lw = logoMeta.width || 200
-      const lh = logoMeta.height || 100
-      const qScale = req.nextUrl.searchParams.get("scale")
-      const qOx = req.nextUrl.searchParams.get("ox")
-      const qOy = req.nextUrl.searchParams.get("oy")
-      const userScale = qScale ? (Number(qScale) || 75) : (mapping?.logoScale ?? 75)
-      const userOx = qOx ? (Number(qOx) || 0) : (mapping?.logoOffsetX ?? 0)
-      const userOy = qOy ? (Number(qOy) || 0) : (mapping?.logoOffsetY ?? 0)
-      const scalePct = userScale / 100
-      const maxLogoH = Math.round(ph * 0.25)
-      let logoW = Math.round(pw * scalePct)
-      let logoH = Math.round(lh * (logoW / lw))
-      if (logoH > maxLogoH) {
-        const ratio = maxLogoH / logoH
-        logoW = Math.round(logoW * ratio)
-        logoH = maxLogoH
-      }
-      const finalLogoW = Math.min(logoW, pw)
-      const logoResized = await sharp(logoBuf).resize(finalLogoW, logoH, { fit: "inside" }).png().toBuffer()
-      const resizedMeta = await sharp(logoResized).metadata()
-      const actualLogoW = resizedMeta.width || finalLogoW
-      const actualLogoH = resizedMeta.height || logoH
-      const logoX = Math.round((pw - actualLogoW) / 2 + userOx)
-      const logoBadgeOffset = (badgesEnabled && genreName && voteAverage && voteAverage > 0) ? 0 : Math.round(40 * s)
-      const logoTop = Math.max(0, Math.round(ph - actualLogoH - ph * 0.1 + userOy + logoBadgeOffset))
+    if (blurComposite) composites.push(blurComposite)
+    if (logoResult) composites.push(logoResult)
 
-      composites.push({ input: logoResized, top: logoTop, left: logoX })
-    }
+    // 9. Render both badges in parallel (both depend on genreColor, not on each other)
+    const accentForBadge = genreColor || "#555555"
+    const qBs = req.nextUrl.searchParams.get("bs")
+    const badgeStyle = qBs || (mapping?.badgeStyle && mapping.badgeStyle !== "shadow" ? mapping.badgeStyle : undefined) || sd.badgeStyle || "shadow"
+    const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
+    const targetCenter = Math.round(30 * STD_H / 570)
 
-    // Badge priority (matches client EditView.tsx):
-    // 1. Nuovo film / Nuova serie
-    // 2. Anime rank (MDBList)
-    // 3. Trend rank (JustWatch)
-    // 4. Award (Vincitore)
-    // 5. Franchise
-    // 6. Nomination (Candidato)
-    // 7. Studio (TMDB)
-    // 8. Director (Wikidata)
-    // 9. Miniserie / Ritorna / Da divorare / Il più votato
     const now = Date.now()
-    const twoWeeks = 14 * 24 * 60 * 60 * 1000
-    const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < twoWeeks : false
-    const isNewSeries = mediaType === "tv" && firstAirDate ? (now - new Date(firstAirDate).getTime()) < twoWeeks : false
-    // Try to get Wikidata data, but don't block poster generation for more than 3s
+    const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000
+    const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < TWO_WEEKS_MS : false
+    const isNewSeries = mediaType === "tv" && firstAirDate ? (now - new Date(firstAirDate).getTime()) < TWO_WEEKS_MS : false
+
     const wikidataResult = await Promise.race([
       wikidataPromise,
       new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>((resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), 3000))
@@ -479,7 +459,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const topBadge = (() => {
       if (!rankingEnabled) return null
       if (queryExtra) return { type: "extra" as const, label: queryExtra }
-
       const badge = computeBadge({
         isNewMovie, isNewSeries,
         animeRank: animeRankResult,
@@ -498,23 +477,45 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return null
     })()
 
-    if (topBadge) {
-      try {
-        const accentForBadge = genreColor || "#555555"
-        if (topBadge.type === "extra") {
-          const { png: extraPng, w, h } = await renderExtraBadge(topBadge.label, pw, topLight, qRankingBadgeStyle, accentForBadge)
-          const extraLeft = qRankingBadgeStyle === "bar" || qRankingBadgeStyle === "glass" ? 0 : Math.round((pw - w) / 2)
-          composites.push({ input: extraPng, top: 0, left: extraLeft })
-        } else {
-          const { png: rankPng, w, h } = await renderRankingBadge(topBadge.rank, pw, topBadge.label, topLight, qRankingBadgeStyle, accentForBadge)
-          const rankLeft = qRankingBadgeStyle === "bar" || qRankingBadgeStyle === "glass" ? 0 : Math.round((pw - w) / 2)
-          composites.push({ input: rankPng, top: 0, left: rankLeft })
-        }
-      } catch (e) {
-        console.error("[poster] Ranking badge rendering failed:", e)
+    // Parallel render: genre badge + ranking badge
+    const [genreBadgeResult, rankBadgeResult] = await Promise.all([
+      (badgesEnabled && genreName && voteAverage && voteAverage > 0)
+        ? renderGenreBadge(genreName, voteAverage, STD_W, year, badgeStyle, accentForBadge, topLight).catch((e) => {
+            console.error("[poster] Genre badge rendering failed:", e)
+            return null
+          })
+        : Promise.resolve(null),
+      topBadge
+        ? ((() => {
+            if (topBadge.type === "extra") {
+              return renderExtraBadge(topBadge.label, STD_W, topLight, qRankingBadgeStyle, accentForBadge)
+                .then(r => ({ ...r, isRank: false }))
+                .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
+            }
+            return renderRankingBadge(topBadge.rank, STD_W, topBadge.label, topLight, qRankingBadgeStyle, accentForBadge)
+              .then(r => ({ ...r, isRank: true }))
+              .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
+          })())
+        : Promise.resolve(null),
+    ])
+
+    // Push badge results
+    if (genreBadgeResult) {
+      if (badgeStyle === "bar" || badgeStyle === "glass") {
+        composites.push({ input: genreBadgeResult.png, top: STD_H - genreBadgeResult.h, left: 0 })
+      } else {
+        const badgeY = STD_H - genreBadgeResult.h - Math.max(0, Math.round(targetCenter - genreBadgeResult.h / 2))
+        const badgeLeft = Math.round((STD_W - genreBadgeResult.w) / 2)
+        composites.push({ input: genreBadgeResult.png, top: badgeY, left: badgeLeft })
       }
     }
+    if (rankBadgeResult) {
+      const isBarOrGlass = qRankingBadgeStyle === "bar" || qRankingBadgeStyle === "glass"
+      const rankLeft = isBarOrGlass ? 0 : Math.round((STD_W - rankBadgeResult.w) / 2)
+      composites.push({ input: rankBadgeResult.png, top: 0, left: rankLeft })
+    }
 
+    // 10. Final composite: single sharp call for all layers
     const composited = await sharp(posterBuf)
       .composite(composites)
       .jpeg({ quality: 85 })
@@ -523,9 +524,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     cacheSet(cacheKey, composited, ["poster"])
     cacheSet(`${cacheKey}:headers`, { etag }, ["poster"])
     diskCacheSet("poster", cacheKey, composited)
-    return new Response(new Uint8Array(composited), {
-      headers: etagHeaders(etag),
-    })
+    return new Response(new Uint8Array(composited), { headers: etagHeaders(etag) })
   } catch (e) {
     console.error("Poster generation failed:", e)
     return new Response("Poster generation failed", { status: 500 })
