@@ -103,17 +103,41 @@ input[type="range"]::-moz-range-thumb {
   100% { background-position: 200% 0; }
 }
 
+@keyframes fade-scale-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95) translateY(-4px); }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slide-down-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .animate-fade-scale-in { animation: fade-scale-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-fade-scale-out { animation: fade-scale-out 0.15s ease-in both; }
 .animate-fade-in { animation: fade-in 0.15s ease-out both; }
+.animate-fade-out { animation: fade-out 0.12s ease-in both; }
 .animate-slide-up { animation: slide-up 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 .animate-slide-in-right { animation: slide-in-right 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-slide-down-out { animation: slide-down-out 0.15s ease-in both; }
 .animate-pulse-ring { animation: pulse-ring 2s infinite; }
+.animate-stagger-in { animation: stagger-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 
-@keyframes toast-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  to { opacity: 1; transform: translateX(-50%); }
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
-.animate-toast-in { animation: toast-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 
 .btn-primary {
   @apply inline-flex items-center justify-center rounded-xl bg-accent-orange text-white font-semibold text-sm shadow-lg shadow-accent-orange/25 hover:bg-accent-orange/90 active:scale-95 transition-all duration-200 disabled:opacity-40 disabled:shadow-none disabled:active:scale-100;

@@ -127,7 +127,6 @@ export interface PosteriumCtx {
   recentSearches: string[]
   removeRecentSearch: (search: string) => void
   mappings: Mapping[]
-  toastRef: React.RefObject<HTMLDivElement | null>
   settingsRef: React.RefObject<HTMLDivElement | null>
   langRef: React.RefObject<HTMLDivElement | null>
   setLangOpen: React.Dispatch<React.SetStateAction<boolean>>
@@ -189,7 +188,6 @@ export function usePosterium(): PosteriumCtx {
   const [previewId, setPreviewId] = useState<string | null>(null)
   const [urlPattern, setUrlPattern] = useState("")
   const [copied, setCopied] = useState(false)
-  const toastRef = useRef<HTMLDivElement>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
   const [previewPoster, setPreviewPoster] = useState<TMDBImage | null>(null)
   const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }>({ genres: [], voteAverage: 0 })
@@ -399,20 +397,7 @@ export function usePosterium(): PosteriumCtx {
   const lastRefreshRef = useRef(0)
 
   const showToast = (msg: string) => {
-    const el = toastRef.current
-    if (el) {
-      el.textContent = msg
-      el.classList.remove("opacity-0", "animate-toast-in")
-      el.classList.add("opacity-100")
-      void el.offsetWidth
-      el.classList.add("animate-toast-in")
-      if (el.dataset.timer) clearTimeout(Number(el.dataset.timer))
-      const timer = window.setTimeout(() => {
-        el.classList.remove("opacity-100", "animate-toast-in")
-        el.classList.add("opacity-0")
-      }, 2500)
-      el.dataset.timer = String(timer)
-    }
+    import("sonner").then(({ toast }) => toast(msg))
   }
 
   const refreshLists = useCallback(async () => {
@@ -1154,7 +1139,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     trending, streamingCharts, mdblistAnimeList,
     STREAMING_PLATFORMS, loadMappings,
     query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
-    toastRef, settingsRef, langRef,
+    settingsRef, langRef,
     setLangOpen, langOpen, pickLang,
     settingsOpen, setSettingsOpen,
     showLangPicker, setShowLangPicker,

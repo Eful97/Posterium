@@ -49,7 +49,7 @@ export function PosterOptions({ posters, posterActivePath, selected, lang, openS
                 <span className="text-[11px] text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3" />{p.t("ui.autoRotate")}</span>
                 <button
                   onClick={() => p.setAutoRotateClean(!p.autoRotateClean)}
-                  className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.autoRotateClean ? "bg-accent-orange/20 text-accent-orange" : "bg-white/5 text-zinc-400"}`}
+                  className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.autoRotateClean ? "bg-accent-orange/20 text-accent-orange animate-pulse-ring" : "bg-white/5 text-zinc-400"}`}
                 >
                   {p.autoRotateClean ? <><Check className="w-3 h-3 inline mr-1" />ON</> : "OFF"}
                 </button>

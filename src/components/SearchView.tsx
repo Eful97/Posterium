@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useP } from "@/lib/context"
 import { posterUrl, titleOf, yearOf } from "@/lib/utils"
 import { SearchBar } from "@/components/SearchBar"
+import { PosterCardSkeleton } from "@/components/Skeleton"
 import { Clock, X, Check, ChevronDown } from "lucide-react"
 
 export function SearchView() {
@@ -44,14 +45,22 @@ export function SearchView() {
         )}
       </div>
 
+      {searching && results.length === 0 && (
+        <div className="mx-auto grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] lg:grid-cols-5 gap-3 sm:gap-4 max-w-7xl justify-items-center">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <PosterCardSkeleton key={i} />
+          ))}
+        </div>
+      )}
+
       {results.length > 0 && (
         <div className="relative animate-fade-scale-in">
           {searching && <div className="absolute inset-0 bg-background/60 backdrop-blur-sm z-20 rounded-2xl flex items-center justify-center"><p className="text-sm text-zinc-400 animate-pulse">{t("ui.searching")}</p></div>}
           <div className="mx-auto grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] lg:grid-cols-5 gap-3 sm:gap-4 max-w-7xl justify-items-center">
-          {results.map((r) => {
+          {results.map((r, idx) => {
             const mapping = mappingsMap.get(`${r.media_type}:${r.id}`)
             return (
-              <button key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="group relative bg-surface rounded-xl overflow-hidden border border-zinc-800 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/10 transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none">
+              <button key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="group relative bg-surface rounded-xl overflow-hidden border border-zinc-800 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/10 transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in" style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden flex items-center justify-center">
                   {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300" /> : <span className="text-3xl font-bold text-zinc-500">{titleOf(r).charAt(0)}</span>}
                 </div>

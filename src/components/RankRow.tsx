@@ -28,14 +28,15 @@ function rankBadge(rank: number) {
   )
 }
 
-function RankCard({ item, onClick, isFirst }: { item: RankItem; onClick: () => void; isFirst?: boolean }) {
+function RankCard({ item, onClick, isFirst, staggerIndex }: { item: RankItem; onClick: () => void; isFirst?: boolean; staggerIndex?: number }) {
   const imgSrc = item.poster_path || item.posterPath
   const label = item.title || item.name || ""
   return (
     <button
       onClick={onClick}
       aria-label={label}
-      className="group rank-btn relative text-left flex-shrink-0 scroll-snap-start"
+      className="group rank-btn relative text-left flex-shrink-0 scroll-snap-start animate-stagger-in"
+      style={staggerIndex !== undefined ? { animationDelay: `${staggerIndex * 60}ms` } : undefined}
     >
       <div className="flex items-end">
         <div
@@ -121,6 +122,7 @@ export function RankRow({
               item={item}
               onClick={() => onItemClick(item)}
               isFirst={idx === 0}
+              staggerIndex={idx}
             />
           ))}
         </div>

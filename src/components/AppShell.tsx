@@ -110,7 +110,6 @@ export function AppShell() {
           </div>
         )}
       </div>
-      <div ref={p.toastRef} className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-accent-orange text-white px-4 py-2 rounded-lg text-sm font-medium z-[60] shadow-lg shadow-accent-orange/30 transition-all duration-300 opacity-0 scale-95 pointer-events-none"></div>
 
       {p.settingsOpen && (
         <div className="fixed inset-0 z-[70] bg-background md:hidden animate-fade-scale-in overflow-y-auto">
