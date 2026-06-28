@@ -10,7 +10,7 @@ import { diskCacheGetAsync, diskCacheSetAsync, hashKey } from "@/lib/disk-cache"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { GENRE_FALLBACK } from "@/lib/badges"
 import { findAccentColor } from "@/lib/accent-color"
-import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/satori-badge"
+import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/svg-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { createT } from "@/lib/i18n"
@@ -18,7 +18,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 
-const RENDER_VERSION = 64
+const RENDER_VERSION = 65
 const IMG_BASE = "https://image.tmdb.org/t/p"
 const MAX_IMG_SIZE = 10 * 1024 * 1024
 const STD_W = 1000
@@ -502,7 +502,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     // Push badge results
     if (genreBadgeResult) {
-      if (badgeStyle === "bar" || badgeStyle === "glass") {
+      if (badgeStyle === "bar") {
         composites.push({ input: genreBadgeResult.png, top: STD_H - genreBadgeResult.h, left: 0 })
       } else {
         const badgeY = STD_H - genreBadgeResult.h - Math.max(0, Math.round(targetCenter - genreBadgeResult.h / 2))
@@ -511,8 +511,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       }
     }
     if (rankBadgeResult) {
-      const isBarOrGlass = qRankingBadgeStyle === "bar" || qRankingBadgeStyle === "glass"
-      const rankLeft = isBarOrGlass ? 0 : Math.round((STD_W - rankBadgeResult.w) / 2)
+      const isBar = qRankingBadgeStyle === "bar"
+      const rankLeft = isBar ? 0 : Math.round((STD_W - rankBadgeResult.w) / 2)
       composites.push({ input: rankBadgeResult.png, top: 0, left: rankLeft })
     }
 

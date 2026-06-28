@@ -335,8 +335,8 @@ export default function EditView() {
           <div className="mt-2 pt-2 border-t border-zinc-800/60">
             <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleRankingExtra")}</label>
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
-                {(["default","bar","glass","colored"] as const).map(s => (
-                  <button key={s} onClick={() => p.setRankingBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.rankingBadgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "default" ? <><Circle className="w-3 h-3" /> {p.t("ui.bsDefault")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : s === "glass" ? <><Minus className="w-3 h-3" /> {p.t("ui.glass")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</button>
+                {(["default","bar","colored"] as const).map(s => (
+                  <button key={s} onClick={() => p.setRankingBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.rankingBadgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "default" ? <><Circle className="w-3 h-3" /> {p.t("ui.bsDefault")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</button>
                 ))}
             </div>
           </div>
@@ -391,8 +391,8 @@ export default function EditView() {
         <div className="mt-3 pt-3 border-t border-zinc-800/60">
           <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleGenreBadge")}</label>
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
-            {(["shadow","pill","outline","bar","colored","glass"] as const).map(s => (
-              <button key={s} title={s === "shadow" ? p.t("ui.shadow") : s === "pill" ? p.t("ui.pill") : s === "outline" ? p.t("ui.outline") : s === "bar" ? p.t("ui.bar") : s === "colored" ? p.t("ui.colored") : p.t("ui.glass")} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> {p.t("ui.shadow")}</> : s === "pill" ? <><Pill className="w-3 h-3" /> {p.t("ui.pill")}</> : s === "outline" ? <><Square className="w-3 h-3" /> {p.t("ui.outline")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : s === "colored" ? <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</> : <><Minus className="w-3 h-3" /> {p.t("ui.glass")}</>}</button>
+            {(["shadow","pill","bar","colored"] as const).map(s => (
+              <button key={s} title={s === "shadow" ? p.t("ui.shadow") : s === "pill" ? p.t("ui.pill") : s === "bar" ? p.t("ui.bar") : p.t("ui.colored")} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> {p.t("ui.shadow")}</> : s === "pill" ? <><Pill className="w-3 h-3" /> {p.t("ui.pill")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</button>
             ))}
           </div>
         </div>

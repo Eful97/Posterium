@@ -22,8 +22,8 @@ pinned: false
 - 🌐 **Internazionalizzazione** — 5 lingue (Italiano, English, Français, Deutsch, Español) per badge e UI completa
 - 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y
 - 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi con ombra proporzionale e text-shadow sincronizzato
-- 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, 6 stili (shadow/pill/outline/bar/colored/glass), con overflow protection, anno, accent color e text color adattivo
-- 🏆 **Badge ranking/extra** — Classifica JustWatch, tendenze MDBList, badge personalizzati, 4 stili (default/bar/glass/colored)
+- 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, 4 stili (shadow/pill/bar/colored), con overflow protection, anno, accent color e text color adattivo
+- 🏆 **Badge ranking/extra** — Classifica JustWatch, tendenze MDBList, badge personalizzati, 3 stili (default/bar/colored)
 - ✏️ **Badge personalizzato** — Sostituisci il badge automatico con testo libero, per ogni titolo individualmente
 - 🎨 **Blur fondo** — Intensità, fade, oscurità regolabili, sincronizzato client ↔ server (sostituisce il gradiente)
 - 📊 **Rating** — Media da 9 fonti: IMDb, TMDb, Metacritic, Rotten Tomatoes (critica + pubblico), Letterboxd, Trakt, MyAnimeList, Kitsu via MDBList

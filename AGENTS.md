@@ -9,31 +9,33 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
-App version: `0.11.13` — RENDER_VERSION: `64` — rv: `56`
+App version: `0.11.14` — RENDER_VERSION: `65` — rv: `56`
 
 ## Badge Genere/Rating (GenreRatingBadges)
 
-| Parametro | Client (`PreviewBadges.tsx`) | Server (`satori-badge.ts:renderGenreBadge`) |
+| Parametro | Client (`PreviewBadges.tsx`) | Server (`svg-badge.ts:renderGenreBadge`) |
 |---|---|---|
 | Font size | `fs = round(finalFs)` da `24 * containerW / 380` | `finalFontSize = round(24 * pw / 380)` |
-| Gap genere→bullet | `round(fs / 3)` ≈ `fs * 0.33` | `round(finalFontSize * 0.33)` |
-| Gap stella→voto | `round(fs / 6)` ≈ `fs * 0.17` | `round(finalFontSize * 0.17)` |
-| Padding orizzontale | (flex naturale) | `pad = round(finalFontSize * 0.35)` × 2 |
+| Gap genere→bullet | `round(fs / 3)` | `round(fs / 3)` |
+| Gap stella→voto | `round(fs / 6)` | `round(fs / 6)` |
+| Padding orizzontale | (flex naturale) | `pad = round(finalFontSize * 0.35)` (solo pill) |
 | Larghezza bullet | (naturale) | `bulletW = round(finalFontSize * 0.35)` |
 | Larghezza stella | (naturale) | `starW = round(finalFontSize * 0.92)` |
 | Altezza badge | (flex naturale) | `svgH = max(round(finalFontSize * 1.6), 24)` |
 | Colori testo | `text-gray-200` (≈ `#e5e7eb`) | `#e5e7eb` |
 | Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` | `"0 4px 6px rgba(0,0,0,0.5)"` |
-| Overflow protection | `fs` ridotto se `totalW > containerW - 20`, calcolato con `genreClientDims()` | Stessa logica: `totalW > pw - 20`, usa `genreBadgeDims()` riproporziona `fs` |
+| Overflow protection | `fs` ridotto se `totalW > containerW - 20`, calcolato con `genreClientDims()` | Stessa logica: `totalW > pw - 20`, usa `genreBadgeDims()`. `totalW = textContentW + buf` (no pad*2) |
+| Text offset server | (nessuno) | `textOffsetX = -50` (bar, pill, shadow) — compensa shift Resvg |
+| CHAR_WIDTH | (CSS flex naturale) | `0.62` in `badge-svg-shared.ts` |
 | Allineamento verticale | Flex baseline naturale | Bullet `translateY(5px)`, Stella `translateY(fs * 0.23)`, Voto `translateY(5px)`, Anno `translateY(5px)` |
-| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg `tlBg` (black/white 80% in base a `topLight`) con testo `tlFg`; `outline` — textShadow outline; `bar` — bg `tlBg` full-width + testo `tlFg`; `colored` — bg `accentColor` + testo adattivo; `glass` — bar full-width effetto vetro | Stessi stili in SVG con Satori. Per `pill`/`bar` usa `tlBg`/`tlFg` in base a `topLight` (stessa soglia > 0.80). `colored` usa `textColorForBg()`. `glass` usa wrapper dark dietro. |
+| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg `tlBg` (black/white 80% in base a `topLight`) con testo `tlFg`; `bar` — bg `tlBg` full-width + testo `tlFg`; `colored` — bg `accentColor` + testo adattivo | Stessi stili in SVG. Per `pill`/`bar` usa `tlBg`/`tlFg` in base a `topLight` (stessa soglia > 0.80). `colored` usa `textColorForBg()`. |
 | Sfondo pill/bar (`tlBg`) | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
 | Testo pill/bar (`tlFg`) | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
 | Bordo bar | `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}` | `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}` |
 
 ## Badge Ranking/Extra
 
-| Parametro | Client (`PreviewBadges.tsx`) | Server (`satori-badge.ts:renderRankingBadge/renderExtraBadge`) |
+| Parametro | Client (`PreviewBadges.tsx`) | Server (`svg-badge.ts:renderRankingBadge/renderExtraBadge`) |
 |---|---|---|
 | Font size base | `23 * containerW / 380` | `23 * pw / 380` |
 | Padding X | `px = round(fs)` | `px = round(finalFontSize * 1.0)` |
@@ -43,7 +45,7 @@ App version: `0.11.13` — RENDER_VERSION: `64` — rv: `56`
 | Ombra | `shadowOff = round(fs * 0.2)`, `shadowBlur = round(fs * 0.6)`, `boxShadow: "0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)"` | `shadowBlur = round(fs * 0.6)`, `shadowOff = round(fs * 0.2)` (stessa formula scalata) |
 | Sfondo | `topLight ? "bg-black/80" : "bg-white/80"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
 | Testo | `topLight ? "text-white/80" : "text-black/80"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
-| Overflow protection | `fs` ridotto se `fs * (textLen * 0.58 + 2.35) > containerW - 20` (ranking, 2.35 = hash + px*2) o `fs * (labelLen * 0.58 + 2.0) > containerW - 20` (extra) | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
+| Overflow protection | `fs` ridotto se `fs * (textLen * 0.62 + 2.35) > containerW - 20` (ranking, 2.35 = hash + px*2) o `fs * (labelLen * 0.62 + 2.0) > containerW - 20` (extra) | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
 | Posizione | `top-0 left-1/2 -translate-x-1/2` | Composito a `top: 0, left: round((pw - w) / 2)` |
 
 ## Gradiente fondo poster
@@ -73,8 +75,8 @@ App version: `0.11.13` — RENDER_VERSION: `64` — rv: `56`
 | `rank` | `badge.rank` (se rankingBadges attivi) | `qRank` — override del ranking |
 | `label` | `badge.rankLabel \|\| badge.label` | `qLabel` — override label ranking |
 | `extra` | `badge.label` (se extra) o `customBadge` | `queryExtra` — forza badge extra |
-| `bs` | `badgeStyle` | `qBs` — "shadow"/"pill"/"outline"/"bar"/"colored"/"glass" |
-| `rs` | `rankingBadgeStyle` | `qRs` — "default"/"bar"/"glass"/"colored" |
+| `bs` | `badgeStyle` | `qBs` — "shadow"/"pill"/"bar"/"colored" |
+| `rs` | `rankingBadgeStyle` | `qRs` — "default"/"bar"/"colored" |
 | `ac` | `accentColor` (da `extractBadgeColor()`) | `qAc` — override colore accent |
 
 ## Bordo poster
@@ -90,7 +92,7 @@ App version: `0.11.13` — RENDER_VERSION: `64` — rv: `56`
 - `src/components/EditView.tsx` — orchestratore preview client
 - `src/lib/context.tsx` — stato, URL builder, localStorage
 - `src/lib/badges.ts` — server-side SVG (bottomGradientSVG)
-- `src/lib/satori-badge.ts` — server-side Satori+Resvg (renderGenreBadge, renderRankingBadge, renderExtraBadge)
+- `src/lib/svg-badge.ts` — server-side SVG raw badges (renderGenreBadge, renderRankingBadge, renderExtraBadge) + Resvg rendering
 - `src/lib/badge-priority.ts` — logica priorità badge (condivisa)
 - `src/app/api/poster/[type]/[id]/route.ts` — composizione poster finale
 <!-- END:badge-sync -->
