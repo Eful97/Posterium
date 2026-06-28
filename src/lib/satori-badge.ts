@@ -4,6 +4,7 @@ import React from "react"
 import fs from "fs"
 import path from "path"
 import { textColorForBg } from "./accent-color"
+import { buildGenreBadgeSVG, buildRankingBadgeSVG, buildExtraBadgeSVG } from "./svg-badge"
 
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
@@ -74,6 +75,11 @@ export async function renderRankingBadge(
   badgeStyle?: string,
   accentColor?: string,
 ): Promise<{ png: Buffer; w: number; h: number }> {
+  // Phase 1: try raw SVG for non-bar/non-glass styles
+  const svgResult = await buildRankingBadgeSVG(rank, pw, label, topLight, badgeStyle, accentColor)
+  if (svgResult) return svgResult
+
+  // Fallback: Satori for bar/glass styles
   const periodText = label || "Oggi"
   const fullText = `#${rank} ${periodText}`
   const textLen = String(rank).length + periodText.length
@@ -178,6 +184,11 @@ export async function renderExtraBadge(
   badgeStyle?: string,
   accentColor?: string,
 ): Promise<{ png: Buffer; w: number; h: number }> {
+  // Phase 1: try raw SVG for non-bar/non-glass styles
+  const svgResult = await buildExtraBadgeSVG(label, pw, topLight, badgeStyle, accentColor)
+  if (svgResult) return svgResult
+
+  // Fallback: Satori for bar/glass styles
   let finalFontSize = Math.round(23 * pw / 380)
   const maxBadgeW = pw - 20
   if (finalFontSize * (label.length * 0.58 + 3.2) > maxBadgeW) {
@@ -307,6 +318,11 @@ export async function renderGenreBadge(
   accentColor?: string,
   topLight?: boolean,
 ): Promise<{ png: Buffer; w: number; h: number }> {
+  // Phase 1: try raw SVG for simple styles (pill, colored, shadow, outline)
+  const svgResult = await buildGenreBadgeSVG(genreName, voteAverage, pw, year, style, accentColor, topLight)
+  if (svgResult) return svgResult
+
+  // Fallback: Satori for bar/glass styles (Phase 2/3 of migration)
   const voteStr = voteAverage.toFixed(1)
   const yearStr = year || ""
   let finalFontSize = Math.round(24 * pw / 380)
