@@ -108,10 +108,10 @@ export async function buildGenreBadgeSVG(
 
   const textColor = s === "colored"
     ? textColorForBg(accentColor || "")
-    : "#e5e7eb"
+    : (isPillStyle ? "rgba(0,0,0,0.80)" : "#e5e7eb")
   const bgColor = s === "colored"
     ? (accentColor && accentColor !== "#555555" ? accentColor : "rgba(255,255,255,0.80)")
-    : "rgba(0,0,0,0.80)"
+    : (isPillStyle ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)")
 
   const bulletY = 5
   const starY = Math.round(fs * 0.23)
