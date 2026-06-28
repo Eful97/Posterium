@@ -13,6 +13,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV NODE_OPTIONS="--max-old-space-size=1536"
+ENV SHARP_CONCURRENCY=4
+ENV SHARP_CACHE_MEMORY_MB=256
 
 RUN addgroup --system nodejs
 RUN adduser --system --uid 1001 nextjs
