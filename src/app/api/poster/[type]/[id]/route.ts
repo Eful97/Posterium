@@ -5,7 +5,7 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
-import { diskCacheGet, diskCacheSet, hashKey } from "@/lib/disk-cache"
+import { diskCacheGetAsync, diskCacheSetAsync, hashKey } from "@/lib/disk-cache"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { GENRE_FALLBACK } from "@/lib/badges"
 import { findAccentColor } from "@/lib/accent-color"
@@ -117,9 +117,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const cachedRank = mapping?.trendRank ?? null
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}`
 
-  // 3. Disk cache check (no network, no await)
+  // 3. Disk cache check (async, non-blocking)
   const CACHE_TTL_24H = 24 * 60 * 60 * 1000
-  const diskBuf = diskCacheGet("poster", cacheKey, CACHE_TTL_24H)
+  const diskBuf = await diskCacheGetAsync("poster", cacheKey, CACHE_TTL_24H)
   if (diskBuf) {
     cacheSet(cacheKey, diskBuf, ["poster"])
     const diskEtag = `"d${hashKey(cacheKey)}"`
@@ -523,7 +523,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     cacheSet(cacheKey, composited, ["poster"])
     cacheSet(`${cacheKey}:headers`, { etag }, ["poster"])
-    diskCacheSet("poster", cacheKey, composited)
+    diskCacheSetAsync("poster", cacheKey, composited).catch(() => {})
     return new Response(new Uint8Array(composited), { headers: etagHeaders(etag) })
   } catch (e) {
     console.error("Poster generation failed:", e)

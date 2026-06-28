@@ -8,6 +8,9 @@ import { textColorForBg } from "./accent-color"
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
 let _symbols: Buffer | null = null
+let _b64Regular: string | null = null
+let _b64Bold: string | null = null
+let _b64Symbols: string | null = null
 
 const N = (s: string) => path.join(process.cwd(), "node_modules", "@fontsource", s)
 
@@ -26,6 +29,21 @@ function fontSymbols(): Buffer {
   return _symbols
 }
 
+function b64Regular(): string {
+  if (!_b64Regular) _b64Regular = fontRegular().toString("base64")
+  return _b64Regular
+}
+
+function b64Bold(): string {
+  if (!_b64Bold) _b64Bold = fontBold().toString("base64")
+  return _b64Bold
+}
+
+function b64Symbols(): string {
+  if (!_b64Symbols) _b64Symbols = fontSymbols().toString("base64")
+  return _b64Symbols
+}
+
 function fonts() {
   return [
     { name: "Inter", data: fontRegular(), weight: 400 as const, style: "normal" as const },
@@ -34,11 +52,17 @@ function fonts() {
   ]
 }
 
+let _cachedStyle: string | null = null
+function fontStyle(): string {
+  if (!_cachedStyle) {
+    _cachedStyle = `<style>@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64Regular()});font-weight:400;font-style:normal}@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64Bold()});font-weight:700;font-style:normal}@font-face{font-family:'Noto Sans Symbols 2';src:url(data:application/font-woff;base64,${b64Symbols()});font-weight:400;font-style:normal}</style>`
+  }
+  return _cachedStyle
+}
+
 async function render(el: ReturnType<typeof React.createElement>, w: number, h: number): Promise<Buffer> {
   const svg = await satori(el, { width: w, height: h, fonts: fonts() })
-  const b64 = (buf: Buffer) => buf.toString("base64")
-  const style = `<style>@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64(fontRegular())});font-weight:400;font-style:normal}@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64(fontBold())});font-weight:700;font-style:normal}@font-face{font-family:'Noto Sans Symbols 2';src:url(data:application/font-woff;base64,${b64(fontSymbols())});font-weight:400;font-style:normal}</style>`
-  const styledSvg = svg.replace(/<svg([^>]*)>/, `<svg$1>${style}`)
+  const styledSvg = svg.replace(/<svg([^>]*)>/, `<svg$1>${fontStyle()}`)
   return Buffer.from(new Resvg(styledSvg).render().asPng())
 }
 
