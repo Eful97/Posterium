@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import sharp from "sharp"
+import "@/lib/sharp-config"
 import { getImages, getDetails, getExternalIds, type TMDBImage, type TMDBCompany } from "@/lib/tmdb"
 import { getJWRankings } from "@/lib/justwatch"
 import { getById, upsert } from "@/lib/store"
@@ -379,8 +380,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           <rect width="${STD_W}" height="${gh}" fill="url(#m)"/>
         </svg>`
         const [overlayBuf, maskBuf] = await Promise.all([
-          sharp(Buffer.from(overlaySvg)).png().toBuffer(),
-          sharp(Buffer.from(maskSvg)).png().toBuffer(),
+          sharp(Buffer.from(overlaySvg)).png({ compressionLevel: 1 }).toBuffer(),
+          sharp(Buffer.from(maskSvg)).png({ compressionLevel: 1 }).toBuffer(),
         ])
         const fadedBlur = await sharp(posterBuf)
           .extract({ left: 0, top: gradTop, width: STD_W, height: gh })
@@ -390,7 +391,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             { input: overlayBuf, blend: 'over' },
             { input: maskBuf, blend: 'dest-in' },
           ])
-          .png()
+          .png({ compressionLevel: 1 })
           .toBuffer()
         return { input: fadedBlur, top: gradTop, left: 0 } as const
       })(),
@@ -419,7 +420,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             let logoH = Math.round(lh * (logoW / lw))
             if (logoH > maxLogoH) { const ratio = maxLogoH / logoH; logoW = Math.round(logoW * ratio); logoH = maxLogoH }
             const finalLogoW = Math.min(logoW, STD_W)
-            const logoResized = await sharp(logoFetch).resize(finalLogoW, logoH, { fit: "inside" }).png().toBuffer()
+            const logoResized = await sharp(logoFetch).resize(finalLogoW, logoH, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
             const resizedMeta = await sharp(logoResized).metadata()
             const actualLogoW = resizedMeta.width || finalLogoW
             const actualLogoH = resizedMeta.height || logoH
