@@ -81,7 +81,7 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
     if (genre) params.push(`genreName=${encodeURIComponent(genre)}`)
     if (ps.metaInfo.voteAverage > 0) params.push(`voteAverage=${ps.metaInfo.voteAverage}`)
   }
-  if (ps.selectedLogo) {
+  if (ps.selectedLogo && ps.previewPoster?.iso_639_1 === null) {
     params.push(`logo=${encodeURIComponent(ps.selectedLogo.file_path)}`)
     params.push(`scale=${ps.logoScale}`)
     params.push(`ox=${ps.logoOffsetX}`)

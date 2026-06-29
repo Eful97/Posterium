@@ -129,9 +129,10 @@ describe("buildPreviewUrl", () => {
     expect(url).not.toContain("voteAverage=")
   })
 
-  it("includes logo params when logo selected", () => {
+  it("includes logo params when logo selected on clean poster", () => {
     const url = buildPreviewUrl({
       ...basePosterState,
+      previewPoster: { file_path: "/poster.jpg", iso_639_1: null, vote_average: 7.5, width: 500, height: 750 },
       selectedLogo: { file_path: "/logo.png", iso_639_1: "it", vote_average: 1, width: 200, height: 80 },
       logoScale: 60,
       logoOffsetX: 5,
@@ -141,6 +142,17 @@ describe("buildPreviewUrl", () => {
     expect(url).toContain("scale=60")
     expect(url).toContain("ox=5")
     expect(url).toContain("oy=-3")
+  })
+
+  it("does not include logo params when poster is not clean", () => {
+    const url = buildPreviewUrl({
+      ...basePosterState,
+      selectedLogo: { file_path: "/logo.png", iso_639_1: "it", vote_average: 1, width: 200, height: 80 },
+      logoScale: 60,
+      logoOffsetX: 5,
+      logoOffsetY: -3,
+    }, baseBadgeParams)
+    expect(url).not.toContain("logo=")
   })
 
   it("includes backdrop params when backdrop selected", () => {
