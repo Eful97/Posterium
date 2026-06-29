@@ -67,9 +67,9 @@ describe("buildUrlPattern", () => {
     expect(url).not.toContain("badges=0")
   })
 
-  it("always includes rv=56", () => {
+  it("always includes rv=57", () => {
     const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it" })
-    expect(url).toContain("rv=56")
+    expect(url).toContain("rv=57")
   })
 
   it("includes gradientHeight, blur, bf, bd, bs, rs params", () => {

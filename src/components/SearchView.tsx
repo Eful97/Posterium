@@ -8,7 +8,7 @@ import { PosterCardSkeleton } from "@/components/Skeleton"
 import { Clock, X, Check, ChevronDown } from "lucide-react"
 
 export function SearchView() {
-  const { t, tmdbKey, query, results, searching, totalPages, searchPage, recentSearches, mappingsMap, setQuery, doSearch, loadMore, navigateToPoster, removeRecentSearch } = useP()
+  const { t, tmdbKey, query, results, searching, error, setError, totalPages, searchPage, recentSearches, mappingsMap, setQuery, doSearch, loadMore, navigateToPoster, removeRecentSearch } = useP()
   const [searchFocused, setSearchFocused] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -85,7 +85,8 @@ export function SearchView() {
         </div>
       )}
       {!tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">{t("ui.noKey")}</p>}
-      {results.length === 0 && !searching && !showRecent && query.length >= 2 && tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">{t("ui.noResults")}</p>}
+      {error && <div className="text-center py-12"><p className="text-red-400 text-sm mb-2">{t("ui.searchError")}</p><button onClick={() => { setError(null); doSearch(query) }} className="text-xs text-accent hover:underline">{t("ui.retry")}</button></div>}
+      {results.length === 0 && !searching && !showRecent && !error && query.length >= 2 && tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">{t("ui.noResults")}</p>}
     </div>
   )
 }

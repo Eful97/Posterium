@@ -146,6 +146,27 @@ input[type="range"]::-moz-range-thumb {
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Focus ring for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--color-accent-orange);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-accent-orange);
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--color-accent-orange);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-orange) 30%, transparent);
+}
+
+/* Safe area bottom utility */
+.pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+
 .rank-btn:hover ~ .rank-btn .poster-slide {
   translate: 55px 0;
 }

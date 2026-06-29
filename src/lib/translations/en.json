@@ -114,6 +114,8 @@
     "ui.exportJson":  "Export JSON",
     "ui.importJson":  "Import JSON",
     "ui.clearCache":  "Clear cache",
+    "ui.cleared":  "Cleared!",
+    "ui.searchError":  "Search failed. Please try again.",
     "ui.welcome":  "Benvenuto in Posterium",
     "ui.welcomeSubtitle":  "Scegli la tua lingua preferita",
     "ui.chooseLanguage":  "Choose your preferred language",

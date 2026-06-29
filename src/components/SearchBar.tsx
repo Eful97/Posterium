@@ -46,7 +46,7 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
           aria-label={p.t("ui.searchButton")}
           onClick={() => { if (text.length >= 2 && tmdbKey) { onSearch(text) } }}
           disabled={!tmdbKey}
-          className="shrink-0 w-8 h-8 mr-1.5 flex items-center justify-center bg-accent-orange text-white rounded-full hover:shadow-lg hover:shadow-accent-orange/30 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-200"
+          className="shrink-0 w-10 h-10 mr-1.5 flex items-center justify-center bg-accent-orange text-white rounded-full hover:shadow-lg hover:shadow-accent-orange/30 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-200"
         >
           <ArrowRight className="w-4 h-4" />
         </button>

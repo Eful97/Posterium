@@ -8,6 +8,7 @@ export function useSearch(tmdbKey: string, lang: string) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [totalResults, setTotalResults] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [searchPage, setSearchPage] = useState(1)
@@ -19,6 +20,7 @@ export function useSearch(tmdbKey: string, lang: string) {
     const searchQuery = q ?? query
     if (searchQuery.length < 2 || !tmdbKey) return
     setSearching(true)
+    setError(null)
     if (page === 1) setSearchPage(1)
     try {
       const data = await http<{ results: SearchResult[]; total_results: number; total_pages: number }>(
@@ -39,6 +41,8 @@ export function useSearch(tmdbKey: string, lang: string) {
       }
     } catch (e) {
       console.error("[posterium] Search failed:", e)
+      setError("Search failed. Please try again.")
+      if (page === 1) setResults([])
     } finally {
       setSearching(false)
     }
@@ -59,5 +63,5 @@ export function useSearch(tmdbKey: string, lang: string) {
     })
   }, [])
 
-  return { query, setQuery, results, setResults, searching, totalResults, totalPages, searchPage, recentSearches, doSearch, loadMore, removeRecentSearch }
+  return { query, setQuery, results, setResults, searching, error, setError, totalResults, totalPages, searchPage, recentSearches, doSearch, loadMore, removeRecentSearch }
 }

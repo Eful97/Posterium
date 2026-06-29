@@ -105,7 +105,7 @@ export default function EditView() {
     <div className="w-full md:w-72 xl:w-80 2xl:w-96 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1 space-y-4" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.posterSection")}</h3>
-        {p.loadingImages ? <div className="text-center py-12 text-zinc-400">{p.t("ui.loadingPoster")}</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} lang={p.lang} openSections={p.openSections} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} />}
+        {p.loadingImages ? <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} lang={p.lang} openSections={p.openSections} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} />}
       </div>
     </div>
   )

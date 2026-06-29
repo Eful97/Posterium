@@ -63,7 +63,7 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
   params.push(`bd=${bp.blurDarkness}`)
   params.push(`bs=${bp.badgeStyle}`)
   params.push(`rs=${bp.rankingBadgeStyle}`)
-  params.push("rv=56")
+  params.push("rv=57")
   url += "?" + params.join("&")
   return url
 }

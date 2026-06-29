@@ -2,10 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { SearchResult, TMDBImage, Mapping } from "./types"
-import { posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from "./utils"
+import { posterUrl, titleOf, yearOf, STREAMING_PLATFORMS } from "./utils"
 import { findAccentColor, topEdgeAverage } from "./accent-color"
-import { getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "./awards"
-import { computeBadge, computeExtraFallback } from "./badge-priority"
+import { matchTMDBStudios } from "./awards"
 import { setLang as setI18nLang, t } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
 import { http } from "./http"
@@ -13,6 +12,9 @@ import { buildUrlPattern, buildPreviewUrl } from "./poster-url"
 import { useTrending } from "./useTrending"
 import { useSearch } from "./useSearch"
 import { useNavigation } from "./useNavigation"
+import { useMappingsStore } from "./useMappingsStore"
+import { useDefaults } from "./useDefaults"
+import { usePosterSave } from "./usePosterSave"
 
 export interface PosteriumCtx {
   selected: SearchResult | null
@@ -126,6 +128,8 @@ export interface PosteriumCtx {
   query: string
   results: SearchResult[]
   searching: boolean
+  error: string | null
+  setError: (v: string | null) => void
   totalResults: number
   totalPages: number
   searchPage: number
@@ -185,8 +189,9 @@ export function usePosterium(): PosteriumCtx {
   const navigation = useNavigation()
   const trending = useTrending(tmdbKey, mdblistApiKey)
   const search = useSearch(tmdbKey, lang)
+  const { mappings, mappingsMap, loadMappings, removeMapping, exportData, importData } = useMappingsStore()
+  const defaults = useDefaults()
 
-  const [mappings, setMappings] = useState<Mapping[]>([])
   const [urlPattern, setUrlPattern] = useState("")
   const [copied, setCopied] = useState(false)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
@@ -220,39 +225,32 @@ export function usePosterium(): PosteriumCtx {
   const [editingValue, setEditingValue] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
 
-  // Badge state
-  const [globalBadges, setGlobalBadges] = useState(true)
-  const [rankingBadges, setRankingBadges] = useState(true)
+  // Badge state (delegated to useDefaults)
+  const { globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, loadDefaultsToState } = defaults
   const [customBadge, setCustomBadge] = useState<string | null>(null)
-  const [gradientHeight, setGradientHeight] = useState(30)
-  const [blurIntensity, setBlurIntensity] = useState(5)
-  const [blurFade, setBlurFade] = useState(60)
-  const [blurDarkness, setBlurDarkness] = useState(40)
-  const [blurEnabled, setBlurEnabled] = useState(true)
-  const [badgeStyle, setBadgeStyle] = useState("shadow")
-  const [rankingBadgeStyle, setRankingBadgeStyle] = useState("default")
-
-  // Default state
-  const [defaultBadgeStyle, setDefaultBadgeStyle] = useState("shadow")
-  const [defaultBlurEnabled, setDefaultBlurEnabled] = useState(true)
-  const [defaultBlurIntensity, setDefaultBlurIntensity] = useState(5)
-  const [defaultBlurFade, setDefaultBlurFade] = useState(60)
-  const [defaultBlurDarkness, setDefaultBlurDarkness] = useState(40)
-  const [defaultGradientHeight, setDefaultGradientHeight] = useState(30)
-  const [defaultGlobalBadges, setDefaultGlobalBadges] = useState(true)
-  const [defaultRankingBadges, setDefaultRankingBadges] = useState(true)
-  const [defaultRankingBadgeStyle, setDefaultRankingBadgeStyle] = useState("default")
-  const [defaultAutoRotateClean, setDefaultAutoRotateClean] = useState(false)
+  const setGlobalBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(globalBadges) : v; defaults.update({ globalBadges: next }) }
+  const setRankingBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(rankingBadges) : v; defaults.update({ rankingBadges: next }) }
+  const setGradientHeight = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(gradientHeight) : v; defaults.update({ gradientHeight: next }) }
+  const setBlurIntensity = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurIntensity) : v; defaults.update({ blurIntensity: next }) }
+  const setBlurFade = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurFade) : v; defaults.update({ blurFade: next }) }
+  const setBlurDarkness = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurDarkness) : v; defaults.update({ blurDarkness: next }) }
+  const setBlurEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(blurEnabled) : v; defaults.update({ blurEnabled: next }) }
+  const setBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(badgeStyle) : v; defaults.update({ badgeStyle: next }) }
+  const setRankingBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(rankingBadgeStyle) : v; defaults.update({ rankingBadgeStyle: next }) }
+  const setDefaultBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(defaultBadgeStyle) : v; defaults.update({ defaultBadgeStyle: next }) }
+  const setDefaultRankingBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(defaultRankingBadgeStyle) : v; defaults.update({ defaultRankingBadgeStyle: next }) }
+  const setDefaultBlurEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultBlurEnabled) : v; defaults.update({ defaultBlurEnabled: next }) }
+  const setDefaultBlurIntensity = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurIntensity) : v; defaults.update({ defaultBlurIntensity: next }) }
+  const setDefaultBlurFade = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurFade) : v; defaults.update({ defaultBlurFade: next }) }
+  const setDefaultBlurDarkness = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurDarkness) : v; defaults.update({ defaultBlurDarkness: next }) }
+  const setDefaultGradientHeight = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultGradientHeight) : v; defaults.update({ defaultGradientHeight: next }) }
+  const setDefaultGlobalBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultGlobalBadges) : v; defaults.update({ defaultGlobalBadges: next }) }
+  const setDefaultRankingBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultRankingBadges) : v; defaults.update({ defaultRankingBadges: next }) }
+  const setDefaultAutoRotateClean = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultAutoRotateClean) : v; defaults.update({ defaultAutoRotateClean: next }) }
 
   const hasBadges = globalBadges && metaInfo.genres.length > 0 && metaInfo.voteAverage > 0
 
-  const mappingsMap = useMemo(() => {
-    const map = new Map<string, Mapping>()
-    for (const m of mappings) {
-      map.set(`${m.mediaType}:${m.tmdbId}`, m)
-    }
-    return map
-  }, [mappings])
+  // Appearance state
 
   const logoBounds = useMemo(() => {
     if (!navigation.previewPoster || !navigation.selectedLogo) return { minX: -500, maxX: 500, minY: -500, maxY: 500 }
@@ -299,44 +297,6 @@ export function usePosterium(): PosteriumCtx {
     localStorage.setItem("mdblist_key", val)
   }
 
-  const loadDefaultsToState = useCallback(() => {
-    try {
-      const raw = localStorage.getItem("badgeDefaults")
-      if (raw) {
-        const d = JSON.parse(raw)
-        setGlobalBadges(d.globalBadges ?? true)
-        setRankingBadges(d.rankingBadges ?? true)
-        setGradientHeight(d.gradientHeight ?? 30)
-        setBlurIntensity(d.blurIntensity ?? 5)
-        setBlurFade(d.blurFade ?? 60)
-        setBlurDarkness(d.blurDarkness ?? 40)
-        setBlurEnabled(d.blurEnabled ?? true)
-        setBadgeStyle(d.badgeStyle ?? "shadow")
-        setRankingBadgeStyle(d.rankingBadgeStyle ?? "default")
-      } else {
-        setGlobalBadges(true)
-        setRankingBadges(true)
-        setGradientHeight(30)
-        setBlurIntensity(5)
-        setBlurFade(60)
-        setBlurDarkness(40)
-        setBlurEnabled(true)
-        setBadgeStyle("shadow")
-        setRankingBadgeStyle("default")
-      }
-    } catch {
-      setGlobalBadges(true)
-      setRankingBadges(true)
-      setGradientHeight(30)
-      setBlurIntensity(5)
-      setBlurFade(60)
-      setBlurDarkness(40)
-      setBlurEnabled(true)
-      setBadgeStyle("shadow")
-      setRankingBadgeStyle("default")
-    }
-  }, [])
-
   useEffect(() => {
     if (langInit.current) return
     langInit.current = true
@@ -346,31 +306,6 @@ export function usePosterium(): PosteriumCtx {
     } else {
       setShowLangPicker(true)
     }
-    try {
-      const raw = localStorage.getItem("badgeDefaults")
-      if (raw) {
-        const d = JSON.parse(raw)
-        setDefaultGlobalBadges(d.globalBadges ?? true)
-        setDefaultRankingBadges(d.rankingBadges ?? true)
-        setGlobalBadges(d.globalBadges ?? true)
-        setRankingBadges(d.rankingBadges ?? true)
-        setDefaultBadgeStyle(d.badgeStyle ?? "shadow")
-        setDefaultRankingBadgeStyle(d.rankingBadgeStyle ?? "default")
-        setDefaultBlurEnabled(d.blurEnabled ?? true)
-        setDefaultBlurIntensity(d.blurIntensity ?? 5)
-        setDefaultBlurFade(d.blurFade ?? 60)
-        setDefaultBlurDarkness(d.blurDarkness ?? 40)
-        setDefaultGradientHeight(d.gradientHeight ?? 30)
-        setDefaultAutoRotateClean(d.autoRotateClean ?? false)
-        setGradientHeight(d.gradientHeight ?? 30)
-        setBlurIntensity(d.blurIntensity ?? 5)
-        setBlurFade(d.blurFade ?? 60)
-        setBlurDarkness(d.blurDarkness ?? 40)
-        setBlurEnabled(d.blurEnabled ?? true)
-        setBadgeStyle(d.badgeStyle ?? "shadow")
-        setRankingBadgeStyle(d.rankingBadgeStyle ?? "default")
-      }
-    } catch (e) { console.error("[posterium] Load server defaults failed:", e) }
   }, [])
 
   const pickLang = (l: string) => {
@@ -379,16 +314,6 @@ export function usePosterium(): PosteriumCtx {
     localStorage.setItem("preferred_lang", l)
     setShowLangPicker(false)
   }
-
-  // --- Mappings ---
-  const loadMappings = useCallback(async () => {
-    try {
-      const data = await api("/api/mappings")
-      setMappings(data.mappings)
-    } catch (e) { console.error("[posterium] Failed to load mappings:", e) }
-  }, [])
-
-  useEffect(() => { loadMappings() }, [loadMappings])
 
   // --- Settings panels ---
   useEffect(() => {
@@ -693,186 +618,6 @@ export function usePosterium(): PosteriumCtx {
     }
   }
 
-  const selectPoster = useCallback(async (image: TMDBImage) => {
-    if (!navigation.selected) return
-    navigation.setPreviewPoster(image)
-    navigation.setPreviewId(`${navigation.selected.media_type}:${navigation.selected.id}`)
-  }, [navigation.selected]) // eslint-disable-line react-hooks/exhaustive-deps -- navigation setter refs are stable
-
-  const selectLogo = useCallback(async (logo: TMDBImage) => {
-    navigation.setSelectedLogo(logo)
-    if (logo.width && logo.height) {
-      const maxH = Math.round(1500 * 0.25)
-      const effW = Math.round(maxH * logo.width / logo.height)
-      setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
-    } else {
-      setLogoScale(75)
-    }
-    setLogoOffsetX(0)
-    setLogoOffsetY(0)
-    if (!navigation.previewPoster && navigation.selected) {
-      const existing = mappingsMap.get(`${navigation.selected.media_type}:${navigation.selected.id}`)
-      if (existing) {
-        navigation.setPreviewPoster({ file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
-      } else if (navigation.posters.length > 0) {
-        navigation.setPreviewPoster(navigation.posters[0])
-      }
-    }
-    if (navigation.selected) navigation.setPreviewId(`${navigation.selected.media_type}:${navigation.selected.id}`)
-  }, [navigation.selected, navigation.previewPoster, mappingsMap, navigation.posters]) // eslint-disable-line react-hooks/exhaustive-deps -- navigation setter refs are stable
-
-  const saveConfig = useCallback(async () => {
-    if (!navigation.selected || !navigation.previewPoster) return
-    const now = Date.now()
-    const twoWeeks = 14 * 24 * 60 * 60 * 1000
-    const isNewMovie = navigation.selected.media_type === "movie" && metaInfo.release_date ? (now - new Date(metaInfo.release_date).getTime()) < twoWeeks : false
-    const isNewSeries = navigation.selected.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
-    const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards, t) : null
-    const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations, t) : null
-    const animeRankData = trending.mdblistAnimeList?.find((a: EnrichedAnimeItem) => a.id === navigation.selected!.id)
-    const tvType = navigation.selected.media_type === "tv" ? metaInfo.type : null
-    const tvStatus = navigation.selected.media_type === "tv" ? metaInfo.status : null
-    const extra = computeExtraFallback({ mediaType: navigation.selected.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus }, t)
-    const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
-    const badge = computeBadge({ isNewMovie, isNewSeries, animeRank: animeRankData?.rank ?? null, trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra }, t)
-    const badgeExtra = badge?.type === "extra" ? badge.label : undefined
-    const badgeRank = (!badgeExtra && rankingBadges) ? (badge?.type === "rank" ? badge.rank : trendRank || undefined) : undefined
-    const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || t("badge.today")) : undefined
-    const isClean = navigation.previewPoster.iso_639_1 === null
-    const isNewMapping = !mappingsMap.has(`${navigation.selected.media_type}:${navigation.selected.id}`)
-    const effectiveRotationPosters = defaultAutoRotateClean && isClean && isNewMapping
-      ? navigation.posters.filter(p => p.iso_639_1 === null).map(p => p.file_path)
-      : rotationPosters
-    try {
-      await http("/api/mappings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tmdbId: navigation.selected.id,
-          mediaType: navigation.selected.media_type,
-          title: titleOf(navigation.selected),
-          posterPath: navigation.previewPoster.file_path,
-          logoPath: navigation.selectedLogo?.file_path || null,
-          originalPosterPath: navigation.selected.poster_path,
-          language: navigation.previewPoster.iso_639_1,
-          logoScale, logoOffsetX, logoOffsetY,
-          backdropPath: selectedBackdrop?.file_path || null,
-          backdropScale, backdropOffsetX, backdropOffsetY,
-          genreName: metaInfo.genres[0]?.name || null,
-          voteAverage: metaInfo.voteAverage || null,
-          trendRank: trendRank ?? undefined,
-          trendPeriod: "day",
-          accentColor: accentColor !== '#ffffff' ? accentColor : undefined,
-          showBadges: globalBadges,
-          rankingBadges,
-          tvType: metaInfo.type || null,
-          tvStatus: metaInfo.status || null,
-          releaseDate: metaInfo.release_date || null,
-          firstAirDate: metaInfo.first_air_date || null,
-          badgeExtra,
-          badgeRank,
-          badgeLabel,
-          customBadge,
-          badgeStyle: badgeStyle !== defaultBadgeStyle ? badgeStyle : undefined,
-          rankingBadgeStyle: rankingBadgeStyle !== defaultRankingBadgeStyle ? rankingBadgeStyle : undefined,
-          defaultBadgeStyle,
-          defaultRankingBadgeStyle,
-          blurEnabled,
-          blurIntensity,
-          blurFade,
-          blurDarkness,
-          gradientHeight,
-          cleanPosters: effectiveRotationPosters.length > 0 ? effectiveRotationPosters : undefined,
-          cleanPosterIndex: 0,
-          cleanPosterUpdatedAt: new Date().toISOString(),
-          autoRotateClean: effectiveRotationPosters.length > 1 ? (defaultAutoRotateClean && isClean && isNewMapping ? true : autoRotateClean) : undefined,
-        }),
-      })
-      navigation.setPreviewId(`${navigation.selected.media_type}:${navigation.selected.id}`)
-      import("sonner").then(({ toast }) => toast(t("ui.saveSuccess")))
-      loadMappings()
-      fetch(`/api/poster/${navigation.selected.media_type}/${navigation.selected.id}`, { signal: AbortSignal.timeout(30000) }).catch(() => { /* poster warming is fire-and-forget */ })
-    } catch {
-      import("sonner").then(({ toast }) => toast(t("ui.saveError")))
-    }
-  }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, trending.mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, defaultBadgeStyle, defaultRankingBadgeStyle, navigation.posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
-
-  const removeLogo = useCallback(async () => {
-    navigation.setSelectedLogo(null)
-    if (!navigation.selected) return
-    const key = `${navigation.selected.media_type}:${navigation.selected.id}`
-    const existing = mappingsMap.get(key)
-    if (!existing) {
-      import("sonner").then(({ toast }) => toast(t("ui.noMappingUpdate")))
-      return
-    }
-    await http(`/api/mappings/${key}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tmdbId: navigation.selected.id, mediaType: navigation.selected.media_type, title: titleOf(navigation.selected),
-        posterPath: navigation.previewPoster?.file_path || navigation.selected.poster_path!, logoPath: null,
-        originalPosterPath: navigation.selected.poster_path, language: navigation.previewPoster?.iso_639_1 || null,
-        logoScale, logoOffsetX, logoOffsetY,
-        genreName: metaInfo.genres[0]?.name || null,
-        voteAverage: metaInfo.voteAverage || null,
-        trendRank: trendRank ?? null,
-      }),
-    })
-    import("sonner").then(({ toast }) => toast(t("ui.logoRemoved")))
-    loadMappings()
-    if (navigation.selected) navigation.setPreviewId(`${navigation.selected.media_type}:${navigation.selected.id}`)
-  }, [navigation.selected, navigation.previewPoster, logoScale, logoOffsetX, logoOffsetY, metaInfo, trendRank, mappingsMap, loadMappings]) // eslint-disable-line react-hooks/exhaustive-deps -- navigation setter refs are stable
-
-  const selectBackdrop = useCallback((img: TMDBImage) => {
-    setSelectedBackdrop(img)
-    setBackdropScale(100)
-    setBackdropOffsetX(0)
-    setBackdropOffsetY(0)
-  }, [])
-
-  const removeBackdrop = useCallback(() => {
-    setSelectedBackdrop(null)
-  }, [])
-
-  const removeMapping = useCallback(async (m: Mapping) => {
-    await http(`/api/mappings/${m.mediaType}:${m.tmdbId}`, { method: "DELETE" })
-    setMappings((prev) => prev.filter((x) => !(x.tmdbId === m.tmdbId && x.mediaType === m.mediaType)))
-    import("sonner").then(({ toast }) => toast(t("ui.mappingRemoved")))
-  }, [])
-
-  const exportData = async () => {
-    const data = await http("/api/mappings/export")
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url; a.download = "posterium-mappings.json"; a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const importData = () => {
-    const input = document.createElement("input")
-    input.type = "file"; input.accept = ".json"
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (!file) return
-      const text = await file.text()
-      try {
-        const data = JSON.parse(text)
-        await http("/api/mappings/import", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mappings: data.mappings || data }),
-        })
-        loadMappings()
-        import("sonner").then(({ toast }) => toast(t("ui.importSuccess", { count: data.mappings?.length || data.length })))
-      } catch {
-        import("sonner").then(({ toast }) => toast(t("ui.importError")))
-      }
-    }
-    input.click()
-  }
-
   const copyUrl = async () => {
     await navigator.clipboard.writeText(urlPattern)
     setCopied(true)
@@ -880,6 +625,19 @@ export function usePosterium(): PosteriumCtx {
   }
 
   const posterActivePath = navigation.previewPoster?.file_path
+
+  const { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig } = usePosterSave({
+    selected: navigation.selected, previewPoster: navigation.previewPoster, selectedLogo: navigation.selectedLogo,
+    setSelectedLogo: navigation.setSelectedLogo, setPreviewPoster: navigation.setPreviewPoster, setPreviewId: navigation.setPreviewId,
+    posters: navigation.posters, metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
+    mappingsMap, loadMappings, logoScale, logoOffsetX, logoOffsetY,
+    selectedBackdrop, setSelectedBackdrop: setSelectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY,
+    setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
+    globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
+    defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
+    rotationPosters, autoRotateClean, defaultAutoRotateClean, accentColor,
+    setLogoScale, setLogoOffsetX, setLogoOffsetY,
+  })
 
   return useMemo(() => ({
     selected: navigation.selected, setSelected: navigation.setSelected,
@@ -932,7 +690,7 @@ export function usePosterium(): PosteriumCtx {
     titleOf, yearOf, posterUrl,
     trending: trending.trending, streamingCharts: trending.streamingCharts, mdblistAnimeList: trending.mdblistAnimeList,
     STREAMING_PLATFORMS, loadMappings,
-    query: search.query, results: search.results, searching: search.searching, totalResults: search.totalResults, totalPages: search.totalPages, searchPage: search.searchPage, recentSearches: search.recentSearches, mappings,
+    query: search.query, results: search.results, searching: search.searching, error: search.error, setError: search.setError, totalResults: search.totalResults, totalPages: search.totalPages, searchPage: search.searchPage, recentSearches: search.recentSearches, mappings,
     settingsRef, langRef,
     setLangOpen, langOpen, pickLang,
     settingsOpen, setSettingsOpen,

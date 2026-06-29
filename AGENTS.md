@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
-App version: `0.12.0` — RENDER_VERSION: `65` — rv: `56`
+App version: `0.12.1` — RENDER_VERSION: `66` — rv: `57`
 
 ## Badge Genere/Rating (GenreRatingBadges)
 
@@ -45,7 +45,7 @@ App version: `0.12.0` — RENDER_VERSION: `65` — rv: `56`
 | Ombra | `shadowOff = round(fs * 0.2)`, `shadowBlur = round(fs * 0.6)`, `boxShadow: "0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)"` | `shadowBlur = round(fs * 0.6)`, `shadowOff = round(fs * 0.2)` (stessa formula scalata) |
 | Sfondo | `topLight ? "bg-black/80" : "bg-white/80"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
 | Testo | `topLight ? "text-white/80" : "text-black/80"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
-| Overflow protection | `fs` ridotto se `fs * (textLen * 0.62 + 2.35) > containerW - 20` (ranking, 2.35 = hash + px*2) o `fs * (labelLen * 0.62 + 2.0) > containerW - 20` (extra) | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
+| Overflow protection | `fs` ridotto se `fs * (textLen * 0.66 + 2.35) > containerW - 20` (ranking, 2.35 = hash + px*2) o `fs * (labelLen * 0.66 + 2.0) > containerW - 20` (extra) | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
 | Posizione | `top-0 left-1/2 -translate-x-1/2` | Composito a `top: 0, left: round((pw - w) / 2)` |
 
 ## Gradiente fondo poster

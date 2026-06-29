@@ -20,7 +20,7 @@ export function CollapsibleSection({
       <button
         type="button"
         onClick={onToggle}
-        className={`flex items-center gap-2 w-full text-left px-2.5 py-2 rounded-lg transition-all duration-200 ease-in-out ${
+        className={`flex items-center gap-2 w-full text-left px-2.5 py-2.5 rounded-lg transition-all duration-200 ease-in-out ${
           isOpen
             ? "bg-white/5"
             : "hover:bg-white/[0.03]"
