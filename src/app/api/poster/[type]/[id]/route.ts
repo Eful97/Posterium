@@ -303,7 +303,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         : Promise.resolve(null),
     ])
 
-    const wikidataPromise = fetchAllWikidata(tmdbId, mediaType, t).catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }))
+    const wikidataCacheKey = `wikidata:${mediaType}:${tmdbId}`
+    const WIKIDISK_TTL = 24 * 60 * 60 * 1000
+    const wikidataPromise = (async () => {
+      // Try disk cache first (survives HF restarts)
+      try {
+        const diskData = await diskCacheGetAsync("wikidata", wikidataCacheKey, WIKIDISK_TTL)
+        if (diskData) return JSON.parse(diskData.toString("utf-8")) as Awaited<ReturnType<typeof fetchAllWikidata>>
+      } catch {}
+      const result = await fetchAllWikidata(tmdbId, mediaType, t)
+      // Persist to disk
+      diskCacheSetAsync("wikidata", wikidataCacheKey, Buffer.from(JSON.stringify(result))).catch(() => {})
+      return result
+    })().catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }))
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
