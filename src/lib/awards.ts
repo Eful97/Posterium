@@ -1,5 +1,3 @@
-import { diskCacheGetAsync, diskCacheSetAsync } from "./disk-cache"
-
 interface AwardRule {
   keywords: string[]
   label: string
@@ -174,6 +172,7 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
   // Disk cache (survives HF restarts)
   const DISK_TTL = 24 * 60 * 60 * 1000
   try {
+    const { diskCacheGetAsync } = await import("./disk-cache")
     const diskData = await diskCacheGetAsync("wikidata", cacheKey, DISK_TTL)
     if (diskData) {
       const data: WikidataResult = JSON.parse(diskData.toString("utf-8"))
@@ -232,8 +231,10 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
 
     if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value!)
     CACHE.set(cacheKey, { data: result, timestamp: Date.now() })
-    // Persist to disk (survives HF restarts)
-    diskCacheSetAsync("wikidata", cacheKey, Buffer.from(JSON.stringify(result))).catch(() => {})
+    // Persist to disk (survives HF restarts) — dynamic import to avoid client bundle
+    import("./disk-cache").then(({ diskCacheSetAsync }) => {
+      diskCacheSetAsync("wikidata", cacheKey, Buffer.from(JSON.stringify(result))).catch(() => {})
+    }).catch(() => {})
     return result
   } catch {
     return { awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }
