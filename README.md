@@ -41,6 +41,8 @@ pinned: false
 - ⚡ **Standalone output** — Next.js standalone per immagini Docker minime
 - 💾 **Cache su disco 24h** — Poster renderizzati e risposte TMDB cacheati su disco con TTL 24 ore, pre-generazione al salvataggio
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia di cache disco e memoria
+- 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
+- ✅ **85 test** — Suite di test su URL builder, cache, badge priority, types, mappings
 
 ---
 
@@ -106,6 +108,7 @@ Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogn
 | `MDBLIST_API_KEY` | ❌ | Rating aggregati da 9 fonti (IMDb, TMDb, Metacritic, Rotten Tomatoes, Letterboxd, Trakt, MyAnimeList, Kitsu) e classifiche anime. Priorità massima. |
 | `OMDB_API_KEY` | ❌ | Rating IMDb — fallback quando MDBList non disponibile. Senza chiave, fallback su voto TMDB. |
 | `KV_URL` | ❌ | Vercel KV per storage (altrimenti file JSON) |
+| `ADMIN_TOKEN` | ❌ | Token per proteggere endpoint admin (cache clear). Se non impostato, aperto. |
 
 ---
 
@@ -122,19 +125,26 @@ Genera un poster personalizzato via URL.
 | `logo` | Percorso logo | `?logo=/logo123.png` |
 | `scale` | Scala logo (10–100) | `?scale=75` |
 | `ox` / `oy` | Offset logo | `?ox=10&oy=-5` |
+| `backdrop` | Percorso backdrop | `?backdrop=/bg.jpg` |
+| `bscale` | Scala backdrop (10–200) | `?bscale=100` |
+| `box` / `boy` | Offset backdrop | `?box=0&boy=0` |
 | `genreName` | Nome genere | `?genreName=Thriller` |
 | `voteAverage` | Voto medio | `?voteAverage=7.5` |
 | `rank` | Posizione classifica | `?rank=4` |
 | `label` | Etichetta classifica | `?label=Today` |
 | `extra` | Badge speciale | `?extra=New+series` |
+| `bs` | Stile badge genere | `?bs=pill` (shadow/pill/bar/colored) |
+| `rs` | Stile badge ranking | `?rs=default` (default/bar/colored) |
 | `badges` | Mostra badge genere | `?badges=1` |
 | `ranking` | Mostra badge trend | `?ranking=1` |
 | `lang` | Lingua (it/en/fr/de/es) | `?lang=it` |
-| `gradColor` | Colore gradiente (hex) | `?gradColor=%23000000` |
-| `gradOpacity` | Opacità gradiente (0–1) | `?gradOpacity=0.9` |
-| `gradHeight` | Altezza gradiente (5–100%) | `?gradHeight=85` |
-| `gradFade` | Sfumatura gradiente (0–100%) | `?gradFade=10` |
+| `gradHeight` | Altezza blur (5–100%) | `?gradHeight=30` |
+| `blur` | Intensità blur (1–50px) | `?blur=5` |
+| `bf` | Fade blur (0–100%) | `?bf=60` |
+| `bd` | Oscurità blur (0–100%) | `?bd=40` |
+| `be` | Abilita blur (0/1) | `?be=0` |
 | `tl` | Forza tema chiaro (1/0) | `?tl=1` |
+| `ac` | Accent color override | `?ac=%23ff6430` |
 
 **Esempio:** `/api/poster/tv/260592?api_key=xxx&rank=4&genreName=Animazione&voteAverage=8.2`
 
@@ -147,6 +157,7 @@ Genera un poster personalizzato via URL.
 | `GET /api/awards/[type]/[id]` | Premi, nomination, franchise, studio (Wikidata P166, P1411, P179) |
 | `GET /api/mdblist/anime` | Top anime MDBList |
 | `POST /api/mappings` | Salva configurazione |
+| `POST /api/cache/clear` | Svuota cache disco e memoria *(protetta da `ADMIN_TOKEN` se impostato)* |
 
 ---
 
@@ -167,23 +178,20 @@ Genera un poster personalizzato via URL.
 
 ### Badge genere/rating
 
-Badge con genere, •, ★ e voto medio centrato in basso, con 6 stili:
+Badge con genere, •, ★ e voto medio centrato in basso, con 4 stili:
 - **Shadow** — testo con ombra pronunciata, nessuno sfondo
-- **Pill** — pillola bianca semi-trasparente con angoli arrotondati
-- **Outline** — contorno nero simulato da text-shadow multiplo
+- **Pill** — pillola semi-trasparente con angoli arrotondati
 - **Bar** — barra full-width in basso con sfondo scuro e bordo superiore
 - **Colored** — pillola colorata con il colore dominante del poster/logo, testo bianco/nero adattivo
-- **Glass** — barra full-width effetto vetro con sfocatura e bordo, disponibile anche senza blur fondo
 
 ### Badge ranking/extra
 
-Badge in alto centrato, 4 stili:
+Badge in alto centrato, 3 stili:
 - **Default** — pillola semi-trasparente con ombra
 - **Bar** — barra full-width in alto, più sottile
-- **Glass** — barra effetto vetro con sfocatura e bordo
 - **Colored** — pillola colorata con il colore dominante, testo adattivo
 
-Il testo del badge ranking/extra si adatta automaticamente alla larghezza. Stili condivisi tra client (React) e server (Satori).
+Il testo del badge ranking/extra si adatta automaticamente alla larghezza. Rendering SVG server-side con Resvg.
 
 ### Logo
 
@@ -220,6 +228,33 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
 | Storage | Vercel KV / JSON file |
+| Test | Vitest (85 test) |
+| UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
+
+### Architettura
+
+- **Hook modulari** — `useNavigation`, `useTrending`, `useSearch` (estrazioni da context.tsx monolitico)
+- **API client centralizzato** — `http.ts` con timeout, retry, error handling
+- **URL builder puro** — `poster-url.ts` (buildPreviewUrl, buildUrlPattern)
+- **Badge priority** — `badge-priority.ts` (computeBadge, computeExtraFallback)
+- **Cache** — In-memory con TTL, tag-based invalidation, max 1000 entries
+
+---
+
+## 🧪 Testing
+
+```bash
+npm test              # Esegui tutti i test (85)
+npx vitest run        # Stessa cosa
+```
+
+| File test | Test | Copertura |
+|---|---|---|
+| `poster-url.test.ts` | 29 | buildUrlPattern, buildPreviewUrl (URL params, badge, logo, backdrop, topLight) |
+| `cache.test.ts` | 13 | cacheGet/Set, TTL expiry, cacheGetStale, cacheInvalidate, cacheClear |
+| `types.test.ts` | 14 | toSearchResult (default values, null→undefined, media_type normalization) |
+| `badge-validation.test.ts` | 18 | computeBadge priority chain, computeExtraFallback |
+| `mapping-crud.test.ts` | 11 | CRUD mappings, validation schema |
 
 ---
 
