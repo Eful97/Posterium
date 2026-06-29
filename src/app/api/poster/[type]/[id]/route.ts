@@ -309,8 +309,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             const bw = bMeta.width || 1920
             const bh = bMeta.height || 1080
             const bScale = backdropScale / 100
-            const bResizedW = Math.round(STD_W * bScale)
-            const bResizedH = Math.round(bh * (bResizedW / bw))
+            let bResizedW = Math.round(STD_W * bScale)
+            let bResizedH = Math.round(bh * (bResizedW / bw))
+            if (bResizedW > STD_W) { bResizedH = Math.round(bResizedH * (STD_W / bResizedW)); bResizedW = STD_W }
+            if (bResizedH > STD_H) { bResizedW = Math.round(bResizedW * (STD_H / bResizedH)); bResizedH = STD_H }
             const bX = Math.round((STD_W - bResizedW) / 2 + backdropOffsetX)
             const bY = Math.round((STD_H - bResizedH) / 2 + backdropOffsetY)
             const backdropResized = await sharp(backdropFetch).resize(bResizedW, bResizedH, { fit: 'fill' }).toBuffer()
@@ -427,13 +429,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             let logoH = Math.round(lh * (logoW / lw))
             if (logoH > maxLogoH) { const ratio = maxLogoH / logoH; logoW = Math.round(logoW * ratio); logoH = maxLogoH }
             const finalLogoW = Math.min(logoW, STD_W)
-            const logoResized = await sharp(logoFetch).resize(finalLogoW, logoH, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
+            const finalLogoH = Math.min(logoH, STD_H)
+            let logoResized = await sharp(logoFetch).resize(finalLogoW, finalLogoH, { fit: "inside", withoutEnlargement: true }).png({ compressionLevel: 1 }).toBuffer()
             const resizedMeta = await sharp(logoResized).metadata()
             const actualLogoW = resizedMeta.width || finalLogoW
-            const actualLogoH = resizedMeta.height || logoH
-            const logoX = Math.round((STD_W - actualLogoW) / 2 + userOx)
+            const actualLogoH = resizedMeta.height || finalLogoH
+            if (actualLogoW > STD_W || actualLogoH > STD_H) {
+              logoResized = await sharp(logoResized).resize(Math.min(actualLogoW, STD_W), Math.min(actualLogoH, STD_H), { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
+            }
+            const finalMeta = await sharp(logoResized).metadata()
+            const logoX = Math.round((STD_W - (finalMeta.width || actualLogoW)) / 2 + userOx)
             const logoBadgeOffset = (badgesEnabled && genreName && voteAverage && voteAverage > 0) ? 0 : Math.round(40 * s)
-            const logoTop = Math.max(0, Math.round(STD_H - actualLogoH - STD_H * 0.1 + userOy + logoBadgeOffset))
+            const logoTop = Math.max(0, Math.round(STD_H - (finalMeta.height || actualLogoH) - STD_H * 0.1 + userOy + logoBadgeOffset))
             return { input: logoResized, top: logoTop, left: logoX } as const
           })()
         : Promise.resolve(null),
