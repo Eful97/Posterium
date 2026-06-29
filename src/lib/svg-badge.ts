@@ -74,13 +74,9 @@ export async function renderSVG(svgStr: string, w: number): Promise<Buffer> {
   const resvg = new Resvg(svgStr, {
     fitTo: { mode: "width", value: w },
     font: {
-      fontFiles: [
-        N("inter/files/inter-latin-400-normal.woff"),
-        N("inter/files/inter-latin-700-normal.woff"),
-        N("inter/files/inter-latin-900-normal.woff"),
-        N("noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff"),
-      ],
-    },
+      fontBuffers: [fontRegular(), fontBold(), fontBlack(), fontSymbols()] as unknown as string[],
+      loadSystemFonts: false,
+    } as Record<string, unknown>,
   })
   return Buffer.from(resvg.render().asPng())
 }
