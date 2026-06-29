@@ -13,21 +13,15 @@ import { computeBadge, computeExtraFallback, getAllBadgeOptions } from "@/lib/ba
 import { resolveLabel, isRankKey, isPrefixedKey, badgeKey } from "@/lib/i18n"
 import { SearchBar } from "@/components/SearchBar"
 import { RankRow } from "@/components/RankRow"
-import { RankingBadge, GenreRatingBadges, ExtraBadge } from "@/components/PreviewBadges"
 import { RefreshCw, Search, ImageOff, Ruler, Cloud, Minus, Circle, Moon, Pill, BarChart3, Check, XCircle, ArrowLeftRight, ArrowUpDown, Clock, X } from "lucide-react"
 
 export default function EditView() {
   const p = useP()
   const [searchFocused, setSearchFocused] = useState(false)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [previewDims, setPreviewDims] = useState({ w: 380, h: 570 })
-  const previewRef = useRef<HTMLDivElement>(null)
-  const [dragging, setDragging] = useState(false)
   const [imageError, setImageError] = useState(false)
-  const dragRef = useRef({ startX: 0, startY: 0, startOX: 0, startOY: 0, active: false })
-  const logoWheelRef = useRef<HTMLDivElement>(null)
   const [now] = useState(() => Date.now())
-  const [posterLoading, setPosterLoading] = useState(false)
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   const defaultLogoScale = () => {
     const l = p.selectedLogo
@@ -41,8 +35,8 @@ export default function EditView() {
 
   useEffect(() => {
     setImageError(false)
-    setPosterLoading(true)
-  }, [p.previewPoster])
+    setPreviewLoading(true)
+  }, [p.previewPoster, p.previewUrl])
 
   const searchBar = (
     <div className={p.selected ? "w-full max-w-lg mb-8 relative z-[100] isolate" : "max-w-lg mx-auto relative z-[100] isolate mb-8"}>
@@ -69,29 +63,6 @@ export default function EditView() {
   }, [])
 
   useEffect(() => {
-    const el = logoWheelRef.current
-    if (!el) return
-    const fn = (e: WheelEvent) => {
-      if (!e.shiftKey) return
-      e.preventDefault()
-      p.setLogoScale((s) => Math.max(10, Math.min(100, s - Math.sign(e.deltaY) * 20)))
-    }
-    el.addEventListener("wheel", fn, { passive: false })
-    return () => el.removeEventListener("wheel", fn)
-  })
-
-  useEffect(() => {
-    const el = previewRef.current
-    if (!el) return
-    const ro = new ResizeObserver(([entry]) => {
-      const w = entry.contentRect.width
-      if (w > 0) setPreviewDims({ w, h: w * 1.5 })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (e.key === "Escape") { p.setSettingsOpen(false); p.setShowLangPicker(false) }
       if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); p.saveConfig() }
@@ -110,118 +81,37 @@ export default function EditView() {
     </div>
   )
 
-  const badgesVisible = p.globalBadges && p.metaInfo.genres.length > 0 && p.metaInfo.voteAverage > 0
-
-  const genreTopLight = (() => {
-    const h = p.topEdgeColor
-    if (h.length < 7) return true
-    if (h === "#555555") return true
-    const r = parseInt(h.slice(1, 3), 16) / 255
-    const g = parseInt(h.slice(3, 5), 16) / 255
-    const b = parseInt(h.slice(5, 7), 16) / 255
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.60
-  })()
-
   const previewCol = (
     <div className="w-full max-w-[400px] md:w-[400px] xl:max-w-[520px] 2xl:max-w-[600px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3 overflow-hidden">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.previewSection")}</h3>
         <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
-        <div ref={previewRef} className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
-          {p.previewPoster && !imageError && <>
-            {posterLoading && <div className="absolute inset-0 bg-zinc-800 animate-pulse rounded-2xl" />}
-            {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
-            <img src={p.posterUrl(p.previewPoster.file_path, "w342")} alt={p.selected?.title || p.selected?.name || ""} loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onLoad={() => setPosterLoading(false)} onError={() => { setImageError(true); setPosterLoading(false) }} />
-          </>}
+        <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
+          {p.previewUrl ? (
+            <>
+              {previewLoading && <div className="absolute inset-0 bg-zinc-800 animate-pulse rounded-2xl z-10" />}
+              {/* eslint-disable-next-line @next/next/no-img-element -- server-rendered poster */}
+              <img
+                src={p.previewUrl}
+                alt={p.selected?.title || p.selected?.name || ""}
+                loading="eager"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover"
+                onLoad={() => setPreviewLoading(false)}
+                onError={() => { setImageError(true); setPreviewLoading(false) }}
+              />
+            </>
+          ) : p.selected ? (
+            <div className="absolute inset-0 bg-zinc-800/50 animate-pulse rounded-2xl" />
+          ) : null}
           {imageError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 text-center p-8">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 text-center p-8 z-20">
               <ImageOff className="w-12 h-12 mb-3 text-zinc-500" />
               <p className="text-sm text-zinc-400 font-medium">{p.t("ui.imageNotAvailable")}</p>
               <p className="text-xs text-zinc-500 mt-1">{p.t("ui.posterLoadError")}</p>
               <button onClick={() => setImageError(false)} className="mt-3 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg transition-all duration-150"><span className="flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />{p.t("ui.retry")}</span></button>
             </div>
           )}
-          {p.previewPoster?.iso_639_1 === null && p.selectedLogo && (() => {
-            const scale = 0.38
-            const baseGap = 57
-            const badgeAdj = badgesVisible ? 0 : 15.2
-            const bottomPx = baseGap - p.logoOffsetY * scale - badgeAdj
-            return <div ref={logoWheelRef} style={{ position: "absolute", left: 0, right: 0, bottom: `${bottomPx}px`, display: "flex", justifyContent: "center", zIndex: 10, pointerEvents: "auto" }}>
-              <div
-                style={{
-                  transform: `translateX(${p.logoOffsetX * scale}px)`,
-                  width: `${p.logoScale}%`,
-                  maxWidth: "100%",
-                  cursor: dragging ? "grabbing" : "grab",
-                  position: "relative",
-                }}
-                onPointerDown={(e) => {
-                  e.preventDefault(); e.stopPropagation()
-                  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-                  dragRef.current = { startX: e.clientX, startY: e.clientY, startOX: p.logoOffsetX, startOY: p.logoOffsetY, active: true }
-                  setDragging(false)
-                }}
-                onPointerMove={(e) => {
-                  if (!dragRef.current.active) return
-                  const dx = e.clientX - dragRef.current.startX
-                  const dy = e.clientY - dragRef.current.startY
-                  if (!dragging && Math.abs(dx) + Math.abs(dy) < 4) return
-                  if (!dragging) { setDragging(true); return }
-                  p.setLogoOffsetX(dragRef.current.startOX + Math.round(dx / scale))
-                  p.setLogoOffsetY(dragRef.current.startOY + Math.round(dy / scale))
-                }}
-                onPointerUp={(e) => {
-                  ;(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId)
-                  setDragging(false); dragRef.current.active = false
-                }}
-                onPointerLeave={() => { setDragging(false); dragRef.current.active = false }}
-                onDoubleClick={() => {
-                  const l = p.selectedLogo
-                  if (l && l.width && l.height) {
-                    const maxH = Math.round(1500 * 0.25)
-                    const effW = Math.round(maxH * l.width / l.height)
-                    p.setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
-                  } else {
-                    p.setLogoScale(75)
-                  }
-                  p.setLogoOffsetX(0)
-                  p.setLogoOffsetY(0)
-                }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
-                  <img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full relative" style={{ objectFit: "contain" }} />
-                </div></div>
-          })()}
-          {p.rankingBadges && (() => {
-            const twoWeeks = 14 * 24 * 60 * 60 * 1000
-            const isNewMovie = p.selected?.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
-            const isNewSeries = p.selected?.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
-            const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards, p.t) : null
-            const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations, p.t) : null
-
-            const animeRankData = p.mdblistAnimeList?.find((a) => a.id === p.selected?.id)
-            const animeRank = animeRankData ? animeRankData.rank : null
-            const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
-            const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
-            const tvStatus = p.selected?.media_type === "tv" ? p.metaInfo.status : null
-            const extra = computeExtraFallback({ mediaType: p.selected?.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus }, p.t)
-            const autoBadge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank, award, franchise: p.metaInfo.franchise || null, nomination, studio, director: p.metaInfo.director || null, extra }, p.t)
-            const badge = p.customBadge
-              ? (() => {
-                  const rk = isRankKey(p.customBadge)
-                  if (rk === "badge.today" && p.trendRank) return { type: "rank" as const, label: p.t("badge.today"), rank: p.trendRank, rankLabel: p.t("badge.today") }
-                  if (rk === "badge.anime" && animeRank) return { type: "rank" as const, label: p.t("badge.anime"), rank: animeRank, rankLabel: p.t("badge.anime") }
-                  return { type: "extra" as const, label: resolveLabel(p.customBadge) }
-                })()
-              : autoBadge
-            if (badge) {
-              if (badge.type === "extra") return <div className="absolute inset-0"><ExtraBadge label={badge.label} topLight={genreTopLight} containerW={previewDims.w} badgeStyle={p.rankingBadgeStyle} accentColor={p.accentColor} /></div>
-              return <div className="absolute inset-0"><RankingBadge rank={badge.rank!} label={badge.rankLabel || badge.label} topLight={genreTopLight} containerW={previewDims.w} badgeStyle={p.rankingBadgeStyle} accentColor={p.accentColor} /></div>
-            }
-            return null
-          })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} blurEnabled={p.blurEnabled} badgeStyle={p.badgeStyle} accentColor={p.accentColor} topLight={genreTopLight} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
-          <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
       </div>

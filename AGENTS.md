@@ -13,52 +13,52 @@ App version: `0.13.0` — RENDER_VERSION: `74` — rv: `65`
 
 ## Badge Genere/Rating (GenreRatingBadges)
 
-| Parametro | Client (`PreviewBadges.tsx`) | Server (`svg-badge.ts:renderGenreBadge`) |
-|---|---|---|
-| Font size | `fs = round(finalFs)` da `24 * containerW / 380` | `finalFontSize = round(24 * pw / 380)` |
-| Gap genere→bullet | `round(fs / 3)` | `round(fs / 3)` |
-| Gap stella→voto | `round(fs / 6)` | `round(fs / 6)` |
-| Padding orizzontale | `genreBadgeSafePad(fs) = round(fs * 1.15)` dentro SVG | `genreBadgeSafePad(finalFontSize) = round(finalFontSize * 1.15)` dentro SVG; `pad = round(finalFontSize * 0.35)` (solo pill) |
-| Larghezza bullet | (naturale) | `bulletW = round(finalFontSize * 0.35)` |
-| Larghezza stella | (naturale) | `starW = round(finalFontSize * 0.92)` |
-| Altezza badge | (flex naturale) | `svgH = max(round(finalFontSize * 1.6), 24)` |
-| Colori testo | `text-gray-200` (≈ `#e5e7eb`) | `#e5e7eb` |
-| Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` | `"0 4px 6px rgba(0,0,0,0.5)"` |
-| Overflow protection | `fs` ridotto se `totalW + safePad*2 > min(containerW - 20, round(containerW * 0.84))`, calcolato con `genreClientDims()` | Stessa logica: `totalW + safePad*2 > min(pw - 20, round(pw * 0.84))`, usa `genreBadgeDims()`. Per pill usa `min(width - 20, round(width * 0.78))` su `textContentW + pillPad*3 + safePad*2` |
-| Text offset server | (nessuno) | `textOffsetX = 0` (bar, pill, shadow) — client e server restano centrati uguali |
-| Misura testo | CSS flex naturale | `estimateTextWidth()` per-glyph in `badge-svg-shared.ts` |
-| Allineamento verticale | Flex baseline naturale | Un solo `<text>` con `text-anchor="middle" x="centerX"` e `<tspan dx=...>`; `dominant-baseline="central"` e stella con `Noto Sans Symbols 2` |
-| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg `tlBg` (black/white 80% in base a `topLight`) con testo `tlFg`; `bar` — bg `tlBg` full-width + testo `tlFg`; `colored` — bg `accentColor` + testo adattivo | Stessi stili in SVG. Per `pill`/`bar` usa `tlBg`/`tlFg` in base a `topLight` (stessa soglia > 0.80). `colored` usa `textColorForBg()`. |
-| Sfondo pill/bar (`tlBg`) | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
-| Testo pill/bar (`tlFg`) | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
-| Bordo bar | `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}` | `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}` |
+> **WYSIWYG**: il preview client usa `<img src={previewUrl}>` che carica `/api/poster/{type}/{id}` — lo stesso endpoint usato da Stremio. Non c'è duplicazione: preview = poster finale.
+
+| Parametro | Server (`svg-badge.ts:renderGenreBadge`) |
+|---|---|
+| Font size | `finalFontSize = round(24 * pw / 380)` |
+| Gap genere→bullet | `round(fs / 3)` |
+| Gap stella→voto | `round(fs / 6)` |
+| Padding orizzontale | `genreBadgeSafePad(finalFontSize) = round(finalFontSize * 1.15)` dentro SVG; `pad = round(finalFontSize * 0.35)` (solo pill) |
+| Larghezza bullet | `bulletW = round(finalFontSize * 0.35)` |
+| Larghezza stella | `starW = round(finalFontSize * 0.92)` |
+| Altezza badge | `svgH = max(round(finalFontSize * 1.6), 24)` |
+| Colori testo | `#e5e7eb` |
+| Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` |
+| Overflow protection | `totalW + safePad*2 > min(pw - 20, round(pw * 0.84))`, usa `genreBadgeDims()`. Per pill usa `min(width - 20, round(width * 0.78))` su `textContentW + pillPad*3 + safePad*2` |
+| Misura testo | `estimateTextWidth()` per-glyph in `badge-svg-shared.ts` |
+| Allineamento verticale | Un solo `<text>` con `text-anchor="middle" x="adjustedX"` (compensa dx) e `<tspan dx=...>`; `dominant-baseline="central"` e stella con `Noto Sans Symbols 2` |
+| Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg `tlBg` (black/white 80% in base a `topLight`) con testo `tlFg`; `bar` — bg `tlBg` full-width + testo `tlFg`; `colored` — bg `accentColor` + testo adattivo |
+| Sfondo pill/bar (`tlBg`) | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
+| Testo pill/bar (`tlFg`) | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
+| Bordo bar | `1px solid ${topLight ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)"}` |
 
 ## Badge Ranking/Extra
 
-| Parametro | Client (`PreviewBadges.tsx`) | Server (`svg-badge.ts:renderRankingBadge/renderExtraBadge`) |
-|---|---|---|
-| Font size base | `23 * containerW / 380` | `23 * pw / 380` |
-| Padding X | `px = round(fs)` | `px = round(finalFontSize * 1.0)` |
-| Padding Y (bar) | `bpy = round(fs * 0.35)` | `pt = pb = round(displayFs * 0.35)` |
-| Padding Y (default) | `bpy = round(fs * 0.5)` | `pt = pb = round(displayFs * 0.5)` |
-| Border radius | `r = round(fs * 0.7)` | `r = round(finalFontSize * 0.7)` |
-| Ombra | `shadowOff = round(fs * 0.2)`, `shadowBlur = round(fs * 0.6)`, `boxShadow: "0 ${shadowOff}px ${shadowBlur}px rgba(0,0,0,0.3)"` | `shadowBlur = round(fs * 0.6)`, `shadowOff = round(fs * 0.2)` (stessa formula scalata) |
-| Sfondo | `topLight ? "bg-black/80" : "bg-white/80"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
-| Testo | `topLight ? "text-white/80" : "text-black/80"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
-| Overflow protection | `fs` ridotto se `fs * (textLen * 0.66 + 2.35) > containerW - 20` (ranking, 2.35 = hash + px*2) o `fs * (labelLen * 0.66 + 2.0) > containerW - 20` (extra) | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
-| Posizione | `top-0 left-1/2 -translate-x-1/2` | Composito a `top: 0, left: round((pw - w) / 2)` |
+| Parametro | Server (`svg-badge.ts:renderRankingBadge/renderExtraBadge`) |
+|---|---|
+| Font size base | `23 * pw / 380` |
+| Padding X | `px = round(finalFontSize * 1.0)` |
+| Padding Y (bar) | `pt = pb = round(displayFs * 0.35)` |
+| Padding Y (default) | `pt = pb = round(displayFs * 0.5)` |
+| Border radius | `r = round(finalFontSize * 0.7)` |
+| Ombra | `shadowBlur = round(fs * 0.6)`, `shadowOff = round(fs * 0.2)` |
+| Sfondo | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
+| Testo | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
+| Overflow protection | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
+| Posizione | Composito a `top: 0, left: round((pw - w) / 2)` |
 
 ## Gradiente fondo poster
 
-| Parametro | Client (`PreviewBadges.tsx`) | Server (`badges.ts:bottomGradientSVG`) |
-|---|---|---|
-| Altezza | `height: gradientHeight%`, `minHeight: 100 * containerH / 570` | `gh = max(round(ph * pct / 100), 100)` |
-| Colore | `gradientColor` → `rgba(r,g,b,gradientOpacity)` | `color` + `opacity` |
-| Direzione | `dirCSS = gradientDir === "down" ? "to bottom" : "to top"` | `y1 = dir === "up" ? "0" : "1"`, `y2 = dir === "up" ? "1" : "0"` |
-| Posizione | `posClass = gradientDir === "down" ? "top-0" : "bottom-0"` | `top = dir === "up" ? ph - gh : 0` |
-| Fade (client: bottom→top) | `0% opaco → gf% opaco → fadeEnd% trasp → 100% trasp` <br>`gf = min(gradientFade, 100)`, `fadeEnd = min(gf + 20, 100)` | `0% trasp → svgFadeEnd% trasp → svgSolidPct% opaco → 100% opaco` <br>`svgSolidPct = 100 - cappedFade`, `svgFadeEnd = max(100 - min(cappedFade + 20, 100), 0)` |
-| Note | Gradiente CSS `to top` (0% = bottom) | Gradiente SVG `y1=0 y2=1` (0% = top) — valori invertiti |
-| Posizione badge genere | `bottom: 20 * containerH / 570 + bottomOffset` | `badgeY = ph - h - round(20 * ph / 570)` |
+| Parametro | Server (`badges.ts:bottomGradientSVG`) |
+|---|---|
+| Altezza | `gh = max(round(ph * pct / 100), 100)` |
+| Colore | `color` + `opacity` |
+| Direzione | `y1 = dir === "up" ? "0" : "1"`, `y2 = dir === "up" ? "1" : "0"` |
+| Posizione | `top = dir === "up" ? ph - gh : 0` |
+| Fade | `0% trasp → svgFadeEnd% trasp → svgSolidPct% opaco → 100% opaco` |
+| Posizione badge genere | `badgeY = ph - h - round(20 * ph / 570)` |
 
 ## Parametri URL (query string)
 
@@ -71,7 +71,7 @@ App version: `0.13.0` — RENDER_VERSION: `74` — rv: `65`
 | `gradHeight` | `gradientHeight` | `qGradHeight` |
 | `gradFade` | `gradientFade` | `qGradFade` |
 | `gradDir` | `gradientDir` | `qGradDir` — "up" o "down" |
-| `tl` | `topLight ? "1" : "0"` (se rankingBadges attivi) | `qTopLight` — override se presente |
+| `tl` | `topLight ? "1" : "0"` (sempre, anche per genre badges) | `qTopLight` — override se presente |
 | `rank` | `badge.rank` (se rankingBadges attivi) | `qRank` — override del ranking |
 | `label` | `badge.rankLabel \|\| badge.label` | `qLabel` — override label ranking |
 | `extra` | `badge.label` (se extra) o `customBadge` | `queryExtra` — forza badge extra |
@@ -96,13 +96,12 @@ App version: `0.13.0` — RENDER_VERSION: `74` — rv: `65`
 
 ## Files coinvolti
 
-- `src/components/PreviewBadges.tsx` — client-side preview (React)
-- `src/components/EditView.tsx` — orchestratore preview client
+- `src/components/EditView.tsx` — preview WYSIWYG (singolo `<img src={previewUrl}>`)
 - `src/lib/context.tsx` — stato, URL builder, localStorage
+- `src/lib/poster-url.ts` — `buildPreviewUrl()`, `buildUrlPattern()` (parametri client → URL server)
 - `src/lib/badges.ts` — server-side SVG (bottomGradientSVG)
 - `src/lib/svg-badge.ts` — server-side SVG raw badges (renderGenreBadge, renderRankingBadge, renderExtraBadge) + Resvg rendering
 - `src/lib/badge-priority.ts` — logica priorità badge (condivisa)
 - `src/lib/logo-layout.ts` — geometria condivisa logo preview/server
-- `src/app/api/badge-preview/route.ts` — PNG preview badge generati dal renderer server
-- `src/app/api/poster/[type]/[id]/route.ts` — composizione poster finale
+- `src/app/api/poster/[type]/[id]/route.ts` — composizione poster finale (preview + Stremio usano la stessa route)
 <!-- END:badge-sync -->

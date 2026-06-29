@@ -45,6 +45,7 @@ interface PosterState {
   trendRank: number | null
   mdblistAnimeList: EnrichedAnimeItem[]
   topEdgeColor: string
+  accentColor?: string
   lang: string
   tmdbKey: string
 }
@@ -100,9 +101,10 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   params.push(`bs=${bp.badgeStyle}`)
   params.push(`rs=${bp.rankingBadgeStyle}`)
   if (!bp.blurEnabled) params.push("be=0")
+  if (ps.accentColor && ps.accentColor !== "#555555") params.push(`ac=${encodeURIComponent(ps.accentColor)}`)
+  const topLight = computeTopLight(ps.topEdgeColor)
+  params.push(`tl=${topLight ? "1" : "0"}`)
   if (bp.rankingBadges) {
-    const topLight = computeTopLight(ps.topEdgeColor)
-    params.push(`tl=${topLight ? "1" : "0"}`)
     const badgeParams = computeBadgeParams(ps, bp)
     params.push(...badgeParams)
   }

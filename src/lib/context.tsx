@@ -352,14 +352,14 @@ export function usePosterium(): PosteriumCtx {
         logoScale, logoOffsetX, logoOffsetY,
         backdropScale, backdropOffsetX, backdropOffsetY,
         metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
-        topEdgeColor, lang, tmdbKey,
+        topEdgeColor, accentColor, lang, tmdbKey,
       },
       { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled }
     )
     setPreviewUrl(url)
   }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, selectedBackdrop,
     logoScale, logoOffsetX, logoOffsetY, backdropScale, backdropOffsetX, backdropOffsetY,
-    metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, lang, tmdbKey,
+    metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, accentColor, lang, tmdbKey,
     globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled])
 
   useEffect(() => {

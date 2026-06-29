@@ -182,9 +182,19 @@ describe("buildPreviewUrl", () => {
     expect(url).not.toContain("be=0")
   })
 
-  it("includes tl param when rankingBadges enabled", () => {
-    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, rankingBadges: true })
+  it("always includes tl param", () => {
+    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, rankingBadges: false })
     expect(url).toMatch(/tl=[01]/)
+  })
+
+  it("includes ac param when accentColor is set", () => {
+    const url = buildPreviewUrl({ ...basePosterState, accentColor: "#ff0000" }, baseBadgeParams)
+    expect(url).toContain("ac=%23ff0000")
+  })
+
+  it("does not include ac param when accentColor is default", () => {
+    const url = buildPreviewUrl({ ...basePosterState, accentColor: "#555555" }, baseBadgeParams)
+    expect(url).not.toContain("ac=")
   })
 
   it("does not include badges=0 when globalBadges is true", () => {
