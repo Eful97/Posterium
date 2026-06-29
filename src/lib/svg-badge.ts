@@ -70,7 +70,7 @@ function wrapSvg(svg: string): string {
   return svg.replace("<svg ", `<svg `).replace(">", `>${fontStyle()}`)
 }
 
-export async function renderSVG(svgStr: string, w: number, h: number): Promise<Buffer> {
+export async function renderSVG(svgStr: string, w: number): Promise<Buffer> {
   const resvg = new Resvg(svgStr, { fitTo: { mode: "width", value: w } })
   return Buffer.from(resvg.render().asPng())
 }
@@ -123,7 +123,7 @@ export async function buildGenreBadgeSVG(
     result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s, -50)
   }
 
-  const png = await renderSVG(wrapSvg(result.svg), result.w, result.h)
+  const png = await renderSVG(wrapSvg(result.svg), result.w)
   return { png, w: result.w, h: result.h }
 }
 
@@ -158,7 +158,7 @@ export async function buildRankingBadgeSVG(
     result = buildRankingDefaultSvg(fullText, fs, fg, bg)
   }
 
-  const png = await renderSVG(wrapSvg(result.svg), result.w, result.h)
+  const png = await renderSVG(wrapSvg(result.svg), result.w)
   return { png, w: result.w, h: result.h }
 }
 
@@ -189,7 +189,7 @@ export async function buildExtraBadgeSVG(
     result = buildExtraDefaultSvg(label, fs, fg, bg)
   }
 
-  const png = await renderSVG(wrapSvg(result.svg), result.w, result.h)
+  const png = await renderSVG(wrapSvg(result.svg), result.w)
   return { png, w: result.w, h: result.h }
 }
 

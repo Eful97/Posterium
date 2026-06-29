@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest"
 import { mappingSchema } from "@/lib/validation"
 import { computeBadge } from "@/lib/badge-priority"
+import { createT } from "@/lib/i18n"
+
+const t = createT("it")
 
 describe("mappingSchema CRUD", () => {
   it("validates a minimal mapping", () => {
@@ -73,7 +76,7 @@ describe("badge priority edge cases", () => {
     const r = computeBadge({
       isNewMovie: false, isNewSeries: false, animeRank: 3, trendRank: 10,
       award: null, franchise: null, nomination: null, studio: null, director: null, extra: null,
-    })
+    }, t)
     expect(r?.type).toBe("rank")
     expect(r?.rank).toBe(3)
     expect(r?.label).toBe("Anime")

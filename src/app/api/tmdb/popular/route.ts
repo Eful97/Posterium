@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const cacheKey = `popular:${req.nextUrl.searchParams.toString()}`
-  const cached = cacheGet<{ results: any[]; page: number; totalPages: number }>(cacheKey)
+  const cached = cacheGet<{ results: (TMDBMediaResult & { media_type: "movie" | "tv" })[]; page: number; totalPages: number }>(cacheKey)
   if (cached) return Response.json(cached)
   const page = parseInt(req.nextUrl.searchParams.get("page") || "1", 10)
   const language = req.nextUrl.searchParams.get("language") || "it-IT"

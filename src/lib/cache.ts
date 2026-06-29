@@ -2,6 +2,7 @@ interface CacheEntry<T> {
   data: T
   timestamp: number
   tags: string[]
+  ttl?: number
 }
 
 const store = new Map<string, CacheEntry<unknown>>()
@@ -46,7 +47,8 @@ function isExpired(entry: CacheEntry<unknown>): boolean {
       return entry.timestamp < yesterdayRefresh.getTime()
     }
   }
-  return Date.now() - entry.timestamp > ttlForTags(entry.tags)
+  const ttl = entry.ttl || ttlForTags(entry.tags)
+  return Date.now() - entry.timestamp > ttl
 }
 
 let cleanupTimer: ReturnType<typeof setInterval> | null = null
@@ -81,13 +83,13 @@ export function cacheGetStale<T>(key: string): { data: T | null; stale: boolean 
   return { data: entry.data, stale: false }
 }
 
-export function cacheSet<T>(key: string, data: T, tags: string[] = []): void {
+export function cacheSet<T>(key: string, data: T, tags: string[] = [], ttlMs?: number): void {
   startCleanup()
   if (store.size >= MAX_ENTRIES && !store.has(key)) {
     const first = store.keys().next().value
     if (first) store.delete(first)
   }
-  store.set(key, { data, timestamp: Date.now(), tags })
+  store.set(key, { data, timestamp: Date.now(), tags, ttl: ttlMs })
 }
 
 export function cacheInvalidate(tag: string): void {

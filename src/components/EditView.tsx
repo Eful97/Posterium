@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useP } from "@/lib/context"
+import { toSearchResult } from "@/lib/types"
+import type { EnrichedAnimeItem } from "@/lib/validation"
 import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
 import { Toggle } from "@/components/Toggle"
@@ -12,7 +14,7 @@ import { resolveLabel, isRankKey, isPrefixedKey, badgeKey } from "@/lib/i18n"
 import { SearchBar } from "@/components/SearchBar"
 import { RankRow } from "@/components/RankRow"
 import { RankingBadge, GenreRatingBadges, ExtraBadge } from "@/components/PreviewBadges"
-import { RefreshCw, Search, Image, Ruler, Cloud, Minus, Circle, Moon, Pill, Square, BarChart3, Check, XCircle, ArrowLeftRight, ArrowUpDown, Clock, X } from "lucide-react"
+import { RefreshCw, Search, ImageOff, Ruler, Cloud, Minus, Circle, Moon, Pill, BarChart3, Check, XCircle, ArrowLeftRight, ArrowUpDown, Clock, X } from "lucide-react"
 
 export default function EditView() {
   const p = useP()
@@ -96,13 +98,14 @@ export default function EditView() {
     }
     addEventListener("keydown", fn)
     return () => removeEventListener("keydown", fn)
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- p is stable; only specific methods used
+  }, [p.setSettingsOpen, p.setShowLangPicker, p.saveConfig])
 
   const posterCol = (
     <div className="w-full md:w-72 xl:w-80 2xl:w-96 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1 space-y-4" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
       <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.posterSection")}</h3>
-        {p.loadingImages ? <div className="text-center py-12 text-zinc-400">{p.t("ui.loadingPoster")}</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} selected={p.selected} lang={p.lang} openSections={p.openSections} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} />}
+        {p.loadingImages ? <div className="text-center py-12 text-zinc-400">{p.t("ui.loadingPoster")}</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} lang={p.lang} openSections={p.openSections} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} />}
       </div>
     </div>
   )
@@ -127,11 +130,12 @@ export default function EditView() {
         <div ref={previewRef} className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
           {p.previewPoster && !imageError && <>
             {posterLoading && <div className="absolute inset-0 bg-zinc-800 animate-pulse rounded-2xl" />}
-            <img src={p.posterUrl(p.previewPoster.file_path, "w342")} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onLoad={() => setPosterLoading(false)} onError={() => { setImageError(true); setPosterLoading(false) }} />
+            {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
+            <img src={p.posterUrl(p.previewPoster.file_path, "w342")} alt={p.selected?.title || p.selected?.name || ""} loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover" onLoad={() => setPosterLoading(false)} onError={() => { setImageError(true); setPosterLoading(false) }} />
           </>}
           {imageError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 text-center p-8">
-              <Image className="w-12 h-12 mb-3 text-zinc-500" />
+              <ImageOff className="w-12 h-12 mb-3 text-zinc-500" />
               <p className="text-sm text-zinc-400 font-medium">{p.t("ui.imageNotAvailable")}</p>
               <p className="text-xs text-zinc-500 mt-1">{p.t("ui.posterLoadError")}</p>
               <button onClick={() => setImageError(false)} className="mt-3 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg transition-all duration-150"><span className="flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />{p.t("ui.retry")}</span></button>
@@ -183,17 +187,19 @@ export default function EditView() {
                   p.setLogoOffsetX(0)
                   p.setLogoOffsetY(0)
                 }}
-                ><img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full relative" style={{ objectFit: "contain" }} /></div></div>
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
+                  <img src={p.posterUrl(p.selectedLogo.file_path, "original")} alt="" loading="eager" decoding="async" className="w-full relative" style={{ objectFit: "contain" }} />
+                </div></div>
           })()}
           {p.rankingBadges && (() => {
-            // eslint-disable-next-line
             const twoWeeks = 14 * 24 * 60 * 60 * 1000
             const isNewMovie = p.selected?.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
             const isNewSeries = p.selected?.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
             const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards, p.t) : null
             const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations, p.t) : null
 
-            const animeRankData = p.mdblistAnimeList?.find((a: any) => a.id === p.selected?.id)
+            const animeRankData = p.mdblistAnimeList?.find((a) => a.id === p.selected?.id)
             const animeRank = animeRankData ? animeRankData.rank : null
             const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
             const tvType = p.selected?.media_type === "tv" ? p.metaInfo.type : null
@@ -214,7 +220,7 @@ export default function EditView() {
             }
             return null
           })()}
-          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} blurEnabled={p.blurEnabled} badgeStyle={p.badgeStyle} accentColor={p.accentColor} topLight={genreTopLight} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} rankingBadgeStyle={p.rankingBadgeStyle} /></div>}
+          {badgesVisible && <div className="absolute inset-0"><GenreRatingBadges genreName={p.metaInfo.genres[0].name} voteAverage={p.metaInfo.voteAverage} containerW={previewDims.w} containerH={previewDims.h} gradientHeight={p.gradientHeight} blurIntensity={p.blurIntensity} blurFade={p.blurFade} blurDarkness={p.blurDarkness} blurEnabled={p.blurEnabled} badgeStyle={p.badgeStyle} accentColor={p.accentColor} topLight={genreTopLight} releaseDate={p.metaInfo.release_date || p.metaInfo.first_air_date} /></div>}
           <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "3px solid rgba(255,255,255,0.80)", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }} />
         </div>
         </div>
@@ -266,7 +272,7 @@ export default function EditView() {
               const isNewSeries = p.selected.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
               const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards, p.t) : null
               const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations, p.t) : null
-              const animeRankData = p.mdblistAnimeList?.find((a: any) => a.id === p.selected!.id)
+              const animeRankData = p.mdblistAnimeList?.find((a) => a.id === p.selected!.id)
               const animeRank = animeRankData ? animeRankData.rank : null
               const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
               const tvType = p.selected.media_type === "tv" ? p.metaInfo.type : null
@@ -364,7 +370,7 @@ export default function EditView() {
                   const isNewSeries = s.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
                   const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards, p.t) : null
                   const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations, p.t) : null
-                  const animeRankData = p.mdblistAnimeList?.find((a: any) => a.id === s.id)
+                  const animeRankData = p.mdblistAnimeList?.find((a) => a.id === s.id)
                   const animeRank = animeRankData ? animeRankData.rank : null
                   const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
                   const tvType = s.media_type === "tv" ? p.metaInfo.type : null
@@ -439,7 +445,7 @@ export default function EditView() {
             <div className="space-y-6">
               {(["movie", "tv"] as const).map((mediaType) => {
                 const items = p.trending.filter((r) => r.media_type === mediaType).slice(0, 20)
-                return <RankRow key={mediaType} label={mediaType === "movie" ? p.t("ui.movies") : p.t("ui.series")} items={items} onItemClick={(item) => p.navigateToPoster(item as any)} />
+                return <RankRow key={mediaType} label={mediaType === "movie" ? p.t("ui.movies") : p.t("ui.series")} items={items} onItemClick={(item) => p.navigateToPoster(toSearchResult(item))} />
               })}
             </div>
           )}
@@ -453,7 +459,7 @@ export default function EditView() {
                 <div className="space-y-6">
                   {([["movie", chart.movies], ["tv", chart.tv]] as const).map(([mediaType, items]) => {
                     if (items.length === 0) return null
-                    return <RankRow key={mediaType} label={mediaType === "movie" ? p.t("ui.movies") : p.t("ui.series")} items={items.map((i) => ({ ...i, poster_path: i.posterPath, name: i.title }))} onItemClick={(item) => { if (item.tmdbId) p.navigateToPoster({ id: item.tmdbId, media_type: mediaType, title: item.title ?? "", name: item.title ?? "", poster_path: item.posterPath } as any) }} />
+                    return <RankRow key={mediaType} label={mediaType === "movie" ? p.t("ui.movies") : p.t("ui.series")} items={items.map((i) => ({ ...i, poster_path: i.posterPath, name: i.title }))} onItemClick={(item) => { if (item.tmdbId) p.navigateToPoster(toSearchResult({ id: item.tmdbId, media_type: mediaType as string, title: item.title ?? "", name: item.title ?? "", poster_path: item.posterPath })) }} />
                   })}
                 </div>
               </div>
@@ -463,7 +469,7 @@ export default function EditView() {
           {p.mdblistAnimeList.length > 0 && (
             <div className="mt-10">
               <h2 className="text-xl font-bold mb-4 text-center">{p.t("ui.trendingAnime")}</h2>
-              <RankRow label={p.t("ui.anime")} items={p.mdblistAnimeList} onItemClick={(item: any) => p.navigateToPoster({ id: item.id ?? 0, media_type: item.media_type || 'tv', title: item.title ?? '', name: item.title ?? '', poster_path: item.poster_path ?? '' })} />
+              <RankRow label={p.t("ui.anime")} items={p.mdblistAnimeList} onItemClick={(item) => { const a = item as unknown as EnrichedAnimeItem; p.navigateToPoster(toSearchResult({ id: a.id ?? 0, media_type: a.media_type || 'tv', title: a.title ?? '', name: a.title ?? '', poster_path: a.poster_path ?? '' })) }} />
             </div>
           )}
 

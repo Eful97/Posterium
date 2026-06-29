@@ -50,7 +50,7 @@ export async function getJWRankings(objectType: "MOVIE" | "SHOW", country = "IT"
   const json = await res.json()
   const edges = json?.data?.streamingCharts?.edges || []
   const result = edges
-    .map((e: any) => {
+    .map((e: { node?: { content?: { externalIds?: { tmdbId?: number | string } } }; streamingChartInfo?: { rank?: number } }) => {
       const tmdbId = Number(e?.node?.content?.externalIds?.tmdbId)
       const rank = e?.streamingChartInfo?.rank
       if (!tmdbId || !rank) return null

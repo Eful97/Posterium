@@ -44,6 +44,7 @@ const RankCard = React.memo(function RankCard({ item, onClick, isFirst, staggerI
         >
           <div className="aspect-[2/3] bg-zinc-800 rounded-lg overflow-hidden shadow-xl transition-all duration-300 relative">
             {imgSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL
               <img
                 src={posterUrl(imgSrc, "w342")}
                 alt={label}

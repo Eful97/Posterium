@@ -7,7 +7,17 @@ export async function GET(req: NextRequest) {
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const cacheKey = "mdblist:anime:top10"
-  const cached = cacheGet<any[]>(cacheKey)
+  interface MdblistItem {
+  imdb_id?: string
+  imdb?: string
+  ids?: { imdb?: string; tmdb?: number | string }
+  tmdb_id?: number | string
+  tmdb?: number | string
+  id?: number | string
+  title?: string
+}
+
+const cached = cacheGet<MdblistItem[]>(cacheKey)
   if (cached) return Response.json(cached)
 
   const mdblistKey = req.nextUrl.searchParams.get("mdblist_key")
@@ -26,7 +36,7 @@ export async function GET(req: NextRequest) {
     const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
     const items = rawItems.slice(0, 20)
 
-    const results = await Promise.all(items.map(async (item: any, idx: number) => {
+    const results = await Promise.all(items.map(async (item: MdblistItem, idx: number) => {
       // IDs can be in different fields
       const imdbId = item.imdb_id || item.imdb || item.ids?.imdb || ''
       const tmdbId = item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id

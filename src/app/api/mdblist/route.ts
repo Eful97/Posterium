@@ -32,7 +32,15 @@ export async function GET(req: NextRequest) {
       if (!res.ok) continue
       const body = await res.json()
       const payload = body?.data || body
-      let parsedItems: any[] = []
+      interface MdblistRawItem {
+  imdb_id?: string
+  imdb?: string
+  ids?: { imdb?: string }
+  title?: string
+  year?: number
+}
+
+let parsedItems: MdblistRawItem[] = []
       if (Array.isArray(payload)) {
         parsedItems = payload
       } else if (payload?.items) {
@@ -42,7 +50,7 @@ export async function GET(req: NextRequest) {
       } else if (payload?.movies) {
         parsedItems = payload.movies
       }
-      const items: MDBListEntry[] = parsedItems.slice(0, 20).map((item: any) => ({
+      const items: MDBListEntry[] = parsedItems.slice(0, 20).map((item: MdblistRawItem) => ({
         imdb: item.imdb_id || item.imdb || item.ids?.imdb || '',
         title: item.title || '',
         year: item.year || 0,

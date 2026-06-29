@@ -22,15 +22,6 @@ const SLUG_TO_PLATFORM: Record<string, string> = {
   "paramount-plus": "Paramount+",
 }
 
-const PLATFORM_TO_SLUG: Record<string, string> = {
-  Netflix: "netflix",
-  "Disney+": "disney",
-  "Amazon Prime": "amazon-prime",
-  "HBO Max": "hbo-max",
-  "Apple TV": "apple-tv",
-  "Paramount+": "paramount-plus",
-}
-
 interface CatalogEntry {
   rank: number
   title: string

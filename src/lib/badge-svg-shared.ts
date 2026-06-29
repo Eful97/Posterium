@@ -82,15 +82,8 @@ export function buildGenreTextSvg(genreName: string, voteStr: string, yearStr: s
 }
 
 export function buildRankingBarSvg(fullText: string, pw: number, fs: number, textColor: string, bg: string) {
-  const px = Math.round(fs * 1.0)
   const pt = Math.round(fs * 0.35)
   const pb = pt
-  const textLen = fullText.length
-  const rankPart = String(fullText).split(" ")[0].replace("#", "").length * fs * CHAR_WIDTH
-  const spacePart = fs * 0.35
-  const labelPart = fullText.split(" ").slice(1).join(" ").length * fs * CHAR_WIDTH
-  const textW = Math.round(rankPart + spacePart + labelPart)
-  const totalW = textW + px * 2
   const svgH = fs + pt + pb
   const r = Math.round(fs * 0.7)
   const shadowBlur = Math.round(fs * 0.6)
@@ -106,7 +99,6 @@ export function buildRankingDefaultSvg(fullText: string, fs: number, textColor: 
   const px = Math.round(fs * 1.0)
   const pt = Math.round(fs * 0.5)
   const pb = pt
-  const textLen = fullText.length
   const rankPart = String(fullText).split(" ")[0].replace("#", "").length * fs * CHAR_WIDTH
   const spacePart = fs * 0.35
   const labelPart = fullText.split(" ").slice(1).join(" ").length * fs * CHAR_WIDTH
@@ -129,11 +121,8 @@ export function buildRankingDefaultSvg(fullText: string, fs: number, textColor: 
 }
 
 export function buildExtraBarSvg(label: string, pw: number, fs: number, textColor: string, bg: string) {
-  const px = Math.round(fs * 1.0)
   const pt = Math.round(fs * 0.35)
   const pb = pt
-  const textW = Math.max(Math.round(label.length * fs * CHAR_WIDTH), fs)
-  const totalW = textW + px * 2
   const svgH = fs + pt + pb
   const r = Math.round(fs * 0.7)
   const shadowBlur = Math.round(fs * 0.6)

@@ -92,13 +92,6 @@ export interface TMDBSearchResponse {
   total_results: number
 }
 
-function getUrl(path: string, params: Record<string, string> = {}, apiKey?: string) {
-  const url = new URL(`${TMDB_BASE}${path}`)
-  url.searchParams.set("api_key", apiKey || TMDB_API_KEY!)
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-  return url.toString()
-}
-
 export async function searchMulti(query: string, language = "it-IT", apiKey?: string, page = 1): Promise<TMDBSearchResponse> {
   const data = await tmdbFetch(`/search/multi?query=${encodeURIComponent(query)}&language=${language}&page=${page}`, apiKey)
   return data as TMDBSearchResponse

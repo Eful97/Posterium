@@ -11,13 +11,12 @@ import { SliderRow } from "@/components/SliderRow"
 import { SearchView } from "@/components/SearchView"
 import { MyPostersView } from "@/components/MyPostersView"
 import EditView from "@/components/EditView"
-import type { SearchResult } from "@/lib/types"
-import { RefreshCw, Settings, Globe, Star, Trophy, Palette, Moon, Pill, Square, BarChart3, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Eye, EyeOff, Key, Clipboard, Trash2 } from "lucide-react"
+import { SecretInput, BadgeStyleSelector, MenuItem } from "@/components/ui"
+import { RefreshCw, Settings, Globe, Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, HeartPulse, Key } from "lucide-react"
 
 export function AppShell() {
   const p = useP()
   const [refreshing, setRefreshing] = useState(false)
-  const [showMdb, setShowMdb] = useState(false)
   const [installed, setInstalled] = useState(false)
   const [editVal, setEditVal] = useState<string | null>(null)
   const [editTxt, setEditTxt] = useState("")
@@ -44,10 +43,11 @@ export function AppShell() {
           <button onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.replaceState({ view: "myposters" }, ""); p.setView("myposters") } }} className="h-10 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm font-medium rounded-xl text-zinc-300">{p.t("ui.myPostersBtn")} ({p.mappings.length})</button>
           <div className="relative" ref={p.settingsRef}>
             <button onClick={(e) => { e.stopPropagation(); p.setSettingsOpen((o) => !o) }} className="h-10 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm flex items-center gap-2 rounded-xl text-zinc-300">{p.t("ui.settings")}</button>
-            <div className="hidden md:block">{p.settingsOpen && <SettingsPanel showKey={p.showKey} tmdbKeyInput={p.tmdbKeyInput} setTmdbKeyInput={p.setTmdbKeyInput} setTmdbKey={p.setTmdbKey} setShowKey={p.setShowKey} setSettingsOpen={p.setSettingsOpen} exportData={p.exportData} importData={p.importData} mdblistApiKey={p.mdblistApiKey} setMdblistApiKey={p.setMdblistApiKey} />}</div>
+            <div className="hidden md:block">{p.settingsOpen && <SettingsPanel tmdbKeyInput={p.tmdbKeyInput} setTmdbKeyInput={p.setTmdbKeyInput} setTmdbKey={p.setTmdbKey} setSettingsOpen={p.setSettingsOpen} exportData={p.exportData} importData={p.importData} mdblistApiKey={p.mdblistApiKey} setMdblistApiKey={p.setMdblistApiKey} />}</div>
           </div>
         </div>
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
+          {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
           <img onClick={p.goHome} src="/posterium.svg" alt="Posterium" decoding="async" className="h-16 md:h-20 w-auto mb-5 md:mb-4 cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
             <button onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="h-9 px-3 btn-primary text-xs">{p.copied ? p.t("ui.copied") : p.t("ui.copyUrl")}</button>
@@ -69,7 +69,7 @@ export function AppShell() {
       >
         <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
       </button>
-      <a href="/status" className="fixed bottom-5 right-[4rem] z-50 h-8 w-8 flex items-center justify-center bg-surface rounded-xl hover:bg-surface2 active:scale-90 transition-all duration-150 text-sm shadow-lg shadow-black/30">🏥</a>
+      <a href="/status" className="fixed bottom-5 right-[4rem] z-50 h-8 w-8 flex items-center justify-center bg-surface rounded-xl hover:bg-surface2 active:scale-90 transition-all duration-150 text-sm shadow-lg shadow-black/30"><HeartPulse className="w-4 h-4" /></a>
       <div className="fixed bottom-5 right-5 z-50" ref={p.langRef}>
         <button onClick={() => p.setLangOpen((o) => !o)} className="h-8 w-8 flex items-center justify-center bg-surface rounded-xl hover:bg-surface2 active:scale-90 transition-all duration-150 text-sm shadow-lg shadow-black/30" title={LANG_NAMES[p.lang]}>{LANG_FLAGS[p.lang] || <Globe className="w-4 h-4" />}</button>
         {p.langOpen && (
@@ -92,48 +92,28 @@ export function AppShell() {
             <h2 className="text-sm font-semibold text-zinc-200">{p.t("ui.settingsTitle")}</h2>
           </div>
           <div className="p-4 space-y-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Key className="w-3 h-3" />{p.t("ui.tmdbKey")}</label>
-              <div className="flex gap-1">
-                <input type={p.showKey ? "text" : "password"} value={p.tmdbKeyInput} onChange={(e) => p.setTmdbKeyInput(e.target.value)} onBlur={() => p.setTmdbKey(p.tmdbKeyInput)} onKeyDown={(e) => { if (e.key === "Enter") { p.setTmdbKey(p.tmdbKeyInput); p.setSettingsOpen(false) } }} placeholder={p.t("ui.tmdbKeyPlaceholder")} className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500" />
-                <button onClick={(e) => { e.stopPropagation(); p.setShowKey((s) => !s) }} className="px-2 bg-zinc-800 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150">{p.showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Clipboard className="w-3 h-3" />{p.t("ui.mdblistKey")}</label>
-              <div className="flex gap-1">
-                <input type={showMdb ? "text" : "password"} value={p.mdblistApiKey} onChange={(e) => { p.setMdblistApiKey(e.target.value); localStorage.setItem("mdblist_key", e.target.value) }} placeholder={p.t("ui.mdblistKeyPlaceholder")} className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500" />
-                <button onClick={(e) => { e.stopPropagation(); setShowMdb(!showMdb) }} className="px-2 bg-zinc-800 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150">{showMdb ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
-              </div>
-            </div>
-            <button onClick={() => { p.exportData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Upload className="w-3 h-3" />{p.t("ui.exportJson")}</span></button>
-            <button onClick={() => { p.importData(); p.setSettingsOpen(false) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Download className="w-3 h-3" />{p.t("ui.importJson")}</span></button>
-            <button onClick={async () => { setClearing(true); try { await fetch("/api/cache/clear") } catch {}; setTimeout(() => setClearing(false), 1500) }} className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-red-900/50 active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5"><Trash2 className="w-3 h-3" />{clearing ? p.t("ui.saved") : p.t("ui.clearCache")}</span></button>
+            <SecretInput label={p.t("ui.tmdbKey")} icon={<Key />} value={p.tmdbKeyInput} onChange={p.setTmdbKeyInput} onBlur={() => p.setTmdbKey(p.tmdbKeyInput)} onKeyDown={(e) => { if (e.key === "Enter") { p.setTmdbKey(p.tmdbKeyInput); p.setSettingsOpen(false) } }} placeholder={p.t("ui.tmdbKeyPlaceholder")} />
+            <SecretInput label={p.t("ui.mdblistKey")} icon={<Clipboard />} value={p.mdblistApiKey} onChange={(v) => { p.setMdblistApiKey(v); localStorage.setItem("mdblist_key", v) }} placeholder={p.t("ui.mdblistKeyPlaceholder")} />
+            <MenuItem icon={<Upload className="w-3 h-3" />} label={p.t("ui.exportJson")} onClick={() => { p.exportData(); p.setSettingsOpen(false) }} />
+            <MenuItem icon={<Download className="w-3 h-3" />} label={p.t("ui.importJson")} onClick={() => { p.importData(); p.setSettingsOpen(false) }} />
+            <MenuItem icon={<Trash2 className="w-3 h-3" />} label={clearing ? p.t("ui.saved") : p.t("ui.clearCache")} onClick={async () => { setClearing(true); try { await fetch("/api/cache/clear", { method: "POST" }) } catch {}; setTimeout(() => setClearing(false), 1500) }} danger />
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Star className="w-3 h-3" /> {p.t("ui.genreRatingBadge")}</span>
-              <button onClick={() => p.setDefaultGlobalBadges(!p.defaultGlobalBadges)} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultGlobalBadges ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultGlobalBadges ? "translate-x-4" : "translate-x-0"}`} /></button>
+              <button type="button" onClick={() => p.setDefaultGlobalBadges(!p.defaultGlobalBadges)} role="switch" aria-checked={p.defaultGlobalBadges} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultGlobalBadges ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultGlobalBadges ? "translate-x-4" : "translate-x-0"}`} /></button>
             </div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {p.t("ui.trendBadge")}</span>
-              <button onClick={() => p.setDefaultRankingBadges(!p.defaultRankingBadges)} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultRankingBadges ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultRankingBadges ? "translate-x-4" : "translate-x-0"}`} /></button>
+              <button type="button" onClick={() => p.setDefaultRankingBadges(!p.defaultRankingBadges)} role="switch" aria-checked={p.defaultRankingBadges} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultRankingBadges ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultRankingBadges ? "translate-x-4" : "translate-x-0"}`} /></button>
             </div>
             <hr className="border-zinc-700 my-2" />
             <label className="text-xs text-zinc-400 font-medium block mb-2 flex items-center gap-1.5"><Palette className="w-3 h-3" /> {p.t("ui.styleDefault")}</label>
-            <div className="flex gap-1 mb-2">
-              {(["shadow","pill","bar","colored"] as const).map(s => (
-                <button key={s} onClick={() => p.setDefaultBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.defaultBadgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}><span className="flex items-center gap-1 justify-center">{s === "shadow" ? <><Moon className="w-3 h-3" /> {p.t("ui.shadow")}</> : s === "pill" ? <><Pill className="w-3 h-3" /> {p.t("ui.pill")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><Circle className="w-3 h-3" /> {p.t("ui.colored")}</>}</span></button>
-              ))}
-            </div>
-            <label className="text-xs text-zinc-400 font-medium block mb-2 flex items-center gap-1.5"><BarChart3 className="w-3 h-3" /> {p.t("ui.styleRankingDefault")}</label>
-            <div className="flex gap-1 mb-2">
-              {(["default","bar","colored"] as const).map(s => (
-                <button key={s} onClick={() => p.setDefaultRankingBadgeStyle(s)} className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.defaultRankingBadgeStyle === s ? "bg-white/20 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}><span className="flex items-center gap-1 justify-center">{s === "default" ? <><Circle className="w-3 h-3" /> {p.t("ui.bsDefault")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</span></button>
-              ))}
-            </div>
+            <BadgeStyleSelector value={p.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored"]} onChange={p.setDefaultBadgeStyle} t={p.t} />
+            <label className="text-xs text-zinc-400 font-medium block mb-2 flex items-center gap-1.5"><Circle className="w-3 h-3" /> {p.t("ui.styleRankingDefault")}</label>
+            <BadgeStyleSelector value={p.defaultRankingBadgeStyle} options={["default", "bar", "colored"]} onChange={p.setDefaultRankingBadgeStyle} t={p.t} accentColor={p.accentColor} />
             <hr className="border-zinc-700 my-2" />
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-zinc-400">{p.t("ui.blurDefault")}</span>
-              <button onClick={() => p.setDefaultBlurEnabled(!p.defaultBlurEnabled)} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultBlurEnabled ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultBlurEnabled ? "translate-x-4" : "translate-x-0"}`} /></button>
+              <button type="button" onClick={() => p.setDefaultBlurEnabled(!p.defaultBlurEnabled)} role="switch" aria-checked={p.defaultBlurEnabled} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultBlurEnabled ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultBlurEnabled ? "translate-x-4" : "translate-x-0"}`} /></button>
             </div>
             {p.defaultBlurEnabled && <>
               <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={p.t("ui.height")} value={p.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setDefaultGradientHeight(v)} onDoubleClick={() => p.setDefaultGradientHeight(30)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="gh" suffix="%" />
@@ -143,9 +123,9 @@ export function AppShell() {
             </>}
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-zinc-400 flex items-center gap-1.5"><RotateCcw className="w-3 h-3" /> {p.t("ui.autoRotateDefault")}</span>
-              <button onClick={() => p.setDefaultAutoRotateClean(!p.defaultAutoRotateClean)} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultAutoRotateClean ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultAutoRotateClean ? "translate-x-4" : "translate-x-0"}`} /></button>
+              <button type="button" onClick={() => p.setDefaultAutoRotateClean(!p.defaultAutoRotateClean)} role="switch" aria-checked={p.defaultAutoRotateClean} className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${p.defaultAutoRotateClean ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${p.defaultAutoRotateClean ? "translate-x-4" : "translate-x-0"}`} /></button>
             </div>
-            <button onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full mt-2 text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {p.t("ui.saved")}</> : <><Save className="w-3 h-3" /> {p.t("ui.saveDefaults")}</>}</span></button>
+            <button type="button" onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full mt-2 text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {p.t("ui.saved")}</> : <><Save className="w-3 h-3" /> {p.t("ui.saveDefaults")}</>}</span></button>
           </div>
         </div>
       )}

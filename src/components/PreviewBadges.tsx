@@ -46,7 +46,7 @@ function RankingBadgeInline({ rank = "13", label: labelProp, topLight, container
   )
 }
 
-function GenreRatingBadgesInline({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientHeight = 30, blurIntensity = 5, blurFade = 60, blurDarkness = 40, blurEnabled = true, badgeStyle = "shadow", accentColor = "#000000", topLight, releaseDate, rankingBadgeStyle }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientHeight?: number; blurIntensity?: number; blurFade?: number; blurDarkness?: number; blurEnabled?: boolean; badgeStyle?: string; accentColor?: string; topLight?: boolean; releaseDate?: string | null; rankingBadgeStyle?: string }) {
+function GenreRatingBadgesInline({ genreName, voteAverage, containerW = 380, containerH = 570, bottomOffset = 0, gradientHeight = 30, blurIntensity = 5, blurFade = 60, blurDarkness = 40, blurEnabled = true, badgeStyle = "shadow", accentColor = "#000000", topLight, releaseDate }: { genreName: string; voteAverage: number; containerW?: number; containerH?: number; bottomOffset?: number; gradientHeight?: number; blurIntensity?: number; blurFade?: number; blurDarkness?: number; blurEnabled?: boolean; badgeStyle?: string; accentColor?: string; topLight?: boolean; releaseDate?: string | null }) {
   const voteStr = voteAverage.toFixed(1)
   const year = releaseDate?.slice(0, 4)
   const yearStr = year || ""
@@ -71,8 +71,6 @@ function GenreRatingBadgesInline({ genreName, voteAverage, containerW = 380, con
   }
   const fs = Math.round(finalFs)
   const barH = fs + Math.round(fs * 0.5) * 2
-  const barShadowOff = Math.max(Math.round(barH * 0.2), 3)
-  const barShadowBlur = Math.max(Math.round(barH * 0.5), 8)
   const targetCenter = 30 * containerH / 570 + bottomOffset
   const badgeH = (badgeStyle === "pill" || badgeStyle === "colored") ? fs + Math.round(fs * 0.35) * 2 : Math.max(Math.round(fs * 1.6), 24)
   const bottom = badgeStyle === "bar" ? 0 : Math.round(targetCenter - badgeH / 2)
@@ -80,7 +78,6 @@ function GenreRatingBadgesInline({ genreName, voteAverage, containerW = 380, con
   const opaquePct = Math.max(100 - blurFade, 0)
 
   const isPillStyle = badgeStyle === "pill" || badgeStyle === "colored"
-  const pillPad = Math.round(fs * 0.35)
   const pillBg = badgeStyle === "colored"
     ? (accentColor !== "#555555" ? accentColor : "rgba(255,255,255,0.80)")
     : "rgba(255,255,255,0.80)"

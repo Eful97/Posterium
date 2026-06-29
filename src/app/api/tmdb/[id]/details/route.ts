@@ -14,7 +14,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const mdblistKey = req.nextUrl.searchParams.get("mdblist_key") || undefined
   const mediaType = type === "tv" || type === "series" ? "tv" : "movie"
   const cacheKey = `details:v9:${type}:${id}:${language}`
-  const cached = cacheGet<{ title?: string; name?: string; genres: any[]; voteAverage: number; voteCount: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: any; number_of_seasons?: number; number_of_episodes?: number; networks?: { id: number; name: string; logo_path: string | null; origin_country: string }[]; production_companies?: { id: number; name: string; logo_path: string | null; origin_country: string }[]; imdb_id?: string | null; original_language?: string }>(cacheKey)
+  interface Genre { id: number; name: string }
+interface Episode { id: number; name: string; air_date: string | null; episode_number: number; season_number: number }
+
+const cached = cacheGet<{ title?: string; name?: string; genres: Genre[]; voteAverage: number; voteCount: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: Episode | null; number_of_seasons?: number; number_of_episodes?: number; networks?: { id: number; name: string; logo_path: string | null; origin_country: string }[]; production_companies?: { id: number; name: string; logo_path: string | null; origin_country: string }[]; imdb_id?: string | null; original_language?: string }>(cacheKey)
   if (cached) return Response.json(cached)
   try {
     const [data, extIds] = await Promise.all([

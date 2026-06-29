@@ -34,7 +34,7 @@ async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<number[]> {
     if (!res.ok) return []
     const json = await res.json()
     return (json?.data?.streamingCharts?.edges || [])
-      .map((e: any) => Number(e?.node?.content?.externalIds?.tmdbId))
+      .map((e: { node?: { content?: { externalIds?: { tmdbId?: number | string } } } }) => Number(e?.node?.content?.externalIds?.tmdbId))
       .filter((id: number) => id > 0)
   } catch { return [] }
 }
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${key}`, { signal: AbortSignal.timeout(10000) })
         if (res.ok) {
           const data = await res.json()
-          const results = await Promise.all((data || []).slice(0, 20).map(async (item: any) => {
+          const results = await Promise.all((data || []).slice(0, 20).map(async (item: { tmdb?: number; imdb?: string; title?: string }) => {
             if (!item.tmdb) return null
             const url = `https://api.themoviedb.org/3/tv/${item.tmdb}?api_key=${process.env.TMDB_API_KEY}&language=it-IT`
             const r2 = await fetch(url, { signal: AbortSignal.timeout(10000) })

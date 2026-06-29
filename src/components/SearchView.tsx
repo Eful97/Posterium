@@ -8,7 +8,7 @@ import { PosterCardSkeleton } from "@/components/Skeleton"
 import { Clock, X, Check, ChevronDown } from "lucide-react"
 
 export function SearchView() {
-  const { t, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappingsMap, setQuery, doSearch, loadMore, navigateToPoster, removeRecentSearch } = useP()
+  const { t, tmdbKey, query, results, searching, totalPages, searchPage, recentSearches, mappingsMap, setQuery, doSearch, loadMore, navigateToPoster, removeRecentSearch } = useP()
   const [searchFocused, setSearchFocused] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -62,6 +62,7 @@ export function SearchView() {
             return (
               <button key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="group relative bg-surface rounded-xl overflow-hidden border border-zinc-800 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/10 transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in" style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
                   {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300" /> : <span className="text-3xl font-bold text-zinc-500">{titleOf(r).charAt(0)}</span>}
                 </div>
                 <div className="px-2 py-2.5 text-center">

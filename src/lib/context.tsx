@@ -1,13 +1,18 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react"
-import type { SearchResult, TMDBImage, Mapping, FlixPatrolChart } from "./types"
-import { getDomain, posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from "./utils"
+import type { SearchResult, TMDBImage, Mapping } from "./types"
+import { posterUrl, titleOf, yearOf, api, STREAMING_PLATFORMS } from "./utils"
 import { findAccentColor, topEdgeAverage } from "./accent-color"
 import { getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "./awards"
 import { computeBadge, computeExtraFallback } from "./badge-priority"
-import { setLang as setI18nLang, getLang, t, resolveLabel, isRankKey, isPrefixedKey, badgeKey } from "./i18n"
+import { setLang as setI18nLang, t } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
+import { http } from "./http"
+import { buildUrlPattern, buildPreviewUrl } from "./poster-url"
+import { useTrending } from "./useTrending"
+import { useSearch } from "./useSearch"
+import { useNavigation } from "./useNavigation"
 
 export interface PosteriumCtx {
   selected: SearchResult | null
@@ -115,7 +120,7 @@ export interface PosteriumCtx {
   posterUrl: (path: string, size?: string) => string
   trending: (SearchResult & { rank: number })[]
   mdblistAnimeList: EnrichedAnimeItem[]
-  streamingCharts: Record<string, FlixPatrolChart>
+  streamingCharts: Record<string, import("./types").FlixPatrolChart>
   STREAMING_PLATFORMS: typeof STREAMING_PLATFORMS
   loadMappings: () => Promise<void>
   query: string
@@ -169,39 +174,41 @@ export function PosteriumProvider({ value, children }: { value: PosteriumCtx; ch
 }
 
 export function usePosterium(): PosteriumCtx {
-  const [query, setQuery] = useState("")
-  const [results, setResults] = useState<SearchResult[]>([])
-  const [searching, setSearching] = useState(false)
-  const [totalResults, setTotalResults] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [searchPage, setSearchPage] = useState(1)
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("recent_searches") || "[]") } catch { return [] }
-  })
-  const [selected, setSelected] = useState<SearchResult | null>(null)
-  const [posters, setPosters] = useState<TMDBImage[]>([])
-  const [logos, setLogos] = useState<TMDBImage[]>([])
-  const [loadingImages, setLoadingImages] = useState(false)
-  const [selectedLogo, setSelectedLogo] = useState<TMDBImage | null>(null)
-  const [mappings, setMappings] = useState<Mapping[]>([])
   const [lang, setLang] = useState("it")
-  const [previewId, setPreviewId] = useState<string | null>(null)
-  const [urlPattern, setUrlPattern] = useState("")
-  const [copied, setCopied] = useState(false)
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
-  const [previewPoster, setPreviewPoster] = useState<TMDBImage | null>(null)
-  const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }>({ genres: [], voteAverage: 0 })
-  const [view, setView] = useState<"edit" | "search" | "myposters">("edit")
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [langOpen, setLangOpen] = useState(false)
-  const [trending, setTrending] = useState<Array<SearchResult & { rank: number }>>([])
-  const [mdblistAnimeList, setMdblistAnimeList] = useState<EnrichedAnimeItem[]>([])
-  const [streamingCharts, setStreamingCharts] = useState<Record<string, FlixPatrolChart>>({})
-
   const [tmdbKey, setTmdbKeyState] = useState("")
   const [mdblistApiKey, setMdblistApiKey] = useState("")
   const [tmdbKeyInput, setTmdbKeyInput] = useState("")
   const [showKey, setShowKey] = useState(false)
+  const keyInit = useRef(false)
+  const langInit = useRef(false)
+
+  const navigation = useNavigation()
+  const trending = useTrending(tmdbKey, mdblistApiKey)
+  const search = useSearch(tmdbKey, lang)
+
+  const [mappings, setMappings] = useState<Mapping[]>([])
+  const [urlPattern, setUrlPattern] = useState("")
+  const [copied, setCopied] = useState(false)
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
+  const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }>({ genres: [], voteAverage: 0 })
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
+  const [trendRank, setTrendRank] = useState<number | null>(null)
+  const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
+  const [showLangPicker, setShowLangPicker] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState("")
+  const [accentColor, setAccentColor] = useState("#555555")
+  const [topEdgeColor, setTopEdgeColor] = useState("#555555")
+  const [rotationPosters, setRotationPosters] = useState<string[]>([])
+  const [autoRotateClean, setAutoRotateClean] = useState(false)
+  const [loadingImages, setLoadingImages] = useState(false)
+  const settingsRef = useRef<HTMLDivElement>(null)
+  const langRef = useRef<HTMLDivElement>(null)
+  const posterScrollRef = useRef<HTMLDivElement>(null)
+  const [posterScrollInfo, setPosterScrollInfo] = useState({ top: 0, height: 100 })
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Appearance state
   const [logoScale, setLogoScale] = useState(75)
   const [logoOffsetX, setLogoOffsetX] = useState(0)
   const [logoOffsetY, setLogoOffsetY] = useState(0)
@@ -213,6 +220,7 @@ export function usePosterium(): PosteriumCtx {
   const [editingValue, setEditingValue] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
 
+  // Badge state
   const [globalBadges, setGlobalBadges] = useState(true)
   const [rankingBadges, setRankingBadges] = useState(true)
   const [customBadge, setCustomBadge] = useState<string | null>(null)
@@ -223,6 +231,8 @@ export function usePosterium(): PosteriumCtx {
   const [blurEnabled, setBlurEnabled] = useState(true)
   const [badgeStyle, setBadgeStyle] = useState("shadow")
   const [rankingBadgeStyle, setRankingBadgeStyle] = useState("default")
+
+  // Default state
   const [defaultBadgeStyle, setDefaultBadgeStyle] = useState("shadow")
   const [defaultBlurEnabled, setDefaultBlurEnabled] = useState(true)
   const [defaultBlurIntensity, setDefaultBlurIntensity] = useState(5)
@@ -233,22 +243,6 @@ export function usePosterium(): PosteriumCtx {
   const [defaultRankingBadges, setDefaultRankingBadges] = useState(true)
   const [defaultRankingBadgeStyle, setDefaultRankingBadgeStyle] = useState("default")
   const [defaultAutoRotateClean, setDefaultAutoRotateClean] = useState(false)
-  const [trendRank, setTrendRank] = useState<number | null>(null)
-  const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
-  const [showLangPicker, setShowLangPicker] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState("")
-  const [accentColor, setAccentColor] = useState("#555555")
-  const [topEdgeColor, setTopEdgeColor] = useState("#555555")
-  const [rotationPosters, setRotationPosters] = useState<string[]>([])
-  const [autoRotateClean, setAutoRotateClean] = useState(false)
-  const keyInit = useRef(false)
-  const langInit = useRef(false)
-  const settingsRef = useRef<HTMLDivElement>(null)
-  const langRef = useRef<HTMLDivElement>(null)
-  const posterScrollRef = useRef<HTMLDivElement>(null)
-  const [posterScrollInfo, setPosterScrollInfo] = useState({ top: 0, height: 100 })
-  const fetchIdRef = useRef(0)
-  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const hasBadges = globalBadges && metaInfo.genres.length > 0 && metaInfo.voteAverage > 0
 
@@ -261,11 +255,11 @@ export function usePosterium(): PosteriumCtx {
   }, [mappings])
 
   const logoBounds = useMemo(() => {
-    if (!previewPoster || !selectedLogo) return { minX: -500, maxX: 500, minY: -500, maxY: 500 }
-    const pw = previewPoster.width || 1000
-    const ph = previewPoster.height || 1500
-    const lw = selectedLogo.width || 1
-    const lh = selectedLogo.height || 1
+    if (!navigation.previewPoster || !navigation.selectedLogo) return { minX: -500, maxX: 500, minY: -500, maxY: 500 }
+    const pw = navigation.previewPoster.width || 1000
+    const ph = navigation.previewPoster.height || 1500
+    const lw = navigation.selectedLogo.width || 1
+    const lh = navigation.selectedLogo.height || 1
     const maxLogoH = Math.round(ph * 0.25)
     let finW = Math.min(Math.round(pw * logoScale / 100), pw)
     let logoH = Math.round(lh * (finW / lw))
@@ -281,8 +275,9 @@ export function usePosterium(): PosteriumCtx {
     const maxY = Math.round(ph * 0.1 - badgeOff)
     if (!isFinite(Number(halfX)) || !isFinite(Number(minY)) || !isFinite(Number(maxY))) return { minX: -500, maxX: 500, minY: -500, maxY: 500 }
     return { minX: -halfX, maxX: halfX, minY: -minY, maxY }
-  }, [previewPoster, selectedLogo, logoScale, hasBadges])
+  }, [navigation.previewPoster, navigation.selectedLogo, logoScale, hasBadges])
 
+  // --- Initialization ---
   useEffect(() => {
     if (keyInit.current) return
     keyInit.current = true
@@ -375,7 +370,7 @@ export function usePosterium(): PosteriumCtx {
         setBadgeStyle(d.badgeStyle ?? "shadow")
         setRankingBadgeStyle(d.rankingBadgeStyle ?? "default")
       }
-    } catch {}
+    } catch (e) { console.error("[posterium] Load server defaults failed:", e) }
   }, [])
 
   const pickLang = (l: string) => {
@@ -385,6 +380,7 @@ export function usePosterium(): PosteriumCtx {
     setShowLangPicker(false)
   }
 
+  // --- Mappings ---
   const loadMappings = useCallback(async () => {
     try {
       const data = await api("/api/mappings")
@@ -394,91 +390,7 @@ export function usePosterium(): PosteriumCtx {
 
   useEffect(() => { loadMappings() }, [loadMappings])
 
-  const lastRefreshRef = useRef(0)
-
-  const showToast = (msg: string) => {
-    import("sonner").then(({ toast }) => toast(msg))
-  }
-
-  const refreshLists = useCallback(async () => {
-    if (!tmdbKey) return
-    const now = Date.now()
-    if (now - lastRefreshRef.current < 10 * 60 * 1000) {
-      showToast(t("ui.refreshRateLimit"))
-      return
-    }
-    lastRefreshRef.current = now
-    try {
-      const [trendingData, animeData] = await Promise.all([
-        api(`/api/tmdb/trending?api_key=${tmdbKey}`),
-        mdblistApiKey ? api(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`).catch(() => null) : Promise.resolve(null),
-      ])
-      setTrending([...(trendingData.movies || []), ...(trendingData.tv || [])])
-      if (animeData) setMdblistAnimeList(animeData)
-    } catch (e) { console.error("[posterium] Failed to load trending:", e) }
-    for (const p of STREAMING_PLATFORMS) {
-      api(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`).then((data) => {
-        setStreamingCharts((prev) => ({ ...prev, [p.slug]: data }))
-      }).catch(() => {})
-    }
-    showToast(t("ui.listsRefreshed"))
-  }, [tmdbKey, mdblistApiKey, showToast])
-
-  useEffect(() => {
-    if (!tmdbKey) return
-    api(`/api/tmdb/trending?api_key=${tmdbKey}`).then((data) => {
-      setTrending([...(data.movies || []), ...(data.tv || [])])
-    }).catch(() => {})
-    if (mdblistApiKey) {
-      api(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`).then(setMdblistAnimeList).catch(() => {})
-    }
-  }, [tmdbKey, mdblistApiKey])
-
-  useEffect(() => {
-    if (!tmdbKey) return
-    for (const p of STREAMING_PLATFORMS) {
-      api(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`).then((data) => {
-        setStreamingCharts((prev) => ({ ...prev, [p.slug]: data }))
-      }).catch((e) => { console.error("[posterium] FlixPatrol fetch failed for", p.slug, e) })
-    }
-  }, [tmdbKey])
-
-  useEffect(() => {
-    const handler = (e: PopStateEvent) => {
-      const source = e.state?.source
-      if (source === "myposters") {
-        setView("myposters")
-        setSelected(null)
-        setPreviewPoster(null)
-        setSelectedLogo(null)
-        setPreviewId(null)
-      } else if (e.state?.view === "search") {
-        setView("search")
-        setSelected(null)
-        setPreviewPoster(null)
-        setSelectedLogo(null)
-        setPreviewId(null)
-      } else if (e.state?.view === "myposters") {
-        setView("myposters")
-      } else {
-        ++fetchIdRef.current
-        setView("edit")
-        setSelected(null)
-        setPreviewPoster(null)
-        setSelectedLogo(null)
-        setPreviewId(null)
-        setPosters([])
-        setLogos([])
-        setMetaInfo({ genres: [], voteAverage: 0 })
-        setTrendRank(null)
-        setResults([])
-        setQuery("")
-      }
-    }
-    addEventListener("popstate", handler)
-    return () => removeEventListener("popstate", handler)
-  }, [])
-
+  // --- Settings panels ---
   useEffect(() => {
     if (!settingsOpen) return
     const handler = (e: MouseEvent) => {
@@ -505,163 +417,51 @@ export function usePosterium(): PosteriumCtx {
     }
   }, [langOpen])
 
+  // --- URL Pattern ---
   useEffect(() => {
-    if (!selected || !tmdbKey) return
-    const itemId = selected.id
-    const itemType = selected.media_type
-    const fetchId = ++fetchIdRef.current
-    api(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${lang},en,null&api_key=${tmdbKey}`).then((data) => {
-      if (fetchIdRef.current !== fetchId) return
-      setPosters(data.posters || [])
-      setLogos(data.logos || [])
-      setBackdrops(data.backdrops || [])
-      if (previewPoster) {
-        const match = (data.posters || []).find((p: TMDBImage) => p.file_path === previewPoster.file_path)
-        if (!match) {
-          const clean = data.posters?.find((p: TMDBImage) => p.iso_639_1 === null)
-          const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
-          const firstPoster = data.posters?.[0]
-          if (clean) {
-            const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
-            const itLogo = lang !== "it" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
-            const enLogo = lang !== "en" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
-            const firstLogo = data.logos?.[0]
-            const autoLogo = langLogo || itLogo || enLogo || firstLogo
-            if (autoLogo) {
-              setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
-              setGradientHeight(30)
-            } else {
-              const itPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "it")
-              const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")
-              setPreviewPoster(itPoster || enPoster || langPoster || firstPoster || previewPoster)
-              setGradientHeight(15)
-            }
-          } else {
-            setPreviewPoster(langPoster || firstPoster || previewPoster)
-            setGradientHeight(15)
-          }
-        }
-      }
-    if (previewPoster?.iso_639_1 === null && selectedLogo) {
-        const match = (data.logos || []).find((l: TMDBImage) => l.file_path === selectedLogo.file_path)
-        if (!match) {
-          const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
-          const itLogo = lang !== "it" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
-          const enLogo = lang !== "en" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
-          const firstLogo = data.logos?.[0]
-          setSelectedLogo(langLogo || itLogo || enLogo || firstLogo || selectedLogo)
-        }
-      }
-    }).catch(() => {})
-  }, [lang])
+    setUrlPattern(buildUrlPattern({
+      globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
+      customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled,
+      tmdbKey, lang,
+    }))
+  }, [globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+
+  // --- Preview URL ---
+  const buildPreviewUrlCb = useCallback(() => {
+    const url = buildPreviewUrl(
+      {
+        selected: navigation.selected,
+        previewPoster: navigation.previewPoster,
+        selectedLogo: navigation.selectedLogo,
+        selectedBackdrop,
+        logoScale, logoOffsetX, logoOffsetY,
+        backdropScale, backdropOffsetX, backdropOffsetY,
+        metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
+        topEdgeColor, lang, tmdbKey,
+      },
+      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled }
+    )
+    setPreviewUrl(url)
+  }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, selectedBackdrop,
+    logoScale, logoOffsetX, logoOffsetY, backdropScale, backdropOffsetX, backdropOffsetY,
+    metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, lang, tmdbKey,
+    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled])
 
   useEffect(() => {
-    let url = `${getDomain()}/api/poster/{type}/{tmdb_id}`
-    const params: string[] = []
-    if (tmdbKey) params.push(`api_key=${encodeURIComponent(tmdbKey)}`)
-    if (!globalBadges) params.push("badges=0")
-    if (!rankingBadges) params.push("ranking=0")
-    if (lang) params.push(`lang=${encodeURIComponent(lang)}`)
-    if (!blurEnabled) params.push("be=0")
-    params.push(`gradHeight=${gradientHeight}`)
-    params.push(`blur=${blurIntensity}`)
-    params.push(`bf=${blurFade}`)
-    params.push(`bd=${blurDarkness}`)
-    params.push(`bs=${badgeStyle}`)
-    params.push(`rs=${rankingBadgeStyle}`)
-    params.push("rv=56")
-    url += "?" + params.join("&")
-    setUrlPattern(url)
-  }, [globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, tmdbKey, lang])
-
-
-  const buildPreviewUrl = useCallback(() => {
-    if (!selected) { setPreviewUrl(""); return }
-    const params: string[] = []
-    if (tmdbKey) params.push(`api_key=${encodeURIComponent(tmdbKey)}`)
-    if (!globalBadges) params.push("badges=0")
-    if (!rankingBadges) params.push("ranking=0")
-    if (previewPoster) {
-      params.push(`poster=${encodeURIComponent(previewPoster.file_path)}`)
-      const genre = metaInfo.genres[0]?.name
-      if (genre) params.push(`genreName=${encodeURIComponent(genre)}`)
-      if (metaInfo.voteAverage > 0) params.push(`voteAverage=${metaInfo.voteAverage}`)
-    }
-    if (selectedLogo) {
-      params.push(`logo=${encodeURIComponent(selectedLogo.file_path)}`)
-      params.push(`scale=${logoScale}`)
-      params.push(`ox=${logoOffsetX}`)
-      params.push(`oy=${logoOffsetY}`)
-    }
-    if (selectedBackdrop) {
-      params.push(`backdrop=${encodeURIComponent(selectedBackdrop.file_path)}`)
-      params.push(`bscale=${backdropScale}`)
-      params.push(`box=${backdropOffsetX}`)
-      params.push(`boy=${backdropOffsetY}`)
-    }
-    if (lang) params.push(`lang=${lang}`)
-    params.push(`gradHeight=${gradientHeight}`)
-    params.push(`blur=${blurIntensity}`)
-    params.push(`bf=${blurFade}`)
-    params.push(`bd=${blurDarkness}`)
-    params.push(`bs=${badgeStyle}`)
-    params.push(`rs=${rankingBadgeStyle}`)
-    if (!blurEnabled) params.push("be=0")
-    if (rankingBadges) {
-      const edgeLum = (() => {
-        const h = topEdgeColor
-        if (h.length < 7) return null
-        if (h === "#555555") return null
-        const r = parseInt(h.slice(1, 3), 16) / 255
-        const g = parseInt(h.slice(3, 5), 16) / 255
-        const b = parseInt(h.slice(5, 7), 16) / 255
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b
-      })()
-      const topLight = edgeLum !== null ? edgeLum > 0.60 : true
-      params.push(`tl=${topLight ? "1" : "0"}`)
-      const now = Date.now()
-      const twoWeeks = 14 * 24 * 60 * 60 * 1000
-const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (now - new Date(metaInfo.release_date).getTime()) < twoWeeks : false
-        const isNewSeries = selected?.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
-      const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards) : null
-      const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations) : null
-      const animeRank = selected && mdblistAnimeList.length > 0 ? (mdblistAnimeList.find((a) => a.id === selected.id)?.rank ?? null) : null
-      const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
-      const tvType = selected?.media_type === "tv" ? metaInfo.type : null
-      const tvStatus = selected?.media_type === "tv" ? metaInfo.status : null
-      const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus }, t)
-      if (customBadge) {
-        const rankKey = isRankKey(customBadge)
-        if (rankKey === "badge.today" && trendRank) params.push(`rank=${trendRank}&label=${encodeURIComponent(t("badge.today"))}`)
-        else if (rankKey === "badge.anime" && animeRank) params.push(`rank=${animeRank}&label=${encodeURIComponent(t("badge.anime"))}`)
-        else params.push(`extra=${encodeURIComponent(resolveLabel(customBadge))}`)
-      } else {
-        const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra }, t)
-        if (badge) {
-          if (badge.type === "extra") params.push(`extra=${encodeURIComponent(badge.label)}`)
-          else params.push(`rank=${badge.rank}&label=${encodeURIComponent(badge.rankLabel || badge.label)}`)
-        }
-      }
-    }
-    const v = Date.now()
-    params.push(`v=${v}`)
-    const qs = params.length > 0 ? "?" + params.join("&") : ""
-    setPreviewUrl(`${getDomain()}/api/poster/${selected.media_type}/${selected.id}${qs}`)
-  }, [selected, previewPoster, metaInfo, logoScale, logoOffsetX, logoOffsetY, globalBadges, rankingBadges, selectedLogo, selectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY, lang, tmdbKey, accentColor, topEdgeColor, trendRank, mdblistAnimeList, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle])
-
-  useEffect(() => {
-    if (!selected) { setPreviewUrl(""); return }
+    if (!navigation.selected) { setPreviewUrl(""); return }
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current)
-    previewTimerRef.current = setTimeout(buildPreviewUrl, 200)
+    previewTimerRef.current = setTimeout(buildPreviewUrlCb, 200)
     return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current) }
-  }, [selected, buildPreviewUrl])
+  }, [navigation.selected, buildPreviewUrlCb])
 
   useEffect(() => {
     return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current) }
   }, [])
+
+  // --- Color detection ---
   useEffect(() => {
     const root = document.documentElement
-    if (!previewPoster) {
+    if (!navigation.previewPoster) {
       root.style.setProperty("--color-accent", "#555555")
       root.style.setProperty("--color-accent-r", "85")
       root.style.setProperty("--color-accent-g", "85")
@@ -673,7 +473,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     }
     const genreName = metaInfo.genres[0]?.name
     let cancelled = false
-    const url = posterUrl(previewPoster.file_path, "w342") + `?cb=${Date.now()}`
+    const url = posterUrl(navigation.previewPoster.file_path, "w342") + `?cb=${Date.now()}`
     const img = new Image()
     img.crossOrigin = "anonymous"
     const setRootColors = (r: number, g: number, b: number, edgeR: number, edgeG: number, edgeB: number) => {
@@ -705,103 +505,115 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         const result = findAccentColor(pixels, w, h, genreName || '')
         const edge = topEdgeAverage(pixels, w, h)
         setRootColors(result.r, result.g, result.b, edge.r, edge.g, edge.b)
-      } catch {}
+      } catch { /* color detection is non-critical */ }
     }
     img.onerror = () => { if (!cancelled) { setRootColors(85, 85, 85, 85, 85, 85) } }
     img.src = url
     return () => { cancelled = true }
-  }, [previewPoster])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- color detection runs only when poster changes
+  }, [navigation.previewPoster])
 
-  const navigateToPoster = (item: SearchResult, source?: string) => {
-    window.history.pushState({ source: source || null }, "", window.location.href)
-    openPosterBrowser(item)
-  }
-
-  const toggleSection = (key: string) => {
-    setOpenSections((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }))
-  }
-
-  const doSearch = useCallback(async (q?: string, page = 1) => {
-    const searchQuery = q ?? query
-    if (searchQuery.length < 2 || !tmdbKey) return
-    setSearching(true)
-    if (page === 1) setSearchPage(1)
-    try {
-      const data = await api(`/api/tmdb/search?q=${encodeURIComponent(searchQuery)}&language=${lang}&api_key=${tmdbKey}&page=${page}`)
-      const newResults = data.results || []
-      setResults(page === 1 ? newResults : (prev) => [...prev, ...newResults])
-      setTotalResults(data.total_results || 0)
-      setTotalPages(data.total_pages || 0)
-      if (page === 1) {
-        setSearchPage(1)
-        setRecentSearches((prev) => {
-          const next = [searchQuery, ...prev.filter((s) => s !== searchQuery)].slice(0, 5)
-          localStorage.setItem("recent_searches", JSON.stringify(next))
-          return next
-        })
+  // --- Poster image refresh ---
+  useEffect(() => {
+    if (!navigation.selected || !tmdbKey) return
+    const itemId = navigation.selected.id
+    const itemType = navigation.selected.media_type
+    const fetchId = navigation.incrementFetchId()
+    http<{ posters: TMDBImage[]; logos: TMDBImage[]; backdrops: TMDBImage[] }>(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${lang},en,null&api_key=${tmdbKey}`, { timeout: 30000 }).then((data) => {
+      if (navigation.fetchIdRef.current !== fetchId) return
+      navigation.setPosters(data.posters || [])
+      navigation.setLogos(data.logos || [])
+      setBackdrops(data.backdrops || [])
+      if (navigation.previewPoster) {
+        const match = (data.posters || []).find((p: TMDBImage) => p.file_path === navigation.previewPoster!.file_path)
+        if (!match) {
+          const clean = data.posters?.find((p: TMDBImage) => p.iso_639_1 === null)
+          const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
+          const firstPoster = data.posters?.[0]
+          if (clean) {
+            const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
+            const itLogo = lang !== "it" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
+            const enLogo = lang !== "en" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
+            const firstLogo = data.logos?.[0]
+            const autoLogo = langLogo || itLogo || enLogo || firstLogo
+            if (autoLogo) {
+              navigation.setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+              setGradientHeight(30)
+            } else {
+              const itPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "it")
+              const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")
+              navigation.setPreviewPoster(itPoster || enPoster || langPoster || firstPoster || navigation.previewPoster)
+              setGradientHeight(15)
+            }
+          } else {
+            navigation.setPreviewPoster(langPoster || firstPoster || navigation.previewPoster)
+            setGradientHeight(15)
+          }
+        }
       }
-    } catch {
-    } finally {
-      setSearching(false)
-    }
-  }, [query, tmdbKey, lang])
-
-  const loadMore = useCallback(async () => {
-    if (searching || searchPage >= totalPages) return
-    const nextPage = searchPage + 1
-    setSearchPage(nextPage)
-    await doSearch(query, nextPage)
-  }, [query, searchPage, totalPages, searching, doSearch])
+      if (navigation.previewPoster?.iso_639_1 === null && navigation.selectedLogo) {
+        const match = (data.logos || []).find((l: TMDBImage) => l.file_path === navigation.selectedLogo!.file_path)
+        if (!match) {
+          const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
+          const itLogo = lang !== "it" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
+          const enLogo = lang !== "en" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
+          const firstLogo = data.logos?.[0]
+          navigation.setSelectedLogo(langLogo || itLogo || enLogo || firstLogo || navigation.selectedLogo)
+        }
+      }
+    }).catch((e) => { console.error("[posterium] Poster image refresh failed:", e) })
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only on lang change; others set inside
+  }, [lang])
 
   const openPosterBrowser = async (item: SearchResult) => {
     const itemId = item.id
     const itemType = item.media_type
-    const fetchId = ++fetchIdRef.current
-    setSelected(item)
-    setSelectedLogo(null)
+    const fetchId = navigation.incrementFetchId()
+    navigation.setSelected(item)
+    navigation.setSelectedLogo(null)
     setSelectedBackdrop(null)
-    setPreviewPoster(null)
+    navigation.setPreviewPoster(null)
     setLoadingImages(true)
     setOpenSections({})
-    setPreviewId(`${itemType}:${itemId}`)
-    setView("edit")
+    navigation.setPreviewId(`${itemType}:${itemId}`)
+    navigation.setView("edit")
     try {
       const [data, details, rankData, awardData] = await Promise.all([
-        api(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${lang},en,null&api_key=${tmdbKey}`).catch(() => ({ posters: [], logos: [], backdrops: [] })),
-        api(`/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistApiKey ? `&mdblist_key=${encodeURIComponent(mdblistApiKey)}` : ""}`).catch(() => ({ genres: [], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null, networks: [], production_companies: [], original_language: "en" })),
-        api(`/api/trending/rank?type=${itemType}&id=${itemId}&api_key=${encodeURIComponent(tmdbKey)}`).catch(() => ({ rank: null })),
-        api(`/api/awards/${itemType}/${itemId}`).catch(() => ({ awards: [] })),
+        http<{ posters: TMDBImage[]; logos: TMDBImage[]; backdrops: TMDBImage[] }>(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${lang},en,null&api_key=${tmdbKey}`, { timeout: 30000 }).catch(() => ({ posters: [] as TMDBImage[], logos: [] as TMDBImage[], backdrops: [] as TMDBImage[] })),
+        http<{ genres: { id: number; name: string }[]; voteAverage: number; voteCount: number; status: string | null; type: string | null; release_date: string | null; first_air_date: string | null; last_air_date: string | null; next_episode_to_air: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons: number | null; number_of_episodes: number | null; title: string | null; name: string | null; imdb_id: string | null; networks: { name: string }[]; production_companies: { name: string }[]; original_language: string }>(`/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistApiKey ? `&mdblist_key=${encodeURIComponent(mdblistApiKey)}` : ""}`, { timeout: 30000 }).catch(() => ({ genres: [] as { id: number; name: string }[], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null, networks: [] as { name: string }[], production_companies: [] as { name: string }[], original_language: "en" })),
+        http<{ rank: number | null }>(`/api/trending/rank?type=${itemType}&id=${itemId}&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 15000 }).catch(() => ({ rank: null })),
+        http<{ awards: string[]; nominations: string[]; franchise: string | null; basedOn: string | null; director: string | null }>(`/api/awards/${itemType}/${itemId}`, { timeout: 15000 }).catch(() => ({ awards: [] as string[], nominations: [] as string[], franchise: null, basedOn: null, director: null })),
       ])
-      if (fetchIdRef.current !== fetchId) return
-      setSelected({ ...item, imdb_id: details.imdb_id })
-      setPosters(data.posters || [])
-      setLogos(data.logos || [])
+      if (navigation.fetchIdRef.current !== fetchId) return
+      navigation.setSelected({ ...item, imdb_id: details.imdb_id })
+      navigation.setPosters(data.posters || [])
+      navigation.setLogos(data.logos || [])
       setBackdrops(data.backdrops || [])
-      if (details.title) setSelected((prev) => ({ ...prev!, title: details.title }))
-      if (details.name) setSelected((prev) => ({ ...prev!, name: details.name }))
-      const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: any) => n.name) : (details.production_companies || []).map((c: any) => c.name)
-      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type, status: details.status, release_date: details.release_date, first_air_date: details.first_air_date, last_air_date: details.last_air_date, next_episode_to_air: details.next_episode_to_air, number_of_seasons: details.number_of_seasons, number_of_episodes: details.number_of_episodes, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null, director: awardData?.director || null })
+      if (details.title) navigation.setSelected((prev) => ({ ...prev!, title: details.title! }))
+      if (details.name) navigation.setSelected((prev) => ({ ...prev!, name: details.name! }))
+      const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: { name: string }) => n.name) : (details.production_companies || []).map((c: { name: string }) => c.name)
+      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type ?? undefined, status: details.status ?? undefined, release_date: details.release_date ?? undefined, first_air_date: details.first_air_date ?? undefined, last_air_date: details.last_air_date ?? undefined, next_episode_to_air: details.next_episode_to_air ?? undefined, number_of_seasons: details.number_of_seasons ?? undefined, number_of_episodes: details.number_of_episodes ?? undefined, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null, director: awardData?.director || null })
       setTrendRank(rankData.rank || null)
       const extImdbId = item.imdb_id || details.imdb_id
       if (extImdbId && mdblistApiKey) {
-        api(`/api/mdblist?imdb=${extImdbId}&api_key=${mdblistApiKey}`).then((d) => {
+        http<{ match?: { key: string; rank: number } }>(`/api/mdblist?imdb=${extImdbId}&api_key=${mdblistApiKey}`, { timeout: 15000 }).then((d) => {
           if (d?.match) {
             setMdblistMatch(d.match)
           }
-      }).catch(() => {})
+        }).catch((e) => { console.error("[posterium] MDBList lookup failed:", e) })
       }
       if (!item.poster_path && data.posters?.length > 0) {
         const first = data.posters.find((p: TMDBImage) => p.iso_639_1) || data.posters[0]
-        setSelected((prev) => ({ ...prev!, poster_path: first.file_path }))
+        navigation.setSelected((prev) => ({ ...prev!, poster_path: first.file_path }))
       }
       const existing = mappingsMap.get(`${itemType}:${itemId}`)
       if (existing) {
         const foundPoster = (data.posters || []).find((p: TMDBImage) => p.file_path === existing.posterPath)
-        setPreviewPoster(foundPoster ? { file_path: foundPoster.file_path, iso_639_1: existing.language, vote_average: 0, width: foundPoster.width, height: foundPoster.height } : { file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
+        navigation.setPreviewPoster(foundPoster ? { file_path: foundPoster.file_path, iso_639_1: existing.language, vote_average: 0, width: foundPoster.width, height: foundPoster.height } : { file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
         let foundLogo: TMDBImage | undefined
         if (existing.logoPath) {
           foundLogo = (data.logos || []).find((l: TMDBImage) => l.file_path === existing.logoPath)
-          setSelectedLogo(foundLogo ? { file_path: foundLogo.file_path, iso_639_1: existing.language, vote_average: 0, width: foundLogo.width, height: foundLogo.height } : { file_path: existing.logoPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
+          navigation.setSelectedLogo(foundLogo ? { file_path: foundLogo.file_path, iso_639_1: existing.language, vote_average: 0, width: foundLogo.width, height: foundLogo.height } : { file_path: existing.logoPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
         }
         setLogoScale(existing.logoScale ?? 75)
         setLogoOffsetX(existing.logoOffsetX ?? 0)
@@ -823,7 +635,7 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
         setBlurDarkness(existing.blurDarkness ?? defaultBlurDarkness)
         setBlurEnabled(existing.blurEnabled ?? defaultBlurEnabled)
         setBadgeStyle(existing.badgeStyle ?? defaultBadgeStyle)
-        setRankingBadgeStyle((existing as any).rankingBadgeStyle ?? defaultRankingBadgeStyle)
+        setRankingBadgeStyle(existing.rankingBadgeStyle ?? defaultRankingBadgeStyle)
         setRotationPosters(existing.cleanPosters || [])
         setAutoRotateClean(existing.autoRotateClean ?? false)
       } else {
@@ -847,8 +659,8 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           const firstLogo = data.logos?.[0]
           const autoLogo = langLogo || itLogo || enLogo || firstLogo
           if (autoLogo) {
-            setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
-            setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
+            navigation.setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
+            navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
             if (autoLogo.width && autoLogo.height) {
               const alw = autoLogo.width
               const alh = autoLogo.height
@@ -862,16 +674,16 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
             const origPoster = details.original_language ? data.posters?.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
             const fallbackPoster = itPoster || enPoster || origPoster || firstPoster
             if (fallbackPoster) {
-              setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
+              navigation.setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
             }
           }
         } else if (langPoster) {
-          setPreviewPoster({ file_path: langPoster.file_path, iso_639_1: lang, vote_average: 0, width: 0, height: 0 })
+          navigation.setPreviewPoster({ file_path: langPoster.file_path, iso_639_1: lang, vote_average: 0, width: 0, height: 0 })
         } else {
           const origPoster = details.original_language ? data.posters?.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
           const fallbackPoster = origPoster || firstPoster
           if (fallbackPoster) {
-            setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
+            navigation.setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
           }
         }
         loadDefaultsToState()
@@ -882,13 +694,13 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
   }
 
   const selectPoster = useCallback(async (image: TMDBImage) => {
-    if (!selected) return
-    setPreviewPoster(image)
-    setPreviewId(`${selected.media_type}:${selected.id}`)
-  }, [selected])
+    if (!navigation.selected) return
+    navigation.setPreviewPoster(image)
+    navigation.setPreviewId(`${navigation.selected.media_type}:${navigation.selected.id}`)
+  }, [navigation.selected]) // eslint-disable-line react-hooks/exhaustive-deps -- navigation setter refs are stable
 
   const selectLogo = useCallback(async (logo: TMDBImage) => {
-    setSelectedLogo(logo)
+    navigation.setSelectedLogo(logo)
     if (logo.width && logo.height) {
       const maxH = Math.round(1500 * 0.25)
       const effW = Math.round(maxH * logo.width / logo.height)
@@ -898,51 +710,51 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     }
     setLogoOffsetX(0)
     setLogoOffsetY(0)
-    if (!previewPoster && selected) {
-      const existing = mappingsMap.get(`${selected.media_type}:${selected.id}`)
+    if (!navigation.previewPoster && navigation.selected) {
+      const existing = mappingsMap.get(`${navigation.selected.media_type}:${navigation.selected.id}`)
       if (existing) {
-        setPreviewPoster({ file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
-      } else if (posters.length > 0) {
-        setPreviewPoster(posters[0])
+        navigation.setPreviewPoster({ file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
+      } else if (navigation.posters.length > 0) {
+        navigation.setPreviewPoster(navigation.posters[0])
       }
     }
-    if (selected) setPreviewId(`${selected.media_type}:${selected.id}`)
-  }, [selected, previewPoster, mappingsMap, posters])
+    if (navigation.selected) navigation.setPreviewId(`${navigation.selected.media_type}:${navigation.selected.id}`)
+  }, [navigation.selected, navigation.previewPoster, mappingsMap, navigation.posters]) // eslint-disable-line react-hooks/exhaustive-deps -- navigation setter refs are stable
 
   const saveConfig = useCallback(async () => {
-    if (!selected || !previewPoster) return
+    if (!navigation.selected || !navigation.previewPoster) return
     const now = Date.now()
     const twoWeeks = 14 * 24 * 60 * 60 * 1000
-    const isNewMovie = selected.media_type === "movie" && metaInfo.release_date ? (now - new Date(metaInfo.release_date).getTime()) < twoWeeks : false
-    const isNewSeries = selected.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
+    const isNewMovie = navigation.selected.media_type === "movie" && metaInfo.release_date ? (now - new Date(metaInfo.release_date).getTime()) < twoWeeks : false
+    const isNewSeries = navigation.selected.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
     const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards, t) : null
     const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations, t) : null
-    const animeRankData = mdblistAnimeList?.find((a: any) => a.id === selected.id)
-    const tvType = selected.media_type === "tv" ? metaInfo.type : null
-    const tvStatus = selected.media_type === "tv" ? metaInfo.status : null
-    const extra = computeExtraFallback({ mediaType: selected.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus }, t)
+    const animeRankData = trending.mdblistAnimeList?.find((a: EnrichedAnimeItem) => a.id === navigation.selected!.id)
+    const tvType = navigation.selected.media_type === "tv" ? metaInfo.type : null
+    const tvStatus = navigation.selected.media_type === "tv" ? metaInfo.status : null
+    const extra = computeExtraFallback({ mediaType: navigation.selected.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus }, t)
     const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
     const badge = computeBadge({ isNewMovie, isNewSeries, animeRank: animeRankData?.rank ?? null, trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra }, t)
     const badgeExtra = badge?.type === "extra" ? badge.label : undefined
     const badgeRank = (!badgeExtra && rankingBadges) ? (badge?.type === "rank" ? badge.rank : trendRank || undefined) : undefined
     const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || t("badge.today")) : undefined
-    const isClean = previewPoster.iso_639_1 === null
-    const isNewMapping = !mappingsMap.has(`${selected.media_type}:${selected.id}`)
+    const isClean = navigation.previewPoster.iso_639_1 === null
+    const isNewMapping = !mappingsMap.has(`${navigation.selected.media_type}:${navigation.selected.id}`)
     const effectiveRotationPosters = defaultAutoRotateClean && isClean && isNewMapping
-      ? posters.filter(p => p.iso_639_1 === null).map(p => p.file_path)
+      ? navigation.posters.filter(p => p.iso_639_1 === null).map(p => p.file_path)
       : rotationPosters
     try {
-      await api("/api/mappings", {
+      await http("/api/mappings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tmdbId: selected.id,
-          mediaType: selected.media_type,
-          title: titleOf(selected),
-          posterPath: previewPoster.file_path,
-          logoPath: selectedLogo?.file_path || null,
-          originalPosterPath: selected.poster_path,
-          language: previewPoster.iso_639_1,
+          tmdbId: navigation.selected.id,
+          mediaType: navigation.selected.media_type,
+          title: titleOf(navigation.selected),
+          posterPath: navigation.previewPoster.file_path,
+          logoPath: navigation.selectedLogo?.file_path || null,
+          originalPosterPath: navigation.selected.poster_path,
+          language: navigation.previewPoster.iso_639_1,
           logoScale, logoOffsetX, logoOffsetY,
           backdropPath: selectedBackdrop?.file_path || null,
           backdropScale, backdropOffsetX, backdropOffsetY,
@@ -976,41 +788,41 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
           autoRotateClean: effectiveRotationPosters.length > 1 ? (defaultAutoRotateClean && isClean && isNewMapping ? true : autoRotateClean) : undefined,
         }),
       })
-      setPreviewId(`${selected.media_type}:${selected.id}`)
-      showToast(t("ui.saveSuccess"))
+      navigation.setPreviewId(`${navigation.selected.media_type}:${navigation.selected.id}`)
+      import("sonner").then(({ toast }) => toast(t("ui.saveSuccess")))
       loadMappings()
-      fetch(`/api/poster/${selected.media_type}/${selected.id}`, { signal: AbortSignal.timeout(30000) }).catch(() => {})
+      fetch(`/api/poster/${navigation.selected.media_type}/${navigation.selected.id}`, { signal: AbortSignal.timeout(30000) }).catch(() => { /* poster warming is fire-and-forget */ })
     } catch {
-      showToast(t("ui.saveError"))
+      import("sonner").then(({ toast }) => toast(t("ui.saveError")))
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap])
+  }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, trending.mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, defaultBadgeStyle, defaultRankingBadgeStyle, navigation.posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
 
   const removeLogo = useCallback(async () => {
-    setSelectedLogo(null)
-    if (!selected) return
-    const key = `${selected.media_type}:${selected.id}`
+    navigation.setSelectedLogo(null)
+    if (!navigation.selected) return
+    const key = `${navigation.selected.media_type}:${navigation.selected.id}`
     const existing = mappingsMap.get(key)
     if (!existing) {
-      showToast(t("ui.noMappingUpdate"))
+      import("sonner").then(({ toast }) => toast(t("ui.noMappingUpdate")))
       return
     }
-    await api(`/api/mappings/${key}`, {
+    await http(`/api/mappings/${key}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        tmdbId: selected.id, mediaType: selected.media_type, title: titleOf(selected),
-        posterPath: previewPoster?.file_path || selected.poster_path!, logoPath: null,
-        originalPosterPath: selected.poster_path, language: previewPoster?.iso_639_1 || null,
+        tmdbId: navigation.selected.id, mediaType: navigation.selected.media_type, title: titleOf(navigation.selected),
+        posterPath: navigation.previewPoster?.file_path || navigation.selected.poster_path!, logoPath: null,
+        originalPosterPath: navigation.selected.poster_path, language: navigation.previewPoster?.iso_639_1 || null,
         logoScale, logoOffsetX, logoOffsetY,
         genreName: metaInfo.genres[0]?.name || null,
         voteAverage: metaInfo.voteAverage || null,
         trendRank: trendRank ?? null,
       }),
     })
-    showToast(t("ui.logoRemoved"))
+    import("sonner").then(({ toast }) => toast(t("ui.logoRemoved")))
     loadMappings()
-    if (selected) setPreviewId(`${selected.media_type}:${selected.id}`)
-  }, [selected, previewPoster, logoScale, logoOffsetX, logoOffsetY, metaInfo, trendRank, mappingsMap, loadMappings])
+    if (navigation.selected) navigation.setPreviewId(`${navigation.selected.media_type}:${navigation.selected.id}`)
+  }, [navigation.selected, navigation.previewPoster, logoScale, logoOffsetX, logoOffsetY, metaInfo, trendRank, mappingsMap, loadMappings]) // eslint-disable-line react-hooks/exhaustive-deps -- navigation setter refs are stable
 
   const selectBackdrop = useCallback((img: TMDBImage) => {
     setSelectedBackdrop(img)
@@ -1024,13 +836,13 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
   }, [])
 
   const removeMapping = useCallback(async (m: Mapping) => {
-    await api(`/api/mappings/${m.mediaType}:${m.tmdbId}`, { method: "DELETE" })
+    await http(`/api/mappings/${m.mediaType}:${m.tmdbId}`, { method: "DELETE" })
     setMappings((prev) => prev.filter((x) => !(x.tmdbId === m.tmdbId && x.mediaType === m.mediaType)))
-    showToast(t("ui.mappingRemoved"))
+    import("sonner").then(({ toast }) => toast(t("ui.mappingRemoved")))
   }, [])
 
   const exportData = async () => {
-    const data = await api("/api/mappings/export")
+    const data = await http("/api/mappings/export")
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -1047,15 +859,15 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
       const text = await file.text()
       try {
         const data = JSON.parse(text)
-        await api("/api/mappings/import", {
+        await http("/api/mappings/import", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mappings: data.mappings || data }),
         })
         loadMappings()
-        showToast(t("ui.importSuccess", { count: data.mappings?.length || data.length }))
+        import("sonner").then(({ toast }) => toast(t("ui.importSuccess", { count: data.mappings?.length || data.length })))
       } catch {
-        showToast(t("ui.importError"))
+        import("sonner").then(({ toast }) => toast(t("ui.importError")))
       }
     }
     input.click()
@@ -1067,36 +879,18 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const goHome = () => {
-    setView("edit")
-    setSelected(null)
-    setPreviewPoster(null)
-    setSelectedLogo(null)
-    setPreviewId(null)
-    setResults([])
-    setQuery("")
-  }
-
-  const removeRecentSearch = (search: string) => {
-    setRecentSearches((prev) => {
-      const next = prev.filter((s) => s !== search)
-      localStorage.setItem("recent_searches", JSON.stringify(next))
-      return next
-    })
-  }
-
-  const posterActivePath = previewPoster?.file_path
+  const posterActivePath = navigation.previewPoster?.file_path
 
   return useMemo(() => ({
-    selected, setSelected,
-    view, setView: setView as React.Dispatch<React.SetStateAction<string>>,
-    posters, loadingImages,
-    previewPoster, setPreviewPoster,
-    selectedLogo, setSelectedLogo,
-    logos,
+    selected: navigation.selected, setSelected: navigation.setSelected,
+    view: navigation.view, setView: navigation.setView as React.Dispatch<React.SetStateAction<string>>,
+    posters: navigation.posters, loadingImages,
+    previewPoster: navigation.previewPoster, setPreviewPoster: navigation.setPreviewPoster,
+    selectedLogo: navigation.selectedLogo, setSelectedLogo: navigation.setSelectedLogo,
+    logos: navigation.logos,
     posterActivePath: posterActivePath ?? null,
     previewUrl, urlPattern, lang,
-    openSections, toggleSection,
+    openSections, toggleSection: (key: string) => setOpenSections((prev) => ({ ...prev, [key]: !(prev[key] ?? true) })),
     posterScrollRef, posterScrollInfo, setPosterScrollInfo,
     selectPoster, selectLogo, removeLogo,
     logoBounds, logoScale, setLogoScale,
@@ -1130,15 +924,15 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     trendRank,
     mdblistMatch,
     metaInfo,
-    previewId, setPreviewId,
+    previewId: navigation.previewId, setPreviewId: navigation.setPreviewId,
     saveConfig, removeMapping, mappingsMap,
-    goHome, navigateToPoster,
-    refreshLists,
-    tmdbKey, setQuery, doSearch, loadMore,
+    goHome: navigation.goHome, navigateToPoster: (item: SearchResult, source?: string) => { navigation.navigateToPoster(item, source); openPosterBrowser(item) },
+    refreshLists: trending.refreshLists,
+    tmdbKey, setQuery: search.setQuery, doSearch: search.doSearch, loadMore: search.loadMore,
     titleOf, yearOf, posterUrl,
-    trending, streamingCharts, mdblistAnimeList,
+    trending: trending.trending, streamingCharts: trending.streamingCharts, mdblistAnimeList: trending.mdblistAnimeList,
     STREAMING_PLATFORMS, loadMappings,
-    query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
+    query: search.query, results: search.results, searching: search.searching, totalResults: search.totalResults, totalPages: search.totalPages, searchPage: search.searchPage, recentSearches: search.recentSearches, mappings,
     settingsRef, langRef,
     setLangOpen, langOpen, pickLang,
     settingsOpen, setSettingsOpen,
@@ -1146,31 +940,31 @@ const isNewMovie = selected?.media_type === "movie" && metaInfo.release_date ? (
     tmdbKeyInput, setTmdbKeyInput,
     showKey, setShowKey, setTmdbKey,
     mdblistApiKey, setMdblistApiKey: setMdblistApiKeyFn,
-    exportData, importData, removeRecentSearch,
+    exportData, importData, removeRecentSearch: search.removeRecentSearch,
     copyUrl, copied,
     accentColor,
     topEdgeColor,
     rotationPosters, setRotationPosters,
     autoRotateClean, setAutoRotateClean,
     t,
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- context value deps intentionally stable to prevent re-render cascades
   }), [
-    selected, view, posters, loadingImages, previewPoster, selectedLogo,
-    logos, posterActivePath, previewUrl, urlPattern, lang,
+    navigation.selected, navigation.view, navigation.posters, loadingImages, navigation.previewPoster, navigation.selectedLogo,
+    navigation.logos, posterActivePath, previewUrl, urlPattern, lang,
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
     globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle,
     rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
     defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean,
-    trendRank, mdblistMatch, metaInfo, previewId,
+    trendRank, mdblistMatch, metaInfo, navigation.previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
-    mappingsMap, tmdbKey, query, results, searching, totalResults, totalPages, searchPage, recentSearches, mappings,
+    mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
     tmdbKeyInput, showKey, copied,
     accentColor,
-    topEdgeColor,
-    rotationPosters, autoRotateClean,
-    trending, streamingCharts, mdblistAnimeList,
-    refreshLists,
+    topEdgeColor, rotationPosters, autoRotateClean,
+    trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
+    trending.refreshLists,
   ])
 }

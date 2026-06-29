@@ -1,7 +1,7 @@
 "use client"
 
-import type { SearchResult, TMDBImage } from "@/lib/types"
-import { LANG_NAMES, groupBy, limitBest, titleOf } from "@/lib/utils"
+import type { TMDBImage } from "@/lib/types"
+import { LANG_NAMES, groupBy } from "@/lib/utils"
 import { PosterBtn } from "@/components/PosterBtn"
 import { CollapsibleSection } from "@/components/CollapsibleSection"
 import { useP } from "@/lib/context"
@@ -10,7 +10,6 @@ import { RotateCcw, Plus, Check, Clock } from "lucide-react"
 interface Props {
   posters: TMDBImage[]
   posterActivePath: string | null
-  selected: SearchResult | null
   lang: string
   openSections: Record<string, boolean>
   posterScrollRef: React.RefObject<HTMLDivElement | null>
@@ -18,7 +17,7 @@ interface Props {
   selectPoster: (img: TMDBImage) => void
 }
 
-export function PosterOptions({ posters, posterActivePath, selected, lang, openSections, posterScrollRef, toggleSection, selectPoster }: Props) {
+export function PosterOptions({ posters, posterActivePath, lang, openSections, posterScrollRef, toggleSection, selectPoster }: Props) {
   const p = useP()
   const cleanPosters = posters.filter((img) => img.iso_639_1 === null)
   const hasClean = cleanPosters.length > 0

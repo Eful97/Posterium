@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
   const country = req.nextUrl.searchParams.get("country") || "IT"
   const cacheKey = `trending:${country}`
-  const cached = cacheGet<{ movies: any[]; tv: any[] }>(cacheKey)
+  const cached = cacheGet<{ movies: TrendingItem[]; tv: TrendingItem[] }>(cacheKey)
   if (cached) return Response.json(cached)
   try {
     const [movieRanks, tvRanks] = await Promise.all([
@@ -66,11 +66,11 @@ export async function GET(req: NextRequest) {
         first_air_date: details.first_air_date,
       }
     }
-    const movieBatches = movieRanks.map(async (r, idx) => {
+    const movieBatches = movieRanks.map(async (r) => {
       const item = await enrichItem(r.tmdbId, "movie")
       if (item) movieResults.push({ ...item, rank: r.rank })
     })
-    const tvBatches = tvRanks.map(async (r, idx) => {
+    const tvBatches = tvRanks.map(async (r) => {
       const item = await enrichItem(r.tmdbId, "tv")
       if (item) tvResults.push({ ...item, rank: r.rank })
     })

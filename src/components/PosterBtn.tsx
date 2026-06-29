@@ -6,13 +6,6 @@ import { posterUrl } from "@/lib/utils"
 import { useP } from "@/lib/context"
 import { Check } from "lucide-react"
 
-interface Props {
-  img: TMDBImage
-  active: boolean
-  onSelect: (img: TMDBImage) => void
-  title?: string
-}
-
 interface PosterBtnProps {
   img: TMDBImage
   active: boolean
@@ -31,6 +24,7 @@ export const PosterBtn = React.memo(function PosterBtn({ img, active, onSelect, 
       style={staggerIndex !== undefined ? { animation: `fade-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${staggerIndex * 40}ms both` } : undefined}
     >
       <div className="aspect-[2/3] relative overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
         <img src={posterUrl(img.file_path, "w154")} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         {active && (
           <>

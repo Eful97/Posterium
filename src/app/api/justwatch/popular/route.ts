@@ -1,5 +1,4 @@
-import { NextRequest } from "next/server";
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   return Response.json({ titles: [] });
 }

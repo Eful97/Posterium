@@ -23,6 +23,13 @@ const IMG_BASE = "https://image.tmdb.org/t/p"
 const MAX_IMG_SIZE = 10 * 1024 * 1024
 const STD_W = 1000
 const STD_H = 1500
+const BADGE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000
+
+function badgeCacheKey(type: string, ...parts: (string | number | boolean | undefined | null)[]): string {
+  return `badge:${type}:${parts.map(p => typeof p === "number" ? Math.round(p * 10) / 10 : (p ?? "x")).join(":")}`
+}
+
+const badgeInflight = new Map<string, Promise<unknown>>()
 
 type RouteParams = { type: string; id: string }
 
@@ -265,7 +272,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       (mediaType === "tv")
         ? (() => {
             try {
-              const cached = cacheGet<any[]>("mdblist:anime:top10")
+              const cached = cacheGet<EnrichedAnimeItem[]>("mdblist:anime:top10")
               if (cached && Array.isArray(cached)) {
                 const idx = cached.findIndex((a: EnrichedAnimeItem) => a.id === tmdbId)
                 return Promise.resolve(idx >= 0 ? idx + 1 : null)
@@ -318,7 +325,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       composites.push({ input: backdropBuf.buf, top: backdropBuf.top, left: backdropBuf.left })
     }
 
-    // 7b. Luminance + missing details (parallel, both need posterBuf)
+    // 7b. Luminance + missing details (parallel, both need posterBuf for luminance but details is independent)
     const [topLum] = await Promise.all([
       topLuminance(posterBuf),
       (async () => {
@@ -478,25 +485,47 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return null
     })()
 
-    // Parallel render: genre badge + ranking badge
+    // Parallel render: genre badge + ranking badge (with badge PNG cache)
+    const genreBadgeKey = (badgesEnabled && genreName && voteAverage && voteAverage > 0)
+      ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentForBadge, topLight)
+      : null
+    const rankBadgeKey = topBadge
+      ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, qRankingBadgeStyle, accentForBadge)
+      : null
+
     const [genreBadgeResult, rankBadgeResult] = await Promise.all([
-      (badgesEnabled && genreName && voteAverage && voteAverage > 0)
-        ? renderGenreBadge(genreName, voteAverage, STD_W, year, badgeStyle, accentForBadge, topLight).catch((e) => {
-            console.error("[poster] Genre badge rendering failed:", e)
-            return null
-          })
+      genreBadgeKey
+        ? (cacheGet<{ png: Buffer; w: number; h: number }>(genreBadgeKey)
+            || (() => {
+                const existing = badgeInflight.get(genreBadgeKey) as Promise<{ png: Buffer; w: number; h: number } | null> | undefined
+                if (existing) return existing
+                const p = renderGenreBadge(genreName!, voteAverage!, STD_W, year, badgeStyle, accentForBadge, topLight)
+                  .then((r) => { if (r) cacheSet(genreBadgeKey, r, ["badge"], BADGE_CACHE_TTL); return r })
+                  .catch((e) => { console.error("[poster] Genre badge rendering failed:", e); return null })
+                  .finally(() => { badgeInflight.delete(genreBadgeKey) })
+                badgeInflight.set(genreBadgeKey, p)
+                return p
+              })())
         : Promise.resolve(null),
-      topBadge
-        ? ((() => {
-            if (topBadge.type === "extra") {
-              return renderExtraBadge(topBadge.label, STD_W, topLight, qRankingBadgeStyle, accentForBadge)
-                .then(r => ({ ...r, isRank: false }))
-                .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
-            }
-            return renderRankingBadge(topBadge.rank, STD_W, topBadge.label, topLight, qRankingBadgeStyle, accentForBadge)
-              .then(r => ({ ...r, isRank: true }))
-              .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
-          })())
+      rankBadgeKey
+        ? (cacheGet<{ png: Buffer; w: number; h: number; isRank?: boolean }>(rankBadgeKey)
+            || (() => {
+                const existing = badgeInflight.get(rankBadgeKey) as Promise<{ png: Buffer; w: number; h: number; isRank?: boolean } | null> | undefined
+                if (existing) return existing
+                let p: Promise<{ png: Buffer; w: number; h: number; isRank?: boolean } | null>
+                if (topBadge!.type === "extra") {
+                  p = renderExtraBadge(topBadge!.label, STD_W, topLight, qRankingBadgeStyle, accentForBadge)
+                    .then((r) => { const v = { ...r, isRank: false }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
+                    .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
+                } else {
+                  p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, qRankingBadgeStyle, accentForBadge)
+                    .then((r) => { const v = { ...r, isRank: true }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
+                    .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
+                }
+                p.finally(() => { badgeInflight.delete(rankBadgeKey) })
+                badgeInflight.set(rankBadgeKey, p)
+                return p
+              })())
         : Promise.resolve(null),
     ])
 

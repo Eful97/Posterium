@@ -23,12 +23,10 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
   inline?: boolean
 }) {
   const p = useP()
-  const [visible, setVisible] = useState(open)
   const [closing, setClosing] = useState(false)
 
   useEffect(() => {
     if (open) {
-      setVisible(true)
       setClosing(false)
     }
   }, [open])

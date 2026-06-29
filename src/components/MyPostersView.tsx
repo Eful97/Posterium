@@ -2,9 +2,10 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react"
 import { useP } from "@/lib/context"
+import { toSearchResult } from "@/lib/types"
 import { posterUrl, LANG_NAMES } from "@/lib/utils"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
-import { Search, X, Check, Square, Trash2, Calendar, ArrowUpAZ, ChevronDown, Clapperboard, Tv, Flag, Clipboard, List } from "lucide-react"
+import { Search, X, Check, Square, Trash2, Calendar, ArrowUpAZ, ChevronDown, Clapperboard, Tv, Flag, Clipboard } from "lucide-react"
 
 export function MyPostersView() {
   const p = useP()
@@ -152,12 +153,14 @@ export function MyPostersView() {
         {filtered.map((m, idx) => {
           const key = `${m.mediaType}:${m.tmdbId}`
           return (
-            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster({ id: m.tmdbId, media_type: m.mediaType as "movie" | "tv", title: m.title, name: m.title, poster_path: m.posterPath } as any, "myposters") }} aria-label={m.title} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/10"}`} style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
+            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster(toSearchResult({ id: m.tmdbId, media_type: m.mediaType, title: m.title, name: m.title, poster_path: m.posterPath }), "myposters") }} aria-label={m.title} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/10"}`} style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
                 <div className="aspect-[2/3] bg-zinc-800 overflow-hidden relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
                   {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" /> : <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-500">{m.title.charAt(0)}</div>}
                   {m.logoPath && (
                     <div className="absolute inset-x-0 bottom-[7.33%] flex items-center justify-center">
                       <div style={{ width: `${m.logoScale ?? 75}%` }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
                         <img src={posterUrl(m.logoPath, "w154")} alt="" loading="lazy" decoding="async" className="w-full" style={{ objectFit: "contain" }} />
                       </div>
                     </div>

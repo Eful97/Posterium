@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { mappingSchema } from "@/lib/validation"
+import { createT } from "@/lib/i18n"
+
+const t = createT("it")
 
 describe("computeBadge", () => {
   const base = {
@@ -11,60 +14,64 @@ describe("computeBadge", () => {
   }
 
   it("prioritizes new movie over everything", () => {
-    expect(computeBadge({ ...base, isNewMovie: true, award: "Vincitore Oscar" })?.label).toBe("Nuovo film")
+    expect(computeBadge({ ...base, isNewMovie: true, award: "Vincitore Oscar" }, t)?.label).toBe("Nuovo film")
   })
 
   it("prioritizes new series over award", () => {
-    expect(computeBadge({ ...base, isNewSeries: true, award: "Vincitore Oscar" })?.label).toBe("Nuova serie")
+    expect(computeBadge({ ...base, isNewSeries: true, award: "Vincitore Oscar" }, t)?.label).toBe("Nuova serie")
   })
 
   it("prioritizes anime rank over trend rank", () => {
-    expect(computeBadge({ ...base, animeRank: 5, trendRank: 10 })?.type).toBe("rank")
-    expect(computeBadge({ ...base, animeRank: 5, trendRank: 10 })?.rank).toBe(5)
-    expect(computeBadge({ ...base, animeRank: 5, trendRank: 10 })?.label).toBe("Anime")
+    expect(computeBadge({ ...base, animeRank: 5, trendRank: 10 }, t)?.type).toBe("rank")
+    expect(computeBadge({ ...base, animeRank: 5, trendRank: 10 }, t)?.rank).toBe(5)
+    expect(computeBadge({ ...base, animeRank: 5, trendRank: 10 }, t)?.label).toBe("Anime")
   })
 
   it("prioritizes trend rank over award", () => {
-    expect(computeBadge({ ...base, trendRank: 3, award: "Vincitore Oscar" })?.type).toBe("rank")
-    expect(computeBadge({ ...base, trendRank: 3 })?.rank).toBe(3)
+    expect(computeBadge({ ...base, trendRank: 3, award: "Vincitore Oscar" }, t)?.type).toBe("rank")
+    expect(computeBadge({ ...base, trendRank: 3 }, t)?.rank).toBe(3)
   })
 
   it("prioritizes award over franchise", () => {
-    expect(computeBadge({ ...base, award: "Vincitore Oscar", franchise: "MCU" })?.label).toBe("Vincitore Oscar")
+    expect(computeBadge({ ...base, award: "Vincitore Oscar", franchise: "MCU" }, t)?.label).toBe("Vincitore Oscar")
   })
 
   it("prioritizes franchise over nomination", () => {
-    expect(computeBadge({ ...base, franchise: "MCU", nomination: "Candidato Oscar" })?.label).toBe("MCU")
+    expect(computeBadge({ ...base, franchise: "MCU", nomination: "Candidato Oscar" }, t)?.label).toBe("MCU")
   })
 
   it("falls back to extra when nothing else matches", () => {
-    expect(computeBadge({ ...base, extra: "Da divorare" })?.label).toBe("Da divorare")
+    expect(computeBadge({ ...base, extra: "Da divorare" }, t)?.label).toBe("Da divorare")
   })
 
   it("returns null when nothing matches", () => {
-    expect(computeBadge({ ...base })).toBeNull()
+    expect(computeBadge({ ...base }, t)).toBeNull()
+  })
+
+  it("returns key when no t function provided", () => {
+    expect(computeBadge({ ...base, isNewMovie: true })?.label).toBe("badge.newMovie")
   })
 })
 
 describe("computeExtraFallback", () => {
   it("returns Il più votato for movies with vote >= 8.5", () => {
-    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 8.5, tvType: null, tvStatus: null })).toBe("Il più votato")
+    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 8.5, tvType: null, tvStatus: null }, t)).toBe("Il più votato")
   })
 
   it("returns null for movies with vote < 8.5", () => {
-    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 7.0, tvType: null, tvStatus: null })).toBeNull()
+    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 7.0, tvType: null, tvStatus: null }, t)).toBeNull()
   })
 
   it("returns Miniserie for TV with that type", () => {
-    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 7.0, tvType: "Miniseries", tvStatus: null })).toBe("Miniserie")
+    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 7.0, tvType: "Miniseries", tvStatus: null }, t)).toBe("Miniserie")
   })
 
   it("returns Ritorna for returning series", () => {
-    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 7.0, tvType: null, tvStatus: "Returning Series" })).toBe("Ritorna")
+    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 7.0, tvType: null, tvStatus: "Returning Series" }, t)).toBe("Ritorna")
   })
 
   it("returns Da divorare for high-rated TV", () => {
-    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 9.0, tvType: null, tvStatus: "Ended" })).toBe("Da divorare")
+    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 9.0, tvType: null, tvStatus: "Ended" }, t)).toBe("Da divorare")
   })
 })
 
