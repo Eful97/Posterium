@@ -1,7 +1,6 @@
 const TEXT_SAFE_PAD = 1.15
 const GENRE_TEXT_MAX_RATIO = 0.84
 const GENRE_PILL_MAX_RATIO = 0.78
-const GENRE_TEXT_OPTICAL_LEFT_SHIFT = 0.24
 
 export function genreBadgeSafePad(fs: number): number {
   return Math.round(fs * TEXT_SAFE_PAD)
@@ -66,8 +65,9 @@ export function genreBadgeSvgDims(fs: number, genreName: string, voteStr: string
 
 function buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX, y }: GenreTextFlowArgs) {
   const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr)
-  const startX = centerX - dims.textContentW / 2 - Math.round(fs * GENRE_TEXT_OPTICAL_LEFT_SHIFT)
-  let t = `<text x="${startX}" y="${y}" text-anchor="start" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}">`
+  const totalDx = dims.gap * (yearStr ? 4 : 2) + dims.gapStar
+  const adjustedX = centerX - totalDx / 2
+  let t = `<text x="${adjustedX}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}">`
   t += `<tspan>${escSvg(genreName)}</tspan>`
   t += `<tspan dx="${dims.gap}" fill-opacity="0.6">${escSvg("\u2022")}</tspan>`
   t += `<tspan dx="${dims.gap}" font-family="Noto Sans Symbols 2" font-weight="400">${escSvg("\u2605")}</tspan>`

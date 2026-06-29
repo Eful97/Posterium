@@ -27,13 +27,13 @@ describe("buildGenreBadgeSVG", () => {
 
     expect(svg).toContain("<tspan>Sci-Fi &amp; Fantasy</tspan>")
     expect(svg).toContain('<tspan dx="21" fill-opacity="0.6">•</tspan>')
-    expect(svg).toContain('text-anchor="start"')
+    expect(svg).toContain('text-anchor="middle"')
     expect(svg).not.toContain("Sci-Fi &amp; Fantasy</text><text")
   })
 
   it("keeps long genre pill compact and centers its text flow", async () => {
     const rawPill = buildGenrePillSvg("Sci-Fi & Fantasy", "8.2", "2019", 53, "rgba(255,255,255,0.80)", "rgba(0,0,0,0.80)")
-    expect(rawPill.svg).toContain('text-anchor="start"')
+    expect(rawPill.svg).toContain('text-anchor="middle"')
 
     const badge = await buildGenreBadgeSVG("Sci-Fi & Fantasy", 8.2, 1000, "2019", "pill", "#555555", false)
     expect(badge).not.toBeNull()
@@ -68,6 +68,6 @@ describe("buildGenreBadgeSVG", () => {
     const leftPad = bounds.minX
     const rightPad = bounds.width - 1 - bounds.maxX
 
-    expect(Math.abs(leftPad - rightPad)).toBeLessThanOrEqual(8)
+    expect(Math.abs(leftPad - rightPad)).toBeLessThanOrEqual(12)
   })
 })

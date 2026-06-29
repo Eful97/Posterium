@@ -27,7 +27,7 @@ App version: `0.13.0` — RENDER_VERSION: `74` — rv: `65`
 | Overflow protection | `fs` ridotto se `totalW + safePad*2 > min(containerW - 20, round(containerW * 0.84))`, calcolato con `genreClientDims()` | Stessa logica: `totalW + safePad*2 > min(pw - 20, round(pw * 0.84))`, usa `genreBadgeDims()`. Per pill usa `min(width - 20, round(width * 0.78))` su `textContentW + pillPad*3 + safePad*2` |
 | Text offset server | (nessuno) | `textOffsetX = 0` (bar, pill, shadow) — client e server restano centrati uguali |
 | Misura testo | CSS flex naturale | `estimateTextWidth()` per-glyph in `badge-svg-shared.ts` |
-| Allineamento verticale | Flex baseline naturale | Un solo `<text>` start-anchored con `x = centerX - textContentW/2 - round(fs * 0.24)` e `<tspan dx=...>`; `dominant-baseline="central"` e stella con `Noto Sans Symbols 2` |
+| Allineamento verticale | Flex baseline naturale | Un solo `<text>` con `text-anchor="middle" x="centerX"` e `<tspan dx=...>`; `dominant-baseline="central"` e stella con `Noto Sans Symbols 2` |
 | Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg `tlBg` (black/white 80% in base a `topLight`) con testo `tlFg`; `bar` — bg `tlBg` full-width + testo `tlFg`; `colored` — bg `accentColor` + testo adattivo | Stessi stili in SVG. Per `pill`/`bar` usa `tlBg`/`tlFg` in base a `topLight` (stessa soglia > 0.80). `colored` usa `textColorForBg()`. |
 | Sfondo pill/bar (`tlBg`) | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
 | Testo pill/bar (`tlFg`) | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
