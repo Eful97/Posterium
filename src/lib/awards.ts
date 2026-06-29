@@ -1,3 +1,5 @@
+import { diskCacheGetAsync, diskCacheSetAsync } from "./disk-cache"
+
 interface AwardRule {
   keywords: string[]
   label: string
@@ -169,6 +171,18 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
   const cached = CACHE.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data
 
+  // Disk cache (survives HF restarts)
+  const DISK_TTL = 24 * 60 * 60 * 1000
+  try {
+    const diskData = await diskCacheGetAsync("wikidata", cacheKey, DISK_TTL)
+    if (diskData) {
+      const data: WikidataResult = JSON.parse(diskData.toString("utf-8"))
+      if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value!)
+      CACHE.set(cacheKey, { data, timestamp: Date.now() })
+      return data
+    }
+  } catch {}
+
   const tmdbProp = mediaType === "movie" ? "P4947" : "P4983"
   const networkQuery = mediaType === "tv" ? `OPTIONAL { ?item wdt:P449 ?network . ?network rdfs:label ?networkLabel . FILTER(LANG(?networkLabel) = "en") }` : ""
   const query = `SELECT ?awardLabel ?nominationLabel ?networkLabel ?franchiseLabel ?basedOnLabel ?directorLabel WHERE {
@@ -218,6 +232,8 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
 
     if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value!)
     CACHE.set(cacheKey, { data: result, timestamp: Date.now() })
+    // Persist to disk (survives HF restarts)
+    diskCacheSetAsync("wikidata", cacheKey, Buffer.from(JSON.stringify(result))).catch(() => {})
     return result
   } catch {
     return { awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { getImages } from "@/lib/tmdb"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { jsonGzip } from "@/lib/json-response"
 
 type RouteParams = { id: string }
 
@@ -14,8 +15,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
   const cacheKey = `images:${type}:${id}:${languages}`
   const cached = cacheGet(cacheKey)
-  if (cached) return Response.json(cached)
+  if (cached) return jsonGzip(cached)
   const data = await getImages(type as "movie" | "tv", Number(id), languages, apiKey).catch(() => ({ posters: [], logos: [], backdrops: [] }))
   cacheSet(cacheKey, data, ["tmdb", "images"])
-  return Response.json(data)
+  return jsonGzip(data)
 }

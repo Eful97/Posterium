@@ -12,8 +12,18 @@ let _b64Regular: string | null = null
 let _b64Bold: string | null = null
 let _b64Black: string | null = null
 let _b64Symbols: string | null = null
+let _fontsWarmed = false
 
 const N = (s: string) => path.join(process.cwd(), "node_modules", "@fontsource", s)
+
+export function warmFonts() {
+  if (_fontsWarmed) return
+  _fontsWarmed = true
+  fontRegular()
+  fontBold()
+  fontBlack()
+  fontSymbols()
+}
 
 function fontRegular(): Buffer {
   if (!_regular) _regular = fs.readFileSync(N("inter/files/inter-latin-400-normal.woff"))

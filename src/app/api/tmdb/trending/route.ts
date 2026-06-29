@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { getJWRankings } from "@/lib/justwatch"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { jsonGzip } from "@/lib/json-response"
 
 const TMDB_BASE = "https://api.themoviedb.org/3"
 const TMDB_KEY = process.env.TMDB_API_KEY!
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
   const country = req.nextUrl.searchParams.get("country") || "IT"
   const cacheKey = `trending:${country}`
   const cached = cacheGet<{ movies: TrendingItem[]; tv: TrendingItem[] }>(cacheKey)
-  if (cached) return Response.json(cached)
+  if (cached) return jsonGzip(cached)
   try {
     const [movieRanks, tvRanks] = await Promise.all([
       getJWRankings("MOVIE", country).catch(() => [] as { tmdbId: number; rank: number }[]),
@@ -79,9 +80,9 @@ export async function GET(req: NextRequest) {
     tvResults.sort((a, b) => a.rank - b.rank)
     const body = { movies: movieResults, tv: tvResults }
     cacheSet(cacheKey, body, ["tmdb", "trending", country])
-    return Response.json(body, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })
+    return jsonGzip(body, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" })
   } catch (err) {
     console.error("Trending error:", err)
-    return Response.json({ movies: [], tv: [] }, { headers: { "Cache-Control": "no-store" } })
+    return jsonGzip({ movies: [], tv: [] }, 200, { "Cache-Control": "no-store" })
   }
 }

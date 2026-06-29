@@ -10,7 +10,7 @@ import { diskCacheGetAsync, diskCacheSetAsync, hashKey } from "@/lib/disk-cache"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { GENRE_FALLBACK } from "@/lib/badges"
 import { findAccentColor } from "@/lib/accent-color"
-import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "@/lib/svg-badge"
+import { renderGenreBadge, renderRankingBadge, renderExtraBadge, warmFonts } from "@/lib/svg-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { createT } from "@/lib/i18n"
@@ -102,6 +102,7 @@ async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fal
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const rl = rateLimit(rateLimitKey(req), "poster")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
+  warmFonts()
   const { type, id } = await params
   const mediaType = (["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "")) ? "tv" : "movie"
   const tmdbId = Number(id)

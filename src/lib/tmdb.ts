@@ -1,4 +1,4 @@
-import { diskCacheGet, diskCacheSet } from "@/lib/disk-cache"
+import { diskCacheGetAsync, diskCacheSetAsync } from "@/lib/disk-cache"
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 const TMDB_BASE = "https://api.themoviedb.org/3"
@@ -24,7 +24,7 @@ async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
   }
 
   // Disk cache (24h)
-  const diskData = diskCacheGet("tmdb", cacheKey, DISK_TTL)
+  const diskData = await diskCacheGetAsync("tmdb", cacheKey, DISK_TTL)
   if (diskData) {
     const data = JSON.parse(diskData.toString("utf-8"))
     if (fetchCache.size >= CACHE_MAX) fetchCache.delete(fetchCache.keys().next().value!)
@@ -42,7 +42,7 @@ async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
     const data = await res.json()
     if (fetchCache.size >= CACHE_MAX) fetchCache.delete(fetchCache.keys().next().value!)
     fetchCache.set(cacheKey, { data, timestamp: Date.now() })
-    diskCacheSet("tmdb", cacheKey, Buffer.from(JSON.stringify(data)))
+    diskCacheSetAsync("tmdb", cacheKey, Buffer.from(JSON.stringify(data))).catch(() => {})
     return data
   })()
     .finally(() => inflight.delete(cacheKey))
