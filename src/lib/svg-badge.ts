@@ -80,7 +80,6 @@ export async function renderSVG(svgStr: string, w: number): Promise<Buffer> {
         N("inter/files/inter-latin-900-normal.woff"),
         N("noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff"),
       ],
-      loadSystemFonts: false,
     },
   })
   return Buffer.from(resvg.render().asPng())
