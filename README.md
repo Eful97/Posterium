@@ -36,7 +36,7 @@ pinned: false
 - 🎥 **Badge regista** — Di Hitchcock, Di Nolan, Di Fellini e 66 registi IMDb Top 70 da Wikidata
 - 📡 **Badge network** — Netflix, HBO, Disney+, Prime Video, Apple TV+, Rai, Mediaset e altri da TMDB
 - 🎌 **Anime rank** — Top trending anime da MDBList *(richiede chiave MDBList)*
-- 📐 **Server-side rendering** — Satori + Resvg (JSX → SVG → PNG)
+- 📐 **Server-side rendering** — Resvg (SVG → PNG) per badge, Sharp per poster/logo/backdrop
 - 🐳 **Docker** — Deployabile su HF Spaces, Vercel, server proprio
 - ⚡ **Standalone output** — Next.js standalone per immagini Docker minime
 - 💾 **Cache su disco 24h** — Poster renderizzati e risposte TMDB cacheati su disco con TTL 24 ore, pre-generazione al salvataggio
@@ -223,7 +223,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 |-------|-----------|
 | Framework | Next.js 16 |
 | UI | React 19 + Tailwind CSS 4 |
-| Rendering | Satori + Resvg (JSX → SVG → PNG) |
+| Rendering | Resvg (SVG badge) + Sharp (poster/logo/backdrop) |
 | Immagini | Sharp |
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
