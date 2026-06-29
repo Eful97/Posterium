@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useP } from "@/lib/context"
 import { toSearchResult } from "@/lib/types"
 import type { EnrichedAnimeItem } from "@/lib/validation"
@@ -22,6 +22,10 @@ export default function EditView() {
   const [imageError, setImageError] = useState(false)
   const [now] = useState(() => Date.now())
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [loadProgress, setLoadProgress] = useState(0)
+  const [imgSrc, setImgSrc] = useState("")
+  const xhrRef = useRef<XMLHttpRequest | null>(null)
+  const prevObjUrlRef = useRef("")
 
   const defaultLogoScale = () => {
     const l = p.selectedLogo
@@ -35,8 +39,41 @@ export default function EditView() {
 
   useEffect(() => {
     setImageError(false)
+    setLoadProgress(0)
+    if (!p.previewUrl) { setImgSrc(""); setPreviewLoading(false); return }
     setPreviewLoading(true)
-  }, [p.previewPoster, p.previewUrl])
+    setImgSrc("")
+    const url = p.previewUrl
+    const xhr = new XMLHttpRequest()
+    xhrRef.current = xhr
+    xhr.open("GET", url, true)
+    xhr.responseType = "blob"
+    xhr.onprogress = (e) => {
+      if (e.lengthComputable) {
+        setLoadProgress(Math.round((e.loaded / e.total) * 100))
+      }
+    }
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const blob = xhr.response
+        const objUrl = URL.createObjectURL(blob)
+        if (prevObjUrlRef.current) URL.revokeObjectURL(prevObjUrlRef.current)
+        prevObjUrlRef.current = objUrl
+        setImgSrc(objUrl)
+        setLoadProgress(100)
+        setTimeout(() => setPreviewLoading(false), 200)
+      } else {
+        setImageError(true)
+        setPreviewLoading(false)
+      }
+    }
+    xhr.onerror = () => { setImageError(true); setPreviewLoading(false) }
+    xhr.send()
+    return () => {
+      xhr.abort()
+      xhrRef.current = null
+    }
+  }, [p.previewUrl])
 
   const searchBar = (
     <div className={p.selected ? "w-full max-w-lg mb-8 relative z-[100] isolate" : "max-w-lg mx-auto relative z-[100] isolate mb-8"}>
@@ -89,17 +126,19 @@ export default function EditView() {
         <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
           {p.previewUrl ? (
             <>
-              {previewLoading && <div className="absolute inset-0 bg-zinc-800 animate-pulse rounded-2xl z-10" />}
-              {/* eslint-disable-next-line @next/next/no-img-element -- server-rendered poster */}
-              <img
-                src={p.previewUrl}
-                alt={p.selected?.title || p.selected?.name || ""}
-                loading="eager"
-                decoding="async"
-                className="absolute inset-0 w-full h-full object-cover"
-                onLoad={() => setPreviewLoading(false)}
-                onError={() => { setImageError(true); setPreviewLoading(false) }}
-              />
+              <div className="loading-bar-overlay" style={{ opacity: previewLoading ? 1 : 0, pointerEvents: "none" }} />
+              <div className="loading-bar-container" style={{ opacity: previewLoading ? 1 : 0, transition: "opacity 0.3s ease" }}>
+                <div className="loading-bar-track" style={{ transform: `scaleX(${loadProgress / 100})`, transformOrigin: "left" }} />
+                <span className="loading-bar-text">{loadProgress}%</span>
+              </div>
+              {imgSrc && (
+                /* eslint-disable-next-line @next/next/no-img-element -- server-rendered poster */
+                <img
+                  src={imgSrc}
+                  alt={p.selected?.title || p.selected?.name || ""}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
             </>
           ) : p.selected ? (
             <div className="absolute inset-0 bg-zinc-800/50 animate-pulse rounded-2xl" />
