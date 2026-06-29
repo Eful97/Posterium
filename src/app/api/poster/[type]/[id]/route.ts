@@ -133,6 +133,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const sdHash = hashKey(JSON.stringify(sd))
   const cacheParams = new URLSearchParams(req.nextUrl.searchParams)
   cacheParams.delete("rv")
+  cacheParams.delete("v")
   const cachedRank = mapping?.trendRank ?? null
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}`
 
@@ -435,14 +436,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             const logoLayout = computeLogoLayout({ posterW: STD_W, posterH: STD_H, logoW: lw, logoH: lh, logoScale: userScale, logoOffsetX: userOx, logoOffsetY: userOy, hasBadges: !!(badgesEnabled && genreName && voteAverage && voteAverage > 0) })
             let logoResized = await sharp(logoFetch).resize(logoLayout.width, logoLayout.height, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
             const resizedMeta = await sharp(logoResized).metadata()
-            const actualLogoW = resizedMeta.width || logoLayout.width
-            const actualLogoH = resizedMeta.height || logoLayout.height
-            if (actualLogoW > STD_W || actualLogoH > STD_H) {
-              logoResized = await sharp(logoResized).resize(Math.min(actualLogoW, STD_W), Math.min(actualLogoH, STD_H), { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
+            let actualW = resizedMeta.width || logoLayout.width
+            let actualH = resizedMeta.height || logoLayout.height
+            if (actualW > STD_W || actualH > STD_H) {
+              const scale = Math.min(STD_W / actualW, STD_H / actualH)
+              actualW = Math.round(actualW * scale)
+              actualH = Math.round(actualH * scale)
+              logoResized = await sharp(logoResized).resize(actualW, actualH, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
             }
-            const finalMeta = await sharp(logoResized).metadata()
-            const logoX = Math.round(logoLayout.left + ((logoLayout.width - (finalMeta.width || actualLogoW)) / 2))
-            const logoTop = Math.max(0, Math.round(logoLayout.top + (logoLayout.height - (finalMeta.height || actualLogoH))))
+            const logoX = Math.round(logoLayout.left + ((logoLayout.width - actualW) / 2))
+            const logoTop = Math.max(0, Math.round(logoLayout.top + (logoLayout.height - actualH)))
             return { input: logoResized, top: logoTop, left: logoX } as const
           })()
         : Promise.resolve(null),
@@ -538,9 +541,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         : Promise.resolve(null),
     ])
 
-    // Push badge results
-    const safeGenreBadgeResult = genreBadgeResult ? await fitBadgeToCanvas(genreBadgeResult, STD_W, STD_H) : null
-    const safeRankBadgeResult = rankBadgeResult ? await fitBadgeToCanvas(rankBadgeResult, STD_W, STD_H) : null
+    // Push badge results (parallel)
+    const [safeGenreBadgeResult, safeRankBadgeResult] = await Promise.all([
+      genreBadgeResult ? fitBadgeToCanvas(genreBadgeResult, STD_W, STD_H) : Promise.resolve(null),
+      rankBadgeResult ? fitBadgeToCanvas(rankBadgeResult, STD_W, STD_H) : Promise.resolve(null),
+    ])
 
     if (safeGenreBadgeResult) {
       if (badgeStyle === "bar") {

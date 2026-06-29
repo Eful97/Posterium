@@ -224,9 +224,9 @@ describe("buildPreviewUrl", () => {
     expect(url).toContain("ranking=0")
   })
 
-  it("includes v= timestamp param", () => {
+  it("does not include v= cache-busting param", () => {
     const url = buildPreviewUrl(basePosterState, baseBadgeParams)
-    expect(url).toMatch(/v=\d+/)
+    expect(url).not.toMatch(/v=\d+/)
   })
 
   it("includes customBadge as extra param", () => {

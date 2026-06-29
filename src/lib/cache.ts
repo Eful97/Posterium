@@ -69,6 +69,8 @@ export function cacheGet<T>(key: string): T | null {
     store.delete(key)
     return null
   }
+  store.delete(key)
+  store.set(key, entry)
   return entry.data
 }
 
@@ -80,6 +82,8 @@ export function cacheGetStale<T>(key: string): { data: T | null; stale: boolean 
     store.delete(key)
     return { data: expired, stale: true }
   }
+  store.delete(key)
+  store.set(key, entry)
   return { data: entry.data, stale: false }
 }
 

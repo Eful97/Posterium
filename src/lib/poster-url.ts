@@ -108,7 +108,6 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
     const badgeParams = computeBadgeParams(ps, bp)
     params.push(...badgeParams)
   }
-  params.push(`v=${Date.now()}`)
   const qs = "?" + params.join("&")
   return `${getDomain()}/api/poster/${ps.selected.media_type}/${ps.selected.id}${qs}`
 }
