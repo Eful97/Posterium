@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
-App version: `0.12.1` — RENDER_VERSION: `66` — rv: `57`
+App version: `0.13.0` — RENDER_VERSION: `74` — rv: `65`
 
 ## Badge Genere/Rating (GenreRatingBadges)
 
@@ -18,16 +18,16 @@ App version: `0.12.1` — RENDER_VERSION: `66` — rv: `57`
 | Font size | `fs = round(finalFs)` da `24 * containerW / 380` | `finalFontSize = round(24 * pw / 380)` |
 | Gap genere→bullet | `round(fs / 3)` | `round(fs / 3)` |
 | Gap stella→voto | `round(fs / 6)` | `round(fs / 6)` |
-| Padding orizzontale | (flex naturale) | `pad = round(finalFontSize * 0.35)` (solo pill) |
+| Padding orizzontale | `genreBadgeSafePad(fs) = round(fs * 1.15)` dentro SVG | `genreBadgeSafePad(finalFontSize) = round(finalFontSize * 1.15)` dentro SVG; `pad = round(finalFontSize * 0.35)` (solo pill) |
 | Larghezza bullet | (naturale) | `bulletW = round(finalFontSize * 0.35)` |
 | Larghezza stella | (naturale) | `starW = round(finalFontSize * 0.92)` |
 | Altezza badge | (flex naturale) | `svgH = max(round(finalFontSize * 1.6), 24)` |
 | Colori testo | `text-gray-200` (≈ `#e5e7eb`) | `#e5e7eb` |
 | Text shadow | `"0 4px 6px rgba(0,0,0,0.5)"` | `"0 4px 6px rgba(0,0,0,0.5)"` |
-| Overflow protection | `fs` ridotto se `totalW > containerW - 20`, calcolato con `genreClientDims()` | Stessa logica: `totalW > pw - 20`, usa `genreBadgeDims()`. `totalW = textContentW + buf` (no pad*2) |
-| Text offset server | (nessuno) | `textOffsetX = -50` (bar, pill, shadow) — compensa shift Resvg |
-| CHAR_WIDTH | (CSS flex naturale) | `0.62` in `badge-svg-shared.ts` |
-| Allineamento verticale | Flex baseline naturale | Bullet `translateY(5px)`, Stella `translateY(fs * 0.23)`, Voto `translateY(5px)`, Anno `translateY(5px)` |
+| Overflow protection | `fs` ridotto se `totalW + safePad*2 > min(containerW - 20, round(containerW * 0.84))`, calcolato con `genreClientDims()` | Stessa logica: `totalW + safePad*2 > min(pw - 20, round(pw * 0.84))`, usa `genreBadgeDims()`. Per pill usa `min(width - 20, round(width * 0.78))` su `textContentW + pillPad*3 + safePad*2` |
+| Text offset server | (nessuno) | `textOffsetX = 0` (bar, pill, shadow) — client e server restano centrati uguali |
+| Misura testo | CSS flex naturale | `estimateTextWidth()` per-glyph in `badge-svg-shared.ts` |
+| Allineamento verticale | Flex baseline naturale | Un solo `<text>` start-anchored con `x = centerX - textContentW/2 - round(fs * 0.24)` e `<tspan dx=...>`; `dominant-baseline="central"` e stella con `Noto Sans Symbols 2` |
 | Stili badge (`badgeStyle`) | `shadow` — textShadow; `pill` — bg `tlBg` (black/white 80% in base a `topLight`) con testo `tlFg`; `bar` — bg `tlBg` full-width + testo `tlFg`; `colored` — bg `accentColor` + testo adattivo | Stessi stili in SVG. Per `pill`/`bar` usa `tlBg`/`tlFg` in base a `topLight` (stessa soglia > 0.80). `colored` usa `textColorForBg()`. |
 | Sfondo pill/bar (`tlBg`) | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
 | Testo pill/bar (`tlFg`) | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
@@ -86,6 +86,14 @@ App version: `0.12.1` — RENDER_VERSION: `66` — rv: `57`
 | Bordo | `3px solid rgba(255,255,255,0.80)` | Rimosso (solo client) |
 | Overlay | `absolute inset-0 pointer-events-none` (sopra ogni contenuto) | — |
 
+## Logo clean poster
+
+| Parametro | Client | Server |
+|---|---|---|
+| Dimensione logo | `computeLogoOffsetBounds()` usa `computeLogoBox()` | `computeLogoLayout()` usa `computeLogoBox()` |
+| Scala | `logoScale` come percentuale della larghezza poster, max larghezza poster | Stessa logica, senza cap artificiale al 25% altezza |
+| Cap altezza | Solo canvas poster (`posterH`) | Solo canvas poster (`STD_H`) |
+
 ## Files coinvolti
 
 - `src/components/PreviewBadges.tsx` — client-side preview (React)
@@ -94,5 +102,7 @@ App version: `0.12.1` — RENDER_VERSION: `66` — rv: `57`
 - `src/lib/badges.ts` — server-side SVG (bottomGradientSVG)
 - `src/lib/svg-badge.ts` — server-side SVG raw badges (renderGenreBadge, renderRankingBadge, renderExtraBadge) + Resvg rendering
 - `src/lib/badge-priority.ts` — logica priorità badge (condivisa)
+- `src/lib/logo-layout.ts` — geometria condivisa logo preview/server
+- `src/app/api/badge-preview/route.ts` — PNG preview badge generati dal renderer server
 - `src/app/api/poster/[type]/[id]/route.ts` — composizione poster finale
 <!-- END:badge-sync -->

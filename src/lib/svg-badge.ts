@@ -2,7 +2,7 @@ import { Resvg } from "@resvg/resvg-js"
 import fs from "fs"
 import path from "path"
 import { textColorForBg } from "./accent-color"
-import { genreBadgeSvgDims, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildExtraBarSvg, buildExtraDefaultSvg } from "./badge-svg-shared"
+import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, genreTextMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildExtraBarSvg, buildExtraDefaultSvg } from "./badge-svg-shared"
 
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
@@ -93,19 +93,22 @@ export async function buildGenreBadgeSVG(
   const s = style || "shadow"
   const voteStr = voteAverage.toFixed(1)
   const yearStr = year || ""
-  const maxBadgeW = pw - 20
+  const maxBadgeW = genreTextMaxW(pw)
   let finalFs = 24 * pw / 380
   let dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr)
-  if (dims.totalW > maxBadgeW) {
-    finalFs = Math.max(maxBadgeW / dims.totalW * finalFs, 10)
+  let safePad = genreBadgeSafePad(finalFs)
+  if (dims.totalW + safePad * 2 > maxBadgeW) {
+    finalFs = Math.max(maxBadgeW / (dims.totalW + safePad * 2) * finalFs, 10)
     dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr)
+    safePad = genreBadgeSafePad(finalFs)
   }
 
   const isPillStyle = s === "pill" || s === "colored"
   if (isPillStyle) {
     const _pillPad = Math.round(finalFs * 0.35)
-    if (dims.totalW + _pillPad * 3 > maxBadgeW) {
-      finalFs = Math.max(maxBadgeW / (dims.totalW + _pillPad * 3) * finalFs, 10)
+    const maxPillW = genrePillMaxW(pw)
+    if (dims.textContentW + _pillPad * 3 + safePad * 2 > maxPillW) {
+      finalFs = Math.max(maxPillW / (dims.textContentW + _pillPad * 3 + safePad * 2) * finalFs, 10)
       dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr)
     }
   }
@@ -122,11 +125,11 @@ export async function buildGenreBadgeSVG(
 
   let result: { svg: string; w: number; h: number }
   if (isBar) {
-    result = buildGenreBarSvg(genreName, voteStr, yearStr, pw, fs, "rgba(0,0,0,0.80)", !!topLight, -50)
+    result = buildGenreBarSvg(genreName, voteStr, yearStr, pw, fs, "rgba(0,0,0,0.80)", !!topLight)
   } else if (isPill) {
-    result = buildGenrePillSvg(genreName, voteStr, yearStr, fs, bgColor, textColor, -50)
+    result = buildGenrePillSvg(genreName, voteStr, yearStr, fs, bgColor, textColor)
   } else {
-    result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s, -50)
+    result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s)
   }
 
   const png = await renderSVG(wrapSvg(result.svg), result.w)
@@ -144,11 +147,11 @@ export async function buildRankingBadgeSVG(
   const s = badgeStyle || "default"
   const periodText = label || "Oggi"
   const fullText = `#${rank} ${periodText}`
-  const textLen = String(rank).length + periodText.length
   const maxBadgeW = pw - 20
   let finalFs = 23 * pw / 380
-  if (finalFs * (textLen * 0.62 + 2.35) > maxBadgeW) {
-    finalFs = Math.max(maxBadgeW / (textLen * 0.62 + 2.35), 10)
+  const projectedW = estimateTextWidth(fullText, finalFs) + Math.round(finalFs * 2) + Math.round(finalFs * 0.6) * 2
+  if (projectedW > maxBadgeW) {
+    finalFs = Math.max(maxBadgeW / projectedW * finalFs, 10)
   }
 
   const fs = Math.round(finalFs)
@@ -178,8 +181,9 @@ export async function buildExtraBadgeSVG(
   const s = badgeStyle || "default"
   const maxBadgeW = pw - 20
   let finalFs = 23 * pw / 380
-  if (finalFs * (label.length * 0.62 + 2.0) > maxBadgeW) {
-    finalFs = Math.max(maxBadgeW / (label.length * 0.62 + 2.0), 10)
+  const projectedW = estimateTextWidth(label, finalFs) + Math.round(finalFs * 2) + Math.round(finalFs * 0.6) * 2
+  if (projectedW > maxBadgeW) {
+    finalFs = Math.max(maxBadgeW / projectedW * finalFs, 10)
   }
 
   const fs = Math.round(finalFs)

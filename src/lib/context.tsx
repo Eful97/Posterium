@@ -15,6 +15,7 @@ import { useNavigation } from "./useNavigation"
 import { useMappingsStore } from "./useMappingsStore"
 import { useDefaults } from "./useDefaults"
 import { usePosterSave } from "./usePosterSave"
+import { computeLogoOffsetBounds } from "./logo-layout"
 
 export interface PosteriumCtx {
   selected: SearchResult | null
@@ -254,25 +255,14 @@ export function usePosterium(): PosteriumCtx {
 
   const logoBounds = useMemo(() => {
     if (!navigation.previewPoster || !navigation.selectedLogo) return { minX: -500, maxX: 500, minY: -500, maxY: 500 }
-    const pw = navigation.previewPoster.width || 1000
-    const ph = navigation.previewPoster.height || 1500
-    const lw = navigation.selectedLogo.width || 1
-    const lh = navigation.selectedLogo.height || 1
-    const maxLogoH = Math.round(ph * 0.25)
-    let finW = Math.min(Math.round(pw * logoScale / 100), pw)
-    let logoH = Math.round(lh * (finW / lw))
-    if (logoH > maxLogoH) {
-      const ratio = maxLogoH / logoH
-      finW = Math.round(finW * ratio)
-      logoH = maxLogoH
-    }
-    const s = ph / 1500
-    const badgeOff = hasBadges ? 0 : Math.round(40 * s)
-    const halfX = Math.round((pw - finW) / 2)
-    const minY = Math.round(ph - logoH - ph * 0.1 + badgeOff)
-    const maxY = Math.round(ph * 0.1 - badgeOff)
-    if (!isFinite(Number(halfX)) || !isFinite(Number(minY)) || !isFinite(Number(maxY))) return { minX: -500, maxX: 500, minY: -500, maxY: 500 }
-    return { minX: -halfX, maxX: halfX, minY: -minY, maxY }
+    return computeLogoOffsetBounds({
+      posterW: navigation.previewPoster.width || 1000,
+      posterH: navigation.previewPoster.height || 1500,
+      logoW: navigation.selectedLogo.width || 1,
+      logoH: navigation.selectedLogo.height || 1,
+      logoScale,
+      hasBadges,
+    })
   }, [navigation.previewPoster, navigation.selectedLogo, logoScale, hasBadges])
 
   // --- Initialization ---

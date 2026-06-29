@@ -17,8 +17,9 @@ import { createT } from "@/lib/i18n"
 import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
+import { computeLogoLayout } from "@/lib/logo-layout"
 
-const RENDER_VERSION = 66
+const RENDER_VERSION = 74
 const IMG_BASE = "https://image.tmdb.org/t/p"
 const MAX_IMG_SIZE = 10 * 1024 * 1024
 const STD_W = 1000
@@ -32,6 +33,7 @@ function badgeCacheKey(type: string, ...parts: (string | number | boolean | unde
 const badgeInflight = new Map<string, Promise<unknown>>()
 
 type RouteParams = { type: string; id: string }
+type BadgeRender = { png: Buffer; w: number; h: number; isRank?: boolean }
 
 async function fetchImg(url: string) {
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
@@ -54,6 +56,15 @@ function etagHeaders(etag: string) {
     "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
     "ETag": etag,
   }
+}
+
+async function fitBadgeToCanvas<T extends BadgeRender>(badge: T, maxW: number, maxH: number): Promise<T> {
+  if (badge.w <= maxW && badge.h <= maxH) return badge
+  const scale = Math.min(maxW / badge.w, maxH / badge.h)
+  const w = Math.max(Math.floor(badge.w * scale), 1)
+  const h = Math.max(Math.floor(badge.h * scale), 1)
+  const png = await sharp(badge.png).resize(w, h, { fit: "inside", withoutEnlargement: true }).png({ compressionLevel: 1 }).toBuffer()
+  return { ...badge, png, w, h }
 }
 
 async function topLuminance(buf: Buffer): Promise<number> {
@@ -369,8 +380,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 5
     const blurFade = qBlurFade ? Math.max(Number(qBlurFade), 0) : 60
     const blurDarkness = qBlurDarkness ? Math.max(Number(qBlurDarkness), 0) : 40
-    const s = STD_H / 1500
-
     const [blurComposite, genreColor, logoResult] = await Promise.all([
       // Blur: single sharp pipeline instead of 4 separate ops
       (async () => {
@@ -423,24 +432,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             const userScale = qScale ? (Number(qScale) || 75) : (mapping?.logoScale ?? 75)
             const userOx = qOx ? (Number(qOx) || 0) : (mapping?.logoOffsetX ?? 0)
             const userOy = qOy ? (Number(qOy) || 0) : (mapping?.logoOffsetY ?? 0)
-            const scalePct = userScale / 100
-            const maxLogoH = Math.round(STD_H * 0.25)
-            let logoW = Math.round(STD_W * scalePct)
-            let logoH = Math.round(lh * (logoW / lw))
-            if (logoH > maxLogoH) { const ratio = maxLogoH / logoH; logoW = Math.round(logoW * ratio); logoH = maxLogoH }
-            const finalLogoW = Math.min(logoW, STD_W)
-            const finalLogoH = Math.min(logoH, STD_H)
-            let logoResized = await sharp(logoFetch).resize(finalLogoW, finalLogoH, { fit: "inside", withoutEnlargement: true }).png({ compressionLevel: 1 }).toBuffer()
+            const logoLayout = computeLogoLayout({ posterW: STD_W, posterH: STD_H, logoW: lw, logoH: lh, logoScale: userScale, logoOffsetX: userOx, logoOffsetY: userOy, hasBadges: !!(badgesEnabled && genreName && voteAverage && voteAverage > 0) })
+            let logoResized = await sharp(logoFetch).resize(logoLayout.width, logoLayout.height, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
             const resizedMeta = await sharp(logoResized).metadata()
-            const actualLogoW = resizedMeta.width || finalLogoW
-            const actualLogoH = resizedMeta.height || finalLogoH
+            const actualLogoW = resizedMeta.width || logoLayout.width
+            const actualLogoH = resizedMeta.height || logoLayout.height
             if (actualLogoW > STD_W || actualLogoH > STD_H) {
               logoResized = await sharp(logoResized).resize(Math.min(actualLogoW, STD_W), Math.min(actualLogoH, STD_H), { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
             }
             const finalMeta = await sharp(logoResized).metadata()
-            const logoX = Math.round((STD_W - (finalMeta.width || actualLogoW)) / 2 + userOx)
-            const logoBadgeOffset = (badgesEnabled && genreName && voteAverage && voteAverage > 0) ? 0 : Math.round(40 * s)
-            const logoTop = Math.max(0, Math.round(STD_H - (finalMeta.height || actualLogoH) - STD_H * 0.1 + userOy + logoBadgeOffset))
+            const logoX = Math.round(logoLayout.left + ((logoLayout.width - (finalMeta.width || actualLogoW)) / 2))
+            const logoTop = Math.max(0, Math.round(logoLayout.top + (logoLayout.height - (finalMeta.height || actualLogoH))))
             return { input: logoResized, top: logoTop, left: logoX } as const
           })()
         : Promise.resolve(null),
@@ -537,19 +539,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     ])
 
     // Push badge results
-    if (genreBadgeResult) {
+    const safeGenreBadgeResult = genreBadgeResult ? await fitBadgeToCanvas(genreBadgeResult, STD_W, STD_H) : null
+    const safeRankBadgeResult = rankBadgeResult ? await fitBadgeToCanvas(rankBadgeResult, STD_W, STD_H) : null
+
+    if (safeGenreBadgeResult) {
       if (badgeStyle === "bar") {
-        composites.push({ input: genreBadgeResult.png, top: STD_H - genreBadgeResult.h, left: 0 })
+        composites.push({ input: safeGenreBadgeResult.png, top: STD_H - safeGenreBadgeResult.h, left: 0 })
       } else {
-        const badgeY = STD_H - genreBadgeResult.h - Math.max(0, Math.round(targetCenter - genreBadgeResult.h / 2))
-        const badgeLeft = Math.round((STD_W - genreBadgeResult.w) / 2)
-        composites.push({ input: genreBadgeResult.png, top: badgeY, left: badgeLeft })
+        const badgeY = STD_H - safeGenreBadgeResult.h - Math.max(0, Math.round(targetCenter - safeGenreBadgeResult.h / 2))
+        const badgeLeft = Math.round((STD_W - safeGenreBadgeResult.w) / 2)
+        composites.push({ input: safeGenreBadgeResult.png, top: badgeY, left: badgeLeft })
       }
     }
-    if (rankBadgeResult) {
+    if (safeRankBadgeResult) {
       const isBar = qRankingBadgeStyle === "bar"
-      const rankLeft = isBar ? 0 : Math.round((STD_W - rankBadgeResult.w) / 2)
-      composites.push({ input: rankBadgeResult.png, top: 0, left: rankLeft })
+      const rankLeft = isBar ? 0 : Math.round((STD_W - safeRankBadgeResult.w) / 2)
+      composites.push({ input: safeRankBadgeResult.png, top: 0, left: rankLeft })
     }
 
     // 10. Final composite: single sharp call for all layers

@@ -1,7 +1,52 @@
-const CHAR_WIDTH = 0.62
+const TEXT_SAFE_PAD = 1.15
+const GENRE_TEXT_MAX_RATIO = 0.84
+const GENRE_PILL_MAX_RATIO = 0.78
+const GENRE_TEXT_OPTICAL_LEFT_SHIFT = 0.24
+
+export function genreBadgeSafePad(fs: number): number {
+  return Math.round(fs * TEXT_SAFE_PAD)
+}
+
+export function genrePillMaxW(containerW: number): number {
+  return Math.min(containerW - 20, Math.round(containerW * GENRE_PILL_MAX_RATIO))
+}
+
+export function genreTextMaxW(containerW: number): number {
+  return Math.min(containerW - 20, Math.round(containerW * GENRE_TEXT_MAX_RATIO))
+}
 
 export function escSvg(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+}
+
+function charWidthFactor(char: string): number {
+  if (char === " ") return 0.33
+  if ("iIl.,:;!'|`".includes(char)) return 0.28
+  if ("-–_".includes(char)) return 0.36
+  if ("fjrt".includes(char.toLowerCase())) return 0.45
+  if ("mw".includes(char.toLowerCase())) return 0.86
+  if ("#%&@".includes(char)) return 0.75
+  if (/\d/.test(char)) return 0.58
+  if (/[A-Z]/.test(char)) return 0.68
+  return 0.62
+}
+
+export function estimateTextWidth(text: string, fs: number): number {
+  let units = 0
+  for (const char of text) units += charWidthFactor(char)
+  return Math.round(Math.max(units * fs, fs * 0.35))
+}
+
+type GenreBadgeText = {
+  readonly genreName: string
+  readonly voteStr: string
+  readonly yearStr: string
+}
+
+type GenreTextFlowArgs = GenreBadgeText & {
+  readonly fs: number
+  readonly centerX: number
+  readonly y: number
 }
 
 export function genreBadgeSvgDims(fs: number, genreName: string, voteStr: string, yearStr: string) {
@@ -9,9 +54,9 @@ export function genreBadgeSvgDims(fs: number, genreName: string, voteStr: string
   const gapStar = Math.round(fs / 6)
   const bulletW = Math.round(fs * 0.35)
   const starW = Math.round(fs * 0.92)
-  const genreW = Math.round(genreName.length * fs * CHAR_WIDTH)
-  const voteW = Math.round(voteStr.length * fs * CHAR_WIDTH)
-  const yearW = yearStr ? Math.round(yearStr.length * fs * CHAR_WIDTH) : 0
+  const genreW = estimateTextWidth(genreName, fs)
+  const voteW = estimateTextWidth(voteStr, fs)
+  const yearW = yearStr ? estimateTextWidth(yearStr, fs) : 0
   const buf = Math.round(fs * 0.25)
   const textContentW = genreW + gap + bulletW + gap + starW + gapStar + voteW + (yearStr ? gap + bulletW + gap + yearW : 0)
   const totalW = textContentW + buf
@@ -19,65 +64,64 @@ export function genreBadgeSvgDims(fs: number, genreName: string, voteStr: string
   return { starW, gap, gapStar, totalW, svgH, genreW, voteW, yearW, bulletW, textContentW }
 }
 
-function buildGenreTspans(genreName: string, voteStr: string, yearStr: string, gap: number, gapStar: number) {
-  let t = ""
+function buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX, y }: GenreTextFlowArgs) {
+  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr)
+  const startX = centerX - dims.textContentW / 2 - Math.round(fs * GENRE_TEXT_OPTICAL_LEFT_SHIFT)
+  let t = `<text x="${startX}" y="${y}" text-anchor="start" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}">`
   t += `<tspan>${escSvg(genreName)}</tspan>`
-  t += `<tspan dx="${gap}" fill-opacity="0.6">${escSvg("\u2022")}</tspan>`
-  t += `<tspan dx="${gap}" font-family="Noto Sans Symbols 2">${escSvg("\u2605")}</tspan>`
-  t += `<tspan dx="${gapStar}">${escSvg(voteStr)}</tspan>`
+  t += `<tspan dx="${dims.gap}" fill-opacity="0.6">${escSvg("\u2022")}</tspan>`
+  t += `<tspan dx="${dims.gap}" font-family="Noto Sans Symbols 2" font-weight="400">${escSvg("\u2605")}</tspan>`
+  t += `<tspan dx="${dims.gapStar}">${escSvg(voteStr)}</tspan>`
   if (yearStr) {
-    t += `<tspan dx="${gap}" fill-opacity="0.6">${escSvg("\u2022")}</tspan>`
-    t += `<tspan dx="${gap}">${escSvg(yearStr)}</tspan>`
+    t += `<tspan dx="${dims.gap}" fill-opacity="0.6">${escSvg("\u2022")}</tspan>`
+    t += `<tspan dx="${dims.gap}">${escSvg(yearStr)}</tspan>`
   }
+  t += "</text>"
   return t
 }
 
 export function buildGenreBarSvg(genreName: string, voteStr: string, yearStr: string, pw: number, fs: number, textColor: string, topLight: boolean, textOffsetX = 0) {
-  const gap = Math.round(fs / 3)
-  const gapStar = Math.round(fs / 6)
   const barPad = Math.round(fs * 0.5)
   const barH = fs + barPad * 2
   const barR = Math.round(fs * 0.7)
   const barShadowOff = Math.max(Math.round(barH * 0.2), 3)
   const barShadowBlur = Math.max(Math.round(barH * 0.5), 8)
-  const tspans = buildGenreTspans(genreName, voteStr, yearStr, gap, gapStar)
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: pw / 2 + textOffsetX, y: barH / 2 })
   const pathD = `M 0,${barH} L 0,${barR} A ${barR},${barR} 0 0,1 ${barR},0 L ${pw - barR},0 A ${barR},${barR} 0 0,1 ${pw},${barR} L ${pw},${barH} Z`
   const defs = `<defs><filter id="sh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="-${barShadowOff}" stdDeviation="${barShadowBlur / 2}" flood-color="rgba(0,0,0,0.3)"/></filter></defs>`
-  const textEl = `<text text-anchor="middle" x="${pw / 2 + textOffsetX}" y="${barH / 2}" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}">${tspans}</text>`
+  const textEl = `<g fill="${textColor}">${textParts}</g>`
   const borderLine = `<line x1="0" y1="0" x2="${pw}" y2="0" stroke="rgba(0,0,0,0.10)" stroke-width="1"/>`
   const inner = `<path d="${pathD}" fill="rgba(255,255,255,0.80)" filter="url(#sh)"/>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${barH}">${defs}${inner}${borderLine}${textEl}</svg>`, w: pw, h: barH }
 }
 
 export function buildGenrePillSvg(genreName: string, voteStr: string, yearStr: string, fs: number, bgColor: string, textColor: string, textOffsetX = 0) {
-  const gap = Math.round(fs / 3)
-  const gapStar = Math.round(fs / 6)
   const pillPad = Math.round(fs * 0.35)
+  const safePad = genreBadgeSafePad(fs)
   const pillR = Math.round(fs * 0.8)
   const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr)
-  const pillW = dims.textContentW + pillPad * 3
+  const pillW = dims.textContentW + pillPad * 3 + safePad * 2
   const pillH = fs + pillPad * 2
-  const tspans = buildGenreTspans(genreName, voteStr, yearStr, gap, gapStar)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pillW}" height="${pillH}"><rect width="${pillW}" height="${pillH}" rx="${pillR}" fill="${bgColor}"/><text text-anchor="middle" x="${pillW / 2 + textOffsetX}" y="${pillH / 2}" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}">${tspans}</text></svg>`
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: pillW / 2 + textOffsetX, y: pillH / 2 })
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pillW}" height="${pillH}"><rect width="${pillW}" height="${pillH}" rx="${pillR}" fill="${bgColor}"/><g fill="${textColor}">${textParts}</g></svg>`
   return { svg, w: pillW, h: pillH }
 }
 
 export function buildGenreTextSvg(genreName: string, voteStr: string, yearStr: string, fs: number, textColor: string, style: string, textOffsetX = 0) {
-  const gap = Math.round(fs / 3)
-  const gapStar = Math.round(fs / 6)
   const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr)
-  const tspans = buildGenreTspans(genreName, voteStr, yearStr, gap, gapStar)
   const shadowPad = style === "shadow" ? 8 : 0
   const shadowDrop = style === "shadow" ? 5 : 0
-  const renderW = dims.totalW + shadowPad * 2
+  const safePad = genreBadgeSafePad(fs)
+  const renderW = dims.totalW + shadowPad * 2 + safePad * 2
   const renderH = dims.svgH + shadowDrop
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: shadowDrop + dims.svgH / 2 })
   let defs = ""
   let filterAttr = ""
   if (style === "shadow") {
     defs = `<defs><filter id="sh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="rgba(0,0,0,0.6)"/></filter></defs>`
     filterAttr = ' filter="url(#sh)"'
   }
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}<text text-anchor="middle" x="${shadowPad + dims.totalW / 2 + textOffsetX}" y="${shadowDrop + dims.svgH / 2}" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${filterAttr}>${tspans}</text></svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}<g fill="${textColor}"${filterAttr}>${textParts}</g></svg>`
   return { svg, w: renderW, h: renderH }
 }
 
@@ -99,10 +143,7 @@ export function buildRankingDefaultSvg(fullText: string, fs: number, textColor: 
   const px = Math.round(fs * 1.0)
   const pt = Math.round(fs * 0.5)
   const pb = pt
-  const rankPart = String(fullText).split(" ")[0].replace("#", "").length * fs * CHAR_WIDTH
-  const spacePart = fs * 0.35
-  const labelPart = fullText.split(" ").slice(1).join(" ").length * fs * CHAR_WIDTH
-  const textW = Math.round(rankPart + spacePart + labelPart)
+  const textW = estimateTextWidth(fullText, fs)
   const totalW = textW + px * 2
   const svgH = fs + pt + pb
   const r = Math.round(fs * 0.7)
@@ -138,7 +179,7 @@ export function buildExtraDefaultSvg(label: string, fs: number, textColor: strin
   const px = Math.round(fs * 1.0)
   const pt = Math.round(fs * 0.5)
   const pb = pt
-  const textW = Math.max(Math.round(label.length * fs * CHAR_WIDTH), fs)
+  const textW = Math.max(estimateTextWidth(label, fs), fs)
   const totalW = textW + px * 2
   const svgH = fs + pt + pb
   const r = Math.round(fs * 0.7)
