@@ -134,7 +134,7 @@ export function buildRankingBarSvg(fullText: string, pw: number, fs: number, tex
   const shadowOff = Math.round(fs * 0.2)
   const pathD = `M 0,0 L ${pw},0 L ${pw},${svgH - r} A ${r},${r} 0 0,1 ${pw - r},${svgH} L ${r},${svgH} A ${r},${r} 0 0,1 0,${svgH - r} Z`
   const defs = `<defs><filter id="ds" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="${shadowOff}" stdDeviation="${shadowBlur / 2}" flood-color="rgba(0,0,0,0.3)"/></filter></defs>`
-  const textEl = `<text x="${pw / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="900" font-size="${fs}" fill="${textColor}" letter-spacing="0.025em">${escSvg(fullText)}</text>`
+  const textEl = `<text x="${pw / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="900" font-size="${fs}" fill="${textColor}">${escSvg(fullText)}</text>`
   const inner = `<path d="${pathD}" fill="${bg}" filter="url(#ds)"/>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${svgH}">${defs}${inner}${textEl}</svg>`, w: pw, h: svgH }
 }
@@ -157,7 +157,7 @@ export function buildRankingDefaultSvg(fullText: string, fs: number, textColor: 
   const centerX = ox + totalW / 2
   const centerY = oy + svgH / 2
   const defs = `<defs><filter id="ds" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="${shadowOff}" stdDeviation="${shadowBlur / 2}" flood-color="rgba(0,0,0,0.3)"/></filter></defs>`
-  const textEl = `<text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="900" font-size="${fs}" fill="${textColor}" letter-spacing="0.025em">${escSvg(fullText)}</text>`
+  const textEl = `<text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="900" font-size="${fs}" fill="${textColor}">${escSvg(fullText)}</text>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}<path d="${pathD}" fill="${bg}" filter="url(#ds)"/>${textEl}</svg>`, w: renderW, h: renderH }
 }
 
@@ -170,7 +170,7 @@ export function buildExtraBarSvg(label: string, pw: number, fs: number, textColo
   const shadowOff = Math.round(fs * 0.2)
   const pathD = `M 0,0 L ${pw},0 L ${pw},${svgH - r} A ${r},${r} 0 0,1 ${pw - r},${svgH} L ${r},${svgH} A ${r},${r} 0 0,1 0,${svgH - r} Z`
   const defs = `<defs><filter id="ds" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="${shadowOff}" stdDeviation="${shadowBlur / 2}" flood-color="rgba(0,0,0,0.3)"/></filter></defs>`
-  const textEl = `<text x="${pw / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}" letter-spacing="0.025em">${escSvg(label)}</text>`
+  const textEl = `<text x="${pw / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}">${escSvg(label)}</text>`
   const inner = `<path d="${pathD}" fill="${bg}" filter="url(#ds)"/>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${svgH}">${defs}${inner}${textEl}</svg>`, w: pw, h: svgH }
 }
@@ -193,6 +193,6 @@ export function buildExtraDefaultSvg(label: string, fs: number, textColor: strin
   const centerX = ox + totalW / 2
   const centerY = oy + svgH / 2
   const defs = `<defs><filter id="ds" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="${shadowOff}" stdDeviation="${shadowBlur / 2}" flood-color="rgba(0,0,0,0.3)"/></filter></defs>`
-  const textEl = `<text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}" letter-spacing="0.025em">${escSvg(label)}</text>`
+  const textEl = `<text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}">${escSvg(label)}</text>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}<path d="${pathD}" fill="${bg}" filter="url(#ds)"/>${textEl}</svg>`, w: renderW, h: renderH }
 }
