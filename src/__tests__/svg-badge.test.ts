@@ -28,6 +28,7 @@ describe("buildGenreBadgeSVG", () => {
     expect(svg).toContain("<tspan>Sci-Fi &amp; Fantasy</tspan>")
     expect(svg).toContain('<tspan dx="21" fill-opacity="0.6">•</tspan>')
     expect(svg).toContain('text-anchor="middle"')
+    expect(svg).toContain('lengthAdjust="spacingAndGlyphs"')
     expect(svg).not.toContain("Sci-Fi &amp; Fantasy</text><text")
   })
 
@@ -162,5 +163,17 @@ describe("buildRankingDefaultSvg", () => {
   it("contains text-anchor middle for centering", () => {
     const { svg } = buildRankingDefaultSvg("#1 Oggi", 60, "rgba(255,255,255,0.80)", "rgba(0,0,0,0.80)")
     expect(svg).toContain('text-anchor="middle"')
+  })
+
+  it("locks text to the measured badge width", () => {
+    const { svg } = buildRankingDefaultSvg("#1 Oggi", 60, "rgba(255,255,255,0.80)", "rgba(0,0,0,0.80)")
+    expect(svg).toContain('lengthAdjust="spacingAndGlyphs"')
+  })
+})
+
+describe("buildExtraDefaultSvg", () => {
+  it("locks text to the measured badge width", () => {
+    const { svg } = buildExtraDefaultSvg("Vincitore Golden Globe", 60, "rgba(0,0,0,0.80)", "rgba(255,255,255,0.80)")
+    expect(svg).toContain('lengthAdjust="spacingAndGlyphs"')
   })
 })
