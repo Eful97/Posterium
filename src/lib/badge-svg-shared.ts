@@ -1,5 +1,5 @@
-const TEXT_SAFE_PAD = 1.25
-const GENRE_TEXT_MAX_RATIO = 0.80
+const TEXT_SAFE_PAD = 1.15
+const GENRE_TEXT_MAX_RATIO = 0.84
 const GENRE_PILL_MAX_RATIO = 0.78
 
 export function genreBadgeSafePad(fs: number): number {

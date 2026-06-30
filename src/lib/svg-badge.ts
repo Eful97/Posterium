@@ -199,7 +199,7 @@ export async function buildRankingBadgeSVG(
   const fullText = `#${rank} ${periodText}`
   const maxBadgeW = pw - 20
   let finalFs = 23 * pw / 380
-  const projectedW = estimateTextWidth(fullText, finalFs) + Math.round(finalFs * 3.5) + Math.round(finalFs * 0.6) * 2
+  const projectedW = estimateTextWidth(fullText, finalFs) + Math.round(finalFs * 2) + Math.round(finalFs * 0.6) * 2
   if (projectedW > maxBadgeW) {
     finalFs = Math.max(maxBadgeW / projectedW * finalFs, 10)
   }
@@ -231,7 +231,7 @@ export async function buildExtraBadgeSVG(
   const s = badgeStyle || "default"
   const maxBadgeW = pw - 20
   let finalFs = 23 * pw / 380
-  const projectedW = estimateTextWidth(label, finalFs) + Math.round(finalFs * 3.5) + Math.round(finalFs * 0.6) * 2
+  const projectedW = estimateTextWidth(label, finalFs) + Math.round(finalFs * 2) + Math.round(finalFs * 0.6) * 2
   if (projectedW > maxBadgeW) {
     finalFs = Math.max(maxBadgeW / projectedW * finalFs, 10)
   }
