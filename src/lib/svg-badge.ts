@@ -1,50 +1,10 @@
 import { Resvg } from "@resvg/resvg-js"
 import fs from "fs"
 import path from "path"
-import { createRequire } from "module"
 import { textColorForBg } from "./accent-color"
 import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, genreTextMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildExtraBarSvg, buildExtraDefaultSvg } from "./badge-svg-shared"
 
-let _fontPaths: Record<string, string> | null = null
-
-function resolveFontPaths(): Record<string, string> {
-  const tryPath = (p: string) => { try { fs.accessSync(p); return p } catch { return null } }
-
-  // Try require.resolve first (works in standalone output)
-  try {
-    const _require = createRequire(import.meta.url)
-    const interDir = path.dirname(_require.resolve("@fontsource/inter/package.json"))
-    const notoDir = path.dirname(_require.resolve("@fontsource/noto-sans-symbols-2/package.json"))
-    const paths = {
-      regular: path.join(interDir, "files", "inter-latin-400-normal.woff"),
-      bold: path.join(interDir, "files", "inter-latin-700-normal.woff"),
-      black: path.join(interDir, "files", "inter-latin-900-normal.woff"),
-      symbols: path.join(notoDir, "files", "noto-sans-symbols-2-symbols-400-normal.woff"),
-    }
-    if (tryPath(paths.regular)) return paths
-  } catch { /* require.resolve failed, fall through */ }
-
-  // Fallback: process.cwd() + node_modules (works in dev)
-  const N = (s: string) => path.join(process.cwd(), "node_modules", "@fontsource", s)
-  const paths = {
-    regular: N("inter/files/inter-latin-400-normal.woff"),
-    bold: N("inter/files/inter-latin-700-normal.woff"),
-    black: N("inter/files/inter-latin-900-normal.woff"),
-    symbols: N("noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff"),
-  }
-  if (tryPath(paths.regular)) return paths
-
-  throw new Error(
-    `Cannot locate font files. Tried require.resolve and process.cwd().\n` +
-    `  process.cwd(): ${process.cwd()}\n` +
-    `  tried: ${paths.regular}`
-  )
-}
-
-function fontPath(name: string): string {
-  if (!_fontPaths) _fontPaths = resolveFontPaths()
-  return _fontPaths[name]
-}
+const N = (s: string) => path.join(process.cwd(), "node_modules", "@fontsource", s)
 
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
@@ -66,22 +26,22 @@ export function warmFonts() {
 }
 
 function fontRegular(): Buffer {
-  if (!_regular) _regular = fs.readFileSync(fontPath("regular"))
+  if (!_regular) _regular = fs.readFileSync(N("inter/files/inter-latin-400-normal.woff"))
   return _regular
 }
 
 function fontBold(): Buffer {
-  if (!_bold) _bold = fs.readFileSync(fontPath("bold"))
+  if (!_bold) _bold = fs.readFileSync(N("inter/files/inter-latin-700-normal.woff"))
   return _bold
 }
 
 function fontBlack(): Buffer {
-  if (!_black) _black = fs.readFileSync(fontPath("black"))
+  if (!_black) _black = fs.readFileSync(N("inter/files/inter-latin-900-normal.woff"))
   return _black
 }
 
 function fontSymbols(): Buffer {
-  if (!_symbols) _symbols = fs.readFileSync(fontPath("symbols"))
+  if (!_symbols) _symbols = fs.readFileSync(N("noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff"))
   return _symbols
 }
 
