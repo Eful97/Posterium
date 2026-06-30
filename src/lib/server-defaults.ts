@@ -1,5 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
+import { DATA_DIR } from "@/lib/data-dir"
 
 export interface ServerDefaults {
   badgeStyle?: string
@@ -13,19 +14,6 @@ export interface ServerDefaults {
   rankingBadges?: boolean
   autoRotateClean?: boolean
 }
-
-const DATA_DIR = (() => {
-  const hfData = "/data"
-  try {
-    if (fs.existsSync(hfData)) {
-      const testFile = path.join(hfData, ".write_test")
-      fs.writeFileSync(testFile, "ok")
-      fs.unlinkSync(testFile)
-      return hfData
-    }
-  } catch {}
-  return path.join(process.cwd(), "data")
-})()
 
 const FILE = path.join(DATA_DIR, "defaults.json")
 

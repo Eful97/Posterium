@@ -2,6 +2,7 @@ import fs from "node:fs"
 import fsp from "node:fs/promises"
 import path from "node:path"
 import type { Mapping } from "@/lib/types"
+import { DATA_DIR } from "@/lib/data-dir"
 
 export type { Mapping }
 
@@ -49,19 +50,6 @@ async function kvImportMappings(mappings: Mapping[]) {
 
 // ---- File-based helpers (HF / local) ----
 
-const DATA_DIR = (() => {
-  const hfData = "/data"
-  try {
-    if (fs.existsSync(hfData)) {
-      const testFile = path.join(hfData, ".write_test")
-      fs.writeFileSync(testFile, "ok")
-      fs.unlinkSync(testFile)
-      return hfData
-    }
-  } catch {}
-  const local = path.join(process.cwd(), "data")
-  return local
-})()
 const DATA_FILE = path.join(DATA_DIR, "mappings.json")
 
 let fileCache: Record<string, Mapping> | null = null

@@ -3,11 +3,9 @@ import fs from "node:fs"
 import path from "node:path"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { DATA_DIR, POSTER_CACHE_DIR } from "@/lib/data-dir"
 
-const DATA_FILE = path.join((() => {
-  try { if (fs.existsSync("/data")) return "/data" } catch (e) { console.error("[health] Failed to detect /data:", e) }
-  return path.join(process.cwd(), "data")
-})(), "mappings.json")
+const DATA_FILE = path.join(DATA_DIR, "mappings.json")
 
 async function checkEndpoint(url: string): Promise<{ ok: boolean; status: number; time: number }> {
   const start = performance.now()
@@ -66,10 +64,7 @@ export async function GET(request: Request) {
       dataFileExists: fs.existsSync(DATA_FILE),
       diskPosterCount: (() => {
         try {
-          const dir = process.env.DATA_DIR || "/data/posters"
-          if (fs.existsSync(dir)) return fs.readdirSync(dir).length
-          const local = path.join(process.cwd(), "data", "posters")
-          if (fs.existsSync(local)) return fs.readdirSync(local).length
+          if (fs.existsSync(POSTER_CACHE_DIR)) return fs.readdirSync(POSTER_CACHE_DIR).length
         } catch (e) { console.error("[health] Disk poster count failed:", e) }
         return 0
       })(),

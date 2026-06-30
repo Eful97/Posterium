@@ -1,13 +1,10 @@
 import fs from "node:fs"
 import path from "node:path"
+import { DATA_DIR } from "@/lib/data-dir"
 
 const CATALOG_URL = "https://raw.githubusercontent.com/0xConstant1/fp-crawler/main/catalogs/italy.json"
 const TMDB_BASE = "https://api.themoviedb.org/3"
 
-const DATA_DIR = (() => {
-  try { if (fs.existsSync("/data")) return "/data" } catch (e) { console.error("[flixpatrol] Failed to check /data:", e) }
-  return path.join(process.cwd(), "data")
-})()
 const CACHE_FILE = path.join(DATA_DIR, "flixpatrol_cache.json")
 
 const tmdbCache = new Map<string, { data: unknown; timestamp: number }>()

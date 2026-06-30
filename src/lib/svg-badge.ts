@@ -4,7 +4,7 @@ import path from "path"
 import { textColorForBg } from "./accent-color"
 import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, genreTextMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildExtraBarSvg, buildExtraDefaultSvg } from "./badge-svg-shared"
 
-const N = (s: string) => path.join(process.cwd(), "node_modules", "@fontsource", s)
+const N = (s: string) => path.join(process.cwd(), "src", "assets", "fonts", s)
 
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
@@ -22,10 +22,10 @@ export function warmFonts() {
   const cwd = process.cwd()
   console.log(`[font-debug] cwd=${cwd}`)
   const paths = [
-    N("inter/files/inter-latin-400-normal.woff"),
-    N("inter/files/inter-latin-700-normal.woff"),
-    N("inter/files/inter-latin-900-normal.woff"),
-    N("noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff"),
+    N("Inter-Regular.ttf"),
+    N("Inter-Bold.ttf"),
+    N("Inter-Black.ttf"),
+    N("NotoSansSymbols2-Regular.ttf"),
   ]
   for (const p of paths) {
     try {
@@ -47,22 +47,22 @@ export function warmFonts() {
 }
 
 function fontRegular(): Buffer {
-  if (!_regular) _regular = fs.readFileSync(N("inter/files/inter-latin-400-normal.woff"))
+  if (!_regular) _regular = fs.readFileSync(N("Inter-Regular.ttf"))
   return _regular
 }
 
 function fontBold(): Buffer {
-  if (!_bold) _bold = fs.readFileSync(N("inter/files/inter-latin-700-normal.woff"))
+  if (!_bold) _bold = fs.readFileSync(N("Inter-Bold.ttf"))
   return _bold
 }
 
 function fontBlack(): Buffer {
-  if (!_black) _black = fs.readFileSync(N("inter/files/inter-latin-900-normal.woff"))
+  if (!_black) _black = fs.readFileSync(N("Inter-Black.ttf"))
   return _black
 }
 
 function fontSymbols(): Buffer {
-  if (!_symbols) _symbols = fs.readFileSync(N("noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff"))
+  if (!_symbols) _symbols = fs.readFileSync(N("NotoSansSymbols2-Regular.ttf"))
   return _symbols
 }
 
@@ -89,7 +89,7 @@ function b64Symbols(): string {
 let _cachedStyle: string | null = null
 function fontStyle(): string {
   if (!_cachedStyle) {
-    _cachedStyle = `<style>@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64Regular()});font-weight:400;font-style:normal}@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64Bold()});font-weight:700;font-style:normal}@font-face{font-family:'Inter';src:url(data:application/font-woff;base64,${b64Black()});font-weight:900;font-style:normal}@font-face{font-family:'Noto Sans Symbols 2';src:url(data:application/font-woff;base64,${b64Symbols()});font-weight:400;font-style:normal}</style>`
+    _cachedStyle = `<style>@font-face{font-family:'Inter';src:url(data:font/ttf;base64,${b64Regular()});font-weight:400;font-style:normal}@font-face{font-family:'Inter';src:url(data:font/ttf;base64,${b64Bold()});font-weight:700;font-style:normal}@font-face{font-family:'Inter';src:url(data:font/ttf;base64,${b64Black()});font-weight:900;font-style:normal}@font-face{font-family:'Noto Sans Symbols 2';src:url(data:font/ttf;base64,${b64Symbols()});font-weight:400;font-style:normal}</style>`
   }
   return _cachedStyle
 }

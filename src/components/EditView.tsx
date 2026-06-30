@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useP } from "@/lib/context"
 import { toSearchResult } from "@/lib/types"
 import type { EnrichedAnimeItem } from "@/lib/validation"

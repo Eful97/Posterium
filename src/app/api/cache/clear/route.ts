@@ -1,21 +1,11 @@
 import fs from "node:fs"
 import path from "node:path"
+import { DATA_DIR } from "@/lib/data-dir"
 import { cacheClear } from "@/lib/cache"
 import { diskCacheClear } from "@/lib/disk-cache"
 import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 
-const DATA_DIR = (() => {
-  const hfData = "/data"
-  try {
-    if (fs.existsSync(hfData)) {
-      const testFile = path.join(hfData, ".write_test")
-      fs.writeFileSync(testFile, "ok")
-      fs.unlinkSync(testFile)
-      return hfData
-    }
-  } catch {}
-  return path.join(process.cwd(), "data")
-})()
+// DATA_DIR imported from data-dir
 
 export async function POST(req: Request) {
   if (!checkAdminToken(req)) return adminAuthResponse()

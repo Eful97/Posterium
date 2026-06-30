@@ -2,21 +2,9 @@ import fs from "node:fs"
 import fsp from "node:fs/promises"
 import path from "node:path"
 import crypto from "node:crypto"
+import { CACHE_DIR } from "@/lib/data-dir"
 
-const root = (() => {
-  const hfData = "/data"
-  try {
-    if (fs.existsSync(hfData)) {
-      const testFile = path.join(hfData, ".write_test")
-      fs.writeFileSync(testFile, "ok")
-      fs.unlinkSync(testFile)
-      return hfData
-    }
-  } catch {}
-  return path.join(process.cwd(), "data")
-})()
-
-const CACHE_DIR = path.join(root, "cache")
+// CACHE_DIR imported from data-dir
 const MAX_CACHE_SIZE = 500 * 1024 * 1024
 
 function ensureDir(dir: string) {
