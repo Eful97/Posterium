@@ -84,8 +84,10 @@ async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fal
     const result = findAccentColor(pixels, w, h, genre)
     return `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
   }
+  // Thumbnail 200×300 per color extraction (full 1000×1500 raw = 6MB)
+  const thumbBuf = await sharp(posterBuf).resize(200, 300, { fit: 'cover' }).toBuffer()
   const [pColor, lColor] = await Promise.all([
-    extractFrom(posterBuf, STD_W, STD_H, fallbackGenre || ''),
+    extractFrom(thumbBuf, 200, 300, fallbackGenre || ''),
     logoBuf ? (async () => {
       const meta = await sharp(logoBuf).metadata()
       return extractFrom(logoBuf, meta.width || 200, meta.height || 100, '')
@@ -481,7 +483,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     const wikidataResult = await Promise.race([
       wikidataPromise,
-      new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>((resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), 3000))
+      new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>((resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), 1500))
     ])
 
     const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards, t) : null

@@ -1,9 +1,13 @@
-FROM node:20-bullseye AS builder
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
-RUN git clone https://github.com/Eful97/Posterium.git /app
+FROM node:20-bullseye AS deps
 WORKDIR /app
-RUN rm -rf node_modules package-lock.json
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production 2>/dev/null || npm install
+
+FROM node:20-bullseye AS builder
+WORKDIR /app
+COPY package.json package-lock.json* ./
 RUN npm install
+COPY . .
 RUN npm run build
 
 FROM node:20-bullseye AS runner
@@ -19,6 +23,7 @@ ENV SHARP_CACHE_MEMORY_MB=256
 RUN addgroup --system nodejs
 RUN adduser --system --uid 1001 nextjs
 
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

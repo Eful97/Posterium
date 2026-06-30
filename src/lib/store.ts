@@ -1,4 +1,5 @@
 import fs from "node:fs"
+import fsp from "node:fs/promises"
 import path from "node:path"
 import type { Mapping } from "@/lib/types"
 
@@ -65,6 +66,7 @@ const DATA_FILE = path.join(DATA_DIR, "mappings.json")
 
 let fileCache: Record<string, Mapping> | null = null
 let cacheDirty = false
+let initPromise: Promise<void> | null = null
 
 function ensureDataDir() {
   try {
@@ -74,10 +76,12 @@ function ensureDataDir() {
   } catch (e) { console.error("[store] Failed to create data dir:", e) }
 }
 
-function loadFromDisk(): Record<string, Mapping> {
+async function loadFromDisk(): Promise<Record<string, Mapping>> {
   try {
-    if (!fs.existsSync(DATA_FILE)) return {}
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"))
+    const exists = await fsp.access(DATA_FILE).then(() => true).catch(() => false)
+    if (!exists) return {}
+    const raw = await fsp.readFile(DATA_FILE, "utf-8")
+    return JSON.parse(raw)
   } catch {
     return {}
   }
@@ -85,16 +89,19 @@ function loadFromDisk(): Record<string, Mapping> {
 
 function getData(): Record<string, Mapping> {
   if (fileCache === null) {
-    fileCache = loadFromDisk()
+    fileCache = {}
+    if (!initPromise) {
+      initPromise = loadFromDisk().then((data) => { fileCache = data; initPromise = null })
+    }
   }
   return fileCache
 }
 
-function persist() {
+async function persist() {
   if (!cacheDirty || fileCache === null) return
+  ensureDataDir()
   try {
-    ensureDataDir()
-    fs.writeFileSync(DATA_FILE, JSON.stringify(fileCache, null, 2))
+    await fsp.writeFile(DATA_FILE, JSON.stringify(fileCache, null, 2))
   } catch (e) { console.error("[store] Failed to write mappings:", e) }
   cacheDirty = false
 }
@@ -103,11 +110,13 @@ function persist() {
 
 export async function getAll(): Promise<Mapping[]> {
   if (useKv) return kvGetAll()
+  if (initPromise) await initPromise
   return Object.values(getData())
 }
 
 export async function getById(type: "movie" | "tv", id: number): Promise<Mapping | null> {
   if (useKv) return kvGetById(type, id)
+  if (initPromise) await initPromise
   const key = `${type}:${id}`
   return getData()[key] ?? null
 }
@@ -117,11 +126,12 @@ export async function upsert(mapping: Mapping) {
     await kvUpsert(mapping)
     return
   }
+  if (initPromise) await initPromise
   const data = getData()
   const key = `${mapping.mediaType}:${mapping.tmdbId}`
   data[key] = { ...mapping, updatedAt: new Date().toISOString() }
   cacheDirty = true
-  persist()
+  await persist()
 }
 
 export async function remove(type: "movie" | "tv", id: number) {
@@ -129,11 +139,12 @@ export async function remove(type: "movie" | "tv", id: number) {
     await kvRemove(type, id)
     return
   }
+  if (initPromise) await initPromise
   const data = getData()
   const key = `${type}:${id}`
   delete data[key]
   cacheDirty = true
-  persist()
+  await persist()
 }
 
 export async function removeAll() {
@@ -141,9 +152,10 @@ export async function removeAll() {
     await kvRemoveAll()
     return
   }
+  if (initPromise) await initPromise
   fileCache = {}
   cacheDirty = true
-  persist()
+  await persist()
 }
 
 export async function importMappings(mappings: Mapping[]) {
@@ -151,11 +163,12 @@ export async function importMappings(mappings: Mapping[]) {
     await kvImportMappings(mappings)
     return
   }
+  if (initPromise) await initPromise
   const data = getData()
   for (const m of mappings) {
     const key = `${m.mediaType}:${m.tmdbId}`
     data[key] = m
   }
   cacheDirty = true
-  persist()
+  await persist()
 }
