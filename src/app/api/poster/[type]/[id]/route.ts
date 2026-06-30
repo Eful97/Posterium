@@ -562,6 +562,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       rankBadgeResult ? fitBadgeToCanvas(rankBadgeResult, STD_W, STD_H) : Promise.resolve(null),
     ])
 
+    console.log(`[badge-debug] badgesEnabled=${badgesEnabled} badgeStyle=${badgeStyle} qRs=${qRankingBadgeStyle} topLight=${topLight} year=${year} topBadge=${JSON.stringify(topBadge)} genreKey=${genreBadgeKey?.slice(0,50)} genreOK=${!!genreBadgeResult} rankOK=${!!rankBadgeResult}`)
     if (safeGenreBadgeResult) {
       if (badgeStyle === "bar") {
         composites.push({ input: safeGenreBadgeResult.png, top: STD_H - safeGenreBadgeResult.h, left: 0 })

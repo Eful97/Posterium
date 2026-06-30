@@ -19,10 +19,31 @@ let _fontsWarmed = false
 export function warmFonts() {
   if (_fontsWarmed) return
   _fontsWarmed = true
-  fontRegular()
-  fontBold()
-  fontBlack()
-  fontSymbols()
+  const cwd = process.cwd()
+  console.log(`[font-debug] cwd=${cwd}`)
+  const paths = [
+    N("inter/files/inter-latin-400-normal.woff"),
+    N("inter/files/inter-latin-700-normal.woff"),
+    N("inter/files/inter-latin-900-normal.woff"),
+    N("noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff"),
+  ]
+  for (const p of paths) {
+    try {
+      const stat = fs.statSync(p)
+      console.log(`[font-debug] EXISTS ${p} size=${stat.size}`)
+    } catch {
+      console.log(`[font-debug] MISSING ${p}`)
+    }
+  }
+  try {
+    fontRegular()
+    fontBold()
+    fontBlack()
+    fontSymbols()
+    console.log(`[font-debug] All fonts loaded OK sizes: regular=${_regular?.length} bold=${_bold?.length} black=${_black?.length} symbols=${_symbols?.length}`)
+  } catch (e) {
+    console.error(`[font-debug] Font load error:`, e)
+  }
 }
 
 function fontRegular(): Buffer {
@@ -141,6 +162,7 @@ export async function buildGenreBadgeSVG(
   } else {
     result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s)
   }
+  console.log(`[font-debug] genreBadgeSvg style=${s} fs=${fs} w=${result.w}`)
 
   const png = await renderSVG(wrapSvg(result.svg), result.w)
   return { png, w: result.w, h: result.h }
@@ -176,6 +198,9 @@ export async function buildRankingBadgeSVG(
   } else {
     result = buildRankingDefaultSvg(fullText, fs, fg, bg)
   }
+  console.log(`[font-debug] rankingBadgeSvg style=${s} fs=${fs} w=${result.w} label="${periodText}" fullText="${fullText}"`)
+  const textMatch = result.svg.match(/font-weight="(\d+)"/)
+  if (textMatch) console.log(`[font-debug]   font-weight=${textMatch[1]}`)
 
   const png = await renderSVG(wrapSvg(result.svg), result.w)
   return { png, w: result.w, h: result.h }
@@ -208,6 +233,7 @@ export async function buildExtraBadgeSVG(
   } else {
     result = buildExtraDefaultSvg(label, fs, fg, bg)
   }
+  console.log(`[font-debug] extraBadgeSvg style=${s} fs=${fs} w=${result.w} label="${label}"`)
 
   const png = await renderSVG(wrapSvg(result.svg), result.w)
   return { png, w: result.w, h: result.h }
