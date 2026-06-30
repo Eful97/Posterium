@@ -1,8 +1,20 @@
 import { Resvg } from "@resvg/resvg-js"
 import fs from "fs"
 import path from "path"
+import { createRequire } from "module"
 import { textColorForBg } from "./accent-color"
 import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, genreTextMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildExtraBarSvg, buildExtraDefaultSvg } from "./badge-svg-shared"
+
+const _require = createRequire(import.meta.url)
+const _FONT_INTER = path.dirname(_require.resolve("@fontsource/inter/package.json"))
+const _FONT_NOTO = path.dirname(_require.resolve("@fontsource/noto-sans-symbols-2/package.json"))
+
+const FONTS = {
+  regular: path.join(_FONT_INTER, "files", "inter-latin-400-normal.woff"),
+  bold: path.join(_FONT_INTER, "files", "inter-latin-700-normal.woff"),
+  black: path.join(_FONT_INTER, "files", "inter-latin-900-normal.woff"),
+  symbols: path.join(_FONT_NOTO, "files", "noto-sans-symbols-2-symbols-400-normal.woff"),
+} as const
 
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
@@ -14,7 +26,13 @@ let _b64Black: string | null = null
 let _b64Symbols: string | null = null
 let _fontsWarmed = false
 
-const N = (s: string) => path.join(process.cwd(), "node_modules", "@fontsource", s)
+function loadFont(fontPath: string): Buffer {
+  try {
+    return fs.readFileSync(fontPath)
+  } catch (e) {
+    throw new Error(`Font not found: ${fontPath} — ${(e as Error).message}`)
+  }
+}
 
 export function warmFonts() {
   if (_fontsWarmed) return
@@ -26,22 +44,22 @@ export function warmFonts() {
 }
 
 function fontRegular(): Buffer {
-  if (!_regular) _regular = fs.readFileSync(N("inter/files/inter-latin-400-normal.woff"))
+  if (!_regular) _regular = loadFont(FONTS.regular)
   return _regular
 }
 
 function fontBold(): Buffer {
-  if (!_bold) _bold = fs.readFileSync(N("inter/files/inter-latin-700-normal.woff"))
+  if (!_bold) _bold = loadFont(FONTS.bold)
   return _bold
 }
 
 function fontBlack(): Buffer {
-  if (!_black) _black = fs.readFileSync(N("inter/files/inter-latin-900-normal.woff"))
+  if (!_black) _black = loadFont(FONTS.black)
   return _black
 }
 
 function fontSymbols(): Buffer {
-  if (!_symbols) _symbols = fs.readFileSync(N("noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff"))
+  if (!_symbols) _symbols = loadFont(FONTS.symbols)
   return _symbols
 }
 
@@ -159,7 +177,7 @@ export async function buildRankingBadgeSVG(
   const fullText = `#${rank} ${periodText}`
   const maxBadgeW = pw - 20
   let finalFs = 23 * pw / 380
-  const projectedW = estimateTextWidth(fullText, finalFs) + Math.round(finalFs * 2) + Math.round(finalFs * 0.6) * 2
+  const projectedW = estimateTextWidth(fullText, finalFs) + Math.round(finalFs * 3.5) + Math.round(finalFs * 0.6) * 2
   if (projectedW > maxBadgeW) {
     finalFs = Math.max(maxBadgeW / projectedW * finalFs, 10)
   }
@@ -191,7 +209,7 @@ export async function buildExtraBadgeSVG(
   const s = badgeStyle || "default"
   const maxBadgeW = pw - 20
   let finalFs = 23 * pw / 380
-  const projectedW = estimateTextWidth(label, finalFs) + Math.round(finalFs * 2) + Math.round(finalFs * 0.6) * 2
+  const projectedW = estimateTextWidth(label, finalFs) + Math.round(finalFs * 3.5) + Math.round(finalFs * 0.6) * 2
   if (projectedW > maxBadgeW) {
     finalFs = Math.max(maxBadgeW / projectedW * finalFs, 10)
   }
