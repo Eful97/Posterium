@@ -24,7 +24,7 @@ const IMG_BASE = "https://image.tmdb.org/t/p"
 const MAX_IMG_SIZE = 10 * 1024 * 1024
 const STD_W = 1000
 const STD_H = 1500
-const BADGE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000
+const BADGE_CACHE_TTL = 24 * 60 * 60 * 1000
 
 function badgeCacheKey(type: string, ...parts: (string | number | boolean | undefined | null)[]): string {
   return `badge:${type}:${parts.map(p => typeof p === "number" ? Math.round(p * 10) / 10 : (p ?? "x")).join(":")}`
