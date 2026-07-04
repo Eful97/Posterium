@@ -6,7 +6,11 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
-import { diskCacheGetAsync, diskCacheSetAsync, hashKey } from "@/lib/disk-cache"
+import crypto from "node:crypto"
+
+function hashKey(key: string): string {
+  return crypto.createHash("md5").update(key).digest("hex").slice(0, 16)
+}
 import { getServerDefaults } from "@/lib/server-defaults"
 import { GENRE_FALLBACK } from "@/lib/badges"
 import { findAccentColor } from "@/lib/accent-color"
@@ -212,19 +216,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const cachedRank = mapping?.trendRank ?? null
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}`
 
-  // 3. Disk cache check (async, non-blocking)
-  const CACHE_TTL_24H = 24 * 60 * 60 * 1000
-  const diskBuf = await diskCacheGetAsync("poster", cacheKey, CACHE_TTL_24H)
-  if (diskBuf) {
-    cacheSet(cacheKey, diskBuf, ["poster"])
-    const diskEtag = `"d${hashKey(cacheKey)}"`
-    if (req.headers.get("If-None-Match") === diskEtag) {
-      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" } })
-    }
-    return new Response(new Uint8Array(diskBuf), { headers: etagHeaders(diskEtag) })
-  }
-
-  // 4. Memory cache check (no network)
+  // 3. Memory cache check (no network)
   const cached = cacheGetStale<Buffer>(cacheKey)
   const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
   if (cached.data && cachedHeaders.data) {
@@ -377,19 +369,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         : Promise.resolve(null),
     ])
 
-    const wikidataCacheKey = `wikidata:${mediaType}:${tmdbId}`
-    const WIKIDISK_TTL = 24 * 60 * 60 * 1000
-    const wikidataPromise = (async () => {
-      // Try disk cache first (survives HF restarts)
-      try {
-        const diskData = await diskCacheGetAsync("wikidata", wikidataCacheKey, WIKIDISK_TTL)
-        if (diskData) return JSON.parse(diskData.toString("utf-8")) as Awaited<ReturnType<typeof fetchAllWikidata>>
-      } catch {}
-      const result = await fetchAllWikidata(tmdbId, mediaType, t)
-      // Persist to disk
-      diskCacheSetAsync("wikidata", wikidataCacheKey, Buffer.from(JSON.stringify(result))).catch(() => {})
-      return result
-    })().catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }))
+    const wikidataPromise = fetchAllWikidata(tmdbId, mediaType, t)
+      .catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }))
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
@@ -672,7 +653,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     cacheSet(cacheKey, composited, ["poster"])
     cacheSet(`${cacheKey}:headers`, { etag }, ["poster"])
-    diskCacheSetAsync("poster", cacheKey, composited).catch(() => {})
     return new Response(new Uint8Array(composited), { headers: etagHeaders(etag) })
   } catch (e) {
     console.error("Poster generation failed:", e)

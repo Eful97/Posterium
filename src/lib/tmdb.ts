@@ -1,5 +1,3 @@
-import { diskCacheGetAsync, diskCacheSetAsync } from "@/lib/disk-cache"
-
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 const TMDB_BASE = "https://api.themoviedb.org/3"
 const IMG_BASE = "https://image.tmdb.org/t/p"
@@ -7,7 +5,6 @@ const IMG_BASE = "https://image.tmdb.org/t/p"
 const fetchCache = new Map<string, { data: unknown; timestamp: number }>()
 const CACHE_TTL = 5 * 60 * 1000
 const CACHE_MAX = 500
-const DISK_TTL = 24 * 60 * 60 * 1000
 
 const inflight = new Map<string, Promise<unknown>>()
 
@@ -25,15 +22,6 @@ async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
     return cached.data
   }
 
-  // Disk cache (24h)
-  const diskData = await diskCacheGetAsync("tmdb", cacheKey, DISK_TTL)
-  if (diskData) {
-    const data = JSON.parse(diskData.toString("utf-8"))
-    if (fetchCache.size >= CACHE_MAX) fetchCache.delete(fetchCache.keys().next().value!)
-    fetchCache.set(cacheKey, { data, timestamp: Date.now() })
-    return data
-  }
-
   // Deduplicate concurrent requests for the same URL
   const existing = inflight.get(cacheKey)
   if (existing) return existing
@@ -44,7 +32,6 @@ async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
     const data = await res.json()
     if (fetchCache.size >= CACHE_MAX) fetchCache.delete(fetchCache.keys().next().value!)
     fetchCache.set(cacheKey, { data, timestamp: Date.now() })
-    diskCacheSetAsync("tmdb", cacheKey, Buffer.from(JSON.stringify(data))).catch(() => {})
     return data
   })()
     .finally(() => inflight.delete(cacheKey))

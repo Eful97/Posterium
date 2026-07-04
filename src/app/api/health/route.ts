@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server"
-import fs from "node:fs"
-import path from "node:path"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
-import { DATA_DIR, POSTER_CACHE_DIR } from "@/lib/data-dir"
-
-const DATA_FILE = path.join(DATA_DIR, "mappings.json")
 
 async function checkEndpoint(url: string): Promise<{ ok: boolean; status: number; time: number }> {
   const start = performance.now()
@@ -42,33 +37,11 @@ export async function GET(request: Request) {
   const externalIds = apiKey
     ? await checkEndpoint(`https://api.themoviedb.org/3/movie/550/external_ids?api_key=${apiKey}`)
     : { ok: false, status: 401, time: 0 }
-  const mappingsCount = (() => {
-    try {
-      if (fs.existsSync(DATA_FILE)) {
-        const raw = fs.readFileSync(DATA_FILE, "utf-8")
-        const data = JSON.parse(raw)
-        return Object.keys(data).length
-      }
-      return 0
-    } catch {
-      return -1
-    }
-  })()
   const health = {
     status: tmdbTrending.ok && tmdbSearch.ok ? "healthy" : "degraded",
     timestamp: new Date().toISOString(),
     tmdb: { apiKey: !!apiKey, apiKeyLength: apiKey.length, trending: tmdbTrending, search: tmdbSearch, popular: tmdbPopular, externalIds },
     streaming: { justwatch, flixpatrol },
-    storage: {
-      mappingsCount,
-      dataFileExists: fs.existsSync(DATA_FILE),
-      diskPosterCount: (() => {
-        try {
-          if (fs.existsSync(POSTER_CACHE_DIR)) return fs.readdirSync(POSTER_CACHE_DIR).length
-        } catch (e) { console.error("[health] Disk poster count failed:", e) }
-        return 0
-      })(),
-    },
     system: { node: process.version, platform: process.platform, env: process.env.NODE_ENV },
   }
   cacheSet("health", health, ["health"])
