@@ -4,7 +4,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["@resvg/resvg-js", "sharp"],
   outputFileTracingIncludes: {
-    "/api/poster/**/*": ["./node_modules/@fontsource/**/*"],
+    "/api/poster/**/*": ["src/assets/fonts/**/*"],
+  },
+  outputFileTracingExcludes: {
+    "/api/poster/**/*": ["next.config.ts"],
   },
   images: {
     remotePatterns: [

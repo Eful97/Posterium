@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { buildPreviewUrl, buildUrlPattern } from "@/lib/poster-url"
+import { POSTER_URL_VERSION } from "@/lib/render-version"
 
 const baseBadgeParams = {
   globalBadges: true,
@@ -67,9 +68,9 @@ describe("buildUrlPattern", () => {
     expect(url).not.toContain("badges=0")
   })
 
-  it("always includes rv=66", () => {
+  it("always includes the shared poster URL version", () => {
     const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it" })
-    expect(url).toContain("rv=66")
+    expect(url).toContain(`rv=${POSTER_URL_VERSION}`)
   })
 
   it("includes gradientHeight, blur, bf, bd, bs, rs params", () => {

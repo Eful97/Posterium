@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { getTrending } from "@/lib/tmdb"
-import { diskCacheSetAsync } from "@/lib/disk-cache"
+import { POSTER_URL_VERSION } from "@/lib/render-version"
 
 const WARMUP_TOKEN = process.env.ADMIN_TOKEN || process.env.WARMUP_TOKEN
 
@@ -31,12 +31,13 @@ export async function POST(req: NextRequest) {
       const batch = ids.slice(i, i + concurrency)
       const batchResults = await Promise.allSettled(
         batch.map(async ({ type, id }) => {
-          const url = `${req.nextUrl.origin}/api/poster/${type}/${id}?rv=65&lang=it`
+          const url = new URL(`/api/poster/${type}/${id}`, req.nextUrl.origin)
+          url.searchParams.set("rv", String(POSTER_URL_VERSION))
+          url.searchParams.set("lang", "it")
+          if (apiKey) url.searchParams.set("api_key", apiKey)
           const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
           if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          const buf = Buffer.from(await res.arrayBuffer())
-          const cacheKey = `warmup:${type}:${id}`
-          await diskCacheSetAsync("poster", cacheKey, buf)
+          await res.arrayBuffer()
           return "ok"
         })
       )

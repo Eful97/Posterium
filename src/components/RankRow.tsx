@@ -9,6 +9,7 @@ interface RankItem {
   tmdbId?: number | null
   title?: string | null
   name?: string | null
+  media_type?: string
   poster_path?: string | null
   posterPath?: string | null
   rank: number

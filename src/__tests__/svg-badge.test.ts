@@ -32,6 +32,12 @@ describe("buildGenreBadgeSVG", () => {
     expect(svg).not.toContain("Sci-Fi &amp; Fantasy</text><text")
   })
 
+  it("uses a lighter text weight for genre/rating badges", () => {
+    const { svg } = buildGenreTextSvg("Sci-Fi & Fantasy", "8.0", "2022", 63, "#e5e7eb", "shadow")
+
+    expect(svg).toContain('font-weight="600"')
+  })
+
   it("keeps long genre pill compact and centers its text flow", async () => {
     const rawPill = buildGenrePillSvg("Sci-Fi & Fantasy", "8.2", "2019", 53, "rgba(255,255,255,0.80)", "rgba(0,0,0,0.80)")
     expect(rawPill.svg).toContain('text-anchor="middle"')
@@ -163,6 +169,12 @@ describe("buildRankingDefaultSvg", () => {
   it("contains text-anchor middle for centering", () => {
     const { svg } = buildRankingDefaultSvg("#1 Oggi", 60, "rgba(255,255,255,0.80)", "rgba(0,0,0,0.80)")
     expect(svg).toContain('text-anchor="middle"')
+  })
+
+  it("uses a lighter text weight for trend badges", () => {
+    const { svg } = buildRankingDefaultSvg("#1 Oggi", 60, "rgba(255,255,255,0.80)", "rgba(0,0,0,0.80)")
+
+    expect(svg).toContain('font-weight="700"')
   })
 
   it("locks text to the measured badge width", () => {

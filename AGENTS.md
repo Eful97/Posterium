@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
-App version: `0.13.1` — RENDER_VERSION: `75` — rv: `66`
+App version: `0.13.2` — RENDER_VERSION: `76` — rv: `67`
 
 ## Badge Genere/Rating (GenreRatingBadges)
 

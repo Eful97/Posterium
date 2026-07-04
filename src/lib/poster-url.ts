@@ -2,6 +2,7 @@ import { getDomain } from "./utils"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
 import { computeBadge, computeExtraFallback } from "./badge-priority"
 import { resolveLabel, isRankKey, t as tFn } from "./i18n"
+import { POSTER_URL_VERSION } from "./render-version"
 import type { SearchResult, TMDBImage } from "./types"
 import type { EnrichedAnimeItem } from "./validation"
 
@@ -64,7 +65,7 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
   params.push(`bd=${bp.blurDarkness}`)
   params.push(`bs=${bp.badgeStyle}`)
   params.push(`rs=${bp.rankingBadgeStyle}`)
-  params.push("rv=66")
+  params.push(`rv=${POSTER_URL_VERSION}`)
   url += "?" + params.join("&")
   return url
 }
@@ -125,20 +126,21 @@ function computeTopLight(hexColor: string): boolean {
 
 function computeBadgeParams(ps: PosterState, bp: BadgeParams): string[] {
   const params: string[] = []
+  const selected = ps.selected
   const now = Date.now()
   const twoWeeks = 14 * 24 * 60 * 60 * 1000
-  const isNewMovie = ps.selected?.media_type === "movie" && ps.metaInfo.release_date
+  const isNewMovie = selected?.media_type === "movie" && ps.metaInfo.release_date
     ? (now - new Date(ps.metaInfo.release_date).getTime()) < twoWeeks : false
-  const isNewSeries = ps.selected?.media_type === "tv" && ps.metaInfo.first_air_date
+  const isNewSeries = selected?.media_type === "tv" && ps.metaInfo.first_air_date
     ? (now - new Date(ps.metaInfo.first_air_date).getTime()) < twoWeeks : false
   const award = ps.metaInfo.awards?.length ? getAwardBadgeLabel(ps.metaInfo.awards) : null
   const nomination = !award && ps.metaInfo.nominations?.length ? getNominationBadgeLabel(ps.metaInfo.nominations) : null
-  const animeRank = ps.selected && ps.mdblistAnimeList.length > 0
-    ? (ps.mdblistAnimeList.find((a) => a.id === ps.selected!.id)?.rank ?? null) : null
+  const animeRank = selected && ps.mdblistAnimeList.length > 0
+    ? (ps.mdblistAnimeList.find((a) => a.id === selected.id)?.rank ?? null) : null
   const studio = ps.metaInfo.studios?.length ? ps.metaInfo.studios[0] : null
-  const tvType = ps.selected?.media_type === "tv" ? ps.metaInfo.type : null
-  const tvStatus = ps.selected?.media_type === "tv" ? ps.metaInfo.status : null
-  const extra = computeExtraFallback({ mediaType: ps.selected?.media_type === "tv" ? "tv" : "movie", voteAverage: ps.metaInfo.voteAverage, tvType, tvStatus }, tFn)
+  const tvType = selected?.media_type === "tv" ? ps.metaInfo.type : null
+  const tvStatus = selected?.media_type === "tv" ? ps.metaInfo.status : null
+  const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: ps.metaInfo.voteAverage, tvType, tvStatus }, tFn)
   if (bp.customBadge) {
     const rankKey = isRankKey(bp.customBadge)
     if (rankKey === "badge.today" && ps.trendRank) params.push(`rank=${ps.trendRank}&label=${encodeURIComponent(tFn("badge.today"))}`)

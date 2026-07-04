@@ -12,8 +12,10 @@ const DISK_TTL = 24 * 60 * 60 * 1000
 const inflight = new Map<string, Promise<unknown>>()
 
 async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
+  const key = apiKey || TMDB_API_KEY
+  if (!key) throw new Error("TMDB API key is missing")
   const url = new URL(`${TMDB_BASE}${path}`)
-  url.searchParams.set("api_key", apiKey || TMDB_API_KEY!)
+  url.searchParams.set("api_key", key)
 
   const cacheKey = url.toString()
 

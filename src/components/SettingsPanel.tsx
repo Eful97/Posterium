@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { useP } from "@/lib/context"
+import { ApiError, http } from "@/lib/http"
 import { saveDefaults } from "@/lib/save-defaults"
 import { SliderRow } from "@/components/SliderRow"
 import { BadgeStyleSelector, SecretInput, MenuItem } from "@/components/ui"
@@ -24,7 +26,23 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   const [editVal, setEditVal] = useState<string | null>(null)
   const [editTxt, setEditTxt] = useState("")
   const [saved, setSaved] = useState(false)
-  const [clearing, setClearing] = useState(false)
+  const [clearStatus, setClearStatus] = useState<"idle" | "clearing" | "cleared">("idle")
+
+  const clearCache = async () => {
+    setClearStatus("clearing")
+    try {
+      await http<{ ok: boolean }>("/api/cache/clear", { method: "POST", retries: 0 })
+      setClearStatus("cleared")
+      toast.success(p.t("ui.cleared"))
+      setTimeout(() => setClearStatus("idle"), 1500)
+    } catch (error) {
+      setClearStatus("idle")
+      const message = error instanceof ApiError && error.status === 401
+        ? p.t("ui.clearCacheUnauthorized")
+        : p.t("ui.clearCacheError")
+      toast.error(message)
+    }
+  }
 
   const content = (
     <>
@@ -63,7 +81,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <hr className="border-zinc-700 my-1" />
       <MenuItem icon={<Upload className="w-3 h-3" />} label={p.t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
       <MenuItem icon={<Download className="w-3 h-3" />} label={p.t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />
-      <MenuItem icon={<Trash2 className="w-3 h-3" />} label={clearing ? p.t("ui.cleared") : p.t("ui.clearCache")} onClick={async () => { setClearing(true); try { await fetch("/api/cache/clear", { method: "POST" }) } catch {}; setTimeout(() => setClearing(false), 1500) }} danger />
+      <MenuItem icon={<Trash2 className="w-3 h-3" />} label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} onClick={clearCache} danger />
     </>
   )
 

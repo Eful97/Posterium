@@ -115,6 +115,8 @@
     "ui.importJson":  "Importa JSON",
     "ui.clearCache":  "Svuota cache",
     "ui.cleared":  "Svuotata!",
+    "ui.clearCacheError":  "Cache non svuotata",
+    "ui.clearCacheUnauthorized":  "Token admin richiesto",
     "ui.searchError":  "Ricerca fallita. Riprova.",
     "ui.welcome":  "Benvenuto in Posterium",
     "ui.welcomeSubtitle":  "Scegli la tua lingua preferita",

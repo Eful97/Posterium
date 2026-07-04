@@ -8,7 +8,7 @@ import { CACHE_DIR } from "@/lib/data-dir"
 const MAX_CACHE_SIZE = 500 * 1024 * 1024
 
 function ensureDir(dir: string) {
-  try { fs.mkdirSync(dir, { recursive: true }) } catch {}
+  try { fs.mkdirSync(dir, { recursive: true }) } catch (error) { logCacheError(error) }
 }
 
 export function hashKey(key: string): string {
@@ -25,7 +25,7 @@ export function diskCacheGet(namespace: string, key: string, ttlMs: number): Buf
       return fs.readFileSync(filePath)
     }
     fs.unlinkSync(filePath)
-  } catch {}
+  } catch (error) { logCacheError(error) }
   return null
 }
 
@@ -33,7 +33,7 @@ export function diskCacheSet(namespace: string, key: string, data: Buffer): void
   const dir = path.join(CACHE_DIR, namespace)
   ensureDir(dir)
   const filePath = path.join(dir, `${hashKey(key)}.dat`)
-  try { fs.writeFileSync(filePath, data) } catch {}
+  try { fs.writeFileSync(filePath, data) } catch (error) { logCacheError(error) }
   evictIfNeeded(dir)
 }
 
@@ -46,16 +46,17 @@ export async function diskCacheGetAsync(namespace: string, key: string, ttlMs: n
     if (Date.now() - stat.mtimeMs < ttlMs) {
       return await fsp.readFile(filePath)
     }
-    await fsp.unlink(filePath).catch(() => {})
-  } catch {}
+    await fsp.unlink(filePath).catch(logCacheError)
+  } catch (error) { logCacheError(error) }
   return null
 }
 
 export async function diskCacheSetAsync(namespace: string, key: string, data: Buffer): Promise<void> {
   const dir = path.join(CACHE_DIR, namespace)
-  await fsp.mkdir(dir, { recursive: true }).catch(() => {})
+  await fsp.mkdir(dir, { recursive: true }).catch(logCacheError)
   const filePath = path.join(dir, `${hashKey(key)}.dat`)
-  await fsp.writeFile(filePath, data).catch(() => {})
+  await fsp.writeFile(filePath, data).catch(logCacheError)
+  evictIfNeeded(dir)
 }
 
 // --- Eviction ---
@@ -76,16 +77,16 @@ function evictIfNeeded(dir: string): void {
       let totalSize = files.reduce((s, f) => s + f.size, 0)
       for (const f of files) {
         if (totalSize <= MAX_CACHE_SIZE) break
-        try { fs.unlinkSync(f.fp) } catch {}
+        try { fs.unlinkSync(f.fp) } catch (error) { logCacheError(error) }
         totalSize -= f.size
       }
-    } catch {}
+    } catch (error) { logCacheError(error) }
   }, 0)
 }
 
 export function diskCacheRemove(namespace: string, key: string): void {
   const filePath = path.join(CACHE_DIR, namespace, `${hashKey(key)}.dat`)
-  try { fs.unlinkSync(filePath) } catch {}
+  try { fs.unlinkSync(filePath) } catch (error) { logCacheError(error) }
 }
 
 export function diskCacheClear(namespace: string): void {
@@ -93,7 +94,13 @@ export function diskCacheClear(namespace: string): void {
   try {
     const files = fs.readdirSync(dir)
     for (const f of files) {
-      try { fs.unlinkSync(path.join(dir, f)) } catch {}
+      try { fs.unlinkSync(path.join(dir, f)) } catch (error) { logCacheError(error) }
     }
-  } catch {}
+  } catch (error) { logCacheError(error) }
+}
+
+function logCacheError(error: unknown): void {
+  if (process.env.POSTERIUM_CACHE_DEBUG === "1") {
+    console.warn("[disk-cache]", error)
+  }
 }

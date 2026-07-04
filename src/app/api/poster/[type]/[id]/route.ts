@@ -18,8 +18,8 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { computeLogoLayout } from "@/lib/logo-layout"
+import { RENDER_VERSION } from "@/lib/render-version"
 
-const RENDER_VERSION = 75
 const IMG_BASE = "https://image.tmdb.org/t/p"
 const MAX_IMG_SIZE = 10 * 1024 * 1024
 const STD_W = 1000
@@ -43,6 +43,10 @@ async function fetchImg(url: string) {
   const buf = Buffer.from(await res.arrayBuffer())
   if (buf.length > MAX_IMG_SIZE) throw new Error("image too large")
   return buf
+}
+
+function isValidHex(color: string): boolean {
+  return /^#([0-9A-Fa-f]{3}){1,2}$/.test(color)
 }
 
 function imgSrc(path: string): string {
@@ -354,9 +358,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       composites.push({ input: backdropBuf.buf, top: backdropBuf.top, left: backdropBuf.left })
     }
 
-    // 7b. Luminance + missing details (parallel, both need posterBuf for luminance but details is independent)
-    const [topLum] = await Promise.all([
-      topLuminance(posterBuf),
+    // 7b. Luminance (only if needed) + missing details
+    const qTopLight = req.nextUrl.searchParams.get("tl")
+    const [topLumResult] = await Promise.all([
+      (async () => {
+        if (qTopLight !== null) return null
+        return topLuminance(posterBuf)
+      })(),
       (async () => {
         if (mapping?.tvType) tvType = mapping.tvType
         if (mapping?.tvStatus) tvStatus = mapping.tvStatus
@@ -376,8 +384,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       })(),
     ])
 
-    const qTopLight = req.nextUrl.searchParams.get("tl")
-    const topLight = qTopLight !== null ? qTopLight === "1" : topLum > 0.60
+    const topLight = qTopLight !== null ? qTopLight === "1" : (topLumResult ?? 0.5) > 0.60
 
     // 8. Blur + badge color extraction + logo resize (parallel)
     const qBadges = req.nextUrl.searchParams.get("badges")
@@ -433,7 +440,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       (badgesEnabled && genreName && voteAverage && voteAverage > 0)
         ? (async () => {
             const qAc = req.nextUrl.searchParams.get("ac")
-            return qAc || mapping?.accentColor || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName!] || "#555555"
+            const rawColor = qAc && isValidHex(qAc) ? qAc : (mapping?.accentColor || await extractBadgeColor(posterBuf, logoFetch, genreName) || GENRE_FALLBACK[genreName!] || "#555555")
+            return isValidHex(rawColor) ? rawColor : "#555555"
           })()
         : Promise.resolve(undefined),
       // Logo resize
@@ -562,7 +570,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       rankBadgeResult ? fitBadgeToCanvas(rankBadgeResult, STD_W, STD_H) : Promise.resolve(null),
     ])
 
-    console.log(`[badge-debug] badgesEnabled=${badgesEnabled} badgeStyle=${badgeStyle} qRs=${qRankingBadgeStyle} topLight=${topLight} year=${year} topBadge=${JSON.stringify(topBadge)} genreKey=${genreBadgeKey?.slice(0,50)} genreOK=${!!genreBadgeResult} rankOK=${!!rankBadgeResult}`)
     if (safeGenreBadgeResult) {
       if (badgeStyle === "bar") {
         composites.push({ input: safeGenreBadgeResult.png, top: STD_H - safeGenreBadgeResult.h, left: 0 })

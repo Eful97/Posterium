@@ -1,6 +1,8 @@
 const TEXT_SAFE_PAD = 1.15
 const GENRE_TEXT_MAX_RATIO = 0.84
 const GENRE_PILL_MAX_RATIO = 0.78
+const GENRE_FONT_WEIGHT = 600
+const RANKING_FONT_WEIGHT = 700
 
 export function genreBadgeSafePad(fs: number): number {
   return Math.round(fs * TEXT_SAFE_PAD)
@@ -71,7 +73,7 @@ function buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX, y }: Gen
   const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr)
   const totalDx = dims.gap * (yearStr ? 4 : 2) + dims.gapStar
   const adjustedX = centerX - totalDx / 2
-  let t = `<text x="${adjustedX}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}"${textFitAttrs(dims.textContentW)}>`
+  let t = `<text x="${adjustedX}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="${GENRE_FONT_WEIGHT}" font-size="${fs}"${textFitAttrs(dims.textContentW)}>`
   t += `<tspan>${escSvg(genreName)}</tspan>`
   t += `<tspan dx="${dims.gap}" fill-opacity="0.6">${escSvg("\u2022")}</tspan>`
   t += `<tspan dx="${dims.gap}" font-family="Noto Sans Symbols 2" font-weight="400">${escSvg("\u2605")}</tspan>`
@@ -139,7 +141,7 @@ export function buildRankingBarSvg(fullText: string, pw: number, fs: number, tex
   const shadowOff = Math.round(fs * 0.2)
   const pathD = `M 0,0 L ${pw},0 L ${pw},${svgH - r} A ${r},${r} 0 0,1 ${pw - r},${svgH} L ${r},${svgH} A ${r},${r} 0 0,1 0,${svgH - r} Z`
   const defs = `<defs><filter id="ds" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="${shadowOff}" stdDeviation="${shadowBlur / 2}" flood-color="rgba(0,0,0,0.3)"/></filter></defs>`
-  const textEl = `<text x="${pw / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="900" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(fullText)}</text>`
+  const textEl = `<text x="${pw / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="${RANKING_FONT_WEIGHT}" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(fullText)}</text>`
   const inner = `<path d="${pathD}" fill="${bg}" filter="url(#ds)"/>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${svgH}">${defs}${inner}${textEl}</svg>`, w: pw, h: svgH }
 }
@@ -162,7 +164,7 @@ export function buildRankingDefaultSvg(fullText: string, fs: number, textColor: 
   const centerX = ox + totalW / 2
   const centerY = oy + svgH / 2
   const defs = `<defs><filter id="ds" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="${shadowOff}" stdDeviation="${shadowBlur / 2}" flood-color="rgba(0,0,0,0.3)"/></filter></defs>`
-  const textEl = `<text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="900" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(fullText)}</text>`
+  const textEl = `<text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="${RANKING_FONT_WEIGHT}" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(fullText)}</text>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}<path d="${pathD}" fill="${bg}" filter="url(#ds)"/>${textEl}</svg>`, w: renderW, h: renderH }
 }
 

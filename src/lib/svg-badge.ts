@@ -4,7 +4,16 @@ import path from "path"
 import { textColorForBg } from "./accent-color"
 import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, genreTextMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildExtraBarSvg, buildExtraDefaultSvg } from "./badge-svg-shared"
 
-const N = (s: string) => path.join(process.cwd(), "src", "assets", "fonts", s)
+const FONT_REGULAR = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "Inter-Regular.ttf")
+const FONT_BOLD = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "Inter-Bold.ttf")
+const FONT_BLACK = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "Inter-Black.ttf")
+const FONT_SYMBOLS = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "NotoSansSymbols2-Regular.ttf")
+const FONT_FILES = [
+  FONT_REGULAR,
+  FONT_BOLD,
+  FONT_BLACK,
+  FONT_SYMBOLS,
+] as const
 
 let _regular: Buffer | null = null
 let _bold: Buffer | null = null
@@ -19,15 +28,16 @@ let _fontsWarmed = false
 export function warmFonts() {
   if (_fontsWarmed) return
   _fontsWarmed = true
+  if (process.env.POSTERIUM_FONT_DEBUG !== "1") {
+    fontRegular()
+    fontBold()
+    fontBlack()
+    fontSymbols()
+    return
+  }
   const cwd = process.cwd()
   console.log(`[font-debug] cwd=${cwd}`)
-  const paths = [
-    N("Inter-Regular.ttf"),
-    N("Inter-Bold.ttf"),
-    N("Inter-Black.ttf"),
-    N("NotoSansSymbols2-Regular.ttf"),
-  ]
-  for (const p of paths) {
+  for (const p of FONT_FILES) {
     try {
       const stat = fs.statSync(p)
       console.log(`[font-debug] EXISTS ${p} size=${stat.size}`)
@@ -47,22 +57,22 @@ export function warmFonts() {
 }
 
 function fontRegular(): Buffer {
-  if (!_regular) _regular = fs.readFileSync(N("Inter-Regular.ttf"))
+  if (!_regular) _regular = fs.readFileSync(FONT_REGULAR)
   return _regular
 }
 
 function fontBold(): Buffer {
-  if (!_bold) _bold = fs.readFileSync(N("Inter-Bold.ttf"))
+  if (!_bold) _bold = fs.readFileSync(FONT_BOLD)
   return _bold
 }
 
 function fontBlack(): Buffer {
-  if (!_black) _black = fs.readFileSync(N("Inter-Black.ttf"))
+  if (!_black) _black = fs.readFileSync(FONT_BLACK)
   return _black
 }
 
 function fontSymbols(): Buffer {
-  if (!_symbols) _symbols = fs.readFileSync(N("NotoSansSymbols2-Regular.ttf"))
+  if (!_symbols) _symbols = fs.readFileSync(FONT_SYMBOLS)
   return _symbols
 }
 
@@ -105,9 +115,9 @@ export async function renderSVG(svgStr: string, w: number): Promise<Buffer> {
   const resvg = new Resvg(svgStr, {
     fitTo: { mode: "width", value: w },
     font: {
-      fontBuffers: [fontRegular(), fontBold(), fontBlack(), fontSymbols()] as unknown as string[],
+      fontFiles: [...FONT_FILES],
       loadSystemFonts: false,
-    } as Record<string, unknown>,
+    },
   })
   return Buffer.from(resvg.render().asPng())
 }
@@ -162,8 +172,6 @@ export async function buildGenreBadgeSVG(
   } else {
     result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s)
   }
-  console.log(`[font-debug] genreBadgeSvg style=${s} fs=${fs} w=${result.w}`)
-
   const png = await renderSVG(wrapSvg(result.svg), result.w)
   return { png, w: result.w, h: result.h }
 }
@@ -198,10 +206,6 @@ export async function buildRankingBadgeSVG(
   } else {
     result = buildRankingDefaultSvg(fullText, fs, fg, bg)
   }
-  console.log(`[font-debug] rankingBadgeSvg style=${s} fs=${fs} w=${result.w} label="${periodText}" fullText="${fullText}"`)
-  const textMatch = result.svg.match(/font-weight="(\d+)"/)
-  if (textMatch) console.log(`[font-debug]   font-weight=${textMatch[1]}`)
-
   const png = await renderSVG(wrapSvg(result.svg), result.w)
   return { png, w: result.w, h: result.h }
 }
@@ -233,8 +237,6 @@ export async function buildExtraBadgeSVG(
   } else {
     result = buildExtraDefaultSvg(label, fs, fg, bg)
   }
-  console.log(`[font-debug] extraBadgeSvg style=${s} fs=${fs} w=${result.w} label="${label}"`)
-
   const png = await renderSVG(wrapSvg(result.svg), result.w)
   return { png, w: result.w, h: result.h }
 }

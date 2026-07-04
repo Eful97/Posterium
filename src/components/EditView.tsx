@@ -3,14 +3,14 @@
 import { useState, useRef, useEffect } from "react"
 import { useP } from "@/lib/context"
 import { toSearchResult } from "@/lib/types"
-import type { EnrichedAnimeItem } from "@/lib/validation"
 import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
 import { Toggle } from "@/components/Toggle"
 import { SliderRow } from "@/components/SliderRow"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "@/lib/awards"
-import { computeBadge, computeExtraFallback, getAllBadgeOptions } from "@/lib/badge-priority"
-import { resolveLabel, isRankKey, isPrefixedKey, badgeKey } from "@/lib/i18n"
+import { computeExtraFallback, getAllBadgeOptions } from "@/lib/badge-priority"
+import { isPrefixedKey, badgeKey } from "@/lib/i18n"
+import { buildPreviewUrl } from "@/lib/poster-url"
 import { SearchBar } from "@/components/SearchBar"
 import { RankRow } from "@/components/RankRow"
 import { RefreshCw, Search, ImageOff, Ruler, Cloud, Minus, Circle, Moon, Pill, BarChart3, Check, XCircle, ArrowLeftRight, ArrowUpDown, Clock, X } from "lucide-react"
@@ -166,65 +166,25 @@ export default function EditView() {
           <button onClick={p.saveConfig} className="flex-1 min-w-0 py-3 px-4 btn-primary font-bold active:scale-[0.97]">{p.t("ui.savePoster")}</button>
           <button onClick={() => {
             if (!p.selected || !p.previewPoster) return
-            const params: string[] = []
-            if (p.tmdbKey) params.push(`api_key=${encodeURIComponent(p.tmdbKey)}`)
-            if (!p.globalBadges) params.push("badges=0")
-            if (!p.rankingBadges) params.push("ranking=0")
-            params.push(`poster=${encodeURIComponent(p.previewPoster.file_path)}`)
-            if (p.accentColor) params.push(`ac=${encodeURIComponent(p.accentColor)}`)
-            const _h = p.topEdgeColor
-            const _edgeLum = _h.length >= 7 && _h !== "#555555"
-              ? 0.2126 * parseInt(_h.slice(1, 3), 16) / 255 + 0.7152 * parseInt(_h.slice(3, 5), 16) / 255 + 0.0722 * parseInt(_h.slice(5, 7), 16) / 255
-              : null
-            params.push(`tl=${_edgeLum !== null ? (_edgeLum > 0.60 ? "1" : "0") : "1"}`)
-            const g = p.metaInfo.genres[0]?.name
-            if (g) params.push(`genreName=${encodeURIComponent(g)}`)
-            if (p.metaInfo.voteAverage > 0) params.push(`voteAverage=${p.metaInfo.voteAverage}`)
-            if (p.selectedLogo && p.previewPoster?.iso_639_1 === null) {
-              params.push(`logo=${encodeURIComponent(p.selectedLogo.file_path)}`)
-              params.push(`scale=${p.logoScale}`)
-              params.push(`ox=${p.logoOffsetX}`)
-              params.push(`oy=${p.logoOffsetY}`)
-            }
-            if (p.lang) params.push(`lang=${p.lang}`)
-            params.push(`gradHeight=${p.gradientHeight}`)
-            params.push(`blur=${p.blurIntensity}`)
-            params.push(`bf=${p.blurFade}`)
-            params.push(`bd=${p.blurDarkness}`)
-            if (!p.blurEnabled) params.push("be=0")
-            params.push(`bs=${p.badgeStyle}`)
-            params.push(`rs=${p.rankingBadgeStyle}`)
-            if (p.rankingBadges) {
-              const now = Date.now()
-              const twoWeeks = 14 * 24 * 60 * 60 * 1000
-              const isNewMovie = p.selected.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
-              const isNewSeries = p.selected.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
-              const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards, p.t) : null
-              const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations, p.t) : null
-              const animeRankData = p.mdblistAnimeList?.find((a) => a.id === p.selected!.id)
-              const animeRank = animeRankData ? animeRankData.rank : null
-              const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
-              const tvType = p.selected.media_type === "tv" ? p.metaInfo.type : null
-              const tvStatus = p.selected.media_type === "tv" ? p.metaInfo.status : null
-              const extra = computeExtraFallback({ mediaType: p.selected.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus }, p.t)
-              if (p.customBadge) {
-                const rk = isRankKey(p.customBadge)
-                if (rk === "badge.today" && p.trendRank) params.push(`rank=${p.trendRank}&label=${encodeURIComponent(p.t("badge.today"))}`)
-                else if (rk === "badge.anime" && animeRank) params.push(`rank=${animeRank}&label=${encodeURIComponent(p.t("badge.anime"))}`)
-                else params.push(`extra=${encodeURIComponent(resolveLabel(p.customBadge))}`)
-              } else {
-                const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank, award, franchise: p.metaInfo.franchise || null, nomination, studio, director: p.metaInfo.director || null, extra }, p.t)
-                if (badge) {
-                  if (badge.type === "extra") params.push(`extra=${encodeURIComponent(badge.label)}`)
-                  else params.push(`rank=${badge.rank}&label=${encodeURIComponent(badge.rankLabel || badge.label)}`)
-                }
-              }
-            }
-            params.push(`v=${Date.now()}`)
-            window.open(`/api/poster/${p.selected.media_type}/${p.selected.id}?${params.join("&")}`, "_blank")
+            const url = buildPreviewUrl(p, {
+              globalBadges: p.globalBadges,
+              rankingBadges: p.rankingBadges,
+              badgeStyle: p.badgeStyle,
+              rankingBadgeStyle: p.rankingBadgeStyle,
+              customBadge: p.customBadge,
+              gradientHeight: p.gradientHeight,
+              blurIntensity: p.blurIntensity,
+              blurFade: p.blurFade,
+              blurDarkness: p.blurDarkness,
+              blurEnabled: p.blurEnabled,
+            })
+            if (!url) return
+            window.open(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`, "_blank")
           }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">{p.t("ui.testUrl")}</button>
           {(() => {
-            const key = `${p.selected!.media_type}:${p.selected!.id}`
+            const selected = p.selected
+            if (!selected) return null
+            const key = `${selected.media_type}:${selected.id}`
             const hasMapping = p.mappingsMap.get(key)
             if (!hasMapping) return null
             return (
@@ -398,7 +358,7 @@ export default function EditView() {
           {p.mdblistAnimeList.length > 0 && (
             <div className="mt-10">
               <h2 className="text-xl font-bold mb-4 text-center">{p.t("ui.trendingAnime")}</h2>
-              <RankRow label={p.t("ui.anime")} items={p.mdblistAnimeList} onItemClick={(item) => { const a = item as unknown as EnrichedAnimeItem; p.navigateToPoster(toSearchResult({ id: a.id ?? 0, media_type: a.media_type || 'tv', title: a.title ?? '', name: a.title ?? '', poster_path: a.poster_path ?? '' })) }} />
+              <RankRow label={p.t("ui.anime")} items={p.mdblistAnimeList} onItemClick={(item) => p.navigateToPoster(toSearchResult(item))} />
             </div>
           )}
 
