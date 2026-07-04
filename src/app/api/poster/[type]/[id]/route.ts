@@ -24,6 +24,8 @@ const IMG_BASE = "https://image.tmdb.org/t/p"
 const MAX_IMG_SIZE = 10 * 1024 * 1024
 const STD_W = 1000
 const STD_H = 1500
+const OUTPUT_W = 500
+const OUTPUT_H = 750
 const BADGE_CACHE_TTL = 24 * 60 * 60 * 1000
 
 function badgeCacheKey(type: string, ...parts: (string | number | boolean | undefined | null)[]): string {
@@ -34,6 +36,7 @@ const badgeInflight = new Map<string, Promise<unknown>>()
 
 type RouteParams = { type: string; id: string }
 type BadgeRender = { png: Buffer; w: number; h: number; isRank?: boolean }
+type PosterComposite = { input: Buffer; top: number; left: number }
 
 async function fetchImg(url: string) {
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
@@ -69,6 +72,71 @@ async function fitBadgeToCanvas<T extends BadgeRender>(badge: T, maxW: number, m
   const h = Math.max(Math.floor(badge.h * scale), 1)
   const png = await sharp(badge.png).resize(w, h, { fit: "inside", withoutEnlargement: true }).png({ compressionLevel: 1 }).toBuffer()
   return { ...badge, png, w, h }
+}
+
+async function fitCompositeToCanvas(layer: PosterComposite, maxW: number, maxH: number): Promise<PosterComposite | null> {
+  const meta = await sharp(layer.input).metadata()
+  const layerW = meta.width || 0
+  const layerH = meta.height || 0
+  if (layerW <= 0 || layerH <= 0) return null
+
+  const left = Math.max(layer.left, 0)
+  const top = Math.max(layer.top, 0)
+  const trimLeft = Math.max(-layer.left, 0)
+  const trimTop = Math.max(-layer.top, 0)
+  const width = Math.min(layerW - trimLeft, maxW - left)
+  const height = Math.min(layerH - trimTop, maxH - top)
+
+  if (width <= 0 || height <= 0) return null
+  const needsExtract = left !== layer.left || top !== layer.top || width !== layerW || height !== layerH
+  if (!needsExtract) return { ...layer, top, left }
+
+  const input = await sharp(layer.input)
+      .extract({ left: trimLeft, top: trimTop, width, height })
+      .png({ compressionLevel: 1 })
+      .toBuffer()
+  return { input, top, left }
+}
+
+async function renderCompositeLayers(base: Buffer, layers: PosterComposite[], width: number, height: number): Promise<Buffer> {
+  const { data: basePixels } = await sharp(base)
+    .resize(width, height, { fit: "cover", position: "centre" })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  for (const layer of layers) {
+    const { data: layerPixels, info } = await sharp(layer.input)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    const layerW = info.width
+    const layerH = info.height
+    const startX = Math.max(layer.left, 0)
+    const startY = Math.max(layer.top, 0)
+    const endX = Math.min(layer.left + layerW, width)
+    const endY = Math.min(layer.top + layerH, height)
+
+    for (let y = startY; y < endY; y += 1) {
+      const layerY = y - layer.top
+      for (let x = startX; x < endX; x += 1) {
+        const layerX = x - layer.left
+        const src = (layerY * layerW + layerX) * 4
+        const dst = (y * width + x) * 4
+        const alpha = (layerPixels[src + 3] ?? 255) / 255
+        if (alpha <= 0) continue
+        const invAlpha = 1 - alpha
+        basePixels[dst] = Math.round((layerPixels[src] ?? 0) * alpha + (basePixels[dst] ?? 0) * invAlpha)
+        basePixels[dst + 1] = Math.round((layerPixels[src + 1] ?? 0) * alpha + (basePixels[dst + 1] ?? 0) * invAlpha)
+        basePixels[dst + 2] = Math.round((layerPixels[src + 2] ?? 0) * alpha + (basePixels[dst + 2] ?? 0) * invAlpha)
+        basePixels[dst + 3] = 255
+      }
+    }
+  }
+
+  return sharp(basePixels, { raw: { width, height, channels: 4 } })
+    .png({ compressionLevel: 1 })
+    .toBuffer()
 }
 
 async function topLuminance(buf: Buffer): Promise<number> {
@@ -352,7 +420,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         : Promise.resolve(null),
     ])
 
-    const composites: { input: Buffer; top: number; left: number }[] = []
+    const composites: PosterComposite[] = []
 
     if (backdropBuf) {
       composites.push({ input: backdropBuf.buf, top: backdropBuf.top, left: backdropBuf.left })
@@ -403,38 +471,46 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 5
     const blurFade = qBlurFade ? Math.max(Number(qBlurFade), 0) : 60
     const blurDarkness = qBlurDarkness ? Math.max(Number(qBlurDarkness), 0) : 40
-    const [blurComposite, genreColor, logoResult] = await Promise.all([
-      // Blur: single sharp pipeline instead of 4 separate ops
+    const [blurredPosterBuf, genreColor, logoResult] = await Promise.all([
       (async () => {
         if (!blurEnabled) return null
-        const gh = Math.max(Math.round(STD_H * blurHeight / 100), 100)
-        const gradTop = STD_H - gh
-        const fadedPct = Math.min(blurFade, 100)
+        const gh = Math.min(Math.max(Math.round(STD_H * blurHeight / 100), 100), STD_H)
+        const gradTop = Math.max(STD_H - gh, 0)
+        const fadedPct = Math.min(Math.max(blurFade, 0), 100)
         const darkAlpha = Math.min(blurDarkness / 100, 1)
-        const overlaySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${STD_W}" height="${gh}"><rect width="${STD_W}" height="${gh}" fill="rgba(0,0,0,${darkAlpha})"/></svg>`
-        const maskSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${STD_W}" height="${gh}">
-          <defs><linearGradient id="m" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="white" stop-opacity="0"/>
-            <stop offset="${fadedPct}%" stop-color="white" stop-opacity="1"/>
-            <stop offset="100%" stop-color="white" stop-opacity="1"/>
-          </linearGradient></defs>
-          <rect width="${STD_W}" height="${gh}" fill="url(#m)"/>
-        </svg>`
-        const [overlayBuf, maskBuf] = await Promise.all([
-          sharp(Buffer.from(overlaySvg)).png({ compressionLevel: 1 }).toBuffer(),
-          sharp(Buffer.from(maskSvg)).png({ compressionLevel: 1 }).toBuffer(),
-        ])
-        const fadedBlur = await sharp(posterBuf)
+        const { data: blurPixels, info } = await sharp(posterBuf)
           .extract({ left: 0, top: gradTop, width: STD_W, height: gh })
+          .resize(STD_W, gh, { fit: "fill" })
           .blur(blurIntensity)
+          .removeAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true })
+        const channels = info.channels
+        const fadeStop = fadedPct / 100
+        const { data: basePixels, info: baseInfo } = await sharp(posterBuf)
           .ensureAlpha()
-          .composite([
-            { input: overlayBuf, blend: 'over' },
-            { input: maskBuf, blend: 'dest-in' },
-          ])
+          .raw()
+          .toBuffer({ resolveWithObject: true })
+        const baseChannels = baseInfo.channels
+        for (let y = 0; y < gh; y += 1) {
+          const yPct = gh <= 1 ? 1 : y / (gh - 1)
+          const fade = fadeStop <= 0 ? 1 : Math.min(yPct / fadeStop, 1)
+          const shade = 1 - darkAlpha * fade
+          for (let x = 0; x < STD_W; x += 1) {
+            const src = (y * STD_W + x) * channels
+            const dst = ((gradTop + y) * STD_W + x) * baseChannels
+            const blurR = (blurPixels[src] ?? 0) * shade
+            const blurG = (blurPixels[src + 1] ?? 0) * shade
+            const blurB = (blurPixels[src + 2] ?? 0) * shade
+            basePixels[dst] = Math.round((basePixels[dst] ?? 0) * (1 - fade) + blurR * fade)
+            basePixels[dst + 1] = Math.round((basePixels[dst + 1] ?? 0) * (1 - fade) + blurG * fade)
+            basePixels[dst + 2] = Math.round((basePixels[dst + 2] ?? 0) * (1 - fade) + blurB * fade)
+            basePixels[dst + 3] = 255
+          }
+        }
+        return sharp(basePixels, { raw: { width: STD_W, height: STD_H, channels: baseChannels } })
           .png({ compressionLevel: 1 })
           .toBuffer()
-        return { input: fadedBlur, top: gradTop, left: 0 } as const
       })(),
       // Badge color extraction
       (badgesEnabled && genreName && voteAverage && voteAverage > 0)
@@ -474,7 +550,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         : Promise.resolve(null),
     ])
 
-    if (blurComposite) composites.push(blurComposite)
+    const renderBaseBuf = blurredPosterBuf || posterBuf
     if (logoResult) composites.push(logoResult)
 
     // 9. Render both badges in parallel (both depend on genreColor, not on each other)
@@ -586,8 +662,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     // 10. Final composite: single sharp call for all layers
-    const composited = await sharp(posterBuf)
-      .composite(composites)
+    const safeComposites = (await Promise.all(composites.map((layer) => fitCompositeToCanvas(layer, STD_W, STD_H))))
+      .filter((layer): layer is PosterComposite => layer !== null)
+    const compositedBase = await renderCompositeLayers(renderBaseBuf, safeComposites, STD_W, STD_H)
+    const composited = await sharp(compositedBase)
+      .resize(OUTPUT_W, OUTPUT_H, { fit: "cover" })
       .jpeg({ quality: 85 })
       .toBuffer()
 
