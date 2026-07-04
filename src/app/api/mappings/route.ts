@@ -43,6 +43,10 @@ export async function POST(req: NextRequest) {
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")
+  // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano
+  const origin = new URL(req.url).origin
+  const warmUrl = `${origin}/api/poster/${parsed.data.mediaType}/${parsed.data.tmdbId}`
+  fetch(warmUrl, { signal: AbortSignal.timeout(25000) }).catch(() => {})
   return Response.json({ ok: true })
 }
 

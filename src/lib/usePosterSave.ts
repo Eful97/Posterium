@@ -204,7 +204,6 @@ export function usePosterSave(deps: PosterSaveDeps) {
       setPreviewId(`${selected.media_type}:${selected.id}`)
       import("sonner").then(({ toast }) => toast(t("ui.saveSuccess")))
       loadMappings()
-      fetch(`/api/poster/${selected.media_type}/${selected.id}`, { signal: AbortSignal.timeout(30000) }).catch(() => { /* poster warming is fire-and-forget */ })
     } catch {
       import("sonner").then(({ toast }) => toast(t("ui.saveError")))
     }

@@ -510,7 +510,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             const qScale = req.nextUrl.searchParams.get("scale")
             const qOx = req.nextUrl.searchParams.get("ox")
             const qOy = req.nextUrl.searchParams.get("oy")
-            const userScale = qScale ? (Number(qScale) || 75) : (mapping?.logoScale ?? 75)
+            const defaultScale = Math.min(Math.round(37.5 * lw / lh), 75)
+            const userScale = qScale ? (Number(qScale) || defaultScale) : (mapping?.logoScale ?? defaultScale)
             const userOx = qOx ? (Number(qOx) || 0) : (mapping?.logoOffsetX ?? 0)
             const userOy = qOy ? (Number(qOy) || 0) : (mapping?.logoOffsetY ?? 0)
             const logoLayout = computeLogoLayout({ posterW: STD_W, posterH: STD_H, logoW: lw, logoH: lh, logoScale: userScale, logoOffsetX: userOx, logoOffsetY: userOy, hasBadges: !!(badgesEnabled && genreName && voteAverage && voteAverage > 0) })
@@ -648,7 +649,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const compositedBase = await renderCompositeLayers(renderBaseBuf, safeComposites, STD_W, STD_H)
     const composited = await sharp(compositedBase)
       .resize(OUTPUT_W, OUTPUT_H, { fit: "cover" })
-      .jpeg({ quality: 85 })
+      .jpeg({ quality: 70 })
       .toBuffer()
 
     cacheSet(cacheKey, composited, ["poster"])
