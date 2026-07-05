@@ -5,7 +5,7 @@ import { getImages, getDetails, getExternalIds, type TMDBImage, type TMDBCompany
 import { getJWRankings } from "@/lib/justwatch"
 import { getById, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
+import { cacheGet, cacheSet } from "@/lib/cache"
 import crypto from "node:crypto"
 
 function hashKey(key: string): string {
@@ -23,11 +23,24 @@ import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { computeLogoLayout } from "@/lib/logo-layout"
 import { RENDER_VERSION } from "@/lib/render-version"
+import {
+  beginPosterRender,
+  getPendingPoster,
+  isImmutablePosterRequest,
+  isPosterRefreshRequest,
+  normalizePosterCacheParams,
+  posterHeaders,
+  posterNotModifiedHeaders,
+  posterResponse,
+  readCachedPoster,
+  schedulePosterRefresh,
+  writeCachedPoster,
+} from "@/lib/poster-runtime-cache"
 
 const IMG_BASE = "https://image.tmdb.org/t/p"
 const MAX_IMG_SIZE = 10 * 1024 * 1024
-const STD_W = 1000
-const STD_H = 1500
+const STD_W = 500
+const STD_H = 750
 const OUTPUT_W = 500
 const OUTPUT_H = 750
 const BADGE_CACHE_TTL = 24 * 60 * 60 * 1000
@@ -59,14 +72,6 @@ function isValidHex(color: string): boolean {
 function imgSrc(path: string): string {
   if (path.startsWith("http")) return path
   return `${IMG_BASE}/w500${path}`
-}
-
-function etagHeaders(etag: string) {
-  return {
-    "Content-Type": "image/jpeg",
-    "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
-    "ETag": etag,
-  }
 }
 
 async function fitBadgeToCanvas<T extends BadgeRender>(badge: T, maxW: number, maxH: number): Promise<T> {
@@ -160,7 +165,6 @@ async function extractBadgeColor(posterBuf: Buffer, logoBuf?: Buffer | null, fal
     const result = findAccentColor(pixels, w, h, genre)
     return `#${result.r.toString(16).padStart(2, '0')}${result.g.toString(16).padStart(2, '0')}${result.b.toString(16).padStart(2, '0')}`
   }
-  // Thumbnail 200×300 per color extraction (full 1000×1500 raw = 6MB)
   const thumbBuf = await sharp(posterBuf).resize(200, 300, { fit: 'cover' }).toBuffer()
   const [pColor, lColor] = await Promise.all([
     extractFrom(thumbBuf, 200, 300, fallbackGenre || ''),
@@ -210,24 +214,33 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   // 2. Build cache key using mapping's stored rank (skip JW network call)
   const sdHash = hashKey(JSON.stringify(sd))
-  const cacheParams = new URLSearchParams(req.nextUrl.searchParams)
-  cacheParams.delete("rv")
-  cacheParams.delete("v")
+  const cacheParams = normalizePosterCacheParams(req.nextUrl.searchParams)
   const cachedRank = mapping?.trendRank ?? null
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}`
+  const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams)
+  const refreshRequest = isPosterRefreshRequest(req.nextUrl.searchParams)
 
   // 3. Memory cache check (no network)
-  const cached = cacheGetStale<Buffer>(cacheKey)
-  const cachedHeaders = cacheGetStale<{ etag: string }>(`${cacheKey}:headers`)
-  if (cached.data && cachedHeaders.data) {
-    const etag = cachedHeaders.data.etag
-    if (req.headers.get("If-None-Match") === etag) {
-      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" } })
+  const cachedPoster = readCachedPoster(cacheKey)
+  if (cachedPoster.payload) {
+    if (req.headers.get("If-None-Match") === cachedPoster.payload.etag) {
+      return new Response(null, { status: 304, headers: posterNotModifiedHeaders(cachedPoster.payload.etag, immutablePoster) })
     }
-    if (!cached.stale && !cachedHeaders.stale) {
-      return new Response(new Uint8Array(cached.data), { headers: etagHeaders(etag) })
+    if (!cachedPoster.stale) {
+      return posterResponse(cachedPoster.payload, immutablePoster)
+    }
+    if (!refreshRequest) {
+      schedulePosterRefresh(req)
+      return posterResponse(cachedPoster.payload, immutablePoster)
     }
   }
+
+  const pendingPoster = getPendingPoster(cacheKey)
+  if (pendingPoster) {
+    const payload = await pendingPoster
+    if (payload) return posterResponse(payload, immutablePoster)
+  }
+  const completePosterRender = beginPosterRender(cacheKey)
 
   // 5. Cache miss — resolve posterPath from mapping, query, or TMDB
   let posterPath: string | null = null
@@ -281,7 +294,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     rankingBadges = mapping.rankingBadges ?? true
     etag = `"v${RENDER_VERSION}:${mapping.updatedAt}"`
     if (req.headers.get("If-None-Match") === etag) {
-      return new Response(null, { status: 304, headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800", "ETag": etag } })
+      completePosterRender(null)
+      return new Response(null, { status: 304, headers: posterNotModifiedHeaders(etag, immutablePoster) })
     }
   } else {
     const preferredLanguage = req.nextUrl.searchParams.get("lang") || "it"
@@ -336,19 +350,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   }
 
   if (!posterPath) {
+    completePosterRender(null)
     return new Response("Poster not found", { status: 404 })
   }
 
   try {
+    const qRankingEarly = req.nextUrl.searchParams.get("ranking")
+    const hasQueryEarly = !!queryPoster || !!mapping
+    const rankingEnabledEarly = hasQueryEarly ? (qRankingEarly !== null ? qRankingEarly !== "0" : rankingBadges) : true
+
     // 6. Parallel: fetch all images + JW rank + MDBList (network I/O)
     const [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult] = await Promise.all([
       fetchImg(imgSrc(posterPath)).catch(() => null),
       logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
       backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
-      getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
+      rankingEnabledEarly
+        ? getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
         .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
-        .catch(() => null),
-      (mediaType === "tv")
+        .catch(() => null)
+        : Promise.resolve(null),
+      (rankingEnabledEarly && mediaType === "tv")
         ? (() => {
             try {
               const cached = cacheGet<EnrichedAnimeItem[]>("mdblist:anime:top10")
@@ -369,14 +390,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         : Promise.resolve(null),
     ])
 
-    const wikidataPromise = fetchAllWikidata(tmdbId, mediaType, t)
-      .catch(() => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }))
+    const emptyWikidata = { awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }
+    const wikidataPromise = rankingEnabledEarly
+      ? fetchAllWikidata(tmdbId, mediaType, t).catch(() => emptyWikidata)
+      : Promise.resolve(emptyWikidata)
     const rankingRank = rankingResult ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
 
     if (!originalBuf) {
+      completePosterRender(null)
       return new Response("Poster image not available", { status: 404 })
     }
 
@@ -647,15 +671,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const safeComposites = (await Promise.all(composites.map((layer) => fitCompositeToCanvas(layer, STD_W, STD_H))))
       .filter((layer): layer is PosterComposite => layer !== null)
     const compositedBase = await renderCompositeLayers(renderBaseBuf, safeComposites, STD_W, STD_H)
-    const composited = await sharp(compositedBase)
-      .resize(OUTPUT_W, OUTPUT_H, { fit: "cover" })
-      .jpeg({ quality: 70 })
-      .toBuffer()
+    const composited = STD_W === OUTPUT_W && STD_H === OUTPUT_H
+      ? await sharp(compositedBase).jpeg({ quality: 70 }).toBuffer()
+      : await sharp(compositedBase)
+        .resize(OUTPUT_W, OUTPUT_H, { fit: "cover" })
+        .jpeg({ quality: 70 })
+        .toBuffer()
 
-    cacheSet(cacheKey, composited, ["poster"])
-    cacheSet(`${cacheKey}:headers`, { etag }, ["poster"])
-    return new Response(new Uint8Array(composited), { headers: etagHeaders(etag) })
+    const payload = { buffer: composited, etag }
+    writeCachedPoster(cacheKey, payload)
+    completePosterRender(payload)
+    return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster) })
   } catch (e) {
+    completePosterRender(null)
     console.error("Poster generation failed:", e)
     return new Response("Poster generation failed", { status: 500 })
   }

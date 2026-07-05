@@ -109,6 +109,8 @@ Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogn
 | `OMDB_API_KEY` | ❌ | Rating IMDb — fallback quando MDBList non disponibile. Senza chiave, fallback su voto TMDB. |
 | `KV_URL` | ❌ | Vercel KV per storage (altrimenti file JSON) |
 | `ADMIN_TOKEN` | ❌ | Token per proteggere endpoint admin (cache clear). Se non impostato, aperto. |
+| `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | Dominio CDN pubblico da usare negli URL poster installati su Stremio, es. `https://poster-cdn.example.com`. |
+| `POSTER_CDN_URL` | ❌ | Variante server-side del dominio CDN, usata dal warmup se non vuoi esporla nel bundle client. |
 
 ---
 

@@ -2,7 +2,8 @@ import { getDomain } from "./utils"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
 import { computeBadge, computeExtraFallback } from "./badge-priority"
 import { resolveLabel, isRankKey, t as tFn } from "./i18n"
-import { POSTER_URL_VERSION } from "./render-version"
+import { getPosterPublicBaseUrl } from "./poster-public-url"
+import { buildStremioPosterSearchParams } from "./stremio-poster-params"
 import type { SearchResult, TMDBImage } from "./types"
 import type { EnrichedAnimeItem } from "./validation"
 
@@ -52,21 +53,21 @@ interface PosterState {
 }
 
 export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string }): string {
-  let url = `${getDomain()}/api/poster/{type}/{tmdb_id}`
-  const params: string[] = []
-  if (bp.tmdbKey) params.push(`api_key=${encodeURIComponent(bp.tmdbKey)}`)
-  if (!bp.globalBadges) params.push("badges=0")
-  if (!bp.rankingBadges) params.push("ranking=0")
-  if (bp.lang) params.push(`lang=${encodeURIComponent(bp.lang)}`)
-  if (!bp.blurEnabled) params.push("be=0")
-  params.push(`gradHeight=${bp.gradientHeight}`)
-  params.push(`blur=${bp.blurIntensity}`)
-  params.push(`bf=${bp.blurFade}`)
-  params.push(`bd=${bp.blurDarkness}`)
-  params.push(`bs=${bp.badgeStyle}`)
-  params.push(`rs=${bp.rankingBadgeStyle}`)
-  params.push(`rv=${POSTER_URL_VERSION}`)
-  url += "?" + params.join("&")
+  let url = `${getPosterPublicBaseUrl()}/api/poster/{type}/{tmdb_id}`
+  const params = buildStremioPosterSearchParams({
+    apiKey: bp.tmdbKey,
+    lang: bp.lang,
+    globalBadges: bp.globalBadges,
+    rankingBadges: bp.rankingBadges,
+    badgeStyle: bp.badgeStyle,
+    rankingBadgeStyle: bp.rankingBadgeStyle,
+    gradientHeight: bp.gradientHeight,
+    blurIntensity: bp.blurIntensity,
+    blurFade: bp.blurFade,
+    blurDarkness: bp.blurDarkness,
+    blurEnabled: bp.blurEnabled,
+  })
+  url += "?" + params.toString()
   return url
 }
 
