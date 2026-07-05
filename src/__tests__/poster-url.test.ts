@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { afterEach, describe, it, expect } from "vitest"
 import { buildPreviewUrl, buildUrlPattern } from "@/lib/poster-url"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 
@@ -38,9 +38,23 @@ const basePosterState = {
 }
 
 describe("buildUrlPattern", () => {
+  const previousPosterCdnUrl = process.env.NEXT_PUBLIC_POSTER_CDN_URL
+
+  afterEach(() => {
+    process.env.NEXT_PUBLIC_POSTER_CDN_URL = previousPosterCdnUrl
+  })
+
   it("contains domain and route pattern", () => {
     const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "key", lang: "it" })
     expect(url).toContain("/api/poster/{type}/{tmdb_id}")
+  })
+
+  it("uses poster CDN base URL when configured", () => {
+    process.env.NEXT_PUBLIC_POSTER_CDN_URL = "https://cdn.posterium.example/"
+
+    const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "key", lang: "it" })
+
+    expect(url).toContain("https://cdn.posterium.example/api/poster/{type}/{tmdb_id}")
   })
 
   it("includes api_key param", () => {

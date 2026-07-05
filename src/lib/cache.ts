@@ -78,9 +78,7 @@ export function cacheGetStale<T>(key: string): { data: T | null; stale: boolean 
   const entry = store.get(key) as CacheEntry<T> | undefined
   if (!entry) return { data: null, stale: false }
   if (isExpired(entry)) {
-    const expired = entry.data as T
-    store.delete(key)
-    return { data: expired, stale: true }
+    return { data: entry.data as T, stale: true }
   }
   store.delete(key)
   store.set(key, entry)

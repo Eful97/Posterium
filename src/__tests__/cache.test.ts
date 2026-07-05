@@ -65,6 +65,17 @@ describe("cache", () => {
       expect(result.data).toBe("old-data")
       expect(result.stale).toBe(true)
     })
+
+    it("keeps expired data available for repeated stale reads", () => {
+      cacheSet("expired-repeat", "old-data", [], 1)
+      const start = Date.now()
+      while (Date.now() - start < 5) {
+        Date.now()
+      }
+
+      expect(cacheGetStale("expired-repeat")).toEqual({ data: "old-data", stale: true })
+      expect(cacheGetStale("expired-repeat")).toEqual({ data: "old-data", stale: true })
+    })
   })
 
   describe("cacheInvalidate", () => {
