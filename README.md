@@ -37,12 +37,13 @@ pinned: false
 - 📡 **Badge network** — Netflix, HBO, Disney+, Prime Video, Apple TV+, Rai, Mediaset e altri da TMDB
 - 🎌 **Anime rank** — Top trending anime da MDBList *(richiede chiave MDBList)*
 - 📐 **Server-side rendering** — Resvg (SVG → PNG) per badge, Sharp per poster/logo/backdrop
+- 🚀 **Poster ottimizzati per Stremio** — Output JPEG 500×750, URL versionati, ETag e header CDN/stale-while-revalidate
 - 🐳 **Docker** — Deployabile su HF Spaces, Vercel, server proprio
 - ⚡ **Standalone output** — Next.js standalone per immagini Docker minime
-- 💾 **Cache su disco 24h** — Poster renderizzati e risposte TMDB cacheati su disco con TTL 24 ore, pre-generazione al salvataggio
-- 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia di cache disco e memoria
+- 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
+- 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **85 test** — Suite di test su URL builder, cache, badge priority, types, mappings
+- ✅ **121 test** — Suite di test su URL builder, cache, badge priority, types, mappings, header CDN e parametri Stremio
 
 ---
 
@@ -159,7 +160,8 @@ Genera un poster personalizzato via URL.
 | `GET /api/awards/[type]/[id]` | Premi, nomination, franchise, studio (Wikidata P166, P1411, P179) |
 | `GET /api/mdblist/anime` | Top anime MDBList |
 | `POST /api/mappings` | Salva configurazione |
-| `POST /api/cache/clear` | Svuota cache disco e memoria *(protetta da `ADMIN_TOKEN` se impostato)* |
+| `POST /api/cache/clear` | Svuota la cache in memoria *(protetta da `ADMIN_TOKEN` se impostato)* |
+| `POST /api/warmup` | Pre-genera poster salvati e URL Stremio per riempire runtime cache/CDN |
 
 ---
 
@@ -230,7 +232,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
 | Storage | Vercel KV / JSON file |
-| Test | Vitest (85 test) |
+| Test | Vitest (121 test) |
 | UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
 
 ### Architettura
@@ -239,24 +241,31 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 - **API client centralizzato** — `http.ts` con timeout, retry, error handling
 - **URL builder puro** — `poster-url.ts` (buildPreviewUrl, buildUrlPattern)
 - **Badge priority** — `badge-priority.ts` (computeBadge, computeExtraFallback)
-- **Cache** — In-memory con TTL, tag-based invalidation, max 1000 entries
+- **Poster runtime cache** — `poster-runtime-cache.ts` con ETag, header CDN, stale refresh e coalescing in-flight
+- **URL Stremio versionati** — `stremio-poster-params.ts` aggiunge `rv` stabile per cache immutable/CDN
+- **Cache generica** — In-memory con TTL, stale reads e tag-based invalidation
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-npm test              # Esegui tutti i test (85)
+npm test              # Esegui tutti i test (121)
 npx vitest run        # Stessa cosa
 ```
 
 | File test | Test | Copertura |
 |---|---|---|
-| `poster-url.test.ts` | 29 | buildUrlPattern, buildPreviewUrl (URL params, badge, logo, backdrop, topLight) |
-| `cache.test.ts` | 13 | cacheGet/Set, TTL expiry, cacheGetStale, cacheInvalidate, cacheClear |
+| `poster-url.test.ts` | 33 | buildUrlPattern, buildPreviewUrl, CDN base URL, URL params, badge, logo, backdrop, topLight |
+| `cache.test.ts` | 14 | cacheGet/Set, TTL expiry, cacheGetStale, cacheInvalidate, cacheClear |
+| `poster-runtime-cache.test.ts` | 2 | Header CDN immutable e stale-while-revalidate |
+| `stremio-poster-params.test.ts` | 2 | Parametri poster Stremio versionati e default globali |
 | `types.test.ts` | 14 | toSearchResult (default values, null→undefined, media_type normalization) |
 | `badge-validation.test.ts` | 18 | computeBadge priority chain, computeExtraFallback |
 | `mapping-crud.test.ts` | 11 | CRUD mappings, validation schema |
+| `svg-badge.test.ts` | 23 | Rendering badge SVG, overflow protection, stili e dimensioni |
+| `http.test.ts` | 2 | Timeout/retry HTTP client |
+| `logo-layout.test.ts` | 2 | Dimensioni e bounds logo |
 
 ---
 
