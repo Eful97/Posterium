@@ -70,7 +70,9 @@ async function loadFromDisk(): Promise<Record<string, Mapping>> {
     if (!exists) return {}
     const raw = await fsp.readFile(DATA_FILE, "utf-8")
     return JSON.parse(raw)
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`[store] Failed to load mappings: ${message}`)
     return {}
   }
 }

@@ -20,16 +20,24 @@ const FILE = path.join(DATA_DIR, "defaults.json")
 let cached: ServerDefaults | null = null
 let cachedMtime = 0
 
+function logDefaultsError(action: string, error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error)
+  console.warn(`[server-defaults] ${action}: ${message}`)
+}
+
 export function getServerDefaults(): ServerDefaults {
   try {
     if (fs.existsSync(FILE)) {
       const stat = fs.statSync(FILE)
       if (cached && stat.mtimeMs <= cachedMtime) return cached
-      cached = JSON.parse(fs.readFileSync(FILE, "utf-8"))
+      const parsed = JSON.parse(fs.readFileSync(FILE, "utf-8")) as ServerDefaults
+      cached = parsed
       cachedMtime = stat.mtimeMs
-      return cached!
+      return parsed
     }
-  } catch {}
+  } catch (error) {
+    logDefaultsError("failed to load defaults", error)
+  }
   if (cached) return cached
   cached = {}
   return cached
@@ -38,5 +46,9 @@ export function getServerDefaults(): ServerDefaults {
 export function setServerDefaults(d: ServerDefaults): void {
   cached = { ...d }
   cachedMtime = Date.now()
-  try { fs.writeFileSync(FILE, JSON.stringify(d, null, 2)) } catch {}
+  try {
+    fs.writeFileSync(FILE, JSON.stringify(d, null, 2))
+  } catch (error) {
+    logDefaultsError("failed to save defaults", error)
+  }
 }

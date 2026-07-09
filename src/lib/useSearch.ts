@@ -4,6 +4,22 @@ import { useState, useCallback } from "react"
 import { http } from "./http"
 import type { SearchResult } from "./types"
 
+function readRecentSearches(): string[] {
+  if (typeof window === "undefined" || !window.localStorage) return []
+  try {
+    return JSON.parse(window.localStorage.getItem("recent_searches") || "[]")
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`[search] Failed to read recent searches: ${message}`)
+    return []
+  }
+}
+
+function writeRecentSearches(searches: string[]): void {
+  if (typeof window === "undefined" || !window.localStorage) return
+  window.localStorage.setItem("recent_searches", JSON.stringify(searches))
+}
+
 export function useSearch(tmdbKey: string, lang: string) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
@@ -12,9 +28,7 @@ export function useSearch(tmdbKey: string, lang: string) {
   const [totalResults, setTotalResults] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [searchPage, setSearchPage] = useState(1)
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("recent_searches") || "[]") } catch { return [] }
-  })
+  const [recentSearches, setRecentSearches] = useState<string[]>(readRecentSearches)
 
   const doSearch = useCallback(async (q?: string, page = 1) => {
     const searchQuery = q ?? query
@@ -35,7 +49,7 @@ export function useSearch(tmdbKey: string, lang: string) {
         setSearchPage(1)
         setRecentSearches((prev) => {
           const next = [searchQuery, ...prev.filter((s) => s !== searchQuery)].slice(0, 5)
-          localStorage.setItem("recent_searches", JSON.stringify(next))
+          writeRecentSearches(next)
           return next
         })
       }
@@ -58,7 +72,7 @@ export function useSearch(tmdbKey: string, lang: string) {
   const removeRecentSearch = useCallback((search: string) => {
     setRecentSearches((prev) => {
       const next = prev.filter((s) => s !== search)
-      localStorage.setItem("recent_searches", JSON.stringify(next))
+      writeRecentSearches(next)
       return next
     })
   }, [])

@@ -28,31 +28,18 @@ let _fontsWarmed = false
 export function warmFonts() {
   if (_fontsWarmed) return
   _fontsWarmed = true
-  if (process.env.POSTERIUM_FONT_DEBUG !== "1") {
-    fontRegular()
-    fontBold()
-    fontBlack()
-    fontSymbols()
-    return
-  }
-  const cwd = process.cwd()
-  console.log(`[font-debug] cwd=${cwd}`)
-  for (const p of FONT_FILES) {
-    try {
-      const stat = fs.statSync(p)
-      console.log(`[font-debug] EXISTS ${p} size=${stat.size}`)
-    } catch {
-      console.log(`[font-debug] MISSING ${p}`)
-    }
-  }
+  const debugFonts = process.env.POSTERIUM_FONT_DEBUG === "1"
   try {
     fontRegular()
     fontBold()
     fontBlack()
     fontSymbols()
-    console.log(`[font-debug] All fonts loaded OK sizes: regular=${_regular?.length} bold=${_bold?.length} black=${_black?.length} symbols=${_symbols?.length}`)
+    if (debugFonts) {
+      console.info(`[font-debug] Fonts loaded: regular=${_regular?.length} bold=${_bold?.length} black=${_black?.length} symbols=${_symbols?.length}`)
+    }
   } catch (e) {
-    console.error(`[font-debug] Font load error:`, e)
+    if (debugFonts) console.error("[font-debug] Font load error:", e)
+    throw e
   }
 }
 

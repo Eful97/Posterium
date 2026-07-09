@@ -70,10 +70,15 @@ interface StoredDefaults {
 }
 
 function readStoredDefaults(): StoredDefaults | null {
+  if (typeof window === "undefined" || !window.localStorage) return null
   try {
-    const raw = localStorage.getItem("badgeDefaults")
+    const raw = window.localStorage.getItem("badgeDefaults")
     return raw ? JSON.parse(raw) : null
-  } catch { return null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`[defaults] Failed to read local defaults: ${message}`)
+    return null
+  }
 }
 
 export function useDefaults() {

@@ -16,6 +16,7 @@ import { useMappingsStore } from "./useMappingsStore"
 import { useDefaults } from "./useDefaults"
 import { usePosterSave } from "./usePosterSave"
 import { computeLogoOffsetBounds } from "./logo-layout"
+import { useOutsideDismiss } from "./useOutsideDismiss"
 
 export interface PosteriumCtx {
   selected: SearchResult | null
@@ -306,31 +307,23 @@ export function usePosterium(): PosteriumCtx {
   }
 
   // --- Settings panels ---
-  useEffect(() => {
-    if (!settingsOpen) return
-    const handler = (e: MouseEvent) => {
-      if (window.innerWidth < 768) return
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [settingsOpen])
+  const dismissSettings = useCallback(() => setSettingsOpen(false), [])
+  const ignoreMobileSettingsDismiss = useCallback(() => window.innerWidth < 768, [])
+  const dismissLang = useCallback(() => setLangOpen(false), [])
 
-  useEffect(() => {
-    if (!langOpen) return
-    const handler = (e: MouseEvent) => {
-      if (langRef.current && !langRef.current.contains(e.target as Node)) {
-        setLangOpen(false)
-      }
-    }
-    const timer = setTimeout(() => document.addEventListener("click", handler), 0)
-    return () => {
-      clearTimeout(timer)
-      document.removeEventListener("click", handler)
-    }
-  }, [langOpen])
+  useOutsideDismiss({
+    active: settingsOpen,
+    ref: settingsRef,
+    onDismiss: dismissSettings,
+    eventName: "mousedown",
+    shouldIgnore: ignoreMobileSettingsDismiss,
+  })
+
+  useOutsideDismiss({
+    active: langOpen,
+    ref: langRef,
+    onDismiss: dismissLang,
+  })
 
   // --- URL Pattern ---
   useEffect(() => {

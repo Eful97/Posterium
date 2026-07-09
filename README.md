@@ -43,7 +43,7 @@ pinned: false
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **121 test** — Suite di test su URL builder, cache, badge priority, types, mappings, header CDN e parametri Stremio
+- ✅ **124 test** — Suite di test su URL builder, cache, badge priority, types, mappings, header CDN, compositing poster e parametri Stremio
 
 ---
 
@@ -112,6 +112,25 @@ Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogn
 | `ADMIN_TOKEN` | ❌ | Token per proteggere endpoint admin (cache clear). Se non impostato, aperto. |
 | `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | Dominio CDN pubblico da usare negli URL poster installati su Stremio, es. `https://poster-cdn.example.com`. |
 | `POSTER_CDN_URL` | ❌ | Variante server-side del dominio CDN, usata dal warmup se non vuoi esporla nel bundle client. |
+
+---
+
+## ⚡ Performance Stremio
+
+Per massimizzare la velocità di caricamento dei poster su Stremio:
+
+1. Imposta `NEXT_PUBLIC_POSTER_CDN_URL` con un dominio pubblico stabile davanti all'app (Cloudflare, reverse proxy o CDN equivalente).
+2. Reinstalla il catalogo Stremio dopo ogni cambio dominio/CDN, così gli URL poster puntano al nuovo host.
+3. Dopo deploy o import massivo, lancia `POST /api/warmup` con `Authorization: Bearer <ADMIN_TOKEN>` se il token è configurato.
+4. Mantieni gli URL versionati generati dall'app: il parametro `rv` permette cache immutable e refresh pulito quando cambia il render.
+5. Lascia l'output poster a 500×750: riduce peso e tempo di trasferimento senza perdere resa utile in Stremio.
+
+Esempio warmup:
+
+```bash
+curl -X POST "https://tuo-dominio/api/warmup?limit=100" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
 
 ---
 
@@ -219,6 +238,8 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 </p>
 <p align="center">
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto7.png" alt="Posterium Home" width="32%" />
+</p>
+
 ---
 
 ## 🏗️ Tech Stack
@@ -232,16 +253,17 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
 | Storage | Vercel KV / JSON file |
-| Test | Vitest (121 test) |
+| Test | Vitest (124 test) |
 | UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
 
 ### Architettura
 
-- **Hook modulari** — `useNavigation`, `useTrending`, `useSearch` (estrazioni da context.tsx monolitico)
+- **Hook modulari** — `useNavigation`, `useTrending`, `useSearch`, `useMappingsStore`, `useDefaults`, `usePosterSave`, `useOutsideDismiss`
 - **API client centralizzato** — `http.ts` con timeout, retry, error handling
 - **URL builder puro** — `poster-url.ts` (buildPreviewUrl, buildUrlPattern)
 - **Badge priority** — `badge-priority.ts` (computeBadge, computeExtraFallback)
 - **Poster runtime cache** — `poster-runtime-cache.ts` con ETag, header CDN, stale refresh e coalescing in-flight
+- **Poster render helpers** — `poster-render-helpers.ts` centralizza fetch immagini, clipping layer, compositing, luminanza e colore accent
 - **URL Stremio versionati** — `stremio-poster-params.ts` aggiunge `rv` stabile per cache immutable/CDN
 - **Cache generica** — In-memory con TTL, stale reads e tag-based invalidation
 
@@ -250,7 +272,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 ## 🧪 Testing
 
 ```bash
-npm test              # Esegui tutti i test (121)
+npm test              # Esegui tutti i test (124)
 npx vitest run        # Stessa cosa
 ```
 
@@ -259,6 +281,7 @@ npx vitest run        # Stessa cosa
 | `poster-url.test.ts` | 33 | buildUrlPattern, buildPreviewUrl, CDN base URL, URL params, badge, logo, backdrop, topLight |
 | `cache.test.ts` | 14 | cacheGet/Set, TTL expiry, cacheGetStale, cacheInvalidate, cacheClear |
 | `poster-runtime-cache.test.ts` | 2 | Header CDN immutable e stale-while-revalidate |
+| `poster-render-helpers.test.ts` | 3 | Clipping layer, dimensioni finali 500×750 e luminanza top-edge |
 | `stremio-poster-params.test.ts` | 2 | Parametri poster Stremio versionati e default globali |
 | `types.test.ts` | 14 | toSearchResult (default values, null→undefined, media_type normalization) |
 | `badge-validation.test.ts` | 18 | computeBadge priority chain, computeExtraFallback |

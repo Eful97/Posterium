@@ -14,7 +14,11 @@ export function saveDefaults(p: PosteriumCtx) {
     autoRotateClean: p.defaultAutoRotateClean,
   }
   localStorage.setItem("badgeDefaults", JSON.stringify(d))
-  fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) }).catch(() => {})
+  void fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn(`[defaults] Failed to sync server defaults: ${message}`)
+    })
   const key = p.selected ? `${p.selected.media_type}:${p.selected.id}` : null
   const mapping = key ? p.mappingsMap.get(key) : undefined
   if (!mapping?.badgeStyle) p.setBadgeStyle(d.badgeStyle)

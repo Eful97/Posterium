@@ -46,7 +46,10 @@ export async function POST(req: NextRequest) {
   // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano
   const origin = new URL(req.url).origin
   const warmUrl = `${origin}/api/poster/${parsed.data.mediaType}/${parsed.data.tmdbId}`
-  fetch(warmUrl, { signal: AbortSignal.timeout(25000) }).catch(() => {})
+  void fetch(warmUrl, { signal: AbortSignal.timeout(25000) }).catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`[mappings] Poster warmup failed: ${message}`)
+  })
   return Response.json({ ok: true })
 }
 
