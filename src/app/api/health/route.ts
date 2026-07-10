@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { DATA_DIR } from "@/lib/data-dir"
-import { accessSync, constants, readdirSync } from "node:fs"
+import { accessSync, constants, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 async function checkEndpoint(url: string): Promise<{ ok: boolean; status: number; time: number }> {
@@ -16,25 +16,27 @@ async function checkEndpoint(url: string): Promise<{ ok: boolean; status: number
 }
 
 function storageInfo() {
-  const info: { path: string; exists: boolean; writable: boolean; fileCount?: number; error?: string } = {
+  const info: { path: string; exists: boolean; writable: boolean; fileCount: number; dataFileExists: boolean; mappingsCount: number } = {
     path: DATA_DIR,
     exists: false,
     writable: false,
+    fileCount: 0,
+    dataFileExists: false,
+    mappingsCount: 0,
   }
   try {
+    accessSync(DATA_DIR, constants.R_OK | constants.W_OK)
     info.exists = true
-    accessSync(DATA_DIR, constants.R_OK)
-    try {
-      accessSync(DATA_DIR, constants.W_OK)
-      info.writable = true
-    } catch { info.writable = false }
+    info.writable = true
     const entries = readdirSync(DATA_DIR)
     info.fileCount = entries.length
   } catch { info.exists = false }
   const mappingsPath = join(DATA_DIR, "mappings.json")
   try {
     accessSync(mappingsPath, constants.R_OK)
-    info.fileCount = (info.fileCount ?? 0) + 1
+    info.dataFileExists = true
+    const raw = JSON.parse(readFileSync(mappingsPath, "utf-8"))
+    info.mappingsCount = Object.keys(raw).length
   } catch { /* ok */ }
   return info
 }
