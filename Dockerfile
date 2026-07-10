@@ -30,6 +30,7 @@ ENV HOSTNAME=0.0.0.0
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 ENV SHARP_CONCURRENCY=4
 ENV SHARP_CACHE_MEMORY_MB=256
+ENV POSTERIUM_DATA_DIR=/data
 
 RUN addgroup --system nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -39,7 +40,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && mkdir -p data && chown nextjs:nodejs data
+RUN chmod +x /entrypoint.sh && mkdir -p /data && chown nextjs:nodejs /data
 
 EXPOSE 3000
 

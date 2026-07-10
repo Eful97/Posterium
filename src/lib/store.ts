@@ -1,4 +1,3 @@
-import fs from "node:fs"
 import fsp from "node:fs/promises"
 import path from "node:path"
 import type { Mapping } from "@/lib/types"
@@ -52,63 +51,49 @@ async function kvImportMappings(mappings: Mapping[]) {
 
 const DATA_FILE = path.join(DATA_DIR, "mappings.json")
 
-let fileCache: Record<string, Mapping> | null = null
-let cacheDirty = false
-let initPromise: Promise<void> | null = null
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error
+}
 
-function ensureDataDir() {
+async function ensureDataDir() {
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true })
-    }
-  } catch (e) { console.error("[store] Failed to create data dir:", e) }
+    await fsp.mkdir(DATA_DIR, { recursive: true })
+  } catch (e) {
+    console.error("[store] Failed to create data dir:", e)
+  }
 }
 
 async function loadFromDisk(): Promise<Record<string, Mapping>> {
   try {
-    const exists = await fsp.access(DATA_FILE).then(() => true).catch(() => false)
-    if (!exists) return {}
     const raw = await fsp.readFile(DATA_FILE, "utf-8")
     return JSON.parse(raw)
   } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return {}
     const message = error instanceof Error ? error.message : String(error)
     console.warn(`[store] Failed to load mappings: ${message}`)
     return {}
   }
 }
 
-function getData(): Record<string, Mapping> {
-  if (fileCache === null) {
-    fileCache = {}
-    if (!initPromise) {
-      initPromise = loadFromDisk().then((data) => { fileCache = data; initPromise = null })
-    }
-  }
-  return fileCache
-}
-
-async function persist() {
-  if (!cacheDirty || fileCache === null) return
-  ensureDataDir()
+async function persist(data: Record<string, Mapping>) {
+  await ensureDataDir()
   try {
-    await fsp.writeFile(DATA_FILE, JSON.stringify(fileCache, null, 2))
+    await fsp.writeFile(DATA_FILE, JSON.stringify(data, null, 2))
   } catch (e) { console.error("[store] Failed to write mappings:", e) }
-  cacheDirty = false
 }
 
 // ---- Exported API ----
 
 export async function getAll(): Promise<Mapping[]> {
   if (useKv) return kvGetAll()
-  if (initPromise) await initPromise
-  return Object.values(getData())
+  return Object.values(await loadFromDisk())
 }
 
 export async function getById(type: "movie" | "tv", id: number): Promise<Mapping | null> {
   if (useKv) return kvGetById(type, id)
-  if (initPromise) await initPromise
   const key = `${type}:${id}`
-  return getData()[key] ?? null
+  const data = await loadFromDisk()
+  return data[key] ?? null
 }
 
 export async function upsert(mapping: Mapping) {
@@ -116,12 +101,10 @@ export async function upsert(mapping: Mapping) {
     await kvUpsert(mapping)
     return
   }
-  if (initPromise) await initPromise
-  const data = getData()
+  const data = await loadFromDisk()
   const key = `${mapping.mediaType}:${mapping.tmdbId}`
   data[key] = { ...mapping, updatedAt: new Date().toISOString() }
-  cacheDirty = true
-  await persist()
+  await persist(data)
 }
 
 export async function remove(type: "movie" | "tv", id: number) {
@@ -129,12 +112,10 @@ export async function remove(type: "movie" | "tv", id: number) {
     await kvRemove(type, id)
     return
   }
-  if (initPromise) await initPromise
-  const data = getData()
+  const data = await loadFromDisk()
   const key = `${type}:${id}`
   delete data[key]
-  cacheDirty = true
-  await persist()
+  await persist(data)
 }
 
 export async function removeAll() {
@@ -142,10 +123,7 @@ export async function removeAll() {
     await kvRemoveAll()
     return
   }
-  if (initPromise) await initPromise
-  fileCache = {}
-  cacheDirty = true
-  await persist()
+  await persist({})
 }
 
 export async function importMappings(mappings: Mapping[]) {
@@ -153,12 +131,10 @@ export async function importMappings(mappings: Mapping[]) {
     await kvImportMappings(mappings)
     return
   }
-  if (initPromise) await initPromise
-  const data = getData()
+  const data = await loadFromDisk()
   for (const m of mappings) {
     const key = `${m.mediaType}:${m.tmdbId}`
     data[key] = m
   }
-  cacheDirty = true
-  await persist()
+  await persist(data)
 }
