@@ -50,15 +50,23 @@ export function useMappingsStore() {
       const text = await file.text()
       try {
         const data = JSON.parse(text)
-        await http("/api/mappings/import", {
+        const res = await fetch("/api/mappings/import", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mappings: data.mappings || data }),
         })
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => null)
+          const msg = errBody?.error || errBody?.details ? Object.values(errBody.details).flat().join("; ") : t("ui.importError")
+          import("sonner").then(({ toast }) => toast(msg))
+          return
+        }
         loadMappings()
-        import("sonner").then(({ toast }) => toast(t("ui.importSuccess", { count: data.mappings?.length || data.length })))
-      } catch {
-        import("sonner").then(({ toast }) => toast(t("ui.importError")))
+        const result = await res.json()
+        import("sonner").then(({ toast }) => toast(t("ui.importSuccess", { count: result.count ?? data.mappings?.length ?? data.length })))
+      } catch (e) {
+        const msg = e instanceof SyntaxError ? t("ui.importError") : (e as Error).message
+        import("sonner").then(({ toast }) => toast(msg))
       }
     }
     input.click()

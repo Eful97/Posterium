@@ -55,39 +55,39 @@ export interface Mapping {
   originalPosterPath: string | null
   language: string | null
   updatedAt: string
-  logoScale?: number
-  logoOffsetX?: number
-  logoOffsetY?: number
+  logoScale?: number | null
+  logoOffsetX?: number | null
+  logoOffsetY?: number | null
   backdropPath?: string | null
-  backdropScale?: number
-  backdropOffsetX?: number
-  backdropOffsetY?: number
-  showBadges?: boolean
-  genreName?: string
-  voteAverage?: number
-  trendRank?: number
-  trendPeriod?: string
-  accentColor?: string
-  tvType?: string
-  tvStatus?: string
-  badgeExtra?: string
-  badgeRank?: number
-  badgeLabel?: string
+  backdropScale?: number | null
+  backdropOffsetX?: number | null
+  backdropOffsetY?: number | null
+  showBadges?: boolean | null
+  genreName?: string | null
+  voteAverage?: number | null
+  trendRank?: number | null
+  trendPeriod?: string | null
+  accentColor?: string | null
+  tvType?: string | null
+  tvStatus?: string | null
+  badgeExtra?: string | null
+  badgeRank?: number | null
+  badgeLabel?: string | null
   customBadge?: string | null
-  releaseDate?: string
-  firstAirDate?: string
-  rankingBadges?: boolean
-  badgeStyle?: string
-  rankingBadgeStyle?: string
-  blurEnabled?: boolean
-  blurIntensity?: number
-  blurFade?: number
-  blurDarkness?: number
-  gradientHeight?: number
-  cleanPosters?: string[]
-  cleanPosterIndex?: number
-  cleanPosterUpdatedAt?: string
-  autoRotateClean?: boolean
-  defaultBadgeStyle?: string
-  defaultRankingBadgeStyle?: string
+  releaseDate?: string | null
+  firstAirDate?: string | null
+  rankingBadges?: boolean | null
+  badgeStyle?: string | null
+  rankingBadgeStyle?: string | null
+  blurEnabled?: boolean | null
+  blurIntensity?: number | null
+  blurFade?: number | null
+  blurDarkness?: number | null
+  gradientHeight?: number | null
+  cleanPosters?: string[] | null
+  cleanPosterIndex?: number | null
+  cleanPosterUpdatedAt?: string | null
+  autoRotateClean?: boolean | null
+  defaultBadgeStyle?: string | null
+  defaultRankingBadgeStyle?: string | null
 }
