@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheGet, cacheSet } from "@/lib/cache"
 import { DATA_DIR } from "@/lib/data-dir"
 import { accessSync, constants, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
@@ -16,13 +15,30 @@ async function checkEndpoint(url: string): Promise<{ ok: boolean; status: number
 }
 
 function storageInfo() {
-  const info: { path: string; exists: boolean; writable: boolean; fileCount: number; dataFileExists: boolean; mappingsCount: number } = {
+  const info: {
+    path: string
+    exists: boolean
+    writable: boolean
+    fileCount: number
+    dataFileExists: boolean
+    mappingsCount: number
+    envDataDir: string | undefined
+    hfStorageDir: string | undefined
+    cwd: string
+    uid: number
+    dirEntries: string[]
+  } = {
     path: DATA_DIR,
     exists: false,
     writable: false,
     fileCount: 0,
     dataFileExists: false,
     mappingsCount: 0,
+    envDataDir: process.env.POSTERIUM_DATA_DIR,
+    hfStorageDir: process.env.HF_STORAGE_DIR,
+    cwd: process.cwd(),
+    uid: typeof process.getuid === "function" ? process.getuid() : -1,
+    dirEntries: [],
   }
   try {
     accessSync(DATA_DIR, constants.R_OK | constants.W_OK)
@@ -30,7 +46,11 @@ function storageInfo() {
     info.writable = true
     const entries = readdirSync(DATA_DIR)
     info.fileCount = entries.length
-  } catch { info.exists = false }
+    info.dirEntries = entries
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    info.dirEntries = [`access error: ${msg}`]
+  }
   const mappingsPath = join(DATA_DIR, "mappings.json")
   try {
     accessSync(mappingsPath, constants.R_OK)
@@ -44,8 +64,6 @@ function storageInfo() {
 export async function GET(request: Request) {
   const rl = rateLimit(rateLimitKey(request), "default")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
-  const cached = cacheGet("health")
-  if (cached) return NextResponse.json(cached)
   const { searchParams } = new URL(request.url)
   const apiKey = searchParams.get("api_key") || process.env.TMDB_API_KEY || ""
   const tmdbTrending = apiKey
@@ -74,7 +92,6 @@ export async function GET(request: Request) {
     system: { node: process.version, platform: process.platform, env: process.env.NODE_ENV },
     storage: storageInfo(),
   }
-  cacheSet("health", health, ["health"])
   const statusCode = health.status === "healthy" ? 200 : 503
   return NextResponse.json(health, { status: statusCode })
 }
