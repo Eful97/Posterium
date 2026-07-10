@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server"
+import { APP_VERSION } from "@/generated/app-version"
 
 export async function GET(req: NextRequest) {
   const domain = req.nextUrl.origin
   return Response.json({
     id: "org.posterium",
-    version: "0.2.9",
+    version: APP_VERSION,
     name: "Posterium",
     description: "Custom poster manager for Stremio — loghi, badge trend, premi e rating",
     resources: ["catalog", "poster"],

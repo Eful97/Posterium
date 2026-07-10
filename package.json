@@ -4,10 +4,13 @@
   "license": "AGPL-3.0-only",
   "private": true,
   "scripts": {
+    "predev": "node scripts/write-app-version.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/write-app-version.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "pretest": "node scripts/write-app-version.mjs",
     "test": "vitest run",
     "verify": "npx tsc --noEmit && npx eslint . && npx vitest run && next build"
   },

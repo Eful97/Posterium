@@ -1,13 +1,24 @@
+FROM node:20-bullseye AS source
+WORKDIR /src
+ARG SOURCE_REPO=https://github.com/Eful97/Posterium.git
+ARG SOURCE_REF=master
+COPY . .
+RUN if [ ! -f package.json ]; then \
+      apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/* && \
+      git clone --depth 1 --branch "$SOURCE_REF" "$SOURCE_REPO" /tmp/posterium && \
+      cp -a /tmp/posterium/. .; \
+    fi && test -f package.json
+
 FROM node:20-bullseye AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci --only=production 2>/dev/null || npm install
+COPY --from=source /src/package.json /src/package-lock.json ./
+RUN npm ci --omit=dev 2>/dev/null || npm install --omit=dev
 
 FROM node:20-bullseye AS builder
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY --from=source /src/package.json /src/package-lock.json ./
 RUN npm install
-COPY . .
+COPY --from=source /src ./
 RUN npm run build
 
 FROM node:20-bullseye AS runner

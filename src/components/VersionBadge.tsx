@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useP } from "@/lib/context"
+import { APP_VERSION } from "@/generated/app-version"
 
-const CURRENT_VERSION = "0.13.5"
+const CURRENT_VERSION = APP_VERSION
 const REPO = "Eful97/Posterium"
 const CHECK_TTL = 60 * 60 * 1000
 
@@ -29,15 +30,18 @@ async function fetchLatestTag(): Promise<string | null> {
 
 async function getLatestVersion(force = false): Promise<string | null> {
   try {
-    const cached = localStorage.getItem("posterium:latest")
+    const storage = typeof window === "undefined" ? null : window.localStorage
+    const cached = storage?.getItem("posterium:latest")
     if (!force && cached) {
       const { tag, ts } = JSON.parse(cached)
       if (Date.now() - ts < CHECK_TTL) return tag
     }
     const tag = await fetchLatestTag()
-    if (tag) localStorage.setItem("posterium:latest", JSON.stringify({ tag, ts: Date.now() }))
+    if (tag) storage?.setItem("posterium:latest", JSON.stringify({ tag, ts: Date.now() }))
     return tag
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`[version] Failed to check latest version: ${message}`)
     return null
   }
 }
@@ -48,7 +52,7 @@ export function VersionBadge() {
   const [checking, setChecking] = useState(false)
 
   useEffect(() => {
-    localStorage.removeItem("posterium:tag")
+    window.localStorage?.removeItem("posterium:tag")
     getLatestVersion().then((tag) => {
       if (tag && tag !== CURRENT_VERSION) setUpdateTag(tag)
     })

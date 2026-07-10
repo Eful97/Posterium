@@ -43,7 +43,7 @@ pinned: false
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **124 test** — Suite di test su URL builder, cache, badge priority, types, mappings, header CDN, compositing poster e parametri Stremio
+- ✅ **125 test** — Suite di test su URL builder, cache, badge priority, types, mappings, header CDN, versioning, compositing poster e parametri Stremio
 
 ---
 
@@ -253,7 +253,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
 | Storage | Vercel KV / JSON file |
-| Test | Vitest (124 test) |
+| Test | Vitest (125 test) |
 | UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
 
 ### Architettura
@@ -272,7 +272,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 ## 🧪 Testing
 
 ```bash
-npm test              # Esegui tutti i test (124)
+npm test              # Esegui tutti i test (125)
 npx vitest run        # Stessa cosa
 ```
 
@@ -281,6 +281,7 @@ npx vitest run        # Stessa cosa
 | `poster-url.test.ts` | 33 | buildUrlPattern, buildPreviewUrl, CDN base URL, URL params, badge, logo, backdrop, topLight |
 | `cache.test.ts` | 14 | cacheGet/Set, TTL expiry, cacheGetStale, cacheInvalidate, cacheClear |
 | `poster-runtime-cache.test.ts` | 2 | Header CDN immutable e stale-while-revalidate |
+| `app-version.test.ts` | 1 | Versione generata allineata a package.json |
 | `poster-render-helpers.test.ts` | 3 | Clipping layer, dimensioni finali 500×750 e luminanza top-edge |
 | `stremio-poster-params.test.ts` | 2 | Parametri poster Stremio versionati e default globali |
 | `types.test.ts` | 14 | toSearchResult (default values, null→undefined, media_type normalization) |
