@@ -11,6 +11,10 @@ type T = (key: string, params?: Record<string, string | number>) => string
 
 const _idT: T = (k) => k
 
+function franchiseKey(name: string): string {
+  return `franchise.${name.toLowerCase().replace(/[\s-]+/g, '_')}`
+}
+
 export function computeBadge(params: {
   isNewMovie: boolean
   isNewSeries: boolean
@@ -29,7 +33,7 @@ export function computeBadge(params: {
   if (params.animeRank) return { type: "rank", label: t("badge.anime"), rank: params.animeRank }
   if (params.trendRank) return { type: "rank", label: t("badge.today"), rank: params.trendRank }
   if (params.award) return { type: "extra", label: params.award }
-  if (params.franchise) return { type: "extra", label: params.franchise }
+  if (params.franchise) return { type: "extra", label: t(franchiseKey(params.franchise)) }
   if (params.nomination) return { type: "extra", label: params.nomination }
   if (params.studio) return { type: "extra", label: params.studio }
   if (params.director) return { type: "extra", label: params.director }
@@ -81,7 +85,7 @@ export function getAllBadgeOptions(params: {
   if (params.trendRank) options.add(keyed("badge.today"))
   if (params.animeRank) options.add(keyed("badge.anime"))
   if (params.award) options.add(params.award)
-  if (params.franchise) options.add(params.franchise)
+  if (params.franchise) options.add(keyed(franchiseKey(params.franchise)))
   if (params.nomination) options.add(params.nomination)
   if (params.studio) options.add(params.studio)
   if (params.director) options.add(params.director)
