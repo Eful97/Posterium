@@ -451,9 +451,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < TWO_WEEKS_MS : false
     const isNewSeries = mediaType === "tv" && firstAirDate ? (now - new Date(firstAirDate).getTime()) < TWO_WEEKS_MS : false
 
+    const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 4000
     const wikidataResult = await Promise.race([
       wikidataPromise,
-      new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>((resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), 1500))
+      new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>((resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), WIKIDATA_TIMEOUT))
     ])
 
     const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards, t) : null

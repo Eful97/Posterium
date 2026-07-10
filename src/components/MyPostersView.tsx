@@ -81,8 +81,8 @@ export function MyPostersView() {
     <div className="pt-4 animate-fade-scale-in">
       <h2 className="text-xl font-bold text-center mb-4">{p.t("ui.myPostersTitle")} <span className="text-xs text-zinc-400 font-normal">({mappings.length})</span></h2>
       <div className="flex items-center gap-2 mb-4 px-4 max-w-7xl mx-auto md:justify-center md:relative">
-        <div className="flex items-center h-9 md:h-12 bg-black/50 backdrop-blur-sm border border-zinc-700/80 focus-within:border-accent/60 focus-within:shadow-lg focus-within:shadow-accent/10 rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
-          <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-accent transition-colors duration-300"><Search size={14} /></span>
+        <div role="search" className="flex items-center h-9 md:h-12 bg-black/50 backdrop-blur-sm border border-zinc-700/80 focus-within:border-zinc-500 focus-visible:outline-none rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
+          <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500"><Search size={14} /></span>
           <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={p.t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
           {filter.length > 0 && (
             <button onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full hover:bg-zinc-600 hover:shadow-lg active:scale-90 transition-all duration-200"><X className="w-4 h-4" /></button>
