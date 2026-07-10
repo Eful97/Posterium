@@ -32,8 +32,8 @@ pinned: false
 - 🔄 **Rotazione poster clean 24h** — Seleziona più poster puliti e ruotali automaticamente ogni 24 ore, con opzione globale nelle impostazioni predefinite
 - ⚙️ **Impostazioni globali** — Salva stili badge, blur e rotazione come predefiniti applicati a tutti i nuovi salvataggi
 - 🏆 **Badge premi** — Vincitore e Candidato Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David da Wikidata
-- 🎬 **Badge franchise** — Marvel Cinematic Universe, Harry Potter, James Bond e 50+ franchige da Wikidata
-- 🎥 **Badge regista** — Di Hitchcock, Di Nolan, Di Fellini e 66 registi IMDb Top 70 da Wikidata
+- 🎬 **Badge franchise** — Marvel Cinematic Universe, Harry Potter, James Bond e 52 saghe da Wikidata (tradotte in italiano)
+- 🎥 **Badge regista** — Di Hitchcock, Di Nolan, Di Fellini e 71 registi IMDb Top 70 da Wikidata
 - 📡 **Badge network** — Netflix, HBO, Disney+, Prime Video, Apple TV+, Rai, Mediaset e altri da TMDB
 - 🎌 **Anime rank** — Top trending anime da MDBList *(richiede chiave MDBList)*
 - 📐 **Server-side rendering** — Resvg (SVG → PNG) per badge, Sharp per poster/logo/backdrop
@@ -98,6 +98,8 @@ Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogn
 3. HF lo monterà automaticamente a `/data` — Posterium rileva il volume e lo usa come DATA_DIR
 
 > **Nota:** senza bucket, i poster vengono persi ad ogni riavvio/rebuild dello Space.
+>
+> Puoi verificare lo stato dello storage via `GET /api/health` → campo `storage` (path, esistenza, scrivibilità, conteggio poster salvati).
 
 ---
 
@@ -110,6 +112,8 @@ Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogn
 | `OMDB_API_KEY` | ❌ | Rating IMDb — fallback quando MDBList non disponibile. Senza chiave, fallback su voto TMDB. |
 | `KV_URL` | ❌ | Vercel KV per storage (altrimenti file JSON) |
 | `ADMIN_TOKEN` | ❌ | Token per proteggere endpoint admin (cache clear). Se non impostato, aperto. |
+| `WIKIDATA_TIMEOUT` | ❌ | Timeout query Wikidata in ms (default: 4000). Se i badge premi/franchise/regista non compaiono, aumenta a 6000. |
+| `POSTERIUM_DATA_DIR` | ❌ | Directory dati (default: `./data`). Su HF Spaces con Storage Bucket è `/data`. |
 | `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | Dominio CDN pubblico da usare negli URL poster installati su Stremio, es. `https://poster-cdn.example.com`. |
 | `POSTER_CDN_URL` | ❌ | Variante server-side del dominio CDN, usata dal warmup se non vuoi esporla nel bundle client. |
 
