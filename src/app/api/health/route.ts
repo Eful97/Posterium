@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { DATA_DIR } from "@/lib/data-dir"
+import { accessSync, constants, readdirSync } from "node:fs"
+import { join } from "node:path"
 
 async function checkEndpoint(url: string): Promise<{ ok: boolean; status: number; time: number }> {
   const start = performance.now()
@@ -10,6 +13,30 @@ async function checkEndpoint(url: string): Promise<{ ok: boolean; status: number
   } catch {
     return { ok: false, status: 0, time: Math.round(performance.now() - start) }
   }
+}
+
+function storageInfo() {
+  const info: { path: string; exists: boolean; writable: boolean; fileCount?: number; error?: string } = {
+    path: DATA_DIR,
+    exists: false,
+    writable: false,
+  }
+  try {
+    info.exists = true
+    accessSync(DATA_DIR, constants.R_OK)
+    try {
+      accessSync(DATA_DIR, constants.W_OK)
+      info.writable = true
+    } catch { info.writable = false }
+    const entries = readdirSync(DATA_DIR)
+    info.fileCount = entries.length
+  } catch { info.exists = false }
+  const mappingsPath = join(DATA_DIR, "mappings.json")
+  try {
+    accessSync(mappingsPath, constants.R_OK)
+    info.fileCount = (info.fileCount ?? 0) + 1
+  } catch { /* ok */ }
+  return info
 }
 
 export async function GET(request: Request) {
@@ -43,6 +70,7 @@ export async function GET(request: Request) {
     tmdb: { apiKey: !!apiKey, apiKeyLength: apiKey.length, trending: tmdbTrending, search: tmdbSearch, popular: tmdbPopular, externalIds },
     streaming: { justwatch, flixpatrol },
     system: { node: process.version, platform: process.platform, env: process.env.NODE_ENV },
+    storage: storageInfo(),
   }
   cacheSet("health", health, ["health"])
   const statusCode = health.status === "healthy" ? 200 : 503

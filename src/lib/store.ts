@@ -6,6 +6,9 @@ import { DATA_DIR } from "@/lib/data-dir"
 export type { Mapping }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL
+if (!useKv) {
+  console.log(`[store] Data directory: ${DATA_DIR}, file: ${path.join(DATA_DIR, "mappings.json")}`)
+}
 
 // ---- Vercel KV helpers ----
 
@@ -79,7 +82,13 @@ async function persist(data: Record<string, Mapping>) {
   await ensureDataDir()
   try {
     await fsp.writeFile(DATA_FILE, JSON.stringify(data, null, 2))
-  } catch (e) { console.error("[store] Failed to write mappings:", e) }
+  } catch (e) {
+    console.error(`[store] Failed to write mappings to ${DATA_FILE}:`, e)
+    const msg = e instanceof Error ? e.message : String(e)
+    if (msg.includes("EACCES") || msg.includes("EPERM")) {
+      console.error(`[store] Permission error — check that '${DATA_DIR}' is writable by the current user`)
+    }
+  }
 }
 
 // ---- Exported API ----
