@@ -40,6 +40,7 @@ export function AppShell() {
           </div>
         </div>
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
+          <>
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
           <img onClick={p.goHome} src="/posterium.svg" alt="Posterium" decoding="async" className="h-16 md:h-20 w-auto mb-5 md:mb-4 cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
@@ -48,6 +49,7 @@ export function AppShell() {
             <button onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.replaceState({ view: "myposters" }, ""); p.setView("myposters") } }} className="h-11 px-3 bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-xs font-medium rounded-xl text-zinc-300">{p.t("ui.myPostersBtn")} ({p.mappings.length})</button>
             <button onClick={() => p.setSettingsOpen(true)} className="h-11 w-11 flex items-center justify-center bg-transparent border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 text-sm rounded-xl text-zinc-300"><Settings className="w-5 h-5" /></button>
           </div>
+          </>
         </div>
         <div key={p.view} className="animate-fade-scale-in">
           {p.view === "search" ? <SearchView /> : p.view === "myposters" ? <MyPostersView /> : <EditView />}

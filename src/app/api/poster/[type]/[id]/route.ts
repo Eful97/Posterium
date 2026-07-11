@@ -74,23 +74,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   // Auto-rotate clean poster (sequential, not random)
   const isRotating = !!(mapping && mapping.autoRotateClean && mapping.cleanPosters && mapping.cleanPosters.length > 1)
   if (isRotating) {
-    const lastUpdate = mapping.cleanPosterUpdatedAt ? new Date(mapping.cleanPosterUpdatedAt).getTime() : 0
-    const now = Date.now()
-    if (now - lastUpdate > 24 * 60 * 60 * 1000) {
-      const currentIdx = mapping.cleanPosterIndex ?? -1
-      const posters = mapping.cleanPosters!
-      const newIndex = currentIdx < 0 ? 0 : (currentIdx + 1) % posters.length
-      const newPosterPath = posters[newIndex]
-      if (newPosterPath !== mapping.posterPath) {
-        mapping.posterPath = newPosterPath
-        mapping.cleanPosterIndex = newIndex
-        mapping.cleanPosterUpdatedAt = new Date(now).toISOString()
-        mapping.updatedAt = new Date(now).toISOString()
-        try {
-          await upsert(mapping)
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error)
-          console.warn(`[poster] Auto-rotate update failed: ${message}`)
+    const excludedSet = new Set(mapping.excludedPosters || [])
+    const availablePosters = mapping.cleanPosters!.filter((path) => !excludedSet.has(path))
+    if (availablePosters.length >= 2) {
+      const lastUpdate = mapping.cleanPosterUpdatedAt ? new Date(mapping.cleanPosterUpdatedAt).getTime() : 0
+      const now = Date.now()
+      if (now - lastUpdate > 24 * 60 * 60 * 1000) {
+        const currentIdx = mapping.cleanPosterIndex ?? -1
+        const posters = availablePosters
+        const newIndex = currentIdx < 0 ? 0 : (currentIdx + 1) % posters.length
+        const newPosterPath = posters[newIndex]
+        if (newPosterPath !== mapping.posterPath) {
+          mapping.posterPath = newPosterPath
+          mapping.cleanPosterIndex = newIndex
+          mapping.cleanPosterUpdatedAt = new Date(now).toISOString()
+          mapping.updatedAt = new Date(now).toISOString()
+          try {
+            await upsert(mapping)
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            console.warn(`[poster] Auto-rotate update failed: ${message}`)
+          }
         }
       }
     }

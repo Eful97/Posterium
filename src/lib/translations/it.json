@@ -241,6 +241,7 @@
     "ui.delete":  "Elimina",
     "ui.autoRotate":  "Rotazione 24h",
     "ui.autoRotateDefault":  "Rotazione poster ogni 24h",
+    "ui.logoFitEnabled":  "Compatibilità logo automatica",
     "ui.addToRotation":  "Aggiungi a rotazione",
     "ui.removeFromRotation":  "Rimuovi da rotazione"
 }

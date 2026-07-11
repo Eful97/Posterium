@@ -48,10 +48,18 @@ interface PosterSaveDeps {
   rotationPosters: string[]
   autoRotateClean: boolean
   defaultAutoRotateClean: boolean
+  excludedPosters: string[]
   accentColor: string
   setLogoScale: (v: number) => void
   setLogoOffsetX: (v: number) => void
   setLogoOffsetY: (v: number) => void
+}
+
+export interface SaveConfigOverrides {
+  excludedPosters?: string[]
+  rotationPosters?: string[]
+  previewPoster?: TMDBImage
+  silent?: boolean
 }
 
 export function usePosterSave(deps: PosterSaveDeps) {
@@ -64,7 +72,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle,
     blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
-    rotationPosters, autoRotateClean, defaultAutoRotateClean, accentColor,
+    rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor,
     setLogoScale, setLogoOffsetX, setLogoOffsetY,
   } = deps
 
@@ -134,8 +142,9 @@ export function usePosterSave(deps: PosterSaveDeps) {
     setSelectedBackdrop(null)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps -- setter refs are stable
 
-  const saveConfig = useCallback(async () => {
-    if (!selected || !previewPoster) return
+  const saveConfig = useCallback(async (overrides: SaveConfigOverrides = {}) => {
+    const posterToSave = overrides.previewPoster ?? previewPoster
+    if (!selected || !posterToSave) return
     const now = Date.now()
     const twoWeeks = 14 * 24 * 60 * 60 * 1000
     const isNewMovie = selected.media_type === "movie" && metaInfo.release_date ? (now - new Date(metaInfo.release_date).getTime()) < twoWeeks : false
@@ -151,11 +160,15 @@ export function usePosterSave(deps: PosterSaveDeps) {
     const badgeExtra = badge?.type === "extra" ? badge.label : undefined
     const badgeRank = (!badgeExtra && rankingBadges) ? (badge?.type === "rank" ? badge.rank : trendRank || undefined) : undefined
     const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || t("badge.today")) : undefined
-    const isClean = previewPoster.iso_639_1 === null
+    const isClean = posterToSave.iso_639_1 === null
     const isNewMapping = !mappingsMap.has(`${selected.media_type}:${selected.id}`)
-    const effectiveRotationPosters = defaultAutoRotateClean && isClean && isNewMapping
+    const nextExcludedPosters = overrides.excludedPosters ?? excludedPosters
+    const nextRotationPosters = overrides.rotationPosters ?? rotationPosters
+    const excludedSet = new Set(nextExcludedPosters)
+    const effectiveRotationPosters = (defaultAutoRotateClean && isClean && isNewMapping
       ? posters.filter(p => p.iso_639_1 === null).map(p => p.file_path)
-      : rotationPosters
+      : nextRotationPosters
+    ).filter((path) => !excludedSet.has(path))
     try {
       await http("/api/mappings", {
         method: "POST",
@@ -164,10 +177,10 @@ export function usePosterSave(deps: PosterSaveDeps) {
           tmdbId: selected.id,
           mediaType: selected.media_type,
           title: titleOf(selected),
-          posterPath: previewPoster.file_path,
+          posterPath: posterToSave.file_path,
           logoPath: selectedLogo?.file_path || null,
           originalPosterPath: selected.poster_path,
-          language: previewPoster.iso_639_1,
+          language: posterToSave.iso_639_1,
           logoScale, logoOffsetX, logoOffsetY,
           backdropPath: selectedBackdrop?.file_path || null,
           backdropScale, backdropOffsetX, backdropOffsetY,
@@ -199,15 +212,17 @@ export function usePosterSave(deps: PosterSaveDeps) {
           cleanPosterIndex: 0,
           cleanPosterUpdatedAt: new Date().toISOString(),
           autoRotateClean: effectiveRotationPosters.length > 1 ? (defaultAutoRotateClean && isClean && isNewMapping ? true : autoRotateClean) : undefined,
+          excludedPosters: nextExcludedPosters.length > 0 ? nextExcludedPosters : undefined,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)
-      import("sonner").then(({ toast }) => toast(t("ui.saveSuccess")))
-      loadMappings()
-    } catch {
-      import("sonner").then(({ toast }) => toast(t("ui.saveError")))
+      if (!overrides.silent) import("sonner").then(({ toast }) => toast(t("ui.saveSuccess")))
+      await loadMappings()
+    } catch (error) {
+      if (!overrides.silent) import("sonner").then(({ toast }) => toast(t("ui.saveError")))
+      if (overrides.silent) throw error
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
 
   return { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig }
 }

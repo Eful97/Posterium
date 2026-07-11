@@ -13,6 +13,7 @@ export interface DefaultsState {
   defaultGlobalBadges: boolean
   defaultRankingBadges: boolean
   defaultAutoRotateClean: boolean
+  defaultLogoFitEnabled: boolean
   globalBadges: boolean
   rankingBadges: boolean
   gradientHeight: number
@@ -35,6 +36,7 @@ const DEFAULTS: DefaultsState = {
   defaultGlobalBadges: true,
   defaultRankingBadges: true,
   defaultAutoRotateClean: false,
+  defaultLogoFitEnabled: true,
   globalBadges: true,
   rankingBadges: true,
   gradientHeight: 30,
@@ -66,6 +68,7 @@ interface StoredDefaults {
   defaultGlobalBadges?: boolean
   defaultRankingBadges?: boolean
   defaultAutoRotateClean?: boolean
+  defaultLogoFitEnabled?: boolean
   autoRotateClean?: boolean
 }
 
@@ -96,6 +99,7 @@ export function useDefaults() {
       defaultGlobalBadges: d.defaultGlobalBadges ?? d.globalBadges ?? true,
       defaultRankingBadges: d.defaultRankingBadges ?? d.rankingBadges ?? true,
       defaultAutoRotateClean: d.defaultAutoRotateClean ?? d.autoRotateClean ?? false,
+      defaultLogoFitEnabled: d.defaultLogoFitEnabled ?? true,
       globalBadges: d.globalBadges ?? true,
       rankingBadges: d.rankingBadges ?? true,
       gradientHeight: d.gradientHeight ?? 30,
@@ -129,6 +133,7 @@ export function useDefaults() {
       defaultGlobalBadges: d.defaultGlobalBadges ?? d.globalBadges ?? true,
       defaultRankingBadges: d.defaultRankingBadges ?? d.rankingBadges ?? true,
       defaultAutoRotateClean: d.defaultAutoRotateClean ?? d.autoRotateClean ?? false,
+      defaultLogoFitEnabled: d.defaultLogoFitEnabled ?? true,
       globalBadges: d.globalBadges ?? true,
       rankingBadges: d.rankingBadges ?? true,
       gradientHeight: d.gradientHeight ?? 30,

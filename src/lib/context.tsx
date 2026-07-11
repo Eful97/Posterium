@@ -104,6 +104,8 @@ export interface PosteriumCtx {
   setDefaultRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
   defaultAutoRotateClean: boolean
   setDefaultAutoRotateClean: React.Dispatch<React.SetStateAction<boolean>>
+  defaultLogoFitEnabled: boolean
+  setDefaultLogoFitEnabled: React.Dispatch<React.SetStateAction<boolean>>
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
   metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }
@@ -165,6 +167,9 @@ export interface PosteriumCtx {
   setRotationPosters: React.Dispatch<React.SetStateAction<string[]>>
   autoRotateClean: boolean
   setAutoRotateClean: React.Dispatch<React.SetStateAction<boolean>>
+  excludedPosters: string[]
+  setExcludedPosters: React.Dispatch<React.SetStateAction<string[]>>
+  autoSaveExcludedPosters: (nextExcluded: string[], nextRotationPosters?: string[], nextPreviewPoster?: TMDBImage) => Promise<void>
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
@@ -208,6 +213,8 @@ export function usePosterium(): PosteriumCtx {
   const [topEdgeColor, setTopEdgeColor] = useState("#555555")
   const [rotationPosters, setRotationPosters] = useState<string[]>([])
   const [autoRotateClean, setAutoRotateClean] = useState(false)
+  const [excludedPosters, setExcludedPosters] = useState<string[]>([])
+
   const [loadingImages, setLoadingImages] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
   const langRef = useRef<HTMLDivElement>(null)
@@ -228,7 +235,7 @@ export function usePosterium(): PosteriumCtx {
   const [editText, setEditText] = useState("")
 
   // Badge state (delegated to useDefaults)
-  const { globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, loadDefaultsToState } = defaults
+  const { globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled, loadDefaultsToState } = defaults
   const [customBadge, setCustomBadge] = useState<string | null>(null)
   const setGlobalBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(globalBadges) : v; defaults.update({ globalBadges: next }) }
   const setRankingBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(rankingBadges) : v; defaults.update({ rankingBadges: next }) }
@@ -249,6 +256,7 @@ export function usePosterium(): PosteriumCtx {
   const setDefaultGlobalBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultGlobalBadges) : v; defaults.update({ defaultGlobalBadges: next }) }
   const setDefaultRankingBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultRankingBadges) : v; defaults.update({ defaultRankingBadges: next }) }
   const setDefaultAutoRotateClean = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultAutoRotateClean) : v; defaults.update({ defaultAutoRotateClean: next }) }
+  const setDefaultLogoFitEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultLogoFitEnabled) : v; defaults.update({ defaultLogoFitEnabled: next }) }
 
   const hasBadges = globalBadges && metaInfo.genres.length > 0 && metaInfo.voteAverage > 0
 
@@ -546,10 +554,12 @@ export function usePosterium(): PosteriumCtx {
         setRankingBadgeStyle(existing.rankingBadgeStyle ?? defaultRankingBadgeStyle)
         setRotationPosters(existing.cleanPosters || [])
         setAutoRotateClean(existing.autoRotateClean ?? false)
+        setExcludedPosters(existing.excludedPosters || [])
       } else {
         setCustomBadge(null)
         setRotationPosters([])
         setAutoRotateClean(false)
+        setExcludedPosters([])
         setLogoScale(75)
         setLogoOffsetX(0)
         setLogoOffsetY(0)
@@ -609,7 +619,7 @@ export function usePosterium(): PosteriumCtx {
 
   const posterActivePath = navigation.previewPoster?.file_path
 
-  const { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig } = usePosterSave({
+  const { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig: savePosterConfig } = usePosterSave({
     selected: navigation.selected, previewPoster: navigation.previewPoster, selectedLogo: navigation.selectedLogo,
     setSelectedLogo: navigation.setSelectedLogo, setPreviewPoster: navigation.setPreviewPoster, setPreviewId: navigation.setPreviewId,
     posters: navigation.posters, metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
@@ -618,9 +628,22 @@ export function usePosterium(): PosteriumCtx {
     setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
-    rotationPosters, autoRotateClean, defaultAutoRotateClean, accentColor,
+    rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor,
     setLogoScale, setLogoOffsetX, setLogoOffsetY,
   })
+
+  const saveConfig = useCallback(async () => {
+    await savePosterConfig()
+  }, [savePosterConfig])
+
+  const autoSaveExcludedPosters = useCallback(async (nextExcluded: string[], nextRotationPosters?: string[], nextPreviewPoster?: TMDBImage) => {
+    await savePosterConfig({
+      excludedPosters: nextExcluded,
+      rotationPosters: nextRotationPosters ?? rotationPosters,
+      previewPoster: nextPreviewPoster,
+      silent: true,
+    })
+  }, [savePosterConfig, rotationPosters])
 
   return useMemo(() => ({
     selected: navigation.selected, setSelected: navigation.setSelected,
@@ -662,6 +685,7 @@ export function usePosterium(): PosteriumCtx {
     defaultGlobalBadges, setDefaultGlobalBadges,
     defaultRankingBadges, setDefaultRankingBadges,
     defaultAutoRotateClean, setDefaultAutoRotateClean,
+    defaultLogoFitEnabled, setDefaultLogoFitEnabled,
     trendRank,
     mdblistMatch,
     metaInfo,
@@ -687,6 +711,8 @@ export function usePosterium(): PosteriumCtx {
     topEdgeColor,
     rotationPosters, setRotationPosters,
     autoRotateClean, setAutoRotateClean,
+    excludedPosters, setExcludedPosters,
+    autoSaveExcludedPosters,
     t,
   // eslint-disable-next-line react-hooks/exhaustive-deps -- context value deps intentionally stable to prevent re-render cascades
   }), [
@@ -697,14 +723,14 @@ export function usePosterium(): PosteriumCtx {
     globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle,
     rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
-    defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean,
+    defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled,
     trendRank, mdblistMatch, metaInfo, navigation.previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
     tmdbKeyInput, showKey, copied,
     accentColor,
-    topEdgeColor, rotationPosters, autoRotateClean,
+    topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
   ])

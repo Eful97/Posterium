@@ -12,6 +12,7 @@ export function saveDefaults(p: PosteriumCtx) {
     blurDarkness: p.defaultBlurDarkness,
     gradientHeight: p.defaultGradientHeight,
     autoRotateClean: p.defaultAutoRotateClean,
+    defaultLogoFitEnabled: p.defaultLogoFitEnabled,
   }
   localStorage.setItem("badgeDefaults", JSON.stringify(d))
   void fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })

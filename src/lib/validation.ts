@@ -41,6 +41,7 @@ export const mappingSchema = z.object({
   cleanPosterIndex: z.number().int().min(0).nullable().optional(),
   cleanPosterUpdatedAt: z.string().nullable().optional(),
   autoRotateClean: z.boolean().nullable().optional(),
+  excludedPosters: z.array(z.string()).nullable().optional(),
   defaultBadgeStyle: z.string().nullable().optional(),
   defaultRankingBadgeStyle: z.string().nullable().optional(),
 })

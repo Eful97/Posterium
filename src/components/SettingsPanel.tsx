@@ -7,7 +7,7 @@ import { ApiError, http } from "@/lib/http"
 import { saveDefaults } from "@/lib/save-defaults"
 import { SliderRow } from "@/components/SliderRow"
 import { BadgeStyleSelector, SecretInput, MenuItem } from "@/components/ui"
-import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key } from "lucide-react"
+import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles } from "lucide-react"
 
 interface Props {
   tmdbKeyInput: string
@@ -75,6 +75,10 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><RotateCcw className="w-3 h-3" /> {p.t("ui.autoRotateDefault")}</span>
         <button type="button" onClick={() => p.setDefaultAutoRotateClean(!p.defaultAutoRotateClean)} role="switch" aria-checked={p.defaultAutoRotateClean} className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${p.defaultAutoRotateClean ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${p.defaultAutoRotateClean ? "translate-x-5" : "translate-x-0"}`} /></button>
+      </div>
+      <div className="flex items-center justify-between mt-1">
+        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> {p.t("ui.logoFitEnabled")}</span>
+        <button type="button" onClick={() => p.setDefaultLogoFitEnabled(!p.defaultLogoFitEnabled)} role="switch" aria-checked={p.defaultLogoFitEnabled} className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${p.defaultLogoFitEnabled ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${p.defaultLogoFitEnabled ? "translate-x-5" : "translate-x-0"}`} /></button>
       </div>
       <hr className="border-zinc-700 my-1" />
       <button type="button" onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {p.t("ui.saved")}</> : <><Save className="w-3 h-3" /> {p.t("ui.saveDefaults")}</>}</span></button>

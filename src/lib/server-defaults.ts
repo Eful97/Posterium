@@ -13,6 +13,7 @@ export interface ServerDefaults {
   globalBadges?: boolean
   rankingBadges?: boolean
   autoRotateClean?: boolean
+  defaultLogoFitEnabled?: boolean
 }
 
 const FILE = path.join(DATA_DIR, "defaults.json")

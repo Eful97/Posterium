@@ -189,6 +189,7 @@
     "ui.delete":  "Löschen",
     "ui.autoRotate":  "Auto-Rotation 24h",
     "ui.autoRotateDefault":  "Auto-Rotation 24h Standard",
+    "ui.logoFitEnabled":  "Automatische Logo-Kompatibilität",
     "ui.addToRotation":  "Zur Rotation hinzufügen",
     "ui.removeFromRotation":  "Aus Rotation entfernen"
 }
