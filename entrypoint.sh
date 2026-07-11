@@ -33,14 +33,14 @@ if [ -d "$DATA_DIR" ]; then
   chown -R nextjs:nodejs "$DATA_DIR" 2>/dev/null || true
 
   # Test write access as nextjs user
-  WRITE_TEST=$(su -s /bin/sh nextjs -c "touch '$DATA_DIR/.write_test' && rm -f '$DATA_DIR/.write_test' && echo ok" 2>&1 || true)
+  WRITE_TEST=$(su -s /bin/sh -m nextjs -c "touch '$DATA_DIR/.write_test' && rm -f '$DATA_DIR/.write_test' && echo ok" 2>&1 || true)
   if [ "$WRITE_TEST" = "ok" ]; then
     echo "[entrypoint] Storage: WRITABLE by nextjs"
   else
     echo "[entrypoint] Storage: NOT WRITABLE by nextjs"
     echo "[entrypoint] Attempting chmod 777 as fallback..."
     chmod 777 "$DATA_DIR" 2>/dev/null || true
-    WRITE_TEST2=$(su -s /bin/sh nextjs -c "touch '$DATA_DIR/.write_test' && rm -f '$DATA_DIR/.write_test' && echo ok" 2>&1 || true)
+      WRITE_TEST2=$(su -s /bin/sh -m nextjs -c "touch '$DATA_DIR/.write_test' && rm -f '$DATA_DIR/.write_test' && echo ok" 2>&1 || true)
     if [ "$WRITE_TEST2" = "ok" ]; then
       echo "[entrypoint] Storage: WRITABLE after chmod 777"
     else
@@ -63,4 +63,4 @@ else
 fi
 
 echo "[entrypoint] ============================================"
-exec su -s /bin/sh nextjs -c "exec node server.js"
+exec su -s /bin/sh -m nextjs -c "exec node server.js"
