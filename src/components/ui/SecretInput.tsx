@@ -26,7 +26,7 @@ export function SecretInput({
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5">
-        {Icon && <span className="w-3 h-3">{Icon}</span>}
+        {Icon && <span className="shrink-0 w-3 h-3 [&>svg]:w-3 [&>svg]:h-3">{Icon}</span>}
         {label}
       </label>
       <div className="flex gap-1">
