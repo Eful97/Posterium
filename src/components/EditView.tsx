@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { useP } from "@/lib/context"
 import { toSearchResult } from "@/lib/types"
 import { LANG_NAMES, groupBy } from "@/lib/utils"
@@ -26,6 +26,7 @@ export default function EditView() {
   const [previewLoading, setPreviewLoading] = useState(false)
   const [loadProgress, setLoadProgress] = useState(0)
   const [activeRightTab, setActiveRightTab] = useState<"logo" | "badge" | "transform">("logo")
+  const [activePosterTab, setActivePosterTab] = useState("clean")
   const [imgSrc, setImgSrc] = useState("")
   const xhrRef = useRef<XMLHttpRequest | null>(null)
   const prevObjUrlRef = useRef("")
@@ -114,7 +115,7 @@ export default function EditView() {
 
   const cleanPoster = p.previewPoster?.iso_639_1 === null
 
-  const leftTabs = (() => {
+  const leftTabs = useMemo(() => {
     const tabs: { key: string; label: string; count: number }[] = []
     const cleanCount = p.posters.filter((img) => img.iso_639_1 === null).length
     if (cleanCount > 0) tabs.push({ key: "clean", label: "Clean", count: cleanCount })
@@ -124,7 +125,14 @@ export default function EditView() {
       .sort(([a], [b]) => { if (a === p.lang) return -1; if (b === p.lang) return 1; if (a === "en") return -1; if (b === "en") return 1; return a.localeCompare(b) })
       .forEach(([lang, imgs]) => tabs.push({ key: lang, label: LANG_NAMES[lang] || lang, count: imgs.length }))
     return tabs
-  })()
+  }, [p.lang, p.posters])
+
+  useEffect(() => {
+    if (leftTabs.length === 0) return
+    if (!leftTabs.some((tab) => tab.key === activePosterTab)) {
+      setActivePosterTab(leftTabs[0]?.key ?? "clean")
+    }
+  }, [activePosterTab, leftTabs])
 
   const rightTabs = [
     { key: "logo", label: p.t("ui.logoSection") },
@@ -137,21 +145,21 @@ export default function EditView() {
       {p.selected && (
         <div className="flex flex-col items-center">
           {searchBar}
-          <div className="grid grid-cols-1 lg:grid-cols-[390px_430px_390px] gap-4 items-stretch w-full xl:px-6 2xl:px-16" style={{ minHeight: "min(680px, calc(100dvh - 300px))" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-[390px_430px_390px] gap-4 items-stretch w-full xl:px-6 2xl:px-16 lg:h-[clamp(660px,calc(100dvh-260px),820px)] lg:min-h-0">
 
             {/* LEFT: Poster */}
-            <EditorPanel tabs={leftTabs} activeTab="clean">
+            <EditorPanel tabs={leftTabs} activeTab={activePosterTab} onTabChange={setActivePosterTab}>
               {p.loadingImages ? (
                 <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div>
               ) : (
-                <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} lang={p.lang} selectPoster={p.selectPoster} />
+                <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} lang={p.lang} selectPoster={p.selectPoster} activeGroup={activePosterTab} onActiveGroupChange={setActivePosterTab} showTabs={false} />
               )}
             </EditorPanel>
 
             {/* CENTER: Preview */}
             <EditorPanel title={p.t("ui.previewSection")}>
-              <div className="flex flex-col items-center h-full">
-                <div className="w-full max-w-[380px] bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
+              <div className="flex flex-col items-center justify-between min-h-full">
+                <div className="w-full max-w-[360px] bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
                   <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
                     {p.previewUrl ? (
                       <>
@@ -192,7 +200,7 @@ export default function EditView() {
                 )}
 
                 {p.previewPoster && p.selected && (
-                  <div className="mt-3 w-full max-w-[380px] grid grid-cols-3 gap-2">
+                  <div className="mt-3 w-full max-w-[360px] grid grid-cols-3 gap-2">
                     <button onClick={p.saveConfig} className="py-2 px-3 text-[11px] font-bold btn-primary active:scale-[0.97] rounded-xl">{p.t("ui.savePoster")}</button>
                     <button onClick={() => {
                       if (!p.selected || !p.previewPoster) return
