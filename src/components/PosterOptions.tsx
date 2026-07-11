@@ -55,6 +55,12 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
   const bestPoster = bestResult ? cleanPosters.find((p) => p.file_path === bestResult.posterPath) : undefined
   const isBestSelected = bestPoster ? posterActivePath === bestPoster.file_path : false
 
+  const isSavedPoster = useMemo(() => {
+    if (!p.selected) return false
+    const mediaType = p.selected.media_type === "tv" ? "tv" : "movie"
+    return p.mappingsMap.has(`${mediaType}:${p.selected.id}`)
+  }, [p.mappingsMap, p.selected])
+
   const topFitRotationPosters = useMemo(() => {
     if (results.length === 0) return []
     const cleanPosterPaths = new Set(cleanPosters.map((poster) => poster.file_path))
@@ -69,6 +75,7 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
     populatedRotationRef.current = false
   }, [p.selected?.id])
   useEffect(() => {
+    if (isSavedPoster) return
     if (topFitRotationPosters.length === 0 || fitLoading) return
     if (p.rotationPosters.length > 0) { populatedRotationRef.current = false; return }
     if (populatedRotationRef.current) return
@@ -77,10 +84,15 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
     if (p.defaultAutoRotateClean && topFitRotationPosters.length > 1) {
       p.setAutoRotateClean(true)
     }
-  }, [topFitRotationPosters, fitLoading]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only on fit results
+  }, [topFitRotationPosters, fitLoading, isSavedPoster]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only on fit results
 
   const [sortByFit, setSortByFit] = useState(false)
   const autoSelectedFitKeyRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    setSortByFit(false)
+    autoSelectedFitKeyRef.current = null
+  }, [p.selected?.id])
 
   const autoSelectFitKey = useMemo(() => {
     if (!p.defaultLogoFitEnabled || !bestPoster || !p.selectedLogo) return null
@@ -105,6 +117,10 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
   ])
 
   useEffect(() => {
+    if (isSavedPoster) {
+      autoSelectedFitKeyRef.current = null
+      return
+    }
     if (!autoSelectFitKey || !bestPoster || fitLoading) {
       if (!autoSelectFitKey) autoSelectedFitKeyRef.current = null
       return
@@ -117,7 +133,7 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
     autoSelectedFitKeyRef.current = autoSelectFitKey
     setSortByFit(true)
     selectPoster(bestPoster)
-  }, [autoSelectFitKey, bestPoster, fitLoading, isBestSelected, selectPoster])
+  }, [autoSelectFitKey, bestPoster, fitLoading, isBestSelected, isSavedPoster, selectPoster])
 
   const displayPosters = useMemo(() => {
     if (!sortByFit) return cleanPosters
