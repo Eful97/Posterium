@@ -165,10 +165,12 @@ export function usePosterSave(deps: PosterSaveDeps) {
     const nextExcludedPosters = overrides.excludedPosters ?? excludedPosters
     const nextRotationPosters = overrides.rotationPosters ?? rotationPosters
     const excludedSet = new Set(nextExcludedPosters)
-    const effectiveRotationPosters = (defaultAutoRotateClean && isClean && isNewMapping
-      ? posters.filter(p => p.iso_639_1 === null).map(p => p.file_path)
-      : nextRotationPosters
-    ).filter((path) => !excludedSet.has(path))
+    const baseRotationPosters = nextRotationPosters.length > 0
+      ? nextRotationPosters
+      : defaultAutoRotateClean && isClean && isNewMapping
+        ? posters.filter(p => p.iso_639_1 === null).map(p => p.file_path)
+        : []
+    const effectiveRotationPosters = baseRotationPosters.filter((path) => !excludedSet.has(path))
     try {
       await http("/api/mappings", {
         method: "POST",

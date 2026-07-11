@@ -15,6 +15,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { computeLogoLayout } from "@/lib/logo-layout"
+import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { RENDER_VERSION } from "@/lib/render-version"
 import {
   beginPosterRender,
@@ -50,6 +51,13 @@ const BADGE_CACHE_TTL = 24 * 60 * 60 * 1000
 
 function badgeCacheKey(type: string, ...parts: (string | number | boolean | undefined | null)[]): string {
   return `badge:${type}:${parts.map(p => typeof p === "number" ? Math.round(p * 10) / 10 : (p ?? "x")).join(":")}`
+}
+
+function queryNumber(searchParams: URLSearchParams, key: string): number | null {
+  const value = searchParams.get(key)
+  if (!value) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 const badgeInflight = new Map<string, Promise<unknown>>()
@@ -220,7 +228,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         if (logoPath) {
-          posterPath = clean.file_path
+          posterPath = sd.defaultLogoFitEnabled
+            ? await selectBestLogoFitPosterPath({
+                posters: images.posters,
+                logoPath,
+                fetchImage: (path) => fetchImg(imgSrc(path)),
+                logoScale: queryNumber(req.nextUrl.searchParams, "scale"),
+                logoOffsetX: queryNumber(req.nextUrl.searchParams, "ox"),
+                logoOffsetY: queryNumber(req.nextUrl.searchParams, "oy"),
+                hasBadges: showBadges && !!genreName && !!voteAverage && voteAverage > 0,
+              }) ?? clean.file_path
+            : clean.file_path
         } else {
           const itPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === "it")
           const enPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === "en")
@@ -562,10 +580,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       .filter((layer): layer is PosterComposite => layer !== null)
     const compositedBase = await renderCompositeLayers(renderBaseBuf, safeComposites, STD_W, STD_H)
     const composited = STD_W === OUTPUT_W && STD_H === OUTPUT_H
-      ? await sharp(compositedBase).jpeg({ quality: 70 }).toBuffer()
+      ? await sharp(compositedBase).jpeg({ quality: 80 }).toBuffer()
       : await sharp(compositedBase)
         .resize(OUTPUT_W, OUTPUT_H, { fit: "cover" })
-        .jpeg({ quality: 70 })
+.jpeg({ quality: 80 })
         .toBuffer()
 
     const payload = { buffer: composited, etag }

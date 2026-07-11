@@ -74,6 +74,9 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
     if (populatedRotationRef.current) return
     populatedRotationRef.current = true
     p.setRotationPosters(topFitRotationPosters)
+    if (p.defaultAutoRotateClean && topFitRotationPosters.length > 1) {
+      p.setAutoRotateClean(true)
+    }
   }, [topFitRotationPosters, fitLoading]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only on fit results
 
   const [sortByFit, setSortByFit] = useState(false)
