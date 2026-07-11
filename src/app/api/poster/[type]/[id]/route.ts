@@ -580,10 +580,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       .filter((layer): layer is PosterComposite => layer !== null)
     const compositedBase = await renderCompositeLayers(renderBaseBuf, safeComposites, STD_W, STD_H)
     const composited = STD_W === OUTPUT_W && STD_H === OUTPUT_H
-      ? await sharp(compositedBase).jpeg({ quality: 80 }).toBuffer()
+      ? await sharp(compositedBase).jpeg({ quality: 70 }).toBuffer()
       : await sharp(compositedBase)
         .resize(OUTPUT_W, OUTPUT_H, { fit: "cover" })
-.jpeg({ quality: 80 })
+.jpeg({ quality: 70 })
         .toBuffer()
 
     const payload = { buffer: composited, etag }
