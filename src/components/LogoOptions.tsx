@@ -97,6 +97,11 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
           <Check className="w-3 h-3" />Logo selezionato
         </div>
       )}
+      {!selectedLogo && (
+        <button disabled={disabled} onClick={() => p.setLogoDisabled(!p.logoDisabled)} className={`mt-3 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : p.logoDisabled ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"}`}>
+          <span className="flex items-center justify-center gap-1.5">{p.logoDisabled ? "Loghi disabilitati" : "Disabilita loghi"}</span>
+        </button>
+      )}
       {selectedLogo && (
         <button disabled={disabled} onClick={removeLogo} className={`mt-2 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-red-300 hover:border-red-500/30"}`}>
           <span className="flex items-center justify-center gap-1.5"><Trash2 className="w-3 h-3" />{p.t("ui.removeLogo")}</span>

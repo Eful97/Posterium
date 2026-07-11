@@ -50,6 +50,8 @@ interface PosterSaveDeps {
   defaultAutoRotateClean: boolean
   excludedPosters: string[]
   accentColor: string
+  logoDisabled: boolean
+  setLogoDisabled: (v: boolean) => void
   setLogoScale: (v: number) => void
   setLogoOffsetX: (v: number) => void
   setLogoOffsetY: (v: number) => void
@@ -72,7 +74,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle,
     blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
-    rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor,
+    rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
     setLogoScale, setLogoOffsetX, setLogoOffsetY,
   } = deps
 
@@ -84,6 +86,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
 
   const selectLogo = useCallback(async (logo: TMDBImage) => {
     setSelectedLogo(logo)
+    setLogoDisabled(false)
     if (logo.width && logo.height) {
       const maxH = Math.round(1500 * 0.25)
       const effW = Math.round(maxH * logo.width / logo.height)
@@ -124,6 +127,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
         genreName: metaInfo.genres[0]?.name || null,
         voteAverage: metaInfo.voteAverage || null,
         trendRank: trendRank ?? null,
+        logoDisabled: true,
       }),
     })
     import("sonner").then(({ toast }) => toast(t("ui.logoRemoved")))
@@ -215,6 +219,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
           cleanPosterUpdatedAt: new Date().toISOString(),
           autoRotateClean: effectiveRotationPosters.length > 1 ? (defaultAutoRotateClean && isClean && isNewMapping ? true : autoRotateClean) : undefined,
           excludedPosters: nextExcludedPosters.length > 0 ? nextExcludedPosters : undefined,
+          logoDisabled: logoDisabled || undefined,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)

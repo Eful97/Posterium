@@ -55,6 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     releaseDate: parsed.data.releaseDate ?? existing.releaseDate,
     firstAirDate: parsed.data.firstAirDate ?? existing.firstAirDate,
     backdropPath: parsed.data.backdropPath ?? existing.backdropPath,
+    logoDisabled: parsed.data.logoDisabled ?? existing.logoDisabled,
     tmdbId: existing.tmdbId,
     mediaType: existing.mediaType,
     updatedAt: new Date().toISOString(),

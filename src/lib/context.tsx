@@ -169,6 +169,8 @@ export interface PosteriumCtx {
   setAutoRotateClean: React.Dispatch<React.SetStateAction<boolean>>
   excludedPosters: string[]
   setExcludedPosters: React.Dispatch<React.SetStateAction<string[]>>
+  logoDisabled: boolean
+  setLogoDisabled: React.Dispatch<React.SetStateAction<boolean>>
   autoSaveExcludedPosters: (nextExcluded: string[], nextRotationPosters?: string[], nextPreviewPoster?: TMDBImage) => Promise<void>
 }
 
@@ -214,6 +216,7 @@ export function usePosterium(): PosteriumCtx {
   const [rotationPosters, setRotationPosters] = useState<string[]>([])
   const [autoRotateClean, setAutoRotateClean] = useState(false)
   const [excludedPosters, setExcludedPosters] = useState<string[]>([])
+  const [logoDisabled, setLogoDisabled] = useState(false)
 
   const [loadingImages, setLoadingImages] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
@@ -530,6 +533,20 @@ export function usePosterium(): PosteriumCtx {
         if (existing.logoPath) {
           foundLogo = (data.logos || []).find((l: TMDBImage) => l.file_path === existing.logoPath)
           navigation.setSelectedLogo(foundLogo ? { file_path: foundLogo.file_path, iso_639_1: existing.language, vote_average: 0, width: foundLogo.width, height: foundLogo.height } : { file_path: existing.logoPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
+        } else if (!existing.logoDisabled) {
+          const langLogo = (data.logos || []).find((l: TMDBImage) => l.iso_639_1 === lang)
+          const itLogo = lang !== "it" ? (data.logos || []).find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
+          const enLogo = lang !== "en" ? (data.logos || []).find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
+          const firstLogo = (data.logos || [])[0]
+          const autoLogo = langLogo || itLogo || enLogo || firstLogo
+          if (autoLogo) {
+            navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
+            if (autoLogo.width && autoLogo.height) {
+              const maxH = Math.round(1500 * 0.25)
+              const effW = Math.round(maxH * autoLogo.width / autoLogo.height)
+              setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
+            }
+          }
         }
         setLogoScale(existing.logoScale ?? 75)
         setLogoOffsetX(existing.logoOffsetX ?? 0)
@@ -555,11 +572,13 @@ export function usePosterium(): PosteriumCtx {
         setRotationPosters(existing.cleanPosters || [])
         setAutoRotateClean(existing.autoRotateClean ?? false)
         setExcludedPosters(existing.excludedPosters || [])
+        setLogoDisabled(existing.logoDisabled ?? false)
       } else {
         setCustomBadge(null)
         setRotationPosters([])
         setAutoRotateClean(false)
         setExcludedPosters([])
+        setLogoDisabled(false)
         setLogoScale(75)
         setLogoOffsetX(0)
         setLogoOffsetY(0)
@@ -628,7 +647,7 @@ export function usePosterium(): PosteriumCtx {
     setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
-    rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor,
+    rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
     setLogoScale, setLogoOffsetX, setLogoOffsetY,
   })
 
@@ -712,6 +731,7 @@ export function usePosterium(): PosteriumCtx {
     rotationPosters, setRotationPosters,
     autoRotateClean, setAutoRotateClean,
     excludedPosters, setExcludedPosters,
+    logoDisabled, setLogoDisabled,
     autoSaveExcludedPosters,
     t,
   // eslint-disable-next-line react-hooks/exhaustive-deps -- context value deps intentionally stable to prevent re-render cascades
@@ -730,7 +750,7 @@ export function usePosterium(): PosteriumCtx {
     langOpen, settingsOpen, showLangPicker,
     tmdbKeyInput, showKey, copied,
     accentColor,
-    topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, autoSaveExcludedPosters,
+    topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, logoDisabled, setLogoDisabled, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
   ])

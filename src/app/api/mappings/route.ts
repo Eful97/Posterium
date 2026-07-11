@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     releaseDate: parsed.data.releaseDate ?? undefined,
     firstAirDate: parsed.data.firstAirDate ?? undefined,
     backdropPath: parsed.data.backdropPath ?? null,
+    logoDisabled: parsed.data.logoDisabled ?? undefined,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidate("poster")

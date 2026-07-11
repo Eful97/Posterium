@@ -91,4 +91,5 @@ export interface Mapping {
   excludedPosters?: string[] | null
   defaultBadgeStyle?: string | null
   defaultRankingBadgeStyle?: string | null
+  logoDisabled?: boolean | null
 }
