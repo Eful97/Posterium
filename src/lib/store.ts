@@ -59,11 +59,11 @@ function isNodeError(error: unknown): error is NodeJS.ErrnoException {
 }
 
 async function ensureDataDir() {
-  try {
-    await fsp.mkdir(DATA_DIR, { recursive: true })
-  } catch (e) {
-    console.error("[store] Failed to create data dir:", e)
-  }
+  await fsp.mkdir(DATA_DIR, { recursive: true }).catch((e) => {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error(`[store] Failed to create data dir '${DATA_DIR}': ${msg}`)
+    throw new Error(`Cannot create data directory: ${msg}`)
+  })
 }
 
 async function loadFromDisk(): Promise<Record<string, Mapping>> {
@@ -83,11 +83,13 @@ async function persist(data: Record<string, Mapping>) {
   try {
     await fsp.writeFile(DATA_FILE, JSON.stringify(data, null, 2))
   } catch (e) {
-    console.error(`[store] Failed to write mappings to ${DATA_FILE}:`, e)
     const msg = e instanceof Error ? e.message : String(e)
+    console.error(`[store] Failed to write mappings to ${DATA_FILE}: ${msg}`)
     if (msg.includes("EACCES") || msg.includes("EPERM")) {
       console.error(`[store] Permission error — check that '${DATA_DIR}' is writable by the current user`)
+      console.error(`[store] If using HF Storage Bucket, verify it's linked in Space Settings → Storage`)
     }
+    throw new Error(`Cannot persist mappings: ${msg}`)
   }
 }
 
