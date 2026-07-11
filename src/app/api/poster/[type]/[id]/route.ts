@@ -71,17 +71,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const sd = getServerDefaults()
   const mapping = await getById(mediaType, tmdbId)
 
-  // Auto-rotate clean poster
-  if (mapping && mapping.autoRotateClean && mapping.cleanPosters && mapping.cleanPosters.length > 1) {
+  // Auto-rotate clean poster (sequential, not random)
+  const isRotating = !!(mapping && mapping.autoRotateClean && mapping.cleanPosters && mapping.cleanPosters.length > 1)
+  if (isRotating) {
     const lastUpdate = mapping.cleanPosterUpdatedAt ? new Date(mapping.cleanPosterUpdatedAt).getTime() : 0
     const now = Date.now()
     if (now - lastUpdate > 24 * 60 * 60 * 1000) {
-      const newIndex = Math.floor(Math.random() * mapping.cleanPosters.length)
-      const newPosterPath = mapping.cleanPosters[newIndex]
+      const currentIdx = mapping.cleanPosterIndex ?? -1
+      const posters = mapping.cleanPosters!
+      const newIndex = currentIdx < 0 ? 0 : (currentIdx + 1) % posters.length
+      const newPosterPath = posters[newIndex]
       if (newPosterPath !== mapping.posterPath) {
         mapping.posterPath = newPosterPath
         mapping.cleanPosterIndex = newIndex
         mapping.cleanPosterUpdatedAt = new Date(now).toISOString()
+        mapping.updatedAt = new Date(now).toISOString()
         try {
           await upsert(mapping)
         } catch (error) {
@@ -96,8 +100,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const sdHash = hashKey(JSON.stringify(sd))
   const cacheParams = normalizePosterCacheParams(req.nextUrl.searchParams)
   const cachedRank = mapping?.trendRank ?? null
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}`
-  const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams)
+  const rotateKey = isRotating ? `:ci${mapping.cleanPosterIndex}:u${mapping.updatedAt}` : ""
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}`
+  const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams) && !isRotating
   const refreshRequest = isPosterRefreshRequest(req.nextUrl.searchParams)
 
   // 3. Memory cache check (no network)
