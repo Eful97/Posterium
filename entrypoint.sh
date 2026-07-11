@@ -63,4 +63,4 @@ else
 fi
 
 echo "[entrypoint] ============================================"
-exec su -s /bin/sh -m nextjs -c "exec node server.js"
+exec su -s /bin/sh nextjs -c "exec env POSTERIUM_DATA_DIR=$DATA_DIR node server.js"
