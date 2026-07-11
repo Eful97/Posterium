@@ -125,15 +125,15 @@ async function logoAvgColor(logoBuffer: Buffer): Promise<{ r: number; g: number;
     }
   }
   return count > 0
-    ? { r: rSum / count / 255, g: gSum / count / 255, b: bSum / count / 255 }
-    : { r: 0.5, g: 0.5, b: 0.5 }
+    ? { r: rSum / count, g: gSum / count, b: bSum / count }
+    : { r: 128, g: 128, b: 128 }
 }
 
 function colorDistance(a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }): number {
   const dr = a.r - b.r
   const dg = a.g - b.g
   const db = a.b - b.b
-  return Math.sqrt(dr * dr + dg * dg + db * db) / Math.sqrt(3)
+  return Math.sqrt(dr * dr + dg * dg + db * db) / 441.67
 }
 
 async function logoAvgLuma(logoBuffer: Buffer): Promise<number> {
@@ -206,12 +206,14 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
     contrast = clamp(rawContrast * 1.8, 0, 1)
 
     const logoColor = await logoAvgColor(logoBuffer)
-    const bgR = analysis.meanR / 255
-    const bgG = analysis.meanG / 255
-    const bgB = analysis.meanB / 255
-    const colorDist = colorDistance(logoColor, { r: bgR, g: bgG, b: bgB })
-    const colorSimilarityPenalty = colorDist < 0.28 ? (1 - colorDist / 0.28) * 0.35 : 0
-    contrast = contrast * (1 - colorSimilarityPenalty)
+    const bgColor = { r: analysis.meanR, g: analysis.meanG, b: analysis.meanB }
+    const chromaDistance = colorDistance(logoColor, bgColor)
+    const chromaMultiplier = chromaDistance < 0.28
+      ? 0.65 + chromaDistance / 0.28 * 0.35
+      : 1
+    contrast = contrast * chromaMultiplier
+
+    if (chromaDistance < 0.20) reasons.push("Colore logo simile allo sfondo")
 
     if (contrast > 0.55) reasons.push("Buon contrasto logo/sfondo")
     else if (contrast < 0.25) reasons.push("Scarso contrasto logo/sfondo")
@@ -240,13 +242,17 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
 
   // When contrast is poor, penalize the overall score multiplicatively
   const contrastMultiplier = Math.min(1, contrast * 2.5 + 0.25)
-  const score = clamp(
+  let score = clamp(
     (cleanliness * 0.35 +
     contrast * 0.30 +
     lowDetailScore * 0.25 +
     badgeReadability * 0.10) * contrastMultiplier,
     0, 1,
   )
+
+  if (contrast < 0.35) {
+    score = Math.min(score, 0.55)
+  }
 
   return {
     posterPath,

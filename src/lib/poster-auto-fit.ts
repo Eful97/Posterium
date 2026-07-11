@@ -250,6 +250,22 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
   )
 
   withPenalty.sort((a, b) => b.adjustedScore - a.adjustedScore)
+
+  // Tie-breaker: when top 2 are very close, amplify TMDB/text penalties
+  if (withPenalty.length >= 2) {
+    const diff = withPenalty[0].adjustedScore - withPenalty[1].adjustedScore
+    if (diff < 0.08) {
+      for (const entry of withPenalty) {
+        const posterEntry = usablePosters.find((p) => p.posterPath === entry.posterPath)
+        if (!posterEntry) continue
+        const extraBonus = clamp((posterEntry.voteAverage - 4) / 6, 0, 1) * 0.06
+        const textBoost = (entry.textPenalty ?? 0) * 0.10
+        entry.adjustedScore = entry.adjustedScore + extraBonus - textBoost
+      }
+      withPenalty.sort((a, b) => b.adjustedScore - a.adjustedScore)
+    }
+  }
+
   const best = withPenalty[0]
 
   if (best?.posterPath) {

@@ -186,6 +186,19 @@ describe("scorePosterLogoFit", () => {
     expect(result).toHaveProperty("reasons")
     expect(Array.isArray(result.reasons)).toBe(true)
   })
+  it("penalizes yellow logo on yellow poster vs yellow logo on dark poster", async () => {
+    const yellowLogo = await makeLogo(200, 80, 255, 210, 0)
+    const yellowPoster = await makeSolidPoster(240, 200, 20)
+    const darkPoster = await makeSolidPoster(20, 20, 30)
+
+    const [yellowResult, darkResult] = await Promise.all([
+      scorePosterLogoFit({ posterBuffer: yellowPoster, logoBuffer: yellowLogo, logoScale: 75, logoOffsetX: 0, logoOffsetY: 0, hasBadges: true }),
+      scorePosterLogoFit({ posterBuffer: darkPoster, logoBuffer: yellowLogo, logoScale: 75, logoOffsetX: 0, logoOffsetY: 0, hasBadges: true }),
+    ])
+
+    expect(darkResult.score).toBeGreaterThan(yellowResult.score)
+    expect(darkResult.metrics.contrast).toBeGreaterThan(yellowResult.metrics.contrast)
+  })
 })
 
 describe("rankPostersByFit", () => {
