@@ -3,8 +3,10 @@
 import { useState, useRef, useEffect } from "react"
 import { useP } from "@/lib/context"
 import { toSearchResult } from "@/lib/types"
+import { LANG_NAMES, groupBy } from "@/lib/utils"
 import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
+import { EditorPanel } from "@/components/EditorPanel"
 import { Toggle } from "@/components/Toggle"
 import { SliderRow } from "@/components/SliderRow"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "@/lib/awards"
@@ -110,211 +112,220 @@ export default function EditView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- p is stable; only specific methods used
   }, [p.setSettingsOpen, p.setShowLangPicker, p.saveConfig])
 
-  const posterCol = (
-    <div className="w-full md:w-72 xl:w-80 2xl:w-96 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-1 space-y-4" style={{ animationDelay: "0ms", animationFillMode: "backwards" }}>
-      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
-        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.posterSection")}</h3>
-        {p.loadingImages ? <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div> : <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} lang={p.lang} openSections={p.openSections} posterScrollRef={p.posterScrollRef} toggleSection={p.toggleSection} selectPoster={p.selectPoster} />}
-      </div>
-    </div>
-  )
-
-  const previewCol = (
-    <div className="w-full max-w-[400px] md:w-[400px] xl:max-w-[520px] 2xl:max-w-[600px] shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-2" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
-      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3 overflow-hidden">
-        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1 text-center">{p.t("ui.previewSection")}</h3>
-        <div className="bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
-        <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
-          {p.previewUrl ? (
-            <>
-              <div className="loading-bar-overlay" style={{ opacity: previewLoading ? 1 : 0, pointerEvents: "none" }} />
-              <div className="loading-bar-container" style={{ opacity: previewLoading ? 1 : 0, transition: "opacity 0.3s ease" }}>
-                <div className="loading-bar-track" style={{ transform: `scaleX(${loadProgress / 100})`, transformOrigin: "left" }} />
-                <span className="loading-bar-text">{loadProgress}%</span>
-              </div>
-              {imgSrc && (
-                /* eslint-disable-next-line @next/next/no-img-element -- server-rendered poster */
-                <img
-                  src={imgSrc}
-                  alt={p.selected?.title || p.selected?.name || ""}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              )}
-            </>
-          ) : p.selected ? (
-            <div className="absolute inset-0 bg-zinc-800/50 animate-pulse rounded-2xl" />
-          ) : null}
-          {imageError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 text-center p-8 z-20">
-              <ImageOff className="w-12 h-12 mb-3 text-zinc-500" />
-              <p className="text-sm text-zinc-400 font-medium">{p.t("ui.imageNotAvailable")}</p>
-              <p className="text-xs text-zinc-500 mt-1">{p.t("ui.posterLoadError")}</p>
-              <button onClick={() => setImageError(false)} className="mt-3 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg transition-all duration-150"><span className="flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />{p.t("ui.retry")}</span></button>
-            </div>
-          )}
-        </div>
-        </div>
-      </div>
-      {p.selected && (
-        <div className="text-center select-text mt-3">
-          <h2 className="text-xl font-bold [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_2px_8px_rgba(0,0,0,0.7)]">{p.titleOf(p.selected)}</h2>
-          <p className="text-sm text-zinc-300 mt-0.5 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">{p.yearOf(p.selected)} {p.selected.media_type === "movie" ? p.t("ui.movie") : p.t("ui.tvSeries")}</p>
-          <p className="text-sm text-zinc-400 mt-1">TMDB: <a href={`https://www.themoviedb.org/${p.selected.media_type}/${p.selected.id}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline underline-offset-2">{p.selected.id}</a>{p.selected.imdb_id ? <> • IMDB: <a href={`https://www.imdb.com/title/${p.selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline underline-offset-2">{p.selected.imdb_id}</a></> : ""}</p>
-        </div>
-      )}
-      {p.previewPoster && p.selected && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          <button onClick={p.saveConfig} className="flex-1 min-w-0 py-3 px-4 btn-primary font-bold active:scale-[0.97]">{p.t("ui.savePoster")}</button>
-          <button onClick={() => {
-            if (!p.selected || !p.previewPoster) return
-            const url = buildPreviewUrl(p, {
-              globalBadges: p.globalBadges,
-              rankingBadges: p.rankingBadges,
-              badgeStyle: p.badgeStyle,
-              rankingBadgeStyle: p.rankingBadgeStyle,
-              customBadge: p.customBadge,
-              gradientHeight: p.gradientHeight,
-              blurIntensity: p.blurIntensity,
-              blurFade: p.blurFade,
-              blurDarkness: p.blurDarkness,
-              blurEnabled: p.blurEnabled,
-            })
-            if (!url) return
-            window.open(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`, "_blank")
-          }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">{p.t("ui.testUrl")}</button>
-          {(() => {
-            const selected = p.selected
-            if (!selected) return null
-            const key = `${selected.media_type}:${selected.id}`
-            const hasMapping = p.mappingsMap.get(key)
-            if (!hasMapping) return null
-            return (
-              <button onClick={() => { p.removeMapping(hasMapping); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="py-3 px-4 rounded-xl text-sm font-semibold bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.97] transition-all duration-200">{p.t("ui.remove")}</button>
-            )
-          })()}
-        </div>
-      )}
-      <p className="text-xs text-zinc-400 text-center mt-3">{p.selectedLogo ? p.t("ui.logoSelected") : p.previewPoster?.iso_639_1 === null ? `${p.t("ui.clean")} ${p.t("ui.selected").toLowerCase()}` : p.previewPoster ? p.t("ui.logoHint") : p.t("ui.noPosterSelected")}</p>
-    </div>
-  )
-
   const cleanPoster = p.previewPoster?.iso_639_1 === null
 
-  const logoCol = (
-    <div className="w-full md:w-72 xl:w-80 2xl:w-96 shrink-0 self-start md:sticky md:top-4 animate-fade-scale-in md:order-3 space-y-4" style={{ animationDelay: "120ms", animationFillMode: "backwards" }}>
-      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3">
-        <div className="flex mb-3 px-1">
-          <button onClick={() => setActiveRightTab("logo")} className={`flex-1 h-7 rounded-lg text-[11px] font-semibold transition-all ${activeRightTab === "logo" ? "bg-white/10 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"}`}>{p.t("ui.logoSection")}</button>
-          {cleanPoster && <button onClick={() => setActiveRightTab("badge")} className={`flex-1 h-7 rounded-lg text-[11px] font-semibold transition-all ${activeRightTab === "badge" ? "bg-white/10 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"}`}>{p.t("ui.badgeSection")}</button>}
-          {cleanPoster && p.selectedLogo && <button onClick={() => setActiveRightTab("transform")} className={`flex-1 h-7 rounded-lg text-[11px] font-semibold transition-all ${activeRightTab === "transform" ? "bg-white/10 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"}`}>{p.t("ui.transform")}</button>}
-        </div>
-        {activeRightTab === "logo" && <>
-          <LogoOptions logos={p.logos} selectedLogo={p.selectedLogo} lang={p.lang} selectLogo={p.selectLogo} removeLogo={p.removeLogo} disabled={!cleanPoster} />
-          {!cleanPoster && <p className="text-xs text-zinc-500 text-center mt-2 px-1">{p.t("ui.logoHint")}</p>}
-        </>}
-        {activeRightTab === "badge" && <>
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs text-zinc-400">{p.t("ui.trendBadge")}</span>
-              <Toggle value={p.rankingBadges} onChange={(v) => p.setRankingBadges(v)} />
-            </div>
-            <div className="mt-2 pt-2 border-t border-zinc-800/60">
-              <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleRankingExtra")}</label>
-              <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
-                  {(["default","bar","colored"] as const).map(s => (
-                    <button key={s} onClick={() => p.setRankingBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.rankingBadgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "default" ? <><Circle className="w-3 h-3" /> {p.t("ui.bsDefault")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</button>
-                  ))}
-              </div>
-            </div>
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs text-zinc-400">{p.t("ui.genreRatingBadge")}</span>
-              <Toggle value={p.globalBadges} onChange={(v) => p.setGlobalBadges(v)} />
-            </div>
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs text-zinc-500">{p.t("ui.customBadge")}</span>
-              {p.editingValue === "customBadge" ? (
-                <input autoFocus value={p.editText} onChange={(e) => p.setEditText(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => { const v = p.editText.trim(); p.setCustomBadge(v || null); p.setEditingValue(null) }} onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }} className="w-28 text-right text-xs bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent" placeholder={p.t("ui.customBadgePlaceholder")} />
-              ) : (
-                <select value={p.customBadge ?? "__auto__"} onChange={(e) => {
-                  const v = e.target.value
-                  if (v === "__custom__") { p.setEditText(""); p.setEditingValue("customBadge") }
-                  else if (v === "__auto__") p.setCustomBadge(null)
-                  else p.setCustomBadge(v)
-                }} className="w-28 text-right text-xs bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent cursor-pointer">
-                  <option value="__auto__">{p.t("ui.auto")}</option>
-                  {(() => {
-                    const s = p.selected
-                    if (!s) return null
-                    const twoWeeks = 14 * 24 * 60 * 60 * 1000
-                    const isNewMovie = s.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
-                    const isNewSeries = s.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
-                    const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards, p.t) : null
-                    const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations, p.t) : null
-                    const animeRankData = p.mdblistAnimeList?.find((a) => a.id === s.id)
-                    const animeRank = animeRankData ? animeRankData.rank : null
-                    const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
-                    const tvType = s.media_type === "tv" ? p.metaInfo.type : null
-                    const tvStatus = s.media_type === "tv" ? p.metaInfo.status : null
-                    const extra = computeExtraFallback({ mediaType: s.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus }, p.t)
-                    const options = getAllBadgeOptions({
-                      isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank,
-                      award, franchise: p.metaInfo.franchise || null, nomination, studio,
-                      director: p.metaInfo.director || null, extra,
-                      mediaType: s.media_type === "tv" ? "tv" : "movie",
-                      voteAverage: p.metaInfo.voteAverage, tvType, tvStatus,
-                    })
-                    return options.map((o) => {
-                      const display = isPrefixedKey(o) ? p.t(badgeKey(o)) : o
-                      return <option key={o} value={o}>{display}</option>
-                    })
-                  })()}
-                  <option value="__custom__">{p.t("ui.customOption")}</option>
-                </select>
-              )}
-            </div>
-          </div>
+  const leftTabs = (() => {
+    const tabs: { key: string; label: string; count: number }[] = []
+    const cleanCount = p.posters.filter((img) => img.iso_639_1 === null).length
+    if (cleanCount > 0) tabs.push({ key: "clean", label: "Clean", count: cleanCount })
+    const langGrouped = groupBy(p.posters.filter((img) => img.iso_639_1 !== null), (img) => img.iso_639_1 || "other")
+    Object.entries(langGrouped)
+      .filter(([, imgs]) => imgs.length > 0)
+      .sort(([a], [b]) => { if (a === p.lang) return -1; if (b === p.lang) return 1; if (a === "en") return -1; if (b === "en") return 1; return a.localeCompare(b) })
+      .forEach(([lang, imgs]) => tabs.push({ key: lang, label: LANG_NAMES[lang] || lang, count: imgs.length }))
+    return tabs
+  })()
 
-          <div className="mt-3 pt-3 border-t border-zinc-800/60">
-            <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleGenreBadge")}</label>
-            <div className="grid grid-cols-2 gap-1.5 px-1">
-              {(["shadow","pill","bar","colored"] as const).map(s => (
-                <button key={s} title={s === "shadow" ? p.t("ui.shadow") : s === "pill" ? p.t("ui.pill") : s === "bar" ? p.t("ui.bar") : p.t("ui.colored")} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> {p.t("ui.shadow")}</> : s === "pill" ? <><Pill className="w-3 h-3" /> {p.t("ui.pill")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-3 pt-3 border-t border-zinc-800/60">
-            <button onClick={() => p.setBlurEnabled(!p.blurEnabled)} className={`w-full mb-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/10 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}><span className="flex items-center gap-1.5 justify-center">{p.blurEnabled ? <><Check className="w-3 h-3" /> {p.t("ui.blurEnabled")}</> : <><XCircle className="w-3 h-3" /> {p.t("ui.blurDisabled")}</>}</span></button>
-            {p.blurEnabled && <div className="space-y-1 px-1"><SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={p.t("ui.height")} value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setGradientHeight(v)} onDoubleClick={() => p.setGradientHeight(30)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
-              <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={p.t("ui.intensity")} value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => p.setBlurIntensity(v)} onDoubleClick={() => p.setBlurIntensity(5)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />
-              <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={p.t("ui.fade")} value={p.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurFade(v)} onDoubleClick={() => p.setBlurFade(60)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurFade" suffix="%" />
-              <SliderRow icon={<Circle className="w-3.5   h-3.5" />} label={p.t("ui.darkness")} value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurDarkness(v)} onDoubleClick={() => p.setBlurDarkness(40)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" /></div>}
-          </div>
-        </>}
-        {activeRightTab === "transform" && <>
-          <div className="flex items-center justify-between mb-2 px-1">
-            <h4 className="text-xs font-semibold text-zinc-300">{p.t("ui.transform")}</h4>
-            <button onClick={() => { defaultLogoScale(); p.setLogoOffsetX(0); p.setLogoOffsetY(0) }} className="text-xs text-zinc-400 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">{p.t("ui.reset")}</button>
-          </div>
-          <div className="space-y-2">
-            <SliderRow icon={<Search className="w-3.5 h-3.5" />} label={p.t("ui.scale")} value={p.logoScale} min={10} max={100} boundsMin={10} boundsMax={100} onChange={p.setLogoScale} onDoubleClick={defaultLogoScale} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="scale" />
-            <SliderRow icon={<ArrowLeftRight className="w-3.5 h-3.5" />} label="X" value={p.logoOffsetX} min={p.logoBounds.minX} max={p.logoBounds.maxX} boundsMin={p.logoBounds.minX} boundsMax={p.logoBounds.maxX} onChange={p.setLogoOffsetX} onDoubleClick={() => p.setLogoOffsetX(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="ox" />
-            <SliderRow icon={<ArrowUpDown className="w-3.5 h-3.5" />} label="Y" value={p.logoOffsetY} min={p.logoBounds.minY} max={p.logoBounds.maxY} boundsMin={p.logoBounds.minY} boundsMax={p.logoBounds.maxY} onChange={p.setLogoOffsetY} onDoubleClick={() => p.setLogoOffsetY(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="oy" />
-          </div>
-        </>}
-      </div>
-    </div>
-  )
+  const rightTabs = [
+    { key: "logo", label: p.t("ui.logoSection") },
+    ...(cleanPoster ? [{ key: "badge", label: p.t("ui.badgeSection") }] : []),
+    ...(cleanPoster && p.selectedLogo ? [{ key: "transform", label: p.t("ui.transform") }] : []),
+  ]
 
   return (
     <div>
       {p.selected && (
         <div className="flex flex-col items-center">
           {searchBar}
-          <div className="flex flex-col md:flex-row gap-6 md:gap-4 xl:gap-6 justify-center items-start w-full xl:px-6 2xl:px-16">
-            {previewCol}
-            {posterCol}
-            {logoCol}
+          <div className="grid grid-cols-1 lg:grid-cols-[390px_430px_390px] gap-4 items-stretch w-full xl:px-6 2xl:px-16" style={{ minHeight: "min(680px, calc(100dvh - 300px))" }}>
+
+            {/* LEFT: Poster */}
+            <EditorPanel tabs={leftTabs} activeTab="clean">
+              {p.loadingImages ? (
+                <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div>
+              ) : (
+                <PosterOptions posters={p.posters} posterActivePath={p.posterActivePath} lang={p.lang} selectPoster={p.selectPoster} />
+              )}
+            </EditorPanel>
+
+            {/* CENTER: Preview */}
+            <EditorPanel title={p.t("ui.previewSection")}>
+              <div className="flex flex-col items-center h-full">
+                <div className="w-full max-w-[380px] bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
+                  <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
+                    {p.previewUrl ? (
+                      <>
+                        <div className="loading-bar-overlay" style={{ opacity: previewLoading ? 1 : 0, pointerEvents: "none" }} />
+                        <div className="loading-bar-container" style={{ opacity: previewLoading ? 1 : 0, transition: "opacity 0.3s ease" }}>
+                          <div className="loading-bar-track" style={{ transform: `scaleX(${loadProgress / 100})`, transformOrigin: "left" }} />
+                          <span className="loading-bar-text">{loadProgress}%</span>
+                        </div>
+                        {imgSrc && (
+                          /* eslint-disable-next-line @next/next/no-img-element -- server-rendered poster */
+                          <img
+                            src={imgSrc}
+                            alt={p.selected?.title || p.selected?.name || ""}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        )}
+                      </>
+                    ) : p.selected ? (
+                      <div className="absolute inset-0 bg-zinc-800/50 animate-pulse rounded-2xl" />
+                    ) : null}
+                    {imageError && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 text-center p-8 z-20">
+                        <ImageOff className="w-12 h-12 mb-3 text-zinc-500" />
+                        <p className="text-sm text-zinc-400 font-medium">{p.t("ui.imageNotAvailable")}</p>
+                        <p className="text-xs text-zinc-500 mt-1">{p.t("ui.posterLoadError")}</p>
+                        <button onClick={() => setImageError(false)} className="mt-3 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 rounded-lg transition-all duration-150"><span className="flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />{p.t("ui.retry")}</span></button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {p.selected && (
+                  <div className="mt-3 w-full text-center select-text">
+                    <h2 className="text-lg font-bold [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_2px_8px_rgba(0,0,0,0.7)]">{p.titleOf(p.selected)}</h2>
+                    <p className="text-xs text-zinc-300 mt-0.5 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">{p.yearOf(p.selected)} {p.selected.media_type === "movie" ? p.t("ui.movie") : p.t("ui.tvSeries")}</p>
+                    <p className="text-xs text-zinc-400 mt-1">TMDB: <a href={`https://www.themoviedb.org/${p.selected.media_type}/${p.selected.id}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline underline-offset-2">{p.selected.id}</a>{p.selected.imdb_id ? <> • IMDB: <a href={`https://www.imdb.com/title/${p.selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline underline-offset-2">{p.selected.imdb_id}</a></> : ""}</p>
+                  </div>
+                )}
+
+                {p.previewPoster && p.selected && (
+                  <div className="mt-3 w-full max-w-[380px] grid grid-cols-3 gap-2">
+                    <button onClick={p.saveConfig} className="py-2 px-3 text-[11px] font-bold btn-primary active:scale-[0.97] rounded-xl">{p.t("ui.savePoster")}</button>
+                    <button onClick={() => {
+                      if (!p.selected || !p.previewPoster) return
+                      const url = buildPreviewUrl(p, {
+                        globalBadges: p.globalBadges,
+                        rankingBadges: p.rankingBadges,
+                        badgeStyle: p.badgeStyle,
+                        rankingBadgeStyle: p.rankingBadgeStyle,
+                        customBadge: p.customBadge,
+                        gradientHeight: p.gradientHeight,
+                        blurIntensity: p.blurIntensity,
+                        blurFade: p.blurFade,
+                        blurDarkness: p.blurDarkness,
+                        blurEnabled: p.blurEnabled,
+                      })
+                      if (!url) return
+                      window.open(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`, "_blank")
+                    }} className="py-2 px-3 rounded-xl text-[11px] font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">{p.t("ui.testUrl")}</button>
+                    {(() => {
+                      const selected = p.selected
+                      if (!selected) return null
+                      const key = `${selected.media_type}:${selected.id}`
+                      const hasMapping = p.mappingsMap.get(key)
+                      if (!hasMapping) return null
+                      return (
+                        <button onClick={() => { p.removeMapping(hasMapping); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="py-2 px-3 rounded-xl text-[11px] font-semibold bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.97] transition-all duration-200">{p.t("ui.remove")}</button>
+                      )
+                    })()}
+                  </div>
+                )}
+
+                <p className="text-[11px] text-zinc-500 text-center mt-2">{p.selectedLogo ? p.t("ui.logoSelected") : p.previewPoster?.iso_639_1 === null ? `${p.t("ui.clean")} ${p.t("ui.selected").toLowerCase()}` : p.previewPoster ? p.t("ui.logoHint") : p.t("ui.noPosterSelected")}</p>
+              </div>
+            </EditorPanel>
+
+            {/* RIGHT: Edit */}
+            <EditorPanel tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
+              {activeRightTab === "logo" && <>
+                <LogoOptions logos={p.logos} selectedLogo={p.selectedLogo} lang={p.lang} selectLogo={p.selectLogo} removeLogo={p.removeLogo} disabled={!cleanPoster} />
+                {!cleanPoster && <p className="text-xs text-zinc-500 text-center mt-2 px-1">{p.t("ui.logoHint")}</p>}
+              </>}
+              {activeRightTab === "badge" && <>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs text-zinc-400">{p.t("ui.trendBadge")}</span>
+                    <Toggle value={p.rankingBadges} onChange={(v) => p.setRankingBadges(v)} />
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-zinc-800/60">
+                    <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleRankingExtra")}</label>
+                    <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
+                        {(["default","bar","colored"] as const).map(s => (
+                          <button key={s} onClick={() => p.setRankingBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.rankingBadgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "default" ? <><Circle className="w-3 h-3" /> {p.t("ui.bsDefault")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</button>
+                        ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs text-zinc-400">{p.t("ui.genreRatingBadge")}</span>
+                    <Toggle value={p.globalBadges} onChange={(v) => p.setGlobalBadges(v)} />
+                  </div>
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs text-zinc-500">{p.t("ui.customBadge")}</span>
+                    {p.editingValue === "customBadge" ? (
+                      <input autoFocus value={p.editText} onChange={(e) => p.setEditText(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => { const v = p.editText.trim(); p.setCustomBadge(v || null); p.setEditingValue(null) }} onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }} className="w-28 text-right text-xs bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent" placeholder={p.t("ui.customBadgePlaceholder")} />
+                    ) : (
+                      <select value={p.customBadge ?? "__auto__"} onChange={(e) => {
+                        const v = e.target.value
+                        if (v === "__custom__") { p.setEditText(""); p.setEditingValue("customBadge") }
+                        else if (v === "__auto__") p.setCustomBadge(null)
+                        else p.setCustomBadge(v)
+                      }} className="w-28 text-right text-xs bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent cursor-pointer">
+                        <option value="__auto__">{p.t("ui.auto")}</option>
+                        {(() => {
+                          const s = p.selected
+                          if (!s) return null
+                          const twoWeeks = 14 * 24 * 60 * 60 * 1000
+                          const isNewMovie = s.media_type === "movie" && p.metaInfo.release_date ? (now - new Date(p.metaInfo.release_date).getTime()) < twoWeeks : false
+                          const isNewSeries = s.media_type === "tv" && p.metaInfo.first_air_date ? (now - new Date(p.metaInfo.first_air_date).getTime()) < twoWeeks : false
+                          const award = p.metaInfo.awards?.length ? getAwardBadgeLabel(p.metaInfo.awards, p.t) : null
+                          const nomination = !award && p.metaInfo.nominations?.length ? getNominationBadgeLabel(p.metaInfo.nominations, p.t) : null
+                          const animeRankData = p.mdblistAnimeList?.find((a) => a.id === s.id)
+                          const animeRank = animeRankData ? animeRankData.rank : null
+                          const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
+                          const tvType = s.media_type === "tv" ? p.metaInfo.type : null
+                          const tvStatus = s.media_type === "tv" ? p.metaInfo.status : null
+                          const extra = computeExtraFallback({ mediaType: s.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus }, p.t)
+                          const options = getAllBadgeOptions({
+                            isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank,
+                            award, franchise: p.metaInfo.franchise || null, nomination, studio,
+                            director: p.metaInfo.director || null, extra,
+                            mediaType: s.media_type === "tv" ? "tv" : "movie",
+                            voteAverage: p.metaInfo.voteAverage, tvType, tvStatus,
+                          })
+                          return options.map((o) => {
+                            const display = isPrefixedKey(o) ? p.t(badgeKey(o)) : o
+                            return <option key={o} value={o}>{display}</option>
+                          })
+                        })()}
+                        <option value="__custom__">{p.t("ui.customOption")}</option>
+                      </select>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-zinc-800/60">
+                  <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleGenreBadge")}</label>
+                  <div className="grid grid-cols-2 gap-1.5 px-1">
+                    {(["shadow","pill","bar","colored"] as const).map(s => (
+                      <button key={s} title={s === "shadow" ? p.t("ui.shadow") : s === "pill" ? p.t("ui.pill") : s === "bar" ? p.t("ui.bar") : p.t("ui.colored")} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> {p.t("ui.shadow")}</> : s === "pill" ? <><Pill className="w-3 h-3" /> {p.t("ui.pill")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><Circle className="w-3 h-3" style={{color: p.accentColor !== "#555555" ? p.accentColor : undefined}} /> {p.t("ui.colored")}</>}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-zinc-800/60">
+                  <button onClick={() => p.setBlurEnabled(!p.blurEnabled)} className={`w-full mb-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-150 ${p.blurEnabled ? "bg-white/10 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}><span className="flex items-center gap-1.5 justify-center">{p.blurEnabled ? <><Check className="w-3 h-3" /> {p.t("ui.blurEnabled")}</> : <><XCircle className="w-3 h-3" /> {p.t("ui.blurDisabled")}</>}</span></button>
+                  {p.blurEnabled && <div className="space-y-1 px-1"><SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={p.t("ui.height")} value={p.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setGradientHeight(v)} onDoubleClick={() => p.setGradientHeight(30)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="gradHeight" suffix="%" />
+                    <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={p.t("ui.intensity")} value={p.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => p.setBlurIntensity(v)} onDoubleClick={() => p.setBlurIntensity(5)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurIntensity" suffix="px" />
+                    <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={p.t("ui.fade")} value={p.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurFade(v)} onDoubleClick={() => p.setBlurFade(60)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurFade" suffix="%" />
+                    <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={p.t("ui.darkness")} value={p.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setBlurDarkness(v)} onDoubleClick={() => p.setBlurDarkness(40)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="blurDarkness" suffix="%" /></div>}
+                </div>
+              </>}
+              {activeRightTab === "transform" && <>
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <h4 className="text-xs font-semibold text-zinc-300">{p.t("ui.transform")}</h4>
+                  <button onClick={() => { defaultLogoScale(); p.setLogoOffsetX(0); p.setLogoOffsetY(0) }} className="text-xs text-zinc-400 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">{p.t("ui.reset")}</button>
+                </div>
+                <div className="space-y-2">
+                  <SliderRow icon={<Search className="w-3.5 h-3.5" />} label={p.t("ui.scale")} value={p.logoScale} min={10} max={100} boundsMin={10} boundsMax={100} onChange={p.setLogoScale} onDoubleClick={defaultLogoScale} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="scale" />
+                  <SliderRow icon={<ArrowLeftRight className="w-3.5 h-3.5" />} label="X" value={p.logoOffsetX} min={p.logoBounds.minX} max={p.logoBounds.maxX} boundsMin={p.logoBounds.minX} boundsMax={p.logoBounds.maxX} onChange={p.setLogoOffsetX} onDoubleClick={() => p.setLogoOffsetX(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="ox" />
+                  <SliderRow icon={<ArrowUpDown className="w-3.5 h-3.5" />} label="Y" value={p.logoOffsetY} min={p.logoBounds.minY} max={p.logoBounds.maxY} boundsMin={p.logoBounds.minY} boundsMax={p.logoBounds.maxY} onChange={p.setLogoOffsetY} onDoubleClick={() => p.setLogoOffsetY(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="oy" />
+                </div>
+              </>}
+            </EditorPanel>
+
           </div>
         </div>
       )}

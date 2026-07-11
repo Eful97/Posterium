@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import type { TMDBImage } from "@/lib/types"
 import { LANG_NAMES, groupBy } from "@/lib/utils"
 import { PosterBtn } from "@/components/PosterBtn"
-import { CollapsibleSection } from "@/components/CollapsibleSection"
 import { useP } from "@/lib/context"
 import { usePosterFit } from "@/lib/usePosterFit"
 import { RotateCcw, Check, Clock, Sparkles, ArrowUpDown, EyeOff } from "lucide-react"
@@ -13,13 +12,10 @@ interface Props {
   posters: TMDBImage[]
   posterActivePath: string | null
   lang: string
-  openSections: Record<string, boolean>
-  posterScrollRef: React.RefObject<HTMLDivElement | null>
-  toggleSection: (key: string) => void
   selectPoster: (img: TMDBImage) => void
 }
 
-export function PosterOptions({ posters, posterActivePath, lang, openSections, posterScrollRef, toggleSection, selectPoster }: Props) {
+export function PosterOptions({ posters, posterActivePath, lang, selectPoster }: Props) {
   const p = useP()
 
   const excludedSet = useMemo(() => new Set(p.excludedPosters), [p.excludedPosters])
@@ -34,7 +30,28 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
     }),
     [lang, posters],
   )
-  const primaryLang = !hasClean && langGroups.length > 0 ? (langGroups.find(([l]) => l === lang)?.[0] || langGroups.find(([l]) => l === "en")?.[0] || langGroups[0][0]) : null
+
+  const posterTabs = useMemo(() => {
+    const tabs: { key: string; label: string; count: number }[] = []
+    if (hasClean) tabs.push({ key: "clean", label: "Clean", count: cleanPosters.length })
+    for (const [language, imgs] of langGroups) {
+      if (imgs.length > 0) tabs.push({ key: language, label: LANG_NAMES[language] || language, count: imgs.length })
+    }
+    return tabs
+  }, [hasClean, cleanPosters.length, langGroups])
+
+  const [activeGroup, setActiveGroup] = useState("clean")
+  const prevTabCountRef = useRef(posterTabs.length)
+
+  useEffect(() => {
+    if (posterTabs.length !== prevTabCountRef.current) {
+      prevTabCountRef.current = posterTabs.length
+      if (!posterTabs.some((t) => t.key === activeGroup)) {
+        setActiveGroup(posterTabs[0]?.key ?? "clean")
+      }
+    }
+  }, [posterTabs, activeGroup])
+
   let idx = 0
 
   const { bestFitPath, results, loading: fitLoading } = usePosterFit({
@@ -174,137 +191,154 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
     }
   }
 
+  const activeClean = activeGroup === "clean"
+  const activeLangImgs = !activeClean ? langGroups.find(([l]) => l === activeGroup)?.[1] ?? [] : []
+
   return (
-    <div className="relative">
-      <div ref={posterScrollRef} className="max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-none">
-      {hasClean && (() => {
-        const isOpen = openSections["clean"] !== false
-        return (
-          <CollapsibleSection isOpen={isOpen} onToggle={() => toggleSection("clean")} label={p.t("ui.clean")} count={cleanPosters.length}>
-            <div className="space-y-2 mb-2 px-1">
-              {isBestSelected && (
-                <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold text-accent-orange bg-accent-orange/10 rounded-lg">
-                  <Check className="w-3 h-3" />Best fit selezionato
-                </div>
-              )}
-              {p.rotationPosters.length > 1 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3" />{p.t("ui.autoRotate")}</span>
-                  <button
-                    onClick={toggleAutoRotateClean}
-                    className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.autoRotateClean ? "bg-accent-orange/20 text-accent-orange animate-pulse-ring" : "bg-white/5 text-zinc-400"}`}
-                  >
-                    {p.autoRotateClean ? <><Check className="w-3 h-3 inline mr-1" />ON</> : "OFF"}
-                  </button>
-                </div>
-              )}
-              {hasFitData && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-400 flex items-center gap-1"><ArrowUpDown className="w-3 h-3" />Ordine poster</span>
-                  <div className="flex rounded-lg overflow-hidden border border-white/10">
-                    <button
-                      onClick={() => setSortByFit(false)}
-                      className={`px-2 py-1 text-[11px] font-semibold transition-all ${!sortByFit ? "bg-accent-orange/20 text-accent-orange" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}
-                    >
-                      TMDB
-                    </button>
-                    <button
-                      onClick={() => setSortByFit(true)}
-                      className={`px-2 py-1 text-[11px] font-semibold transition-all ${sortByFit ? "bg-accent-orange/20 text-accent-orange" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}
-                    >
-                      Best fit
-                    </button>
-                  </div>
-                </div>
-              )}
-              {(bestPoster && !isBestSelected && !fitLoading) && (
+    <div>
+      {posterTabs.length > 1 && (
+        <div className="flex gap-1 mb-3 overflow-x-auto scrollbar-none">
+          {posterTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveGroup(tab.key)}
+              className={`h-7 px-2.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 ${
+                activeGroup === tab.key
+                  ? "bg-accent-orange/15 text-accent-orange border-accent-orange/35"
+                  : "bg-white/5 text-zinc-400 border-white/10 hover:text-zinc-200 hover:bg-white/10"
+              }`}
+            >
+              {tab.label}
+              <span className="ml-1 text-[10px] opacity-60">{tab.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {activeClean && hasClean && (
+        <div className="space-y-2 mb-2 px-1">
+          {isBestSelected && (
+            <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold text-accent-orange bg-accent-orange/10 rounded-lg">
+              <Check className="w-3 h-3" />Best fit selezionato
+            </div>
+          )}
+          {p.rotationPosters.length > 1 && (
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3" />{p.t("ui.autoRotate")}</span>
+              <button
+                onClick={toggleAutoRotateClean}
+                className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${p.autoRotateClean ? "bg-accent-orange/20 text-accent-orange animate-pulse-ring" : "bg-white/5 text-zinc-400"}`}
+              >
+                {p.autoRotateClean ? <><Check className="w-3 h-3 inline mr-1" />ON</> : "OFF"}
+              </button>
+            </div>
+          )}
+          {hasFitData && (
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-zinc-400 flex items-center gap-1"><ArrowUpDown className="w-3 h-3" />Ordine poster</span>
+              <div className="flex rounded-lg overflow-hidden border border-white/10">
                 <button
-                  onClick={() => selectPoster(bestPoster)}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 bg-accent-orange/15 text-accent-orange hover:bg-accent-orange/25 active:scale-[0.98]"
+                  onClick={() => setSortByFit(false)}
+                  className={`px-2 py-1 text-[11px] font-semibold transition-all ${!sortByFit ? "bg-accent-orange/20 text-accent-orange" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}
                 >
-                  <Sparkles className="w-3 h-3" />Scegli miglior poster
+                  TMDB
                 </button>
-              )}
-              {fitLoading && (
-                <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] text-zinc-500">
-                  <Clock className="w-3 h-3 animate-spin" />Analisi…
-                </div>
-              )}
-            </div>
-            <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
-              {displayPosters.map((img) => {
-                const stagger = idx++
-                const inRotation = p.rotationPosters.includes(img.file_path)
-                const isBestFit = bestFitPath === img.file_path
-                const showBadge = isBestFit && bestScore >= 0.45
-                const isHighScore = bestScore >= 0.65
-                return (
-                  <div key={img.file_path} className={`relative group rounded-xl overflow-hidden ${isBestFit && bestScore >= 0.45 ? `ring-1 ${isHighScore ? "ring-orange-400/70 shadow-[0_0_18px_rgba(255,100,48,0.18)]" : "ring-amber-400/50"}` : ""}`}>
-                    <PosterBtn staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/50 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
-                    {showBadge && (
-                      <div className={`absolute left-1.5 top-1.5 z-20 rounded-md border px-1.5 py-0.5 text-[8px] font-semibold backdrop-blur-md pointer-events-none ${isHighScore ? "border-orange-300/30 bg-black/60 text-orange-200" : "border-amber-300/25 bg-black/55 text-amber-200"}`}>
-                        <Sparkles className="w-2.5 h-2.5 inline mr-0.5" />
-                        {isHighScore ? "Best fit" : "Fit migliore"}
-                      </div>
-                    )}
-                    <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleRotation(img.file_path) }}
-                        className={`w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 ${inRotation ? "bg-accent-orange text-white border-accent-orange shadow-sm shadow-accent-orange/40" : "bg-black/55 border-white/10 text-zinc-200 hover:bg-accent-orange/90 hover:text-white hover:border-accent-orange/60"}`}
-                        title={inRotation ? p.t("ui.removeFromRotation") : p.t("ui.addToRotation")}
-                      >
-                        {inRotation ? <Check className="w-3.5 h-3.5" /> : <RotateCcw className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); excludePoster(img.file_path) }}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 bg-black/55 border-white/10 text-zinc-300 hover:bg-red-500/90 hover:text-white hover:border-red-400/60"
-                        title="Escludi poster"
-                      >
-                        <EyeOff className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            {p.rotationPosters.length > 0 && (
-              <p className="text-[11px] text-zinc-500 mt-1.5 px-1">{p.rotationPosters.length} {p.t("ui.selectedCount", { count: p.rotationPosters.length })}</p>
-            )}
-            {p.excludedPosters.length > 0 && (
-              <div className="mt-2 flex items-center justify-between rounded-lg border border-zinc-800/70 bg-white/5 px-2.5 py-2">
-                <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-                  <span>{p.excludedPosters.length} {p.excludedPosters.length === 1 ? 'poster escluso' : 'poster esclusi'}</span>
-                  {excludedSaveState === "saving" && <span className="text-[10px] text-zinc-500 animate-pulse">salvataggio…</span>}
-                  {excludedSaveState === "saved" && <span className="text-[10px] text-green-500">salvato</span>}
-                  {excludedSaveState === "error" && <span className="text-[10px] text-red-400">errore</span>}
-                </span>
-                <button onClick={() => { p.setExcludedPosters([]); setExcludedSaveState("saving"); p.autoSaveExcludedPosters([], p.rotationPosters).then(() => setExcludedSaveState("saved")).catch(() => setExcludedSaveState("error")) }} className="text-[11px] text-accent-orange hover:text-orange-300">
-                  Ripristina
+                <button
+                  onClick={() => setSortByFit(true)}
+                  className={`px-2 py-1 text-[11px] font-semibold transition-all ${sortByFit ? "bg-accent-orange/20 text-accent-orange" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}
+                >
+                  Best fit
                 </button>
               </div>
-            )}
-          </CollapsibleSection>
-        )
-      })()}
-
-      {langGroups.map(([language, imgs]) => {
-        if (imgs.length === 0) return null
-        const isOpen = language === primaryLang ? openSections[language] !== false : openSections[language]
-        return (
-          <CollapsibleSection key={language} isOpen={isOpen} onToggle={() => toggleSection(language)} label={LANG_NAMES[language] || language} count={imgs.length}>
-            <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
-              {imgs.map((img) => {
-                const stagger = idx++
-                return <PosterBtn key={img.file_path} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
-              })}
             </div>
-          </CollapsibleSection>
-        )
-      })}
+          )}
+          {(bestPoster && !isBestSelected && !fitLoading) && (
+            <button
+              onClick={() => selectPoster(bestPoster)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 bg-accent-orange/15 text-accent-orange hover:bg-accent-orange/25 active:scale-[0.98]"
+            >
+              <Sparkles className="w-3 h-3" />Scegli miglior poster
+            </button>
+          )}
+          {fitLoading && (
+            <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] text-zinc-500">
+              <Clock className="w-3 h-3 animate-spin" />Analisi…
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeClean && hasClean && (
+        <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
+          {displayPosters.map((img) => {
+            const stagger = idx++
+            const inRotation = p.rotationPosters.includes(img.file_path)
+            const isBestFit = bestFitPath === img.file_path
+            const showBadge = isBestFit && bestScore >= 0.45
+            const isHighScore = bestScore >= 0.65
+            return (
+              <div key={img.file_path} className={`relative group rounded-xl overflow-hidden ${isBestFit && bestScore >= 0.45 ? `ring-1 ${isHighScore ? "ring-orange-400/70 shadow-[0_0_18px_rgba(255,100,48,0.18)]" : "ring-amber-400/50"}` : ""}`}>
+                <PosterBtn staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/50 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
+                {showBadge && (
+                  <div className={`absolute left-1.5 top-1.5 z-20 rounded-md border px-1.5 py-0.5 text-[8px] font-semibold backdrop-blur-md pointer-events-none ${isHighScore ? "border-orange-300/30 bg-black/60 text-orange-200" : "border-amber-300/25 bg-black/55 text-amber-200"}`}>
+                    <Sparkles className="w-2.5 h-2.5 inline mr-0.5" />
+                    {isHighScore ? "Best fit" : "Fit migliore"}
+                  </div>
+                )}
+                <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleRotation(img.file_path) }}
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 ${inRotation ? "bg-accent-orange text-white border-accent-orange shadow-sm shadow-accent-orange/40" : "bg-black/55 border-white/10 text-zinc-200 hover:bg-accent-orange/90 hover:text-white hover:border-accent-orange/60"}`}
+                    title={inRotation ? p.t("ui.removeFromRotation") : p.t("ui.addToRotation")}
+                  >
+                    {inRotation ? <Check className="w-3.5 h-3.5" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); excludePoster(img.file_path) }}
+                    className="w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 bg-black/55 border-white/10 text-zinc-300 hover:bg-red-500/90 hover:text-white hover:border-red-400/60"
+                    title="Escludi poster"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {activeClean && !hasClean && (
+        <p className="text-center py-12 text-zinc-400 text-xs">{p.t("ui.loading")}</p>
+      )}
+
+      {!activeClean && (
+        <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
+          {activeLangImgs.map((img) => {
+            const stagger = idx++
+            return <PosterBtn key={img.file_path} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
+          })}
+        </div>
+      )}
+
+      {activeClean && p.rotationPosters.length > 0 && (
+        <p className="text-[11px] text-zinc-500 mt-1.5 px-1">{p.rotationPosters.length} {p.t("ui.selectedCount", { count: p.rotationPosters.length })}</p>
+      )}
+      {activeClean && p.excludedPosters.length > 0 && (
+        <div className="mt-2 flex items-center justify-between rounded-lg border border-zinc-800/70 bg-white/5 px-2.5 py-2">
+          <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+            <span>{p.excludedPosters.length} {p.excludedPosters.length === 1 ? 'poster escluso' : 'poster esclusi'}</span>
+            {excludedSaveState === "saving" && <span className="text-[10px] text-zinc-500 animate-pulse">salvataggio…</span>}
+            {excludedSaveState === "saved" && <span className="text-[10px] text-green-500">salvato</span>}
+            {excludedSaveState === "error" && <span className="text-[10px] text-red-400">errore</span>}
+          </span>
+          <button onClick={() => { p.setExcludedPosters([]); setExcludedSaveState("saving"); p.autoSaveExcludedPosters([], p.rotationPosters).then(() => setExcludedSaveState("saved")).catch(() => setExcludedSaveState("error")) }} className="text-[11px] text-accent-orange hover:text-orange-300">
+            Ripristina
+          </button>
+        </div>
+      )}
 
       {posters.length === 0 && <p className="text-center py-12 text-zinc-400">{p.t("ui.loading")}</p>}
     </div>
-  </div>
   )
 }
