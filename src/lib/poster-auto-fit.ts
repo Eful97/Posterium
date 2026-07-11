@@ -5,12 +5,16 @@ interface PosterCandidate {
   readonly file_path: string
   readonly iso_639_1: string | null
   readonly vote_average?: number
+  readonly width?: number
+  readonly height?: number
 }
 
 interface PosterBufferEntry {
   readonly posterPath: string
   readonly posterBuffer: Buffer
   readonly voteAverage: number
+  readonly width: number
+  readonly height: number
 }
 
 interface SelectBestLogoFitPosterInput {
@@ -95,6 +99,18 @@ function luma(r: number, g: number, b: number): number {
 
 function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val))
+}
+
+const IDEAL_ASPECT = 2 / 3
+
+function posterQualityScore(voteAverage: number, width: number, height: number): number {
+  const tmdbVote = clamp((voteAverage - 2) / 8, 0, 1)
+  const aspect = width > 0 && height > 0 ? width / height : IDEAL_ASPECT
+  const aspectDiff = Math.abs(aspect - IDEAL_ASPECT)
+  const aspectRatioScore = clamp(1 - aspectDiff / 0.3, 0, 1)
+  const pixels = width * height
+  const resolutionScore = pixels >= 500_000 ? 1 : pixels >= 200_000 ? 0.7 : pixels >= 100_000 ? 0.4 : 0.15
+  return tmdbVote * 0.50 + aspectRatioScore * 0.30 + resolutionScore * 0.20
 }
 
 async function computeTextPenalty(posterBuffer: Buffer): Promise<number> {
@@ -210,7 +226,7 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
           AUTO_FIT_TIMEOUT_MS,
         )
         if (!buf) return null
-        return { posterPath: poster.file_path, posterBuffer: buf, voteAverage: poster.vote_average ?? 0 }
+        return { posterPath: poster.file_path, posterBuffer: buf, voteAverage: poster.vote_average ?? 0, width: poster.width ?? 0, height: poster.height ?? 0 }
       } catch {
         return null
       }
@@ -244,7 +260,8 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
       if (!posterEntry) return { ...result, adjustedScore: result.score }
       const textPenalty = await computeTextPenalty(posterEntry.posterBuffer).catch(() => 0)
       const tmdbQualityBonus = clamp((posterEntry.voteAverage - 4) / 6, 0, 1) * 0.04
-      const adjustedScore = result.score * (1 - textPenalty * 0.28) + tmdbQualityBonus
+      const qualityScore = posterQualityScore(posterEntry.voteAverage, posterEntry.width, posterEntry.height)
+      const adjustedScore = result.score * (1 - textPenalty * 0.28) + tmdbQualityBonus + qualityScore * 0.06
       return { ...result, adjustedScore, textPenalty }
     }),
   )
