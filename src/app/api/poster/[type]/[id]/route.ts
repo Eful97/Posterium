@@ -112,8 +112,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const sdHash = hashKey(JSON.stringify(sd))
   const cacheParams = normalizePosterCacheParams(req.nextUrl.searchParams)
   const cachedRank = mapping?.trendRank ?? null
-  const rotateKey = isRotating ? `:ci${mapping.cleanPosterIndex}:u${mapping.updatedAt}` : ""
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}`
+  const rotateKey = isRotating ? `:ci${mapping.cleanPosterIndex}` : ""
+  const mapVersion = mapping?.updatedAt ? `:mu${mapping.updatedAt}` : ""
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}`
   const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams) && !isRotating
   const refreshRequest = isPosterRefreshRequest(req.nextUrl.searchParams)
 
@@ -237,6 +238,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                 logoOffsetX: queryNumber(req.nextUrl.searchParams, "ox"),
                 logoOffsetY: queryNumber(req.nextUrl.searchParams, "oy"),
                 hasBadges: showBadges && !!genreName && !!voteAverage && voteAverage > 0,
+                renderVersion: RENDER_VERSION,
               }) ?? clean.file_path
             : clean.file_path
         } else {
