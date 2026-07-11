@@ -57,19 +57,26 @@ async function extractRgb(buffer: Buffer, left: number, top: number, width: numb
   return { data, width: w, height: h }
 }
 
-function analyzeLuma(rgb: RgbData): { mean: number; stdDev: number; edgeAvg: number } {
+function analyzeLuma(rgb: RgbData): { mean: number; stdDev: number; edgeAvg: number; meanR: number; meanG: number; meanB: number } {
   const { data, width, height } = rgb
   const totalPixels = width * height
-  if (totalPixels === 0) return { mean: 0, stdDev: 0, edgeAvg: 0 }
+  if (totalPixels === 0) return { mean: 0, stdDev: 0, edgeAvg: 0, meanR: 0, meanG: 0, meanB: 0 }
 
   let sum = 0
+  let rSum = 0, gSum = 0, bSum = 0
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 3
       sum += luma(data[idx], data[idx + 1], data[idx + 2])
+      rSum += data[idx]
+      gSum += data[idx + 1]
+      bSum += data[idx + 2]
     }
   }
   const mean = sum / totalPixels
+  const meanR = rSum / totalPixels
+  const meanG = gSum / totalPixels
+  const meanB = bSum / totalPixels
 
   let sqSum = 0
   for (let y = 0; y < height; y++) {
@@ -96,7 +103,37 @@ function analyzeLuma(rgb: RgbData): { mean: number; stdDev: number; edgeAvg: num
   }
   const edgeAvg = edgeCount > 0 ? edgeSum / edgeCount : 0
 
-  return { mean, stdDev, edgeAvg }
+  return { mean, stdDev, edgeAvg, meanR, meanG, meanB }
+}
+
+async function logoAvgColor(logoBuffer: Buffer): Promise<{ r: number; g: number; b: number }> {
+  const { data, info } = await sharp(logoBuffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  let rSum = 0, gSum = 0, bSum = 0, count = 0
+  for (let y = 0; y < info.height; y++) {
+    for (let x = 0; x < info.width; x++) {
+      const idx = (y * info.width + x) * 4
+      if (data[idx + 3] > 32) {
+        rSum += data[idx]
+        gSum += data[idx + 1]
+        bSum += data[idx + 2]
+        count++
+      }
+    }
+  }
+  return count > 0
+    ? { r: rSum / count / 255, g: gSum / count / 255, b: bSum / count / 255 }
+    : { r: 0.5, g: 0.5, b: 0.5 }
+}
+
+function colorDistance(a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }): number {
+  const dr = a.r - b.r
+  const dg = a.g - b.g
+  const db = a.b - b.b
+  return Math.sqrt(dr * dr + dg * dg + db * db) / Math.sqrt(3)
 }
 
 async function logoAvgLuma(logoBuffer: Buffer): Promise<number> {
@@ -167,6 +204,14 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
     const bgLumaAvg = analysis.mean / 255
     const rawContrast = Math.abs(logoLumaAvg - bgLumaAvg)
     contrast = clamp(rawContrast * 1.8, 0, 1)
+
+    const logoColor = await logoAvgColor(logoBuffer)
+    const bgR = analysis.meanR / 255
+    const bgG = analysis.meanG / 255
+    const bgB = analysis.meanB / 255
+    const colorDist = colorDistance(logoColor, { r: bgR, g: bgG, b: bgB })
+    const colorSimilarityPenalty = colorDist < 0.28 ? (1 - colorDist / 0.28) * 0.35 : 0
+    contrast = contrast * (1 - colorSimilarityPenalty)
 
     if (contrast > 0.55) reasons.push("Buon contrasto logo/sfondo")
     else if (contrast < 0.25) reasons.push("Scarso contrasto logo/sfondo")
