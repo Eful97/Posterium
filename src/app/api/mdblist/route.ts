@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   try {
     for (const list of MDBLISTS) {
       const url = MDBLISTS_URL[list.key]
-      const apiKey = req.nextUrl.searchParams.get('api_key')
+      const apiKey = req.nextUrl.searchParams.get('api_key') || process.env.MDBLIST_API_KEY
       const fullUrl = `${url}/items?apikey=${apiKey}&limit=20`
       const res = await fetch(fullUrl, {
         headers: { 'Accept': 'application/json' },

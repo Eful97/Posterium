@@ -21,11 +21,9 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
     http<{ movies: Array<SearchResult & { rank: number }>; tv: Array<SearchResult & { rank: number }> }>(`/api/tmdb/trending?api_key=${tmdbKey}`, { timeout: 30000, signal })
       .then((data) => { if (signal.aborted) return; setTrending([...(data.movies || []), ...(data.tv || [])]) })
       .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load trending:", e) })
-    if (mdblistApiKey) {
-      http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal })
-        .then((data) => { if (signal.aborted) return; setMdblistAnimeList(data) })
-        .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load anime list:", e) })
-    }
+    http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal })
+      .then((data) => { if (signal.aborted) return; setMdblistAnimeList(data) })
+      .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load anime list:", e) })
     return () => { ctrl.abort() }
   }, [tmdbKey, mdblistApiKey])
 
@@ -58,9 +56,7 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
     try {
       const [trendingData, animeData] = await Promise.all([
         http<{ movies: Array<SearchResult & { rank: number }>; tv: Array<SearchResult & { rank: number }> }>(`/api/tmdb/trending?api_key=${tmdbKey}`, { timeout: 30000, signal }),
-        mdblistApiKey
-          ? http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal }).catch(() => null)
-          : Promise.resolve(null),
+        http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal }).catch(() => null),
       ])
       if (signal.aborted) return
       setTrending([...(trendingData.movies || []), ...(trendingData.tv || [])])

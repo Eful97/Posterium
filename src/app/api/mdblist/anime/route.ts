@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 const cached = cacheGet<MdblistItem[]>(cacheKey)
   if (cached) return Response.json(cached)
 
-  const mdblistKey = req.nextUrl.searchParams.get("mdblist_key")
+  const mdblistKey = req.nextUrl.searchParams.get("mdblist_key") || process.env.MDBLIST_API_KEY
   const tmdbKey = req.nextUrl.searchParams.get("api_key")
   if (!mdblistKey || !tmdbKey) return Response.json([])
 
