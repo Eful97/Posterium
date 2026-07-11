@@ -28,7 +28,9 @@ interface SelectBestLogoFitPosterInput {
   readonly renderVersion?: number
 }
 
-const MAX_AUTO_FIT_POSTERS = 20
+const MAX_AUTO_FIT_POSTERS = 10
+const TMDB_CANDIDATE_COUNT = 5
+const METADATA_CANDIDATE_COUNT = 5
 const TEXT_PENALTY_CANDIDATES = 6
 const AUTO_FIT_TIMEOUT_MS = 1200
 const CACHE_TTL = 24 * 60 * 60 * 1000
@@ -41,12 +43,8 @@ interface CacheEntry {
 
 const autoFitCache = new Map<string, CacheEntry>()
 
-function cacheKey(input: SelectBestLogoFitPosterInput, renderVersion?: number): string {
-  const posterSignature = input.posters
-    .filter((poster) => poster.iso_639_1 === null)
-    .slice(0, MAX_AUTO_FIT_POSTERS)
-    .map((poster) => poster.file_path)
-    .join(",")
+function cacheKey(candidates: readonly PosterCandidate[], input: SelectBestLogoFitPosterInput, renderVersion?: number): string {
+  const posterSignature = candidates.map((poster) => poster.file_path).join(",")
   return `auto-fit:${posterSignature}:${input.logoPath}:${input.logoScale ?? "auto"}:${input.logoOffsetX ?? 0}:${input.logoOffsetY ?? 0}:${input.hasBadges}:${renderVersion ?? 0}`
 }
 
@@ -102,6 +100,14 @@ function clamp(val: number, min: number, max: number): number {
 }
 
 const IDEAL_ASPECT = 2 / 3
+const MAX_ASPECT_DIFF = 0.08
+
+function hasPosterAspectRatio(poster: PosterCandidate): boolean {
+  const width = poster.width ?? 0
+  const height = poster.height ?? 0
+  if (width <= 0 || height <= 0) return true
+  return Math.abs(width / height - IDEAL_ASPECT) <= MAX_ASPECT_DIFF
+}
 
 function posterQualityScore(voteAverage: number, width: number, height: number): number {
   const tmdbVote = clamp((voteAverage - 2) / 8, 0, 1)
@@ -111,6 +117,35 @@ function posterQualityScore(voteAverage: number, width: number, height: number):
   const pixels = width * height
   const resolutionScore = pixels >= 500_000 ? 1 : pixels >= 200_000 ? 0.7 : pixels >= 100_000 ? 0.4 : 0.15
   return tmdbVote * 0.50 + aspectRatioScore * 0.30 + resolutionScore * 0.20
+}
+
+function posterMetadataScore(poster: PosterCandidate, index: number): number {
+  const vote = poster.vote_average ?? 0
+  const width = poster.width ?? 0
+  const height = poster.height ?? 0
+
+  const voteScore = clamp(vote / 10, 0, 1)
+  const ratio = width > 0 && height > 0 ? width / height : IDEAL_ASPECT
+  const aspectScore = clamp(1 - Math.abs(ratio - IDEAL_ASPECT) / 0.18, 0, 1)
+  const megapixels = width * height / 1_000_000
+  const resolutionScore = clamp(megapixels / 2.5, 0, 1)
+  const orderScore = clamp(1 - index / 40, 0, 1)
+
+  return voteScore * 0.40 + aspectScore * 0.25 + resolutionScore * 0.20 + orderScore * 0.15
+}
+
+function selectAutoFitCandidates(posters: readonly PosterCandidate[]): PosterCandidate[] {
+  const clean = posters.filter((poster) => poster.iso_639_1 === null && hasPosterAspectRatio(poster))
+  const firstByTmdb = clean.slice(0, TMDB_CANDIDATE_COUNT)
+  const bestByMetadata = clean
+    .slice(TMDB_CANDIDATE_COUNT)
+    .map((poster, index) => ({ poster, score: posterMetadataScore(poster, index + TMDB_CANDIDATE_COUNT) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, METADATA_CANDIDATE_COUNT)
+    .map((entry) => entry.poster)
+  return Array.from(
+    new Map([...firstByTmdb, ...bestByMetadata].map((poster) => [poster.file_path, poster])).values(),
+  ).slice(0, MAX_AUTO_FIT_POSTERS)
 }
 
 async function computeTextPenalty(posterBuffer: Buffer): Promise<number> {
@@ -190,14 +225,12 @@ async function computeTextPenalty(posterBuffer: Buffer): Promise<number> {
 }
 
 export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPosterInput): Promise<string | null> {
-  const candidates = input.posters
-    .filter((poster) => poster.iso_639_1 === null)
-    .slice(0, MAX_AUTO_FIT_POSTERS)
+  const candidates = selectAutoFitCandidates(input.posters)
 
   const firstCandidate = candidates[0]?.file_path ?? null
   if (candidates.length < 2) return firstCandidate
 
-  const key = cacheKey(input, input.renderVersion)
+  const key = cacheKey(candidates, input, input.renderVersion)
   const cached = cacheGet(key)
   if (cached) return cached
 

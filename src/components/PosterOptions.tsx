@@ -13,9 +13,12 @@ interface Props {
   posterActivePath: string | null
   lang: string
   selectPoster: (img: TMDBImage) => void
+  activeGroup?: string
+  onActiveGroupChange?: (key: string) => void
+  showTabs?: boolean
 }
 
-export function PosterOptions({ posters, posterActivePath, lang, selectPoster }: Props) {
+export function PosterOptions({ posters, posterActivePath, lang, selectPoster, activeGroup: controlledActiveGroup, onActiveGroupChange, showTabs = true }: Props) {
   const p = useP()
 
   const excludedSet = useMemo(() => new Set(p.excludedPosters), [p.excludedPosters])
@@ -40,7 +43,9 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster }:
     return tabs
   }, [hasClean, cleanPosters.length, langGroups])
 
-  const [activeGroup, setActiveGroup] = useState("clean")
+  const [internalActiveGroup, setInternalActiveGroup] = useState("clean")
+  const activeGroup = controlledActiveGroup ?? internalActiveGroup
+  const setActiveGroup = onActiveGroupChange ?? setInternalActiveGroup
   const prevTabCountRef = useRef(posterTabs.length)
 
   useEffect(() => {
@@ -50,7 +55,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster }:
         setActiveGroup(posterTabs[0]?.key ?? "clean")
       }
     }
-  }, [posterTabs, activeGroup])
+  }, [posterTabs, activeGroup, setActiveGroup])
 
   let idx = 0
 
@@ -196,7 +201,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster }:
 
   return (
     <div>
-      {posterTabs.length > 1 && (
+      {showTabs && posterTabs.length > 1 && (
         <div className="flex gap-1 mb-3 overflow-x-auto scrollbar-none">
           {posterTabs.map((tab) => (
             <button

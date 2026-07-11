@@ -145,7 +145,7 @@ export default function EditView() {
       {p.selected && (
         <div className="flex flex-col items-center">
           {searchBar}
-          <div className="grid grid-cols-1 lg:grid-cols-[390px_430px_390px] gap-4 items-stretch w-full xl:px-6 2xl:px-16 lg:h-[clamp(660px,calc(100dvh-260px),820px)] lg:min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[390px_430px_390px] gap-4 items-stretch w-full max-w-[1274px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),820px)] lg:min-h-0">
 
             {/* LEFT: Poster */}
             <EditorPanel tabs={leftTabs} activeTab={activePosterTab} onTabChange={setActivePosterTab}>

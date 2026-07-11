@@ -146,7 +146,6 @@ describe("selectBestLogoFitPosterPath", () => {
 
   it("handles partial poster fetch failures gracefully", async () => {
     const poster1 = await solidPoster("#0a0a0a")
-    const poster2 = await solidPoster("#1a1a1a")
     const logo = await solidLogo("#ffffff")
     const images = new Map([
       ["/poster1.jpg", poster1],
@@ -326,5 +325,132 @@ describe("selectBestLogoFitPosterPath", () => {
 
     expect(resultA).toBe("/a1.jpg")
     expect(resultB).toBe("/b1.jpg")
+  })
+
+  it("includes first 5 TMDB posters even if metadata is worse", async () => {
+    const darkPoster = await solidPoster("#050505")
+    const lightPoster = await solidPoster("#f5f5f5")
+    const logo = await solidLogo("#ffffff")
+    const images = new Map([
+      ["/logo.png", logo],
+    ])
+    for (let i = 0; i < 10; i++) {
+      images.set(`/p${i}.jpg`, i === 4 ? darkPoster : lightPoster)
+    }
+
+    const selected = await selectBestLogoFitPosterPath({
+      posters: Array.from({ length: 10 }, (_, i) => ({
+        file_path: `/p${i}.jpg`,
+        iso_639_1: null,
+        vote_average: i === 4 ? 1 : 9,
+        width: i === 4 ? 200 : 1000,
+        height: i === 4 ? 300 : 1500,
+      })),
+      logoPath: "/logo.png",
+      fetchImage: makeImages(images),
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+
+    expect(selected).toBe("/p4.jpg")
+  })
+
+  it("does not exceed MAX_AUTO_FIT_POSTERS", async () => {
+    const poster = await solidPoster("#050505")
+    const logo = await solidLogo("#ffffff")
+    const images = new Map([
+      ["/logo.png", logo],
+    ])
+    for (let i = 0; i < 30; i++) images.set(`/p${i}.jpg`, poster)
+
+    const posters = Array.from({ length: 30 }, (_, i) => ({
+      file_path: `/p${i}.jpg`,
+      iso_639_1: null as string | null,
+      vote_average: i % 10,
+      width: 500,
+      height: 750,
+    }))
+
+    let fetchCount = 0
+    const selected = await selectBestLogoFitPosterPath({
+      posters,
+      logoPath: "/logo.png",
+      fetchImage: async (path) => {
+        fetchCount += 1
+        return makeImages(images)(path)
+      },
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+
+    expect(selected).toBeDefined()
+    expect(fetchCount).toBeLessThanOrEqual(11)
+  })
+
+  it("avoids duplicates in candidate pool", async () => {
+    const posterA = await solidPoster("#050505")
+    const posterB = await solidPoster("#0a0a0a")
+    const logo = await solidLogo("#ffffff")
+    const images = new Map([
+      ["/a.jpg", posterA],
+      ["/b.jpg", posterB],
+      ["/logo.png", logo],
+    ])
+
+    const fetches = new Map<string, number>()
+    const selected = await selectBestLogoFitPosterPath({
+      posters: [
+        { file_path: "/a.jpg", iso_639_1: null, vote_average: 8, width: 1000, height: 1500 },
+        { file_path: "/b.jpg", iso_639_1: null, vote_average: 7, width: 800, height: 1200 },
+        { file_path: "/a.jpg", iso_639_1: null, vote_average: 8, width: 1000, height: 1500 },
+      ],
+      logoPath: "/logo.png",
+      fetchImage: async (path) => {
+        fetches.set(path, (fetches.get(path) ?? 0) + 1)
+        return makeImages(images)(path)
+      },
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+
+    expect(selected).toBeDefined()
+    expect(fetches.get("/a.jpg")).toBe(1)
+  })
+
+  it("skips clean posters with invalid poster aspect ratio", async () => {
+    const validPoster = await solidPoster("#111111")
+    const invalidPoster = await solidPoster("#000000", 1000, 1000)
+    const logo = await solidLogo("#ffffff")
+    const images = new Map([
+      ["/valid.jpg", validPoster],
+      ["/square.jpg", invalidPoster],
+      ["/logo.png", logo],
+    ])
+    const fetches = new Map<string, number>()
+
+    const selected = await selectBestLogoFitPosterPath({
+      posters: [
+        { file_path: "/square.jpg", iso_639_1: null, vote_average: 10, width: 1000, height: 1000 },
+        { file_path: "/valid.jpg", iso_639_1: null, vote_average: 4, width: 1000, height: 1500 },
+      ],
+      logoPath: "/logo.png",
+      fetchImage: async (path) => {
+        fetches.set(path, (fetches.get(path) ?? 0) + 1)
+        return makeImages(images)(path)
+      },
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+
+    expect(selected).toBe("/valid.jpg")
+    expect(fetches.get("/square.jpg")).toBeUndefined()
   })
 })
