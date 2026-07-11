@@ -21,12 +21,6 @@ interface Props {
 
 export function PosterOptions({ posters, posterActivePath, lang, openSections, posterScrollRef, toggleSection, selectPoster }: Props) {
   const p = useP()
-  const currentMappingKey = p.selected
-    ? `${p.selected.media_type}:${p.selected.id}`
-    : null
-  const isSavedPoster = currentMappingKey
-    ? p.mappings.some((m) => `${m.mediaType}:${m.tmdbId}` === currentMappingKey)
-    : false
 
   const excludedSet = useMemo(() => new Set(p.excludedPosters), [p.excludedPosters])
 
@@ -70,6 +64,18 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
       .map((result) => result.posterPath)
   }, [cleanPosters, results])
 
+  const populatedRotationRef = useRef(false)
+  useEffect(() => {
+    populatedRotationRef.current = false
+  }, [p.selected?.id])
+  useEffect(() => {
+    if (topFitRotationPosters.length === 0 || fitLoading) return
+    if (p.rotationPosters.length > 0) { populatedRotationRef.current = false; return }
+    if (populatedRotationRef.current) return
+    populatedRotationRef.current = true
+    p.setRotationPosters(topFitRotationPosters)
+  }, [topFitRotationPosters, fitLoading]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only on fit results
+
   const [sortByFit, setSortByFit] = useState(false)
   const autoSelectedFitKeyRef = useRef<string | null>(null)
 
@@ -96,7 +102,7 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
   ])
 
   useEffect(() => {
-    if (!autoSelectFitKey || !bestPoster || fitLoading || isSavedPoster) {
+    if (!autoSelectFitKey || !bestPoster || fitLoading) {
       if (!autoSelectFitKey) autoSelectedFitKeyRef.current = null
       return
     }
@@ -108,7 +114,7 @@ export function PosterOptions({ posters, posterActivePath, lang, openSections, p
     autoSelectedFitKeyRef.current = autoSelectFitKey
     setSortByFit(true)
     selectPoster(bestPoster)
-  }, [autoSelectFitKey, bestPoster, fitLoading, isBestSelected, isSavedPoster, selectPoster])
+  }, [autoSelectFitKey, bestPoster, fitLoading, isBestSelected, selectPoster])
 
   const displayPosters = useMemo(() => {
     if (!sortByFit) return cleanPosters
