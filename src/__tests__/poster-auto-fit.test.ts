@@ -219,13 +219,13 @@ describe("selectBestLogoFitPosterPath", () => {
     expect(fetchCount).toBe(0)
   })
 
-  it("poster with strong horizontal bands (fake text) gets penalized vs clean", async () => {
-    const textPoster = await posterWithTextBlock("#222222", "#cccccc", 450)
-    const cleanPoster = await solidPoster("#222222")
+  it("prefers poster without bottom text when base scores are similar", async () => {
+    const cleanPoster = await solidPoster("#1a1a2e")
+    const textPoster = await posterWithTextBlock("#1a1a2e", "#e0e0e0", 460)
     const logo = await solidLogo("#ffffff")
     const images = new Map([
-      ["/text.jpg", textPoster],
       ["/clean.jpg", cleanPoster],
+      ["/text.jpg", textPoster],
       ["/logo.png", logo],
     ])
 
@@ -243,5 +243,88 @@ describe("selectBestLogoFitPosterPath", () => {
     })
 
     expect(selected).toBe("/clean.jpg")
+  })
+
+  it("does not penalize poster with light texture below threshold", async () => {
+    const subtleTexture = await sharp({
+      create: { width: 500, height: 750, channels: 3, background: "#2a2a3e" },
+    })
+      .composite([{
+        input: Buffer.from(`<svg width="500" height="750">
+          <rect x="50" y="420" width="400" height="100" fill="#333355" opacity="0.15"/>
+        </svg>`),
+        top: 0, left: 0,
+      }])
+      .jpeg().toBuffer()
+
+    const cleanPoster = await solidPoster("#2a2a3e")
+    const logo = await solidLogo("#ffffff")
+    const images = new Map([
+      ["/subtle.jpg", subtleTexture],
+      ["/clean.jpg", cleanPoster],
+      ["/logo.png", logo],
+    ])
+
+    const selected = await selectBestLogoFitPosterPath({
+      posters: [
+        { file_path: "/subtle.jpg", iso_639_1: null },
+        { file_path: "/clean.jpg", iso_639_1: null },
+      ],
+      logoPath: "/logo.png",
+      fetchImage: makeImages(images),
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+
+    expect(selected).toBe("/subtle.jpg")
+  })
+
+  it("cache does not collide between different poster lists with same logo", async () => {
+    const posterA1 = await solidPoster("#111111")
+    const posterA2 = await solidPoster("#222222")
+    const posterB1 = await solidPoster("#333333")
+    const posterB2 = await solidPoster("#444444")
+    const logo = await solidLogo("#ffffff")
+    const images = new Map([
+      ["/a1.jpg", posterA1],
+      ["/a2.jpg", posterA2],
+      ["/b1.jpg", posterB1],
+      ["/b2.jpg", posterB2],
+      ["/logo.png", logo],
+    ])
+
+    const inputA = {
+      posters: [
+        { file_path: "/a1.jpg", iso_639_1: null },
+        { file_path: "/a2.jpg", iso_639_1: null },
+      ],
+      logoPath: "/logo.png",
+      fetchImage: makeImages(images),
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    }
+
+    const inputB = {
+      posters: [
+        { file_path: "/b1.jpg", iso_639_1: null },
+        { file_path: "/b2.jpg", iso_639_1: null },
+      ],
+      logoPath: "/logo.png",
+      fetchImage: makeImages(images),
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    }
+
+    const resultA = await selectBestLogoFitPosterPath(inputA)
+    const resultB = await selectBestLogoFitPosterPath(inputB)
+
+    expect(resultA).toBe("/a1.jpg")
+    expect(resultB).toBe("/b1.jpg")
   })
 })

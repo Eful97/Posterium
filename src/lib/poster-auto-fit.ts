@@ -4,11 +4,13 @@ import { rankPostersByFit } from "@/lib/poster-fit-score"
 interface PosterCandidate {
   readonly file_path: string
   readonly iso_639_1: string | null
+  readonly vote_average?: number
 }
 
 interface PosterBufferEntry {
   readonly posterPath: string
   readonly posterBuffer: Buffer
+  readonly voteAverage: number
 }
 
 interface SelectBestLogoFitPosterInput {
@@ -23,7 +25,7 @@ interface SelectBestLogoFitPosterInput {
 }
 
 const MAX_AUTO_FIT_POSTERS = 20
-const TEXT_PENALTY_CANDIDATES = 8
+const TEXT_PENALTY_CANDIDATES = 6
 const AUTO_FIT_TIMEOUT_MS = 1200
 const CACHE_TTL = 24 * 60 * 60 * 1000
 const CACHE_MAX_ENTRIES = 500
@@ -36,7 +38,12 @@ interface CacheEntry {
 const autoFitCache = new Map<string, CacheEntry>()
 
 function cacheKey(input: SelectBestLogoFitPosterInput, renderVersion?: number): string {
-  return `auto-fit:${input.posters.length}:${input.logoPath}:${input.logoScale ?? "auto"}:${input.logoOffsetX ?? 0}:${input.logoOffsetY ?? 0}:${input.hasBadges}:${renderVersion ?? 0}`
+  const posterSignature = input.posters
+    .filter((poster) => poster.iso_639_1 === null)
+    .slice(0, MAX_AUTO_FIT_POSTERS)
+    .map((poster) => poster.file_path)
+    .join(",")
+  return `auto-fit:${posterSignature}:${input.logoPath}:${input.logoScale ?? "auto"}:${input.logoOffsetX ?? 0}:${input.logoOffsetY ?? 0}:${input.hasBadges}:${renderVersion ?? 0}`
 }
 
 function cacheGet(key: string): string | null {
@@ -162,7 +169,8 @@ async function computeTextPenalty(posterBuffer: Buffer): Promise<number> {
   const patternScore = clamp(hPatternRatio * 3, 0, 1)
 
   const textPenalty = clamp(densityScore * 0.35 + edgeScore * 0.35 + patternScore * 0.30, 0, 1)
-  return textPenalty
+  if (textPenalty < 0.35) return 0
+  return clamp((textPenalty - 0.35) / 0.65, 0, 1)
 }
 
 export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPosterInput): Promise<string | null> {
@@ -202,7 +210,7 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
           AUTO_FIT_TIMEOUT_MS,
         )
         if (!buf) return null
-        return { posterPath: poster.file_path, posterBuffer: buf }
+        return { posterPath: poster.file_path, posterBuffer: buf, voteAverage: poster.vote_average ?? 0 }
       } catch {
         return null
       }
@@ -235,7 +243,8 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
       const posterEntry = usablePosters.find((p) => p.posterPath === result.posterPath)
       if (!posterEntry) return { ...result, adjustedScore: result.score }
       const textPenalty = await computeTextPenalty(posterEntry.posterBuffer).catch(() => 0)
-      const adjustedScore = result.score * (1 - textPenalty * 0.45)
+      const tmdbQualityBonus = clamp((posterEntry.voteAverage - 4) / 6, 0, 1) * 0.04
+      const adjustedScore = result.score * (1 - textPenalty * 0.28) + tmdbQualityBonus
       return { ...result, adjustedScore, textPenalty }
     }),
   )
