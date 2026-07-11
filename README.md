@@ -20,7 +20,7 @@ pinned: false
 
 - 🔍 **Ricerca TMDB** — Cerca film e serie TV in italiano e inglese
 - 🌐 **Internazionalizzazione** — 5 lingue (Italiano, English, Français, Deutsch, Español) per badge e UI completa
-- 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y
+- 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y, filtro per lingua (Tutti/Italiano/English/Senza lingua)
 - 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi con ombra proporzionale e text-shadow sincronizzato
 - 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, 4 stili (shadow/pill/bar/colored), con overflow protection, anno, accent color e text color adattivo
 - 🏆 **Badge ranking/extra** — Classifica JustWatch, tendenze MDBList, badge personalizzati, 3 stili (default/bar/colored)
@@ -30,6 +30,8 @@ pinned: false
 - 📋 **I miei poster** — Filtri per tipo (Film/Serie TV/Anime), ordinamento, ricerca, layout responsive
 - 🔔 **Aggiornamenti automatici** — Badge versione in alto a sinistra, notifica nuove release da GitHub
 - 🔄 **Rotazione poster clean 24h** — Seleziona più poster puliti e ruotali automaticamente ogni 24 ore, con opzione globale nelle impostazioni predefinite
+- 🧠 **Scoring automatico poster** — Algoritmo di fit scoring (pulizia, contrasto, dettaglio, badge) per selezionare il poster migliore, con ordinamento TMDB/Best fit
+- 🚫 **Blacklist poster esclusi** — Escludi singoli poster dalla selezione/rotazione per ogni titolo, con salvataggio immediato
 - ⚙️ **Impostazioni globali** — Salva stili badge, blur e rotazione come predefiniti applicati a tutti i nuovi salvataggi
 - 🏆 **Badge premi** — Vincitore e Candidato Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David da Wikidata
 - 🎬 **Badge franchise** — Marvel Cinematic Universe, Harry Potter, James Bond e 52 saghe da Wikidata (tradotte in italiano)
@@ -43,7 +45,7 @@ pinned: false
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **127 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster e parametri Stremio
+- ✅ **145 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
 
 ---
 
@@ -183,6 +185,7 @@ Genera un poster personalizzato via URL.
 | `GET /api/awards/[type]/[id]` | Premi, nomination, franchise, studio (Wikidata P166, P1411, P179) |
 | `GET /api/mdblist/anime` | Top anime MDBList |
 | `POST /api/mappings` | Salva configurazione |
+| `POST /api/poster-fit` | Scoring poster — analizza fino a 20 poster per titolo e restituisce score (pulizia, contrasto, dettaglio, badge, composito) |
 | `POST /api/cache/clear` | Svuota la cache in memoria *(protetta da `ADMIN_TOKEN` se impostato)* |
 | `POST /api/warmup` | Pre-genera poster salvati e URL Stremio per riempire runtime cache/CDN |
 
@@ -222,7 +225,7 @@ Il testo del badge ranking/extra si adatta automaticamente alla larghezza. Rende
 
 ### Logo
 
-Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabile con il mouse (drag & drop). Slider Scala/X/Y per regolazioni fini, doppio click per reset.
+Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabile con il mouse (drag & drop). Slider Scala/X/Y per regolazioni fini, doppio click per reset. Filtro per lingua (Tutti/Italiano/English/Senza lingua) con chip interattivi.
 
 ---
 
@@ -257,12 +260,12 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
 | Storage | Vercel KV / JSON file |
-| Test | Vitest (127 test) |
+| Test | Vitest (145 test) |
 | UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
 
 ### Architettura
 
-- **Hook modulari** — `useNavigation`, `useTrending`, `useSearch`, `useMappingsStore`, `useDefaults`, `usePosterSave`, `useOutsideDismiss`
+- **Hook modulari** — `useNavigation`, `useTrending`, `useSearch`, `useMappingsStore`, `useDefaults`, `usePosterSave`, `usePosterFit`, `useOutsideDismiss`
 - **API client centralizzato** — `http.ts` con timeout, retry, error handling
 - **URL builder puro** — `poster-url.ts` (buildPreviewUrl, buildUrlPattern)
 - **Badge priority** — `badge-priority.ts` (computeBadge, computeExtraFallback)
@@ -276,7 +279,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 ## 🧪 Testing
 
 ```bash
-npm test              # Esegui tutti i test (127)
+npm test              # Esegui tutti i test (145)
 npx vitest run        # Stessa cosa
 ```
 
@@ -296,6 +299,8 @@ npx vitest run        # Stessa cosa
 | `svg-badge.test.ts` | 23 | Rendering badge SVG, overflow protection, stili e dimensioni |
 | `http.test.ts` | 2 | Timeout/retry HTTP client |
 | `logo-layout.test.ts` | 2 | Dimensioni e bounds logo |
+| `poster-fit-score.test.ts` | 6 | Scoring poster-fit (pulizia, contrasto, dettaglio, badge, composito) |
+| `poster-fit-api.test.ts` | 2 | Endpoint API poster-fit, timeout, max poster |
 
 ---
 
