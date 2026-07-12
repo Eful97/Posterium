@@ -453,4 +453,56 @@ describe("selectBestLogoFitPosterPath", () => {
     expect(selected).toBe("/valid.jpg")
     expect(fetches.get("/square.jpg")).toBeUndefined()
   })
+
+  it("returns the first candidate when every fit score is weak", async () => {
+    const firstPoster = await solidPoster("#ffffff")
+    const slightlyBetterPoster = await solidPoster("#eeeeee")
+    const logo = await solidLogo("#ffffff")
+    const images = new Map([
+      ["/first.jpg", firstPoster],
+      ["/slightly-better.jpg", slightlyBetterPoster],
+      ["/logo.png", logo],
+    ])
+
+    const selected = await selectBestLogoFitPosterPath({
+      posters: [
+        { file_path: "/first.jpg", iso_639_1: null, vote_average: 5, width: 500, height: 750 },
+        { file_path: "/slightly-better.jpg", iso_639_1: null, vote_average: 9, width: 500, height: 750 },
+      ],
+      logoPath: "/logo.png",
+      fetchImage: makeImages(images),
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+
+    expect(selected).toBe("/first.jpg")
+  })
+
+  it("penalizes logo color conflicts in the logo zone", async () => {
+    const yellowConflictPoster = await solidPoster("#f6d21b")
+    const darkPoster = await solidPoster("#171717")
+    const logo = await solidLogo("#ffd21f")
+    const images = new Map([
+      ["/yellow.jpg", yellowConflictPoster],
+      ["/dark.jpg", darkPoster],
+      ["/logo.png", logo],
+    ])
+
+    const selected = await selectBestLogoFitPosterPath({
+      posters: [
+        { file_path: "/yellow.jpg", iso_639_1: null, vote_average: 9, width: 500, height: 750 },
+        { file_path: "/dark.jpg", iso_639_1: null, vote_average: 6, width: 500, height: 750 },
+      ],
+      logoPath: "/logo.png",
+      fetchImage: makeImages(images),
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+
+    expect(selected).toBe("/dark.jpg")
+  })
 })

@@ -69,12 +69,12 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
     hasBadges: p.globalBadges,
   })
 
-  const scoreMap = useMemo(() => new Map(results.map((r) => [r.posterPath, r.score])), [results])
+  const scoreMap = useMemo(() => new Map(results.map((r) => [r.posterPath, r.adjustedScore])), [results])
   const hasFitData = results.length > 0
 
-  const bestResult = results[0]
-  const bestScore = bestResult?.score ?? 0
-  const bestPoster = bestResult ? cleanPosters.find((p) => p.file_path === bestResult.posterPath) : undefined
+  const bestResult = bestFitPath ? results.find((r) => r.posterPath === bestFitPath) : undefined
+  const bestScore = bestResult?.adjustedScore ?? 0
+  const bestPoster = bestFitPath ? cleanPosters.find((p) => p.file_path === bestFitPath) : undefined
   const isBestSelected = bestPoster ? posterActivePath === bestPoster.file_path : false
 
   const isSavedPoster = useMemo(() => {

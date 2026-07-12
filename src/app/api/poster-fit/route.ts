@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import { selectAcceptedPosterPath } from "@/lib/poster-fit-adjust"
 import { rankBestFitPosters, selectAutoFitCandidates } from "@/lib/poster-auto-fit"
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
@@ -22,17 +23,21 @@ interface PosterFitEntry {
   score: number
   adjustedScore: number
   textPenalty: number
+  logoZoneScore: number
+  colorConflictPenalty: number
+  qualityScore: number
   metrics: {
     cleanliness: number
     contrast: number
     lowDetailScore: number
     badgeReadability: number
   }
-  reasons: string[]
+  reasons: readonly string[]
 }
 
 interface PosterFitResponse {
   ranked: PosterFitEntry[]
+  bestPosterPath: string | null
   total: number
   failed: number
 }
@@ -133,6 +138,9 @@ export async function POST(req: NextRequest) {
     score: r.score,
     adjustedScore: r.adjustedScore,
     textPenalty: r.textPenalty,
+    logoZoneScore: r.logoZoneScore,
+    colorConflictPenalty: r.colorConflictPenalty,
+    qualityScore: r.qualityScore,
     metrics: {
       cleanliness: r.metrics.cleanliness,
       contrast: r.metrics.contrast,
@@ -142,7 +150,12 @@ export async function POST(req: NextRequest) {
     reasons: r.reasons,
   }))
 
-  const response: PosterFitResponse = { ranked, total: candidates.length, failed }
+  const response: PosterFitResponse = {
+    ranked,
+    bestPosterPath: selectAcceptedPosterPath(rankedResults, candidates[0]?.file_path ?? null),
+    total: candidates.length,
+    failed,
+  }
 
   return Response.json(response)
 }

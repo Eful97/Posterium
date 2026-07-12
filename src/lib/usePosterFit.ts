@@ -15,8 +15,11 @@ export interface PosterFitEntry {
   score: number
   adjustedScore: number
   textPenalty: number
+  logoZoneScore: number
+  colorConflictPenalty: number
+  qualityScore: number
   metrics: PosterFitMetrics
-  reasons: string[]
+  reasons: readonly string[]
 }
 
 export interface UsePosterFitInput {
@@ -36,7 +39,12 @@ export interface UsePosterFitResult {
   error: string | null
 }
 
-const resultCache = new Map<string, PosterFitEntry[]>()
+interface PosterFitApiResponse {
+  readonly ranked: PosterFitEntry[]
+  readonly bestPosterPath: string | null
+}
+
+const resultCache = new Map<string, PosterFitApiResponse>()
 
 function serialise(input: UsePosterFitInput): string | null {
   if (!input.enabled || !input.selectedLogo || input.cleanPosters.length < 2) return null
@@ -71,8 +79,8 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
 
     const cached = resultCache.get(cacheKey)
     if (cached) {
-      setResults(cached)
-      setBestFitPath(cached[0]?.posterPath ?? null)
+      setResults(cached.ranked)
+      setBestFitPath(cached.bestPosterPath)
       return
     }
 
@@ -109,12 +117,12 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
 
         if (!res.ok) throw new Error(`API returned ${res.status}`)
 
-        const data = await res.json() as { ranked: PosterFitEntry[] }
+        const data = await res.json() as PosterFitApiResponse
 
-        resultCache.set(cacheKey, data.ranked)
+        resultCache.set(cacheKey, data)
 
         setResults(data.ranked)
-        setBestFitPath(data.ranked[0]?.posterPath ?? null)
+        setBestFitPath(data.bestPosterPath)
       } catch (err) {
         if ((err as Error)?.name === "AbortError") return
       } finally {
