@@ -122,7 +122,7 @@ describe("POST /api/poster-fit", () => {
     expect(json.failed).toBe(1)
   })
 
-  it("only analyzes up to MAX_POSTERS (20)", async () => {
+  it("only analyzes up to candidate pool (5+5)", async () => {
     const posterBuf = await makePosterBuffer(20, 20, 30)
     const logoBuf = await makeLogoBuffer(255, 255, 255)
     const fetchFn = vi.fn(async (url: string) => {
@@ -136,8 +136,8 @@ describe("POST /api/poster-fit", () => {
     const res = await POST(req as any)
     expect(res.status).toBe(200)
     const json = await res.json()
-    expect(json.total).toBe(20)
-    expect(json.ranked).toHaveLength(20)
+    expect(json.total).toBeLessThanOrEqual(10)
+    expect(json.ranked.length).toBeLessThanOrEqual(10)
   })
 
   it("sorts ranked by adjustedScore descending", async () => {

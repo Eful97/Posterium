@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server"
-import { rankBestFitPosters } from "@/lib/poster-auto-fit"
+import { rankBestFitPosters, selectAutoFitCandidates } from "@/lib/poster-auto-fit"
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
-const MAX_POSTERS = 20
 const FETCH_TIMEOUT_MS = 5_000
 
 interface PosterFitBody {
@@ -58,7 +57,16 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "posterPaths and logoPath are required" }, { status: 400 })
   }
 
-  const posterPaths = body.posterPaths.slice(0, MAX_POSTERS)
+  const candidates = selectAutoFitCandidates(
+    body.posterPaths.map((file_path, index) => ({
+      file_path,
+      iso_639_1: null,
+      vote_average: body.voteAverages?.[index] ?? 0,
+      width: body.widths?.[index] ?? 0,
+      height: body.heights?.[index] ?? 0,
+    })),
+  )
+
   const posterSize = body.posterSize || "w342"
   const logoScale = body.logoScale ?? 75
   const logoOffsetX = body.logoOffsetX ?? 0
@@ -79,23 +87,23 @@ export async function POST(req: NextRequest) {
   }
 
   const settled = await Promise.allSettled(
-    posterPaths.map(async (posterPath, index) => {
+    candidates.map(async (candidate) => {
       const ac = new AbortController()
       const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS)
       try {
-        const posterUrl = `${TMDB_IMAGE_BASE}/${posterSize}${posterPath}`
+        const posterUrl = `${TMDB_IMAGE_BASE}/${posterSize}${candidate.file_path}`
         const posterBuffer = await fetchImage(posterUrl, ac.signal)
         clearTimeout(timer)
         return {
-          posterPath,
+          posterPath: candidate.file_path,
           posterBuffer,
-          voteAverage: body.voteAverages?.[index] ?? 0,
-          width: body.widths?.[index] ?? 0,
-          height: body.heights?.[index] ?? 0,
+          voteAverage: candidate.vote_average ?? 0,
+          width: candidate.width ?? 0,
+          height: candidate.height ?? 0,
         }
       } catch (err) {
         clearTimeout(timer)
-        console.warn(`[poster-fit] Skipping ${posterPath}: ${err instanceof Error ? err.message : "Unknown error"}`)
+        console.warn(`[poster-fit] Skipping ${candidate.file_path}: ${err instanceof Error ? err.message : "Unknown error"}`)
         return null
       }
     }),
@@ -134,7 +142,7 @@ export async function POST(req: NextRequest) {
     reasons: r.reasons,
   }))
 
-  const response: PosterFitResponse = { ranked, total: posterPaths.length, failed }
+  const response: PosterFitResponse = { ranked, total: candidates.length, failed }
 
   return Response.json(response)
 }

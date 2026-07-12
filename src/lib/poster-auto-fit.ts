@@ -1,7 +1,7 @@
 import sharp from "sharp"
 import { rankPostersByFit } from "@/lib/poster-fit-score"
 
-interface PosterCandidate {
+export interface PosterCandidate {
   readonly file_path: string
   readonly iso_639_1: string | null
   readonly vote_average?: number
@@ -134,7 +134,7 @@ function posterMetadataScore(poster: PosterCandidate, index: number): number {
   return voteScore * 0.40 + aspectScore * 0.25 + resolutionScore * 0.20 + orderScore * 0.15
 }
 
-function selectAutoFitCandidates(posters: readonly PosterCandidate[]): PosterCandidate[] {
+export function selectAutoFitCandidates(posters: readonly PosterCandidate[]): PosterCandidate[] {
   const clean = posters.filter((poster) => poster.iso_639_1 === null && hasPosterAspectRatio(poster))
   const firstByTmdb = clean.slice(0, TMDB_CANDIDATE_COUNT)
   const bestByMetadata = clean
