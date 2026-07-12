@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { scorePosterLogoFit, type PosterFitResult } from "@/lib/poster-fit-score"
+import { rankBestFitPosters } from "@/lib/poster-auto-fit"
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
 const MAX_POSTERS = 20
@@ -13,11 +13,16 @@ interface PosterFitBody {
   logoOffsetY?: number
   hasBadges?: boolean
   posterSize?: "w342" | "w500"
+  voteAverages?: number[]
+  widths?: number[]
+  heights?: number[]
 }
 
 interface PosterFitEntry {
   posterPath: string
   score: number
+  adjustedScore: number
+  textPenalty: number
   metrics: {
     cleanliness: number
     contrast: number
@@ -74,22 +79,20 @@ export async function POST(req: NextRequest) {
   }
 
   const settled = await Promise.allSettled(
-    posterPaths.map(async (posterPath) => {
+    posterPaths.map(async (posterPath, index) => {
       const ac = new AbortController()
       const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS)
       try {
         const posterUrl = `${TMDB_IMAGE_BASE}/${posterSize}${posterPath}`
         const posterBuffer = await fetchImage(posterUrl, ac.signal)
         clearTimeout(timer)
-        return scorePosterLogoFit({
-          posterBuffer,
-          logoBuffer,
+        return {
           posterPath,
-          logoScale,
-          logoOffsetX,
-          logoOffsetY,
-          hasBadges,
-        })
+          posterBuffer,
+          voteAverage: body.voteAverages?.[index] ?? 0,
+          width: body.widths?.[index] ?? 0,
+          height: body.heights?.[index] ?? 0,
+        }
       } catch (err) {
         clearTimeout(timer)
         console.warn(`[poster-fit] Skipping ${posterPath}: ${err instanceof Error ? err.message : "Unknown error"}`)
@@ -98,29 +101,38 @@ export async function POST(req: NextRequest) {
     }),
   )
 
-  const scored: PosterFitResult[] = []
+  const posterEntries: { posterPath: string; posterBuffer: Buffer; voteAverage: number; width: number; height: number }[] = []
   let failed = 0
   for (const r of settled) {
     if (r.status === "fulfilled" && r.value !== null) {
-      scored.push(r.value)
+      posterEntries.push(r.value)
     } else {
       failed++
     }
   }
 
-  const ranked: PosterFitEntry[] = scored
-    .sort((a, b) => b.score - a.score)
-    .map((r) => ({
-      posterPath: r.posterPath!,
-      score: r.score,
-      metrics: {
-        cleanliness: r.metrics.cleanliness,
-        contrast: r.metrics.contrast,
-        lowDetailScore: 1 - r.metrics.detailPenalty,
-        badgeReadability: r.metrics.badgeReadability,
-      },
-      reasons: r.reasons,
-    }))
+  const rankedResults = await rankBestFitPosters(
+    posterEntries,
+    logoBuffer,
+    logoScale,
+    logoOffsetX,
+    logoOffsetY,
+    hasBadges,
+  )
+
+  const ranked = rankedResults.map((r) => ({
+    posterPath: r.posterPath,
+    score: r.score,
+    adjustedScore: r.adjustedScore,
+    textPenalty: r.textPenalty,
+    metrics: {
+      cleanliness: r.metrics.cleanliness,
+      contrast: r.metrics.contrast,
+      lowDetailScore: 1 - r.metrics.detailPenalty,
+      badgeReadability: r.metrics.badgeReadability,
+    },
+    reasons: r.reasons,
+  }))
 
   const response: PosterFitResponse = { ranked, total: posterPaths.length, failed }
 

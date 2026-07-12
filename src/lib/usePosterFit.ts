@@ -13,6 +13,8 @@ interface PosterFitMetrics {
 export interface PosterFitEntry {
   posterPath: string
   score: number
+  adjustedScore: number
+  textPenalty: number
   metrics: PosterFitMetrics
   reasons: string[]
 }
@@ -98,6 +100,9 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
             logoOffsetX: inp.logoOffsetX,
             logoOffsetY: inp.logoOffsetY,
             hasBadges: inp.hasBadges,
+            voteAverages: inp.cleanPosters.map((p) => p.vote_average),
+            widths: inp.cleanPosters.map((p) => p.width),
+            heights: inp.cleanPosters.map((p) => p.height),
           }),
           signal: controller.signal,
         })

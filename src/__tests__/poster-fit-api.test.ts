@@ -57,6 +57,8 @@ describe("POST /api/poster-fit", () => {
     expect(json.ranked).toHaveLength(1)
     expect(json.ranked[0].posterPath).toBe("/test.jpg")
     expect(json.ranked[0].score).toBeGreaterThan(0)
+    expect(json.ranked[0].adjustedScore).toBeGreaterThan(0)
+    expect(json.ranked[0].textPenalty).toBeTypeOf("number")
     expect(json.ranked[0].metrics).toHaveProperty("cleanliness")
     expect(json.ranked[0].metrics).toHaveProperty("contrast")
     expect(json.ranked[0].metrics).toHaveProperty("lowDetailScore")
@@ -138,7 +140,7 @@ describe("POST /api/poster-fit", () => {
     expect(json.ranked).toHaveLength(20)
   })
 
-  it("sorts ranked by score descending", async () => {
+  it("sorts ranked by adjustedScore descending", async () => {
     const logoBuf = await makeLogoBuffer(255, 255, 255)
     const darkBuf = await makePosterBuffer(20, 20, 30)
     const lightBuf = await makePosterBuffer(230, 230, 240)
@@ -156,7 +158,7 @@ describe("POST /api/poster-fit", () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json.ranked).toHaveLength(2)
-    expect(json.ranked[0].score).toBeGreaterThan(json.ranked[1].score)
+    expect(json.ranked[0].adjustedScore).toBeGreaterThanOrEqual(json.ranked[1].adjustedScore)
     expect(json.ranked[0].posterPath).toBe("/dark.jpg")
   })
 })

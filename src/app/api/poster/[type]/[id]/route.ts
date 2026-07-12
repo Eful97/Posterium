@@ -229,7 +229,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         if (logoPath) {
-          posterPath = sd.defaultLogoFitEnabled
+          posterPath = (sd.defaultLogoFitEnabled ?? true)
             ? await selectBestLogoFitPosterPath({
                 posters: images.posters,
                 logoPath,

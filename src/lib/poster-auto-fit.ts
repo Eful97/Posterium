@@ -224,6 +224,75 @@ async function computeTextPenalty(posterBuffer: Buffer): Promise<number> {
   return clamp((textPenalty - 0.35) / 0.65, 0, 1)
 }
 
+export interface RankedFitResult {
+  posterPath: string
+  score: number
+  adjustedScore: number
+  textPenalty: number
+  metrics: { cleanliness: number; contrast: number; detailPenalty: number; badgeReadability: number }
+  reasons: string[]
+}
+
+function toRankedFitResult(r: { posterPath: string | undefined; score: number; metrics: { cleanliness: number; contrast: number; detailPenalty: number; badgeReadability: number }; reasons: string[] }, adjustedScore: number, textPenalty: number): RankedFitResult {
+  return { posterPath: r.posterPath ?? "", score: r.score, adjustedScore, textPenalty, metrics: r.metrics, reasons: r.reasons }
+}
+
+export async function rankBestFitPosters(
+  posterEntries: PosterBufferEntry[],
+  logoBuffer: Buffer,
+  logoScale: number,
+  logoOffsetX: number,
+  logoOffsetY: number,
+  hasBadges: boolean,
+): Promise<RankedFitResult[]> {
+  if (posterEntries.length === 0) return []
+
+  const ranked = await withTimeout(
+    rankPostersByFit(posterEntries, logoBuffer, logoScale, logoOffsetX, logoOffsetY, hasBadges),
+    posterEntries.map((p) => ({ posterPath: p.posterPath, score: 0, metrics: { cleanliness: 0, contrast: 0, detailPenalty: 0, badgeReadability: 0 }, reasons: [] })),
+    AUTO_FIT_TIMEOUT_MS,
+  )
+
+  if (ranked.length === 0) return []
+
+  const topCandidates = ranked.slice(0, TEXT_PENALTY_CANDIDATES)
+  const withPenalty: RankedFitResult[] = await Promise.all(
+    topCandidates.map(async (result) => {
+      const posterEntry = posterEntries.find((p) => p.posterPath === result.posterPath)
+      if (!posterEntry) return toRankedFitResult(result, result.score, 0)
+      const textPenalty = await computeTextPenalty(posterEntry.posterBuffer).catch(() => 0)
+      const tmdbQualityBonus = clamp((posterEntry.voteAverage - 4) / 6, 0, 1) * 0.04
+      const qualityScore = posterQualityScore(posterEntry.voteAverage, posterEntry.width, posterEntry.height)
+      const adjustedScore = result.score * (1 - textPenalty * 0.28) + tmdbQualityBonus + qualityScore * 0.06
+      return toRankedFitResult(result, adjustedScore, textPenalty)
+    }),
+  )
+
+  const remaining = ranked.slice(TEXT_PENALTY_CANDIDATES).map((r) =>
+    toRankedFitResult(r, r.score, 0),
+  )
+
+  const allResults = [...withPenalty, ...remaining]
+
+  allResults.sort((a, b) => b.adjustedScore - a.adjustedScore)
+
+  if (allResults.length >= 2) {
+    const diff = allResults[0].adjustedScore - allResults[1].adjustedScore
+    if (diff < 0.08) {
+      for (const entry of allResults) {
+        const posterEntry = posterEntries.find((p) => p.posterPath === entry.posterPath)
+        if (!posterEntry) continue
+        const extraBonus = clamp((posterEntry.voteAverage - 4) / 6, 0, 1) * 0.06
+        const textBoost = (entry.textPenalty ?? 0) * 0.10
+        entry.adjustedScore = entry.adjustedScore + extraBonus - textBoost
+      }
+      allResults.sort((a, b) => b.adjustedScore - a.adjustedScore)
+    }
+  }
+
+  return allResults
+}
+
 export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPosterInput): Promise<string | null> {
   const candidates = selectAutoFitCandidates(input.posters)
 
@@ -271,61 +340,16 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
 
   const logoScale = input.logoScale ?? await defaultLogoScale(logoBuffer)
 
-  const ranked = await withTimeout(
-    rankPostersByFit(
-      usablePosters,
-      logoBuffer,
-      logoScale,
-      input.logoOffsetX ?? 0,
-      input.logoOffsetY ?? 0,
-      input.hasBadges,
-    ),
-    usablePosters.map((p) => ({ posterPath: p.posterPath, score: 0, metrics: { cleanliness: 0, contrast: 0, detailPenalty: 0, badgeReadability: 0 }, reasons: [] })),
-    AUTO_FIT_TIMEOUT_MS,
+  const rankedResults = await rankBestFitPosters(
+    usablePosters,
+    logoBuffer,
+    logoScale,
+    input.logoOffsetX ?? 0,
+    input.logoOffsetY ?? 0,
+    input.hasBadges,
   )
 
-  if (ranked.length === 0) return fallbackResult
-
-  interface RankedWithPenalty {
-    posterPath: string | undefined
-    score: number
-    adjustedScore: number
-    textPenalty?: number
-    metrics: { cleanliness: number; contrast: number; detailPenalty: number; badgeReadability: number }
-    reasons: string[]
-  }
-
-  const topCandidates = ranked.slice(0, TEXT_PENALTY_CANDIDATES)
-  const withPenalty: RankedWithPenalty[] = await Promise.all(
-    topCandidates.map(async (result) => {
-      const posterEntry = usablePosters.find((p) => p.posterPath === result.posterPath)
-      if (!posterEntry) return { ...result, adjustedScore: result.score }
-      const textPenalty = await computeTextPenalty(posterEntry.posterBuffer).catch(() => 0)
-      const tmdbQualityBonus = clamp((posterEntry.voteAverage - 4) / 6, 0, 1) * 0.04
-      const qualityScore = posterQualityScore(posterEntry.voteAverage, posterEntry.width, posterEntry.height)
-      const adjustedScore = result.score * (1 - textPenalty * 0.28) + tmdbQualityBonus + qualityScore * 0.06
-      return { ...result, adjustedScore, textPenalty }
-    }),
-  )
-
-  withPenalty.sort((a, b) => b.adjustedScore - a.adjustedScore)
-
-  // Tie-breaker: when top 2 are very close, amplify TMDB/text penalties
-  if (withPenalty.length >= 2) {
-    const diff = withPenalty[0].adjustedScore - withPenalty[1].adjustedScore
-    if (diff < 0.08) {
-      for (const entry of withPenalty) {
-        const posterEntry = usablePosters.find((p) => p.posterPath === entry.posterPath)
-        if (!posterEntry) continue
-        const extraBonus = clamp((posterEntry.voteAverage - 4) / 6, 0, 1) * 0.06
-        const textBoost = (entry.textPenalty ?? 0) * 0.10
-        entry.adjustedScore = entry.adjustedScore + extraBonus - textBoost
-      }
-      withPenalty.sort((a, b) => b.adjustedScore - a.adjustedScore)
-    }
-  }
-
-  const best = withPenalty[0]
+  const best = rankedResults[0]
 
   if (best?.posterPath) {
     cacheSet(key, best.posterPath)
