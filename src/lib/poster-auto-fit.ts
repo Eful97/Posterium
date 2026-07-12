@@ -286,8 +286,17 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
 
   if (ranked.length === 0) return fallbackResult
 
+  interface RankedWithPenalty {
+    posterPath: string | undefined
+    score: number
+    adjustedScore: number
+    textPenalty?: number
+    metrics: { cleanliness: number; contrast: number; detailPenalty: number; badgeReadability: number }
+    reasons: string[]
+  }
+
   const topCandidates = ranked.slice(0, TEXT_PENALTY_CANDIDATES)
-  const withPenalty = await Promise.all(
+  const withPenalty: RankedWithPenalty[] = await Promise.all(
     topCandidates.map(async (result) => {
       const posterEntry = usablePosters.find((p) => p.posterPath === result.posterPath)
       if (!posterEntry) return { ...result, adjustedScore: result.score }
