@@ -53,9 +53,16 @@ async function kvImportMappings(mappings: Mapping[]) {
 // ---- File-based helpers (HF / local) ----
 
 const DATA_FILE = path.join(DATA_DIR, "mappings.json")
+let writeQueue = Promise.resolve()
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error
+}
+
+function enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
+  const run = writeQueue.then(task, task)
+  writeQueue = run.then(() => undefined, () => undefined)
+  return run
 }
 
 async function ensureDataDir() {
@@ -80,8 +87,10 @@ async function loadFromDisk(): Promise<Record<string, Mapping>> {
 
 async function persist(data: Record<string, Mapping>) {
   await ensureDataDir()
+  const tmp = `${DATA_FILE}.tmp`
   try {
-    await fsp.writeFile(DATA_FILE, JSON.stringify(data, null, 2))
+    await fsp.writeFile(tmp, JSON.stringify(data, null, 2))
+    await fsp.rename(tmp, DATA_FILE)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error(`[store] Failed to write mappings to ${DATA_FILE}: ${msg}`)
@@ -112,10 +121,12 @@ export async function upsert(mapping: Mapping) {
     await kvUpsert(mapping)
     return
   }
-  const data = await loadFromDisk()
-  const key = `${mapping.mediaType}:${mapping.tmdbId}`
-  data[key] = { ...mapping, updatedAt: new Date().toISOString() }
-  await persist(data)
+  return enqueueWrite(async () => {
+    const data = await loadFromDisk()
+    const key = `${mapping.mediaType}:${mapping.tmdbId}`
+    data[key] = { ...mapping, updatedAt: new Date().toISOString() }
+    await persist(data)
+  })
 }
 
 export async function remove(type: "movie" | "tv", id: number) {
@@ -123,10 +134,12 @@ export async function remove(type: "movie" | "tv", id: number) {
     await kvRemove(type, id)
     return
   }
-  const data = await loadFromDisk()
-  const key = `${type}:${id}`
-  delete data[key]
-  await persist(data)
+  return enqueueWrite(async () => {
+    const data = await loadFromDisk()
+    const key = `${type}:${id}`
+    delete data[key]
+    await persist(data)
+  })
 }
 
 export async function removeAll() {
@@ -134,7 +147,9 @@ export async function removeAll() {
     await kvRemoveAll()
     return
   }
-  await persist({})
+  return enqueueWrite(async () => {
+    await persist({})
+  })
 }
 
 export async function importMappings(mappings: Mapping[]) {
@@ -142,10 +157,12 @@ export async function importMappings(mappings: Mapping[]) {
     await kvImportMappings(mappings)
     return
   }
-  const data = await loadFromDisk()
-  for (const m of mappings) {
-    const key = `${m.mediaType}:${m.tmdbId}`
-    data[key] = m
-  }
-  await persist(data)
+  return enqueueWrite(async () => {
+    const data = await loadFromDisk()
+    for (const m of mappings) {
+      const key = `${m.mediaType}:${m.tmdbId}`
+      data[key] = m
+    }
+    await persist(data)
+  })
 }

@@ -81,14 +81,15 @@ export async function POST(req: NextRequest) {
   const logoUrl = `${TMDB_IMAGE_BASE}/w500${body.logoPath}`
 
   let logoBuffer: Buffer
+  const logoAc = new AbortController()
+  const logoTimer = setTimeout(() => logoAc.abort(), FETCH_TIMEOUT_MS)
   try {
-    const ac = new AbortController()
-    const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS)
-    logoBuffer = await fetchImage(logoUrl, ac.signal)
-    clearTimeout(timer)
+    logoBuffer = await fetchImage(logoUrl, logoAc.signal)
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error"
     return Response.json({ error: `Failed to fetch logo: ${msg}` }, { status: 502 })
+  } finally {
+    clearTimeout(logoTimer)
   }
 
   const settled = await Promise.allSettled(
@@ -98,7 +99,6 @@ export async function POST(req: NextRequest) {
       try {
         const posterUrl = `${TMDB_IMAGE_BASE}/${posterSize}${candidate.file_path}`
         const posterBuffer = await fetchImage(posterUrl, ac.signal)
-        clearTimeout(timer)
         return {
           posterPath: candidate.file_path,
           posterBuffer,
@@ -107,9 +107,10 @@ export async function POST(req: NextRequest) {
           height: candidate.height ?? 0,
         }
       } catch (err) {
-        clearTimeout(timer)
         console.warn(`[poster-fit] Skipping ${candidate.file_path}: ${err instanceof Error ? err.message : "Unknown error"}`)
         return null
+      } finally {
+        clearTimeout(timer)
       }
     }),
   )

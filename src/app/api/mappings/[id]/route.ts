@@ -35,10 +35,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     return Response.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
   }
   if (!existing) return Response.json({ error: "not found" }, { status: 404 })
+  const hasField = <K extends keyof typeof parsed.data>(key: K) =>
+    Object.prototype.hasOwnProperty.call(parsed.data, key)
   await upsert({
     ...existing,
     ...parsed.data,
-    logoPath: parsed.data.logoPath ?? existing.logoPath,
+    logoPath: hasField("logoPath") ? parsed.data.logoPath : existing.logoPath,
+    backdropPath: hasField("backdropPath") ? parsed.data.backdropPath : existing.backdropPath,
+    customBadge: hasField("customBadge") ? parsed.data.customBadge : existing.customBadge,
+    badgeExtra: hasField("badgeExtra") ? parsed.data.badgeExtra : existing.badgeExtra,
     originalPosterPath: parsed.data.originalPosterPath ?? existing.originalPosterPath,
     language: parsed.data.language ?? existing.language,
     genreName: parsed.data.genreName ?? existing.genreName,
@@ -48,13 +53,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     tvType: parsed.data.tvType ?? existing.tvType,
     tvStatus: parsed.data.tvStatus ?? existing.tvStatus,
     accentColor: parsed.data.accentColor ?? existing.accentColor,
-    badgeExtra: parsed.data.badgeExtra ?? existing.badgeExtra,
     badgeRank: parsed.data.badgeRank ?? existing.badgeRank,
     badgeLabel: parsed.data.badgeLabel ?? existing.badgeLabel,
-    customBadge: parsed.data.customBadge ?? existing.customBadge,
     releaseDate: parsed.data.releaseDate ?? existing.releaseDate,
     firstAirDate: parsed.data.firstAirDate ?? existing.firstAirDate,
-    backdropPath: parsed.data.backdropPath ?? existing.backdropPath,
     logoDisabled: parsed.data.logoDisabled ?? existing.logoDisabled,
     tmdbId: existing.tmdbId,
     mediaType: existing.mediaType,

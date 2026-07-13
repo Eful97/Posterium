@@ -45,11 +45,8 @@ export function getServerDefaults(): ServerDefaults {
 }
 
 export function setServerDefaults(d: ServerDefaults): void {
+  fs.mkdirSync(DATA_DIR, { recursive: true })
+  fs.writeFileSync(FILE, JSON.stringify(d, null, 2))
   cached = { ...d }
   cachedMtime = Date.now()
-  try {
-    fs.writeFileSync(FILE, JSON.stringify(d, null, 2))
-  } catch (error) {
-    logDefaultsError("failed to save defaults", error)
-  }
 }
