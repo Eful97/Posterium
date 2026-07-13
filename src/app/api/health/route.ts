@@ -65,6 +65,13 @@ export async function GET(request: Request) {
         { ok: false, status: 401, time: 0 },
       ]
 
+  const justwatch = apiKey
+    ? await checkEndpoint(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&watch_region=IT`)
+    : { ok: false, status: 401, time: 0 }
+  const flixpatrol = apiKey
+    ? await checkEndpoint(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}`)
+    : { ok: false, status: 401, time: 0 }
+
   const mappingsFile = path.join(DATA_DIR, "mappings.json")
   const defaultsFile = path.join(DATA_DIR, "defaults.json")
 
@@ -82,12 +89,14 @@ export async function GET(request: Request) {
     dataDirExists: await fileExists(DATA_DIR),
     dataDirWritable: await canWriteDir(DATA_DIR),
     mappingsFileExists: await fileExists(mappingsFile),
+    dataFileExists: await fileExists(mappingsFile),
     mappingsReadable: await canRead(mappingsFile),
     mappingsWritable: await canWriteDir(DATA_DIR),
     defaultsFileExists: await fileExists(defaultsFile),
     defaultsReadable: await canRead(defaultsFile),
     defaultsWritable: await canWriteDir(DATA_DIR),
     mappingCount: mappings.length,
+    mappingsCount: mappings.length,
     lastMappingUpdatedAt,
   }
 
@@ -95,6 +104,7 @@ export async function GET(request: Request) {
     status: tmdbTrending.ok && tmdbSearch.ok ? "healthy" : "degraded",
     timestamp: new Date().toISOString(),
     tmdb: { apiKey: !!apiKey, trending: tmdbTrending, search: tmdbSearch, popular: tmdbPopular, externalIds },
+    streaming: { justwatch, flixpatrol },
     system: { node: process.version, platform: process.platform, env: process.env.NODE_ENV },
     storage,
   }
