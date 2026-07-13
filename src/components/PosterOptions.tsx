@@ -201,7 +201,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   const activeLangImgs = !activeClean ? langGroups.find(([l]) => l === activeGroup)?.[1] ?? [] : []
 
   function shortPath(p: string): string {
-    return p.length > 18 ? `${p.slice(0, 10)}…${p.slice(-6)}` : p
+    return p.length > 18 ? `${p.slice(0, 10)}...${p.slice(-6)}` : p
   }
 
   function scoreClass(s: number): string {
@@ -278,7 +278,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
           )}
           {fitLoading && (
             <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] text-zinc-500">
-              <Clock className="w-3 h-3 animate-spin" />Analisi…
+              <Clock className="w-3 h-3 animate-spin" />Analisi...
             </div>
           )}
           {hasFitData && (
@@ -342,7 +342,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
 
           {bestResult && (
             <div className="rounded-lg bg-accent-orange/10 border border-accent-orange/20 px-2 py-1.5 text-accent-orange">
-              Best: <span title={bestResult.posterPath}>{shortPath(bestResult.posterPath)}</span> · score {bestResult.adjustedScore.toFixed(2)}
+              Best: <span title={bestResult.posterPath}>{shortPath(bestResult.posterPath)}</span> - score {bestResult.adjustedScore.toFixed(2)}
             </div>
           )}
 
@@ -360,7 +360,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
 
                 <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-zinc-500">
                   <span>base {result.score.toFixed(2)}</span>
-                  <span>qualità {result.qualityScore.toFixed(2)}</span>
+                  <span>qualita {result.qualityScore.toFixed(2)}</span>
                   <span>testo {result.textPenalty.toFixed(2)}</span>
                   <span>logo {result.logoZoneScore.toFixed(2)}</span>
                   <span>contrasto {result.metrics.contrast.toFixed(2)}</span>
@@ -369,7 +369,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
 
                 {result.reasons.length > 0 && (
                   <div className="mt-1 text-zinc-400">
-                    {result.reasons.join(" · ")}
+                    {result.reasons.join(" - ")}
                   </div>
                 )}
               </div>
@@ -398,7 +398,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
         <div className="mt-2 flex items-center justify-between rounded-lg border border-zinc-800/70 bg-white/5 px-2.5 py-2">
           <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
             <span>{p.excludedPosters.length} {p.excludedPosters.length === 1 ? 'poster escluso' : 'poster esclusi'}</span>
-            {excludedSaveState === "saving" && <span className="text-[10px] text-zinc-500 animate-pulse">salvataggio…</span>}
+            {excludedSaveState === "saving" && <span className="text-[10px] text-zinc-500 animate-pulse">salvataggio...</span>}
             {excludedSaveState === "saved" && <span className="text-[10px] text-green-500">salvato</span>}
             {excludedSaveState === "error" && <span className="text-[10px] text-red-400">errore</span>}
           </span>
