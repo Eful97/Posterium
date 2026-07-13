@@ -109,6 +109,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   }, [topFitRotationPosters, fitLoading, isSavedPoster]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only on fit results
 
   const [sortByFit, setSortByFit] = useState(false)
+  const [showFitDebug, setShowFitDebug] = useState(false)
   const autoSelectedFitKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -199,6 +200,16 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   const activeClean = activeGroup === "clean"
   const activeLangImgs = !activeClean ? langGroups.find(([l]) => l === activeGroup)?.[1] ?? [] : []
 
+  function shortPath(p: string): string {
+    return p.length > 18 ? `${p.slice(0, 10)}…${p.slice(-6)}` : p
+  }
+
+  function scoreClass(s: number): string {
+    if (s >= 0.65) return "text-green-400"
+    if (s >= 0.45) return "text-amber-400"
+    return "text-red-400"
+  }
+
   return (
     <div>
       {showTabs && posterTabs.length > 1 && (
@@ -270,6 +281,15 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
               <Clock className="w-3 h-3 animate-spin" />Analisi…
             </div>
           )}
+          {hasFitData && (
+            <button
+              type="button"
+              onClick={() => setShowFitDebug((v) => !v)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"
+            >
+              {showFitDebug ? "Nascondi debug Best fit" : "Mostra debug Best fit"}
+            </button>
+          )}
         </div>
       )}
 
@@ -310,6 +330,51 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
               </div>
             )
           })}
+        </div>
+      )}
+
+      {activeClean && showFitDebug && hasFitData && (
+        <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3 text-[11px] text-zinc-300 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-zinc-100">Debug Best fit</span>
+            <span className="text-zinc-500">{results.length} candidati</span>
+          </div>
+
+          {bestResult && (
+            <div className="rounded-lg bg-accent-orange/10 border border-accent-orange/20 px-2 py-1.5 text-accent-orange">
+              Best: <span title={bestResult.posterPath}>{shortPath(bestResult.posterPath)}</span> · score {bestResult.adjustedScore.toFixed(2)}
+            </div>
+          )}
+
+          <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+            {results.slice(0, 10).map((result, index) => (
+              <div key={result.posterPath} className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-zinc-200" title={result.posterPath}>
+                    #{index + 1} {shortPath(result.posterPath)}
+                  </span>
+                  <span className={`font-semibold ${scoreClass(result.adjustedScore)}`}>
+                    {result.adjustedScore.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-zinc-500">
+                  <span>base {result.score.toFixed(2)}</span>
+                  <span>qualità {result.qualityScore.toFixed(2)}</span>
+                  <span>testo {result.textPenalty.toFixed(2)}</span>
+                  <span>logo {result.logoZoneScore.toFixed(2)}</span>
+                  <span>contrasto {result.metrics.contrast.toFixed(2)}</span>
+                  <span>dettaglio {result.metrics.lowDetailScore.toFixed(2)}</span>
+                </div>
+
+                {result.reasons.length > 0 && (
+                  <div className="mt-1 text-zinc-400">
+                    {result.reasons.join(" · ")}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
