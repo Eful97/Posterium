@@ -40,4 +40,32 @@ describe("file mapping store", () => {
 
     expect(await store.getAll()).toEqual([mapping])
   })
+
+  it("handles concurrent upserts without losing writes", async () => {
+    tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "posterium-concurrent-"))
+    process.env.POSTERIUM_DATA_DIR = tempDir
+    vi.resetModules()
+    const store = await import("@/lib/store")
+
+    const makeM = (id: number, title: string): Mapping => ({
+      tmdbId: id,
+      mediaType: "movie",
+      title,
+      posterPath: `/p${id}.jpg`,
+      logoPath: null,
+      originalPosterPath: null,
+      language: "it",
+      updatedAt: new Date().toISOString(),
+    })
+
+    await Promise.all([
+      store.upsert(makeM(1, "Movie A")),
+      store.upsert(makeM(2, "Movie B")),
+    ])
+
+    const all = await store.getAll()
+    expect(all).toHaveLength(2)
+    const titles = all.map((m) => m.title).sort()
+    expect(titles).toEqual(["Movie A", "Movie B"])
+  })
 })
