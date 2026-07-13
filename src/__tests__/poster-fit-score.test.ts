@@ -35,32 +35,6 @@ function makeCheckerPoster(bgR: number, bgG: number, bgB: number, checkerR: numb
     .toBuffer()
 }
 
-function makeTwoTonePoster(topR: number, topG: number, topB: number, bottomR: number, bottomG: number, bottomB: number, noise = 0): Promise<Buffer> {
-  const pixels = 500 * 750
-  const data = Buffer.alloc(pixels * 3)
-  const midY = 375
-  for (let y = 0; y < 750; y++) {
-    for (let x = 0; x < 500; x++) {
-      const idx = (y * 500 + x) * 3
-      const nr = y < midY
-        ? topR + (Math.random() - 0.5) * noise
-        : bottomR + (Math.random() - 0.5) * noise
-      const ng = y < midY
-        ? topG + (Math.random() - 0.5) * noise
-        : bottomG + (Math.random() - 0.5) * noise
-      const nb = y < midY
-        ? topB + (Math.random() - 0.5) * noise
-        : bottomB + (Math.random() - 0.5) * noise
-      data[idx] = Math.max(0, Math.min(255, Math.round(nr)))
-      data[idx + 1] = Math.max(0, Math.min(255, Math.round(ng)))
-      data[idx + 2] = Math.max(0, Math.min(255, Math.round(nb)))
-    }
-  }
-  return sharp(data, { raw: { width: 500, height: 750, channels: 3 } })
-    .jpeg()
-    .toBuffer()
-}
-
 function makeLogo(width: number, height: number, r: number, g: number, b: number, alpha = 255): Promise<Buffer> {
   const data = Buffer.alloc(width * height * 4)
   for (let y = 0; y < height; y++) {

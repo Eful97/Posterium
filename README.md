@@ -45,7 +45,7 @@ pinned: false
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **145 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
+- ✅ **172 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
 
 ---
 
@@ -260,7 +260,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
 | Storage | Vercel KV / JSON file |
-| Test | Vitest (145 test) |
+| Test | Vitest (172 test) + Playwright E2E |
 | UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
 
 ### Architettura
@@ -279,9 +279,14 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 ## 🧪 Testing
 
 ```bash
-npm test              # Esegui tutti i test (145)
-npx vitest run        # Stessa cosa
+# Test unitari (172 test)
+node .\node_modules\vitest\vitest.mjs run
+
+# E2E smoke (Playwright, Chromium)
+node .\node_modules\@playwright\test\cli.js test e2e/posterium-smoke.spec.ts
 ```
+
+> **Nota Windows:** evitare `npm test` / `npx` se il wrapper globale e' rotto — usare i comandi diretti come sopra.
 
 | File test | Test | Copertura |
 |---|---|---|
@@ -290,17 +295,21 @@ npx vitest run        # Stessa cosa
 | `poster-runtime-cache.test.ts` | 2 | Header CDN immutable e stale-while-revalidate |
 | `app-version.test.ts` | 1 | Versione generata allineata a package.json |
 | `data-dir.test.ts` | 1 | Directory dati configurabile per volume persistente |
-| `store.test.ts` | 1 | Ricarica mapping da disco tra worker/server |
-| `poster-render-helpers.test.ts` | 3 | Clipping layer, dimensioni finali 500×750 e luminanza top-edge |
+| `store.test.ts` | 2 | Ricarica mapping da disco tra worker/server, concurrent upsert |
+| `poster-render-helpers.test.ts` | 3 | Clipping layer, dimensioni finali 500x750 e luminanza top-edge |
 | `stremio-poster-params.test.ts` | 2 | Parametri poster Stremio versionati e default globali |
-| `types.test.ts` | 14 | toSearchResult (default values, null→undefined, media_type normalization) |
+| `types.test.ts` | 14 | toSearchResult (default values, null->undefined, media_type normalization) |
 | `badge-validation.test.ts` | 18 | computeBadge priority chain, computeExtraFallback |
 | `mapping-crud.test.ts` | 11 | CRUD mappings, validation schema |
+| `mapping-null-put.test.ts` | 2 | PUT null fields (logoPath, backdropPath, customBadge, badgeExtra) |
 | `svg-badge.test.ts` | 23 | Rendering badge SVG, overflow protection, stili e dimensioni |
 | `http.test.ts` | 2 | Timeout/retry HTTP client |
 | `logo-layout.test.ts` | 2 | Dimensioni e bounds logo |
-| `poster-fit-score.test.ts` | 6 | Scoring poster-fit (pulizia, contrasto, dettaglio, badge, composito) |
-| `poster-fit-api.test.ts` | 2 | Endpoint API poster-fit, timeout, max poster |
+| `poster-fit-score.test.ts` | 10 | Scoring poster-fit (pulizia, contrasto, dettaglio, badge, composito) |
+| `poster-fit-api.test.ts` | 9 | Endpoint API poster-fit, timeout, max poster, concurrent, skip failed |
+| `poster-auto-fit.test.ts` | 16 | Auto-fit server-side, candidate selection, ranking, caching |
+| `health.test.ts` | 3 | Health endpoint, storage diagnostics |
+| `defaults-api.test.ts` | 4 | Defaults endpoint auth, validation |
 
 ---
 

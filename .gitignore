@@ -48,6 +48,13 @@ yarn-error.log*
 /test-results/
 /playwright-report/
 
+# dev server logs
+dev-server*.log
+
+# claude / misc
+.claude/
+.git-rewrite/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
