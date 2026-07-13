@@ -327,24 +327,24 @@ describe("selectBestLogoFitPosterPath", () => {
     expect(resultB).toBe("/b1.jpg")
   })
 
-  it("includes first 5 TMDB posters even if metadata is worse", async () => {
+  it("includes first 8 TMDB posters even if metadata is worse", async () => {
     const darkPoster = await solidPoster("#050505")
     const lightPoster = await solidPoster("#f5f5f5")
     const logo = await solidLogo("#ffffff")
     const images = new Map([
       ["/logo.png", logo],
     ])
-    for (let i = 0; i < 10; i++) {
-      images.set(`/p${i}.jpg`, i === 4 ? darkPoster : lightPoster)
+    for (let i = 0; i < 12; i++) {
+      images.set(`/p${i}.jpg`, i === 7 ? darkPoster : lightPoster)
     }
 
     const selected = await selectBestLogoFitPosterPath({
-      posters: Array.from({ length: 10 }, (_, i) => ({
+      posters: Array.from({ length: 12 }, (_, i) => ({
         file_path: `/p${i}.jpg`,
         iso_639_1: null,
-        vote_average: i === 4 ? 1 : 9,
-        width: i === 4 ? 200 : 1000,
-        height: i === 4 ? 300 : 1500,
+        vote_average: i === 7 ? 1 : 9,
+        width: i === 7 ? 200 : 1000,
+        height: i === 7 ? 300 : 1500,
       })),
       logoPath: "/logo.png",
       fetchImage: makeImages(images),
@@ -354,10 +354,10 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/p4.jpg")
+    expect(selected).toBe("/p7.jpg")
   })
 
-  it("does not exceed MAX_AUTO_FIT_POSTERS", async () => {
+  it("only analyzes the first 8 valid TMDB clean posters", async () => {
     const poster = await solidPoster("#050505")
     const logo = await solidLogo("#ffffff")
     const images = new Map([
@@ -388,7 +388,7 @@ describe("selectBestLogoFitPosterPath", () => {
     })
 
     expect(selected).toBeDefined()
-    expect(fetchCount).toBeLessThanOrEqual(11)
+    expect(fetchCount).toBeLessThanOrEqual(9)
   })
 
   it("avoids duplicates in candidate pool", async () => {

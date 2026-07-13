@@ -26,9 +26,7 @@ interface SelectBestLogoFitPosterInput {
   readonly renderVersion?: number
 }
 
-const MAX_AUTO_FIT_POSTERS = 10
-const TMDB_CANDIDATE_COUNT = 5
-const METADATA_CANDIDATE_COUNT = 5
+const TMDB_CANDIDATE_COUNT = 8
 const AUTO_FIT_TIMEOUT_MS = 1200
 const CACHE_TTL = 24 * 60 * 60 * 1000
 const CACHE_MAX_ENTRIES = 500
@@ -85,10 +83,6 @@ function defaultLogoScale(logoBuffer: Buffer): Promise<number> {
   })
 }
 
-function clamp(val: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, val))
-}
-
 const IDEAL_ASPECT = 2 / 3
 const MAX_ASPECT_DIFF = 0.08
 
@@ -99,33 +93,11 @@ function hasPosterAspectRatio(poster: PosterCandidate): boolean {
   return Math.abs(width / height - IDEAL_ASPECT) <= MAX_ASPECT_DIFF
 }
 
-function posterMetadataScore(poster: PosterCandidate, index: number): number {
-  const vote = poster.vote_average ?? 0
-  const width = poster.width ?? 0
-  const height = poster.height ?? 0
-
-  const voteScore = clamp(vote / 10, 0, 1)
-  const ratio = width > 0 && height > 0 ? width / height : IDEAL_ASPECT
-  const aspectScore = clamp(1 - Math.abs(ratio - IDEAL_ASPECT) / 0.18, 0, 1)
-  const megapixels = width * height / 1_000_000
-  const resolutionScore = clamp(megapixels / 2.5, 0, 1)
-  const orderScore = clamp(1 - index / 40, 0, 1)
-
-  return voteScore * 0.40 + aspectScore * 0.25 + resolutionScore * 0.20 + orderScore * 0.15
-}
-
 export function selectAutoFitCandidates(posters: readonly PosterCandidate[]): PosterCandidate[] {
   const clean = posters.filter((poster) => poster.iso_639_1 === null && hasPosterAspectRatio(poster))
-  const firstByTmdb = clean.slice(0, TMDB_CANDIDATE_COUNT)
-  const bestByMetadata = clean
-    .slice(TMDB_CANDIDATE_COUNT)
-    .map((poster, index) => ({ poster, score: posterMetadataScore(poster, index + TMDB_CANDIDATE_COUNT) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, METADATA_CANDIDATE_COUNT)
-    .map((entry) => entry.poster)
   return Array.from(
-    new Map([...firstByTmdb, ...bestByMetadata].map((poster) => [poster.file_path, poster])).values(),
-  ).slice(0, MAX_AUTO_FIT_POSTERS)
+    new Map(clean.map((poster) => [poster.file_path, poster])).values(),
+  ).slice(0, TMDB_CANDIDATE_COUNT)
 }
 
 export async function rankBestFitPosters(
