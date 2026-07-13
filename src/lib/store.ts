@@ -6,7 +6,9 @@ import { DATA_DIR } from "@/lib/data-dir"
 export type { Mapping }
 
 const useKv = !!process.env.VERCEL && !!process.env.KV_URL
-if (!useKv) {
+const debugStore = process.env.POSTERIUM_DEBUG === "1"
+
+if (!useKv && debugStore) {
   console.log(`[store] Data directory: ${DATA_DIR}, file: ${path.join(DATA_DIR, "mappings.json")}`)
 }
 
