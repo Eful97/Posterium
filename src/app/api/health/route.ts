@@ -100,6 +100,6 @@ export async function GET(request: Request) {
   }
 
   const storageOk = storage.dataDirWritable || storage.mappingCount === 0
-  const statusCode = (tmdbTrending.ok && tmdbSearch.ok && storageOk) ? 200 : (storageOk ? 503 : 503)
+  const statusCode = tmdbTrending.ok && tmdbSearch.ok && storageOk ? 200 : 503
   return NextResponse.json(health, { status: statusCode })
 }
