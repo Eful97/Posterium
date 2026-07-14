@@ -70,41 +70,40 @@ docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 
 ### Koyeb (eco-small) + Cloudflare R2/Supabase/Upstash
 
-Miglior equilibrio costi/funzionalita per Posterium: deploy managed su Koyeb (512 MB RAM, ~$5/mese) con storage esterno per persistenza poster.
+Miglior equilibrio costi/funzionalita: deploy managed su Koyeb (~$5/mese, 512 MB RAM) con storage esterno per persistenza poster.
 
-#### 1. Storage esterno (scegli uno)
+#### Step 1 — Scegli storage
 
-| Servizio | Tipo | Free tier | Note |
-|----------|------|-----------|------|
-| **Cloudflare R2** | Object storage (S3-compatibile) | 10 GB gratis, nessun egress fee | Ideale per poster. Serve un custom domain o Workers per servirli. |
-| **Supabase** | PostgreSQL + Storage | 1 GB storage gratis | Storage + DB in uno, good per piccoli volumi. |
-| **Upstash** | Redis | 10 MB gratis | Per KV_URL (cache + mappings). Combinare con R2 per i poster. |
+| Servizio | Free tier | Cosa fa |
+|----------|-----------|---------|
+| **Cloudflare R2** | 10 GB gratis | Poster. Nessun egress fee. Serve custom domain o Worker per servirli. |
+| **Upstash Redis** | 10 MB gratis | Mappings/cache via `KV_URL`. |
+| **Supabase** | 1 GB gratis | PostgreSQL + Storage in uno. |
 
-**Raccomandazione:** Cloudflare R2 (poster) + Upstash Redis (KV/mappings) per il miglior rapporto costo/prestazioni.
+> **Raccomandazione:** R2 (poster) + Upstash (KV) per il miglior rapporto costo/prestazioni.
 
-#### 2. Deploy Koyeb
+#### Step 2 — Deploy
 
-1. Crea un account su [koyeb.com](https://koyeb.com) (free tier disponibile)
-2. Crea un **New App** → scegli **Git** come source
-3. Connetti il repo GitHub `Eful97/Posterium`
-4. Configura il build:
-   - **Build command:** `npm install && npm run build`
-   - **Run command:** `node .next/standalone/server.js`
+1. Crea account su [koyeb.com](https://koyeb.com)
+2. **New App** → **Git** → collega `Eful97/Posterium`
+3. Configura build:
+   - **Build:** `npm install && npm run build`
+   - **Run:** `node .next/standalone/server.js`
    - **Port:** `3000`
-5. Nelle **Settings** → **Environment variables**, aggiungi:
+4. **Settings** → **Environment variables** → aggiungi:
 
 ```
 TMDB_API_KEY=la_tua_chiave
-MDBLIST_API_KEY=la_tua_chiave    # opzionale — rating da 9 fonti + anime rank
+MDBLIST_API_KEY=la_tua_chiave    # opzionale: rating 9 fonti + anime
 NODE_ENV=production
 ```
 
-6. Aggiungi le variabili per lo storage scelto (vedi tabella sotto)
-7. Deploy automatico ad ogni push su `master`
+5. Aggiungi le variabili dello storage scelto (vedi sotto)
+6. Salva — il deploy parte automatico
 
-> **Nota:** Koyeb eco-small ha 512 MB RAM. Next.js standalone e' ottimizzato per questo. Se il build fallisce, aumenta timeout a 600s nelle impostazioni app.
+> Se il build fallisce, aumenta il timeout a 600s nelle impostazioni app.
 
-#### 3. Variabili d'ambiente per storage
+#### Step 3 — Variabili storage
 
 **Cloudflare R2 + Upstash (raccomandato):**
 ```
@@ -113,43 +112,20 @@ NEXT_PUBLIC_POSTER_CDN_URL=https://poster.tuo-dominio.com
 POSTER_CDN_URL=https://poster.tuo-dominio.com
 ```
 
-> Per servire poster da R2, configura un custom domain o un Cloudflare Worker che proxy le richieste al bucket.
-
 **Supabase:**
 ```
 KV_URL=postgresql://postgres:password@db.supabase.co:5432/postgres
-POSTERIUM_DATA_DIR=/data
 ```
 
-> Su Koyeb il filesystem e' effimero — senza volume persistente, i poster si perdono ad ogni deploy. Usa R2 o un storage esterno.
+> Senza storage esterno, i poster si perdono ad ogni deploy (filesystem effimero).
 
-**File JSON locale (sviluppo):**
-```
-POSTERIUM_DATA_DIR=./data
-```
-Nessuna configurazione esterna necessaria. I poster vengono salvati in locale.
+#### Step 4 — Verifica
 
-#### 4. Verifica deploy
-
-Dopo il deploy, verifica lo stato:
 ```bash
 curl https://tuo-app.koyeb.app/api/health
 ```
 
-Risposta attesa:
-```json
-{
-  "status": "healthy",
-  "storage": {
-    "dataDirExists": true,
-    "mappingCount": 0
-  }
-}
-```
-
-#### 5. Aggiornamenti
-
-Koyeb fa **auto-deploy** ad ogni push su `master`. Per deploy manuali o rollback, usa la dashboard Koyeb.
+Risposta `"status": "healthy"` = tutto ok. Koyeb fa auto-deploy ad ogni push su `master`.
 
 ---
 
