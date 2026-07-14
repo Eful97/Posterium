@@ -68,7 +68,7 @@ docker build -t posterium .
 docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 ```
 
-### Koyeb (eco-small) + Cloudflare R2/Supabase/Upstash
+### Koyeb (eco-small) + Cloudflare R2/Upstash
 
 Miglior equilibrio costi/funzionalita: deploy managed su Koyeb (~$5/mese, 512 MB RAM) con storage esterno per persistenza poster.
 
@@ -77,8 +77,7 @@ Miglior equilibrio costi/funzionalita: deploy managed su Koyeb (~$5/mese, 512 MB
 | Servizio | Free tier | Cosa fa |
 |----------|-----------|---------|
 | **Cloudflare R2** | 10 GB gratis | Poster. Nessun egress fee. Serve custom domain o Worker per servirli. |
-| **Upstash Redis** | 10 MB gratis | Mappings/cache via `KV_URL`. |
-| **Supabase** | 1 GB gratis | PostgreSQL + Storage in uno. |
+| **Upstash Redis** | 10 KB gratis | Mappings/cache via `@vercel/kv` (REST API, non serve connessione TCP). |
 
 > **Raccomandazione:** R2 (poster) + Upstash (KV) per il miglior rapporto costo/prestazioni.
 
@@ -98,23 +97,24 @@ MDBLIST_API_KEY=la_tua_chiave    # opzionale: rating 9 fonti + anime
 NODE_ENV=production
 ```
 
-5. Aggiungi le variabili dello storage scelto (vedi sotto)
+5. Aggiungi le variabili Upstash (vedi sotto)
 6. Salva — il deploy parte automatico
 
 > Se il build fallisce, aumenta il timeout a 600s nelle impostazioni app.
 
-#### Step 3 — Variabili storage
+#### Step 3 — Variabili Upstash
 
-**Cloudflare R2 + Upstash (raccomandato):**
+Crea un database Redis su [upstash.com](https://upstash.com) (gratuito). Poi copia queste variabili dalla pagina del database:
+
 ```
-KV_URL=red://:password@upstash.io:6379
+KV_REST_API_URL=https://xxx.upstash.io
+KV_REST_API_TOKEN=AXxx...
+```
+
+Per servire poster da Cloudflare R2, aggiungi:
+```
 NEXT_PUBLIC_POSTER_CDN_URL=https://poster.tuo-dominio.com
 POSTER_CDN_URL=https://poster.tuo-dominio.com
-```
-
-**Supabase:**
-```
-KV_URL=postgresql://postgres:password@db.supabase.co:5432/postgres
 ```
 
 > Senza storage esterno, i poster si perdono ad ogni deploy (filesystem effimero).
@@ -136,7 +136,8 @@ Risposta `"status": "healthy"` = tutto ok. Koyeb fa auto-deploy ad ogni push su 
 | `TMDB_API_KEY` | ✅ | Chiave API TMDB v3 |
 | `MDBLIST_API_KEY` | ❌ | Rating aggregati da 9 fonti (IMDb, TMDb, Metacritic, Rotten Tomatoes, Letterboxd, Trakt, MyAnimeList, Kitsu) e classifiche anime. Priorità massima. |
 | `OMDB_API_KEY` | ❌ | Rating IMDb — fallback quando MDBList non disponibile. Senza chiave, fallback su voto TMDB. |
-| `KV_URL` | ❌ | URL Redis/PostgreSQL per storage (Upstash Redis, Supabase PostgreSQL, Vercel KV). Senza, usa file JSON locale. |
+| `KV_REST_API_URL` | ❌ | URL REST API Upstash Redis (da dashboard Upstash). Attiva storage KV per mappings/cache. |
+| `KV_REST_API_TOKEN` | ❌ | Token Upstash Redis (da dashboard Upstash). Serve insieme a `KV_REST_API_URL`. |
 | `ADMIN_TOKEN` | ❌ | Token per proteggere endpoint admin (cache clear). Se non impostato, aperto. |
 | `WIKIDATA_TIMEOUT` | ❌ | Timeout query Wikidata in ms (default: 4000). Se i badge premi/franchise/regista non compaiono, aumenta a 6000. |
 | `POSTERIUM_DATA_DIR` | ❌ | Directory dati (default: `./data`). Su Koyeb il filesystem e' effimero — usa storage esterno (R2/Supabase). |
@@ -283,7 +284,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Immagini | Sharp |
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
-| Storage | Upstash Redis / Supabase / Cloudflare R2 / JSON file |
+| Storage | Upstash Redis (KV) / Cloudflare R2 (poster) / JSON file |
 | Test | Vitest (172 test) + Playwright E2E |
 | UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
 

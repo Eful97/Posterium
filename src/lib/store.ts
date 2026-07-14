@@ -5,7 +5,7 @@ import { DATA_DIR } from "@/lib/data-dir"
 
 export type { Mapping }
 
-const useKv = !!process.env.VERCEL && !!process.env.KV_URL
+const useKv = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN
 const debugStore = process.env.POSTERIUM_DEBUG === "1"
 
 if (!useKv && debugStore) {
