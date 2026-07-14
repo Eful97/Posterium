@@ -68,40 +68,87 @@ docker build -t posterium .
 docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 ```
 
-### Hugging Face Spaces
+### Koyeb (eco-small) + Cloudflare R2/Supabase/Upstash
 
-Deploy Docker-only: su HF Spaces carichi solo **2 file** (`Dockerfile` + `README.md`), il codice viene clonato da GitHub durante la build.
+Miglior equilibrio costi/funzionalita per Posterium: deploy managed su Koyeb (512 MB RAM, ~$5/mese) con storage esterno per persistenza poster.
 
-#### Setup iniziale
+#### 1. Storage esterno (scegli uno)
 
-1. Crea uno Space su [huggingface.co/new-space](https://huggingface.co/new-space) con SDK **Docker**
-2. Carica solo questi 2 file:
-    - `Dockerfile` — clona il repo da GitHub a un commit specifico (`POSTERIUM_COMMIT`), builda Next.js, deploya
-    - `README.md` — frontmatter HF (`sdk: docker`, `app_port: 3000`)
- 3. Nelle **Settings** dello Space → **Variables and secrets** → aggiungi `TMDB_API_KEY` come secret
+| Servizio | Tipo | Free tier | Note |
+|----------|------|-----------|------|
+| **Cloudflare R2** | Object storage (S3-compatibile) | 10 GB gratis, nessun egress fee | Ideale per poster. Serve un custom domain o Workers per servirli. |
+| **Supabase** | PostgreSQL + Storage | 1 GB storage gratis | Storage + DB in uno, good per piccoli volumi. |
+| **Upstash** | Redis | 10 MB gratis | Per KV_URL (cache + mappings). Combinare con R2 per i poster. |
 
-#### Aggiornamenti
+**Raccomandazione:** Cloudflare R2 (poster) + Upstash Redis (KV/mappings) per il miglior rapporto costo/prestazioni.
 
-Per aggiornare lo Space HF:
+#### 2. Deploy Koyeb
 
-1. Pusha le modifiche su GitHub
-2. Modifica l'`ARG POSTERIUM_COMMIT` nel `Dockerfile` con l'ultimo commit hash (`git rev-parse HEAD`)
-3. Pusha il `Dockerfile` aggiornato
-4. Fai **Factory rebuild** nello Space HF
+1. Crea un account su [koyeb.com](https://koyeb.com) (free tier disponibile)
+2. Crea un **New App** → scegli **Git** come source
+3. Connetti il repo GitHub `Eful97/Posterium`
+4. Configura il build:
+   - **Build command:** `npm install && npm run build`
+   - **Run command:** `node .next/standalone/server.js`
+   - **Port:** `3000`
+5. Nelle **Settings** → **Environment variables**, aggiungi:
 
-> **Nota:** il deploy è **deterministico** — builda sempre lo stesso commit. Per aggiornare, devi cambiare il pin del commit nel Dockerfile.
+```
+TMDB_API_KEY=la_tua_chiave
+NODE_ENV=production
+```
 
-#### Persistenza poster
+6. Aggiungi le variabili per lo storage scelto (vedi tabella sotto)
+7. Deploy automatico ad ogni push su `master`
 
-Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogni rebuild. Per la persistenza serve un **HF Storage Bucket**:
+> **Nota:** Koyeb eco-small ha 512 MB RAM. Next.js standalone e' ottimizzato per questo. Se il build fallisce, aumenta timeout a 600s nelle impostazioni app.
 
-1. Vai su [huggingface.co/new-storage](https://huggingface.co/new-storage) e crea un bucket (gratuito, 10 GB)
-2. Nelle **Settings** dello Space → **Storage** → collega il bucket appena creato
-3. HF lo monterà automaticamente a `/data` — Posterium rileva il volume e lo usa come DATA_DIR
+#### 3. Variabili d'ambiente per storage
 
-> **Nota:** senza bucket, i poster vengono persi ad ogni riavvio/rebuild dello Space.
->
-> Puoi verificare lo stato dello storage via `GET /api/health` → campo `storage` (path, esistenza, scrivibilità, conteggio poster salvati).
+**Cloudflare R2 + Upstash (raccomandato):**
+```
+KV_URL=red://:password@upstash.io:6379
+NEXT_PUBLIC_POSTER_CDN_URL=https://poster.tuo-dominio.com
+POSTER_CDN_URL=https://poster.tuo-dominio.com
+```
+
+> Per servire poster da R2, configura un custom domain o un Cloudflare Worker che proxy le richieste al bucket.
+
+**Supabase:**
+```
+KV_URL=postgresql://postgres:password@db.supabase.co:5432/postgres
+POSTERIUM_DATA_DIR=/data
+```
+
+> Su Koyeb il filesystem e' effimero — senza volume persistente, i poster si perdono ad ogni deploy. Usa R2 o un storage esterno.
+
+**File JSON locale (sviluppo):**
+```
+POSTERIUM_DATA_DIR=./data
+```
+Nessuna configurazione esterna necessaria. I poster vengono salvati in locale.
+
+#### 4. Verifica deploy
+
+Dopo il deploy, verifica lo stato:
+```bash
+curl https://tuo-app.koyeb.app/api/health
+```
+
+Risposta attesa:
+```json
+{
+  "status": "healthy",
+  "storage": {
+    "dataDirExists": true,
+    "mappingCount": 0
+  }
+}
+```
+
+#### 5. Aggiornamenti
+
+Koyeb fa **auto-deploy** ad ogni push su `master`. Per deploy manuali o rollback, usa la dashboard Koyeb.
 
 ---
 
@@ -112,10 +159,10 @@ Il filesystem di HF Spaces è effimero — i poster salvati vengono persi ad ogn
 | `TMDB_API_KEY` | ✅ | Chiave API TMDB v3 |
 | `MDBLIST_API_KEY` | ❌ | Rating aggregati da 9 fonti (IMDb, TMDb, Metacritic, Rotten Tomatoes, Letterboxd, Trakt, MyAnimeList, Kitsu) e classifiche anime. Priorità massima. |
 | `OMDB_API_KEY` | ❌ | Rating IMDb — fallback quando MDBList non disponibile. Senza chiave, fallback su voto TMDB. |
-| `KV_URL` | ❌ | Vercel KV per storage (altrimenti file JSON) |
+| `KV_URL` | ❌ | URL Redis/PostgreSQL per storage (Upstash Redis, Supabase PostgreSQL, Vercel KV). Senza, usa file JSON locale. |
 | `ADMIN_TOKEN` | ❌ | Token per proteggere endpoint admin (cache clear). Se non impostato, aperto. |
 | `WIKIDATA_TIMEOUT` | ❌ | Timeout query Wikidata in ms (default: 4000). Se i badge premi/franchise/regista non compaiono, aumenta a 6000. |
-| `POSTERIUM_DATA_DIR` | ❌ | Directory dati (default: `./data`). Su HF Spaces con Storage Bucket è `/data`. |
+| `POSTERIUM_DATA_DIR` | ❌ | Directory dati (default: `./data`). Su Koyeb il filesystem e' effimero — usa storage esterno (R2/Supabase). |
 | `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | Dominio CDN pubblico da usare negli URL poster installati su Stremio, es. `https://poster-cdn.example.com`. |
 | `POSTER_CDN_URL` | ❌ | Variante server-side del dominio CDN, usata dal warmup se non vuoi esporla nel bundle client. |
 
@@ -259,7 +306,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Immagini | Sharp |
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
-| Storage | Vercel KV / JSON file |
+| Storage | Upstash Redis / Supabase / Cloudflare R2 / JSON file |
 | Test | Vitest (172 test) + Playwright E2E |
 | UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
 
