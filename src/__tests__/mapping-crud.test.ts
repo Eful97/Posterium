@@ -51,6 +51,7 @@ describe("mappingSchema CRUD", () => {
 describe("badge priority edge cases", () => {
   it("handles all null inputs", () => {
     expect(computeBadge({
+      upcomingRelease: null,
       isNewMovie: false, isNewSeries: false, animeRank: null, trendRank: null,
       award: null, franchise: null, nomination: null, studio: null, director: null, extra: null,
     })).toBeNull()
@@ -58,6 +59,7 @@ describe("badge priority edge cases", () => {
 
   it("shows studio over director", () => {
     const r = computeBadge({
+      upcomingRelease: null,
       isNewMovie: false, isNewSeries: false, animeRank: null, trendRank: null,
       award: null, franchise: null, nomination: null, studio: "Netflix", director: "Di Nolan", extra: null,
     })
@@ -66,6 +68,7 @@ describe("badge priority edge cases", () => {
 
   it("shows director when studio is null", () => {
     const r = computeBadge({
+      upcomingRelease: null,
       isNewMovie: false, isNewSeries: false, animeRank: null, trendRank: null,
       award: null, franchise: null, nomination: null, studio: null, director: "Di Nolan", extra: null,
     })
@@ -74,6 +77,7 @@ describe("badge priority edge cases", () => {
 
   it("rank badge includes rank and label", () => {
     const r = computeBadge({
+      upcomingRelease: null,
       isNewMovie: false, isNewSeries: false, animeRank: 3, trendRank: 10,
       award: null, franchise: null, nomination: null, studio: null, director: null, extra: null,
     }, t)
