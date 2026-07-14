@@ -95,6 +95,7 @@ Miglior equilibrio costi/funzionalita per Posterium: deploy managed su Koyeb (51
 
 ```
 TMDB_API_KEY=la_tua_chiave
+MDBLIST_API_KEY=la_tua_chiave    # opzionale — rating da 9 fonti + anime rank
 NODE_ENV=production
 ```
 
