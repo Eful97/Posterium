@@ -10,6 +10,7 @@ import { getServerDefaults } from "@/lib/server-defaults"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge, warmFonts } from "@/lib/svg-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
+import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { createT } from "@/lib/i18n"
 import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList } from "@/lib/mdblist"
@@ -490,11 +491,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const studioBadge = tmdbStudios.length ? tmdbStudios[0] : wikidataResult.studios.length ? wikidataResult.studios[0] : null
     const extraFallback = computeExtraFallback({ mediaType: mediaType as "movie" | "tv", voteAverage: voteAverage ?? 0, tvType, tvStatus }, t)
     const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
+    const upcomingRelease = getUpcomingReleaseLabel({
+      mediaType: mediaType as "movie" | "tv",
+      releaseDate,
+      firstAirDate,
+      locale: req.nextUrl.searchParams.get("lang") || mapping?.language || "it",
+    })
 
     const topBadge = (() => {
       if (!rankingEnabled) return null
       if (queryExtra) return { type: "extra" as const, label: queryExtra }
       const badge = computeBadge({
+        upcomingRelease,
         isNewMovie, isNewSeries,
         animeRank: animeRankResult,
         trendRank: finalRank,

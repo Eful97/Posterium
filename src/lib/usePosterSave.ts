@@ -5,6 +5,7 @@ import type { SearchResult, TMDBImage, Mapping } from "./types"
 import { titleOf } from "./utils"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
 import { computeBadge, computeExtraFallback } from "./badge-priority"
+import { getUpcomingReleaseLabel } from "./release-badge"
 import { t } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
 import { http } from "./http"
@@ -55,6 +56,7 @@ interface PosterSaveDeps {
   setLogoScale: (v: number) => void
   setLogoOffsetX: (v: number) => void
   setLogoOffsetY: (v: number) => void
+  lang: string
 }
 
 export interface SaveConfigOverrides {
@@ -75,7 +77,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
     defaultBadgeStyle, defaultRankingBadgeStyle,
     blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
-    setLogoScale, setLogoOffsetX, setLogoOffsetY,
+    setLogoScale, setLogoOffsetX, setLogoOffsetY, lang,
   } = deps
 
   const selectPoster = useCallback(async (image: TMDBImage) => {
@@ -160,7 +162,13 @@ export function usePosterSave(deps: PosterSaveDeps) {
     const tvStatus = selected.media_type === "tv" ? metaInfo.status : null
     const extra = computeExtraFallback({ mediaType: selected.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus }, t)
     const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
-    const badge = computeBadge({ isNewMovie, isNewSeries, animeRank: animeRankData?.rank ?? null, trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra }, t)
+    const upcomingRelease = getUpcomingReleaseLabel({
+      mediaType: selected.media_type === "tv" ? "tv" : "movie",
+      releaseDate: metaInfo.release_date,
+      firstAirDate: metaInfo.first_air_date,
+      locale: lang,
+    })
+    const badge = computeBadge({ upcomingRelease, isNewMovie, isNewSeries, animeRank: animeRankData?.rank ?? null, trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra }, t)
     const badgeExtra = badge?.type === "extra" ? badge.label : undefined
     const badgeRank = (!badgeExtra && rankingBadges) ? (badge?.type === "rank" ? badge.rank : trendRank || undefined) : undefined
     const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || t("badge.today")) : undefined

@@ -3,6 +3,7 @@ import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
 import { computeBadge, computeExtraFallback } from "./badge-priority"
 import { resolveLabel, isRankKey, t as tFn } from "./i18n"
 import { getPosterPublicBaseUrl } from "./poster-public-url"
+import { getUpcomingReleaseLabel } from "./release-badge"
 import { buildStremioPosterSearchParams } from "./stremio-poster-params"
 import type { SearchResult, TMDBImage } from "./types"
 import type { EnrichedAnimeItem } from "./validation"
@@ -142,13 +143,19 @@ function computeBadgeParams(ps: PosterState, bp: BadgeParams): string[] {
   const tvType = selected?.media_type === "tv" ? ps.metaInfo.type : null
   const tvStatus = selected?.media_type === "tv" ? ps.metaInfo.status : null
   const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: ps.metaInfo.voteAverage, tvType, tvStatus }, tFn)
+  const upcomingRelease = getUpcomingReleaseLabel({
+    mediaType: selected?.media_type === "tv" ? "tv" : "movie",
+    releaseDate: ps.metaInfo.release_date,
+    firstAirDate: ps.metaInfo.first_air_date,
+    locale: ps.lang,
+  })
   if (bp.customBadge) {
     const rankKey = isRankKey(bp.customBadge)
     if (rankKey === "badge.today" && ps.trendRank) params.push(`rank=${ps.trendRank}&label=${encodeURIComponent(tFn("badge.today"))}`)
     else if (rankKey === "badge.anime" && animeRank) params.push(`rank=${animeRank}&label=${encodeURIComponent(tFn("badge.anime"))}`)
     else params.push(`extra=${encodeURIComponent(resolveLabel(bp.customBadge))}`)
   } else {
-    const badge = computeBadge({ isNewMovie, isNewSeries, animeRank, trendRank: ps.trendRank, award, franchise: ps.metaInfo.franchise || null, nomination, studio, director: ps.metaInfo.director || null, extra }, tFn)
+    const badge = computeBadge({ upcomingRelease, isNewMovie, isNewSeries, animeRank, trendRank: ps.trendRank, award, franchise: ps.metaInfo.franchise || null, nomination, studio, director: ps.metaInfo.director || null, extra }, tFn)
     if (badge) {
       if (badge.type === "extra") params.push(`extra=${encodeURIComponent(badge.label)}`)
       else params.push(`rank=${badge.rank}&label=${encodeURIComponent(badge.rankLabel || badge.label)}`)

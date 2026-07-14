@@ -648,7 +648,7 @@ export function usePosterium(): PosteriumCtx {
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
-    setLogoScale, setLogoOffsetX, setLogoOffsetY,
+    setLogoScale, setLogoOffsetX, setLogoOffsetY, lang,
   })
 
   const saveConfig = useCallback(async () => {

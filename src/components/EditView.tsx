@@ -11,6 +11,7 @@ import { Toggle } from "@/components/Toggle"
 import { SliderRow } from "@/components/SliderRow"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "@/lib/awards"
 import { computeExtraFallback, getAllBadgeOptions } from "@/lib/badge-priority"
+import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { isPrefixedKey, badgeKey } from "@/lib/i18n"
 import { buildPreviewUrl } from "@/lib/poster-url"
 import { SearchBar } from "@/components/SearchBar"
@@ -286,8 +287,14 @@ export default function EditView() {
                           const tvType = s.media_type === "tv" ? p.metaInfo.type : null
                           const tvStatus = s.media_type === "tv" ? p.metaInfo.status : null
                           const extra = computeExtraFallback({ mediaType: s.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus }, p.t)
+                          const upcomingRelease = getUpcomingReleaseLabel({
+                            mediaType: s.media_type === "tv" ? "tv" : "movie",
+                            releaseDate: p.metaInfo.release_date,
+                            firstAirDate: p.metaInfo.first_air_date,
+                            locale: p.lang,
+                          })
                           const options = getAllBadgeOptions({
-                            isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank,
+                            upcomingRelease, isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank,
                             award, franchise: p.metaInfo.franchise || null, nomination, studio,
                             director: p.metaInfo.director || null, extra,
                             mediaType: s.media_type === "tv" ? "tv" : "movie",

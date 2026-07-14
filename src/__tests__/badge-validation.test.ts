@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
+import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { mappingSchema } from "@/lib/validation"
 import { createT } from "@/lib/i18n"
 
@@ -7,13 +8,32 @@ const t = createT("it")
 
 describe("computeBadge", () => {
   const base = {
+    upcomingRelease: null,
     isNewMovie: false, isNewSeries: false,
     animeRank: null, trendRank: null,
     award: null, franchise: null, nomination: null,
     studio: null, director: null, extra: null,
   }
 
-  it("prioritizes new movie over everything", () => {
+  it("prioritizes upcoming release over new movie", () => {
+    const badge = computeBadge({
+      ...base,
+      upcomingRelease: "In uscita 18/12/2026",
+      isNewMovie: true,
+    }, t)
+    expect(badge).toEqual({ type: "extra", label: "In uscita 18/12/2026" })
+  })
+
+  it("prioritizes upcoming release over trend", () => {
+    const badge = computeBadge({
+      ...base,
+      upcomingRelease: "In uscita 18/12/2026",
+      trendRank: 1,
+    })
+    expect(badge).toEqual({ type: "extra", label: "In uscita 18/12/2026" })
+  })
+
+  it("prioritizes new movie over everything else", () => {
     expect(computeBadge({ ...base, isNewMovie: true, award: "Vincitore Oscar" }, t)?.label).toBe("Nuovo film")
   })
 
@@ -120,5 +140,39 @@ describe("mappingSchema", () => {
       expect(result.data.voteAverage).toBe(8.5)
       expect(result.data.trendRank).toBe(3)
     }
+  })
+})
+
+describe("getUpcomingReleaseLabel", () => {
+  it("returns formatted date for future movie", () => {
+    expect(getUpcomingReleaseLabel({
+      mediaType: "movie",
+      releaseDate: "2099-12-18",
+      locale: "it",
+    })).toBe("In uscita 18/12/2099")
+  })
+
+  it("returns null for past release date", () => {
+    expect(getUpcomingReleaseLabel({
+      mediaType: "movie",
+      releaseDate: "2020-01-01",
+      locale: "it",
+    })).toBeNull()
+  })
+
+  it("returns null for TV shows", () => {
+    expect(getUpcomingReleaseLabel({
+      mediaType: "tv",
+      releaseDate: "2099-12-18",
+      firstAirDate: "2099-12-18",
+      locale: "it",
+    })).toBeNull()
+  })
+
+  it("returns null when no date provided", () => {
+    expect(getUpcomingReleaseLabel({
+      mediaType: "movie",
+      locale: "it",
+    })).toBeNull()
   })
 })

@@ -16,6 +16,7 @@ function franchiseKey(name: string): string {
 }
 
 export function computeBadge(params: {
+  upcomingRelease: string | null
   isNewMovie: boolean
   isNewSeries: boolean
   animeRank: number | null
@@ -28,6 +29,7 @@ export function computeBadge(params: {
   extra: string | null
 }, _t?: T): BadgeResult | null {
   const t = _t || _idT
+  if (params.upcomingRelease) return { type: "extra", label: params.upcomingRelease }
   if (params.isNewMovie) return { type: "extra", label: t("badge.newMovie") }
   if (params.isNewSeries) return { type: "extra", label: t("badge.newSeries") }
   if (params.animeRank) return { type: "rank", label: t("badge.anime"), rank: params.animeRank }
@@ -64,6 +66,7 @@ function keyed(key: string): string {
 }
 
 export function getAllBadgeOptions(params: {
+  upcomingRelease: string | null
   isNewMovie: boolean
   isNewSeries: boolean
   animeRank: number | null
@@ -80,6 +83,7 @@ export function getAllBadgeOptions(params: {
   tvStatus: string | null | undefined
 }): string[] {
   const options = new Set<string>()
+  if (params.upcomingRelease) options.add(params.upcomingRelease)
   if (params.isNewMovie) options.add(keyed("badge.newMovie"))
   if (params.isNewSeries) options.add(keyed("badge.newSeries"))
   if (params.trendRank) options.add(keyed("badge.today"))
