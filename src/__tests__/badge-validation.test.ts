@@ -18,19 +18,19 @@ describe("computeBadge", () => {
   it("prioritizes upcoming release over new movie", () => {
     const badge = computeBadge({
       ...base,
-      upcomingRelease: "In uscita 18/12/2026",
+      upcomingRelease: "In uscita 18.12.2026",
       isNewMovie: true,
     }, t)
-    expect(badge).toEqual({ type: "extra", label: "In uscita 18/12/2026" })
+    expect(badge).toEqual({ type: "extra", label: "In uscita 18.12.2026" })
   })
 
   it("prioritizes upcoming release over trend", () => {
     const badge = computeBadge({
       ...base,
-      upcomingRelease: "In uscita 18/12/2026",
+      upcomingRelease: "In uscita 18.12.2026",
       trendRank: 1,
     })
-    expect(badge).toEqual({ type: "extra", label: "In uscita 18/12/2026" })
+    expect(badge).toEqual({ type: "extra", label: "In uscita 18.12.2026" })
   })
 
   it("prioritizes new movie over everything else", () => {
@@ -149,7 +149,7 @@ describe("getUpcomingReleaseLabel", () => {
       mediaType: "movie",
       releaseDate: "2099-12-18",
       locale: "it",
-    })).toBe("In uscita 18/12/2099")
+    })).toBe("In uscita 18.12.2099")
   })
 
   it("returns null for past release date", () => {

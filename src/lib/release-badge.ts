@@ -25,9 +25,10 @@ function parseTmdbDate(value?: string | null): Date | null {
 }
 
 function formatReleaseDate(date: Date, locale: string): string {
-  return new Intl.DateTimeFormat(locale === "it" ? "it-IT" : locale, {
+  const d = date.toLocaleDateString(locale === "it" ? "it-IT" : locale, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).format(date)
+  })
+  return d.replaceAll("/", ".")
 }
