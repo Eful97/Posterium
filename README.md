@@ -68,43 +68,30 @@ docker build -t posterium .
 docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
 ```
 
-### Koyeb (eco-small) + Cloudflare R2/Upstash
+### Koyeb
 
-Miglior equilibrio costi/funzionalita: deploy managed su Koyeb (~$5/mese, 512 MB RAM) con storage esterno per persistenza poster.
+1. Crea una nuova app su [koyeb.com](https://koyeb.com).
+2. Scegli **GitHub** come sorgente e seleziona `Eful97/Posterium`.
+3. Come builder seleziona **Dockerfile**, non Node.js/autodetect.
+4. Lascia porta `3000`.
+5. Aggiungi almeno:
+   - `TMDB_API_KEY`
+   - `NODE_ENV=production`
+   - `MDBLIST_API_KEY` (opzionale: rating 9 fonti + anime rank)
+6. Deploy.
 
-#### Step 1 — Scegli storage
+> **Usa Dockerfile su Koyeb.** Il deploy Node.js/autodetect puo' fallire perche' Posterium usa Next.js standalone + Sharp + runtime server custom.
+
+#### Persistenza poster
+
+Il filesystem di Koyeb e' effimero — i mapping si perdono ad ogni deploy. Per persistenza serve storage esterno:
 
 | Servizio | Free tier | Cosa fa |
 |----------|-----------|---------|
-| **Cloudflare R2** | 10 GB gratis | Poster. Nessun egress fee. Serve custom domain o Worker per servirli. |
-| **Upstash Redis** | 10 KB gratis | Mappings/cache via `@vercel/kv` (REST API, non serve connessione TCP). |
+| **Upstash Redis** | 10 KB gratis | Mappings/cache via `@vercel/kv` (REST API). |
+| **Cloudflare R2** | 10 GB gratis | Poster. Serve custom domain o Worker per servirli. |
 
-> **Raccomandazione:** R2 (poster) + Upstash (KV) per il miglior rapporto costo/prestazioni.
-
-#### Step 2 — Deploy
-
-1. Crea account su [koyeb.com](https://koyeb.com)
-2. **New App** → **Git** → collega `Eful97/Posterium`
-3. Configura build:
-   - **Build:** `npm install && npm run build`
-   - **Run:** `node .next/standalone/server.js`
-   - **Port:** `3000`
-4. **Settings** → **Environment variables** → aggiungi:
-
-```
-TMDB_API_KEY=la_tua_chiave
-MDBLIST_API_KEY=la_tua_chiave    # opzionale: rating 9 fonti + anime
-NODE_ENV=production
-```
-
-5. Aggiungi le variabili Upstash (vedi sotto)
-6. Salva — il deploy parte automatico
-
-> Se il build fallisce, aumenta il timeout a 600s nelle impostazioni app.
-
-#### Step 3 — Variabili Upstash
-
-Crea un database Redis su [upstash.com](https://upstash.com) (gratuito). Poi copia queste variabili dalla pagina del database:
+Crea un database Redis su [upstash.com](https://upstash.com) (gratuito), poi aggiungi queste variabili dalla pagina del database:
 
 ```
 KV_REST_API_URL=https://xxx.upstash.io
@@ -117,9 +104,9 @@ NEXT_PUBLIC_POSTER_CDN_URL=https://poster.tuo-dominio.com
 POSTER_CDN_URL=https://poster.tuo-dominio.com
 ```
 
-> Senza storage esterno, i poster si perdono ad ogni deploy (filesystem effimero).
+> **Senza Upstash, i mapping si perdono ad ogni deploy.** I poster generati restano validi finche' cambia il render version.
 
-#### Step 4 — Verifica
+#### Verifica
 
 ```bash
 curl https://tuo-app.koyeb.app/api/health
