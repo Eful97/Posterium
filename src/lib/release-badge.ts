@@ -28,7 +28,7 @@ function formatReleaseDate(date: Date, locale: string): string {
   const d = date.toLocaleDateString(locale === "it" ? "it-IT" : locale, {
     day: "2-digit",
     month: "2-digit",
-    year: "numeric",
+    year: "2-digit",
   })
   return d.replaceAll("/", ".")
 }
