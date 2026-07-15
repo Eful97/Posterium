@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server"
 import { getAll, upsert, removeAll } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheInvalidate } from "@/lib/cache"
+import { cacheInvalidatePosterData } from "@/lib/cache"
 import { mappingSchema } from "@/lib/validation"
 import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
+import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     logoDisabled: parsed.data.logoDisabled ?? undefined,
     updatedAt: new Date().toISOString(),
   })
-  cacheInvalidate("poster")
+  cacheInvalidatePosterData()
   // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano
   const origin = new URL(req.url).origin
   const warmUrl = `${origin}/api/poster/${parsed.data.mediaType}/${parsed.data.tmdbId}`
@@ -51,6 +52,14 @@ export async function POST(req: NextRequest) {
     const message = error instanceof Error ? error.message : String(error)
     console.warn(`[mappings] Poster warmup failed: ${message}`)
   })
+  // Warm catalog cache — ricostruisci cataloghi principali in background
+  for (const catalog of getWarmupCatalogs()) {
+    const catalogUrl = `${origin}/catalog/${catalog.type}/${catalog.id}.json`
+    void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn(`[mappings] Catalog warmup failed for ${catalog.id}: ${message}`)
+    })
+  }
   return Response.json({ ok: true })
 }
 
@@ -59,6 +68,6 @@ export async function DELETE(req: NextRequest) {
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
   await removeAll()
-  cacheInvalidate("poster")
+  cacheInvalidatePosterData()
   return Response.json({ ok: true })
 }

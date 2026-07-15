@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { APP_VERSION } from "@/generated/app-version"
+import { POSTERIUM_CATALOGS } from "@/lib/catalog-definitions"
 
 export async function GET(req: NextRequest) {
   const domain = req.nextUrl.origin
@@ -14,22 +15,9 @@ export async function GET(req: NextRequest) {
     addonCatalogs: [],
     manifestVersion: 1,
     behaviorHints: { adult: false },
-    catalogs: [
-      { id: "posterium-jw-movies", name: "Top 20 Italia — Film", type: "movie", extra: [{ name: "skip" }] },
-      { id: "posterium-jw-series", name: "Top 20 Italia — Serie TV", type: "series", extra: [{ name: "skip" }] },
-      { id: "posterium-netflix-movies", name: "Netflix — Film", type: "movie", extra: [{ name: "skip" }] },
-      { id: "posterium-netflix-series", name: "Netflix — Serie TV", type: "series", extra: [{ name: "skip" }] },
-      { id: "posterium-prime-movies", name: "Prime Video — Film", type: "movie", extra: [{ name: "skip" }] },
-      { id: "posterium-prime-series", name: "Prime Video — Serie TV", type: "series", extra: [{ name: "skip" }] },
-      { id: "posterium-disney-movies", name: "Disney+ — Film", type: "movie", extra: [{ name: "skip" }] },
-      { id: "posterium-disney-series", name: "Disney+ — Serie TV", type: "series", extra: [{ name: "skip" }] },
-      { id: "posterium-apple-movies", name: "Apple TV+ — Film", type: "movie", extra: [{ name: "skip" }] },
-      { id: "posterium-apple-series", name: "Apple TV+ — Serie TV", type: "series", extra: [{ name: "skip" }] },
-      { id: "posterium-hbo-movies", name: "HBO Max — Film", type: "movie", extra: [{ name: "skip" }] },
-      { id: "posterium-hbo-series", name: "HBO Max — Serie TV", type: "series", extra: [{ name: "skip" }] },
-      { id: "posterium-paramount-movies", name: "Paramount+ — Film", type: "movie", extra: [{ name: "skip" }] },
-      { id: "posterium-paramount-series", name: "Paramount+ — Serie TV", type: "series", extra: [{ name: "skip" }] },
-      { id: "posterium-anime", name: "Top 20 Anime", type: "series", extra: [{ name: "skip" }] },
-    ],
+    catalogs: POSTERIUM_CATALOGS.map((catalog) => ({
+      ...catalog,
+      extra: [{ name: "skip" }],
+    })),
   })
 }

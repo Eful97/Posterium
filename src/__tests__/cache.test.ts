@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest"
-import { cacheGet, cacheSet, cacheInvalidate, cacheClear, cacheGetStale } from "@/lib/cache"
+import { cacheGet, cacheSet, cacheInvalidate, cacheInvalidatePosterData, cacheClear, cacheGetStale } from "@/lib/cache"
 
 describe("cache", () => {
   beforeEach(() => {
@@ -95,6 +95,20 @@ describe("cache", () => {
       cacheSet("a", 1, ["tag1"])
       cacheInvalidate("nonexistent")
       expect(cacheGet("a")).toBe(1)
+    })
+  })
+
+  describe("cacheInvalidatePosterData", () => {
+    it("removes poster and catalog entries after mapping changes", () => {
+      cacheSet("poster:movie:1", "poster", ["poster"])
+      cacheSet("catalog:movie:top", "catalog", ["stremio", "catalog"])
+      cacheSet("tmdb:search:avatar", "search", ["tmdb"])
+
+      cacheInvalidatePosterData()
+
+      expect(cacheGet("poster:movie:1")).toBeNull()
+      expect(cacheGet("catalog:movie:top")).toBeNull()
+      expect(cacheGet("tmdb:search:avatar")).toBe("search")
     })
   })
 

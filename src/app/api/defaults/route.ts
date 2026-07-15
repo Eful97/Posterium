@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server"
 import { getServerDefaults, setServerDefaults } from "@/lib/server-defaults"
-import { cacheInvalidate } from "@/lib/cache"
+import { cacheInvalidatePosterData } from "@/lib/cache"
 import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
+import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { z } from "zod"
 
 const defaultsSchema = z.object({
@@ -43,6 +44,15 @@ export async function PUT(req: NextRequest) {
     const message = error instanceof Error ? error.message : String(error)
     return Response.json({ error: `Failed to save: ${message}` }, { status: 500 })
   }
-  cacheInvalidate("poster")
+  cacheInvalidatePosterData()
+  // Warm catalog cache — ricostruisci cataloghi principali in background
+  const origin = new URL(req.url).origin
+  for (const catalog of getWarmupCatalogs()) {
+    const catalogUrl = `${origin}/catalog/${catalog.type}/${catalog.id}.json`
+    void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn(`[defaults] Catalog warmup failed for ${catalog.id}: ${message}`)
+    })
+  }
   return Response.json({ ok: true })
 }

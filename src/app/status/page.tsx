@@ -27,14 +27,26 @@ interface HealthData {
     flixpatrol: CheckResult
   }
   storage: {
+    mode: "kv" | "file"
     mappingsCount: number
-    dataFileExists: boolean
+    dataFileExists: boolean | null
   }
   system: {
     node: string
     platform: string
     env: string
   }
+}
+
+interface CacheTagEntry {
+  tag: string
+  count: number
+}
+
+interface CacheStatusData {
+  totalEntries: number
+  taggedEntries: CacheTagEntry[]
+  untaggedEntries: number
 }
 
 function StatusBadge({ ok }: { ok: boolean }) {
@@ -55,14 +67,44 @@ function StatusRow({ label, ok, extra }: { label: string; ok: boolean; extra?: R
 
 export default function StatusPage() {
   const [data, setData] = useState<HealthData | null>(null)
+  const [cacheStatus, setCacheStatus] = useState<CacheStatusData | null>(null)
+  const [clearingCache, setClearingCache] = useState(false)
+  const [cacheMessage, setCacheMessage] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
+
+  async function loadCacheStatus() {
+    try {
+      const res = await fetch("/api/cache/status")
+      if (!res.ok) { setCacheStatus(null); return }
+      const body = await res.json()
+      setCacheStatus(body)
+    } catch {
+      setCacheStatus(null)
+    }
+  }
+
+  async function clearCache() {
+    setClearingCache(true)
+    setCacheMessage("")
+    try {
+      const res = await fetch("/api/cache/clear", { method: "POST" })
+      if (!res.ok) { setCacheMessage(t("ui.statusCacheClearError")); return }
+      setCacheMessage(t("ui.statusCacheClearSuccess"))
+      await loadCacheStatus()
+    } catch {
+      setCacheMessage(t("ui.statusCacheClearError"))
+    } finally {
+      setClearingCache(false)
+    }
+  }
 
   useEffect(() => {
     fetch("/api/health")
       .then((r) => (r.ok || r.status === 503 ? r.json() : Promise.reject("Errore " + r.status)))
       .then((d) => { setData(d); setLoading(false) })
       .catch((e) => { setError(String(e)); setLoading(false) })
+    void loadCacheStatus()
   }, [])
 
   return (
@@ -99,8 +141,14 @@ export default function StatusPage() {
             <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
               <h2 className="text-base font-semibold mb-3">{t("ui.statusStorage")}</h2>
               <div className="space-y-1">
-                <StatusRow label={t("ui.statusDataFile")} ok={data.storage.dataFileExists} extra={data.storage.dataFileExists ? t("ui.statusDataFileName") : t("ui.statusNotFound")} />
-                <StatusRow label={t("ui.statusSavedPosters")} ok={data.storage.mappingsCount > 0 || !data.storage.dataFileExists} extra={<>{t("ui.statusPosterCount", { count: data.storage.mappingsCount })}</>} />
+                {data.storage.mode === "kv"
+                  ? <StatusRow label={t("ui.statusStorageMode")} ok extra={t("ui.statusStorageKv")} />
+                  : <>
+                      <StatusRow label={t("ui.statusStorageMode")} ok={!!data.storage.dataFileExists} extra={t("ui.statusStorageFile")} />
+                      <StatusRow label={t("ui.statusDataFile")} ok={!!data.storage.dataFileExists} extra={data.storage.dataFileExists ? t("ui.statusDataFileName") : t("ui.statusNotFound")} />
+                    </>
+                }
+                <StatusRow label={t("ui.statusSavedPosters")} ok={data.storage.mappingsCount > 0 || data.storage.mode === "kv" || !data.storage.dataFileExists} extra={<>{t("ui.statusPosterCount", { count: data.storage.mappingsCount })}</>} />
               </div>
             </div>
 
@@ -112,6 +160,40 @@ export default function StatusPage() {
                 <StatusRow label={t("ui.statusEnvironment")} ok extra={<>{data.system.env}</>} />
                 <StatusRow label={t("ui.statusOverall")} ok={data.status === "healthy"} extra={data.status === "healthy" ? t("ui.statusHealthy") : t("ui.statusDegraded")} />
               </div>
+            </div>
+
+            <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
+              <h2 className="text-base font-semibold mb-3">{t("ui.statusCache")}</h2>
+              {cacheStatus ? (
+                <div className="space-y-1">
+                  <StatusRow label={t("ui.statusCacheTotal")} ok extra={cacheStatus.totalEntries} />
+                  <StatusRow label={t("ui.statusCacheUntagged")} ok extra={cacheStatus.untaggedEntries} />
+                  {cacheStatus.taggedEntries.length > 0 ? (
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      {cacheStatus.taggedEntries.map((entry) => (
+                        <span key={entry.tag} className="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
+                          {entry.tag}: <span className="text-white font-semibold">{entry.count}</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-500">{t("ui.statusCacheEmpty")}</p>
+                  )}
+                  <div className="pt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={clearCache}
+                      disabled={clearingCache}
+                      className="px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-200 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {clearingCache ? t("ui.statusCacheClearing") : t("ui.statusCacheClear")}
+                    </button>
+                    {cacheMessage && <span className="text-xs text-zinc-500">{cacheMessage}</span>}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-500">{t("ui.statusCacheUnavailable")}</p>
+              )}
             </div>
 
             <p className="text-xs text-zinc-500 text-center">{t("ui.statusUpdated", { time: new Date(data.timestamp).toLocaleString("it-IT") })}</p>

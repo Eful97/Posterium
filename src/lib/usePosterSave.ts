@@ -169,7 +169,8 @@ export function usePosterSave(deps: PosterSaveDeps) {
       locale: lang,
     })
     const badge = computeBadge({ upcomingRelease, isNewMovie, isNewSeries, animeRank: animeRankData?.rank ?? null, trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra }, t)
-    const badgeExtra = badge?.type === "extra" ? badge.label : undefined
+    const isUpcomingReleaseBadge = !!upcomingRelease && badge?.type === "extra" && badge.label === upcomingRelease
+    const badgeExtra = badge?.type === "extra" && !isUpcomingReleaseBadge ? badge.label : undefined
     const badgeRank = (!badgeExtra && rankingBadges) ? (badge?.type === "rank" ? badge.rank : trendRank || undefined) : undefined
     const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || t("badge.today")) : undefined
     const isClean = posterToSave.iso_639_1 === null

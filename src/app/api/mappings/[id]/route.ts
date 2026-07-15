@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { getById, remove, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheInvalidate } from "@/lib/cache"
+import { cacheInvalidatePosterData } from "@/lib/cache"
 import { mappingUpdateSchema } from "@/lib/validation"
 import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 
@@ -62,7 +62,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     mediaType: existing.mediaType,
     updatedAt: new Date().toISOString(),
   })
-  cacheInvalidate("poster")
+  cacheInvalidatePosterData()
   return Response.json({ ok: true })
 }
 
@@ -74,6 +74,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Rou
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
   await remove(type as "movie" | "tv", tmdbId)
-  cacheInvalidate("poster")
+  cacheInvalidatePosterData()
   return Response.json({ ok: true })
 }

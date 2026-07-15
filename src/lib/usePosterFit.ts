@@ -45,6 +45,15 @@ interface PosterFitApiResponse {
 }
 
 const resultCache = new Map<string, PosterFitApiResponse>()
+const CACHE_MAX_ENTRIES = 100
+
+function cacheSet(key: string, value: PosterFitApiResponse): void {
+  if (resultCache.size >= CACHE_MAX_ENTRIES && !resultCache.has(key)) {
+    const firstKey = resultCache.keys().next().value
+    if (firstKey) resultCache.delete(firstKey)
+  }
+  resultCache.set(key, value)
+}
 
 function serialise(input: UsePosterFitInput): string | null {
   if (!input.enabled || !input.selectedLogo || input.cleanPosters.length < 2) return null
@@ -119,7 +128,7 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
 
         const data = await res.json() as PosterFitApiResponse
 
-        resultCache.set(cacheKey, data)
+        cacheSet(cacheKey, data)
 
         setResults(data.ranked)
         setBestFitPath(data.bestPosterPath)

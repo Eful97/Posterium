@@ -3,7 +3,7 @@ import path from "node:path"
 import { NextResponse } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { DATA_DIR } from "@/lib/data-dir"
-import { getAll } from "@/lib/store"
+import { getAll, getStorageMode } from "@/lib/store"
 
 async function fileExists(file: string): Promise<boolean> {
   try {
@@ -84,17 +84,20 @@ export async function GET(request: Request) {
     .sort()
     .at(-1) ?? null
 
+  const storageMode = getStorageMode()
+
   const storage = {
+    mode: storageMode,
     dataDir: DATA_DIR,
-    dataDirExists: await fileExists(DATA_DIR),
-    dataDirWritable: await canWriteDir(DATA_DIR),
-    mappingsFileExists: await fileExists(mappingsFile),
-    dataFileExists: await fileExists(mappingsFile),
-    mappingsReadable: await canRead(mappingsFile),
-    mappingsWritable: await canWriteDir(DATA_DIR),
-    defaultsFileExists: await fileExists(defaultsFile),
-    defaultsReadable: await canRead(defaultsFile),
-    defaultsWritable: await canWriteDir(DATA_DIR),
+    dataDirExists: storageMode === "file" ? await fileExists(DATA_DIR) : null,
+    dataDirWritable: storageMode === "file" ? await canWriteDir(DATA_DIR) : null,
+    mappingsFileExists: storageMode === "file" ? await fileExists(mappingsFile) : null,
+    dataFileExists: storageMode === "file" ? await fileExists(mappingsFile) : null,
+    mappingsReadable: storageMode === "file" ? await canRead(mappingsFile) : null,
+    mappingsWritable: storageMode === "file" ? await canWriteDir(DATA_DIR) : null,
+    defaultsFileExists: storageMode === "file" ? await fileExists(defaultsFile) : null,
+    defaultsReadable: storageMode === "file" ? await canRead(defaultsFile) : null,
+    defaultsWritable: storageMode === "file" ? await canWriteDir(DATA_DIR) : null,
     mappingCount: mappings.length,
     mappingsCount: mappings.length,
     lastMappingUpdatedAt,
@@ -109,7 +112,7 @@ export async function GET(request: Request) {
     storage,
   }
 
-  const storageOk = storage.dataDirWritable || storage.mappingCount === 0
+  const storageOk = storageMode === "kv" || storage.dataDirWritable || storage.mappingCount === 0
   const statusCode = tmdbTrending.ok && tmdbSearch.ok && storageOk ? 200 : 503
   return NextResponse.json(health, { status: statusCode })
 }

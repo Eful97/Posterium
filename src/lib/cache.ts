@@ -5,6 +5,17 @@ interface CacheEntry<T> {
   ttl?: number
 }
 
+export type CacheTagStats = {
+  readonly tag: string
+  readonly count: number
+}
+
+export type CacheStatus = {
+  readonly totalEntries: number
+  readonly taggedEntries: readonly CacheTagStats[]
+  readonly untaggedEntries: number
+}
+
 const store = new Map<string, CacheEntry<unknown>>()
 
 const MAX_TTL = 30 * 60 * 1000
@@ -97,6 +108,41 @@ export function cacheSet<T>(key: string, data: T, tags: string[] = [], ttlMs?: n
 export function cacheInvalidate(tag: string): void {
   for (const [key, entry] of store) {
     if (entry.tags.includes(tag)) store.delete(key)
+  }
+}
+
+export function cacheInvalidatePosterData(): void {
+  cacheInvalidate("poster")
+  cacheInvalidate("catalog")
+}
+
+export function cacheStatus(): CacheStatus {
+  const tagCounts = new Map<string, number>()
+  let totalEntries = 0
+  let untaggedEntries = 0
+
+  for (const entry of store.values()) {
+    if (isExpired(entry)) continue
+    totalEntries += 1
+
+    if (entry.tags.length === 0) {
+      untaggedEntries += 1
+      continue
+    }
+
+    for (const tag of entry.tags) {
+      tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1)
+    }
+  }
+
+  const taggedEntries = [...tagCounts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => a.tag.localeCompare(b.tag))
+
+  return {
+    totalEntries,
+    taggedEntries,
+    untaggedEntries,
   }
 }
 

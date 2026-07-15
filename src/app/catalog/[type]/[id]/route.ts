@@ -2,6 +2,9 @@ import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { getTop10 } from "@/lib/flixpatrol"
+import { buildPosterPublicUrl } from "@/lib/poster-public-url"
+import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"
+import { getServerDefaults } from "@/lib/server-defaults"
 
 interface StremioMeta {
   id: string
@@ -46,6 +49,30 @@ const PLATFORM_SLUGS: Record<string, string> = {
 
 type RouteParams = { type: string; id: string }
 
+function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number): string {
+  const defaults = getServerDefaults()
+  const url = buildPosterPublicUrl(`/api/poster/${type}/${id}`, {
+    origin: req.nextUrl.origin,
+  })
+
+  const params = buildStremioPosterSearchParams({
+    apiKey: process.env.TMDB_API_KEY,
+    lang: "it",
+    globalBadges: defaults.globalBadges,
+    rankingBadges: defaults.rankingBadges,
+    badgeStyle: defaults.badgeStyle,
+    rankingBadgeStyle: defaults.rankingBadgeStyle,
+    gradientHeight: defaults.gradientHeight,
+    blurIntensity: defaults.blurIntensity,
+    blurFade: defaults.blurFade,
+    blurDarkness: defaults.blurDarkness,
+    blurEnabled: defaults.blurEnabled,
+  })
+
+  params.forEach((value, key) => url.searchParams.set(key, value))
+  return url.toString()
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const rl = rateLimit(rateLimitKey(req), "catalog")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
@@ -77,7 +104,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         id: r!.d.imdb_id || r!.tmdbId.toString(),
         type: stType,
         name: r!.d.title || r!.d.name || "",
-        poster: r!.d.poster_path ? `https://image.tmdb.org/t/p/w500${r!.d.poster_path}` : null,
+        poster: r!.d.poster_path ? posteriumPosterUrl(req, stType, r!.tmdbId) : null,
         releaseInfo: (r!.d.release_date || r!.d.first_air_date || "").slice(0, 4) || undefined,
       }))
     } else if (catalogId.startsWith("posterium-anime")) {
@@ -99,7 +126,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             id: r!.d.imdb_id || r!.imdb || r!.tmdbId.toString(),
             type: "series",
             name: r!.d.name || "",
-            poster: r!.d.poster_path ? `https://image.tmdb.org/t/p/w500${r!.d.poster_path}` : null,
+            poster: r!.d.poster_path ? posteriumPosterUrl(req, "series", r!.tmdbId) : null,
             releaseInfo: (r!.d.first_air_date || "").slice(0, 4) || undefined,
           }))
         }
@@ -118,7 +145,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             id: item.tmdbId!.toString(),
             type: stType,
             name: item.title,
-            poster: item.posterPath ? `https://image.tmdb.org/t/p/w500${item.posterPath}` : null,
+            poster: item.posterPath ? posteriumPosterUrl(req, stType, item.tmdbId!) : null,
             releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
           }))
         }

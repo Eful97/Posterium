@@ -45,7 +45,7 @@ pinned: false
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **172 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
+- ✅ **186 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
 
 ---
 
@@ -89,7 +89,7 @@ Il filesystem di Koyeb e' effimero — i mapping si perdono ad ogni deploy. Per 
 | Servizio | Free tier | Cosa fa |
 |----------|-----------|---------|
 | **Upstash Redis** | 10 KB gratis | Mappings/cache via `@vercel/kv` (REST API). |
-| **Cloudflare R2** | 10 GB gratis | Poster. Serve custom domain o Worker per servirli. |
+| **Cloudflare/CDN** | variabile | Dominio pubblico davanti a Posterium per servire `/api/poster` più velocemente. |
 
 Crea un database Redis su [upstash.com](https://upstash.com) (gratuito), poi aggiungi queste variabili dalla pagina del database:
 
@@ -98,7 +98,7 @@ KV_REST_API_URL=https://xxx.upstash.io
 KV_REST_API_TOKEN=AXxx...
 ```
 
-Per servire poster da Cloudflare R2, aggiungi:
+Per usare un dominio/CDN davanti a Posterium, aggiungi:
 ```
 NEXT_PUBLIC_POSTER_CDN_URL=https://poster.tuo-dominio.com
 POSTER_CDN_URL=https://poster.tuo-dominio.com
@@ -113,6 +113,143 @@ curl https://tuo-app.koyeb.app/api/health
 ```
 
 Risposta `"status": "healthy"` = tutto ok. Koyeb fa auto-deploy ad ogni push su `master`.
+
+---
+
+## Debug e cache
+
+Posterium espone alcuni endpoint utili per controllare lo stato dell'app in produzione.
+
+### Health
+
+```bash
+curl https://TUO-DOMINIO/api/health
+```
+
+Mostra stato TMDB, JustWatch, FlixPatrol e storage (file o KV).
+
+### Cache status
+
+```bash
+curl https://TUO-DOMINIO/api/cache/status
+```
+
+Risposta esempio:
+
+```json
+{
+  "totalEntries": 12,
+  "taggedEntries": [
+    { "tag": "catalog", "count": 3 },
+    { "tag": "poster", "count": 5 },
+    { "tag": "stremio", "count": 3 },
+    { "tag": "tmdb", "count": 4 }
+  ],
+  "untaggedEntries": 0
+}
+```
+
+Se dopo un salvataggio vedi `catalog > 0`, il warmup sta funzionando.
+
+### Svuotare cache
+
+```bash
+curl -X POST https://TUO-DOMINIO/api/cache/clear
+```
+
+### Con ADMIN_TOKEN
+
+Se hai configurato `ADMIN_TOKEN`, usa uno di questi header:
+
+```bash
+curl -H "x-admin-token: TUO_TOKEN" https://TUO-DOMINIO/api/cache/status
+curl -H "Authorization: Bearer TUO_TOKEN" https://TUO-DOMINIO/api/cache/status
+curl -X POST -H "x-admin-token: TUO_TOKEN" https://TUO-DOMINIO/api/cache/clear
+```
+
+### Pagina status
+
+Apri `https://TUO-DOMINIO/status` per vedere in un colpo d'occhio:
+
+- servizi esterni (TMDB, JustWatch, FlixPatrol)
+- storage attivo (file o KV)
+- numero poster salvati
+- stato cache (entry per tag)
+
+> **Nota:** la cache è in memoria. Su ogni restart/redeploy parte vuota e si ripopola con le prime richieste o con il warmup dopo un salvataggio. Su Koyeb, anche se Upstash mantiene i mapping, la cache runtime torna vuota dopo restart.
+
+---
+
+## Troubleshooting Stremio
+
+### Stremio mostra ancora il poster vecchio
+
+Controlla in ordine:
+
+1. Salva di nuovo il poster da Posterium.
+2. Controlla lo status cache:
+   ```bash
+   curl https://TUO-DOMINIO/api/cache/status
+   ```
+3. Se hai dubbi, svuota la cache runtime:
+   ```bash
+   curl -X POST https://TUO-DOMINIO/api/cache/clear
+   ```
+   Con ADMIN_TOKEN:
+   ```bash
+   curl -X POST -H "x-admin-token: TUO_TOKEN" https://TUO-DOMINIO/api/cache/clear
+   ```
+4. Apri direttamente l'URL poster generato da Posterium nel browser per verificare il rendering.
+5. Se usi un CDN davanti a Posterium, svuota anche la cache del CDN.
+6. In Stremio, forza refresh del catalogo o reinstalla il catalogo se hai cambiato dominio.
+
+### Dopo un redeploy i poster salvati spariscono
+
+Se succede, i mapping non stanno usando storage persistente. Su Koyeb consigliato:
+
+```
+KV_REST_API_URL=https://xxx.upstash.io
+KV_REST_API_TOKEN=AXxx...
+```
+
+Poi verifica:
+```bash
+curl https://TUO-DOMINIO/api/health
+```
+
+Nel campo `storage` dovresti vedere `mode: "kv"`.
+
+### /status mostra cache vuota
+
+È normale dopo restart/redeploy. La cache è in memoria e si ripopola quando:
+
+- apri cataloghi Stremio
+- generi poster
+- salvi un poster (avvia warmup in background)
+
+### /api/cache/status ritorna Unauthorized
+
+Hai configurato `ADMIN_TOKEN`. Usa:
+
+```bash
+curl -H "x-admin-token: TUO_TOKEN" https://TUO-DOMINIO/api/cache/status
+```
+
+oppure:
+
+```bash
+curl -H "Authorization: Bearer TUO_TOKEN" https://TUO-DOMINIO/api/cache/status
+```
+
+### Stremio non usa i poster best fit
+
+Il best fit automatico funziona anche senza salvataggio, ma salvare il poster rende il risultato stabile e persistente. Controlla:
+
+1. In impostazioni globali, abilita compatibilità logo automatica.
+2. Apri un titolo non salvato e verifica che il best fit venga selezionato.
+3. Salva il poster se vuoi fissare quel setup.
+4. Controlla che il catalogo Stremio punti al dominio Posterium giusto.
+5. Se vedi ancora il primo poster TMDB, svuota cache runtime e CDN.
 
 ---
 
@@ -272,7 +409,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
 | Storage | Upstash Redis (KV) / Cloudflare R2 (poster) / JSON file |
-| Test | Vitest (172 test) + Playwright E2E |
+| Test | Vitest (186 test) + Playwright E2E |
 | UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
 
 ### Architettura
@@ -291,7 +428,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 ## 🧪 Testing
 
 ```bash
-# Test unitari (172 test)
+# Test unitari (186 test)
 node .\node_modules\vitest\vitest.mjs run
 
 # E2E smoke (Playwright, Chromium)

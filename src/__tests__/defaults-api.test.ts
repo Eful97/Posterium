@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { PUT } from "@/app/api/defaults/route"
+import { cacheClear, cacheGet, cacheSet } from "@/lib/cache"
 
 afterEach(() => {
   vi.restoreAllMocks()
+  cacheClear()
   delete process.env.ADMIN_TOKEN
 })
 
@@ -43,5 +45,20 @@ describe("PUT /api/defaults", () => {
     const req = mockPutRequest({ badgeStyle: "bar", rankingBadges: true })
     const res = await PUT(req as any)
     expect(res.status).toBe(200)
+  })
+
+  it("invalidates poster and catalog cache after saving defaults", async () => {
+    delete process.env.ADMIN_TOKEN
+    cacheSet("poster:movie:1", "poster", ["poster"])
+    cacheSet("catalog:movie:top", "catalog", ["catalog"])
+    cacheSet("tmdb:search:avatar", "search", ["tmdb"])
+
+    const req = mockPutRequest({ badgeStyle: "bar" })
+    const res = await PUT(req as any)
+
+    expect(res.status).toBe(200)
+    expect(cacheGet("poster:movie:1")).toBeNull()
+    expect(cacheGet("catalog:movie:top")).toBeNull()
+    expect(cacheGet("tmdb:search:avatar")).toBe("search")
   })
 })
