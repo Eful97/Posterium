@@ -5,6 +5,7 @@ import { getTop10 } from "@/lib/flixpatrol"
 import { buildPosterPublicUrl } from "@/lib/poster-public-url"
 import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"
 import { getServerDefaults } from "@/lib/server-defaults"
+import { POSTER_URL_VERSION } from "@/lib/render-version"
 
 interface StremioMeta {
   id: string
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const catalogId = rawId.replace(/\.json$/, "")
   const stType = normalizeCatalogType(mediaType)
 
-  const cacheKey = `stremio:catalog:${stType}:${catalogId}`
+  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return Response.json(cached)
 

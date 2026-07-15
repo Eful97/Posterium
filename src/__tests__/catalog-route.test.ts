@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { NextRequest } from "next/server"
 import { GET } from "@/app/catalog/[type]/[id]/route"
 import { cacheClear } from "@/lib/cache"
+import { POSTER_URL_VERSION } from "@/lib/render-version"
 
 function justWatchResponse(tmdbId: number): Response {
   return Response.json({
@@ -53,6 +54,7 @@ describe("GET /catalog/[type]/[id]", () => {
       name: "House of the Dragon",
       poster: expect.stringContaining("/api/poster/series/94997"),
     })
+    expect(body.metas[0].poster).toContain(`rv=${POSTER_URL_VERSION}`)
   })
 
   it("normalizes tv catalog routes to Posterium series poster URLs", async () => {
@@ -71,5 +73,6 @@ describe("GET /catalog/[type]/[id]", () => {
       name: "House of the Dragon",
       poster: expect.stringContaining("/api/poster/series/94997"),
     })
+    expect(body.metas[0].poster).toContain(`rv=${POSTER_URL_VERSION}`)
   })
 })

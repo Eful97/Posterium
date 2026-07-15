@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"
-import { POSTER_URL_VERSION } from "@/lib/render-version"
+import { POSTER_URL_VERSION, RENDER_VERSION } from "@/lib/render-version"
 
 describe("buildStremioPosterSearchParams", () => {
   it("builds the exact visual params used by Stremio poster URLs", () => {
@@ -45,5 +45,9 @@ describe("buildStremioPosterSearchParams", () => {
     expect(params.get("bd")).toBe("40")
     expect(params.get("bs")).toBe("shadow")
     expect(params.get("rs")).toBe("default")
+  })
+
+  it("keeps the public Stremio poster URL version in sync with renderer changes", () => {
+    expect(POSTER_URL_VERSION).toBe(RENDER_VERSION)
   })
 })
