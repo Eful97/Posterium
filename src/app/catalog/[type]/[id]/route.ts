@@ -51,6 +51,14 @@ const PLATFORM_SLUGS: Record<string, string> = {
 type RouteParams = { type: string; id: string }
 type StremioCatalogType = "movie" | "series"
 
+function catalogResponse(body: { metas: StremioMeta[] }): Response {
+  return Response.json(body, {
+    headers: {
+      "Cache-Control": "no-cache, max-age=0, must-revalidate",
+    },
+  })
+}
+
 function normalizeCatalogType(type: string): StremioCatalogType {
   return type === "movie" ? "movie" : "series"
 }
@@ -89,7 +97,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
-  if (cached) return Response.json(cached)
+  if (cached) return catalogResponse(cached)
 
   try {
     let metas: StremioMeta[] = []
@@ -110,7 +118,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         id: r!.d.imdb_id || r!.tmdbId.toString(),
         type: stType,
         name: r!.d.title || r!.d.name || "",
-        poster: r!.d.poster_path ? posteriumPosterUrl(req, stType, r!.tmdbId) : null,
+        poster: posteriumPosterUrl(req, stType, r!.tmdbId),
         releaseInfo: (r!.d.release_date || r!.d.first_air_date || "").slice(0, 4) || undefined,
       }))
     } else if (catalogId.startsWith("posterium-anime")) {
@@ -132,7 +140,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             id: r!.d.imdb_id || r!.imdb || r!.tmdbId.toString(),
             type: "series",
             name: r!.d.name || "",
-            poster: r!.d.poster_path ? posteriumPosterUrl(req, "series", r!.tmdbId) : null,
+            poster: posteriumPosterUrl(req, "series", r!.tmdbId),
             releaseInfo: (r!.d.first_air_date || "").slice(0, 4) || undefined,
           }))
         }
@@ -151,7 +159,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             id: item.tmdbId!.toString(),
             type: stType,
             name: item.title,
-            poster: item.posterPath ? posteriumPosterUrl(req, stType, item.tmdbId!) : null,
+            poster: posteriumPosterUrl(req, stType, item.tmdbId!),
             releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
           }))
         }
@@ -160,9 +168,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     const body = { metas }
     if (metas.length > 0) cacheSet(cacheKey, body, ["stremio", "catalog"])
-    return Response.json(body)
+    return catalogResponse(body)
   } catch (e) {
     console.error("Catalog error:", e)
-    return Response.json({ metas: [] })
+    return catalogResponse({ metas: [] })
   }
 }
