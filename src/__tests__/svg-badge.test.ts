@@ -38,6 +38,15 @@ describe("buildGenreBadgeSVG", () => {
     expect(svg).toContain('font-weight="600"')
   })
 
+  it("lowers the star symbol without shifting the rating baseline", () => {
+    const fs = 63
+    const starDy = Math.max(1, Math.round(fs * 0.06))
+    const { svg } = buildGenreTextSvg("Fantascienza", "8.7", "2026", fs, "#e5e7eb", "shadow")
+
+    expect(svg).toContain(`dy="${starDy}" font-family="Noto Sans Symbols 2"`)
+    expect(svg).toContain(`dy="${-starDy}">8.7</tspan>`)
+  })
+
   it("keeps long genre pill compact and centers its text flow", async () => {
     const rawPill = buildGenrePillSvg("Sci-Fi & Fantasy", "8.2", "2019", 53, "rgba(255,255,255,0.80)", "rgba(0,0,0,0.80)")
     expect(rawPill.svg).toContain('text-anchor="middle"')

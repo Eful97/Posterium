@@ -191,7 +191,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     voteAverage = mapping.voteAverage ?? null
     showBadges = mapping.showBadges ?? true
     rankingBadges = mapping.rankingBadges ?? true
-    etag = `"v${RENDER_VERSION}:${mapping.updatedAt}"`
+    if ((sd.defaultLogoFitEnabled ?? true) && !isRotating && logoPath && mapping.cleanPosters && mapping.cleanPosters.length > 1) {
+      const excludedSet = new Set(mapping.excludedPosters || [])
+      const fitPosters = mapping.cleanPosters
+        .filter((path) => path && !excludedSet.has(path))
+        .map((file_path) => ({ file_path, iso_639_1: null }))
+      if (fitPosters.length >= 2) {
+        const qBadgesForFit = req.nextUrl.searchParams.get("badges")
+        const fitBadgesEnabled = qBadgesForFit !== null ? qBadgesForFit !== "0" : showBadges
+        posterPath = await selectBestLogoFitPosterPath({
+          posters: fitPosters,
+          logoPath,
+          fetchImage: (path) => fetchImg(imgSrc(path)),
+          logoScale: queryNumber(req.nextUrl.searchParams, "scale") ?? mapping.logoScale ?? null,
+          logoOffsetX: queryNumber(req.nextUrl.searchParams, "ox") ?? mapping.logoOffsetX ?? null,
+          logoOffsetY: queryNumber(req.nextUrl.searchParams, "oy") ?? mapping.logoOffsetY ?? null,
+          hasBadges: fitBadgesEnabled && !!genreName && !!voteAverage && voteAverage > 0,
+          renderVersion: RENDER_VERSION,
+        }) ?? posterPath
+      }
+    }
+    etag = `"v${RENDER_VERSION}:${mapping.updatedAt}:sd${sdHash}"`
     if (req.headers.get("If-None-Match") === etag) {
       completePosterRender(null)
       return new Response(null, { status: 304, headers: posterNotModifiedHeaders(etag, immutablePoster) })
