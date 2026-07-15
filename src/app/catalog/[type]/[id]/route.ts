@@ -48,6 +48,11 @@ const PLATFORM_SLUGS: Record<string, string> = {
 }
 
 type RouteParams = { type: string; id: string }
+type StremioCatalogType = "movie" | "series"
+
+function normalizeCatalogType(type: string): StremioCatalogType {
+  return type === "movie" ? "movie" : "series"
+}
 
 function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number): string {
   const defaults = getServerDefaults()
@@ -79,19 +84,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   const { type: mediaType, id: rawId } = await params
   const catalogId = rawId.replace(/\.json$/, "")
+  const stType = normalizeCatalogType(mediaType)
 
-  const cacheKey = `stremio:catalog:${mediaType}:${catalogId}`
+  const cacheKey = `stremio:catalog:${stType}:${catalogId}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return Response.json(cached)
 
   try {
     let metas: StremioMeta[] = []
-    const stType = mediaType === "series" ? "series" : "movie"
 
     if (catalogId.startsWith("posterium-jw")) {
-      const ids = await getJustWatchRankings(mediaType === "movie" ? "MOVIE" : "SHOW")
+      const ids = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW")
       const apiKey = process.env.TMDB_API_KEY!
-      const pathTmdb = mediaType === "movie" ? "/movie" : "/tv"
+      const pathTmdb = stType === "movie" ? "/movie" : "/tv"
       const results = await Promise.all(ids.slice(0, 20).map(async (id) => {
         const url = `https://api.themoviedb.org/3${pathTmdb}/${id}?api_key=${apiKey}&language=it-IT`
         const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
@@ -140,7 +145,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const apiKey = process.env.TMDB_API_KEY
         const data = apiKey ? await getTop10(slug, "italy", apiKey).catch(() => null) : null
         if (data) {
-          const items = mediaType === "movie" ? data.movies : data.tv
+          const items = stType === "movie" ? data.movies : data.tv
           metas = items.slice(0, 10).filter((i) => i.tmdbId).map((item) => ({
             id: item.tmdbId!.toString(),
             type: stType,

@@ -156,7 +156,7 @@
     "ui.statusCacheEmpty":  "Cache vide",
     "ui.statusCacheUnavailable":  "Indisponible",
     "ui.statusCacheClear":  "Vider le cache",
-    "ui.statusCacheClearing":  "VIDage…",
+    "ui.statusCacheClearing":  "Vidage…",
     "ui.statusCacheClearSuccess":  "Cache vidée",
     "ui.statusCacheClearError":  "Impossible de vider le cache",
     "ui.logoSelected":  "Logo sélectionné",
