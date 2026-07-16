@@ -248,6 +248,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           const origLogo = details.original_language && details.original_language !== preferredLanguage ? images.logos.find((l: TMDBImage) => l.iso_639_1 === details.original_language) : undefined
           const anyLogo = images.logos[0]
           const chosenLogo = langLogo || itLogo || enLogo || origLogo || anyLogo
+          if (chosenLogo && !langLogo && !itLogo && !enLogo && origLogo) {
+            console.warn(`[poster] Logo fallback to original_language "${details.original_language}" for ${mediaType}/${tmdbId}`)
+          } else if (chosenLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
+            console.warn(`[poster] Logo fallback to any (first available) for ${mediaType}/${tmdbId}`)
+          }
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         if (logoPath) {

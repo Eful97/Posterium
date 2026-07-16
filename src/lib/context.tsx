@@ -540,6 +540,11 @@ export function usePosterium(): PosteriumCtx {
           const origLogo = details.original_language && details.original_language !== lang ? (data.logos || []).find((l: TMDBImage) => l.iso_639_1 === details.original_language) : undefined
           const firstLogo = (data.logos || [])[0]
           const autoLogo = langLogo || itLogo || enLogo || origLogo || firstLogo
+          if (autoLogo && !langLogo && !itLogo && !enLogo && origLogo) {
+            console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
+          } else if (autoLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
+            console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
+          }
           if (autoLogo) {
             navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
             if (autoLogo.width && autoLogo.height) {
@@ -597,6 +602,11 @@ export function usePosterium(): PosteriumCtx {
           const origLogo = details.original_language && details.original_language !== lang ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === details.original_language) : undefined
           const firstLogo = data.logos?.[0]
           const autoLogo = langLogo || itLogo || enLogo || origLogo || firstLogo
+          if (autoLogo && !langLogo && !itLogo && !enLogo && origLogo) {
+            console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
+          } else if (autoLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
+            console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
+          }
           if (autoLogo) {
             navigation.setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
             navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
