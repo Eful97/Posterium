@@ -530,7 +530,7 @@ export function usePosterium(): PosteriumCtx {
       const existing = mappingsMap.get(`${itemType}:${itemId}`)
       if (existing) {
         const foundPoster = (data.posters || []).find((p: TMDBImage) => p.file_path === existing.posterPath)
-        navigation.setPreviewPoster(foundPoster ? { file_path: foundPoster.file_path, iso_639_1: existing.language, vote_average: 0, width: foundPoster.width, height: foundPoster.height } : { file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
+        navigation.setPreviewPoster(foundPoster ? { file_path: foundPoster.file_path, iso_639_1: foundPoster.iso_639_1, vote_average: 0, width: foundPoster.width, height: foundPoster.height } : { file_path: existing.posterPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
         let foundLogo: TMDBImage | undefined
         if (existing.logoPath) {
           foundLogo = (data.logos || []).find((l: TMDBImage) => l.file_path === existing.logoPath)

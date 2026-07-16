@@ -58,7 +58,7 @@ function cacheSet(key: string, value: PosterFitApiResponse): void {
 function serialise(input: UsePosterFitInput): string | null {
   if (!input.enabled || !input.selectedLogo || input.cleanPosters.length < 2) return null
   return JSON.stringify([
-    input.cleanPosters.map((p) => p.file_path).sort(),
+    input.cleanPosters.map((p) => p.file_path),
     input.selectedLogo.file_path,
     input.logoScale,
     input.logoOffsetX,
