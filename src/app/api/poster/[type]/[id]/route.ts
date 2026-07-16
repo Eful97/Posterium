@@ -252,6 +252,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             console.warn(`[poster] Logo fallback to original_language "${details.original_language}" for ${mediaType}/${tmdbId}`)
           } else if (chosenLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
             console.warn(`[poster] Logo fallback to any (first available) for ${mediaType}/${tmdbId}`)
+          } else if (!chosenLogo) {
+            console.warn(`[poster] No logo available for ${mediaType}/${tmdbId}`)
           }
           if (chosenLogo) logoPath = chosenLogo.file_path
         }

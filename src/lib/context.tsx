@@ -544,6 +544,8 @@ export function usePosterium(): PosteriumCtx {
             console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
           } else if (autoLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
             console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
+          } else if (!autoLogo) {
+            console.warn(`[posterium] No logo available for ${itemType}/${itemId}`)
           }
           if (autoLogo) {
             navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
@@ -606,6 +608,8 @@ export function usePosterium(): PosteriumCtx {
             console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
           } else if (autoLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
             console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
+          } else if (!autoLogo) {
+            console.warn(`[posterium] No logo available for ${itemType}/${itemId}`)
           }
           if (autoLogo) {
             navigation.setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
