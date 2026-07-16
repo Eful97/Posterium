@@ -1,10 +1,12 @@
 import { NextRequest } from "next/server"
-import { getAll, upsert, removeAll } from "@/lib/store"
+import { getAll, getById, upsert, removeAll } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheInvalidatePosterData } from "@/lib/cache"
 import { mappingSchema } from "@/lib/validation"
 import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
+import { getServerDefaults } from "@/lib/server-defaults"
+import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
@@ -47,8 +49,19 @@ export async function POST(req: NextRequest) {
   cacheInvalidatePosterData()
   // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano
   const origin = new URL(req.url).origin
-  const warmUrl = `${origin}/api/poster/${parsed.data.mediaType}/${parsed.data.tmdbId}`
-  void fetch(warmUrl, { signal: AbortSignal.timeout(25000) }).catch((error: unknown) => {
+  void (async () => {
+    const savedMapping = await getById(parsed.data.mediaType, parsed.data.tmdbId)
+    const warmUrl = buildStremioPosterUrl({
+      origin,
+      type: parsed.data.mediaType === "tv" ? "series" : "movie",
+      id: parsed.data.tmdbId,
+      defaults: getServerDefaults(),
+      mapping: savedMapping,
+      apiKey: process.env.TMDB_API_KEY,
+      lang: parsed.data.language || "it",
+    })
+    await fetch(warmUrl, { signal: AbortSignal.timeout(25000) })
+  })().catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error)
     console.warn(`[mappings] Poster warmup failed: ${message}`)
   })

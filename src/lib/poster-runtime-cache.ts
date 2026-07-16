@@ -5,7 +5,7 @@ export const POSTER_REFRESH_PARAM = "__poster_refresh"
 
 const POSTER_CACHE_CONTROL = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
 const POSTER_IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, s-maxage=31536000, immutable"
-const POSTER_CDN_CACHE_CONTROL = "public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=604800"
+const POSTER_CDN_CACHE_CONTROL = POSTER_CACHE_CONTROL
 
 export interface PosterCachePayload {
   readonly buffer: Buffer
@@ -13,6 +13,12 @@ export interface PosterCachePayload {
 }
 
 export type PosterHeaders = Readonly<Record<string, string>>
+
+export interface ImmutablePosterRequestState {
+  readonly hasMapping?: boolean
+  readonly isRotating?: boolean
+  readonly mappingVersionMatches?: boolean
+}
 
 const inflight = new Map<string, Promise<PosterCachePayload | null>>()
 
@@ -28,8 +34,10 @@ export function isPosterRefreshRequest(searchParams: URLSearchParams): boolean {
   return searchParams.get(POSTER_REFRESH_PARAM) === "1"
 }
 
-export function isImmutablePosterRequest(searchParams: URLSearchParams): boolean {
-  return searchParams.has("rv")
+export function isImmutablePosterRequest(searchParams: URLSearchParams, state: ImmutablePosterRequestState = {}): boolean {
+  if (!searchParams.has("rv") || state.isRotating) return false
+  if (!state.hasMapping) return true
+  return state.mappingVersionMatches === true
 }
 
 export function posterHeaders(etag: string, immutable: boolean): PosterHeaders {

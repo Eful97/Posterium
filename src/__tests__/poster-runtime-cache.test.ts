@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { posterHeaders, posterNotModifiedHeaders } from "@/lib/poster-runtime-cache"
+import { isImmutablePosterRequest, posterHeaders, posterNotModifiedHeaders } from "@/lib/poster-runtime-cache"
 
 describe("poster CDN headers", () => {
   it("adds long-lived CDN headers for versioned poster URLs", () => {
@@ -15,6 +15,25 @@ describe("poster CDN headers", () => {
 
     expect(headers["Cache-Control"]).toContain("stale-while-revalidate")
     expect(headers["CDN-Cache-Control"]).toContain("stale-while-revalidate")
+    expect(headers["CDN-Cache-Control"]).toContain("max-age=86400")
     expect(headers["Surrogate-Control"]).toContain("stale-while-revalidate")
+  })
+
+  it("only treats saved mapping poster URLs as immutable when the mapping version matches", () => {
+    const params = new URLSearchParams("rv=81")
+    const versionedParams = new URLSearchParams("rv=81&mv=1784218530000")
+
+    expect(isImmutablePosterRequest(params, { hasMapping: true, isRotating: false })).toBe(false)
+    expect(isImmutablePosterRequest(versionedParams, {
+      hasMapping: true,
+      isRotating: false,
+      mappingVersionMatches: true,
+    })).toBe(true)
+    expect(isImmutablePosterRequest(versionedParams, {
+      hasMapping: true,
+      isRotating: true,
+      mappingVersionMatches: true,
+    })).toBe(false)
+    expect(isImmutablePosterRequest(params, { hasMapping: false, isRotating: false })).toBe(true)
   })
 })

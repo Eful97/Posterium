@@ -2,10 +2,10 @@ import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { getTop10 } from "@/lib/flixpatrol"
-import { buildPosterPublicUrl } from "@/lib/poster-public-url"
-import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
+import { getById } from "@/lib/store"
+import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 
 interface StremioMeta {
   id: string
@@ -63,28 +63,18 @@ function normalizeCatalogType(type: string): StremioCatalogType {
   return type === "movie" ? "movie" : "series"
 }
 
-function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number): string {
+async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number): Promise<string> {
   const defaults = getServerDefaults()
-  const url = buildPosterPublicUrl(`/api/poster/${type}/${id}`, {
+  const mapping = await getById(type === "series" ? "tv" : "movie", id)
+  return buildStremioPosterUrl({
     origin: req.nextUrl.origin,
-  })
-
-  const params = buildStremioPosterSearchParams({
+    type,
+    id,
+    defaults,
+    mapping,
     apiKey: process.env.TMDB_API_KEY,
     lang: "it",
-    globalBadges: defaults.globalBadges,
-    rankingBadges: defaults.rankingBadges,
-    badgeStyle: defaults.badgeStyle,
-    rankingBadgeStyle: defaults.rankingBadgeStyle,
-    gradientHeight: defaults.gradientHeight,
-    blurIntensity: defaults.blurIntensity,
-    blurFade: defaults.blurFade,
-    blurDarkness: defaults.blurDarkness,
-    blurEnabled: defaults.blurEnabled,
-  })
-
-  params.forEach((value, key) => url.searchParams.set(key, value))
-  return url.toString()
+  }).toString()
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
@@ -114,13 +104,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (!d?.id) return null
         return { d, tmdbId: id }
       }))
-      metas = results.filter(Boolean).map((r) => ({
-        id: r!.d.imdb_id || r!.tmdbId.toString(),
+      const validResults = results.filter((r): r is { d: { imdb_id?: string; title?: string; name?: string; release_date?: string; first_air_date?: string }; tmdbId: number } => r !== null)
+      metas = await Promise.all(validResults.map(async (r) => ({
+        id: r.d.imdb_id || r.tmdbId.toString(),
         type: stType,
-        name: r!.d.title || r!.d.name || "",
-        poster: posteriumPosterUrl(req, stType, r!.tmdbId),
-        releaseInfo: (r!.d.release_date || r!.d.first_air_date || "").slice(0, 4) || undefined,
-      }))
+        name: r.d.title || r.d.name || "",
+        poster: await posteriumPosterUrl(req, stType, r.tmdbId),
+        releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
+      })))
     } else if (catalogId.startsWith("posterium-anime")) {
       const key = process.env.MDBLIST_API_KEY
       if (key) {
@@ -136,13 +127,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             if (!d?.id) return null
             return { d, tmdbId: item.tmdb, imdb: item.imdb }
           }))
-          metas = results.filter(Boolean).map((r) => ({
-            id: r!.d.imdb_id || r!.imdb || r!.tmdbId.toString(),
+          const validResults = results.filter((r): r is { d: { imdb_id?: string; name?: string; first_air_date?: string }; tmdbId: number; imdb?: string } => r !== null)
+          metas = await Promise.all(validResults.map(async (r) => ({
+            id: r.d.imdb_id || r.imdb || r.tmdbId.toString(),
             type: "series",
-            name: r!.d.name || "",
-            poster: posteriumPosterUrl(req, "series", r!.tmdbId),
-            releaseInfo: (r!.d.first_air_date || "").slice(0, 4) || undefined,
-          }))
+            name: r.d.name || "",
+            poster: await posteriumPosterUrl(req, "series", r.tmdbId),
+            releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
+          })))
         }
       }
     } else {
@@ -155,13 +147,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const data = apiKey ? await getTop10(slug, "italy", apiKey).catch(() => null) : null
         if (data) {
           const items = stType === "movie" ? data.movies : data.tv
-          metas = items.slice(0, 10).filter((i) => i.tmdbId).map((item) => ({
-            id: item.tmdbId!.toString(),
+          const itemsWithTmdb = items.slice(0, 10).flatMap((item) => (
+            item.tmdbId ? [{ ...item, tmdbId: item.tmdbId }] : []
+          ))
+          metas = await Promise.all(itemsWithTmdb.map(async (item) => ({
+            id: item.tmdbId.toString(),
             type: stType,
             name: item.title,
-            poster: posteriumPosterUrl(req, stType, item.tmdbId!),
+            poster: await posteriumPosterUrl(req, stType, item.tmdbId),
             releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
-          }))
+          })))
         }
       }
     }

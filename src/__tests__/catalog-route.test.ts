@@ -1,15 +1,21 @@
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { NextRequest } from "next/server"
 import { GET } from "@/app/catalog/[type]/[id]/route"
 import { cacheClear } from "@/lib/cache"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getTop10 } from "@/lib/flixpatrol"
+import { getById } from "@/lib/store"
 
 vi.mock("@/lib/flixpatrol", () => ({
   getTop10: vi.fn(),
 }))
 
+vi.mock("@/lib/store", () => ({
+  getById: vi.fn(),
+}))
+
 const mockedGetTop10 = vi.mocked(getTop10)
+const mockedGetById = vi.mocked(getById)
 
 function justWatchResponse(tmdbId: number): Response {
   return Response.json({
@@ -39,9 +45,14 @@ function tmdbShowResponse(tmdbId: number): Response {
 }
 
 describe("GET /catalog/[type]/[id]", () => {
+  beforeEach(() => {
+    mockedGetById.mockResolvedValue(null)
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
     mockedGetTop10.mockReset()
+    mockedGetById.mockReset()
     cacheClear()
     delete process.env.TMDB_API_KEY
   })
@@ -63,6 +74,31 @@ describe("GET /catalog/[type]/[id]", () => {
       poster: expect.stringContaining("/api/poster/series/94997"),
     })
     expect(body.metas[0].poster).toContain(`rv=${POSTER_URL_VERSION}`)
+  })
+
+  it("adds mapping version to catalog poster URLs for saved titles", async () => {
+    process.env.TMDB_API_KEY = "tmdb-key"
+    mockedGetById.mockResolvedValueOnce({
+      tmdbId: 94997,
+      mediaType: "tv",
+      title: "House of the Dragon",
+      posterPath: "/saved.jpg",
+      logoPath: "/logo.png",
+      originalPosterPath: null,
+      language: null,
+      updatedAt: "2026-07-16T10:15:30.000Z",
+    })
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(justWatchResponse(94997))
+      .mockResolvedValueOnce(tmdbShowResponse(94997))
+
+    const req = new NextRequest("http://localhost:3000/catalog/series/posterium-jw-series.json")
+    const res = await GET(req, { params: Promise.resolve({ type: "series", id: "posterium-jw-series.json" }) })
+    const body = await res.json()
+    const posterUrl = new URL(body.metas[0].poster)
+
+    expect(res.status).toBe(200)
+    expect(posterUrl.searchParams.get("mv")).toBe(String(Date.parse("2026-07-16T10:15:30.000Z")))
   })
 
   it("normalizes tv catalog routes to Posterium series poster URLs", async () => {

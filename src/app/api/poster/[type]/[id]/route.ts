@@ -16,7 +16,9 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { computeLogoLayout } from "@/lib/logo-layout"
-import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
+import { selectBestLogoFitPosterPath, type PosterCandidate } from "@/lib/poster-auto-fit"
+import { getEffectiveRotationState } from "@/lib/poster-rotation"
+import { mappingVersionParam } from "@/lib/stremio-poster-url"
 import { RENDER_VERSION } from "@/lib/render-version"
 import {
   beginPosterRender,
@@ -81,16 +83,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const mapping = await getById(mediaType, tmdbId)
 
   // Auto-rotate clean poster (sequential, not random)
-  const isRotating = !!(mapping && mapping.autoRotateClean && mapping.cleanPosters && mapping.cleanPosters.length > 1)
+  const rotationState = getEffectiveRotationState(mapping)
+  const isRotating = rotationState.isRotating
   if (isRotating) {
-    const excludedSet = new Set(mapping.excludedPosters || [])
-    const availablePosters = mapping.cleanPosters!.filter((path) => !excludedSet.has(path))
-    if (availablePosters.length >= 2) {
+    if (mapping && rotationState.availablePosters.length >= 2) {
       const lastUpdate = mapping.cleanPosterUpdatedAt ? new Date(mapping.cleanPosterUpdatedAt).getTime() : 0
       const now = Date.now()
       if (now - lastUpdate > 24 * 60 * 60 * 1000) {
         const currentIdx = mapping.cleanPosterIndex ?? -1
-        const posters = availablePosters
+        const posters = rotationState.availablePosters
         const newIndex = currentIdx < 0 ? 0 : (currentIdx + 1) % posters.length
         const newPosterPath = posters[newIndex]
         if (newPosterPath !== mapping.posterPath) {
@@ -113,10 +114,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const sdHash = hashKey(JSON.stringify(sd))
   const cacheParams = normalizePosterCacheParams(req.nextUrl.searchParams)
   const cachedRank = mapping?.trendRank ?? null
-  const rotateKey = isRotating ? `:ci${mapping.cleanPosterIndex}` : ""
+  const rotateKey = isRotating ? `:ci${mapping?.cleanPosterIndex ?? "x"}` : ""
   const mapVersion = mapping?.updatedAt ? `:mu${mapping.updatedAt}` : ""
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}`
-  const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams) && !isRotating
+  const currentMappingVersion = mappingVersionParam(mapping)
+  const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams, {
+    hasMapping: !!mapping,
+    isRotating,
+    mappingVersionMatches: !!currentMappingVersion && req.nextUrl.searchParams.get("mv") === currentMappingVersion,
+  })
   const refreshRequest = isPosterRefreshRequest(req.nextUrl.searchParams)
 
   // 3. Memory cache check (no network)
@@ -191,11 +197,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     voteAverage = mapping.voteAverage ?? null
     showBadges = mapping.showBadges ?? true
     rankingBadges = mapping.rankingBadges ?? true
-    if ((sd.defaultLogoFitEnabled ?? true) && !isRotating && logoPath && mapping.cleanPosters && mapping.cleanPosters.length > 1) {
+    if ((sd.defaultLogoFitEnabled ?? true) && !isRotating && logoPath) {
       const excludedSet = new Set(mapping.excludedPosters || [])
-      const fitPosters = mapping.cleanPosters
+      let fitPosters: PosterCandidate[] = (mapping.cleanPosters || [])
         .filter((path) => path && !excludedSet.has(path))
         .map((file_path) => ({ file_path, iso_639_1: null }))
+      if (fitPosters.length < 2) {
+        const preferredLanguage = req.nextUrl.searchParams.get("lang") || mapping.language || "it"
+        const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
+        const images = await getImages(mediaType, tmdbId, `${preferredLanguage},en,null`, apiKey).catch(() => null)
+        fitPosters = (images?.posters || [])
+          .filter((poster) => poster.iso_639_1 === null && !excludedSet.has(poster.file_path))
+      }
       if (fitPosters.length >= 2) {
         const qBadgesForFit = req.nextUrl.searchParams.get("badges")
         const fitBadgesEnabled = qBadgesForFit !== null ? qBadgesForFit !== "0" : showBadges
