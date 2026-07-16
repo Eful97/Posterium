@@ -61,7 +61,7 @@ export function matchTMDBStudios(names: string[]): string[] {
     const lower = name.toLowerCase().trim()
     for (const net of NETWORKS) {
       const nLower = net.toLowerCase()
-      if (lower === nLower || lower.includes(nLower) || nLower.includes(lower)) {
+      if (lower === nLower || lower.includes(nLower)) {
         found.add(net)
         break
       }
@@ -95,7 +95,7 @@ function matchFranchise(labels: string[]): string | null {
     const fLower = fr.toLowerCase()
     for (const label of labels) {
       const lower = label.toLowerCase().trim()
-      if (lower === fLower || lower.includes(fLower) || fLower.includes(lower)) {
+      if (lower === fLower || lower.includes(fLower)) {
         return fr
       }
       if (fr === "MCU" && lower.includes("marvel cinematic")) return "MCU"
@@ -111,7 +111,7 @@ function matchStudios(labels: string[]): string[] {
     const lower = label.toLowerCase()
     for (const net of NETWORKS) {
       const nLower = net.toLowerCase()
-      if (lower === nLower || lower.includes(nLower) || nLower.includes(lower)) {
+      if (lower === nLower || lower.includes(nLower)) {
         found.add(net)
         break
       }
@@ -145,7 +145,7 @@ function matchDirector(name: string | null, t?: (key: string, params?: Record<st
   if (!name) return null
   const lower = name.toLowerCase().trim()
   for (const d of DIRECTORS) {
-    if (lower === d.toLowerCase() || lower.includes(d.toLowerCase()) || d.toLowerCase().includes(lower)) {
+    if (lower === d.toLowerCase() || lower.includes(d.toLowerCase())) {
       return t ? t("badge.director", { name: d }) : `Di ${d}`
     }
   }

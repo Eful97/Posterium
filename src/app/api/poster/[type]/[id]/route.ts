@@ -245,8 +245,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           const langLogo = images.logos.find((l: TMDBImage) => l.iso_639_1 === preferredLanguage)
           const itLogo = preferredLanguage !== "it" ? images.logos.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
           const enLogo = preferredLanguage !== "en" ? images.logos.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
+          const origLogo = details.original_language && details.original_language !== preferredLanguage ? images.logos.find((l: TMDBImage) => l.iso_639_1 === details.original_language) : undefined
           const anyLogo = images.logos[0]
-          const chosenLogo = langLogo || itLogo || enLogo || anyLogo
+          const chosenLogo = langLogo || itLogo || enLogo || origLogo || anyLogo
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         if (logoPath) {
