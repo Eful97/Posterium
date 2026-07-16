@@ -16,7 +16,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { computeLogoLayout } from "@/lib/logo-layout"
-import { selectBestLogoFitPosterPath, type PosterCandidate } from "@/lib/poster-auto-fit"
+import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { getEffectiveRotationState } from "@/lib/poster-rotation"
 import { mappingVersionParam } from "@/lib/stremio-poster-url"
 import { RENDER_VERSION } from "@/lib/render-version"
@@ -197,33 +197,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     voteAverage = mapping.voteAverage ?? null
     showBadges = mapping.showBadges ?? true
     rankingBadges = mapping.rankingBadges ?? true
-    if ((sd.defaultLogoFitEnabled ?? true) && !isRotating && logoPath) {
-      const excludedSet = new Set(mapping.excludedPosters || [])
-      let fitPosters: PosterCandidate[] = (mapping.cleanPosters || [])
-        .filter((path) => path && !excludedSet.has(path))
-        .map((file_path) => ({ file_path, iso_639_1: null }))
-      if (fitPosters.length < 2) {
-        const preferredLanguage = req.nextUrl.searchParams.get("lang") || mapping.language || "it"
-        const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
-        const images = await getImages(mediaType, tmdbId, `${preferredLanguage},en,null`, apiKey).catch(() => null)
-        fitPosters = (images?.posters || [])
-          .filter((poster) => poster.iso_639_1 === null && !excludedSet.has(poster.file_path))
-      }
-      if (fitPosters.length >= 2) {
-        const qBadgesForFit = req.nextUrl.searchParams.get("badges")
-        const fitBadgesEnabled = qBadgesForFit !== null ? qBadgesForFit !== "0" : showBadges
-        posterPath = await selectBestLogoFitPosterPath({
-          posters: fitPosters,
-          logoPath,
-          fetchImage: (path) => fetchImg(imgSrc(path)),
-          logoScale: queryNumber(req.nextUrl.searchParams, "scale") ?? mapping.logoScale ?? null,
-          logoOffsetX: queryNumber(req.nextUrl.searchParams, "ox") ?? mapping.logoOffsetX ?? null,
-          logoOffsetY: queryNumber(req.nextUrl.searchParams, "oy") ?? mapping.logoOffsetY ?? null,
-          hasBadges: fitBadgesEnabled && !!genreName && !!voteAverage && voteAverage > 0,
-          renderVersion: RENDER_VERSION,
-        }) ?? posterPath
-      }
-    }
     etag = `"v${RENDER_VERSION}:${mapping.updatedAt}:sd${sdHash}"`
     if (req.headers.get("If-None-Match") === etag) {
       completePosterRender(null)
