@@ -14,6 +14,7 @@ function makeMapping(overrides: Partial<Mapping> = {}): Mapping {
     title: "Test Movie",
     posterPath: "/poster.jpg",
     logoPath: "/logo.png",
+    originalPosterPath: null,
     backdropPath: "/backdrop.jpg",
     customBadge: "Custom",
     badgeExtra: "Extra",

@@ -25,7 +25,7 @@ test("home works on mobile", async ({ page }) => {
 })
 
 test("can open an editor from search", async ({ page }) => {
-  const hasTmdbKey = process.env.TMDB_API_KEY?.length > 0
+  const hasTmdbKey = !!(process.env.TMDB_API_KEY?.length)
   test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
 
   await page.goto("/")

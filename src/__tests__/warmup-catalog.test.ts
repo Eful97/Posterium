@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import { NextRequest } from "next/server"
 
 describe("POST /api/mappings — catalog warmup", () => {
   const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }))
@@ -22,7 +23,7 @@ describe("POST /api/mappings — catalog warmup", () => {
       posterPath: "/poster.jpg",
     }
 
-    const req = new Request("http://localhost:3000/api/mappings", {
+    const req = new NextRequest("http://localhost:3000/api/mappings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -61,7 +62,7 @@ describe("POST /api/mappings — catalog warmup", () => {
       posterPath: "/poster2.jpg",
     }
 
-    const req = new Request("http://localhost:3000/api/mappings", {
+    const req = new NextRequest("http://localhost:3000/api/mappings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

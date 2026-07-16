@@ -56,10 +56,12 @@ describe("GET /api/health", () => {
     const store = await import("@/lib/store")
     await store.upsert({
       tmdbId: 1, mediaType: "movie", title: "A", posterPath: "/a.jpg",
+      logoPath: null, originalPosterPath: null,
       language: "it", updatedAt: "2026-07-01T00:00:00.000Z",
     })
     await store.upsert({
       tmdbId: 2, mediaType: "tv", title: "B", posterPath: "/b.jpg",
+      logoPath: null, originalPosterPath: null,
       language: "en", updatedAt: "2026-07-02T00:00:00.000Z",
     })
 

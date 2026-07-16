@@ -38,8 +38,8 @@ describe("POST /api/poster-fit", () => {
     const posterBuf = await makePosterBuffer(20, 20, 30)
     const logoBuf = await makeLogoBuffer(255, 255, 255)
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-      if (url.includes("/logo")) return new Response(logoBuf)
-      return new Response(posterBuf)
+      if (url.includes("/logo")) return new Response(new Uint8Array(logoBuf))
+      return new Response(new Uint8Array(posterBuf))
     }))
 
     const req = mockNextRequest({ posterPaths: ["/test.jpg"], logoPath: "/logo.png" })
@@ -104,10 +104,10 @@ describe("POST /api/poster-fit", () => {
     const logoBuf = await makeLogoBuffer(255, 255, 255)
     let callCount = 0
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-      if (url.includes("/logo")) return new Response(logoBuf)
+      if (url.includes("/logo")) return new Response(new Uint8Array(logoBuf))
       callCount++
       if (callCount === 1) return new Response(null, { status: 404 })
-      return new Response(posterBuf)
+      return new Response(new Uint8Array(posterBuf))
     }))
 
     const req = mockNextRequest({ posterPaths: ["/fail.jpg", "/ok.jpg"], logoPath: "/logo.png" })
@@ -122,8 +122,8 @@ describe("POST /api/poster-fit", () => {
     const posterBuf = await makePosterBuffer(20, 20, 30)
     const logoBuf = await makeLogoBuffer(255, 255, 255)
     const fetchFn = vi.fn(async (url: string) => {
-      if (url.includes("/logo")) return new Response(logoBuf)
-      return new Response(posterBuf)
+      if (url.includes("/logo")) return new Response(new Uint8Array(logoBuf))
+      return new Response(new Uint8Array(posterBuf))
     })
     vi.stubGlobal("fetch", fetchFn)
 
@@ -141,9 +141,9 @@ describe("POST /api/poster-fit", () => {
     const darkBuf = await makePosterBuffer(20, 20, 30)
     const lightBuf = await makePosterBuffer(230, 230, 240)
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-      if (url.includes("/logo")) return new Response(logoBuf)
-      if (url.includes("/dark")) return new Response(darkBuf)
-      return new Response(lightBuf)
+      if (url.includes("/logo")) return new Response(new Uint8Array(logoBuf))
+      if (url.includes("/dark")) return new Response(new Uint8Array(darkBuf))
+      return new Response(new Uint8Array(lightBuf))
     }))
 
     const req = mockNextRequest({
