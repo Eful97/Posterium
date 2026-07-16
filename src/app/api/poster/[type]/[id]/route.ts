@@ -220,9 +220,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const preferredLanguage = req.nextUrl.searchParams.get("lang") || "it"
     const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
     try {
-      const [images, details, extIds] = await Promise.all([
-        getImages(mediaType, tmdbId, `${preferredLanguage},en,null`, apiKey),
-        getDetails(mediaType, tmdbId, preferredLanguage, apiKey),
+      const details = await getDetails(mediaType, tmdbId, preferredLanguage, apiKey)
+      const origLang = details.original_language
+      const imageLangs = origLang && origLang !== preferredLanguage && origLang !== "en"
+        ? `${preferredLanguage},en,null,${origLang}`
+        : `${preferredLanguage},en,null`
+      const [images, extIds] = await Promise.all([
+        getImages(mediaType, tmdbId, imageLangs, apiKey),
         getExternalIds(mediaType, tmdbId, apiKey).catch(() => ({ imdb_id: null })),
       ])
       const imdbId = extIds.imdb_id
