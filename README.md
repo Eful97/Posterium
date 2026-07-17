@@ -20,13 +20,13 @@ pinned: false
 
 - 🔍 **Ricerca TMDB** — Cerca film e serie TV in italiano e inglese
 - 🌐 **Internazionalizzazione** — 5 lingue (Italiano, English, Français, Deutsch, Español) per badge e UI completa
-- 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y, filtro per lingua (Tutti/Italiano/English/Senza lingua)
+- 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y, filtro per lingua (Tutti/Italiano/English/Senza lingua) e fallback automatico su lingua originale
 - 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi con ombra proporzionale e text-shadow sincronizzato
 - 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, 4 stili (shadow/pill/bar/colored), con overflow protection, anno, accent color e text color adattivo
 - 🏆 **Badge ranking/extra** — Classifica JustWatch, tendenze MDBList, badge personalizzati, 3 stili (default/bar/colored)
 - ✏️ **Badge personalizzato** — Sostituisci il badge automatico con testo libero, per ogni titolo individualmente
 - 🎨 **Blur fondo** — Intensità, fade, oscurità regolabili, sincronizzato client ↔ server (sostituisce il gradiente)
-- 📊 **Rating** — Media da 9 fonti: IMDb, TMDb, Metacritic, Rotten Tomatoes (critica + pubblico), Letterboxd, Trakt, MyAnimeList, Kitsu via MDBList
+- 📊 **Rating** — Media tra IMDb (da MDBList o OMDb) e TMDb (da TMDB), per un voto bilanciato e accurato
 - 📋 **I miei poster** — Filtri per tipo (Film/Serie TV/Anime), ordinamento, ricerca, layout responsive
 - 🔔 **Aggiornamenti automatici** — Badge versione in alto a sinistra, notifica nuove release da GitHub
 - 🔄 **Rotazione poster clean 24h** — Seleziona più poster puliti e ruotali automaticamente ogni 24 ore, con opzione globale nelle impostazioni predefinite
@@ -45,7 +45,7 @@ pinned: false
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **191 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
+- ✅ **199 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
 
 ---
 
@@ -258,8 +258,8 @@ Il best fit automatico funziona anche senza salvataggio, ma salvare il poster re
 | Variabile | Obbligatoria | Descrizione |
 |-----------|:----------:|-------------|
 | `TMDB_API_KEY` | ✅ | Chiave API TMDB v3 |
-| `MDBLIST_API_KEY` | ❌ | Rating aggregati da 9 fonti (IMDb, TMDb, Metacritic, Rotten Tomatoes, Letterboxd, Trakt, MyAnimeList, Kitsu) e classifiche anime. Priorità massima. |
-| `OMDB_API_KEY` | ❌ | Rating IMDb — fallback quando MDBList non disponibile. Senza chiave, fallback su voto TMDB. |
+| `MDBLIST_API_KEY` | ❌ | Rating IMDb da MDBList (mediato con TMDB) e classifiche anime. Priorità massima. |
+| `OMDB_API_KEY` | ❌ | Rating IMDb — fallback quando MDBList non disponibile (mediato con TMDB). Senza chiave, usa solo voto TMDB. |
 | `KV_REST_API_URL` | ❌ | URL REST API Upstash Redis (da dashboard Upstash). Attiva storage KV per mappings/cache. |
 | `KV_REST_API_TOKEN` | ❌ | Token Upstash Redis (da dashboard Upstash). Serve insieme a `KV_REST_API_URL`. |
 | `ADMIN_TOKEN` | ❌ | Token per proteggere endpoint admin (cache clear). Se non impostato, aperto. |
@@ -428,7 +428,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 ## 🧪 Testing
 
 ```bash
-# Test unitari (191 test)
+# Test unitari (199 test)
 node .\node_modules\vitest\vitest.mjs run
 
 # E2E smoke (Playwright, Chromium)
@@ -440,6 +440,10 @@ node .\node_modules\@playwright\test\cli.js test e2e/posterium-smoke.spec.ts
 | File test | Test | Copertura |
 |---|---|---|
 | `poster-url.test.ts` | 33 | buildUrlPattern, buildPreviewUrl, CDN base URL, URL params, badge, logo, backdrop, topLight |
+| `catalog-definitions.test.ts` | 2 | Single source for catalog IDs, manifest sync |
+| `warmup-catalog.test.ts` | 5 | Warmup logic on save/import |
+| `cache-status-api.test.ts` | 4 | Cache debug endpoints auth and data |
+| `catalog-route.test.ts` | 3 | Stremio catalog generation and poster URLs |
 | `cache.test.ts` | 14 | cacheGet/Set, TTL expiry, cacheGetStale, cacheInvalidate, cacheClear |
 | `poster-runtime-cache.test.ts` | 2 | Header CDN immutable e stale-while-revalidate |
 | `app-version.test.ts` | 1 | Versione generata allineata a package.json |
