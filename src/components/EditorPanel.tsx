@@ -11,20 +11,16 @@ interface Props {
 
 export function EditorPanel({ title, tabs, activeTab, onTabChange, children, className = "" }: Props) {
   return (
-    <section className={`h-full min-h-0 rounded-xl border border-zinc-800/70 bg-zinc-950/45 flex flex-col overflow-hidden ${className}`}>
+    <section className={`editor-panel rounded-2xl border border-white/10 bg-zinc-950/75 shadow-2xl shadow-black/40 backdrop-blur-xl ${className}`}>
       {(title || tabs) && (
-        <div className="shrink-0 px-4 py-3 border-b border-zinc-800/60">
+        <div className="editor-panel-header">
           {tabs ? (
             <div className="flex gap-1 overflow-x-auto scrollbar-none">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => onTabChange?.(tab.key)}
-                  className={`h-7 px-2.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 ${
-                    activeTab === tab.key
-                      ? "bg-accent-orange/15 text-accent-orange border-accent-orange/35"
-                      : "bg-white/5 text-zinc-400 border-white/10 hover:text-zinc-200 hover:bg-white/10"
-                  }`}
+                  className={`tab-chip h-7 px-2.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 ${activeTab === tab.key ? "tab-chip-active bg-accent-orange/15 text-accent-orange border-accent-orange/35" : "bg-white/5 text-zinc-400 border-white/10 hover:text-zinc-200 hover:bg-white/10"}`}
                 >
                   {tab.label}
                   {tab.count !== undefined && <span className="ml-1 text-[10px] opacity-60">{tab.count}</span>}
@@ -36,7 +32,7 @@ export function EditorPanel({ title, tabs, activeTab, onTabChange, children, cla
           )}
         </div>
       )}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-none p-3">
+      <div className="editor-panel-body scrollbar-none">
         {children}
       </div>
     </section>

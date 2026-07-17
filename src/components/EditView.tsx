@@ -146,7 +146,7 @@ export default function EditView() {
       {p.selected && (
         <div className="flex flex-col items-center">
           {searchBar}
-          <div className="grid grid-cols-1 lg:grid-cols-[390px_430px_390px] gap-4 items-stretch w-full max-w-[1274px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),820px)] lg:min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(330px,400px)_minmax(390px,440px)_minmax(330px,400px)] gap-5 items-stretch w-full max-w-[1320px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
 
             {/* LEFT: Poster */}
             <EditorPanel tabs={leftTabs} activeTab={activePosterTab} onTabChange={setActivePosterTab}>
@@ -160,8 +160,8 @@ export default function EditView() {
             {/* CENTER: Preview */}
             <EditorPanel title={p.t("ui.previewSection")}>
               <div className="flex flex-col items-center justify-between min-h-full">
-                <div className="w-full max-w-[360px] bg-zinc-800/80 rounded-2xl overflow-hidden relative shadow-2xl shadow-black/50 backdrop-blur-sm border border-white/[0.07]">
-                  <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-900/50 overflow-hidden rounded-2xl">
+                <div className="preview-frame w-full max-w-[360px] rounded-[1.35rem] overflow-hidden relative">
+                  <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-950/70 overflow-hidden rounded-[1.2rem]">
                     {p.previewUrl ? (
                       <>
                         <div className="loading-bar-overlay" style={{ opacity: previewLoading ? 1 : 0, pointerEvents: "none" }} />
@@ -194,9 +194,9 @@ export default function EditView() {
 
                 {p.selected && (
                   <div className="mt-3 w-full text-center select-text">
-                    <h2 className="text-lg font-bold [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_2px_8px_rgba(0,0,0,0.7)]">{p.titleOf(p.selected)}</h2>
+                    <h2 className="text-lg font-bold text-zinc-50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_2px_8px_rgba(0,0,0,0.7)]">{p.titleOf(p.selected)}</h2>
                     <p className="text-xs text-zinc-300 mt-0.5 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">{p.yearOf(p.selected)} {p.selected.media_type === "movie" ? p.t("ui.movie") : p.t("ui.tvSeries")}</p>
-                    <p className="text-xs text-zinc-400 mt-1">TMDB: <a href={`https://www.themoviedb.org/${p.selected.media_type}/${p.selected.id}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline underline-offset-2">{p.selected.id}</a>{p.selected.imdb_id ? <> • IMDB: <a href={`https://www.imdb.com/title/${p.selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline underline-offset-2">{p.selected.imdb_id}</a></> : ""}</p>
+                    <p className="text-xs text-zinc-500 mt-1">TMDB: <a href={`https://www.themoviedb.org/${p.selected.media_type}/${p.selected.id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 hover:text-white underline underline-offset-2">{p.selected.id}</a>{p.selected.imdb_id ? <> • IMDB: <a href={`https://www.imdb.com/title/${p.selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 hover:text-white underline underline-offset-2">{p.selected.imdb_id}</a></> : ""}</p>
                   </div>
                 )}
 
@@ -219,7 +219,7 @@ export default function EditView() {
                       })
                       if (!url) return
                       window.open(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`, "_blank")
-                    }} className="py-2 px-3 rounded-xl text-[11px] font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-accent/40 active:scale-[0.97] transition-all duration-200">{p.t("ui.testUrl")}</button>
+                    }} className="py-2 px-3 rounded-xl text-[11px] font-semibold bg-white/[0.06] border border-white/10 text-zinc-300 hover:bg-white/[0.10] hover:border-white/20 hover:text-white active:scale-[0.97] transition-all duration-200">{p.t("ui.testUrl")}</button>
                     {(() => {
                       const selected = p.selected
                       if (!selected) return null

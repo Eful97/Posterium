@@ -52,11 +52,7 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
           <button
             key={tab.key}
             onClick={() => setActiveLogoGroup(tab.key)}
-            className={`h-7 px-2.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 ${
-              activeLogoGroup === tab.key
-                ? "bg-accent-orange/15 text-accent-orange border-accent-orange/35"
-                : "bg-white/5 text-zinc-400 border-white/10 hover:text-zinc-200 hover:bg-white/10"
-            }`}
+            className={`tab-chip h-7 px-2.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 ${activeLogoGroup === tab.key ? "tab-chip-active bg-accent-orange/15 text-accent-orange border-accent-orange/35" : "bg-white/5 text-zinc-400 border-white/10 hover:text-zinc-200 hover:bg-white/10"}`}
           >
             {tab.label}
             <span className="ml-1 text-[10px] opacity-60">{tab.count}</span>
@@ -80,7 +76,7 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
                 {best.map((img) => {
                   const isActive = selectedLogo?.file_path === img.file_path
                   return (
-                    <button key={img.file_path} disabled={disabled} onClick={() => selectLogo(img)} className={`group relative p-2 bg-black/40 backdrop-blur-sm rounded-xl border-2 transition-all duration-200 ease-out flex items-center justify-center h-20 shadow-md ${disabled ? "opacity-40 cursor-not-allowed" : "hover:shadow-accent/20 hover:scale-[1.02]"} ${isActive ? "border-accent-orange border-[3px] bg-accent-orange/15 shadow-[0_0_15px_var(--color-accent-orange)] ring-2 ring-accent-orange/25" : "border-zinc-700 hover:border-accent/50 hover:shadow-lg"}`} title={isActive ? p.t("ui.logoSelected") : undefined}>
+                    <button key={img.file_path} disabled={disabled} onClick={() => selectLogo(img)} className={`poster-tile group relative p-2 rounded-xl transition-all duration-200 ease-out flex items-center justify-center h-20 ${disabled ? "opacity-40 cursor-not-allowed" : ""} ${isActive ? "poster-tile-active bg-accent-orange/10" : ""}`} title={isActive ? p.t("ui.logoSelected") : undefined}>
                       {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
                       <img src={posterUrl(img.file_path, "w154")} alt="" loading="lazy" decoding="async" className="max-h-14 max-w-full object-contain transition-transform duration-200 group-hover:scale-110" />
                       {isActive && <div className="absolute top-1 right-1 rounded-md bg-accent-orange text-white p-0.5 shadow-sm shadow-accent-orange/40"><Check className="w-3 h-3" /></div>}

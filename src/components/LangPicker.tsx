@@ -11,13 +11,13 @@ export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
       <div className="w-full max-w-lg mx-4">
         <div className="text-center mb-10">
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
-          <img src="/posterium.svg" alt="Posterium" loading="eager" decoding="async" className="h-16 w-auto mx-auto mb-4 hover:brightness-110 transition-all duration-150" />
+          <img src="/posterium.svg" alt="Posterium" loading="eager" decoding="async" className="h-auto w-[min(92vw,390px)] mx-auto mb-4 hover:brightness-110 transition-all duration-150" />
           <h2 className="text-2xl font-bold text-zinc-100">{p.t("ui.welcome")}</h2>
           <p className="text-sm text-zinc-400 mt-1.5">{p.t("ui.welcomeSubtitle")}</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {PICKER_LANGS.map((l) => (
-            <button key={l.code} onClick={() => onPick(l.code)} className="flex items-center gap-2 px-4 py-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-accent/50 hover:bg-zinc-800 active:scale-[0.97] transition-all duration-200 text-left group">
+            <button key={l.code} onClick={() => onPick(l.code)} className="surface-card flex items-center gap-2 px-4 py-3.5 rounded-2xl hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 text-left group">
               <span className="text-2xl shrink-0">{LANG_FLAGS[l.code] || <Globe className="w-6 h-6" />}</span>
               <div>
                 <p className="text-sm font-medium text-zinc-200 group-hover:text-accent transition-colors">{l.name}</p>

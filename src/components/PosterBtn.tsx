@@ -19,7 +19,7 @@ export const PosterBtn = React.memo(function PosterBtn({ img, active, onSelect, 
   return (
     <button
       onClick={() => onSelect(img)}
-      className={`group relative bg-zinc-800 rounded-xl overflow-hidden border-2 transition-all duration-200 ease-out shadow-md hover:shadow-accent/25 hover:shadow-xl ${active ? "border-accent-orange shadow-[0_0_15px_var(--color-accent-orange)] ring-2 ring-accent-orange/30 ring-offset-1 ring-offset-background scale-[1.02]" : "border-transparent hover:border-white/20 hover:shadow-white/5"}`}
+      className={`poster-tile group relative rounded-xl overflow-hidden transition-all duration-200 ease-out ${active ? "poster-tile-active scale-[1.02]" : ""}`}
       title={title || ""}
       style={staggerIndex !== undefined ? { animation: `fade-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${staggerIndex * 40}ms both` } : undefined}
     >
@@ -29,10 +29,10 @@ export const PosterBtn = React.memo(function PosterBtn({ img, active, onSelect, 
         {active && (
           <>
             <div className="absolute inset-0 bg-accent-orange/10" />
-            <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-accent-orange rounded-full flex items-center justify-center shadow-lg shadow-accent-orange/40">
+            <div className="absolute top-1 right-1 w-4 h-4 bg-accent-orange rounded-full flex items-center justify-center shadow-lg shadow-accent-orange/40">
               <Check className="w-2.5 h-2.5 text-white" />
             </div>
-            <span className="absolute bottom-0 left-0 right-0 text-[8px] font-semibold text-accent-orange text-center py-0.5 bg-accent-orange/15 backdrop-blur-sm">{p.t("ui.selected")}</span>
+            <span className="absolute bottom-0 left-0 right-0 text-[8px] font-semibold text-orange-100 text-center py-0.5 bg-accent-orange/25 backdrop-blur-sm">{p.t("ui.selected")}</span>
           </>
         )}
         {!active && <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-white/5 transition-opacity duration-300" />}

@@ -36,6 +36,31 @@ Minimum 44×44px for interactive elements on mobile.
 | `muted` | `#a1a1aa` | Secondary text |
 | `accent-orange` | `#ff6430` | Primary accent |
 | `accent` | `#ffffff` | Text accent / links |
+| `panel` | `rgba(18,18,22,0.80)` | Translucent glass panels with visible ambience |
+| `panel-strong` | `rgba(21,21,26,0.86)` | Strong panel surfaces |
+| `border-subtle` | `rgba(255,255,255,0.08)` | Default modern borders |
+| `border-strong` | `rgba(255,255,255,0.14)` | Hover/active borders |
+
+## Modern Surface Classes
+
+Defined in `src/app/globals.css` and preferred over repeating long Tailwind class strings.
+
+| Class | Usage |
+|-------|-------|
+| `.app-shell` | Main app background with radial ambient light and subtle grid |
+| `.glass-panel` | Dropdowns and elevated overlays |
+| `.top-action-button` | Header action buttons |
+| `.editor-panel` | Main three-column editor cards |
+| `.editor-panel-header` | Panel header/tabs area |
+| `.editor-panel-body` | Scrollable panel content |
+| `.tab-chip` / `.tab-chip-active` | Compact segmented/tab controls |
+| `.search-shell` / `.search-shell-active` | Search input shell |
+| `.surface-card` | Search and saved-poster cards |
+| `.poster-tile` / `.poster-tile-active` | Poster and logo selectable tiles |
+| `.preview-frame` | Main rendered poster preview shell |
+| `.floating-action` | Bottom-right floating controls |
+
+Motion should stay subtle: transform/opacity only, usually 150-300ms. The modern look comes from layered surfaces, consistent borders, and compact spacing rather than large decorative blocks.
 
 ## Badge System
 

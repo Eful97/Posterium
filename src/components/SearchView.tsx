@@ -32,7 +32,7 @@ export function SearchView() {
       <div className="max-w-lg mx-auto relative z-[100] isolate mb-8">
         <SearchBar tmdbKey={tmdbKey} value={query} onChange={setQuery} onSearch={(q) => { setQuery(q); doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
         {showRecent && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
+          <div className="absolute top-full left-0 right-0 mt-2 glass-panel rounded-2xl p-2 z-50 animate-fade-scale-in">
             <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
             {recentSearches.map((s) => (
               <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { setQuery(s); doSearch(s); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
@@ -60,8 +60,8 @@ export function SearchView() {
           {results.map((r, idx) => {
             const mapping = mappingsMap.get(`${r.media_type}:${r.id}`)
             return (
-              <button key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="group relative bg-surface rounded-xl overflow-hidden border border-zinc-800 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/10 transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in" style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
-                <div className="aspect-[2/3] bg-zinc-800 overflow-hidden flex items-center justify-center">
+              <button key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="surface-card group relative rounded-2xl overflow-hidden transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in hover:-translate-y-0.5" style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
+                <div className="aspect-[2/3] bg-zinc-900/80 overflow-hidden flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
                   {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300" /> : <span className="text-3xl font-bold text-zinc-500">{titleOf(r).charAt(0)}</span>}
                 </div>

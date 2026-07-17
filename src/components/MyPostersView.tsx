@@ -81,8 +81,8 @@ export function MyPostersView() {
     <div className="pt-4 animate-fade-scale-in">
       <h2 className="text-xl font-bold text-center mb-4">{p.t("ui.myPostersTitle")} <span className="text-xs text-zinc-400 font-normal">({mappings.length})</span></h2>
       <div className="flex items-center gap-2 mb-4 px-4 max-w-7xl mx-auto md:justify-center md:relative">
-        <div role="search" className="flex items-center h-9 md:h-12 bg-black/50 backdrop-blur-sm border border-zinc-700/80 focus-within:border-zinc-500 focus-visible:outline-none rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
-          <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500"><Search size={14} /></span>
+        <div role="search" className="search-shell flex items-center h-9 md:h-12 rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
+          <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors"><Search size={14} /></span>
           <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={p.t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
           {filter.length > 0 && (
             <button onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full hover:bg-zinc-600 hover:shadow-lg active:scale-90 transition-all duration-200"><X className="w-4 h-4" /></button>
@@ -103,7 +103,7 @@ export function MyPostersView() {
               <ChevronDown className="w-3 h-3 shrink-0" />
             </button>
             {sortOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1.5 shadow-2xl shadow-black/50 z-50 min-w-44 animate-fade-scale-in">
+              <div className="absolute right-0 top-full mt-2 glass-panel rounded-2xl p-1.5 z-50 min-w-44 animate-fade-scale-in">
                 <button onClick={() => { setSortBy("updated"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>{p.t("ui.sortRecent")}</button>
                 <button onClick={() => { setSortBy("alpha"); setSortOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>{p.t("ui.sortAlpha")}</button>
               </div>
@@ -116,7 +116,7 @@ export function MyPostersView() {
               <ChevronDown className="w-3 h-3 shrink-0" />
             </button>
             {typeOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1.5 shadow-2xl shadow-black/50 z-50 min-w-44 animate-fade-scale-in">
+              <div className="absolute right-0 top-full mt-2 glass-panel rounded-2xl p-1.5 z-50 min-w-44 animate-fade-scale-in">
                 {(["all", "movie", "tv", "anime"] as const).map((t) => (
                   <button key={t} onClick={() => { setTypeFilter(t); setTypeOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${typeFilter === t ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>
                     {t === "all" ? p.t("ui.all") : t === "movie" ? <><Clapperboard className="w-3.5 h-3.5" /> {p.t("ui.filterMovie")}</> : t === "tv" ? <><Tv className="w-3.5 h-3.5" /> {p.t("ui.filterSeries")}</> : <><Flag className="w-3.5 h-3.5" /> {p.t("ui.filterAnime")}</>}
@@ -153,8 +153,8 @@ export function MyPostersView() {
         {filtered.map((m, idx) => {
           const key = `${m.mediaType}:${m.tmdbId}`
           return (
-            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster(toSearchResult({ id: m.tmdbId, media_type: m.mediaType, title: m.title, name: m.title, poster_path: m.posterPath }), "myposters") }} aria-label={m.title} className={`group relative bg-surface rounded-xl overflow-hidden border transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in ${selectMode ? (selected.has(key) ? "border-red-400 ring-1 ring-red-400/50" : "border-zinc-800 hover:border-zinc-600") : "border-zinc-800 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/10"}`} style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
-                <div className="aspect-[2/3] bg-zinc-800 overflow-hidden relative">
+            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster(toSearchResult({ id: m.tmdbId, media_type: m.mediaType, title: m.title, name: m.title, poster_path: m.posterPath }), "myposters") }} aria-label={m.title} className={`surface-card group relative rounded-2xl overflow-hidden transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in hover:-translate-y-0.5 ${selectMode ? (selected.has(key) ? "ring-2 ring-red-400/50 border-red-400/70" : "") : ""}`} style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
+                <div className="aspect-[2/3] bg-zinc-900/80 overflow-hidden relative">
                   {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
                   {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} /> : <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-500">{m.title.charAt(0)}</div>}
                   {m.logoPath && (

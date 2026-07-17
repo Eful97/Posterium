@@ -26,8 +26,8 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
   }, [value])
 
   return (
-    <div role="search" className={`flex items-center ${h} bg-black/50 backdrop-blur-sm border ${focused ? "border-zinc-500" : "border-zinc-700/80"} focus-within:border-zinc-500 focus-visible:outline-none rounded-2xl transition-all duration-300 group`}>
-      <span className="shrink-0 pl-3.5 text-zinc-500" aria-hidden="true"><Search className="w-4 h-4" /></span>
+    <div role="search" className={`search-shell flex items-center ${h} ${focused ? "search-shell-active" : ""} rounded-2xl transition-all duration-300 group`}>
+      <span className="shrink-0 pl-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" aria-hidden="true"><Search className="w-4 h-4" /></span>
       <input
         suppressHydrationWarning
         ref={inputRef}
@@ -38,7 +38,7 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
         onBlur={() => { setFocused(false); onBlur?.() }}
         onKeyDown={(e) => { if (e.key === "Enter" && text.length >= 2 && tmdbKey) { onSearch(text) } }}
         placeholder={large ? p.t("ui.searchPlaceholderLarge") : p.t("ui.searchPlaceholder")}
-        className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-2 h-full transition-colors duration-200"
+        className="flex-1 bg-transparent text-xs md:text-sm outline-none placeholder:text-zinc-500 focus:placeholder:text-zinc-400 px-2 h-full transition-colors duration-200"
       />
       {text.length > 0 && (
         <button
