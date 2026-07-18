@@ -85,19 +85,19 @@ export function MyPostersView() {
           <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors"><Search size={14} /></span>
           <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={p.t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
           {filter.length > 0 && (
-            <button onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full hover:bg-zinc-600 hover:shadow-lg active:scale-90 transition-all duration-200"><X className="w-4 h-4" /></button>
+            <button aria-label={p.t("ui.filterPlaceholder")} onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full hover:bg-zinc-600 hover:shadow-lg active:scale-90 transition-all duration-200"><X className="w-4 h-4" /></button>
           )}
         </div>
         <div className="flex items-center gap-1 md:gap-2 md:absolute md:right-0 shrink-0">
-          <button onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-zinc-400 hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? <X className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}</span><span className="hidden md:inline">{selectMode ? p.t("ui.cancel") : p.t("ui.select")}</span></button>
+          <button aria-label={selectMode ? p.t("ui.cancel") : p.t("ui.select")} onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-zinc-400 hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? <X className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}</span><span className="hidden md:inline">{selectMode ? p.t("ui.cancel") : p.t("ui.select")}</span></button>
           {mappings.length > 0 && (
             <div className="relative">
-              <button onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
+              <button aria-label={p.t("ui.deleteAll")} onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
               <ConfirmDialog open={showDeleteAll} title={p.t("ui.confirmDeleteAll")} message={p.t("ui.confirmDeleteAllMsg", { count: mappings.length })} confirmLabel={p.t("ui.deleteAll")} onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
             </div>
           )}
           <div className="relative" ref={sortRef}>
-            <button onClick={() => { setSortOpen((o) => !o); setTypeOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2">
+            <button aria-label={sortBy === "updated" ? p.t("ui.sortRecent") : p.t("ui.sortAZ")} onClick={() => { setSortOpen((o) => !o); setTypeOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2">
               <span className="shrink-0">{sortBy === "updated" ? <Calendar className="w-3.5 h-3.5" /> : <ArrowUpAZ className="w-3.5 h-3.5" />}</span>
               <span className="hidden md:inline truncate">{sortBy === "updated" ? p.t("ui.recent") : p.t("ui.sortAZ")}</span>
               <ChevronDown className="w-3 h-3 shrink-0" />
@@ -110,7 +110,7 @@ export function MyPostersView() {
             )}
           </div>
           <div className="relative" ref={typeRef}>
-            <button onClick={() => { setTypeOpen((o) => !o); setSortOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2">
+            <button aria-label={typeFilter === "all" ? p.t("ui.all") : typeFilter === "movie" ? p.t("ui.filterMovie") : typeFilter === "tv" ? p.t("ui.filterSeries") : p.t("ui.filterAnime")} onClick={() => { setTypeOpen((o) => !o); setSortOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2">
               <span className="shrink-0">{typeFilter === "movie" ? <Clapperboard className="w-3.5 h-3.5" /> : typeFilter === "tv" ? <Tv className="w-3.5 h-3.5" /> : typeFilter === "anime" ? <Flag className="w-3.5 h-3.5" /> : <Clipboard className="w-3.5 h-3.5" />}</span>
               <span className="hidden md:inline truncate">{typeFilter === "all" ? p.t("ui.all") : typeFilter === "movie" ? p.t("ui.filterMovie") : typeFilter === "tv" ? p.t("ui.filterSeries") : p.t("ui.filterAnime")}</span>
               <ChevronDown className="w-3 h-3 shrink-0" />
@@ -132,8 +132,8 @@ export function MyPostersView() {
         <div className="flex items-center justify-between gap-3 mb-4 mx-auto max-w-7xl w-full px-4 animate-fade-scale-in">
           <span className="text-sm font-semibold text-zinc-200 tabular-nums">{p.t("ui.selectedCount", { count: selected.size })}</span>
           <div className="flex items-center gap-2">
-            <button onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-zinc-800 active:scale-95 transition-all duration-150">{p.t("ui.cancel")}</button>
-            <button disabled={deleting} onClick={deleteSelected} className="flex items-center gap-1.5 text-xs font-semibold text-red-400 bg-red-900/25 border border-red-900/50 px-4 py-1.5 rounded-xl hover:bg-red-900/40 hover:border-red-500 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button aria-label={p.t("ui.cancel")} onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-zinc-800 active:scale-95 transition-all duration-150">{p.t("ui.cancel")}</button>
+            <button aria-label={p.t("ui.delete")} disabled={deleting} onClick={deleteSelected} className="flex items-center gap-1.5 text-xs font-semibold text-red-400 bg-red-900/25 border border-red-900/50 px-4 py-1.5 rounded-xl hover:bg-red-900/40 hover:border-red-500 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
               <Trash2 className="w-3.5 h-3.5" /> {deleting ? p.t("ui.deleting") : p.t("ui.delete")}
             </button>
           </div>

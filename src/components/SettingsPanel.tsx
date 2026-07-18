@@ -27,6 +27,8 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   const [editTxt, setEditTxt] = useState("")
   const [saved, setSaved] = useState(false)
   const [clearStatus, setClearStatus] = useState<"idle" | "clearing" | "cleared">("idle")
+  const [tmdbKeyError, setTmdbKeyError] = useState<string | undefined>(undefined)
+  const [mdblistKeyError, setMdblistKeyError] = useState<string | undefined>(undefined)
 
   const clearCache = async () => {
     setClearStatus("clearing")
@@ -46,8 +48,8 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
 
   const content = (
     <>
-      <SecretInput label={p.t("ui.tmdbKey")} icon={<Key />} value={tmdbKeyInput} onChange={setTmdbKeyInput} onBlur={() => setTmdbKey(tmdbKeyInput)} onKeyDown={(e) => { if (e.key === "Enter") { setTmdbKey(tmdbKeyInput); setSettingsOpen(false) } }} placeholder={p.t("ui.tmdbKeyPlaceholder")} />
-      <SecretInput label={p.t("ui.mdblistKey")} icon={<Clipboard />} value={mdblistApiKey} onChange={(v) => { setMdblistApiKey(v); localStorage.setItem("mdblist_key", v) }} placeholder={p.t("ui.mdblistKeyPlaceholder")} />
+      <SecretInput label={p.t("ui.tmdbKey")} icon={<Key />} value={tmdbKeyInput} onChange={setTmdbKeyInput} onBlur={() => { setTmdbKey(tmdbKeyInput); if (tmdbKeyInput.length < 20) { setTmdbKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setTmdbKeyError(undefined) } }} onKeyDown={(e) => { if (e.key === "Enter") { setTmdbKey(tmdbKeyInput); setSettingsOpen(false) } }} placeholder={p.t("ui.tmdbKeyPlaceholder")} error={tmdbKeyError} />
+      <SecretInput label={p.t("ui.mdblistKey")} icon={<Clipboard />} value={mdblistApiKey} onChange={(v) => { setMdblistApiKey(v); localStorage.setItem("mdblist_key", v) }} onBlur={() => { if (mdblistApiKey.length > 0 && mdblistApiKey.length < 20) { setMdblistKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setMdblistKeyError(undefined) } }} placeholder={p.t("ui.mdblistKeyPlaceholder")} error={mdblistKeyError} />
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Star className="w-3 h-3" /> {p.t("ui.genreRatingBadge")}</span>
         <button type="button" onClick={() => p.setDefaultGlobalBadges(!p.defaultGlobalBadges)} role="switch" aria-checked={p.defaultGlobalBadges} className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${p.defaultGlobalBadges ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${p.defaultGlobalBadges ? "translate-x-5" : "translate-x-0"}`} /></button>
@@ -85,7 +87,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <hr className="border-zinc-700 my-1" />
       <MenuItem icon={<Upload className="w-3 h-3" />} label={p.t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
       <MenuItem icon={<Download className="w-3 h-3" />} label={p.t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />
-      <MenuItem icon={<Trash2 className="w-3 h-3" />} label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} onClick={clearCache} danger />
+      <MenuItem aria-label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} icon={<Trash2 className="w-3 h-3" />} label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} onClick={clearCache} danger />
     </>
   )
 

@@ -17,6 +17,21 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@theme inline (light) {
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  --color-surface: #f1f5f9;
+  --color-surface2: #e2e8f0;
+  --color-border: #cbd5e1;
+  --color-muted: #64748b;
+  --color-accent-orange: #ea580c;
+  --color-accent: #0f172a;
+  --color-panel: rgba(255, 255, 255, 0.95);
+  --color-panel-strong: rgba(248, 250, 252, 0.98);
+  --color-border-subtle: rgba(0, 0, 0, 0.08);
+  --color-border-strong: rgba(0, 0, 0, 0.12);
+}
+
 body {
   background:
     radial-gradient(circle at 50% -20%, rgba(255, 100, 48, 0.10), transparent 34rem),
@@ -351,10 +366,17 @@ input[type="range"]::-moz-range-thumb {
   transition: color 150ms ease, background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
-.tab-chip:hover {
-  color: rgb(244 244 245);
-  background: rgba(255,255,255,0.075);
-  border-color: rgba(255,255,255,0.14);
+.editor-panel-header button,
+.tab-chip,
+.poster-tile,
+.poster-tile-active,
+.btn-primary,
+.top-action-button,
+.floating-action,
+.menu-item,
+.search-shell input,
+.button {
+  will-change: transform, opacity;
 }
 
 .tab-chip-active {

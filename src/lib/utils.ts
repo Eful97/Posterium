@@ -2,6 +2,10 @@ import type { TMDBImage, SearchResult } from "./types"
 
 export const IMG_BASE = "https://image.tmdb.org/t/p"
 
+export function cn(...classes: (string | undefined | null | false)[]) {
+  return classes.filter(Boolean).join(" ")
+}
+
 export const LANG_FLAGS: Record<string, string> = {
   it: "🇮🇹", en: "🇬🇧", fr: "🇫🇷", de: "🇩🇪", es: "🇪🇸", pt: "🇵🇹",
   ja: "🇯🇵", ko: "🇰🇷", zh: "🇨🇳", ru: "🇷🇺", ar: "🇸🇦", nl: "🇳🇱",

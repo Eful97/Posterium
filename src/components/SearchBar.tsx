@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import { useP } from "@/lib/context"
-import { Search, ArrowRight } from "lucide-react"
+import { Search, ArrowRight, AlertCircle } from "lucide-react"
 
 interface Props {
   tmdbKey: string
@@ -12,9 +12,10 @@ interface Props {
   onChange?: (v: string) => void
   onFocus?: () => void
   onBlur?: () => void
+  error?: string | null
 }
 
-export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, onBlur }: Props) {
+export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, onBlur, error }: Props) {
   const p = useP()
   const [text, setText] = useState(value || "")
   const [focused, setFocused] = useState(false)
@@ -26,7 +27,7 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
   }, [value])
 
   return (
-    <div role="search" className={`search-shell flex items-center ${h} ${focused ? "search-shell-active" : ""} rounded-2xl transition-all duration-300 group`}>
+    <div role="search" className={`search-shell flex items-center ${h} ${focused ? "search-shell-active" : ""} rounded-2xl transition-all duration-300 group ${error ? "ring-1 ring-red-500/50" : ""}`}>
       <span className="shrink-0 pl-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" aria-hidden="true"><Search className="w-4 h-4" /></span>
       <input
         suppressHydrationWarning
@@ -40,6 +41,9 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
         placeholder={large ? p.t("ui.searchPlaceholderLarge") : p.t("ui.searchPlaceholder")}
         className="flex-1 bg-transparent text-xs md:text-sm outline-none placeholder:text-zinc-500 focus:placeholder:text-zinc-400 px-2 h-full transition-colors duration-200"
       />
+      {error && (
+        <span className="shrink-0 pr-1.5" aria-hidden="true"><AlertCircle className="w-4 h-4 text-red-400" /></span>
+      )}
       {text.length > 0 && (
         <button
           type="button"

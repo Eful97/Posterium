@@ -12,6 +12,7 @@ export function SecretInput({
   onKeyDown,
   placeholder,
   className = "",
+  error,
 }: {
   label: string
   icon: React.ReactNode
@@ -21,6 +22,7 @@ export function SecretInput({
   onKeyDown?: (e: React.KeyboardEvent) => void
   placeholder?: string
   className?: string
+  error?: string
 }) {
   const [show, setShow] = useState(false)
   return (
@@ -37,7 +39,7 @@ export function SecretInput({
           onBlur={onBlur}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
-          className="flex-1 bg-background border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500"
+          className={`flex-1 bg-background border rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500 transition-colors duration-150 ${error ? "border-red-500/70 focus:border-red-500" : "border-zinc-700"}`}
         />
         <button
           type="button"
@@ -48,6 +50,7 @@ export function SecretInput({
           {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       </div>
+      {error && <p className="text-[10px] text-red-400 font-medium">{error}</p>}
     </div>
   )
 }

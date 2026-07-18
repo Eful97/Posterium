@@ -162,7 +162,7 @@ export interface PosteriumCtx {
   copyUrl: () => Promise<void>
   copied: boolean
   accentColor: string
-  topEdgeColor: string
+topEdgeColor: string
   rotationPosters: string[]
   setRotationPosters: React.Dispatch<React.SetStateAction<string[]>>
   autoRotateClean: boolean
@@ -172,6 +172,8 @@ export interface PosteriumCtx {
   logoDisabled: boolean
   setLogoDisabled: React.Dispatch<React.SetStateAction<boolean>>
   autoSaveExcludedPosters: (nextExcluded: string[], nextRotationPosters?: string[], nextPreviewPoster?: TMDBImage) => Promise<void>
+  theme: "dark" | "light"
+  setTheme: React.Dispatch<React.SetStateAction<"dark" | "light">>
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
@@ -192,6 +194,7 @@ export function usePosterium(): PosteriumCtx {
   const [mdblistApiKey, setMdblistApiKey] = useState("")
   const [tmdbKeyInput, setTmdbKeyInput] = useState("")
   const [showKey, setShowKey] = useState(false)
+  const [theme, setTheme] = useState<"dark" | "light">("dark")
   const keyInit = useRef(false)
   const langInit = useRef(false)
 
@@ -751,6 +754,7 @@ export function usePosterium(): PosteriumCtx {
     excludedPosters, setExcludedPosters,
     logoDisabled, setLogoDisabled,
     autoSaveExcludedPosters,
+    theme, setTheme,
     t,
   // eslint-disable-next-line react-hooks/exhaustive-deps -- context value deps intentionally stable to prevent re-render cascades
   }), [
@@ -771,5 +775,6 @@ export function usePosterium(): PosteriumCtx {
     topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, logoDisabled, setLogoDisabled, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
+    theme,
   ])
 }

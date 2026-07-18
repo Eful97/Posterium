@@ -50,6 +50,7 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
       <div className="flex gap-1 mb-3 overflow-x-auto scrollbar-none">
         {logoTabs.map((tab) => (
           <button
+            aria-label={tab.label}
             key={tab.key}
             onClick={() => setActiveLogoGroup(tab.key)}
             className={`tab-chip h-7 px-2.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 ${activeLogoGroup === tab.key ? "tab-chip-active bg-accent-orange/15 text-accent-orange border-accent-orange/35" : "bg-white/5 text-zinc-400 border-white/10 hover:text-zinc-200 hover:bg-white/10"}`}
@@ -94,12 +95,12 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
         </div>
       )}
       {!selectedLogo && (
-        <button disabled={disabled} onClick={() => p.setLogoDisabled(!p.logoDisabled)} className={`mt-3 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : p.logoDisabled ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"}`}>
+        <button aria-label={p.logoDisabled ? p.t("ui.removeLogo") : "Abilita loghi"} disabled={disabled} onClick={() => p.setLogoDisabled(!p.logoDisabled)} className={`mt-3 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : p.logoDisabled ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"}`}>
           <span className="flex items-center justify-center gap-1.5">{p.logoDisabled ? "Loghi disabilitati" : "Disabilita loghi"}</span>
         </button>
       )}
       {selectedLogo && (
-        <button disabled={disabled} onClick={removeLogo} className={`mt-2 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-red-300 hover:border-red-500/30"}`}>
+        <button aria-label={p.t("ui.removeLogo")} disabled={disabled} onClick={removeLogo} className={`mt-2 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-red-300 hover:border-red-500/30"}`}>
           <span className="flex items-center justify-center gap-1.5"><Trash2 className="w-3 h-3" />{p.t("ui.removeLogo")}</span>
         </button>
       )}
