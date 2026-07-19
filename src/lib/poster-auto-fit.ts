@@ -26,7 +26,7 @@ interface SelectBestLogoFitPosterInput {
   readonly renderVersion?: number
 }
 
-const TMDB_CANDIDATE_COUNT = 8
+const TMDB_CANDIDATE_COUNT = 12
 const AUTO_FIT_TIMEOUT_MS = 1200
 const CACHE_TTL = 24 * 60 * 60 * 1000
 const CACHE_MAX_ENTRIES = 500
@@ -107,11 +107,12 @@ export async function rankBestFitPosters(
   logoOffsetX: number,
   logoOffsetY: number,
   hasBadges: boolean,
+  offsetYVariants?: number[],
 ): Promise<RankedFitResult[]> {
   if (posterEntries.length === 0) return []
 
   const ranked = await withTimeout(
-    rankPostersByFit(posterEntries, logoBuffer, logoScale, logoOffsetX, logoOffsetY, hasBadges),
+    rankPostersByFit(posterEntries, logoBuffer, logoScale, logoOffsetX, logoOffsetY, hasBadges, offsetYVariants),
     posterEntries.map((p) => ({ posterPath: p.posterPath, score: 0, metrics: { cleanliness: 0, contrast: 0, detailPenalty: 0, badgeReadability: 0 }, reasons: [] })),
     AUTO_FIT_TIMEOUT_MS,
   )
@@ -175,6 +176,7 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
     input.logoOffsetX ?? 0,
     input.logoOffsetY ?? 0,
     input.hasBadges,
+    [-20, 0, 20],
   )
 
   const selectedPosterPath = selectAcceptedPosterPath(rankedResults, fallbackResult)

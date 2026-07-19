@@ -16,7 +16,6 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { computeLogoLayout } from "@/lib/logo-layout"
-import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { getEffectiveRotationState } from "@/lib/poster-rotation"
 import { mappingVersionParam } from "@/lib/stremio-poster-url"
 import { RENDER_VERSION } from "@/lib/render-version"
@@ -247,19 +246,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           }
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
-        if (logoPath) {
-          posterPath = (sd.defaultLogoFitEnabled ?? true)
-            ? await selectBestLogoFitPosterPath({
-                posters: images.posters,
-                logoPath,
-                fetchImage: (path) => fetchImg(imgSrc(path)),
-                logoScale: queryNumber(req.nextUrl.searchParams, "scale"),
-                logoOffsetX: queryNumber(req.nextUrl.searchParams, "ox"),
-                logoOffsetY: queryNumber(req.nextUrl.searchParams, "oy"),
-                hasBadges: showBadges && !!genreName && !!voteAverage && voteAverage > 0,
-                renderVersion: RENDER_VERSION,
-              }) ?? clean.file_path
-            : clean.file_path
+        if (clean) {
+          posterPath = clean.file_path
         } else {
           const itPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === "it")
           const enPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === "en")

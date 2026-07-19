@@ -121,11 +121,51 @@ async function computeTextPenalty(posterBuffer: Buffer): Promise<number> {
   }
   const hPatternRatio = hPatternSum / Math.max(1, h * (w - 2))
 
+  // Alternating bright/dark lines detection for credits
+  let alternatingLines = 0
+  let totalLines = 0
+  const sampleStep = 4
+
+  for (let y = 0; y < h - 4; y += sampleStep) {
+    totalLines++
+    let brightCount = 0
+    let darkCount = 0
+    for (let x = 0; x < w; x += 4) {
+      const idx = y * w * 3 + x * 3
+      const lum = luma(data[idx], data[idx + 1], data[idx + 2])
+      if (lum > 180) brightCount++
+      if (lum < 60) darkCount++
+    }
+    const nextY = y + sampleStep
+    if (nextY < h) {
+      let nextBright = 0
+      let nextDark = 0
+      for (let x = 0; x < w; x += 4) {
+        const idx = nextY * w * 3 + x * 3
+        const lum = luma(data[idx], data[idx + 1], data[idx + 2])
+        if (lum > 180) nextBright++
+        if (lum < 60) nextDark++
+      }
+      if ((brightCount > w * 0.3 && nextDark > w * 0.3) || (darkCount > w * 0.3 && nextBright > w * 0.3)) {
+        alternatingLines++
+      }
+    }
+  }
+
+  const alternationRatio = alternatingLines / Math.max(1, totalLines)
+  const textLineScore = clamp((alternationRatio - 0.1) * 3, 0, 1)
+
   const densityScore = clamp(stdDev / 70, 0, 1)
   const edgeScore = clamp(edgeAvg / 50, 0, 1)
   const patternScore = clamp(hPatternRatio * 3, 0, 1)
 
-  const textPenalty = clamp(densityScore * 0.35 + edgeScore * 0.35 + patternScore * 0.30, 0, 1)
+  const textPenalty = clamp(
+    densityScore * 0.25 +
+    edgeScore * 0.25 +
+    patternScore * 0.20 +
+    textLineScore * 0.30,
+    0, 1,
+  )
   if (textPenalty < 0.35) return 0
   return clamp((textPenalty - 0.35) / 0.65, 0, 1)
 }

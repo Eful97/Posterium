@@ -132,6 +132,7 @@ export async function POST(req: NextRequest) {
     logoOffsetX,
     logoOffsetY,
     hasBadges,
+    [-20, 0, 20],
   )
 
   const ranked = rankedResults.map((r) => ({

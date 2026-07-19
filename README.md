@@ -30,7 +30,7 @@ pinned: false
 - 📋 **I miei poster** — Filtri per tipo (Film/Serie TV/Anime), ordinamento, ricerca, layout responsive
 - 🔔 **Aggiornamenti automatici** — Badge versione in alto a sinistra, notifica nuove release da GitHub
 - 🔄 **Rotazione poster clean 24h** — Seleziona più poster puliti e ruotali automaticamente ogni 24 ore, con opzione globale nelle impostazioni predefinite
-- 🧠 **Scoring automatico poster** — Algoritmo di fit scoring (pulizia, contrasto, dettaglio, badge) per selezionare il poster migliore, con ordinamento TMDB/Best fit
+- 🧠 **Scoring automatico poster** — Algoritmo di fit scoring (pulizia, contrasto, dettaglio, badge, composito) con analisi edge a griglia stride-4, skin-tone detection, gradient smoothness, penalità crediti (righe alternante chiaro/scuro) e varianti offset Y per robustezza
 - 🚫 **Blacklist poster esclusi** — Escludi singoli poster dalla selezione/rotazione per ogni titolo, con salvataggio immediato
 - ⚙️ **Impostazioni globali** — Salva stili badge, blur e rotazione come predefiniti applicati a tutti i nuovi salvataggi
 - 🏆 **Badge premi** — Vincitore e Candidato Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David da Wikidata
@@ -45,7 +45,7 @@ pinned: false
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **199 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
+- ✅ **244 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
 
 ---
 
@@ -334,7 +334,7 @@ Genera un poster personalizzato via URL.
 | `GET /api/awards/[type]/[id]` | Premi, nomination, franchise, studio (Wikidata P166, P1411, P179) |
 | `GET /api/mdblist/anime` | Top anime MDBList |
 | `POST /api/mappings` | Salva configurazione |
-| `POST /api/poster-fit` | Scoring poster — analizza fino a 20 poster per titolo e restituisce score (pulizia, contrasto, dettaglio, badge, composito) |
+| `POST /api/poster-fit` | Scoring poster — analisi avanzata con edge grid stride-4, skin-tone detection, gradient smoothness, penalità crediti e offset Y variants; fino a 12 candidati |
 | `POST /api/cache/clear` | Svuota la cache in memoria *(protetta da `ADMIN_TOKEN` se impostato)* |
 | `POST /api/warmup` | Pre-genera poster salvati e URL Stremio per riempire runtime cache/CDN |
 
@@ -409,7 +409,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 | Font | Inter + Noto Sans Symbols 2 |
 | Dati | TMDB API + Wikidata SPARQL |
 | Storage | Upstash Redis (KV) / Cloudflare R2 (poster) / JSON file |
-| Test | Vitest (191 test) + Playwright E2E |
+| Test | Vitest (244 test) + Playwright E2E |
 | UI Library | Componenti condivisi (BadgeStyleSelector, SecretInput, MenuItem, SectionCard) |
 
 ### Architettura
@@ -428,7 +428,7 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 ## 🧪 Testing
 
 ```bash
-# Test unitari (199 test)
+# Test unitari (244 test)
 node .\node_modules\vitest\vitest.mjs run
 
 # E2E smoke (Playwright, Chromium)
@@ -458,11 +458,12 @@ node .\node_modules\@playwright\test\cli.js test e2e/posterium-smoke.spec.ts
 | `svg-badge.test.ts` | 23 | Rendering badge SVG, overflow protection, stili e dimensioni |
 | `http.test.ts` | 2 | Timeout/retry HTTP client |
 | `logo-layout.test.ts` | 2 | Dimensioni e bounds logo |
-| `poster-fit-score.test.ts` | 10 | Scoring poster-fit (pulizia, contrasto, dettaglio, badge, composito) |
-| `poster-fit-api.test.ts` | 9 | Endpoint API poster-fit, timeout, max poster, concurrent, skip failed |
-| `poster-auto-fit.test.ts` | 16 | Auto-fit server-side, candidate selection, ranking, caching |
+| `poster-fit-score.test.ts` | 10 | Scoring poster-fit base (pulizia, contrasto, dettaglio, badge) |
+| `poster-fit-api.test.ts` | 9 | Endpoint API poster-fit, candidate pool (12 max), timeout, skip failed |
+| `poster-auto-fit.test.ts` | 16 | Auto-fit server-side, candidate selection, ranking, caching, offset Y variants |
 | `health.test.ts` | 3 | Health endpoint, storage diagnostics |
 | `defaults-api.test.ts` | 4 | Defaults endpoint auth, validation |
+| `EditView.test.tsx` | 8 | Hero section, studio badge, badge selector, internazionalizzazione |
 
 ---
 

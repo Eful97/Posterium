@@ -29,7 +29,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://image.tmdb.org" />
         <link rel="preconnect" href="https://api.themoviedb.org" />
       </head>
-      <body className="min-h-full">{children}
+      <body className="min-h-full">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200] focus:bg-accent-orange focus:text-white focus:px-4 focus:py-2 focus:rounded-xl">
+          Skip to main content
+        </a>
+        <main id="main-content">{children}</main>
         <Toaster
           position="bottom-center"
           toastOptions={{

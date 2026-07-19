@@ -132,8 +132,8 @@ describe("POST /api/poster-fit", () => {
     const res = await POST(req)
     expect(res.status).toBe(200)
     const json = await res.json()
-    expect(json.total).toBeLessThanOrEqual(10)
-    expect(json.ranked.length).toBeLessThanOrEqual(10)
+    expect(json.total).toBeLessThanOrEqual(13)
+    expect(json.ranked.length).toBeLessThanOrEqual(13)
   })
 
   it("sorts ranked by adjustedScore descending", async () => {

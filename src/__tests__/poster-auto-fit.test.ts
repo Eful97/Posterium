@@ -388,7 +388,7 @@ describe("selectBestLogoFitPosterPath", () => {
     })
 
     expect(selected).toBeDefined()
-    expect(fetchCount).toBeLessThanOrEqual(9)
+    expect(fetchCount).toBeLessThanOrEqual(13)
   })
 
   it("avoids duplicates in candidate pool", async () => {

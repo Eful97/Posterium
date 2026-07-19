@@ -21,9 +21,24 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
     http<{ movies: Array<SearchResult & { rank: number }>; tv: Array<SearchResult & { rank: number }> }>(`/api/tmdb/trending?api_key=${tmdbKey}`, { timeout: 30000, signal })
       .then((data) => { if (signal.aborted) return; setTrending([...(data.movies || []), ...(data.tv || [])]) })
       .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load trending:", e) })
-    http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal })
-      .then((data) => { if (signal.aborted) return; setMdblistAnimeList(data) })
-      .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load anime list:", e) })
+    if (!mdblistApiKey) {
+      http<{ results: SearchResult[] }>(`/api/tmdb/trending/tv/week?api_key=${tmdbKey}&with_original_language=ja&sort_by=popularity`, { timeout: 30000, signal })
+        .then((data) => {
+          if (signal.aborted) return
+          const fallback = (data.results || []).map((item: SearchResult, idx: number) => ({
+            ...item,
+            rank: idx + 1,
+            mdblistKey: "tmdb-fallback",
+            title: item.title || "",
+          })) as EnrichedAnimeItem[]
+          setMdblistAnimeList(fallback)
+        })
+        .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load TMDB anime fallback:", e) })
+    } else {
+      http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal })
+        .then((data) => { if (signal.aborted) return; setMdblistAnimeList(data) })
+        .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load anime list:", e) })
+    }
     return () => { ctrl.abort() }
   }, [tmdbKey, mdblistApiKey])
 
@@ -54,13 +69,18 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
     const signal = ctrl.signal
     abortRef.current = ctrl
     try {
+      const animePromise = mdblistApiKey
+        ? http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal }).catch(() => null)
+        : http<{ results: SearchResult[] }>(`/api/tmdb/trending/tv/week?api_key=${tmdbKey}&with_original_language=ja&sort_by=popularity`, { timeout: 30000, signal })
+          .then((data) => (data.results || []).map((item: SearchResult, idx: number) => ({ ...item, rank: idx + 1, mdblistKey: "tmdb-fallback", title: item.title || "" })))
+          .catch(() => null)
       const [trendingData, animeData] = await Promise.all([
         http<{ movies: Array<SearchResult & { rank: number }>; tv: Array<SearchResult & { rank: number }> }>(`/api/tmdb/trending?api_key=${tmdbKey}`, { timeout: 30000, signal }),
-        http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal }).catch(() => null),
+        animePromise,
       ])
       if (signal.aborted) return
       setTrending([...(trendingData.movies || []), ...(trendingData.tv || [])])
-      if (animeData) setMdblistAnimeList(animeData)
+      if (animeData) setMdblistAnimeList(animeData as EnrichedAnimeItem[])
     } catch (e) {
       if ((e as Error).name === "AbortError") return
       console.error("[posterium] Failed to refresh lists:", e)

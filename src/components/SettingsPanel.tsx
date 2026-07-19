@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { toast } from "sonner"
 import { useP } from "@/lib/context"
 import { ApiError, http } from "@/lib/http"
@@ -26,9 +26,33 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   const [editVal, setEditVal] = useState<string | null>(null)
   const [editTxt, setEditTxt] = useState("")
   const [saved, setSaved] = useState(false)
+  const settingsRef = useRef<HTMLDivElement>(null)
   const [clearStatus, setClearStatus] = useState<"idle" | "clearing" | "cleared">("idle")
   const [tmdbKeyError, setTmdbKeyError] = useState<string | undefined>(undefined)
   const [mdblistKeyError, setMdblistKeyError] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (!mobile) return
+    const panel = settingsRef.current
+    if (!panel) return
+    const focusable = panel.querySelectorAll<HTMLElement>('button, input, select, [tabindex]:not([tabindex="-1"])')
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (!first || !last) return
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    panel.addEventListener("keydown", handleTab)
+    first?.focus()
+    return () => panel.removeEventListener("keydown", handleTab)
+  }, [mobile])
 
   const clearCache = async () => {
     setClearStatus("clearing")
@@ -83,16 +107,34 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
         <button type="button" onClick={() => p.setDefaultLogoFitEnabled(!p.defaultLogoFitEnabled)} role="switch" aria-checked={p.defaultLogoFitEnabled} className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${p.defaultLogoFitEnabled ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${p.defaultLogoFitEnabled ? "translate-x-5" : "translate-x-0"}`} /></button>
       </div>
       <hr className="border-zinc-700 my-1" />
+      <div className="flex items-center justify-between px-1">
+        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Circle className="w-3 h-3" /> Light Mode</span>
+        <button type="button" onClick={() => p.setTheme(p.theme === "light" ? "dark" : "light")} role="switch" aria-checked={p.theme === "light"} className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${p.theme === "light" ? "bg-accent-orange" : "bg-zinc-600"}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${p.theme === "light" ? "translate-x-5" : "translate-x-0"}`} /></button>
+      </div>
       <button type="button" onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {p.t("ui.saved")}</> : <><Save className="w-3 h-3" /> {p.t("ui.saveDefaults")}</>}</span></button>
       <hr className="border-zinc-700 my-1" />
       <MenuItem icon={<Upload className="w-3 h-3" />} label={p.t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
       <MenuItem icon={<Download className="w-3 h-3" />} label={p.t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />
+      <button type="button" onClick={async () => {
+        try {
+          const resp = await fetch("/api/mappings/export")
+          const json = await resp.json()
+          const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement("a")
+          a.href = url
+          a.download = `posterium-backup-${new Date().toISOString().slice(0, 10)}.json`
+          a.click()
+          URL.revokeObjectURL(url)
+          toast.success("Backup exported successfully")
+        } catch { toast.error("Export failed") }
+      }} className="w-full flex items-center gap-2 px-2 py-2 rounded-xl text-xs font-medium text-zinc-300 hover:bg-white/[0.07] active:scale-[0.98] transition-all duration-150"><Download className="w-3 h-3" /> Export as file</button>
       <MenuItem aria-label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} icon={<Trash2 className="w-3 h-3" />} label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} onClick={clearCache} danger />
     </>
   )
 
   if (mobile) {
-    return <div className="space-y-3">{content}</div>
+    return <div ref={settingsRef} className="space-y-3">{content}</div>
   }
 
   return (

@@ -92,4 +92,6 @@ export interface Mapping {
   defaultBadgeStyle?: string | null
   defaultRankingBadgeStyle?: string | null
   logoDisabled?: boolean | null
+  bestFitScore?: number | null
+  bestFitReasons?: string[] | null
 }

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import type { SearchResult, TMDBImage } from "./types"
 
 export function useNavigation() {
-  const [view, setViewState] = useState<"edit" | "search" | "myposters">("edit")
+  const [view, setViewState] = useState<"edit" | "search" | "myposters" | "cataloghi">("edit")
   const [selected, setSelected] = useState<SearchResult | null>(null)
   const [previewPoster, setPreviewPoster] = useState<TMDBImage | null>(null)
   const [selectedLogo, setSelectedLogo] = useState<TMDBImage | null>(null)
@@ -13,7 +13,7 @@ export function useNavigation() {
   const [logos, setLogos] = useState<TMDBImage[]>([])
   const fetchIdRef = useRef(0)
 
-  const setView = useCallback((v: "edit" | "search" | "myposters") => {
+  const setView = useCallback((v: "edit" | "search" | "myposters" | "cataloghi") => {
     setViewState(v)
   }, [])
 
@@ -62,6 +62,8 @@ export function useNavigation() {
         setPreviewId(null)
       } else if (e.state?.view === "myposters") {
         setViewState("myposters")
+      } else if (e.state?.view === "cataloghi") {
+        setViewState("cataloghi")
       } else {
         resetState()
       }

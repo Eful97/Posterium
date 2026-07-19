@@ -1,6 +1,6 @@
 import { getDomain } from "./utils"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
-import { computeBadge, computeExtraFallback } from "./badge-priority"
+import { computeExtraFallback } from "./badge-priority"
 import { resolveLabel, isRankKey, t as tFn } from "./i18n"
 import { getPosterPublicBaseUrl } from "./poster-public-url"
 import { getUpcomingReleaseLabel } from "./release-badge"
@@ -128,38 +128,33 @@ function computeTopLight(hexColor: string): boolean {
 
 function computeBadgeParams(ps: PosterState, bp: BadgeParams): string[] {
   const params: string[] = []
-  const selected = ps.selected
-  const now = Date.now()
-  const twoWeeks = 14 * 24 * 60 * 60 * 1000
-  const isNewMovie = selected?.media_type === "movie" && ps.metaInfo.release_date
-    ? (now - new Date(ps.metaInfo.release_date).getTime()) < twoWeeks : false
-  const isNewSeries = selected?.media_type === "tv" && ps.metaInfo.first_air_date
-    ? (now - new Date(ps.metaInfo.first_air_date).getTime()) < twoWeeks : false
-  const award = ps.metaInfo.awards?.length ? getAwardBadgeLabel(ps.metaInfo.awards) : null
-  const nomination = !award && ps.metaInfo.nominations?.length ? getNominationBadgeLabel(ps.metaInfo.nominations) : null
-  const animeRank = selected && ps.mdblistAnimeList.length > 0
-    ? (ps.mdblistAnimeList.find((a) => a.id === selected.id)?.rank ?? null) : null
-  const studio = ps.metaInfo.studios?.length ? ps.metaInfo.studios[0] : null
-  const tvType = selected?.media_type === "tv" ? ps.metaInfo.type : null
-  const tvStatus = selected?.media_type === "tv" ? ps.metaInfo.status : null
-  const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: ps.metaInfo.voteAverage, tvType, tvStatus }, tFn)
-  const upcomingRelease = getUpcomingReleaseLabel({
-    mediaType: selected?.media_type === "tv" ? "tv" : "movie",
-    releaseDate: ps.metaInfo.release_date,
-    firstAirDate: ps.metaInfo.first_air_date,
-    locale: ps.lang,
-  })
   if (bp.customBadge) {
+    const selected = ps.selected
+    const now = Date.now()
+    const twoWeeks = 14 * 24 * 60 * 60 * 1000
+    const isNewMovie = selected?.media_type === "movie" && ps.metaInfo.release_date
+      ? (now - new Date(ps.metaInfo.release_date).getTime()) < twoWeeks : false
+    const isNewSeries = selected?.media_type === "tv" && ps.metaInfo.first_air_date
+      ? (now - new Date(ps.metaInfo.first_air_date).getTime()) < twoWeeks : false
+    const award = ps.metaInfo.awards?.length ? getAwardBadgeLabel(ps.metaInfo.awards) : null
+    const nomination = !award && ps.metaInfo.nominations?.length ? getNominationBadgeLabel(ps.metaInfo.nominations) : null
+    const animeRank = selected && ps.mdblistAnimeList.length > 0
+      ? (ps.mdblistAnimeList.find((a) => a.id === selected.id)?.rank ?? null) : null
+    const studio = ps.metaInfo.studios?.length ? ps.metaInfo.studios[0] : null
+    const tvType = selected?.media_type === "tv" ? ps.metaInfo.type : null
+    const tvStatus = selected?.media_type === "tv" ? ps.metaInfo.status : null
+    const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: ps.metaInfo.voteAverage, tvType, tvStatus }, tFn)
+    const upcomingRelease = getUpcomingReleaseLabel({
+      mediaType: selected?.media_type === "tv" ? "tv" : "movie",
+      releaseDate: ps.metaInfo.release_date,
+      firstAirDate: ps.metaInfo.first_air_date,
+      locale: ps.lang,
+    })
     const rankKey = isRankKey(bp.customBadge)
     if (rankKey === "badge.today" && ps.trendRank) params.push(`rank=${ps.trendRank}&label=${encodeURIComponent(tFn("badge.today"))}`)
     else if (rankKey === "badge.anime" && animeRank) params.push(`rank=${animeRank}&label=${encodeURIComponent(tFn("badge.anime"))}`)
     else params.push(`extra=${encodeURIComponent(resolveLabel(bp.customBadge))}`)
-  } else {
-    const badge = computeBadge({ upcomingRelease, isNewMovie, isNewSeries, animeRank, trendRank: ps.trendRank, award, franchise: ps.metaInfo.franchise || null, nomination, studio, director: ps.metaInfo.director || null, extra }, tFn)
-    if (badge) {
-      if (badge.type === "extra") params.push(`extra=${encodeURIComponent(badge.label)}`)
-      else params.push(`rank=${badge.rank}&label=${encodeURIComponent(badge.rankLabel || badge.label)}`)
-    }
   }
+  // For auto badges, let the server compute from its own TMDB data
   return params
 }

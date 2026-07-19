@@ -48,7 +48,7 @@ function matchRules(labels: string[]): string[] {
 
 const NETWORKS = [
   "Netflix", "Amazon Prime Video", "Apple TV+", "Disney+", "HBO", "Max",
-  "Paramount+", "Crunchyroll",
+  "Paramount+", "Crunchyroll", "Prime Video",
   "Rai", "Mediaset", "Sky", "Cartoon Network", "Nickelodeon", "Adult Swim",
   "Universal Pictures", "Warner Bros.", "Paramount Pictures", "Columbia Pictures",
   "20th Century Studios", "Walt Disney Pictures", "Marvel Studios", "Pixar",

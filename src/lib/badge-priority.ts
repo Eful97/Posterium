@@ -93,7 +93,6 @@ export function getAllBadgeOptions(params: {
   if (params.nomination) options.add(params.nomination)
   if (params.studio) options.add(params.studio)
   if (params.director) options.add(params.director)
-  if (params.extra) options.add(params.extra)
   if (params.mediaType === "movie" && params.voteAverage >= 8.5) options.add(keyed("badge.topRated"))
   if (params.mediaType === "tv") {
     const tLower = (params.tvType || "").toLowerCase()

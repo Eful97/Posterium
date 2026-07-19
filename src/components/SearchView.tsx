@@ -86,7 +86,19 @@ export function SearchView() {
       )}
       {!tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">{t("ui.noKey")}</p>}
       {error && <div className="text-center py-12"><p className="text-red-400 text-sm mb-2">{t("ui.searchError")}</p><button onClick={() => { setError(null); doSearch(query) }} className="text-xs text-accent hover:underline">{t("ui.retry")}</button></div>}
-      {results.length === 0 && !searching && !showRecent && !error && query.length >= 2 && tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">{t("ui.noResults")}</p>}
+      {results.length === 0 && !searching && !showRecent && !error && query.length >= 2 && tmdbKey && (
+        <div className="text-center py-16 animate-fade-scale-in">
+          <div className="empty-state-illustration">
+            <svg className="w-8 h-8 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.3-4.3"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+          </div>
+          <p className="text-zinc-400 text-sm mb-1">{t("ui.noResults")}</p>
+          <p className="text-zinc-500 text-xs">{t("ui.noResultsForQuery") || `"${query}" \u2014 Try a different title?`}</p>
+        </div>
+      )}
     </div>
   )
 }

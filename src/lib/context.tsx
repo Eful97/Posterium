@@ -174,6 +174,8 @@ topEdgeColor: string
   autoSaveExcludedPosters: (nextExcluded: string[], nextRotationPosters?: string[], nextPreviewPoster?: TMDBImage) => Promise<void>
   theme: "dark" | "light"
   setTheme: React.Dispatch<React.SetStateAction<"dark" | "light">>
+  serviceErrors: Record<string, boolean>
+  setServiceErrors: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
@@ -220,6 +222,7 @@ export function usePosterium(): PosteriumCtx {
   const [autoRotateClean, setAutoRotateClean] = useState(false)
   const [excludedPosters, setExcludedPosters] = useState<string[]>([])
   const [logoDisabled, setLogoDisabled] = useState(false)
+  const [serviceErrors, setServiceErrors] = useState<Record<string, boolean>>({})
 
   const [loadingImages, setLoadingImages] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
@@ -289,6 +292,8 @@ export function usePosterium(): PosteriumCtx {
     setTmdbKeyInput(saved)
     const mdblistKey = localStorage.getItem("mdblist_key") || ""
     setMdblistApiKey(mdblistKey)
+    const savedTheme = localStorage.getItem("posterium_theme")
+    if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme)
   }, [])
 
   const setTmdbKey = (val: string) => {
@@ -301,6 +306,11 @@ export function usePosterium(): PosteriumCtx {
     setMdblistApiKey(val)
     localStorage.setItem("mdblist_key", val)
   }
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("light-mode", theme === "light")
+    localStorage.setItem("posterium_theme", theme)
+  }, [theme])
 
   useEffect(() => {
     if (langInit.current) return
@@ -495,15 +505,18 @@ export function usePosterium(): PosteriumCtx {
     navigation.setSelectedLogo(null)
     setSelectedBackdrop(null)
     navigation.setPreviewPoster(null)
+    setMetaInfo({ genres: [], voteAverage: 0 })
     setLoadingImages(true)
     setOpenSections({})
     navigation.setPreviewId(`${itemType}:${itemId}`)
     navigation.setView("edit")
     try {
+      const mdblistParam = mdblistApiKey ? "&mdblist_key=" + encodeURIComponent(mdblistApiKey) : ""
+      const detailsUrl = `/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistParam}`
       const [details, rankData, awardData] = await Promise.all([
-        http<{ genres: { id: number; name: string }[]; voteAverage: number; voteCount: number; status: string | null; type: string | null; release_date: string | null; first_air_date: string | null; last_air_date: string | null; next_episode_to_air: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons: number | null; number_of_episodes: number | null; title: string | null; name: string | null; imdb_id: string | null; networks: { name: string }[]; production_companies: { name: string }[]; original_language: string }>(`/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistApiKey ? `&mdblist_key=${encodeURIComponent(mdblistApiKey)}` : ""}`, { timeout: 30000 }).catch(() => ({ genres: [] as { id: number; name: string }[], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null, networks: [] as { name: string }[], production_companies: [] as { name: string }[], original_language: "en" })),
+        http<{ genres: { id: number; name: string }[]; voteAverage: number; voteCount: number; status: string | null; type: string | null; release_date: string | null; first_air_date: string | null; last_air_date: string | null; next_episode_to_air: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons: number | null; number_of_episodes: number | null; title: string | null; name: string | null; imdb_id: string | null; networks: { name: string }[]; production_companies: { name: string }[]; original_language: string }>(detailsUrl, { timeout: 30000 }).catch((e) => { console.error("[posterium] Details fetch failed:", e); setServiceErrors((prev) => ({ ...prev, tmdb: true })); return { genres: [] as { id: number; name: string }[], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null, networks: [] as { name: string }[], production_companies: [] as { name: string }[], original_language: "en" } }),
         http<{ rank: number | null }>(`/api/trending/rank?type=${itemType}&id=${itemId}&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 15000 }).catch(() => ({ rank: null })),
-        http<{ awards: string[]; nominations: string[]; franchise: string | null; basedOn: string | null; director: string | null }>(`/api/awards/${itemType}/${itemId}`, { timeout: 15000 }).catch(() => ({ awards: [] as string[], nominations: [] as string[], franchise: null, basedOn: null, director: null })),
+        http<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>(`/api/awards/${itemType}/${itemId}`, { timeout: 15000 }).catch(() => ({ awards: [] as string[], nominations: [] as string[], studios: [] as string[], franchise: null, basedOn: null, director: null })),
       ])
       const origLang = details.original_language
       const imageLangs = origLang && origLang !== lang && origLang !== "en" ? `${lang},en,null,${origLang}` : `${lang},en,null`
@@ -516,7 +529,7 @@ export function usePosterium(): PosteriumCtx {
       if (details.title) navigation.setSelected((prev) => ({ ...prev!, title: details.title! }))
       if (details.name) navigation.setSelected((prev) => ({ ...prev!, name: details.name! }))
       const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: { name: string }) => n.name) : (details.production_companies || []).map((c: { name: string }) => c.name)
-      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type ?? undefined, status: details.status ?? undefined, release_date: details.release_date ?? undefined, first_air_date: details.first_air_date ?? undefined, last_air_date: details.last_air_date ?? undefined, next_episode_to_air: details.next_episode_to_air ?? undefined, number_of_seasons: details.number_of_seasons ?? undefined, number_of_episodes: details.number_of_episodes ?? undefined, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null, director: awardData?.director || null })
+      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type ?? undefined, status: details.status ?? undefined, release_date: details.release_date ?? undefined, first_air_date: details.first_air_date ?? undefined, last_air_date: details.last_air_date ?? undefined, next_episode_to_air: details.next_episode_to_air ?? undefined, number_of_seasons: details.number_of_seasons ?? undefined, number_of_episodes: details.number_of_episodes ?? undefined, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks).length ? matchTMDBStudios(tmdbNetworks) : (awardData?.studios || []), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null, director: awardData?.director || null })
       setTrendRank(rankData.rank || null)
       const extImdbId = item.imdb_id || details.imdb_id
       if (extImdbId) {
@@ -755,6 +768,7 @@ export function usePosterium(): PosteriumCtx {
     logoDisabled, setLogoDisabled,
     autoSaveExcludedPosters,
     theme, setTheme,
+    serviceErrors, setServiceErrors,
     t,
   // eslint-disable-next-line react-hooks/exhaustive-deps -- context value deps intentionally stable to prevent re-render cascades
   }), [
@@ -775,6 +789,6 @@ export function usePosterium(): PosteriumCtx {
     topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, logoDisabled, setLogoDisabled, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
-    theme,
+    theme, serviceErrors,
   ])
 }

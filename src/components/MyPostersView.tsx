@@ -153,10 +153,15 @@ export function MyPostersView() {
         {filtered.map((m, idx) => {
           const key = `${m.mediaType}:${m.tmdbId}`
           return (
-            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster(toSearchResult({ id: m.tmdbId, media_type: m.mediaType, title: m.title, name: m.title, poster_path: m.posterPath }), "myposters") }} aria-label={m.title} className={`surface-card group relative rounded-2xl overflow-hidden transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in hover:-translate-y-0.5 ${selectMode ? (selected.has(key) ? "ring-2 ring-red-400/50 border-red-400/70" : "") : ""}`} style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
+            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster(toSearchResult({ id: m.tmdbId, media_type: m.mediaType, title: m.title, name: m.title, poster_path: m.posterPath }), "myposters") }} aria-label={`${m.title} — ${m.logoPath ? "with logo" : "clean poster"} — ${m.mediaType}`} aria-pressed={selectMode && selected.has(key)} className={`surface-card group relative rounded-2xl overflow-hidden transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in hover:-translate-y-0.5 ${selectMode ? (selected.has(key) ? "ring-2 ring-red-400/50 border-red-400/70" : "") : ""}`} style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
                 <div className="aspect-[2/3] bg-zinc-900/80 overflow-hidden relative">
                   {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
-                  {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} /> : <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-500">{m.title.charAt(0)}</div>}
+                  {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).parentElement?.classList.add("show-fallback") }} /> : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-zinc-800/50 to-zinc-900/80 gap-2">
+                      <svg className="w-8 h-8 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><polygon points="9.5 8 15.5 12 9.5 16 9.5 8" fill="currentColor" stroke="none"/></svg>
+                      <span className="text-[10px] font-medium text-zinc-600">{m.title?.charAt(0)?.toUpperCase() || "?"}</span>
+                    </div>
+                  )}
                   {m.logoPath && (
                     <div className="absolute inset-x-0 bottom-[7.33%] flex items-center justify-center">
                       <div style={{ width: `${m.logoScale ?? 75}%` }}>
