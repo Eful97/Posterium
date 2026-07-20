@@ -247,7 +247,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           }
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
-        if (logoPath && sd.defaultLogoFitEnabled !== false) {
+        const qLogoFit = req.nextUrl.searchParams.get("logoFit")
+        const logoFitEnabled = qLogoFit !== null ? qLogoFit !== "0" : sd.defaultLogoFitEnabled !== false
+        if (logoPath && logoFitEnabled) {
           const fitStart = Date.now()
           const bestFit = await selectBestLogoFitPosterPath({
             posters: images.posters,
