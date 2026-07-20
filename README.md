@@ -77,9 +77,9 @@ docker run -p 8080:8080 -e TMDB_API_KEY=la_tua_chiave posterium
 
    | Variabile | Valore |
    |---|---|
-   | `TMDB_API_KEY` | `b79494142742d168904a6e232a90d5fe` |
-   | `MDBLIST_API_KEY` | `6r93pbca3shx42tny2ahyy8wf` |
-   | `OMDB_API_KEY` | `93a5cdb4` |
+   | `TMDB_API_KEY` | `la_tua_chiave_tmdb` |
+   | `MDBLIST_API_KEY` | `la_tua_chiave_mdblist` |
+   | `OMDB_API_KEY` | `la_tua_chiave_omdb` |
 
 5. **Deploy**. Dopo ~3 min l'app è su `https://posterium-{random}.koyeb.app`.
 
@@ -134,9 +134,9 @@ Poi crea le API key:
 
 ```bash
 cat > .env.local << EOF
-TMDB_API_KEY=b79494142742d168904a6e232a90d5fe
-MDBLIST_API_KEY=6r93pbca3shx42tny2ahyy8wf
-OMDB_API_KEY=93a5cdb4
+TMDB_API_KEY=la_tua_chiave_tmdb
+MDBLIST_API_KEY=la_tua_chiave_mdblist
+OMDB_API_KEY=la_tua_chiave_omdb
 EOF
 ```
 
