@@ -248,6 +248,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         if (logoPath && sd.defaultLogoFitEnabled !== false) {
+          const fitStart = Date.now()
           const bestFit = await selectBestLogoFitPosterPath({
             posters: images.posters,
             logoPath,
@@ -258,8 +259,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             },
             hasBadges: true,
           })
+          const fitMs = Date.now() - fitStart
+          if (bestFit && bestFit !== clean.file_path) {
+            console.log(`[best-fit] ${mediaType}/${tmdbId}: migliorato poster ${bestFit} (primo era ${clean.file_path}) ${fitMs}ms`)
+          } else if (!bestFit) {
+            console.log(`[best-fit] ${mediaType}/${tmdbId}: fallback al primo clean dopo ${fitMs}ms`)
+          } else {
+            console.log(`[best-fit] ${mediaType}/${tmdbId}: primo clean già ottimale ${fitMs}ms`)
+          }
           posterPath = bestFit ?? clean.file_path
         } else {
+          if (logoPath) {
+            console.log(`[best-fit] ${mediaType}/${tmdbId}: disabilitato da config`)
+          } else {
+            console.log(`[best-fit] ${mediaType}/${tmdbId}: nessun logo disponibile, best-fit saltato`)
+          }
           posterPath = clean.file_path
         }
       } else {
