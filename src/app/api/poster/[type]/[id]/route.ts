@@ -12,6 +12,7 @@ import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMD
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { createT } from "@/lib/i18n"
+import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
@@ -246,14 +247,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           }
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
-        if (clean) {
-          posterPath = clean.file_path
+        if (logoPath && sd.defaultLogoFitEnabled !== false) {
+          const bestFit = await selectBestLogoFitPosterPath({
+            posters: images.posters,
+            logoPath,
+            fetchImage: async (path: string) => {
+              const res = await fetch(imgSrc(path))
+              if (!res.ok) throw new Error(`HTTP ${res.status}`)
+              return Buffer.from(await res.arrayBuffer())
+            },
+            hasBadges: true,
+          })
+          posterPath = bestFit ?? clean.file_path
         } else {
-          const itPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === "it")
-          const enPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === "en")
-          const origPoster = details.original_language ? images.posters.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
-          const chosen = itPoster || enPoster || origPoster || images.posters[0]
-          if (chosen) posterPath = chosen.file_path
+          posterPath = clean.file_path
         }
       } else {
         const langPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === preferredLanguage)
