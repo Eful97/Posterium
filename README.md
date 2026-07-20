@@ -4,7 +4,7 @@ emoji: 🖼️
 colorFrom: indigo
 colorTo: purple
 sdk: docker
-app_port: 3000
+app_port: 8080
 pinned: false
 ---
 
@@ -65,54 +65,46 @@ Apri [http://localhost:3000](http://localhost:3000)
 
 ```bash
 docker build -t posterium .
-docker run -p 3000:3000 -e TMDB_API_KEY=la_tua_chiave posterium
+docker run -p 8080:8080 -e TMDB_API_KEY=la_tua_chiave posterium
 ```
 
-### Koyeb
+### Koyeb (gratis, senza carta)
 
-1. Crea una nuova app su [koyeb.com](https://koyeb.com).
-2. Scegli **GitHub** come sorgente e seleziona `Eful97/Posterium`.
-3. Come builder seleziona **Dockerfile**, non Node.js/autodetect.
-4. Lascia porta `3000`.
-5. Aggiungi almeno:
-   - `TMDB_API_KEY`
-   - `NODE_ENV=production`
-   - `MDBLIST_API_KEY` (opzionale: rating 9 fonti + anime rank)
-6. Deploy.
+1. Crea un account su [koyeb.com](https://koyeb.com) — **nessuna carta di credito**.
+2. Crea una **new App** → **GitHub** → seleziona `Eful97/Posterium`.
+3. Builder: **Dockerfile**. Lascia tutto come default.
+4. **Environment Variables** (obbligatorie):
 
-> **Usa Dockerfile su Koyeb.** Il deploy Node.js/autodetect puo' fallire perche' Posterium usa Next.js standalone + Sharp + runtime server custom.
+   | Variabile | Valore |
+   |---|---|
+   | `TMDB_API_KEY` | `b79494142742d168904a6e232a90d5fe` |
+   | `MDBLIST_API_KEY` | `6r93pbca3shx42tny2ahyy8wf` |
+   | `OMDB_API_KEY` | `93a5cdb4` |
 
-#### Persistenza poster
+5. **Deploy**. Dopo ~3 min l'app è su `https://posterium-{random}.koyeb.app`.
 
-Il filesystem di Koyeb e' effimero — i mapping si perdono ad ogni deploy. Per persistenza serve storage esterno:
-
-| Servizio | Free tier | Cosa fa |
-|----------|-----------|---------|
-| **Upstash Redis** | 10 KB gratis | Mappings/cache via `@vercel/kv` (REST API). |
-| **Cloudflare/CDN** | variabile | Dominio pubblico davanti a Posterium per servire `/api/poster` più velocemente. |
-
-Crea un database Redis su [upstash.com](https://upstash.com) (gratuito), poi aggiungi queste variabili dalla pagina del database:
-
-```
-KV_REST_API_URL=https://xxx.upstash.io
-KV_REST_API_TOKEN=AXxx...
-```
-
-Per usare un dominio/CDN davanti a Posterium, aggiungi:
-```
-NEXT_PUBLIC_POSTER_CDN_URL=https://poster.tuo-dominio.com
-POSTER_CDN_URL=https://poster.tuo-dominio.com
-```
-
-> **Senza Upstash, i mapping si perdono ad ogni deploy.** I poster generati restano validi finche' cambia il render version.
-
-#### Verifica
+#### Verifica rapida
 
 ```bash
-curl https://tuo-app.koyeb.app/api/health
+curl https://posterium-tuo-nome.koyeb.app/api/health
 ```
 
-Risposta `"status": "healthy"` = tutto ok. Koyeb fa auto-deploy ad ogni push su `master`.
+Risposta: `"status":"healthy"` = tutto funziona.
+
+#### URL Stremio
+
+```
+https://posterium-tuo-nome.koyeb.app/manifest.json
+```
+
+#### Note
+
+- **Storage effimero** — i mapping salvati si perdono a ogni redeploy. Per mantenerli, aggiungi Upstash Redis (gratis, 10 KB):
+  ```
+  KV_REST_API_URL=https://xxx.upstash.io
+  KV_REST_API_TOKEN=AXxx...
+  ```
+- **Auto-deploy** — Koyeb rebuilda a ogni push su `master`. Le variabili d'ambiente restano impostate.
 
 ---
 
