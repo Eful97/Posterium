@@ -149,6 +149,7 @@ export async function extractBadgeColor(
   posterBuf: Buffer,
   logoBuf?: Buffer | null,
   fallbackGenre?: string | null,
+  region?: 'bottom' | 'top',
 ): Promise<string> {
   async function extractFrom(buf: Buffer, w: number, h: number, genre: string): Promise<string> {
     const pixels = await sharp(buf).ensureAlpha().raw().toBuffer()
@@ -157,8 +158,25 @@ export async function extractBadgeColor(
   }
 
   const thumbBuf = await sharp(posterBuf).resize(200, 300, { fit: "cover" }).toBuffer()
+
+  // Crop to target region for more focused color extraction
+  let posterAnalysisBuf = thumbBuf
+  let posterW = 200
+  let posterH = 300
+  if (region === 'bottom') {
+    posterH = 120  // bottom 40%
+    posterAnalysisBuf = await sharp(thumbBuf)
+      .extract({ left: 0, top: 180, width: 200, height: posterH })
+      .toBuffer()
+  } else if (region === 'top') {
+    posterH = 120  // top 40%
+    posterAnalysisBuf = await sharp(thumbBuf)
+      .extract({ left: 0, top: 0, width: 200, height: posterH })
+      .toBuffer()
+  }
+
   const [posterColor, logoColor] = await Promise.all([
-    extractFrom(thumbBuf, 200, 300, fallbackGenre || ""),
+    extractFrom(posterAnalysisBuf, posterW, posterH, fallbackGenre || ""),
     logoBuf ? (async () => {
       const meta = await sharp(logoBuf).metadata()
       return extractFrom(logoBuf, meta.width || 200, meta.height || 100, "")

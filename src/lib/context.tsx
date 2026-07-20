@@ -162,6 +162,7 @@ export interface PosteriumCtx {
   copyUrl: () => Promise<void>
   copied: boolean
   accentColor: string
+  setAccentColor: (v: string) => void
 topEdgeColor: string
   rotationPosters: string[]
   setRotationPosters: React.Dispatch<React.SetStateAction<string[]>>
@@ -434,8 +435,9 @@ export function usePosterium(): PosteriumCtx {
         ctx.imageSmoothingEnabled = false
         ctx.drawImage(img, 0, 0, w, h)
         const pixels = ctx.getImageData(0, 0, w, h).data
-        const result = findAccentColor(pixels, w, h, genreName || '')
+        let result = findAccentColor(pixels, w, h, genreName || '')
         const edge = topEdgeAverage(pixels, w, h)
+
         setRootColors(result.r, result.g, result.b, edge.r, edge.g, edge.b)
       } catch { /* color detection is non-critical */ }
     }
@@ -760,7 +762,7 @@ export function usePosterium(): PosteriumCtx {
     mdblistApiKey, setMdblistApiKey: setMdblistApiKeyFn,
     exportData, importData, removeRecentSearch: search.removeRecentSearch,
     copyUrl, copied,
-    accentColor,
+    accentColor, setAccentColor,
     topEdgeColor,
     rotationPosters, setRotationPosters,
     autoRotateClean, setAutoRotateClean,
@@ -785,7 +787,7 @@ export function usePosterium(): PosteriumCtx {
     mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
     tmdbKeyInput, showKey, copied,
-    accentColor,
+    accentColor, setAccentColor,
     topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, logoDisabled, setLogoDisabled, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,

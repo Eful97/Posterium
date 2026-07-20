@@ -17,9 +17,10 @@ import { buildPreviewUrl } from "@/lib/poster-url"
 import { SearchBar } from "@/components/SearchBar"
 import { RankRow } from "@/components/RankRow"
 import { PosterCarousel } from "@/components/PosterCarousel"
+import { BadgeStyleSelector } from "@/components/ui"
 import { useToast } from "@/components/Toast"
 import { ScrollReveal } from "@/components/ScrollReveal"
-import { RefreshCw, Search, ImageOff, Ruler, Cloud, Minus, Circle, Moon, Pill, BarChart3, Check, XCircle, ArrowLeftRight, ArrowUpDown, Clock, X } from "lucide-react"
+import { RefreshCw, Search, ImageOff, Ruler, Cloud, Minus, Circle, Check, XCircle, ArrowLeftRight, ArrowUpDown, Clock, X } from "lucide-react"
 
 export default function EditView() {
   const p = useP()
@@ -37,9 +38,6 @@ export default function EditView() {
   const toast = useToast()
   const toastRef = useRef(toast)
   toastRef.current = toast
-
-  // Extract accent swatch background to avoid JSX parse errors with !== inside template literals
-  const swatchBackground = p.accentColor !== "#555555" ? p.accentColor : "linear-gradient(135deg, #666, #888)"
 
   const defaultLogoScale = () => {
     const l = p.selectedLogo
@@ -265,19 +263,14 @@ export default function EditView() {
                   </div>
                   <div className="mt-2 pt-2 border-t border-zinc-800/60">
                     <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleRankingExtra")}</label>
-                    <div className="grid grid-cols-2 xl:grid-cols-4 gap-1.5 px-1">
-                        {(["default","bar","colored"] as const).map(s => (
-                          <button aria-label={p.t("ui.styleRankingExtra") + ": " + s} key={s} onClick={() => p.setRankingBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.rankingBadgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "default" ? <><Circle className="w-3 h-3" /> {p.t("ui.bsDefault")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><div className="color-swatch" style={{background: swatchBackground}} title={p.accentColor !== "#555555" ? p.accentColor : "fallback"} /> {p.t("ui.colored")}</>}</button>
-                        ))}
+                    <div className="px-1">
+                      <BadgeStyleSelector value={p.rankingBadgeStyle} options={["default","bar","colored","pill","glass"]} onChange={p.setRankingBadgeStyle} t={p.t} accentColor={p.accentColor} />
                     </div>
                     {p.accentColor === "#555555" && (
-                      <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{p.t("ui.noDominantColor") || "No dominant color &mdash; using fallback"}</div>
+                      <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{p.t("ui.noDominantColor") || "No dominant color — using fallback"}</div>
                     )}
                     {p.accentColor !== "#555555" && (
-                      <div className="flex items-center gap-2 justify-center mt-1.5 px-1">
-                        <div className="color-swatch" style={{background: p.accentColor}} />
-                        <span className="text-[10px] text-zinc-500">{p.accentColor}</span>
-                      </div>
+                      <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">Accent color condiviso con badge genere</div>
                     )}
                   </div>
                   <div className="flex items-center justify-between px-1">
@@ -336,17 +329,32 @@ export default function EditView() {
 
                 <div className="mt-3 pt-3 border-t border-zinc-800/60">
                   <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleGenreBadge")}</label>
-                  <div className="grid grid-cols-2 gap-1.5 px-1">
-                    {(["shadow","pill","bar","colored"] as const).map(s => (
-                      <button aria-label={p.t("ui.styleGenreBadge") + ": " + (s === "shadow" ? p.t("ui.shadow") : s === "pill" ? p.t("ui.pill") : s === "bar" ? p.t("ui.bar") : p.t("ui.colored"))} key={s} title={s === "shadow" ? p.t("ui.shadow") : s === "pill" ? p.t("ui.pill") : s === "bar" ? p.t("ui.bar") : p.t("ui.colored")} onClick={() => p.setBadgeStyle(s)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${p.badgeStyle === s ? "bg-white/15 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"}`}>{s === "shadow" ? <><Moon className="w-3 h-3" /> {p.t("ui.shadow")}</> : s === "pill" ? <><Pill className="w-3 h-3" /> {p.t("ui.pill")}</> : s === "bar" ? <><BarChart3 className="w-3 h-3" /> {p.t("ui.bar")}</> : <><div className="color-swatch" style={{background: swatchBackground}} title={p.accentColor !== "#555555" ? p.accentColor : "fallback"} /> {p.t("ui.colored")}</>}</button>
-                    ))}
+                  <div className="px-1">
+                    <BadgeStyleSelector value={p.badgeStyle} options={["shadow","pill","bar","colored","bordered","glass"]} onChange={p.setBadgeStyle} t={p.t} accentColor={p.accentColor} />
                   </div>
-                  {p.accentColor !== "#555555" && (
-                    <div className="flex items-center gap-2 justify-center mt-1.5 text-[10px] text-zinc-500">
-                      <div className="color-swatch" style={{background: p.accentColor}} />
-                      <span>Accent: {p.accentColor}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 justify-center mt-2 px-1">
+                    <input
+                      type="color"
+                      value={p.accentColor === "#555555" ? "#000000" : p.accentColor}
+                      onChange={(e) => p.setAccentColor(e.target.value)}
+                      className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded"
+                    />
+                    <input
+                      type="text"
+                      value={p.accentColor}
+                      onChange={(e) => { const v = e.target.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) p.setAccentColor(v) }}
+                      onBlur={(e) => { if (!/^#[0-9a-fA-F]{6}$/.test(e.target.value)) e.target.value = p.accentColor }}
+                      className="w-20 text-center text-[11px] bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent font-mono text-zinc-300"
+                      placeholder="#555555"
+                    />
+                    {p.accentColor !== "#555555" && (
+                      <button
+                        onClick={() => p.setAccentColor("#555555")}
+                        className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors px-1"
+                        title="Reset to auto-detect"
+                      >↺</button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-zinc-800/60">

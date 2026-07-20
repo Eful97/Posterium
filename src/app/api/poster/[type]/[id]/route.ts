@@ -11,6 +11,7 @@ import { renderGenreBadge, renderRankingBadge, renderExtraBadge, warmFonts } fro
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
+import { GENRE_FALLBACK } from "@/lib/badges"
 import { createT } from "@/lib/i18n"
 import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import type { EnrichedAnimeItem } from "@/lib/validation"
@@ -250,18 +251,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const qLogoFit = req.nextUrl.searchParams.get("logoFit")
         const logoFitEnabled = qLogoFit !== null ? qLogoFit !== "0" : sd.defaultLogoFitEnabled !== false
         if (logoPath && logoFitEnabled) {
-          const fitStart = Date.now()
-          const bestFit = await selectBestLogoFitPosterPath({
-            posters: images.posters,
-            logoPath,
-            fetchImage: async (path: string) => {
-              const res = await fetch(imgSrc(path))
-              if (!res.ok) throw new Error(`HTTP ${res.status}`)
-              return Buffer.from(await res.arrayBuffer())
-            },
-            hasBadges: true,
-          })
-          const fitMs = Date.now() - fitStart
+          let bestFit: string | null = null
+          let fitMs = 0
+          try {
+            const fitStart = Date.now()
+            bestFit = await selectBestLogoFitPosterPath({
+              posters: images.posters,
+              logoPath,
+              fetchImage: async (path: string) => {
+                const res = await fetch(imgSrc(path))
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                return Buffer.from(await res.arrayBuffer())
+              },
+              hasBadges: true,
+            })
+            fitMs = Date.now() - fitStart
+          } catch (e) {
+            console.error(`[best-fit] ${mediaType}/${tmdbId}: eccezione imprevista, fallback al primo clean`, e)
+          }
           if (bestFit && bestFit !== clean.file_path) {
             console.log(`[best-fit] ${mediaType}/${tmdbId}: migliorato poster ${bestFit} (primo era ${clean.file_path}) ${fitMs}ms`)
           } else if (!bestFit) {
@@ -415,7 +422,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : 5
     const blurFade = qBlurFade ? Math.max(Number(qBlurFade), 0) : 60
     const blurDarkness = qBlurDarkness ? Math.max(Number(qBlurDarkness), 0) : 40
-    const [blurredPosterBuf, genreColor, logoResult] = await Promise.all([
+    const [blurredPosterBuf, badgeColors, logoResult] = await Promise.all([
       (async () => {
         if (!blurEnabled) return null
         const gh = Math.min(Math.max(Math.round(STD_H * blurHeight / 100), 100), STD_H)
@@ -456,12 +463,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           .png({ compressionLevel: 1 })
           .toBuffer()
       })(),
-      // Badge color extraction
+      // Badge color extraction (separate per genre/ranking)
       (badgesEnabled && genreName && voteAverage && voteAverage > 0)
         ? (async () => {
             const qAc = req.nextUrl.searchParams.get("ac")
-            const rawColor = qAc && isValidHex(qAc) ? qAc : (mapping?.accentColor || await extractBadgeColor(posterBuf, logoFetch, genreName))
-            return isValidHex(rawColor) ? rawColor : "#555555"
+            if (qAc && isValidHex(qAc)) return { genreColor: qAc, rankColor: qAc }
+            if (mapping?.accentColor) return { genreColor: mapping.accentColor, rankColor: mapping.accentColor }
+            const [genreColor, rankColor] = await Promise.all([
+              extractBadgeColor(posterBuf, logoFetch, genreName, 'bottom'),
+              extractBadgeColor(posterBuf, logoFetch, null, 'top'),
+            ])
+            return {
+              genreColor: isValidHex(genreColor) ? genreColor : (GENRE_FALLBACK[genreName] || "#555555"),
+              rankColor: isValidHex(rankColor) ? rankColor : "#555555",
+            }
           })()
         : Promise.resolve(undefined),
       // Logo resize
@@ -498,8 +513,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const renderBaseBuf = blurredPosterBuf || posterBuf
     if (logoResult) composites.push(logoResult)
 
-    // 9. Render both badges in parallel (both depend on genreColor, not on each other)
-    const accentForBadge = genreColor || "#555555"
+    // 9. Render both badges in parallel (separate colors per zona)
+    const accentColorGenre = badgeColors?.genreColor || (GENRE_FALLBACK[genreName || ""] || "#555555")
+    const accentColorRank = badgeColors?.rankColor || "#555555"
     const qBs = req.nextUrl.searchParams.get("bs")
     const badgeStyle = qBs || (mapping?.badgeStyle && mapping.badgeStyle !== "shadow" ? mapping.badgeStyle : undefined) || sd.badgeStyle || "shadow"
     const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
@@ -551,10 +567,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     // Parallel render: genre badge + ranking badge (with badge PNG cache)
     const genreBadgeKey = (badgesEnabled && genreName && voteAverage && voteAverage > 0)
-      ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentForBadge, topLight)
+      ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentColorGenre, topLight)
       : null
     const rankBadgeKey = topBadge
-      ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, qRankingBadgeStyle, accentForBadge)
+      ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, qRankingBadgeStyle, accentColorRank)
       : null
 
     const [genreBadgeResult, rankBadgeResult] = await Promise.all([
@@ -563,7 +579,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             || (() => {
                 const existing = badgeInflight.get(genreBadgeKey) as Promise<{ png: Buffer; w: number; h: number } | null> | undefined
                 if (existing) return existing
-                const p = renderGenreBadge(genreName!, voteAverage!, STD_W, year, badgeStyle, accentForBadge, topLight)
+                const p = renderGenreBadge(genreName!, voteAverage!, STD_W, year, badgeStyle, accentColorGenre, topLight)
                   .then((r) => { if (r) cacheSet(genreBadgeKey, r, ["badge"], BADGE_CACHE_TTL); return r })
                   .catch((e) => { console.error("[poster] Genre badge rendering failed:", e); return null })
                   .finally(() => { badgeInflight.delete(genreBadgeKey) })
@@ -578,11 +594,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                 if (existing) return existing
                 let p: Promise<{ png: Buffer; w: number; h: number; isRank?: boolean } | null>
                 if (topBadge!.type === "extra") {
-                  p = renderExtraBadge(topBadge!.label, STD_W, topLight, qRankingBadgeStyle, accentForBadge)
+                  p = renderExtraBadge(topBadge!.label, STD_W, topLight, qRankingBadgeStyle, accentColorRank)
                     .then((r) => { const v = { ...r, isRank: false }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                     .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
                 } else {
-                  p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, qRankingBadgeStyle, accentForBadge)
+                  p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, qRankingBadgeStyle, accentColorRank)
                     .then((r) => { const v = { ...r, isRank: true }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                     .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
                 }
