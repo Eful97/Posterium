@@ -56,6 +56,7 @@ function catalogResponse(body: { metas: StremioMeta[] }): Response {
   return Response.json(body, {
     headers: {
       "Cache-Control": "no-cache, max-age=0, must-revalidate",
+      "Access-Control-Allow-Origin": "*",
     },
   })
 }

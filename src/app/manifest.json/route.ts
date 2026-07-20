@@ -20,5 +20,11 @@ export async function GET(req: NextRequest) {
       ...catalog,
       extra: [{ name: "skip" }],
     })),
+  }, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-cache, max-age=0, must-revalidate",
+    },
   })
 }
