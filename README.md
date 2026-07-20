@@ -108,6 +108,88 @@ https://posterium-tuo-nome.koyeb.app/manifest.json
 
 ---
 
+### 📱 Termux (telefono Android)
+
+Trasforma un telefono vecchio in un server Posterium 24/7 — **zero canone mensile**.
+
+#### Requisiti
+
+- Android 8+ con **2+ GB RAM**
+- **50+ GB batteria** o telefono sempre in carica
+- Installare [Termux da F-Droid](https://f-droid.org/packages/com.termux/) **⚠️ NON dal Play Store** (versione obsoleta)
+
+#### Setup rapido
+
+Apri Termux e incolla:
+
+```bash
+pkg update && pkg upgrade -y
+pkg install nodejs git -y
+git clone https://github.com/Eful97/Posterium
+cd Posterium
+npm install --ignore-scripts
+```
+
+Poi crea le API key:
+
+```bash
+cat > .env.local << EOF
+TMDB_API_KEY=b79494142742d168904a6e232a90d5fe
+MDBLIST_API_KEY=6r93pbca3shx42tny2ahyy8wf
+OMDB_API_KEY=93a5cdb4
+EOF
+```
+
+Build e avvia:
+
+```bash
+npm run build
+npm start
+```
+
+Ora Posterium è in rete locale: `http://{ip-del-telefono}:3000`
+
+#### Esporre su internet (opzionale)
+
+| Metodo | Comando | Limiti free |
+|---|---|---|
+| **Cloudflare Tunnel** | `pkg install cloudflared` → `cloudflared tunnel --url http://localhost:3000` | Illimitato |
+| **Ngrok** | `pkg install ngrok` → `ngrok http 3000` | 40 req/min |
+| **Tailscale** | `pkg install tailscale` → `tailscale up` | Rete VPN privata |
+
+#### Tenerlo sempre acceso
+
+```bash
+# Evita sleep del telefono
+pkg install termux-services
+sv-enable node
+
+# Avvio automatico all'accensione (root opzionale)
+pkg install termux-boot
+mkdir -p ~/.termux/boot
+echo 'cd ~/Posterium && npm start' > ~/.termux/boot/start-posterium
+chmod +x ~/.termux/boot/start-posterium
+```
+
+#### Limiti reali
+
+| Cosa | Come gestirlo |
+|---|---|
+| 🔌 Batteria | Tieni il telefono sempre in carica |
+| 🌙 Schermo | Lascialo spento — Termux gira in background |
+| 🌐 IP dinamico | Usa **Cloudflare Tunnel** o **DDNS** (noip.com) |
+| 📱 RAM 2GB | Sufficiente per uso personale |
+| 💾 Storage | 16 GB bastano |
+
+#### URL Stremio
+
+Se usi Cloudflare Tunnel:
+```
+https://tuo-tunnel.cloudflare.com/manifest.json
+```
+
+---
+
 ## Debug e cache
 
 Posterium espone alcuni endpoint utili per controllare lo stato dell'app in produzione.
