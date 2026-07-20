@@ -469,6 +469,11 @@ Massimo 25% dell'altezza del poster, scala automatica al cambio logo. Trascinabi
 <p align="center">
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Foto7.png" alt="Posterium Home" width="32%" />
 </p>
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Screenshot%202026-07-20%20164532.png" alt="Posterium Home" width="32%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Screenshot%202026-07-20%20164555.png" alt="Posterium Editor" width="32%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Screenshot%202026-07-20%20164624.png" alt="Posterium Badge" width="32%" />
+</div>
 
 ---
 
