@@ -6,6 +6,7 @@ import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
+import { getOriginFromRequest } from "@/lib/poster-public-url"
 
 interface StremioMeta {
   id: string
@@ -67,7 +68,7 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
   const defaults = getServerDefaults()
   const mapping = await getById(type === "series" ? "tv" : "movie", id)
   return buildStremioPosterUrl({
-    origin: req.nextUrl.origin,
+    origin: getOriginFromRequest(req),
     type,
     id,
     defaults,

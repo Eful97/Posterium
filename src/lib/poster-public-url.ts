@@ -1,3 +1,4 @@
+import type { NextRequest } from "next/server"
 import { getDomain } from "@/lib/utils"
 
 export interface PosterBaseUrlInput {
@@ -9,6 +10,19 @@ function cleanBaseUrl(value: string | undefined): string | null {
   const trimmed = value?.trim()
   if (!trimmed) return null
   return trimmed.replace(/\/+$/, "")
+}
+
+/**
+ * Extract the public origin from a request, accounting for reverse proxies
+ * (Koyeb, HF Spaces, etc.) that forward via internal IPs.
+ */
+export function getOriginFromRequest(req: NextRequest): string {
+  const forwardedHost = req.headers.get("X-Forwarded-Host")
+  const forwardedProto = req.headers.get("X-Forwarded-Proto") || "https"
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`
+  }
+  return req.nextUrl.origin
 }
 
 export function getPosterPublicBaseUrl(input: PosterBaseUrlInput = {}): string {

@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server"
 import { APP_VERSION } from "@/generated/app-version"
 import { POSTERIUM_CATALOGS } from "@/lib/catalog-definitions"
+import { getOriginFromRequest } from "@/lib/poster-public-url"
 
 export async function GET(req: NextRequest) {
-  const domain = req.nextUrl.origin
+  const domain = getOriginFromRequest(req)
   return Response.json({
     id: "org.posterium",
     version: APP_VERSION,

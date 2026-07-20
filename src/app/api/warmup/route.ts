@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { getJWRankings } from "@/lib/justwatch"
-import { buildPosterPublicUrl } from "@/lib/poster-public-url"
+import { buildPosterPublicUrl, getOriginFromRequest } from "@/lib/poster-public-url"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"
 import { getAll } from "@/lib/store"
@@ -64,7 +64,7 @@ function addTarget(targets: WarmupTarget[], target: WarmupTarget): void {
 
 function buildPosterUrl(input: BuildPosterUrlInput): URL {
   const url = buildPosterPublicUrl(`/api/poster/${input.target.type}/${input.target.id}`, {
-    origin: input.req.nextUrl.origin,
+    origin: getOriginFromRequest(input.req),
     preferCdn: input.req.nextUrl.searchParams.get("edge") !== "0",
   })
   const defaults = getServerDefaults()
