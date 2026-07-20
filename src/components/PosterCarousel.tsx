@@ -44,6 +44,7 @@ export function PosterCarousel() {
   const [isHovering, setIsHovering] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const hoveringRef = useRef(false)
+  const tickRef = useRef<() => void>(() => {})
   const [showLeft, setShowLeft] = useState(false)
   const [showRight, setShowRight] = useState(true)
 
@@ -73,6 +74,7 @@ export function PosterCarousel() {
       }
       rafRef.current = requestAnimationFrame(tick)
     }
+    tickRef.current = tick
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
   }, [totalW, totalItems])
@@ -89,6 +91,8 @@ export function PosterCarousel() {
       setOffset(-posRef.current)
       if (t < 1) {
         rafRef.current = requestAnimationFrame(animate)
+      } else {
+        rafRef.current = requestAnimationFrame(tickRef.current)
       }
     }
     cancelAnimationFrame(rafRef.current)
