@@ -14,7 +14,7 @@ import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { createT } from "@/lib/i18n"
 import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import type { EnrichedAnimeItem } from "@/lib/validation"
-import { fetchMDBList } from "@/lib/mdblist"
+import { fetchMDBList, type MDBListEntry } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { computeLogoLayout } from "@/lib/logo-layout"
 import { getEffectiveRotationState } from "@/lib/poster-rotation"
@@ -309,9 +309,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       (rankingEnabledEarly && mediaType === "tv")
         ? (() => {
             try {
-              const cached = cacheGet<EnrichedAnimeItem[]>("mdblist:anime:top10")
+              const cached = cacheGet("mdblist:anime:top10")
               if (cached && Array.isArray(cached)) {
-                const idx = cached.findIndex((a: EnrichedAnimeItem) => a.id === tmdbId)
+                const idx = cached.findIndex((e) => Number((e as MDBListEntry).tmdb) === tmdbId || (e as EnrichedAnimeItem).id === tmdbId)
                 return Promise.resolve(idx >= 0 ? idx + 1 : null)
               }
               return fetchMDBList("mdblistAnime")
