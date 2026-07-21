@@ -225,15 +225,24 @@ function buildNetflixRankBadgeSVG(rank: number, pw: number) {
   const hBottomRight = Math.round(h * 0.82)
   const topFs = Math.round(w * 0.28)
   const rankFs = Math.round(w * 0.54)
+  const padLeft = Math.round(fs * 0.4)
+  const padBottom = Math.round(fs * 0.4)
+  const totalW = w + padLeft
+  const totalH = h + padBottom
 
-  // Nastro Netflix top-right: top retta a y=0, lati dritti, taglio inclinato in basso
-  const pathD = `M 0 0 L ${w} 0 L ${w} ${hBottomRight} L 0 ${h} Z`
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-    <path d="${pathD}" fill="#E50914"/>
-    <text x="${w / 2}" y="${Math.round(h * 0.26)}" fill="#fff" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">TOP</text>
-    <text x="${w / 2}" y="${Math.round(h * 0.62)}" fill="#fff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central">${rank}</text>
+  // Nastro Netflix top-right: ombra drop-shadow soffice a sinistra e in basso
+  const pathD = `M ${padLeft} 0 L ${totalW} 0 L ${totalW} ${hBottomRight} L ${padLeft} ${h} Z`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
+    <defs>
+      <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="-2" dy="3" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.6"/>
+      </filter>
+    </defs>
+    <path d="${pathD}" fill="#E50914" filter="url(#shadow)"/>
+    <text x="${padLeft + w / 2}" y="${Math.round(h * 0.26)}" fill="#fff" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">TOP</text>
+    <text x="${padLeft + w / 2}" y="${Math.round(h * 0.62)}" fill="#fff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central">${rank}</text>
   </svg>`
-  return { svg, w, h }
+  return { svg, w: totalW, h: totalH }
 }
 
 export async function buildRankingBadgeSVG(
