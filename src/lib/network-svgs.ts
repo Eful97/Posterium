@@ -67,7 +67,33 @@ async function loadNetworkPng(networkKey: string, pw: number): Promise<{ png: Bu
       .resize(targetW, undefined, { fit: "inside", withoutEnlargement: false })
       .png()
       .toBuffer({ resolveWithObject: true })
-    return { png: data, w: info.width, h: info.height }
+
+    const pad = Math.max(Math.round(4 * pw / 380), 3)
+    const off = Math.max(Math.round(2 * pw / 380), 1)
+
+    // Generate soft black drop shadow from logo alpha
+    const shadowLayer = await sharp(data)
+      .ensureAlpha()
+      .linear([0, 0, 0, 0.65], [0, 0, 0, 0])
+      .blur(1.8)
+      .toBuffer()
+
+    const { data: finalPng, info: finalInfo } = await sharp({
+      create: {
+        width: info.width + pad * 2,
+        height: info.height + pad * 2,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      }
+    })
+    .composite([
+      { input: shadowLayer, top: pad + off, left: pad + off },
+      { input: data, top: pad, left: pad }
+    ])
+    .png()
+    .toBuffer({ resolveWithObject: true })
+
+    return { png: finalPng, w: finalInfo.width, h: finalInfo.height }
   } catch (e) {
     console.error(`[network-svgs] Failed to load PNG for ${networkKey}:`, e)
     return null

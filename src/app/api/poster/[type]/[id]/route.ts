@@ -658,8 +658,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     if (networkLogoResult) {
-      const netTop = 20
-      const netLeft = 28
+      const netTop = 15
+      const netLeft = 23
       composites.push({ input: networkLogoResult.png, top: netTop, left: netLeft })
     }
 
