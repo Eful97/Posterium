@@ -222,25 +222,29 @@ function buildNetflixRankBadgeSVG(rank: number, pw: number) {
   const fs = Math.round(Math.max(23 * pw / 380, 14))
   const w = Math.round(fs * 2.4)
   const h = Math.round(w * 1.35)
-  const hBottomRight = Math.round(h * 0.82)
   const topFs = Math.round(w * 0.28)
   const rankFs = Math.round(w * 0.54)
-  const padLeft = Math.round(fs * 0.4)
+  const padX = Math.round(fs * 0.4)
   const padBottom = Math.round(fs * 0.4)
-  const totalW = w + padLeft
+  const totalW = w + padX * 2
   const totalH = h + padBottom
 
-  // Nastro Netflix top-right: ombra drop-shadow soffice a sinistra e in basso
-  const pathD = `M ${padLeft} 0 L ${totalW} 0 L ${totalW} ${hBottomRight} L ${padLeft} ${h} Z`
+  const ribbonLeft = padX
+  const ribbonRight = padX + w
+  const ribbonMidX = padX + w / 2
+  const ribbonVNotchY = Math.round(h * 0.86)
+
+  // Nastro Netflix top-center: ombra centrata in basso e taglio a V
+  const pathD = `M ${ribbonLeft} 0 L ${ribbonRight} 0 L ${ribbonRight} ${h} L ${ribbonMidX} ${ribbonVNotchY} L ${ribbonLeft} ${h} Z`
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
     <defs>
       <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="-2" dy="3" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.6"/>
+        <feDropShadow dx="0" dy="3" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.65"/>
       </filter>
     </defs>
     <path d="${pathD}" fill="#E50914" filter="url(#shadow)"/>
-    <text x="${padLeft + w / 2}" y="${Math.round(h * 0.26)}" fill="#fff" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">TOP</text>
-    <text x="${padLeft + w / 2}" y="${Math.round(h * 0.62)}" fill="#fff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central">${rank}</text>
+    <text x="${ribbonMidX}" y="${Math.round(h * 0.26)}" fill="#fff" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">TOP</text>
+    <text x="${ribbonMidX}" y="${Math.round(h * 0.58)}" fill="#fff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central">${rank}</text>
   </svg>`
   return { svg, w: totalW, h: totalH }
 }

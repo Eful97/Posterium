@@ -641,7 +641,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     if (safeRankBadgeResult) {
       const isBar = qRankingBadgeStyle === "bar"
       const isNetflixRank = qRankingBadgeStyle === "netflix"
-      const rankLeft = isBar ? 0 : isNetflixRank ? STD_W - safeRankBadgeResult.w : Math.round((STD_W - safeRankBadgeResult.w) / 2)
+      const rankLeft = isBar ? 0 : Math.round((STD_W - safeRankBadgeResult.w) / 2)
       const rankTop = 0
       composites.push({ input: safeRankBadgeResult.png, top: rankTop, left: rankLeft })
     }
