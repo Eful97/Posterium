@@ -32,8 +32,8 @@ pinned: false
 - 🌐 **Internazionalizzazione** — 5 lingue (Italiano, English, Français, Deutsch, Español) per badge e UI completa
 - 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y, filtro per lingua (Tutti/Italiano/English/Senza lingua) e fallback automatico su lingua originale
 - 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi con ombra proporzionale e text-shadow sincronizzato
-- 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, 4 stili (shadow/pill/bar/colored), con overflow protection, anno, accent color e text color adattivo
-- 🏆 **Badge ranking/extra** — Classifica JustWatch, tendenze MDBList, badge personalizzati, 3 stili (default/bar/colored)
+- 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, 6 stili (shadow/pill/bar/colored/bordo/vetro), con overflow protection, anno, accent color e text color adattivo
+- 🏆 **Badge ranking/extra** — Classifica JustWatch, tendenze MDBList, badge personalizzati, 5 stili (default/bar/colored/pill/netflix) con l'iconica bandierina drolla fisso in alto a destra per Netflix Top 10 / Top 3
 - ✏️ **Badge personalizzato** — Sostituisci il badge automatico con testo libero, per ogni titolo individualmente
 - 🎨 **Blur fondo** — Intensità, fade, oscurità regolabili, sincronizzato client ↔ server (sostituisce il gradiente)
 - 📊 **Rating** — Media tra IMDb (da MDBList o OMDb) e TMDb (da TMDB), per un voto bilanciato e accurato
@@ -42,20 +42,20 @@ pinned: false
 - 🔄 **Rotazione poster clean 24h** — Seleziona più poster puliti e ruotali automaticamente ogni 24 ore, con opzione globale nelle impostazioni predefinite
 - 🧠 **Scoring automatico poster** — Algoritmo di fit scoring (pulizia, contrasto, dettaglio, badge, composito) con analisi edge a griglia stride-4, skin-tone detection, gradient smoothness, penalità crediti (righe alternante chiaro/scuro) e varianti offset Y per robustezza
 - 🚫 **Blacklist poster esclusi** — Escludi singoli poster dalla selezione/rotazione per ogni titolo, con salvataggio immediato
-- ⚙️ **Impostazioni globali** — Salva stili badge, blur e rotazione come predefiniti applicati a tutti i nuovi salvataggi
+- ⚙️ **Impostazioni globali** — Salva stili badge (tutti i 6 stili genere e 5 stili ranking incluso Netflix), blur e rotazione come predefiniti applicati a tutti i nuovi salvataggi
 - 🏆 **Badge premi** — Vincitore e Candidato Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David da Wikidata
 - 🎬 **Badge franchise** — Marvel Cinematic Universe, Harry Potter, James Bond e 52 saghe da Wikidata (tradotte in italiano)
 - 🎥 **Badge regista** — Di Hitchcock, Di Nolan, Di Fellini e 71 registi IMDb Top 70 da Wikidata
-- 📡 **Badge network** — Netflix, HBO, Disney+, Prime Video, Apple TV+, Rai, Mediaset e altri da TMDB
+- 📡 **Badge network** — Netflix, HBO, Disney+, Prime Video, Rai, Mediaset e altri da TMDB
 - 🎌 **Anime rank** — Top trending anime da MDBList *(richiede chiave MDBList)*
 - 📐 **Server-side rendering** — Resvg (SVG → PNG) per badge, Sharp per poster/logo/backdrop
-- 🚀 **Poster ottimizzati per Stremio** — Output JPEG 500×750, URL versionati, ETag e header CDN/stale-while-revalidate
+- 🚀 **Poster ottimizzati per Stremio** — Output JPEG 500×750, URL versionati con `rv`, ETag e header CDN/stale-while-revalidate
 - 🐳 **Docker** — Deployabile su HF Spaces, Vercel, server proprio
 - ⚡ **Standalone output** — Next.js standalone per immagini Docker minime
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **244 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
+- ✅ **245 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
 
 ---
 
@@ -394,8 +394,8 @@ Genera un poster personalizzato via URL.
 | `rank` | Posizione classifica | `?rank=4` |
 | `label` | Etichetta classifica | `?label=Today` |
 | `extra` | Badge speciale | `?extra=New+series` |
-| `bs` | Stile badge genere | `?bs=pill` (shadow/pill/bar/colored) |
-| `rs` | Stile badge ranking | `?rs=default` (default/bar/colored) |
+| `bs` | Stile badge genere | `?bs=pill` (shadow/pill/bar/colored/bordo/vetro) |
+| `rs` | Stile badge ranking | `?rs=netflix` (default/bar/colored/pill/netflix) |
 | `badges` | Mostra badge genere | `?badges=1` |
 | `ranking` | Mostra badge trend | `?ranking=1` |
 | `lang` | Lingua (it/en/fr/de/es) | `?lang=it` |
@@ -407,7 +407,7 @@ Genera un poster personalizzato via URL.
 | `tl` | Forza tema chiaro (1/0) | `?tl=1` |
 | `ac` | Accent color override | `?ac=%23ff6430` |
 
-**Esempio:** `/api/poster/tv/260592?api_key=xxx&rank=4&genreName=Animazione&voteAverage=8.2`
+**Esempio:** `/api/poster/tv/260592?api_key=xxx&rank=4&genreName=Animazione&voteAverage=8.2&rs=netflix`
 
 ### Altri endpoint
 
@@ -441,18 +441,22 @@ Genera un poster personalizzato via URL.
 
 ### Badge genere/rating
 
-Badge con genere, •, ★ e voto medio centrato in basso, con 4 stili:
+Badge con genere, •, ★ e voto medio centrato in basso, con 6 stili:
 - **Shadow** — testo con ombra pronunciata, nessuno sfondo
 - **Pill** — pillola semi-trasparente con angoli arrotondati
 - **Bar** — barra full-width in basso con sfondo scuro e bordo superiore
 - **Colored** — pillola colorata con il colore dominante del poster/logo, testo bianco/nero adattivo
+- **Bordo** — testo pulito con bordo di contorno sottile
+- **Vetro** — effetto glassmorphism satinato trasparente
 
 ### Badge ranking/extra
 
-Badge in alto centrato, 3 stili:
-- **Default** — pillola semi-trasparente con ombra
+Badge in alto, 5 stili:
+- **Default** — pillola semi-trasparente con ombra centrata in alto
 - **Bar** — barra full-width in alto, più sottile
 - **Colored** — pillola colorata con il colore dominante, testo adattivo
+- **Pill** — pillola moderna arrotondata
+- **Netflix** — nastro verticale rosso dritto allineato in alto a destra (TOP 10 / TOP 3), con fallback automatico allo stile default se non in classifica
 
 Il testo del badge ranking/extra si adatta automaticamente alla larghezza. Rendering SVG server-side con Resvg.
 
