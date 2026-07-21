@@ -6,6 +6,7 @@ export const POSTER_REFRESH_PARAM = "__poster_refresh"
 const POSTER_CACHE_CONTROL = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
 const POSTER_IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, s-maxage=31536000, immutable"
 const POSTER_CDN_CACHE_CONTROL = POSTER_CACHE_CONTROL
+const PREVIEW_CACHE_CONTROL = "no-cache, no-store, must-revalidate, max-age=0"
 
 export interface PosterCachePayload {
   readonly buffer: Buffer
@@ -40,7 +41,16 @@ export function isImmutablePosterRequest(searchParams: URLSearchParams, state: I
   return state.mappingVersionMatches === true
 }
 
-export function posterHeaders(etag: string, immutable: boolean): PosterHeaders {
+export function posterHeaders(etag: string, immutable: boolean, isPreview: boolean = false): PosterHeaders {
+  if (isPreview) {
+    return {
+      "Content-Type": "image/jpeg",
+      "Cache-Control": PREVIEW_CACHE_CONTROL,
+      "Pragma": "no-cache",
+      "Expires": "0",
+      "ETag": etag,
+    }
+  }
   return {
     "Content-Type": "image/jpeg",
     "Cache-Control": immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : POSTER_CACHE_CONTROL,
@@ -59,8 +69,8 @@ export function posterNotModifiedHeaders(etag: string, immutable: boolean): Post
   }
 }
 
-export function posterResponse(payload: PosterCachePayload, immutable: boolean): Response {
-  return new Response(new Uint8Array(payload.buffer), { headers: posterHeaders(payload.etag, immutable) })
+export function posterResponse(payload: PosterCachePayload, immutable: boolean, isPreview: boolean = false): Response {
+  return new Response(new Uint8Array(payload.buffer), { headers: posterHeaders(payload.etag, immutable, isPreview) })
 }
 
 export function readCachedPoster(cacheKey: string): { readonly payload: PosterCachePayload | null; readonly stale: boolean } {

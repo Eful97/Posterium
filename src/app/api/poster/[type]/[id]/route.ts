@@ -119,19 +119,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     mappingVersionMatches: !!currentMappingVersion && req.nextUrl.searchParams.get("mv") === currentMappingVersion,
   })
   const refreshRequest = isPosterRefreshRequest(req.nextUrl.searchParams)
+  const isPreview = req.nextUrl.searchParams.has("preview")
 
   // 3. Memory cache check (no network)
   const cachedPoster = readCachedPoster(cacheKey)
   if (cachedPoster.payload) {
-    if (req.headers.get("If-None-Match") === cachedPoster.payload.etag) {
+    if (!isPreview && req.headers.get("If-None-Match") === cachedPoster.payload.etag) {
       return new Response(null, { status: 304, headers: posterNotModifiedHeaders(cachedPoster.payload.etag, immutablePoster) })
     }
     if (!cachedPoster.stale) {
-      return posterResponse(cachedPoster.payload, immutablePoster)
+      return posterResponse(cachedPoster.payload, immutablePoster, isPreview)
     }
     if (!refreshRequest) {
       schedulePosterRefresh(req)
-      return posterResponse(cachedPoster.payload, immutablePoster)
+      return posterResponse(cachedPoster.payload, immutablePoster, isPreview)
     }
   }
 
@@ -664,7 +665,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const payload = { buffer: composited, etag }
     writeCachedPoster(cacheKey, payload)
     completePosterRender(payload)
-    return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster) })
+    return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster, isPreview) })
   } catch (e) {
     completePosterRender(null)
     console.error("Poster generation failed:", e)
