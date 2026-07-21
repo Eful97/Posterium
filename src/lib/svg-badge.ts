@@ -220,22 +220,21 @@ export async function renderGenreBadge(
 
 function buildNetflixRankBadgeSVG(rank: number, pw: number) {
   const fs = Math.round(Math.max(23 * pw / 380, 14))
-  const w = Math.round(fs * 3.8)
-  const h = Math.round(w * 0.65)
-  const topFs = Math.round(h * 0.30)
-  const rankFs = Math.round(h * 0.52)
+  const w = Math.round(fs * 3.4)
+  const h = Math.round(w * 0.90)
+  const slant = Math.round(w * 0.10)
+  const topFs = Math.round(w * 0.24)
+  const rankFs = Math.round(w * 0.50)
   const padX = Math.round(fs * 0.4)
   const padBottom = Math.round(fs * 0.4)
   const totalW = w + padX * 2
   const totalH = h + padBottom
 
-  const ribbonLeft = padX
-  const ribbonRight = padX + w
   const ribbonMidX = padX + w / 2
-  const ribbonVNotchY = Math.round(h * 0.90)
+  const ribbonVNotchY = Math.round(h * 0.88)
 
-  // Nastro Netflix top-center (Opzione 2: Top Banner Tag): ampia fascia con ombra centrata
-  const pathD = `M ${ribbonLeft} 0 L ${ribbonRight} 0 L ${ribbonRight} ${h} L ${ribbonMidX} ${ribbonVNotchY} L ${ribbonLeft} ${h} Z`
+  // Nastro Netflix top-center (Opzione 3: Nastro a Trapezio smussato con V centrale)
+  const pathD = `M ${padX} 0 L ${padX + w} 0 L ${padX + w - slant} ${h} L ${ribbonMidX} ${ribbonVNotchY} L ${padX + slant} ${h} Z`
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
     <defs>
       <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
@@ -244,7 +243,7 @@ function buildNetflixRankBadgeSVG(rank: number, pw: number) {
     </defs>
     <path d="${pathD}" fill="#E50914" filter="url(#shadow)"/>
     <text x="${ribbonMidX}" y="${Math.round(h * 0.28)}" fill="#fff" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">TOP</text>
-    <text x="${ribbonMidX}" y="${Math.round(h * 0.64)}" fill="#fff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central">${rank}</text>
+    <text x="${ribbonMidX}" y="${Math.round(h * 0.60)}" fill="#fff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central">${rank}</text>
   </svg>`
   return { svg, w: totalW, h: totalH }
 }
