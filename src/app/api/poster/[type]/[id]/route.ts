@@ -339,7 +339,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const wikidataPromise = rankingEnabledEarly
       ? fetchAllWikidata(tmdbId, mediaType, t).catch(() => emptyWikidata)
       : Promise.resolve(emptyWikidata)
-    const rankingRank = rankingResult ?? mapping?.trendRank ?? null
+    const rankingRank = rankingResult ?? mapping?.badgeRank ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
     const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
@@ -416,7 +416,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qRankParam = req.nextUrl.searchParams.get("rank")
     // Stile "netflix" (badge a destra) ha senso solo se c'è un rank numerico — altrimenti badge
     // come "Candidato Oscar" verrebbero spostati a destra senza motivo.
-    if (qRankingBadgeStyle === "netflix" && !animeRankResult && !rankingResult && !mapping?.trendRank && !qRankParam) {
+    if (qRankingBadgeStyle === "netflix" && !animeRankResult && !rankingResult && !mapping?.badgeRank && !mapping?.trendRank && !qRankParam && !finalRank) {
       qRankingBadgeStyle = "default"
     }
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")

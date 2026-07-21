@@ -30,10 +30,10 @@ export function computeBadge(params: {
 }, _t?: T): BadgeResult | null {
   const t = _t || _idT
   if (params.upcomingRelease) return { type: "extra", label: params.upcomingRelease }
-  if (params.isNewMovie) return { type: "extra", label: t("badge.newMovie") }
-  if (params.isNewSeries) return { type: "extra", label: t("badge.newSeries") }
   if (params.animeRank) return { type: "rank", label: t("badge.anime"), rank: params.animeRank }
   if (params.trendRank) return { type: "rank", label: t("badge.today"), rank: params.trendRank }
+  if (params.isNewMovie) return { type: "extra", label: t("badge.newMovie") }
+  if (params.isNewSeries) return { type: "extra", label: t("badge.newSeries") }
   if (params.award) return { type: "extra", label: params.award }
   if (params.franchise) return { type: "extra", label: t(franchiseKey(params.franchise)) }
   if (params.nomination) return { type: "extra", label: params.nomination }
