@@ -654,9 +654,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     if (networkLogoResult) {
-      const isNetflixLogo = networkLogoResult.networkKey === "netflix"
-      const netTop = isNetflixLogo ? 20 : 22
-      const netLeft = isNetflixLogo ? 18 : 16
+      const netTop = 20
+      const netLeft = 28
       composites.push({ input: networkLogoResult.png, top: netTop, left: netLeft })
     }
 
