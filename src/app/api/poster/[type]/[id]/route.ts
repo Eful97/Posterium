@@ -545,7 +545,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const networkName = studioBadge || (tmdbStudios.length ? tmdbStudios[0] : null)
     const networkLogoResult = netLogoEnabled && networkName ? await renderNetworkLogoBadge(networkName, STD_W) : null
 
-    const topBadge = (() => {
+    let topBadge = (() => {
       if (!rankingEnabled) return null
       if (queryExtra) return { type: "extra" as const, label: queryExtra }
       const badge = computeBadge({
@@ -566,6 +566,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       }
       return null
     })()
+
+    if (topBadge && networkLogoResult) {
+      const bLabel = topBadge.label.toLowerCase().trim()
+      const netKey = networkLogoResult.networkKey.toLowerCase().trim()
+      const netName = (networkName || "").toLowerCase().trim()
+      if (bLabel === netKey || bLabel.includes(netKey) || netKey.includes(bLabel) || (netName && (bLabel === netName || bLabel.includes(netName)))) {
+        topBadge = null
+      }
+    }
 
     // Parallel render: genre badge + ranking badge (with badge PNG cache)
     const genreBadgeKey = (badgesEnabled && genreName && voteAverage && voteAverage > 0)
@@ -636,8 +645,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     if (networkLogoResult) {
       const isNetflixLogo = networkLogoResult.networkKey === "netflix"
-      const netTop = isNetflixLogo ? 0 : 8
-      const netLeft = isNetflixLogo ? 12 : 10
+      const netTop = isNetflixLogo ? 20 : 22
+      const netLeft = isNetflixLogo ? 18 : 16
       composites.push({ input: networkLogoResult.png, top: netTop, left: netLeft })
     }
 
