@@ -47,9 +47,9 @@ export async function PUT(req: NextRequest) {
   }
   cacheInvalidatePosterData()
   // Warm catalog cache — ricostruisci cataloghi principali in background
-  const origin = new URL(req.url).origin
+  const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
   for (const catalog of getWarmupCatalogs()) {
-    const catalogUrl = `${origin}/catalog/${catalog.type}/${catalog.id}.json`
+    const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
     void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error)
       console.warn(`[defaults] Catalog warmup failed for ${catalog.id}: ${message}`)

@@ -48,11 +48,11 @@ export async function POST(req: NextRequest) {
   })
   cacheInvalidatePosterData()
   // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano
-  const origin = new URL(req.url).origin
+  const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
   void (async () => {
     const savedMapping = await getById(parsed.data.mediaType, parsed.data.tmdbId)
     const warmUrl = buildStremioPosterUrl({
-      origin,
+      origin: internalOrigin,
       type: parsed.data.mediaType === "tv" ? "series" : "movie",
       id: parsed.data.tmdbId,
       defaults: getServerDefaults(),
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   })
   // Warm catalog cache — ricostruisci cataloghi principali in background
   for (const catalog of getWarmupCatalogs()) {
-    const catalogUrl = `${origin}/catalog/${catalog.type}/${catalog.id}.json`
+    const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
     void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error)
       console.warn(`[mappings] Catalog warmup failed for ${catalog.id}: ${message}`)
