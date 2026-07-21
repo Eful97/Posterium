@@ -1,3 +1,5 @@
+import { MAX_LOGO_HEIGHT_RATIO } from "./constants"
+
 type LogoLayoutInput = {
   readonly posterW: number
   readonly posterH: number
@@ -41,7 +43,7 @@ export function computeLogoBox(input: LogoBoxInput): LogoBox {
   const posterH = sanePositive(input.posterH, 1500)
   const logoW = sanePositive(input.logoW, 1)
   const logoH = sanePositive(input.logoH, 1)
-  const scalePct = sanePositive(input.logoScale, 75) / 100
+  const scalePct = Math.max(input.logoScale, 10) / 100
   const targetW = Math.min(Math.round(posterW * scalePct), posterW)
   const targetH = Math.round(logoH * (targetW / logoW))
   if (targetH <= posterH) return { width: targetW, height: targetH }

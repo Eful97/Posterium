@@ -61,6 +61,10 @@ async function kvImportMappings(mappings: Mapping[]) {
 
 const DATA_FILE = path.join(DATA_DIR, "mappings.json")
 let writeQueue = Promise.resolve()
+// In-memory mirror so reads never go stale during a write
+let memCache: Record<string, Mapping> | null = null
+let memCacheTime = 0
+const MEM_CACHE_TTL = 2000 // 2s before refreshing from disk
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error
@@ -80,19 +84,45 @@ async function ensureDataDir() {
   })
 }
 
+/**
+ * Read from disk, then update the in-memory mirror.
+ */
 async function loadFromDisk(): Promise<Record<string, Mapping>> {
   try {
+    const stat = await fsp.stat(DATA_FILE).catch(() => null)
     const raw = await fsp.readFile(DATA_FILE, "utf-8")
-    return JSON.parse(raw)
+    const data = JSON.parse(raw) as Record<string, Mapping>
+    memCache = data
+    memCacheTime = stat ? stat.mtimeMs : Date.now()
+    return data
   } catch (error) {
-    if (isNodeError(error) && error.code === "ENOENT") return {}
+    if (isNodeError(error) && error.code === "ENOENT") {
+      memCache = {}
+      memCacheTime = Date.now()
+      return {}
+    }
     const message = error instanceof Error ? error.message : String(error)
     console.warn(`[store] Failed to load mappings: ${message}`)
-    return {}
+    return memCache ?? {}
   }
 }
 
+/**
+ * Fast read via in-memory mirror, refreshing from disk if file was modified.
+ */
+async function readFromMem(): Promise<Record<string, Mapping>> {
+  try {
+    const stat = await fsp.stat(DATA_FILE)
+    if (memCache && stat.mtimeMs <= memCacheTime) return memCache
+  } catch {
+    if (memCache) return memCache
+  }
+  return loadFromDisk()
+}
+
 async function persist(data: Record<string, Mapping>) {
+  memCache = data
+  memCacheTime = Date.now()
   await ensureDataDir()
   const tmp = `${DATA_FILE}.tmp`
   try {
@@ -103,7 +133,7 @@ async function persist(data: Record<string, Mapping>) {
     console.error(`[store] Failed to write mappings to ${DATA_FILE}: ${msg}`)
     if (msg.includes("EACCES") || msg.includes("EPERM")) {
       console.error(`[store] Permission error — check that '${DATA_DIR}' is writable by the current user`)
-      console.error(`[store] If using HF Storage Bucket, verify it's linked in Space Settings → Storage`)
+      console.error("[store] If using HF Storage Bucket, verify it's linked in Space Settings -> Storage")
     }
     throw new Error(`Cannot persist mappings: ${msg}`)
   }
@@ -113,13 +143,13 @@ async function persist(data: Record<string, Mapping>) {
 
 export async function getAll(): Promise<Mapping[]> {
   if (useKv) return kvGetAll()
-  return Object.values(await loadFromDisk())
+  return Object.values(await readFromMem())
 }
 
 export async function getById(type: "movie" | "tv", id: number): Promise<Mapping | null> {
   if (useKv) return kvGetById(type, id)
   const key = `${type}:${id}`
-  const data = await loadFromDisk()
+  const data = await readFromMem()
   return data[key] ?? null
 }
 

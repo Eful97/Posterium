@@ -8,18 +8,18 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge, warmFonts } from "@/lib/svg-badge"
+import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { renderNetworkLogoBadge, renderFirstMatchingNetworkLogoBadge } from "@/lib/network-svgs"
-import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
+import { computeTopBadge, type BadgeInput } from "@/lib/poster-badge"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { GENRE_FALLBACK } from "@/lib/badges"
 import { createT } from "@/lib/i18n"
-import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, type MDBListEntry } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { computeLogoLayout } from "@/lib/logo-layout"
-import { getEffectiveRotationState } from "@/lib/poster-rotation"
+import { getEffectiveRotationState, tryRotatePoster } from "@/lib/poster-rotation"
 import { mappingVersionParam } from "@/lib/stremio-poster-url"
 import { RENDER_VERSION } from "@/lib/render-version"
 import {
@@ -74,34 +74,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   }
 
   // 1. Fast: get mapping + server defaults (no network)
+  let mapping = await getById(mediaType, tmdbId)
   const sd = getServerDefaults()
-  const mapping = await getById(mediaType, tmdbId)
 
-  // Auto-rotate clean poster (sequential, not random)
+  // Auto-rotate clean poster (sequential, not random) — atomic per-poster
   const rotationState = getEffectiveRotationState(mapping)
   const isRotating = rotationState.isRotating
-  if (isRotating) {
-    if (mapping && rotationState.availablePosters.length >= 2) {
-      const lastUpdate = mapping.cleanPosterUpdatedAt ? new Date(mapping.cleanPosterUpdatedAt).getTime() : 0
-      const now = Date.now()
-      if (now - lastUpdate > 24 * 60 * 60 * 1000) {
-        const currentIdx = mapping.cleanPosterIndex ?? -1
-        const posters = rotationState.availablePosters
-        const newIndex = currentIdx < 0 ? 0 : (currentIdx + 1) % posters.length
-        const newPosterPath = posters[newIndex]
-        if (newPosterPath !== mapping.posterPath) {
-          mapping.posterPath = newPosterPath
-          mapping.cleanPosterIndex = newIndex
-          mapping.cleanPosterUpdatedAt = new Date(now).toISOString()
-          mapping.updatedAt = new Date(now).toISOString()
-          try {
-            await upsert(mapping)
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error)
-            console.warn(`[poster] Auto-rotate update failed: ${message}`)
-          }
-        }
-      }
+  if (isRotating && mapping) {
+    try {
+      const rotated = await tryRotatePoster(mapping, rotationState)
+      if (rotated) mapping = rotated
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn(`[poster] Auto-rotate failed: ${message}`)
     }
   }
 
@@ -535,27 +520,48 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
     const targetCenter = Math.round(30 * STD_H / 570)
 
-    const now = Date.now()
-    const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000
-    const isNewMovie = mediaType === "movie" && releaseDate ? (now - new Date(releaseDate).getTime()) < TWO_WEEKS_MS : false
-    const isNewSeries = mediaType === "tv" && firstAirDate ? (now - new Date(firstAirDate).getTime()) < TWO_WEEKS_MS : false
-
     const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 4000
     const wikidataResult = await Promise.race([
       wikidataPromise,
-      new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>((resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), WIKIDATA_TIMEOUT))
+      new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>(
+        (resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), WIKIDATA_TIMEOUT)
+      ),
     ])
 
-    const awardBadge = wikidataResult.awards.length ? getAwardBadgeLabel(wikidataResult.awards, t) : null
-    const studioBadge = tmdbStudios.length ? tmdbStudios[0] : wikidataResult.studios.length ? wikidataResult.studios[0] : null
-    const extraFallback = computeExtraFallback({ mediaType: mediaType as "movie" | "tv", voteAverage: voteAverage ?? 0, tvType, tvStatus }, t)
-    const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
-    const upcomingRelease = getUpcomingReleaseLabel({
+    // Use shared badge computation — same logic as client preview
+    const badgeInput: BadgeInput = {
       mediaType: mediaType as "movie" | "tv",
-      releaseDate,
-      firstAirDate,
-      locale: req.nextUrl.searchParams.get("lang") || mapping?.language || "it",
-    })
+      releaseDate: releaseDate ?? null,
+      firstAirDate: firstAirDate ?? null,
+      voteAverage: voteAverage ?? 0,
+      trendRank: finalRank,
+      animeRank: animeRankResult,
+      awards: wikidataResult.awards,
+      nominations: wikidataResult.nominations,
+      franchise: wikidataResult.franchise,
+      studios: wikidataResult.studios,
+      director: wikidataResult.director,
+      tvType: tvType ?? null,
+      tvStatus,
+    }
+    const locale = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
+    const computed = computeTopBadge(badgeInput, t, locale)
+    const upcomingRelease = computed.upcomingRelease
+    const studioBadge = computed.studioBadge
+    const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
+    let topBadge: { type: "extra"; label: string } | { type: "rank"; rank: number; label: string } | null = null
+    if (rankingEnabled) {
+      if (queryExtra) {
+        topBadge = { type: "extra" as const, label: queryExtra }
+      } else if (computed.badge) {
+        const b = computed.badge
+        if (b.type === "extra") {
+          topBadge = { type: "extra" as const, label: b.label }
+        } else {
+          topBadge = { type: "rank" as const, rank: b.rank!, label: qLabel || b.rankLabel || b.label }
+        }
+      }
+    }
     const qNetLogo = req.nextUrl.searchParams.get("netLogo")
     const globalNetLogo = sd.networkLogo !== false
     const mappingNetLogo = mapping?.networkLogo !== false
@@ -570,29 +576,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const networkLogoResult = netLogoEnabled ? await renderFirstMatchingNetworkLogoBadge(networkCandidates, STD_W) : null
     const networkName = networkLogoResult?.matchedName || studioBadge || (tmdbStudios.length ? tmdbStudios[0] : null)
 
-    let topBadge = (() => {
-      if (!rankingEnabled) return null
-      if (queryExtra) return { type: "extra" as const, label: queryExtra }
-      const badge = computeBadge({
-        upcomingRelease,
-        isNewMovie, isNewSeries,
-        animeRank: animeRankResult,
-        trendRank: finalRank,
-        award: awardBadge,
-        franchise: wikidataResult.franchise,
-        nomination: wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations, t) : null,
-        studio: networkLogoResult ? null : studioBadge,
-        director: wikidataResult.director,
-        extra: extraFallback,
-      }, t)
-      if (badge) {
-        if (badge.type === "extra") return { type: "extra" as const, label: badge.label }
-        return { type: "rank" as const, rank: badge.rank!, label: qLabel || badge.rankLabel || badge.label }
-      }
-      return null
-    })()
-
-
+    // Parallel render: genre badge + ranking badge (with badge PNG cache)
 
     // Parallel render: genre badge + ranking badge (with badge PNG cache)
     const genreBadgeKey = (badgesEnabled && genreName && voteAverage && voteAverage > 0)

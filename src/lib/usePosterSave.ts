@@ -3,9 +3,7 @@
 import { useCallback } from "react"
 import type { SearchResult, TMDBImage, Mapping } from "./types"
 import { titleOf } from "./utils"
-import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
-import { computeBadge, computeExtraFallback } from "./badge-priority"
-import { getUpcomingReleaseLabel } from "./release-badge"
+import { computeTopBadge, type BadgeInput } from "./poster-badge"
 import { t } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
 import { http } from "./http"
@@ -147,33 +145,34 @@ export function usePosterSave(deps: PosterSaveDeps) {
 
   const removeBackdrop = useCallback(() => {
     setSelectedBackdrop(null)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- setter refs are stable
+  }, [])
 
   const saveConfig = useCallback(async (overrides: SaveConfigOverrides = {}) => {
     const posterToSave = overrides.previewPoster ?? previewPoster
     if (!selected || !posterToSave) return
-    const now = Date.now()
-    const twoWeeks = 14 * 24 * 60 * 60 * 1000
-    const isNewMovie = selected.media_type === "movie" && metaInfo.release_date ? (now - new Date(metaInfo.release_date).getTime()) < twoWeeks : false
-    const isNewSeries = selected.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
-    const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards, t) : null
-    const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations, t) : null
-    const animeRankData = mdblistAnimeList?.find((a: EnrichedAnimeItem) => a.id === selected.id)
-    const tvType = selected.media_type === "tv" ? metaInfo.type : null
-    const tvStatus = selected.media_type === "tv" ? metaInfo.status : null
-    const extra = computeExtraFallback({ mediaType: selected.media_type === "tv" ? "tv" : "movie", voteAverage: metaInfo.voteAverage, tvType, tvStatus }, t)
-    const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
-    const upcomingRelease = getUpcomingReleaseLabel({
+
+    // Use shared badge computation — identical to server
+    const animeRankData = mdblistAnimeList?.find((a) => a.id === selected.id)
+    const badgeInput: BadgeInput = {
       mediaType: selected.media_type === "tv" ? "tv" : "movie",
-      releaseDate: metaInfo.release_date,
-      firstAirDate: metaInfo.first_air_date,
-      locale: lang,
-    })
-    const badge = computeBadge({ upcomingRelease, isNewMovie, isNewSeries, animeRank: animeRankData?.rank ?? null, trendRank, award, franchise: metaInfo.franchise || null, nomination, studio, director: metaInfo.director || null, extra }, t)
-    const isUpcomingReleaseBadge = !!upcomingRelease && badge?.type === "extra" && badge.label === upcomingRelease
-    const badgeExtra = badge?.type === "extra" && !isUpcomingReleaseBadge ? badge.label : undefined
-    const badgeRank = (!badgeExtra && rankingBadges) ? (badge?.type === "rank" ? badge.rank : trendRank || undefined) : undefined
-    const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && badge?.type === "rank") ? (badge.rankLabel || t("badge.today")) : undefined
+      releaseDate: metaInfo.release_date ?? null,
+      firstAirDate: metaInfo.first_air_date ?? null,
+      voteAverage: metaInfo.voteAverage,
+      trendRank: trendRank ?? null,
+      animeRank: animeRankData?.rank ?? null,
+      awards: metaInfo.awards ?? [],
+      nominations: metaInfo.nominations ?? [],
+      franchise: metaInfo.franchise ?? null,
+      studios: metaInfo.studios ?? [],
+      director: metaInfo.director ?? null,
+      tvType: selected.media_type === "tv" ? metaInfo.type : null,
+      tvStatus: selected.media_type === "tv" ? metaInfo.status : null,
+    }
+    const computed = computeTopBadge(badgeInput, t, lang)
+    const isUpcomingReleaseBadge = !!computed.upcomingRelease && computed.badge?.type === "extra" && computed.badge.label === computed.upcomingRelease
+    const badgeExtra = computed.badge?.type === "extra" && !isUpcomingReleaseBadge ? computed.badge.label : undefined
+    const badgeRank = (!badgeExtra && rankingBadges) ? (computed.badge?.type === "rank" ? computed.badge.rank : trendRank || undefined) : undefined
+    const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && computed.badge?.type === "rank") ? (computed.badge.rankLabel || t("badge.today")) : undefined
     const isClean = posterToSave.iso_639_1 === null
     const isNewMapping = !mappingsMap.has(`${selected.media_type}:${selected.id}`)
     const nextExcludedPosters = overrides.excludedPosters ?? excludedPosters

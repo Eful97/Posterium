@@ -19,7 +19,9 @@ export type CacheStatus = {
 const store = new Map<string, CacheEntry<unknown>>()
 
 const MAX_TTL = 30 * 60 * 1000
-const MAX_ENTRIES = 1000
+const ENV_MAX_ENTRIES = process.env.POSTERIUM_CACHE_MAX ? parseInt(process.env.POSTERIUM_CACHE_MAX, 10) : 2000
+const MAX_ENTRIES = Number.isFinite(ENV_MAX_ENTRIES) && ENV_MAX_ENTRIES > 100 ? ENV_MAX_ENTRIES : 2000
+const EVICT_BATCH = 20
 const REFRESH_HOUR = 3
 
 const TAG_TTL: Record<string, number> = {}
@@ -63,14 +65,38 @@ function isExpired(entry: CacheEntry<unknown>): boolean {
 }
 
 let cleanupTimer: ReturnType<typeof setInterval> | null = null
+let cleanupActive = false
 
 function startCleanup() {
-  if (cleanupTimer) return
+  if (cleanupActive) return
+  cleanupActive = true
   cleanupTimer = setInterval(() => {
+    if (store.size === 0) {
+      // Cache empty — stop the timer until next use
+      if (cleanupTimer) {
+        clearInterval(cleanupTimer)
+        cleanupTimer = null
+      }
+      cleanupActive = false
+      return
+    }
     for (const [key, entry] of store) {
       if (isExpired(entry)) store.delete(key)
     }
   }, 60_000)
+}
+
+function makeSpace(count: number): void {
+  if (store.size + count < MAX_ENTRIES) return
+  // Map preserves insertion order; delete+set on read promotes accessed entries to end.
+  // First keys are the least recently used. Evict in batches.
+  let evicted = 0
+  const limit = Math.min(store.size + count - MAX_ENTRIES + EVICT_BATCH, store.size)
+  for (const key of store.keys()) {
+    if (evicted >= limit) break
+    store.delete(key)
+    evicted++
+  }
 }
 
 export function cacheGet<T>(key: string): T | null {
@@ -80,6 +106,7 @@ export function cacheGet<T>(key: string): T | null {
     store.delete(key)
     return null
   }
+  // Promote to most-recently-used (Map preserves insertion order)
   store.delete(key)
   store.set(key, entry)
   return entry.data
@@ -97,12 +124,15 @@ export function cacheGetStale<T>(key: string): { data: T | null; stale: boolean 
 }
 
 export function cacheSet<T>(key: string, data: T, tags: string[] = [], ttlMs?: number): void {
-  startCleanup()
-  if (store.size >= MAX_ENTRIES && !store.has(key)) {
-    const first = store.keys().next().value
-    if (first) store.delete(first)
+  if (!cleanupActive) startCleanup()
+  if (!store.has(key)) {
+    makeSpace(1)
   }
   store.set(key, { data, timestamp: Date.now(), tags, ttl: ttlMs })
+}
+
+export function cacheHas(key: string): boolean {
+  return cacheGet(key) !== null
 }
 
 export function cacheInvalidate(tag: string): void {
@@ -150,4 +180,9 @@ export function cacheStatus(): CacheStatus {
 
 export function cacheClear(): void {
   store.clear()
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer)
+    cleanupTimer = null
+  }
+  cleanupActive = false
 }

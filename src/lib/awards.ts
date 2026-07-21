@@ -1,3 +1,5 @@
+import { cacheGet, cacheSet } from "./cache"
+
 interface AwardRule {
   keywords: string[]
   label: string
@@ -13,10 +15,6 @@ const RULES: AwardRule[] = [
   { keywords: ["Cannes", "Palme d'Or", "Palma d'Oro", "Festival di Cannes"], label: "Cannes" },
 ]
 
-const CACHE = new Map<string, { data: WikidataResult; timestamp: number }>()
-const CACHE_TTL = 24 * 60 * 60 * 1000
-const CACHE_MAX = 500
-
 export interface WikidataResult {
   awards: string[]
   nominations: string[]
@@ -26,13 +24,101 @@ export interface WikidataResult {
   director: string | null
 }
 
-async function sparqlQuery(query: string): Promise<Record<string, { value: string; type: string }>[]> {
-  const url = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(query)}`
-  const res = await fetch(url, { headers: { "User-Agent": "Posterium/1.0" }, signal: AbortSignal.timeout(5000) })
-  if (!res.ok) return []
-  const json = await res.json()
-  return json?.results?.bindings || []
+// ---- Circuit breaker ----
+let breakerFailures = 0
+let breakerOpenUntil = 0
+const BREAKER_THRESHOLD = 5
+const BREAKER_BACKOFF_MS = 60_000
+
+function isBreakerOpen(): boolean {
+  if (breakerOpenUntil > Date.now()) return true
+  if (breakerFailures >= BREAKER_THRESHOLD) {
+    breakerOpenUntil = Date.now() + BREAKER_BACKOFF_MS
+    console.warn(`[wikidata] Circuit breaker opened for ${BREAKER_BACKOFF_MS}ms (${breakerFailures} failures)`)
+    return true
+  }
+  return false
 }
+
+function recordSuccess(): void {
+  breakerFailures = 0
+}
+
+function recordFailure(): void {
+  breakerFailures++
+}
+
+// ---- Concurrency limiter (max 2 parallel SPARQL queries) ----
+const MAX_CONCURRENT = 2
+let inFlight = 0
+const pendingQueue: Array<() => void> = []
+
+async function acquire(): Promise<void> {
+  if (inFlight < MAX_CONCURRENT) {
+    inFlight++
+    return
+  }
+  return new Promise((resolve) => {
+    pendingQueue.push(resolve)
+  })
+}
+
+function release(): void {
+  const next = pendingQueue.shift()
+  if (next) {
+    next()
+  } else {
+    inFlight--
+  }
+}
+
+// ---- SPARQL helper ----
+
+async function sparqlQuery(query: string): Promise<Record<string, { value: string; type: string }>[]> {
+  if (isBreakerOpen()) return []
+
+  await acquire()
+  try {
+    const url = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(query)}`
+    // Retry once with jitter on failure (but not on breaker)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const timeout = 5000 + Math.round(Math.random() * 1000)
+      try {
+        const res = await fetch(url, {
+          headers: { "User-Agent": "Posterium/1.0" },
+          signal: AbortSignal.timeout(timeout),
+        })
+        if (res.status === 429) {
+          // Rate limited — backoff with jitter
+          const retryAfter = res.headers.get("Retry-After")
+          const wait = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000
+          await new Promise((r) => setTimeout(r, wait + Math.round(Math.random() * 1000)))
+          continue
+        }
+        if (!res.ok) {
+          if (attempt === 0) continue // retry
+          recordFailure()
+          return []
+        }
+        recordSuccess()
+        const json = await res.json()
+        return json?.results?.bindings || []
+      } catch {
+        if (attempt === 1) {
+          recordFailure()
+          return []
+        }
+        // Small jitter before retry
+        await new Promise((r) => setTimeout(r, 500 + Math.round(Math.random() * 500)))
+      }
+    }
+    return []
+  } finally {
+    release()
+  }
+}
+
+// ---- Matching logic ----
 
 function matchRules(labels: string[]): string[] {
   const found = new Set<string>()
@@ -164,10 +250,14 @@ function categorizeBasedOn(label: string, t?: (key: string, params?: Record<stri
   return t ? t("badge.basedOn.fallback") : "Tratto da"
 }
 
+const WIKIDATA_CACHE_TTL = 24 * 60 * 60 * 1000
+
 export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv", t?: (key: string, params?: Record<string, string | number>) => string): Promise<WikidataResult> {
-  const cacheKey = `${mediaType}:${tmdbId}`
-  const cached = CACHE.get(cacheKey)
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data
+  const cacheKey = `wikidata:${mediaType}:${tmdbId}`
+
+  // Check shared cache first (typed, with TTL)
+  const cached = cacheGet<WikidataResult>(cacheKey)
+  if (cached) return cached
 
   const tmdbProp = mediaType === "movie" ? "P4947" : "P4983"
   const networkQuery = mediaType === "tv" ? `OPTIONAL { ?item wdt:P449 ?network . ?network rdfs:label ?networkLabel . FILTER(LANG(?networkLabel) = "en") }` : ""
@@ -216,8 +306,8 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
       director: directorBadge,
     }
 
-    if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value!)
-    CACHE.set(cacheKey, { data: result, timestamp: Date.now() })
+    // Store in shared cache with tags for targeted invalidation
+    cacheSet(cacheKey, result, ["wikidata"], WIKIDATA_CACHE_TTL)
     return result
   } catch {
     return { awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }
