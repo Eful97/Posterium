@@ -32,14 +32,14 @@ const NETWORK_FILES: Record<string, string> = {
 
 // Target rendered widths (at pw=380) — height is proportional via sharp
 const NETWORK_TARGET_W: Record<string, number> = {
-  netflix: 36,
-  hbo: 70,
-  disney: 96,
-  prime: 98,
-  apple: 72,
-  paramount: 95,
-  rai: 58,
-  crunchyroll: 36,
+  netflix: 26,
+  hbo: 52,
+  disney: 72,
+  prime: 74,
+  apple: 54,
+  paramount: 72,
+  rai: 44,
+  crunchyroll: 28,
 }
 
 function getNetworkKey(networkName: string): string | null {
