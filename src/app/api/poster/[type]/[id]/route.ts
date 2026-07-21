@@ -573,7 +573,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         award: awardBadge,
         franchise: wikidataResult.franchise,
         nomination: wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations, t) : null,
-        studio: networkLogoResult ? null : studioBadge,
+        studio: studioBadge,
         director: wikidataResult.director,
         extra: extraFallback,
       }, t)
@@ -584,13 +584,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return null
     })()
 
-    if (topBadge && networkLogoResult) {
-      // Se il logo network in alto a sinistra è presente, l'unico badge superiore consentito è quello del RANK (classifica).
-      // Tutti i badge di tipo "extra" (es. "Da divorare", "Il più votato", studio, regista, ecc.) vengono soppressi.
-      if (topBadge.type !== "rank") {
-        topBadge = null
-      }
-    }
+
 
     // Parallel render: genre badge + ranking badge (with badge PNG cache)
     const genreBadgeKey = (badgesEnabled && genreName && voteAverage && voteAverage > 0)
