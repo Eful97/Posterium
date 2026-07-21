@@ -1,3 +1,4 @@
+import type { NextRequest } from "next/server"
 import fsp from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
@@ -44,12 +45,6 @@ function mockPutRequest(body: unknown, type = "movie", id = 123): Request {
   })
 }
 
-function mockGetRequest(type = "movie", id = 123): Request {
-  return new Request(`http://localhost:3000/api/mappings/${type}:${id}`, {
-    method: "GET",
-  })
-}
-
 describe("PUT /api/mappings null fields", () => {
   it("sets logoPath, backdropPath, customBadge, badgeExtra to null when sent as null", async () => {
     tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "posterium-null-put-"))
@@ -69,7 +64,7 @@ describe("PUT /api/mappings null fields", () => {
       customBadge: null,
       badgeExtra: null,
     })
-    const putRes = await PUT(putReq as any, { params: Promise.resolve({ id: "movie:123" }) })
+    const putRes = await PUT(putReq as unknown as NextRequest, { params: Promise.resolve({ id: "movie:123" }) })
     expect(putRes.status).toBe(200)
 
     const updated = await store.getById("movie", 123)
@@ -98,7 +93,7 @@ describe("PUT /api/mappings null fields", () => {
     const { PUT } = await import("@/app/api/mappings/[id]/route")
 
     const putReq = mockPutRequest({ title: "Updated Title" })
-    const putRes = await PUT(putReq as any, { params: Promise.resolve({ id: "movie:123" }) })
+    const putRes = await PUT(putReq as unknown as NextRequest, { params: Promise.resolve({ id: "movie:123" }) })
     expect(putRes.status).toBe(200)
 
     const updated = await store.getById("movie", 123)

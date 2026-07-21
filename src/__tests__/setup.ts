@@ -62,7 +62,7 @@ vi.mock("@/lib/i18n", () => ({
   isPrefixedKey: (val: string) => val.startsWith("__"),
   badgeKey: (val: string) => val.startsWith("__") ? val.slice(2) : val,
   resolveLabel: (val: string) => mockT(val.startsWith("__") ? val.slice(2) : val),
-  resolveLabelFor: (val: string, lang: string) => mockT(val.startsWith("__") ? val.slice(2) : val),
+  resolveLabelFor: (val: string, _lang: string) => mockT(val.startsWith("__") ? val.slice(2) : val),
   isRankKey: () => null,
   BADGE_KEY_PREFIX: "__",
 }))

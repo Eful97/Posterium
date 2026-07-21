@@ -1,3 +1,4 @@
+import type { NextRequest } from "next/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { PUT } from "@/app/api/defaults/route"
 import { cacheClear, cacheGet, cacheSet } from "@/lib/cache"
@@ -23,27 +24,27 @@ describe("PUT /api/defaults", () => {
       headers: { "content-type": "application/json" },
       body: "not json",
     })
-    const res = await PUT(req as any)
+    const res = await PUT(req as unknown as NextRequest)
     expect(res.status).toBe(400)
   })
 
   it("returns 400 for invalid body fields", async () => {
     const req = mockPutRequest({ badgeStyle: 123, blurEnabled: "yes" })
-    const res = await PUT(req as any)
+    const res = await PUT(req as unknown as NextRequest)
     expect(res.status).toBe(400)
   })
 
   it("returns 401 when ADMIN_TOKEN is set and header is missing", async () => {
     process.env.ADMIN_TOKEN = "secret-token"
     const req = mockPutRequest({ badgeStyle: "bar" })
-    const res = await PUT(req as any)
+    const res = await PUT(req as unknown as NextRequest)
     expect(res.status).toBe(401)
   })
 
   it("accepts valid body with no auth token set", async () => {
     delete process.env.ADMIN_TOKEN
     const req = mockPutRequest({ badgeStyle: "bar", rankingBadges: true })
-    const res = await PUT(req as any)
+    const res = await PUT(req as unknown as NextRequest)
     expect(res.status).toBe(200)
   })
 
@@ -54,7 +55,7 @@ describe("PUT /api/defaults", () => {
     cacheSet("tmdb:search:avatar", "search", ["tmdb"])
 
     const req = mockPutRequest({ badgeStyle: "bar" })
-    const res = await PUT(req as any)
+    const res = await PUT(req as unknown as NextRequest)
 
     expect(res.status).toBe(200)
     expect(cacheGet("poster:movie:1")).toBeNull()

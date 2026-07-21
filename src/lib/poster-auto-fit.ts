@@ -27,7 +27,7 @@ interface SelectBestLogoFitPosterInput {
 }
 
 const TMDB_CANDIDATE_COUNT = 12
-const AUTO_FIT_TIMEOUT_MS = 1200
+const AUTO_FIT_TIMEOUT_MS = 2000
 const CACHE_TTL = 24 * 60 * 60 * 1000
 const CACHE_MAX_ENTRIES = 500
 

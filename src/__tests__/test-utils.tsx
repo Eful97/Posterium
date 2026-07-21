@@ -110,7 +110,7 @@ export const MOCK_CTX: PosteriumCtx = {
   doSearch: stubFn,
   loadMore: stubFn,
   titleOf: (r) => r.title || r.name || "",
-  yearOf: (r) => "",
+  yearOf: (_r) => "",
   posterUrl: (path) => `https://image.tmdb.org/t/p/w500${path}`,
   trending: [],
   mdblistAnimeList: [],
@@ -170,6 +170,5 @@ export function createWrapper(overrides?: Partial<PosteriumCtx>) {
 }
 
 export function renderWithCtx(ui: ReactNode, overrides?: Partial<PosteriumCtx>) {
-  const ctx = { ...MOCK_CTX, ...overrides }
   return render(ui, { wrapper: createWrapper(overrides) })
 }
