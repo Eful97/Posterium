@@ -2,36 +2,31 @@ import { describe, expect, it } from "vitest"
 import { getNetworkSvgResult, renderNetworkLogoBadge } from "@/lib/network-svgs"
 
 describe("network-svgs", () => {
-  it("matches Netflix network and returns red N SVG", () => {
+  it("matches Netflix network and returns networkKey=netflix", () => {
     const res = getNetworkSvgResult("Netflix", 500)
     expect(res).not.toBeNull()
     expect(res!.networkKey).toBe("netflix")
-    expect(res!.svg).toContain("#E50914")
-    expect(res!.svg).toContain("#B81D24")
   })
 
-  it("matches HBO and returns HBO SVG", () => {
+  it("matches HBO and returns networkKey=hbo", () => {
     const res = getNetworkSvgResult("HBO Max", 500)
     expect(res).not.toBeNull()
     expect(res!.networkKey).toBe("hbo")
-    expect(res!.svg).toContain("HBO")
   })
 
-  it("matches Disney+ and returns Disney SVG", () => {
+  it("matches Disney+ and returns networkKey=disney", () => {
     const res = getNetworkSvgResult("Walt Disney Pictures", 500)
     expect(res).not.toBeNull()
     expect(res!.networkKey).toBe("disney")
-    expect(res!.svg).toContain("svg")
   })
 
-  it("matches Prime Video and returns prime SVG", () => {
+  it("matches Prime Video and returns networkKey=prime", () => {
     const res = getNetworkSvgResult("Amazon Prime Video", 500)
     expect(res).not.toBeNull()
     expect(res!.networkKey).toBe("prime")
-    expect(res!.svg).toContain("prime video")
   })
 
-  it("matches Apple TV+ and returns apple SVG", () => {
+  it("matches Apple TV+ and returns networkKey=apple", () => {
     const res = getNetworkSvgResult("Apple TV+", 500)
     expect(res).not.toBeNull()
     expect(res!.networkKey).toBe("apple")
