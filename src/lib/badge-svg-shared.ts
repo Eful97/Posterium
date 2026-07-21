@@ -110,7 +110,7 @@ export function buildGenrePillSvg(genreName: string, voteStr: string, yearStr: s
   const pillW = dims.textContentW + pillPad * 3 + safePad * 2
   const pillH = fs + pillPad * 2
   const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: pillW / 2 + textOffsetX, y: pillH / 2 })
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pillW}" height="${pillH}"><rect width="${pillW}" height="${pillH}" rx="${pillR}" fill="${bgColor}"/><g fill="${textColor}">${textParts}</g></svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pillW}" height="${pillH}"><rect width="${pillW}" height="${pillH}" rx="${pillR}" fill="${bgColor}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/><g fill="${textColor}">${textParts}</g></svg>`
   return { svg, w: pillW, h: pillH }
 }
 
@@ -125,7 +125,7 @@ export function buildGenreTextSvg(genreName: string, voteStr: string, yearStr: s
   let defs = ""
   let filterAttr = ""
   if (style === "shadow") {
-    defs = `<defs><filter id="sh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="rgba(0,0,0,0.6)"/></filter></defs>`
+    defs = `<defs><filter id="sh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.8)"/><feDropShadow dx="0" dy="5" stdDeviation="4.5" flood-color="rgba(0,0,0,0.55)"/></filter></defs>`
     filterAttr = ' filter="url(#sh)"'
   }
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}<g fill="${textColor}"${filterAttr}>${textParts}</g></svg>`
@@ -215,7 +215,7 @@ export function buildRankingPillSvg(fullText: string, fs: number, textColor: str
   const ox = 0
   const oy = 0
   const textEl = `<text x="${renderW / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(fullText)}</text>`
-  const bgEl = `<rect x="${ox}" y="${oy}" width="${totalW}" height="${svgH}" rx="${r}" fill="${bg}"/>`
+  const bgEl = `<rect x="${ox}" y="${oy}" width="${totalW}" height="${svgH}" rx="${r}" fill="${bg}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${svgH}">${bgEl}${textEl}</svg>`, w: renderW, h: svgH }
 }
 
@@ -304,7 +304,7 @@ export function buildExtraPillSvg(label: string, fs: number, textColor: string, 
   const r = svgH / 2
   const renderW = totalW
   const textEl = `<text x="${renderW / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(label)}</text>`
-  const bgEl = `<rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" fill="${bg}"/>`
+  const bgEl = `<rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" fill="${bg}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${svgH}">${bgEl}${textEl}</svg>`, w: renderW, h: svgH }
 }
 
