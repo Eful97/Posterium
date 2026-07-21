@@ -11,7 +11,7 @@ import { renderGenreBadge, renderRankingBadge, renderExtraBadge, warmFonts } fro
 import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
 import { renderNetworkLogoBadge, renderFirstMatchingNetworkLogoBadge } from "@/lib/network-svgs"
-import { computeTopBadge, type BadgeInput } from "@/lib/poster-badge"
+import { computeTopBadge, isNetworkStudio, type BadgeInput } from "@/lib/poster-badge"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { GENRE_FALLBACK, cinematicVignetteSVG } from "@/lib/badges"
 import { createT } from "@/lib/i18n"
@@ -583,6 +583,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     ]
     const networkLogoResult = netLogoEnabled ? await renderFirstMatchingNetworkLogoBadge(networkCandidates, STD_W) : null
     const networkName = networkLogoResult?.matchedName || studioBadge || (tmdbStudios.length ? tmdbStudios[0] : null)
+
+    if (networkLogoResult && topBadge && topBadge.type === "extra") {
+      const lbl = topBadge.label.toLowerCase().trim()
+      const netName = networkLogoResult.matchedName.toLowerCase().trim()
+      if (lbl === netName || lbl.includes(netName) || isNetworkStudio(topBadge.label)) {
+        topBadge = null
+      }
+    }
 
     // Parallel render: genre badge + ranking badge (with badge PNG cache)
 

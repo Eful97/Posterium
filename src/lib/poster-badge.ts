@@ -36,6 +36,21 @@ export interface ComputedTopBadge {
   readonly studioBadge: string | null
 }
 
+export function isNetworkStudio(studioName: string | null): boolean {
+  if (!studioName) return false
+  const lower = studioName.toLowerCase().trim()
+  return !!(
+    lower.includes("netflix") ||
+    lower.includes("hbo") || lower === "max" ||
+    lower.includes("disney") ||
+    lower.includes("prime") || lower.includes("amazon") ||
+    lower.includes("apple") ||
+    lower.includes("paramount") ||
+    lower === "rai" || lower.startsWith("rai ") ||
+    lower.includes("crunchyroll")
+  )
+}
+
 /**
  * Single entry point for badge computation — shared by server (route.ts)
  * and client (usePosterSave.ts, poster-url.ts).
@@ -57,6 +72,8 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
     ? getNominationBadgeLabel(input.nominations, t)
     : null
   const studioBadge = input.studios.length ? input.studios[0] : null
+  const isNetStudio = isNetworkStudio(studioBadge)
+  const studio = (input.networkLogoMatched || isNetStudio) ? null : studioBadge
   const extraFallback = computeExtraFallback({
     mediaType: input.mediaType,
     voteAverage: input.voteAverage,
@@ -80,7 +97,7 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
     award: awardBadge,
     franchise: input.franchise,
     nomination,
-    studio: input.networkLogoMatched ? null : studioBadge,
+    studio,
     director: input.director,
     extra: extraFallback,
   }, t)
