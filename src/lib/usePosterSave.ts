@@ -36,7 +36,9 @@ interface PosterSaveDeps {
   rankingBadges: boolean
   customBadge: string | null
   badgeStyle: string
+  rankingBadgeStyle: string
   defaultBadgeStyle: string
+  defaultRankingBadgeStyle: string
   blurEnabled: boolean
   blurIntensity: number
   blurFade: number
@@ -70,8 +72,8 @@ export function usePosterSave(deps: PosterSaveDeps) {
     logoScale, logoOffsetX, logoOffsetY,
     selectedBackdrop, setSelectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY,
     setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
-    globalBadges, rankingBadges, customBadge, badgeStyle,
-    defaultBadgeStyle,
+    globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
+    defaultBadgeStyle, defaultRankingBadgeStyle,
     blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
     setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, lang,
@@ -143,7 +145,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
 
   const removeBackdrop = useCallback(() => {
     setSelectedBackdrop(null)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- setter refs are stable
+  }, [])
 
   const saveConfig = useCallback(async (overrides: SaveConfigOverrides = {}) => {
     const posterToSave = overrides.previewPoster ?? previewPoster
@@ -213,6 +215,9 @@ export function usePosterSave(deps: PosterSaveDeps) {
           badgeLabel,
           customBadge,
           badgeStyle: badgeStyle !== defaultBadgeStyle ? badgeStyle : undefined,
+          rankingBadgeStyle: rankingBadgeStyle !== defaultRankingBadgeStyle ? rankingBadgeStyle : undefined,
+          defaultBadgeStyle,
+          defaultRankingBadgeStyle,
           blurEnabled,
           blurIntensity,
           blurFade,
@@ -234,7 +239,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
       if (!overrides.silent) import("sonner").then(({ toast }) => toast(t("ui.saveError")))
       if (overrides.silent) throw error
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, defaultBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop, networkLogo])
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop, networkLogo]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
 
   return { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig }
 }

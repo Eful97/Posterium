@@ -8,8 +8,8 @@ export function useBadgeState() {
 
   const {
     globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled,
-    badgeStyle,
-    defaultBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
+    badgeStyle, rankingBadgeStyle,
+    defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
     defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled,
     loadDefaultsToState,
   } = defaults
@@ -24,7 +24,9 @@ export function useBadgeState() {
   const setBlurDarkness = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurDarkness) : v; defaults.update({ blurDarkness: next }) }
   const setBlurEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(blurEnabled) : v; defaults.update({ blurEnabled: next }) }
   const setBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(badgeStyle) : v; defaults.update({ badgeStyle: next }) }
+  const setRankingBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(rankingBadgeStyle) : v; defaults.update({ rankingBadgeStyle: next }) }
   const setDefaultBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(defaultBadgeStyle) : v; defaults.update({ defaultBadgeStyle: next }) }
+  const setDefaultRankingBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(defaultRankingBadgeStyle) : v; defaults.update({ defaultRankingBadgeStyle: next }) }
   const setDefaultBlurEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultBlurEnabled) : v; defaults.update({ defaultBlurEnabled: next }) }
   const setDefaultBlurIntensity = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurIntensity) : v; defaults.update({ defaultBlurIntensity: next }) }
   const setDefaultBlurFade = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurFade) : v; defaults.update({ defaultBlurFade: next }) }
@@ -45,7 +47,9 @@ export function useBadgeState() {
     blurDarkness, setBlurDarkness,
     blurEnabled, setBlurEnabled,
     badgeStyle, setBadgeStyle,
+    rankingBadgeStyle, setRankingBadgeStyle,
     defaultBadgeStyle, setDefaultBadgeStyle,
+    defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
     defaultBlurEnabled, setDefaultBlurEnabled,
     defaultBlurIntensity, setDefaultBlurIntensity,
     defaultBlurFade, setDefaultBlurFade,

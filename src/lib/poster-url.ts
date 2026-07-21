@@ -10,6 +10,7 @@ interface BadgeParams {
   globalBadges: boolean
   rankingBadges: boolean
   badgeStyle: string
+  rankingBadgeStyle: string
   customBadge: string | null
   gradientHeight: number
   blurIntensity: number
@@ -59,6 +60,7 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
     globalBadges: bp.globalBadges,
     rankingBadges: bp.rankingBadges,
     badgeStyle: bp.badgeStyle,
+    rankingBadgeStyle: bp.rankingBadgeStyle,
     gradientHeight: bp.gradientHeight,
     blurIntensity: bp.blurIntensity,
     blurFade: bp.blurFade,
@@ -99,6 +101,7 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   params.push(`bf=${bp.blurFade}`)
   params.push(`bd=${bp.blurDarkness}`)
   params.push(`bs=${bp.badgeStyle}`)
+  params.push(`rs=${bp.rankingBadgeStyle}`)
   if (!bp.blurEnabled) params.push("be=0")
   if (bp.networkLogo === false) params.push("netLogo=0")
   if (ps.accentColor && ps.accentColor !== "#555555") params.push(`ac=${encodeURIComponent(ps.accentColor)}`)

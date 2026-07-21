@@ -5,6 +5,7 @@ import { DATA_DIR } from "@/lib/data-dir"
 
 export interface ServerDefaults {
   badgeStyle?: string
+  rankingBadgeStyle?: string
   blurEnabled?: boolean
   blurIntensity?: number
   blurFade?: number

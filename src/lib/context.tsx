@@ -84,8 +84,12 @@ export interface PosteriumCtx {
   setBlurEnabled: React.Dispatch<React.SetStateAction<boolean>>
   badgeStyle: string
   setBadgeStyle: React.Dispatch<React.SetStateAction<string>>
+  rankingBadgeStyle: string
+  setRankingBadgeStyle: React.Dispatch<React.SetStateAction<string>>
   defaultBadgeStyle: string
   setDefaultBadgeStyle: React.Dispatch<React.SetStateAction<string>>
+  defaultRankingBadgeStyle: string
+  setDefaultRankingBadgeStyle: React.Dispatch<React.SetStateAction<string>>
   defaultBlurEnabled: boolean
   setDefaultBlurEnabled: React.Dispatch<React.SetStateAction<boolean>>
   defaultBlurIntensity: number
@@ -165,7 +169,7 @@ export interface PosteriumCtx {
   copied: boolean
   accentColor: string
   setAccentColor: (v: string) => void
-  topEdgeColor: string
+topEdgeColor: string
   rotationPosters: string[]
   setRotationPosters: React.Dispatch<React.SetStateAction<string[]>>
   autoRotateClean: boolean
@@ -248,7 +252,7 @@ export function usePosterium(): PosteriumCtx {
   const [editText, setEditText] = useState("")
 
   // Badge state (delegated to useDefaults)
-  const { globalBadges, rankingBadges, networkLogo, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, defaultBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo, loadDefaultsToState } = defaults
+  const { globalBadges, rankingBadges, networkLogo, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo, loadDefaultsToState } = defaults
   const [customBadge, setCustomBadge] = useState<string | null>(null)
   const setGlobalBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(globalBadges) : v; defaults.update({ globalBadges: next }) }
   const setRankingBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(rankingBadges) : v; defaults.update({ rankingBadges: next }) }
@@ -260,7 +264,9 @@ export function usePosterium(): PosteriumCtx {
   const setBlurDarkness = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurDarkness) : v; defaults.update({ blurDarkness: next }) }
   const setBlurEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(blurEnabled) : v; defaults.update({ blurEnabled: next }) }
   const setBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(badgeStyle) : v; defaults.update({ badgeStyle: next }) }
+  const setRankingBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(rankingBadgeStyle) : v; defaults.update({ rankingBadgeStyle: next }) }
   const setDefaultBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(defaultBadgeStyle) : v; defaults.update({ defaultBadgeStyle: next }) }
+  const setDefaultRankingBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(defaultRankingBadgeStyle) : v; defaults.update({ defaultRankingBadgeStyle: next }) }
   const setDefaultBlurEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultBlurEnabled) : v; defaults.update({ defaultBlurEnabled: next }) }
   const setDefaultBlurIntensity = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurIntensity) : v; defaults.update({ defaultBlurIntensity: next }) }
   const setDefaultBlurFade = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurFade) : v; defaults.update({ defaultBlurFade: next }) }
@@ -357,11 +363,11 @@ export function usePosterium(): PosteriumCtx {
   // --- URL Pattern ---
   useEffect(() => {
     setUrlPattern(buildUrlPattern({
-      globalBadges, rankingBadges, badgeStyle,
+      globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
       customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo,
       tmdbKey, lang,
     }))
-  }, [globalBadges, rankingBadges, networkLogo, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, tmdbKey, lang]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+  }, [globalBadges, rankingBadges, networkLogo, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -376,13 +382,13 @@ export function usePosterium(): PosteriumCtx {
         metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
         topEdgeColor, accentColor, lang, tmdbKey,
       },
-      { globalBadges, rankingBadges, badgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo }
+      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo }
     )
     setPreviewUrl(url)
   }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, selectedBackdrop,
     logoScale, logoOffsetX, logoOffsetY, backdropScale, backdropOffsetX, backdropOffsetY,
     metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, accentColor, lang, tmdbKey,
-    globalBadges, rankingBadges, badgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo])
+    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo])
 
   useEffect(() => {
     if (!navigation.selected) { setPreviewUrl(""); return }
@@ -523,6 +529,7 @@ export function usePosterium(): PosteriumCtx {
     const existing = mappingsMap.get(`${itemType}:${itemId}`)
     if (existing) {
       setBadgeStyle(existing.badgeStyle ?? defaultBadgeStyle)
+      setRankingBadgeStyle(existing.rankingBadgeStyle ?? defaultRankingBadgeStyle)
       setGlobalBadges(existing.showBadges ?? true)
       setRankingBadges(existing.rankingBadges ?? true)
       setGradientHeight(existing.gradientHeight ?? defaultGradientHeight)
@@ -695,8 +702,8 @@ export function usePosterium(): PosteriumCtx {
     mappingsMap, loadMappings, logoScale, logoOffsetX, logoOffsetY,
     selectedBackdrop, setSelectedBackdrop: setSelectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY,
     setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
-    globalBadges, rankingBadges, customBadge, badgeStyle,
-    defaultBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
+    globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
+    defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
     setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, lang,
   })
@@ -743,7 +750,9 @@ export function usePosterium(): PosteriumCtx {
     blurDarkness, setBlurDarkness,
     blurEnabled, setBlurEnabled,
     badgeStyle, setBadgeStyle,
+    rankingBadgeStyle, setRankingBadgeStyle,
     defaultBadgeStyle, setDefaultBadgeStyle,
+    defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
     defaultBlurEnabled, setDefaultBlurEnabled,
     defaultBlurIntensity, setDefaultBlurIntensity,
     defaultBlurFade, setDefaultBlurFade,
@@ -794,7 +803,8 @@ export function usePosterium(): PosteriumCtx {
     openSections, posterScrollInfo, logoBounds, logoScale,
     logoOffsetX, logoOffsetY, editingValue, editText,
     globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle,
-    defaultBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
+    rankingBadgeStyle,
+    defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
     defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled,
     trendRank, mdblistMatch, metaInfo, navigation.previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,

@@ -217,13 +217,13 @@ export default function EditView() {
                         globalBadges: p.globalBadges,
                         rankingBadges: p.rankingBadges,
                         badgeStyle: p.badgeStyle,
+                        rankingBadgeStyle: p.rankingBadgeStyle,
                         customBadge: p.customBadge,
                         gradientHeight: p.gradientHeight,
                         blurIntensity: p.blurIntensity,
                         blurFade: p.blurFade,
                         blurDarkness: p.blurDarkness,
                         blurEnabled: p.blurEnabled,
-                        networkLogo: p.networkLogo,
                       })
                       if (!url) return
                       window.open(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`, "_blank")
@@ -256,10 +256,22 @@ export default function EditView() {
               {activeRightTab === "badge" && <>
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between px-1">
+                    <span className="text-xs text-zinc-400">{p.t("ui.trendBadge")}</span>
                     <Toggle value={p.rankingBadges} onChange={(v) => p.setRankingBadges(v)} />
                   </div>
+                  <div className="mt-2 pt-2 border-t border-zinc-800/60">
+                    <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleRankingExtra")}</label>
+                    <div className="px-1">
+                      <BadgeStyleSelector value={p.rankingBadgeStyle} options={["default","bar","colored","pill"]} onChange={p.setRankingBadgeStyle} t={p.t} accentColor={p.accentColor} />
+                    </div>
+                    {p.accentColor === "#555555" && (
+                      <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{p.t("ui.noDominantColor") || "No dominant color — using fallback"}</div>
+                    )}
+                    {p.accentColor !== "#555555" && (
+                      <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">Accent color condiviso con badge genere</div>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-xs text-zinc-400">{p.t("ui.genreBadge")}</span>
                     <span className="text-xs text-zinc-400">{p.t("ui.genreRatingBadge")}</span>
                     <Toggle value={p.globalBadges} onChange={(v) => p.setGlobalBadges(v)} />
                   </div>
