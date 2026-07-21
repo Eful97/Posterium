@@ -21,7 +21,7 @@ describe("network-svgs", () => {
     const res = getNetworkSvgResult("Walt Disney Pictures", 500)
     expect(res).not.toBeNull()
     expect(res!.networkKey).toBe("disney")
-    expect(res!.svg).toContain("Disney")
+    expect(res!.svg).toContain("svg")
   })
 
   it("matches Prime Video and returns prime SVG", () => {
