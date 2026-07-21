@@ -17,6 +17,7 @@ interface BadgeParams {
   blurFade: number
   blurDarkness: number
   blurEnabled: boolean
+  networkLogo?: boolean
 }
 
 interface PosterState {
@@ -102,6 +103,7 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   params.push(`bs=${bp.badgeStyle}`)
   params.push(`rs=${bp.rankingBadgeStyle}`)
   if (!bp.blurEnabled) params.push("be=0")
+  if (bp.networkLogo === false) params.push("netLogo=0")
   if (ps.accentColor && ps.accentColor !== "#555555") params.push(`ac=${encodeURIComponent(ps.accentColor)}`)
   const topLight = computeTopLight(ps.topEdgeColor)
   params.push(`tl=${topLight ? "1" : "0"}`)

@@ -9,6 +9,7 @@ import { cacheGet, cacheSet } from "@/lib/cache"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge, warmFonts } from "@/lib/svg-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
+import { renderNetworkLogoBadge } from "@/lib/network-svgs"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { GENRE_FALLBACK } from "@/lib/badges"
@@ -539,7 +540,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       releaseDate,
       firstAirDate,
       locale: req.nextUrl.searchParams.get("lang") || mapping?.language || "it",
-    })
+    })    const qNetLogo = req.nextUrl.searchParams.get("netLogo")
+    const netLogoEnabled = qNetLogo !== "0"
+    const networkName = studioBadge || (tmdbStudios.length ? tmdbStudios[0] : null)
+    const networkLogoResult = netLogoEnabled && networkName ? await renderNetworkLogoBadge(networkName, STD_W) : null
 
     const topBadge = (() => {
       if (!rankingEnabled) return null
@@ -552,7 +556,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         award: awardBadge,
         franchise: wikidataResult.franchise,
         nomination: wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations, t) : null,
-        studio: studioBadge,
+        studio: networkLogoResult ? null : studioBadge,
         director: wikidataResult.director,
         extra: extraFallback,
       }, t)
@@ -580,7 +584,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                 const p = renderGenreBadge(genreName!, voteAverage!, STD_W, year, badgeStyle, accentColorGenre, topLight)
                   .then((r) => { if (r) cacheSet(genreBadgeKey, r, ["badge"], BADGE_CACHE_TTL); return r })
                   .catch((e) => { console.error("[poster] Genre badge rendering failed:", e); return null })
-                  .finally(() => { badgeInflight.delete(genreBadgeKey) })
+                p.finally(() => { badgeInflight.delete(genreBadgeKey) })
                 badgeInflight.set(genreBadgeKey, p)
                 return p
               })())
@@ -628,6 +632,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const rankLeft = isBar ? 0 : isNetflixRank ? STD_W - safeRankBadgeResult.w : Math.round((STD_W - safeRankBadgeResult.w) / 2)
       const rankTop = 0
       composites.push({ input: safeRankBadgeResult.png, top: rankTop, left: rankLeft })
+    }
+
+    if (networkLogoResult) {
+      const isNetflixLogo = networkLogoResult.networkKey === "netflix"
+      const netTop = isNetflixLogo ? 0 : 8
+      const netLeft = isNetflixLogo ? 12 : 10
+      composites.push({ input: networkLogoResult.png, top: netTop, left: netLeft })
     }
 
     // 10. Final composite: single sharp call for all layers
