@@ -40,7 +40,7 @@ describe("buildGenreBadgeSVG", () => {
 
   it("lowers the star symbol without shifting the rating baseline", () => {
     const fs = 63
-    const starDy = Math.max(1, Math.round(fs * 0.06))
+    const starDy = Math.max(2, Math.round(fs * 0.14))
     const { svg } = buildGenreTextSvg("Fantascienza", "8.7", "2026", fs, "#e5e7eb", "shadow")
 
     expect(svg).toContain(`dy="${starDy}" font-family="Noto Sans Symbols 2"`)

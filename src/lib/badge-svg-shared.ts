@@ -73,7 +73,7 @@ function buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX, y }: Gen
   const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr)
   const totalDx = dims.gap * (yearStr ? 4 : 2) + dims.gapStar
   const adjustedX = centerX - totalDx / 2
-  const starDy = Math.max(1, Math.round(fs * 0.06))
+  const starDy = Math.max(2, Math.round(fs * 0.14))
   let t = `<text x="${adjustedX}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="${GENRE_FONT_WEIGHT}" font-size="${fs}"${textFitAttrs(dims.textContentW)}>`
   t += `<tspan>${escSvg(genreName)}</tspan>`
   t += `<tspan dx="${dims.gap}" fill-opacity="0.6">${escSvg("\u2022")}</tspan>`
