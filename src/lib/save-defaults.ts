@@ -13,6 +13,7 @@ export function saveDefaults(p: PosteriumCtx) {
     gradientHeight: p.defaultGradientHeight,
     autoRotateClean: p.defaultAutoRotateClean,
     defaultLogoFitEnabled: p.defaultLogoFitEnabled,
+    defaultNetworkLogo: p.defaultNetworkLogo,
     networkLogo: p.defaultNetworkLogo,
   }
   localStorage.setItem("badgeDefaults", JSON.stringify(d))

@@ -85,7 +85,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Tv className="w-3 h-3" /> Logo Network</span>
-        <Toggle value={p.defaultNetworkLogo} onChange={p.setDefaultNetworkLogo} />
+        <Toggle value={p.defaultNetworkLogo} onChange={(v) => { p.setDefaultNetworkLogo(v); p.setNetworkLogo(v) }} />
       </div>
       <hr className="border-zinc-700 my-1" />
       <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Circle className="w-3 h-3" /> {p.t("ui.styleRankingDefault")}</label>

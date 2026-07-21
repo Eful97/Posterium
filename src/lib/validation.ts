@@ -43,6 +43,7 @@ export const mappingSchema = z.object({
   autoRotateClean: z.boolean().nullable().optional(),
   excludedPosters: z.array(z.string()).nullable().optional(),
   logoDisabled: z.boolean().nullable().optional(),
+  networkLogo: z.boolean().nullable().optional(),
   defaultBadgeStyle: z.string().nullable().optional(),
   defaultRankingBadgeStyle: z.string().nullable().optional(),
 })
