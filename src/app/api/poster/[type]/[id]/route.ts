@@ -414,7 +414,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qRanking = req.nextUrl.searchParams.get("ranking")
     let qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined) || sd.rankingBadgeStyle || "default"
     const qRankParam = req.nextUrl.searchParams.get("rank")
-
+    // Stile "netflix" (badge a destra) ha senso solo se c'è un rank numerico — altrimenti badge
+    // come "Candidato Oscar" verrebbero spostati a destra senza motivo.
+    if (qRankingBadgeStyle === "netflix" && !animeRankResult && !rankingResult && !mapping?.trendRank && !qRankParam) {
+      qRankingBadgeStyle = "default"
+    }
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
     const qBlurFade = req.nextUrl.searchParams.get("bf")
