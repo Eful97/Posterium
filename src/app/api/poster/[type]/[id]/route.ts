@@ -414,9 +414,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qRanking = req.nextUrl.searchParams.get("ranking")
     let qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined) || sd.rankingBadgeStyle || "default"
     const qRankParam = req.nextUrl.searchParams.get("rank")
-    if (qRankingBadgeStyle === "netflix" && !animeRankResult && !rankingResult && !mapping?.trendRank && !qRankParam) {
-      qRankingBadgeStyle = "default"
-    }
+
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
     const qBlurFade = req.nextUrl.searchParams.get("bf")
