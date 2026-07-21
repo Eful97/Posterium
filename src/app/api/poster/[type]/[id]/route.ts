@@ -388,7 +388,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (mapping?.tvStatus) tvStatus = mapping.tvStatus
         if (mapping?.releaseDate) releaseDate = mapping.releaseDate
         if (mapping?.firstAirDate) firstAirDate = mapping.firstAirDate
-        if ((mediaType === "tv" && (!tvType || !firstAirDate)) || (mediaType === "movie" && !releaseDate)) {
+        if (tmdbNetworks.length === 0 && productionCompanies.length === 0) {
           try {
             const qApiKey = req.nextUrl.searchParams.get("api_key") || undefined
             const preferredLang = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
@@ -397,6 +397,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             if (!firstAirDate) firstAirDate = details.first_air_date || null
             if (!tvType) tvType = details.type || null
             if (!tvStatus) tvStatus = details.status || null
+            if (details.networks) tmdbNetworks = details.networks.map((n: TMDBCompany) => n.name)
+            if (details.production_companies) productionCompanies = details.production_companies.map((c: TMDBCompany) => c.name)
+            if (tmdbNetworks.length || productionCompanies.length) {
+              tmdbStudios = matchTMDBStudios([...tmdbNetworks, ...productionCompanies])
+            }
           } catch (e) { console.error("[poster] Details fetch failed:", e) }
         }
       })(),
@@ -579,12 +584,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return null
     })()
 
-    if (topBadge && networkLogoResult) {
+    if (topBadge) {
       const bLabel = topBadge.label.toLowerCase().trim()
-      const netKey = networkLogoResult.networkKey.toLowerCase().trim()
-      const netName = (networkName || "").toLowerCase().trim()
-      if (bLabel === netKey || bLabel.includes(netKey) || netKey.includes(bLabel) || (netName && (bLabel === netName || bLabel.includes(netName)))) {
-        topBadge = null
+      const isKnownNetwork = ["netflix", "hbo", "disney", "prime", "amazon", "apple", "paramount", "rai", "mediaset", "crunchyroll", "hulu", "peacock"].some(net => bLabel.includes(net) || net.includes(bLabel))
+      if (networkLogoResult || isKnownNetwork) {
+        const netKey = networkLogoResult ? networkLogoResult.networkKey.toLowerCase().trim() : ""
+        const netName = (networkName || "").toLowerCase().trim()
+        if (isKnownNetwork || bLabel === netKey || bLabel.includes(netKey) || netKey.includes(bLabel) || (netName && (bLabel === netName || bLabel.includes(netName)))) {
+          topBadge = null
+        }
       }
     }
 
