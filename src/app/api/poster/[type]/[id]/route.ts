@@ -573,7 +573,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         award: awardBadge,
         franchise: wikidataResult.franchise,
         nomination: wikidataResult.nominations.length ? getNominationBadgeLabel(wikidataResult.nominations, t) : null,
-        studio: studioBadge,
+        studio: networkLogoResult ? null : studioBadge,
         director: wikidataResult.director,
         extra: extraFallback,
       }, t)
