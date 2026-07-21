@@ -553,7 +553,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       locale: req.nextUrl.searchParams.get("lang") || mapping?.language || "it",
     })
     const qNetLogo = req.nextUrl.searchParams.get("netLogo")
-    const netLogoEnabled = qNetLogo !== "0"
+    const globalNetLogo = sd.networkLogo !== false
+    const mappingNetLogo = mapping?.networkLogo !== false
+    const netLogoEnabled = globalNetLogo && mappingNetLogo && qNetLogo !== "0"
     const networkCandidates = [
       ...tmdbNetworks,
       ...productionCompanies,

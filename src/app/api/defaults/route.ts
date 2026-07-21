@@ -18,6 +18,7 @@ const defaultsSchema = z.object({
   rankingBadges: z.boolean().optional(),
   autoRotateClean: z.boolean().optional(),
   defaultLogoFitEnabled: z.boolean().optional(),
+  networkLogo: z.boolean().optional(),
 })
 
 export async function GET() {

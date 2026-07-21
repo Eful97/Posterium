@@ -38,6 +38,7 @@ export function buildStremioPosterUrl(input: BuildStremioPosterUrlInput): URL {
     blurFade: input.defaults.blurFade,
     blurDarkness: input.defaults.blurDarkness,
     blurEnabled: input.defaults.blurEnabled,
+    networkLogo: (input.defaults.networkLogo !== false) && (input.mapping?.networkLogo !== false),
   })
 
   params.forEach((value, key) => url.searchParams.set(key, value))

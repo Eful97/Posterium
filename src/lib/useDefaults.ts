@@ -14,8 +14,10 @@ export interface DefaultsState {
   defaultRankingBadges: boolean
   defaultAutoRotateClean: boolean
   defaultLogoFitEnabled: boolean
+  defaultNetworkLogo: boolean
   globalBadges: boolean
   rankingBadges: boolean
+  networkLogo: boolean
   gradientHeight: number
   blurIntensity: number
   blurFade: number
@@ -37,8 +39,10 @@ const DEFAULTS: DefaultsState = {
   defaultRankingBadges: true,
   defaultAutoRotateClean: false,
   defaultLogoFitEnabled: true,
+  defaultNetworkLogo: true,
   globalBadges: true,
   rankingBadges: true,
+  networkLogo: true,
   gradientHeight: 30,
   blurIntensity: 5,
   blurFade: 60,
@@ -51,6 +55,7 @@ const DEFAULTS: DefaultsState = {
 interface StoredDefaults {
   globalBadges?: boolean
   rankingBadges?: boolean
+  networkLogo?: boolean
   gradientHeight?: number
   blurIntensity?: number
   blurFade?: number
@@ -69,6 +74,7 @@ interface StoredDefaults {
   defaultRankingBadges?: boolean
   defaultAutoRotateClean?: boolean
   defaultLogoFitEnabled?: boolean
+  defaultNetworkLogo?: boolean
   autoRotateClean?: boolean
 }
 
@@ -100,8 +106,10 @@ export function useDefaults() {
       defaultRankingBadges: d.defaultRankingBadges ?? d.rankingBadges ?? true,
       defaultAutoRotateClean: d.defaultAutoRotateClean ?? d.autoRotateClean ?? false,
       defaultLogoFitEnabled: d.defaultLogoFitEnabled ?? true,
+      defaultNetworkLogo: d.defaultNetworkLogo ?? d.networkLogo ?? true,
       globalBadges: d.globalBadges ?? true,
       rankingBadges: d.rankingBadges ?? true,
+      networkLogo: d.networkLogo ?? true,
       gradientHeight: d.gradientHeight ?? 30,
       blurIntensity: d.blurIntensity ?? 5,
       blurFade: d.blurFade ?? 60,
@@ -134,8 +142,10 @@ export function useDefaults() {
       defaultRankingBadges: d.defaultRankingBadges ?? d.rankingBadges ?? true,
       defaultAutoRotateClean: d.defaultAutoRotateClean ?? d.autoRotateClean ?? false,
       defaultLogoFitEnabled: d.defaultLogoFitEnabled ?? true,
+      defaultNetworkLogo: d.defaultNetworkLogo ?? d.networkLogo ?? true,
       globalBadges: d.globalBadges ?? true,
       rankingBadges: d.rankingBadges ?? true,
+      networkLogo: d.networkLogo ?? true,
       gradientHeight: d.gradientHeight ?? 30,
       blurIntensity: d.blurIntensity ?? 5,
       blurFade: d.blurFade ?? 60,

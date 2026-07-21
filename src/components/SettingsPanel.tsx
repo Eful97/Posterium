@@ -8,7 +8,7 @@ import { saveDefaults } from "@/lib/save-defaults"
 import { SliderRow } from "@/components/SliderRow"
 import { Toggle } from "@/components/Toggle"
 import { BadgeStyleSelector, SecretInput, MenuItem } from "@/components/ui"
-import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles } from "lucide-react"
+import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles, Tv } from "lucide-react"
 
 interface Props {
   tmdbKeyInput: string
@@ -82,6 +82,10 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {p.t("ui.trendBadge")}</span>
         <Toggle value={p.defaultRankingBadges} onChange={p.setDefaultRankingBadges} />
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Tv className="w-3 h-3" /> Logo Network</span>
+        <Toggle value={p.defaultNetworkLogo} onChange={p.setDefaultNetworkLogo} />
       </div>
       <hr className="border-zinc-700 my-1" />
       <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Circle className="w-3 h-3" /> {p.t("ui.styleRankingDefault")}</label>

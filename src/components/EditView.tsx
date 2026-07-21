@@ -276,6 +276,10 @@ export default function EditView() {
                     <Toggle value={p.globalBadges} onChange={(v) => p.setGlobalBadges(v)} />
                   </div>
                   <div className="flex items-center justify-between px-1">
+                    <span className="text-xs text-zinc-400">Logo Network</span>
+                    <Toggle value={p.networkLogo} onChange={(v) => p.setNetworkLogo(v)} />
+                  </div>
+                  <div className="flex items-center justify-between px-1">
                     <span className="text-xs text-zinc-500">{p.t("ui.customBadge")}</span>
                     {p.editingValue === "customBadge" ? (
                       <input autoFocus value={p.editText} onChange={(e) => p.setEditText(e.target.value)} onFocus={(e) => e.target.select()} onBlur={() => { const v = p.editText.trim(); p.setCustomBadge(v || null); p.setEditingValue(null) }} onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }} className="w-28 text-right text-xs bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent" placeholder={p.t("ui.customBadgePlaceholder")} />

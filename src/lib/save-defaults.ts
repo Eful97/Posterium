@@ -13,6 +13,7 @@ export function saveDefaults(p: PosteriumCtx) {
     gradientHeight: p.defaultGradientHeight,
     autoRotateClean: p.defaultAutoRotateClean,
     defaultLogoFitEnabled: p.defaultLogoFitEnabled,
+    networkLogo: p.defaultNetworkLogo,
   }
   localStorage.setItem("badgeDefaults", JSON.stringify(d))
   void fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
@@ -26,6 +27,7 @@ export function saveDefaults(p: PosteriumCtx) {
   if (!mapping?.rankingBadgeStyle) p.setRankingBadgeStyle(d.rankingBadgeStyle)
   p.setGlobalBadges(d.globalBadges)
   p.setRankingBadges(d.rankingBadges)
+  p.setNetworkLogo(d.networkLogo)
   p.setBlurEnabled(d.blurEnabled)
   p.setBlurIntensity(d.blurIntensity)
   p.setBlurFade(d.blurFade)

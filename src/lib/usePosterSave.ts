@@ -56,6 +56,7 @@ interface PosterSaveDeps {
   setLogoScale: (v: number) => void
   setLogoOffsetX: (v: number) => void
   setLogoOffsetY: (v: number) => void
+  networkLogo: boolean
   lang: string
 }
 
@@ -77,7 +78,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
     defaultBadgeStyle, defaultRankingBadgeStyle,
     blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
-    setLogoScale, setLogoOffsetX, setLogoOffsetY, lang,
+    setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, lang,
   } = deps
 
   const selectPoster = useCallback(async (image: TMDBImage) => {
@@ -229,6 +230,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
           autoRotateClean: effectiveRotationPosters.length > 1 ? (defaultAutoRotateClean && isClean && isNewMapping ? true : autoRotateClean) : undefined,
           excludedPosters: nextExcludedPosters.length > 0 ? nextExcludedPosters : undefined,
           logoDisabled: logoDisabled || undefined,
+          networkLogo: networkLogo !== undefined ? networkLogo : undefined,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)
@@ -238,7 +240,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
       if (!overrides.silent) import("sonner").then(({ toast }) => toast(t("ui.saveError")))
       if (overrides.silent) throw error
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop, networkLogo]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
 
   return { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig }
 }

@@ -108,6 +108,10 @@ export interface PosteriumCtx {
   setDefaultAutoRotateClean: React.Dispatch<React.SetStateAction<boolean>>
   defaultLogoFitEnabled: boolean
   setDefaultLogoFitEnabled: React.Dispatch<React.SetStateAction<boolean>>
+  networkLogo: boolean
+  setNetworkLogo: (v: boolean | ((prev: boolean) => boolean)) => void
+  defaultNetworkLogo: boolean
+  setDefaultNetworkLogo: (v: boolean | ((prev: boolean) => boolean)) => void
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
   metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null }
@@ -248,10 +252,12 @@ export function usePosterium(): PosteriumCtx {
   const [editText, setEditText] = useState("")
 
   // Badge state (delegated to useDefaults)
-  const { globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled, loadDefaultsToState } = defaults
+  const { globalBadges, rankingBadges, networkLogo, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo, loadDefaultsToState } = defaults
   const [customBadge, setCustomBadge] = useState<string | null>(null)
   const setGlobalBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(globalBadges) : v; defaults.update({ globalBadges: next }) }
   const setRankingBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(rankingBadges) : v; defaults.update({ rankingBadges: next }) }
+  const setNetworkLogo = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(networkLogo) : v; defaults.update({ networkLogo: next }) }
+  const setDefaultNetworkLogo = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultNetworkLogo) : v; defaults.update({ defaultNetworkLogo: next }) }
   const setGradientHeight = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(gradientHeight) : v; defaults.update({ gradientHeight: next }) }
   const setBlurIntensity = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurIntensity) : v; defaults.update({ blurIntensity: next }) }
   const setBlurFade = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurFade) : v; defaults.update({ blurFade: next }) }
@@ -358,10 +364,10 @@ export function usePosterium(): PosteriumCtx {
   useEffect(() => {
     setUrlPattern(buildUrlPattern({
       globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
-      customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled,
+      customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo,
       tmdbKey, lang,
     }))
-  }, [globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+  }, [globalBadges, rankingBadges, networkLogo, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -376,13 +382,13 @@ export function usePosterium(): PosteriumCtx {
         metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
         topEdgeColor, accentColor, lang, tmdbKey,
       },
-      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled }
+      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo }
     )
     setPreviewUrl(url)
   }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, selectedBackdrop,
     logoScale, logoOffsetX, logoOffsetY, backdropScale, backdropOffsetX, backdropOffsetY,
     metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, accentColor, lang, tmdbKey,
-    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled])
+    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo])
 
   useEffect(() => {
     if (!navigation.selected) { setPreviewUrl(""); return }
@@ -625,8 +631,10 @@ export function usePosterium(): PosteriumCtx {
           setSelectedBackdrop(foundBackdrop || { file_path: existing.backdropPath, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
         }
         setTrendRank(rankData.rank ?? existing.trendRank ?? null)
+        setNetworkLogo(existing.networkLogo ?? defaultNetworkLogo)
       } else {
         setLogoDisabled(false)
+        setNetworkLogo(defaultNetworkLogo)
         const clean = data.posters?.find((p: TMDBImage) => p.iso_639_1 === null)
         const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
         const firstPoster = data.posters?.[0]
@@ -697,7 +705,7 @@ export function usePosterium(): PosteriumCtx {
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
-    setLogoScale, setLogoOffsetX, setLogoOffsetY, lang,
+    setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, lang,
   })
 
   const saveConfig = useCallback(async () => {
@@ -754,6 +762,8 @@ export function usePosterium(): PosteriumCtx {
     defaultRankingBadges, setDefaultRankingBadges,
     defaultAutoRotateClean, setDefaultAutoRotateClean,
     defaultLogoFitEnabled, setDefaultLogoFitEnabled,
+    networkLogo, setNetworkLogo,
+    defaultNetworkLogo, setDefaultNetworkLogo,
     trendRank,
     mdblistMatch,
     metaInfo,

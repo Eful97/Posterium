@@ -12,6 +12,7 @@ export interface StremioPosterParamsInput {
   readonly blurFade?: number
   readonly blurDarkness?: number
   readonly blurEnabled?: boolean
+  readonly networkLogo?: boolean
 }
 
 const DEFAULT_STREMIO_POSTER_PARAMS = {
@@ -24,6 +25,7 @@ const DEFAULT_STREMIO_POSTER_PARAMS = {
   blurFade: 60,
   blurDarkness: 40,
   blurEnabled: true,
+  networkLogo: true,
 } as const
 
 export function buildStremioPosterSearchParams(input: StremioPosterParamsInput): URLSearchParams {
@@ -31,10 +33,12 @@ export function buildStremioPosterSearchParams(input: StremioPosterParamsInput):
   const globalBadges = input.globalBadges ?? DEFAULT_STREMIO_POSTER_PARAMS.globalBadges
   const rankingBadges = input.rankingBadges ?? DEFAULT_STREMIO_POSTER_PARAMS.rankingBadges
   const blurEnabled = input.blurEnabled ?? DEFAULT_STREMIO_POSTER_PARAMS.blurEnabled
+  const networkLogo = input.networkLogo ?? DEFAULT_STREMIO_POSTER_PARAMS.networkLogo
 
   if (input.apiKey) params.set("api_key", input.apiKey)
   if (!globalBadges) params.set("badges", "0")
   if (!rankingBadges) params.set("ranking", "0")
+  if (!networkLogo) params.set("netLogo", "0")
   params.set("lang", input.lang || "it")
   if (!blurEnabled) params.set("be", "0")
   params.set("gradHeight", String(input.gradientHeight ?? DEFAULT_STREMIO_POSTER_PARAMS.gradientHeight))
