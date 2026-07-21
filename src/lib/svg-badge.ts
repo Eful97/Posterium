@@ -220,10 +220,10 @@ export async function renderGenreBadge(
 
 function buildNetflixRankBadgeSVG(rank: number, pw: number) {
   const fs = Math.round(Math.max(23 * pw / 380, 14))
-  const w = Math.round(fs * 2.4)
-  const h = Math.round(w * 1.35)
-  const topFs = Math.round(w * 0.28)
-  const rankFs = Math.round(w * 0.54)
+  const w = Math.round(fs * 3.2)
+  const h = Math.round(w * 1.0)
+  const topFs = Math.round(w * 0.24)
+  const rankFs = Math.round(w * 0.52)
   const padX = Math.round(fs * 0.4)
   const padBottom = Math.round(fs * 0.4)
   const totalW = w + padX * 2
@@ -232,7 +232,7 @@ function buildNetflixRankBadgeSVG(rank: number, pw: number) {
   const ribbonLeft = padX
   const ribbonRight = padX + w
   const ribbonMidX = padX + w / 2
-  const ribbonVNotchY = Math.round(h * 0.86)
+  const ribbonVNotchY = Math.round(h * 0.88)
 
   // Nastro Netflix top-center: ombra centrata in basso e taglio a V
   const pathD = `M ${ribbonLeft} 0 L ${ribbonRight} 0 L ${ribbonRight} ${h} L ${ribbonMidX} ${ribbonVNotchY} L ${ribbonLeft} ${h} Z`
@@ -243,8 +243,8 @@ function buildNetflixRankBadgeSVG(rank: number, pw: number) {
       </filter>
     </defs>
     <path d="${pathD}" fill="#E50914" filter="url(#shadow)"/>
-    <text x="${ribbonMidX}" y="${Math.round(h * 0.26)}" fill="#fff" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">TOP</text>
-    <text x="${ribbonMidX}" y="${Math.round(h * 0.58)}" fill="#fff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central">${rank}</text>
+    <text x="${ribbonMidX}" y="${Math.round(h * 0.28)}" fill="#fff" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">TOP</text>
+    <text x="${ribbonMidX}" y="${Math.round(h * 0.60)}" fill="#fff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central">${rank}</text>
   </svg>`
   return { svg, w: totalW, h: totalH }
 }
