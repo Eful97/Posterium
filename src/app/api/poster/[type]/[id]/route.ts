@@ -584,15 +584,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return null
     })()
 
-    if (topBadge) {
-      const bLabel = topBadge.label.toLowerCase().trim()
-      const isKnownNetwork = ["netflix", "hbo", "disney", "prime", "amazon", "apple", "paramount", "rai", "mediaset", "crunchyroll", "hulu", "peacock"].some(net => bLabel.includes(net) || net.includes(bLabel))
-      if (networkLogoResult || isKnownNetwork) {
-        const netKey = networkLogoResult ? networkLogoResult.networkKey.toLowerCase().trim() : ""
-        const netName = (networkName || "").toLowerCase().trim()
-        if (isKnownNetwork || bLabel === netKey || bLabel.includes(netKey) || netKey.includes(bLabel) || (netName && (bLabel === netName || bLabel.includes(netName)))) {
-          topBadge = null
-        }
+    if (topBadge && networkLogoResult) {
+      // Se il logo network in alto a sinistra è presente, l'unico badge superiore consentito è quello del RANK (classifica).
+      // Tutti i badge di tipo "extra" (es. "Da divorare", "Il più votato", studio, regista, ecc.) vengono soppressi.
+      if (topBadge.type !== "rank") {
+        topBadge = null
       }
     }
 
