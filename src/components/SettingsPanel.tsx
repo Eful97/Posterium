@@ -88,8 +88,6 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
         <Toggle value={p.defaultNetworkLogo} onChange={(v) => { p.setDefaultNetworkLogo(v); p.setNetworkLogo(v) }} />
       </div>
       <hr className="border-zinc-700 my-1" />
-      <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Circle className="w-3 h-3" /> {p.t("ui.styleRankingDefault")}</label>
-      <BadgeStyleSelector value={p.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill", "netflix"]} onChange={p.setDefaultRankingBadgeStyle} t={p.t} accentColor={p.accentColor} />
       <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5 mt-1"><Palette className="w-3 h-3" /> {p.t("ui.styleDefault")}</label>
       <BadgeStyleSelector value={p.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored", "bordo", "vetro"]} onChange={p.setDefaultBadgeStyle} t={p.t} />
       <hr className="border-zinc-700 my-1" />

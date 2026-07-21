@@ -6,7 +6,6 @@ const baseBadgeParams = {
   globalBadges: true,
   rankingBadges: true,
   badgeStyle: "shadow",
-  rankingBadgeStyle: "default",
   customBadge: null,
   gradientHeight: 30,
   blurIntensity: 5,
@@ -88,13 +87,12 @@ describe("buildUrlPattern", () => {
   })
 
   it("includes gradientHeight, blur, bf, bd, bs, rs params", () => {
-    const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it", gradientHeight: 50, blurIntensity: 8, blurFade: 70, blurDarkness: 50, badgeStyle: "pill", rankingBadgeStyle: "bar" })
+    const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it", gradientHeight: 50, blurIntensity: 8, blurFade: 70, blurDarkness: 50, badgeStyle: "pill" })
     expect(url).toContain("gradHeight=50")
     expect(url).toContain("blur=8")
     expect(url).toContain("bf=70")
     expect(url).toContain("bd=50")
     expect(url).toContain("bs=pill")
-    expect(url).toContain("rs=bar")
   })
 
   it("encodes lang param", () => {
@@ -189,14 +187,13 @@ describe("buildPreviewUrl", () => {
     expect(url).toContain("lang=it")
   })
 
-  it("includes gradHeight, blur, bf, bd, bs, rs", () => {
-    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, gradientHeight: 50, blurIntensity: 8, blurFade: 70, blurDarkness: 50, badgeStyle: "pill", rankingBadgeStyle: "bar" })
+  it("includes all params in preview url", () => {
+    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, gradientHeight: 50, blurIntensity: 8, blurFade: 70, blurDarkness: 50, badgeStyle: "pill" })
     expect(url).toContain("gradHeight=50")
     expect(url).toContain("blur=8")
     expect(url).toContain("bf=70")
     expect(url).toContain("bd=50")
     expect(url).toContain("bs=pill")
-    expect(url).toContain("rs=bar")
   })
 
   it("includes be=0 when blurEnabled is false", () => {

@@ -32,7 +32,6 @@ export function buildStremioPosterUrl(input: BuildStremioPosterUrlInput): URL {
     globalBadges: input.defaults.globalBadges,
     rankingBadges: input.defaults.rankingBadges,
     badgeStyle: input.defaults.badgeStyle,
-    rankingBadgeStyle: input.defaults.rankingBadgeStyle,
     gradientHeight: input.defaults.gradientHeight,
     blurIntensity: input.defaults.blurIntensity,
     blurFade: input.defaults.blurFade,

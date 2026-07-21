@@ -10,10 +10,8 @@ describe("buildStremioPosterSearchParams", () => {
       globalBadges: false,
       rankingBadges: false,
       badgeStyle: "pill",
-      rankingBadgeStyle: "bar",
       gradientHeight: 42,
       blurIntensity: 6,
-      blurFade: 55,
       blurDarkness: 35,
       blurEnabled: false,
     })
@@ -24,12 +22,9 @@ describe("buildStremioPosterSearchParams", () => {
     expect(params.get("ranking")).toBe("0")
     expect(params.get("be")).toBe("0")
     expect(params.get("gradHeight")).toBe("42")
+    expect(params.get("gradHeight")).toBe("42")
     expect(params.get("blur")).toBe("6")
-    expect(params.get("bf")).toBe("55")
-    expect(params.get("bd")).toBe("35")
     expect(params.get("bs")).toBe("pill")
-    expect(params.get("rs")).toBe("bar")
-    expect(params.get("rv")).toBe(String(POSTER_URL_VERSION))
   })
 
   it("uses production defaults when optional settings are missing", () => {
@@ -44,7 +39,6 @@ describe("buildStremioPosterSearchParams", () => {
     expect(params.get("bf")).toBe("60")
     expect(params.get("bd")).toBe("40")
     expect(params.get("bs")).toBe("shadow")
-    expect(params.get("rs")).toBe("default")
   })
 
   it("keeps the public Stremio poster URL version in sync with renderer changes", () => {

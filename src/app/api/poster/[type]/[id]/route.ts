@@ -397,17 +397,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     // 8. Blur + badge color extraction + logo resize (parallel)
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
-    const rawRs = req.nextUrl.searchParams.get("rs")
-    let qRankingBadgeStyle = (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined)
-      || (rawRs && rawRs !== "default" ? rawRs : undefined)
-      || sd.rankingBadgeStyle
-      || "default"
+    // Ranking badge style is always "netflix" for numerical ranks and "default" for extra text badges.
+    // This is no longer user-configurable — the netflix ribbon only shows for JustWatch/anime rankings.
+    // Extra badges (Oscar, New Movie, etc.) always use "default" style.
+    const rankingBadgeStyleForRank = "netflix"
+    const rankingBadgeStyleForExtra = "default"
     const qRankParam = req.nextUrl.searchParams.get("rank")
-    // Stile "netflix" (badge a destra) ha senso solo se c'è un rank numerico — altrimenti badge
-    // come "Candidato Oscar" verrebbero spostati a destra senza motivo.
-    if (qRankingBadgeStyle === "netflix" && !animeRankResult && !rankingResult && !mapping?.badgeRank && !mapping?.trendRank && !qRankParam && !finalRank) {
-      qRankingBadgeStyle = "default"
-    }
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
     const qBlurFade = req.nextUrl.searchParams.get("bf")
@@ -577,13 +572,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const networkName = networkLogoResult?.matchedName || studioBadge || (tmdbStudios.length ? tmdbStudios[0] : null)
 
     // Parallel render: genre badge + ranking badge (with badge PNG cache)
-
-    // Parallel render: genre badge + ranking badge (with badge PNG cache)
     const genreBadgeKey = (badgesEnabled && genreName && voteAverage && voteAverage > 0)
       ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentColorGenre, topLight)
       : null
     const rankBadgeKey = topBadge
-      ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, qRankingBadgeStyle, accentColorRank)
+      ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyleForRank, accentColorRank)
       : null
 
     const [genreBadgeResult, rankBadgeResult] = await Promise.all([
@@ -607,11 +600,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                 if (existing) return existing
                 let p: Promise<{ png: Buffer; w: number; h: number; isRank?: boolean } | null>
                 if (topBadge!.type === "extra") {
-                  p = renderExtraBadge(topBadge!.label, STD_W, topLight, qRankingBadgeStyle, accentColorRank)
+                  p = renderExtraBadge(topBadge!.label, STD_W, topLight, rankingBadgeStyleForExtra, accentColorRank)
                     .then((r) => { const v = { ...r, isRank: false }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                     .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
                 } else {
-                  p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, qRankingBadgeStyle, accentColorRank)
+                  p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, rankingBadgeStyleForRank, accentColorRank)
                     .then((r) => { const v = { ...r, isRank: true }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                     .catch((e) => { console.error("[poster] Ranking badge rendering failed:", e); return null })
                 }
@@ -638,9 +631,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       }
     }
     if (safeRankBadgeResult) {
-      const isBar = qRankingBadgeStyle === "bar"
-      const isNetflixRank = qRankingBadgeStyle === "netflix"
-      const rankLeft = isBar ? 0 : isNetflixRank ? STD_W - safeRankBadgeResult.w : Math.round((STD_W - safeRankBadgeResult.w) / 2)
+      const isNetflixRank = safeRankBadgeResult.isRank && rankingBadgeStyleForRank === "netflix"
+      const rankLeft = isNetflixRank ? STD_W - safeRankBadgeResult.w : Math.round((STD_W - safeRankBadgeResult.w) / 2)
       const rankTop = 0
       composites.push({ input: safeRankBadgeResult.png, top: rankTop, left: rankLeft })
     }

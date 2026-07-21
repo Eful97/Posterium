@@ -74,7 +74,6 @@ function buildPosterUrl(input: BuildPosterUrlInput): URL {
     globalBadges: defaults.globalBadges,
     rankingBadges: defaults.rankingBadges,
     badgeStyle: defaults.badgeStyle,
-    rankingBadgeStyle: defaults.rankingBadgeStyle,
     gradientHeight: defaults.gradientHeight,
     blurIntensity: defaults.blurIntensity,
     blurFade: defaults.blurFade,

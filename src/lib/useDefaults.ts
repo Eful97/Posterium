@@ -4,7 +4,6 @@ import { useState, useCallback } from "react"
 
 export interface DefaultsState {
   defaultBadgeStyle: string
-  defaultRankingBadgeStyle: string
   defaultBlurEnabled: boolean
   defaultBlurIntensity: number
   defaultBlurFade: number
@@ -24,12 +23,10 @@ export interface DefaultsState {
   blurDarkness: number
   blurEnabled: boolean
   badgeStyle: string
-  rankingBadgeStyle: string
 }
 
 const DEFAULTS: DefaultsState = {
   defaultBadgeStyle: "shadow",
-  defaultRankingBadgeStyle: "default",
   defaultBlurEnabled: true,
   defaultBlurIntensity: 5,
   defaultBlurFade: 60,
@@ -49,7 +46,6 @@ const DEFAULTS: DefaultsState = {
   blurDarkness: 40,
   blurEnabled: true,
   badgeStyle: "shadow",
-  rankingBadgeStyle: "default",
 }
 
 interface StoredDefaults {
@@ -62,9 +58,7 @@ interface StoredDefaults {
   blurDarkness?: number
   blurEnabled?: boolean
   badgeStyle?: string
-  rankingBadgeStyle?: string
   defaultBadgeStyle?: string
-  defaultRankingBadgeStyle?: string
   defaultBlurEnabled?: boolean
   defaultBlurIntensity?: number
   defaultBlurFade?: number
@@ -96,7 +90,6 @@ export function useDefaults() {
     if (!d) return { ...DEFAULTS }
     return {
       defaultBadgeStyle: d.defaultBadgeStyle ?? d.badgeStyle ?? "shadow",
-      defaultRankingBadgeStyle: d.defaultRankingBadgeStyle ?? d.rankingBadgeStyle ?? "default",
       defaultBlurEnabled: d.defaultBlurEnabled ?? d.blurEnabled ?? true,
       defaultBlurIntensity: d.defaultBlurIntensity ?? d.blurIntensity ?? 5,
       defaultBlurFade: d.defaultBlurFade ?? d.blurFade ?? 60,
@@ -116,7 +109,6 @@ export function useDefaults() {
       blurDarkness: d.blurDarkness ?? 40,
       blurEnabled: d.blurEnabled ?? true,
       badgeStyle: d.badgeStyle ?? "shadow",
-      rankingBadgeStyle: d.rankingBadgeStyle ?? "default",
     }
   })
 
@@ -132,7 +124,6 @@ export function useDefaults() {
     }
     setState({
       defaultBadgeStyle: d.defaultBadgeStyle ?? d.badgeStyle ?? "shadow",
-      defaultRankingBadgeStyle: d.defaultRankingBadgeStyle ?? d.rankingBadgeStyle ?? "default",
       defaultBlurEnabled: d.defaultBlurEnabled ?? d.blurEnabled ?? true,
       defaultBlurIntensity: d.defaultBlurIntensity ?? d.blurIntensity ?? 5,
       defaultBlurFade: d.defaultBlurFade ?? d.blurFade ?? 60,
@@ -152,7 +143,6 @@ export function useDefaults() {
       blurDarkness: d.blurDarkness ?? 40,
       blurEnabled: d.blurEnabled ?? true,
       badgeStyle: d.badgeStyle ?? "shadow",
-      rankingBadgeStyle: d.rankingBadgeStyle ?? "default",
     })
   }, [])
 
