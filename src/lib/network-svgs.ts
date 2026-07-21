@@ -146,3 +146,19 @@ export async function renderNetworkLogoBadge(networkName?: string | null, pw: nu
   const png = await renderSVG(res.svg, res.w)
   return { png, w: res.w, h: res.h, networkKey: res.networkKey }
 }
+
+export function findMatchingNetworkSvg(names: (string | null | undefined)[], pw: number = 500): { res: NetworkSvgResult; matchedName: string } | null {
+  for (const name of names) {
+    if (!name) continue
+    const res = getNetworkSvgResult(name, pw)
+    if (res) return { res, matchedName: name }
+  }
+  return null
+}
+
+export async function renderFirstMatchingNetworkLogoBadge(names: (string | null | undefined)[], pw: number = 500): Promise<{ png: Buffer; w: number; h: number; networkKey: string; matchedName: string } | null> {
+  const match = findMatchingNetworkSvg(names, pw)
+  if (!match) return null
+  const png = await renderSVG(match.res.svg, match.res.w)
+  return { png, w: match.res.w, h: match.res.h, networkKey: match.res.networkKey, matchedName: match.matchedName }
+}

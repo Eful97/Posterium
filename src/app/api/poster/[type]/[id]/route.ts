@@ -9,7 +9,7 @@ import { cacheGet, cacheSet } from "@/lib/cache"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge, warmFonts } from "@/lib/svg-badge"
 import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMDBStudios } from "@/lib/awards"
-import { renderNetworkLogoBadge } from "@/lib/network-svgs"
+import { renderNetworkLogoBadge, renderFirstMatchingNetworkLogoBadge } from "@/lib/network-svgs"
 import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { GENRE_FALLBACK } from "@/lib/badges"
@@ -160,6 +160,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let tvType: string | null = null
   let tvStatus: string | null = null
   let tmdbStudios: string[] = []
+  let tmdbNetworks: string[] = []
+  let productionCompanies: string[] = []
   const queryPoster = req.nextUrl.searchParams.get("poster")
   const queryLogo = req.nextUrl.searchParams.get("logo")
   const queryBackdrop = req.nextUrl.searchParams.get("backdrop")
@@ -217,8 +219,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       voteAverage = aggregated?.average ?? details.vote_average ?? 0
       releaseDate = details.release_date || null
       firstAirDate = details.first_air_date || null
-      const tmdbNetworks = mediaType === "tv" ? (details.networks || []).map((n: TMDBCompany) => n.name) : (details.production_companies || []).map((c: TMDBCompany) => c.name)
-      tmdbStudios = matchTMDBStudios(tmdbNetworks)
+      tmdbNetworks = (details.networks || []).map((n: TMDBCompany) => n.name)
+      productionCompanies = (details.production_companies || []).map((c: TMDBCompany) => c.name)
+      tmdbStudios = matchTMDBStudios([...tmdbNetworks, ...productionCompanies])
       tvType = details.type || null
       tvStatus = details.status || null
       const clean = images.posters.find((p: TMDBImage) => p.iso_639_1 === null)
@@ -541,10 +544,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       releaseDate,
       firstAirDate,
       locale: req.nextUrl.searchParams.get("lang") || mapping?.language || "it",
-    })    const qNetLogo = req.nextUrl.searchParams.get("netLogo")
+    })
+    const qNetLogo = req.nextUrl.searchParams.get("netLogo")
     const netLogoEnabled = qNetLogo !== "0"
-    const networkName = studioBadge || (tmdbStudios.length ? tmdbStudios[0] : null)
-    const networkLogoResult = netLogoEnabled && networkName ? await renderNetworkLogoBadge(networkName, STD_W) : null
+    const networkCandidates = [
+      ...tmdbNetworks,
+      ...productionCompanies,
+      ...wikidataResult.studios,
+      ...tmdbStudios,
+      studioBadge,
+    ]
+    const networkLogoResult = netLogoEnabled ? await renderFirstMatchingNetworkLogoBadge(networkCandidates, STD_W) : null
+    const networkName = networkLogoResult?.matchedName || studioBadge || (tmdbStudios.length ? tmdbStudios[0] : null)
 
     let topBadge = (() => {
       if (!rankingEnabled) return null
