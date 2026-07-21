@@ -13,7 +13,7 @@ import { fetchAllWikidata, getAwardBadgeLabel, getNominationBadgeLabel, matchTMD
 import { renderNetworkLogoBadge, renderFirstMatchingNetworkLogoBadge } from "@/lib/network-svgs"
 import { computeTopBadge, type BadgeInput } from "@/lib/poster-badge"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
-import { GENRE_FALLBACK } from "@/lib/badges"
+import { GENRE_FALLBACK, cinematicVignetteSVG } from "@/lib/badges"
 import { createT } from "@/lib/i18n"
 import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, type MDBListEntry } from "@/lib/mdblist"
@@ -510,7 +510,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         : Promise.resolve(null),
     ])
 
-    const renderBaseBuf = blurredPosterBuf || posterBuf
+    const rawBaseBuf = blurredPosterBuf || posterBuf
+    const renderBaseBuf = await sharp(rawBaseBuf)
+      .modulate({ brightness: 1.01, saturation: 1.06 })
+      .toBuffer()
+
+    const vigSvg = cinematicVignetteSVG(STD_W, STD_H)
+    const vigBuf = await sharp(Buffer.from(vigSvg)).png().toBuffer()
+    composites.push({ input: vigBuf, top: 0, left: 0 })
     if (logoResult) composites.push(logoResult)
 
     // 9. Render both badges in parallel (separate colors per zona)

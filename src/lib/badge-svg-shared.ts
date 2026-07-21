@@ -77,7 +77,7 @@ function buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX, y }: Gen
   let t = `<text x="${adjustedX}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="${GENRE_FONT_WEIGHT}" font-size="${fs}"${textFitAttrs(dims.textContentW)}>`
   t += `<tspan>${escSvg(genreName)}</tspan>`
   t += `<tspan dx="${dims.gap}" fill-opacity="0.6">${escSvg("\u2022")}</tspan>`
-  t += `<tspan dx="${dims.gap}" dy="${starDy}" font-family="Noto Sans Symbols 2" font-weight="400">${escSvg("\u2605")}</tspan>`
+  t += `<tspan dx="${dims.gap}" dy="${starDy}" font-family="Noto Sans Symbols 2" font-weight="400" fill="#F59E0B">${escSvg("\u2605")}</tspan>`
   t += `<tspan dx="${dims.gapStar}" dy="${-starDy}">${escSvg(voteStr)}</tspan>`
   if (yearStr) {
     t += `<tspan dx="${dims.gap}" fill-opacity="0.6">${escSvg("\u2022")}</tspan>`

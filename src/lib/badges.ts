@@ -1,10 +1,19 @@
-export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opacity = 0.8, pct = 30, fade = 30, fadeWidth = 50): { svg: string; top: number; height: number } {
+export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opacity = 0.8, pct = 30, fade = 30, fadeWidth = 50, accentColor?: string): { svg: string; top: number; height: number } {
   const gh = Math.max(Math.round(ph * pct / 100), 100)
   const top = ph - gh
   const hex = color.replace("#", "")
   const r = parseInt(hex.substring(0, 2), 16) || 0
   const g = parseInt(hex.substring(2, 4), 16) || 0
   const b = parseInt(hex.substring(4, 6), 16) || 0
+
+  let accentStop = ""
+  if (accentColor && accentColor !== "#555555" && accentColor.startsWith("#") && accentColor.length === 7) {
+    const ar = parseInt(accentColor.substring(1, 3), 16) || 0
+    const ag = parseInt(accentColor.substring(3, 5), 16) || 0
+    const ab = parseInt(accentColor.substring(5, 7), 16) || 0
+    accentStop = `<stop offset="40%" stop-color="rgba(${ar},${ag},${ab},0.22)"/>`
+  }
+
   const cappedFade = Math.min(fade, 100)
   const svgSolidPct = 100 - cappedFade
   const svgFadeEnd = Math.max(100 - Math.min(cappedFade + fadeWidth, 100), 0)
@@ -13,6 +22,7 @@ export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opa
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="rgba(${r},${g},${b},0)"/>
       <stop offset="${svgFadeEnd}%" stop-color="rgba(${r},${g},${b},0)"/>
+      ${accentStop}
       <stop offset="${svgSolidPct}%" stop-color="rgba(${r},${g},${b},${opacity})"/>
       <stop offset="100%" stop-color="rgba(${r},${g},${b},${opacity})"/>
     </linearGradient>
@@ -20,6 +30,18 @@ export function bottomGradientSVG(pw: number, ph: number, color = "#000000", opa
   <rect width="${pw}" height="${gh}" fill="url(#g)"/>
 </svg>`
   return { svg, top, height: gh }
+}
+
+export function cinematicVignetteSVG(pw: number, ph: number): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${ph}">
+  <defs>
+    <radialGradient id="vig" cx="50%" cy="50%" r="72%">
+      <stop offset="55%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.22"/>
+    </radialGradient>
+  </defs>
+  <rect width="${pw}" height="${ph}" fill="url(#vig)"/>
+</svg>`
 }
 
 export const GENRE_FALLBACK: Record<string, string> = {
