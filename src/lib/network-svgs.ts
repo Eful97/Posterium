@@ -31,10 +31,10 @@ function buildHboSvg(pw: number): NetworkSvgResult {
 
 function buildDisneySvg(pw: number): NetworkSvgResult {
   const scale = pw / 380
-  const w = Math.round(88 * scale)
-  const h = Math.round(32 * scale)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 88 32">
-    <text x="0" y="24" fill="#FFFFFF" font-family="Inter" font-weight="900" font-size="20" letter-spacing="-0.5">Disney<tspan fill="#1175E8" font-weight="800">+</tspan></text>
+  const w = Math.round(92 * scale)
+  const h = Math.round(34 * scale)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 1041 565">
+    <text x="30" y="440" fill="#FFFFFF" font-family="Inter, sans-serif" font-weight="900" font-size="340" letter-spacing="-10">Disney<tspan fill="#1175E8" font-weight="900">+</tspan></text>
   </svg>`
   return { svg, w, h, networkKey: "disney" }
 }
@@ -56,9 +56,12 @@ function buildPrimeVideoSvg(pw: number): NetworkSvgResult {
 function buildAppleTvSvg(pw: number): NetworkSvgResult {
   const scale = pw / 380
   const w = Math.round(72 * scale)
-  const h = Math.round(30 * scale)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 72 30">
-    <text x="0" y="22" fill="#FFFFFF" font-family="Inter" font-weight="700" font-size="18">tv+</text>
+  const h = Math.round(34 * scale)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 54 27">
+    <g fill="#FFFFFF">
+      <path d="M14.89 4.31C15.82 3.15 16.45 1.59 16.28 0c-1.35.07-3.01.89-3.97 2.06-.86.99-1.62 2.62-1.43 4.14 1.53.13 3.05-.76 4.01-1.89"/>
+      <path d="M16.26 6.5c-2.21-.13-4.1 1.26-5.15 1.26-1.06 0-2.68-1.19-4.43-1.16-2.28.03-4.39 1.32-5.55 3.37-2.38 4.1-.63 10.18 1.68 13.51 1.12 1.65 2.48 3.47 4.26 3.4 1.68-.07 2.35-1.09 4.39-1.09 2.05 0 2.64 1.09 4.42 1.06 1.85-.03 3.01-1.6 4.14-3.25 1.3-1.89 1.83-3.72 1.86-3.82-.04-.02-3.57-1.37-3.61-5.46-.03-3.42 2.79-5.06 2.92-5.15-1.6-2.34-4.08-2.6-4.94-2.67zM30.63 8.35h3.69v13.57h-3.69zM26.24 11.23h12.47v2.86H26.24zM40.94 8.35h3.81l3.52 10.27 3.52-10.27h3.81l-5.63 15.01h-3.41z"/>
+    </g>
   </svg>`
   return { svg, w, h, networkKey: "apple" }
 }
@@ -66,9 +69,12 @@ function buildAppleTvSvg(pw: number): NetworkSvgResult {
 function buildParamountSvg(pw: number): NetworkSvgResult {
   const scale = pw / 380
   const w = Math.round(95 * scale)
-  const h = Math.round(32 * scale)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 95 32">
-    <text x="0" y="22" fill="#FFFFFF" font-family="Inter" font-weight="900" font-size="15">Paramount<tspan fill="#0064FF">+</tspan></text>
+  const h = Math.round(34 * scale)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 1000 622">
+    <g fill="#0064FF">
+      <path d="M283.89,219.39c-2.46-1.02-6.49-5.54,0.22-18.14l15.58-32.56c0.47-0.98-0.66-2.22-1.37-1.38l-13.62,13.7c-6.45,6.73-17.38,25.64-19.5,29.13L248.64,237.5c1.23-0.04,2.26,0.93,2.3,2.16c0.01,0.4-0.09,0.8-0.28,1.16l-15.13,25.4c-3.69,6.3,2.94,10.7,3.84,9.25c23.77-38.29,37.6-35.23,37.6-35.23l7.94-18.38c0.42-0.92,0.01-2.01-0.91-2.42z"/>
+    </g>
+    <text x="350" y="380" fill="#FFFFFF" font-family="Inter, sans-serif" font-weight="900" font-size="280" letter-spacing="-8">Paramount<tspan fill="#0064FF">+</tspan></text>
   </svg>`
   return { svg, w, h, networkKey: "paramount" }
 }
@@ -79,51 +85,21 @@ function buildRaiSvg(pw: number): NetworkSvgResult {
   const h = Math.round(30 * scale)
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 58 30">
     <rect x="0" y="2" width="56" height="26" rx="5" fill="#003399"/>
-    <text x="28" y="20" fill="#FFFFFF" font-family="Inter" font-weight="900" font-size="16" text-anchor="middle">Rai</text>
+    <text x="28" y="20" fill="#FFFFFF" font-family="Inter, sans-serif" font-weight="900" font-size="16" text-anchor="middle">Rai</text>
   </svg>`
   return { svg, w, h, networkKey: "rai" }
 }
 
-function buildMediasetSvg(pw: number): NetworkSvgResult {
-  const scale = pw / 380
-  const w = Math.round(88 * scale)
-  const h = Math.round(30 * scale)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 88 30">
-    <text x="0" y="22" fill="#FFFFFF" font-family="Inter" font-weight="800" font-size="14">MEDIASET</text>
-  </svg>`
-  return { svg, w, h, networkKey: "mediaset" }
-}
-
 function buildCrunchyrollSvg(pw: number): NetworkSvgResult {
   const scale = pw / 380
-  const w = Math.round(34 * scale)
-  const h = Math.round(34 * scale)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 34 34">
-    <circle cx="17" cy="17" r="14" fill="#F47521"/>
-    <circle cx="21" cy="17" r="8" fill="#FFFFFF"/>
-    <circle cx="23" cy="17" r="5" fill="#F47521"/>
+  const w = Math.round(36 * scale)
+  const h = Math.round(36 * scale)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 36 36">
+    <circle cx="18" cy="18" r="16" fill="#F47521"/>
+    <circle cx="22" cy="18" r="9" fill="#FFFFFF"/>
+    <circle cx="24" cy="18" r="5" fill="#F47521"/>
   </svg>`
   return { svg, w, h, networkKey: "crunchyroll" }
-}
-
-function buildHuluSvg(pw: number): NetworkSvgResult {
-  const scale = pw / 380
-  const w = Math.round(60 * scale)
-  const h = Math.round(30 * scale)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 60 30">
-    <text x="0" y="22" fill="#1CE783" font-family="Inter" font-weight="900" font-size="20" letter-spacing="-1">hulu</text>
-  </svg>`
-  return { svg, w, h, networkKey: "hulu" }
-}
-
-function buildPeacockSvg(pw: number): NetworkSvgResult {
-  const scale = pw / 380
-  const w = Math.round(80 * scale)
-  const h = Math.round(30 * scale)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 80 30">
-    <text x="0" y="22" fill="#FFFFFF" font-family="Inter" font-weight="800" font-size="15">peacock</text>
-  </svg>`
-  return { svg, w, h, networkKey: "peacock" }
 }
 
 export function getNetworkSvgResult(networkName?: string | null, pw: number = 500): NetworkSvgResult | null {
@@ -136,10 +112,7 @@ export function getNetworkSvgResult(networkName?: string | null, pw: number = 50
   if (lower.includes("apple")) return buildAppleTvSvg(pw)
   if (lower.includes("paramount")) return buildParamountSvg(pw)
   if (lower === "rai" || lower.startsWith("rai ")) return buildRaiSvg(pw)
-  if (lower.includes("mediaset") || lower.includes("canale 5") || lower.includes("italia 1")) return buildMediasetSvg(pw)
   if (lower.includes("crunchyroll")) return buildCrunchyrollSvg(pw)
-  if (lower.includes("hulu")) return buildHuluSvg(pw)
-  if (lower.includes("peacock")) return buildPeacockSvg(pw)
   return null
 }
 

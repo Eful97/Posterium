@@ -37,15 +37,21 @@ describe("network-svgs", () => {
     expect(res!.networkKey).toBe("apple")
   })
 
-  it("matches Rai and Mediaset networks", () => {
+  it("matches Rai network", () => {
     const rai = getNetworkSvgResult("Rai 1", 500)
     expect(rai?.networkKey).toBe("rai")
-
-    const mediaset = getNetworkSvgResult("Mediaset", 500)
-    expect(mediaset?.networkKey).toBe("mediaset")
   })
 
-  it("returns null for unknown network", () => {
+  it("returns null for removed/unknown network", () => {
+    const mediaset = getNetworkSvgResult("Mediaset", 500)
+    expect(mediaset).toBeNull()
+
+    const hulu = getNetworkSvgResult("Hulu", 500)
+    expect(hulu).toBeNull()
+
+    const peacock = getNetworkSvgResult("Peacock", 500)
+    expect(peacock).toBeNull()
+
     const res = getNetworkSvgResult("Unknown Indie Studio", 500)
     expect(res).toBeNull()
   })
