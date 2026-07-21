@@ -124,6 +124,7 @@ describe("GET /api/poster/[type]/[id] with saved mappings", () => {
       title: "Test Movie",
       genres: [{ id: 18, name: "Drama" }],
       vote_average: 7.5,
+      vote_count: 100,
       original_language: "en",
       release_date: "2024-01-15",
       production_companies: [],

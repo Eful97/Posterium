@@ -28,7 +28,7 @@ export function EditorPanel({ title, tabs, activeTab, onTabChange, children, cla
         <div className="editor-panel-header">
           {tabs ? (
             <div className="flex gap-1 overflow-x-auto scrollbar-none" role="tablist" onKeyDown={handleKeyDown}>
-              {tabs.map((tab, idx) => (
+              {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   role="tab"

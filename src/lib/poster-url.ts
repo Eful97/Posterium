@@ -1,10 +1,8 @@
 import { getDomain } from "./utils"
-import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
-import { computeExtraFallback } from "./badge-priority"
 import { resolveLabel, isRankKey, t as tFn } from "./i18n"
 import { getPosterPublicBaseUrl } from "./poster-public-url"
-import { getUpcomingReleaseLabel } from "./release-badge"
 import { buildStremioPosterSearchParams } from "./stremio-poster-params"
+import { RENDER_VERSION } from "./render-version"
 import type { SearchResult, TMDBImage } from "./types"
 import type { EnrichedAnimeItem } from "./validation"
 
@@ -74,7 +72,7 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
 
 export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   if (!ps.selected) return ""
-  const params: string[] = []
+  const params: string[] = [`rv=${RENDER_VERSION}`]
   if (ps.tmdbKey) params.push(`api_key=${encodeURIComponent(ps.tmdbKey)}`)
   if (!bp.globalBadges) params.push("badges=0")
   if (!bp.rankingBadges) params.push("ranking=0")
@@ -130,26 +128,8 @@ function computeBadgeParams(ps: PosterState, bp: BadgeParams): string[] {
   const params: string[] = []
   if (bp.customBadge) {
     const selected = ps.selected
-    const now = Date.now()
-    const twoWeeks = 14 * 24 * 60 * 60 * 1000
-    const isNewMovie = selected?.media_type === "movie" && ps.metaInfo.release_date
-      ? (now - new Date(ps.metaInfo.release_date).getTime()) < twoWeeks : false
-    const isNewSeries = selected?.media_type === "tv" && ps.metaInfo.first_air_date
-      ? (now - new Date(ps.metaInfo.first_air_date).getTime()) < twoWeeks : false
-    const award = ps.metaInfo.awards?.length ? getAwardBadgeLabel(ps.metaInfo.awards) : null
-    const nomination = !award && ps.metaInfo.nominations?.length ? getNominationBadgeLabel(ps.metaInfo.nominations) : null
     const animeRank = selected && ps.mdblistAnimeList.length > 0
       ? (ps.mdblistAnimeList.find((a) => a.id === selected.id)?.rank ?? null) : null
-    const studio = ps.metaInfo.studios?.length ? ps.metaInfo.studios[0] : null
-    const tvType = selected?.media_type === "tv" ? ps.metaInfo.type : null
-    const tvStatus = selected?.media_type === "tv" ? ps.metaInfo.status : null
-    const extra = computeExtraFallback({ mediaType: selected?.media_type === "tv" ? "tv" : "movie", voteAverage: ps.metaInfo.voteAverage, tvType, tvStatus }, tFn)
-    const upcomingRelease = getUpcomingReleaseLabel({
-      mediaType: selected?.media_type === "tv" ? "tv" : "movie",
-      releaseDate: ps.metaInfo.release_date,
-      firstAirDate: ps.metaInfo.first_air_date,
-      locale: ps.lang,
-    })
     const rankKey = isRankKey(bp.customBadge)
     if (rankKey === "badge.today" && ps.trendRank) params.push(`rank=${ps.trendRank}&label=${encodeURIComponent(tFn("badge.today"))}`)
     else if (rankKey === "badge.anime" && animeRank) params.push(`rank=${animeRank}&label=${encodeURIComponent(tFn("badge.anime"))}`)

@@ -161,7 +161,7 @@ export async function extractBadgeColor(
 
   // Crop to target region for more focused color extraction
   let posterAnalysisBuf = thumbBuf
-  let posterW = 200
+  const posterW = 200
   let posterH = 300
   if (region === 'bottom') {
     posterH = 120  // bottom 40%

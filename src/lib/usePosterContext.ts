@@ -2,9 +2,8 @@
 
 import { useState, useMemo } from "react"
 import type { TMDBImage } from "./types"
-import { computeLogoOffsetBounds } from "./logo-layout"
 
-export function usePosterState(hasBadges: boolean) {
+export function usePosterState() {
   const [logoScale, setLogoScale] = useState(75)
   const [logoOffsetX, setLogoOffsetX] = useState(0)
   const [logoOffsetY, setLogoOffsetY] = useState(0)

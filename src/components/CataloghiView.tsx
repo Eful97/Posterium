@@ -95,9 +95,14 @@ export function CataloghiView() {
       )}
 
       {p.trending.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 text-zinc-500">
-          <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-accent-orange animate-spin mb-4" />
-          <p className="text-sm text-zinc-400">{p.t("ui.loading")}</p>
+        <div className="flex flex-col items-center justify-center py-24 text-zinc-500 animate-fade-scale-in">
+          <div className="empty-state-illustration mb-5">
+            <svg className="w-10 h-10 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" opacity="0.5"/>
+            </svg>
+          </div>
+          <p className="text-sm text-zinc-400 mb-2">{p.t("ui.loadingCatalogs") || "Caricamento cataloghi..."}</p>
+          <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-accent-orange animate-spin" />
         </div>
       )}
     </div>

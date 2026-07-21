@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useMemo } from "react"
 import { useP } from "@/lib/context"
-import { toSearchResult } from "@/lib/types"
 import { LANG_NAMES, groupBy } from "@/lib/utils"
 import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
@@ -15,7 +14,6 @@ import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { isPrefixedKey, badgeKey } from "@/lib/i18n"
 import { buildPreviewUrl } from "@/lib/poster-url"
 import { SearchBar } from "@/components/SearchBar"
-import { RankRow } from "@/components/RankRow"
 import { PosterCarousel } from "@/components/PosterCarousel"
 import { BadgeStyleSelector } from "@/components/ui"
 import { useToast } from "@/components/Toast"
@@ -264,7 +262,7 @@ export default function EditView() {
                   <div className="mt-2 pt-2 border-t border-zinc-800/60">
                     <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleRankingExtra")}</label>
                     <div className="px-1">
-                      <BadgeStyleSelector value={p.rankingBadgeStyle} options={["default","bar","colored","pill","glass"]} onChange={p.setRankingBadgeStyle} t={p.t} accentColor={p.accentColor} />
+                      <BadgeStyleSelector value={p.rankingBadgeStyle} options={["default","bar","colored","pill","netflix"]} onChange={p.setRankingBadgeStyle} t={p.t} accentColor={p.accentColor} disabled={!p.hasNetflixRank ? ["netflix"] : []} />
                     </div>
                     {p.accentColor === "#555555" && (
                       <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{p.t("ui.noDominantColor") || "No dominant color — using fallback"}</div>
@@ -330,7 +328,7 @@ export default function EditView() {
                 <div className="mt-3 pt-3 border-t border-zinc-800/60">
                   <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleGenreBadge")}</label>
                   <div className="px-1">
-                    <BadgeStyleSelector value={p.badgeStyle} options={["shadow","pill","bar","colored","bordered","glass"]} onChange={p.setBadgeStyle} t={p.t} accentColor={p.accentColor} />
+                    <BadgeStyleSelector value={p.badgeStyle} options={["shadow","pill","bar","colored","bordo","vetro"]} onChange={p.setBadgeStyle} t={p.t} accentColor={p.accentColor} />
                   </div>
                   <div className="flex items-center gap-2 justify-center mt-2 px-1">
                     <input

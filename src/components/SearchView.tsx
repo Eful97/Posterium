@@ -84,19 +84,44 @@ export function SearchView() {
           )}
         </div>
       )}
-      {!tmdbKey && <p className="text-zinc-400 text-sm text-center py-12">{t("ui.noKey")}</p>}
-      {error && <div className="text-center py-12"><p className="text-red-400 text-sm mb-2">{t("ui.searchError")}</p><button onClick={() => { setError(null); doSearch(query) }} className="text-xs text-accent hover:underline">{t("ui.retry")}</button></div>}
-      {results.length === 0 && !searching && !showRecent && !error && query.length >= 2 && tmdbKey && (
+      {!tmdbKey && (
         <div className="text-center py-16 animate-fade-scale-in">
-          <div className="empty-state-illustration">
-            <svg className="w-8 h-8 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.3-4.3"/>
-              <line x1="8" y1="11" x2="14" y2="11"/>
+          <div className="empty-state-illustration mb-4">
+            <svg className="w-10 h-10 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" opacity="0.3"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" opacity="0.5"/>
             </svg>
           </div>
-          <p className="text-zinc-400 text-sm mb-1">{t("ui.noResults")}</p>
-          <p className="text-zinc-500 text-xs">{t("ui.noResultsForQuery") || `"${query}" \u2014 Try a different title?`}</p>
+          <p className="text-zinc-400 text-sm font-medium mb-1.5">{t("ui.noKey")}</p>
+          <p className="text-zinc-500 text-xs max-w-xs mx-auto leading-relaxed">Inserisci una chiave TMDB nelle impostazioni per cercare film e serie TV.</p>
+        </div>
+      )}
+      {error && (
+        <div className="text-center py-12 animate-fade-scale-in">
+          <div className="empty-state-illustration mb-4 border-red-900/40 bg-red-900/15">
+            <svg className="w-10 h-10 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" opacity="0.4"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <p className="text-red-400 text-sm font-medium mb-1">{t("ui.searchError")}</p>
+          <p className="text-zinc-500 text-xs mb-4 max-w-xs mx-auto leading-relaxed">{error}</p>
+          <button onClick={() => { setError(null); doSearch(query) }} className="px-5 py-2 rounded-xl text-xs font-semibold bg-red-900/30 border border-red-800/40 text-red-300 hover:bg-red-900/50 hover:text-red-200 active:scale-95 transition-all duration-200 press-scale">{t("ui.retry")}</button>
+        </div>
+      )}
+      {results.length === 0 && !searching && !showRecent && !error && query.length >= 2 && tmdbKey && (
+        <div className="text-center py-16 animate-fade-scale-in">
+          <div className="empty-state-illustration mb-4">
+            <svg className="w-10 h-10 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" opacity="0.4"/>
+              <path d="m21 21-4.3-4.3" opacity="0.4"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+              <line x1="11" y1="8" x2="11" y2="14"/>
+            </svg>
+          </div>
+          <p className="text-zinc-400 text-sm mb-2">{t("ui.noResults")}</p>
+          <p className="text-zinc-500 text-xs max-w-xs mx-auto leading-relaxed">{t("ui.noResultsForQuery") || `Nessun risultato per "${query}". Prova con un titolo diverso o verifica l'ortografia.`}</p>
         </div>
       )}
     </div>

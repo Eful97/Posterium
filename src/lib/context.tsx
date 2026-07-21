@@ -18,11 +18,13 @@ import { usePosterSave } from "./usePosterSave"
 import { computeLogoOffsetBounds } from "./logo-layout"
 import { useOutsideDismiss } from "./useOutsideDismiss"
 
+export type ViewType = "search" | "myposters" | "edit" | "cataloghi"
+
 export interface PosteriumCtx {
   selected: SearchResult | null
   setSelected: React.Dispatch<React.SetStateAction<SearchResult | null>>
-  view: string
-  setView: React.Dispatch<React.SetStateAction<string>>
+  view: ViewType
+  setView: React.Dispatch<React.SetStateAction<ViewType>>
   posters: TMDBImage[]
   loadingImages: boolean
   previewPoster: TMDBImage | null
@@ -177,6 +179,7 @@ topEdgeColor: string
   setTheme: React.Dispatch<React.SetStateAction<"dark" | "light">>
   serviceErrors: Record<string, boolean>
   setServiceErrors: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  hasNetflixRank: boolean
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
@@ -269,6 +272,7 @@ export function usePosterium(): PosteriumCtx {
   const setDefaultLogoFitEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultLogoFitEnabled) : v; defaults.update({ defaultLogoFitEnabled: next }) }
 
   const hasBadges = globalBadges && metaInfo.genres.length > 0 && metaInfo.voteAverage > 0
+  const hasNetflixRank = !!(trendRank || (navigation.selected && trending.mdblistAnimeList.some((a: EnrichedAnimeItem) => a.id === navigation.selected!.id)))
 
   // Appearance state
 
@@ -435,7 +439,7 @@ export function usePosterium(): PosteriumCtx {
         ctx.imageSmoothingEnabled = false
         ctx.drawImage(img, 0, 0, w, h)
         const pixels = ctx.getImageData(0, 0, w, h).data
-        let result = findAccentColor(pixels, w, h, genreName || '')
+        const result = findAccentColor(pixels, w, h, genreName || '')
         const edge = topEdgeAverage(pixels, w, h)
 
         setRootColors(result.r, result.g, result.b, edge.r, edge.g, edge.b)
@@ -512,6 +516,45 @@ export function usePosterium(): PosteriumCtx {
     setOpenSections({})
     navigation.setPreviewId(`${itemType}:${itemId}`)
     navigation.setView("edit")
+
+    // Imposta stili subito (sync) prima delle chiamate async
+    // per evitare race condition: se l'utente cambia opzioni mentre
+    // i dati sono in caricamento, la vecchia fetch non deve sovrascrivere
+    const existing = mappingsMap.get(`${itemType}:${itemId}`)
+    if (existing) {
+      setBadgeStyle(existing.badgeStyle ?? defaultBadgeStyle)
+      setRankingBadgeStyle(existing.rankingBadgeStyle ?? defaultRankingBadgeStyle)
+      setGlobalBadges(existing.showBadges ?? true)
+      setRankingBadges(existing.rankingBadges ?? true)
+      setGradientHeight(existing.gradientHeight ?? defaultGradientHeight)
+      setBlurIntensity(existing.blurIntensity ?? defaultBlurIntensity)
+      setBlurFade(existing.blurFade ?? defaultBlurFade)
+      setBlurDarkness(existing.blurDarkness ?? defaultBlurDarkness)
+      setBlurEnabled(existing.blurEnabled ?? defaultBlurEnabled)
+      setCustomBadge(existing.customBadge ?? null)
+      setRotationPosters(existing.cleanPosters || [])
+      setAutoRotateClean(existing.autoRotateClean ?? false)
+      setExcludedPosters(existing.excludedPosters || [])
+      setLogoDisabled(existing.logoDisabled ?? false)
+      setLogoOffsetX(existing.logoOffsetX ?? 0)
+      setLogoOffsetY(existing.logoOffsetY ?? 0)
+      setBackdropScale(existing.backdropScale ?? 100)
+      setBackdropOffsetX(existing.backdropOffsetX ?? 0)
+      setBackdropOffsetY(existing.backdropOffsetY ?? 0)
+    } else {
+      setCustomBadge(null)
+      setRotationPosters([])
+      setAutoRotateClean(false)
+      setExcludedPosters([])
+      setLogoDisabled(false)
+      setLogoOffsetX(0)
+      setLogoOffsetY(0)
+      setSelectedBackdrop(null)
+      setBackdropScale(100)
+      setBackdropOffsetX(0)
+      setBackdropOffsetY(0)
+    }
+
     try {
       const mdblistParam = mdblistApiKey ? "&mdblist_key=" + encodeURIComponent(mdblistApiKey) : ""
       const detailsUrl = `/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistParam}`
@@ -577,43 +620,13 @@ export function usePosterium(): PosteriumCtx {
           }
         }
         setLogoScale(existing.logoScale ?? 75)
-        setLogoOffsetX(existing.logoOffsetX ?? 0)
-        setLogoOffsetY(existing.logoOffsetY ?? 0)
-        if (existing.backdropPath) {
-          const foundBackdrop = (data.backdrops || []).find((b: TMDBImage) => b.file_path === existing.backdropPath)
+        if (existing.backdropPath && data.backdrops) {
+          const foundBackdrop = data.backdrops.find((b: TMDBImage) => b.file_path === existing.backdropPath)
           setSelectedBackdrop(foundBackdrop || { file_path: existing.backdropPath, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
-          setBackdropScale(existing.backdropScale ?? 100)
-          setBackdropOffsetX(existing.backdropOffsetX ?? 0)
-          setBackdropOffsetY(existing.backdropOffsetY ?? 0)
         }
-        setCustomBadge(existing.customBadge ?? null)
         setTrendRank(rankData.rank ?? existing.trendRank ?? null)
-        setGlobalBadges(existing.showBadges ?? true)
-        setRankingBadges(existing.rankingBadges ?? true)
-        setGradientHeight(existing.gradientHeight ?? defaultGradientHeight)
-        setBlurIntensity(existing.blurIntensity ?? defaultBlurIntensity)
-        setBlurFade(existing.blurFade ?? defaultBlurFade)
-        setBlurDarkness(existing.blurDarkness ?? defaultBlurDarkness)
-        setBlurEnabled(existing.blurEnabled ?? defaultBlurEnabled)
-        setBadgeStyle(existing.badgeStyle ?? defaultBadgeStyle)
-        setRankingBadgeStyle(existing.rankingBadgeStyle ?? defaultRankingBadgeStyle)
-        setRotationPosters(existing.cleanPosters || [])
-        setAutoRotateClean(existing.autoRotateClean ?? false)
-        setExcludedPosters(existing.excludedPosters || [])
-        setLogoDisabled(existing.logoDisabled ?? false)
       } else {
-        setCustomBadge(null)
-        setRotationPosters([])
-        setAutoRotateClean(false)
-        setExcludedPosters([])
         setLogoDisabled(false)
-        setLogoScale(75)
-        setLogoOffsetX(0)
-        setLogoOffsetY(0)
-        setSelectedBackdrop(null)
-        setBackdropScale(100)
-        setBackdropOffsetX(0)
-        setBackdropOffsetY(0)
         const clean = data.posters?.find((p: TMDBImage) => p.iso_639_1 === null)
         const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
         const firstPoster = data.posters?.[0]
@@ -702,7 +715,7 @@ export function usePosterium(): PosteriumCtx {
 
   return useMemo(() => ({
     selected: navigation.selected, setSelected: navigation.setSelected,
-    view: navigation.view, setView: navigation.setView as React.Dispatch<React.SetStateAction<string>>,
+    view: navigation.view, setView: navigation.setView as React.Dispatch<React.SetStateAction<ViewType>>,
     posters: navigation.posters, loadingImages,
     previewPoster: navigation.previewPoster, setPreviewPoster: navigation.setPreviewPoster,
     selectedLogo: navigation.selectedLogo, setSelectedLogo: navigation.setSelectedLogo,
@@ -771,6 +784,7 @@ export function usePosterium(): PosteriumCtx {
     autoSaveExcludedPosters,
     theme, setTheme,
     serviceErrors, setServiceErrors,
+    hasNetflixRank,
     t,
   // eslint-disable-next-line react-hooks/exhaustive-deps -- context value deps intentionally stable to prevent re-render cascades
   }), [
@@ -791,6 +805,6 @@ export function usePosterium(): PosteriumCtx {
     topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, logoDisabled, setLogoDisabled, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
-    theme, serviceErrors,
+    theme, serviceErrors, hasNetflixRank,
   ])
 }

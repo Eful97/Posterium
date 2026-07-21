@@ -57,13 +57,6 @@ function badgeCacheKey(type: string, ...parts: (string | number | boolean | unde
   return `badge:${type}:${parts.map(p => typeof p === "number" ? Math.round(p * 10) / 10 : (p ?? "x")).join(":")}`
 }
 
-function queryNumber(searchParams: URLSearchParams, key: string): number | null {
-  const value = searchParams.get(key)
-  if (!value) return null
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
 const badgeInflight = new Map<string, Promise<unknown>>()
 
 type RouteParams = { type: string; id: string }
@@ -264,6 +257,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                 return Buffer.from(await res.arrayBuffer())
               },
               hasBadges: true,
+              renderVersion: RENDER_VERSION,
             })
             fitMs = Date.now() - fitStart
           } catch (e) {
@@ -408,7 +402,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     // 8. Blur + badge color extraction + logo resize (parallel)
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
-    const qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined) || sd.rankingBadgeStyle || "default"
+    let qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined) || sd.rankingBadgeStyle || "default"
+    const qRankParam = req.nextUrl.searchParams.get("rank")
+    if (qRankingBadgeStyle === "netflix" && !animeRankResult && !rankingResult && !mapping?.trendRank && !qRankParam) {
+      qRankingBadgeStyle = "default"
+    }
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const qBlur = req.nextUrl.searchParams.get("blur")
     const qBlurFade = req.nextUrl.searchParams.get("bf")
@@ -626,8 +624,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
     if (safeRankBadgeResult) {
       const isBar = qRankingBadgeStyle === "bar"
-      const rankLeft = isBar ? 0 : Math.round((STD_W - safeRankBadgeResult.w) / 2)
-      composites.push({ input: safeRankBadgeResult.png, top: 0, left: rankLeft })
+      const isNetflixRank = qRankingBadgeStyle === "netflix"
+      const rankLeft = isBar ? 0 : isNetflixRank ? STD_W - safeRankBadgeResult.w : Math.round((STD_W - safeRankBadgeResult.w) / 2)
+      const rankTop = 0
+      composites.push({ input: safeRankBadgeResult.png, top: rankTop, left: rankLeft })
     }
 
     // 10. Final composite: single sharp call for all layers

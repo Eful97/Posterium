@@ -87,18 +87,6 @@ function fastHue(r: number, g: number, b: number, d: number, max: number): numbe
   return h < 0 ? h + 360 : h
 }
 
-/** Euristico colore pelle: R dominante e caldo, hue 0-50°, saturazione/luminosità medio-bassa */
-function isSkinTone(r255: number, g255: number, b255: number, s: number, l: number, hue?: number): boolean {
-  if (s < 0.06 || s > 0.60) return false
-  if (l < 0.20 || l > 0.88) return false
-  // Hue nella gamma rossi/arancio/gialli
-  if (hue !== undefined && (hue < 0 || hue > 55)) return false
-  // Test rossastro veloce se hue non disponibile
-  if (hue === undefined && (r255 <= g255 || r255 <= b255)) return false
-  if (r255 - b255 < 18) return false
-  return true
-}
-
 /** Convert HSL to RGB (H: 0-360, S: 0-1, L: 0-1) */
 function hslToRgb(H: number, S: number, L: number): AccentResult {
   const c = (1 - Math.abs(2 * L - 1)) * S

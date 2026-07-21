@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { http } from "./http"
 import type { SearchResult } from "./types"
 import { useToast } from "@/components/Toast"
@@ -23,6 +23,8 @@ function writeRecentSearches(searches: string[]): void {
 
 export function useSearch(tmdbKey: string, lang: string) {
   const toast = useToast()
+  const toastRef = useRef(toast)
+  toastRef.current = toast
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
@@ -57,7 +59,7 @@ export function useSearch(tmdbKey: string, lang: string) {
       }
     } catch (e) {
       console.error("[posterium] Search failed:", e)
-      toast.error("Search failed")
+      toastRef.current.error("Search failed")
       setError("Search failed. Please try again.")
       if (page === 1) setResults([])
     } finally {

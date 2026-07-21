@@ -132,6 +132,40 @@ export function buildGenreTextSvg(genreName: string, voteStr: string, yearStr: s
   return { svg, w: renderW, h: renderH }
 }
 
+export function buildGenreBorderedSvg(genreName: string, voteStr: string, yearStr: string, fs: number, textColor: string, topLight: boolean, textOffsetX = 0) {
+  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr)
+  const safePad = genreBadgeSafePad(fs)
+  const borderPad = Math.max(Math.round(fs * 0.4), 6)
+  const borderW = 2
+  const renderW = dims.textContentW + borderPad * 2 + safePad * 2
+  const rectH = dims.svgH
+  const renderH = rectH
+  const r = Math.round(fs * 0.55)
+  const borderColor = topLight ? "rgba(0,0,0,0.50)" : "rgba(255,255,255,0.60)"
+  const bgFill = topLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)"
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: rectH / 2 })
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}"><rect x="${borderW / 2}" y="${borderW / 2}" width="${renderW - borderW}" height="${rectH - borderW}" rx="${r}" fill="${bgFill}" stroke="${borderColor}" stroke-width="${borderW}"/><g fill="${textColor}">${textParts}</g></svg>`
+  return { svg, w: renderW, h: renderH }
+}
+
+export function buildGenreGlassSvg(genreName: string, voteStr: string, yearStr: string, fs: number, textColor: string, topLight: boolean, textOffsetX = 0) {
+  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr)
+  const safePad = genreBadgeSafePad(fs)
+  const glassPad = Math.max(Math.round(fs * 0.45), 8)
+  const renderW = dims.textContentW + glassPad * 2 + safePad * 2
+  const rectH = dims.svgH
+  const renderH = rectH + Math.round(fs * 0.2)
+  const r = Math.round(fs * 0.6)
+  // iOS liquid glass — multi-stop gradient: bright top edge → frosted body → bottom depth
+  const stops = topLight
+    ? `<stop offset="0%" stop-color="rgba(255,255,255,0.92)"/><stop offset="12%" stop-color="rgba(255,255,255,0.55)"/><stop offset="50%" stop-color="rgba(255,255,255,0.32)"/><stop offset="100%" stop-color="rgba(0,0,0,0.08)"/>`
+    : `<stop offset="0%" stop-color="rgba(255,255,255,0.45)"/><stop offset="10%" stop-color="rgba(255,255,255,0.14)"/><stop offset="50%" stop-color="rgba(255,255,255,0.07)"/><stop offset="100%" stop-color="rgba(0,0,0,0.35)"/>`
+  const borderColor = topLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.22)"
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: rectH / 2 })
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient></defs><rect width="${renderW}" height="${rectH}" rx="${r}" fill="url(#gg)" stroke="${borderColor}" stroke-width="1.5"/><g fill="${textColor}">${textParts}</g></svg>`
+  return { svg, w: renderW, h: renderH }
+}
+
 export function buildRankingBarSvg(fullText: string, pw: number, fs: number, textColor: string, bg: string) {
   const pt = Math.round(fs * 0.35)
   const pb = pt
@@ -169,6 +203,60 @@ export function buildRankingDefaultSvg(fullText: string, fs: number, textColor: 
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}<path d="${pathD}" fill="${bg}" filter="url(#ds)"/>${textEl}</svg>`, w: renderW, h: renderH }
 }
 
+export function buildRankingPillSvg(fullText: string, fs: number, textColor: string, bg: string) {
+  const px = Math.round(fs * 1.0)
+  const pt = Math.round(fs * 0.4)
+  const pb = pt
+  const textW = Math.max(estimateTextWidth(fullText, fs), fs)
+  const totalW = textW + px * 2
+  const svgH = fs + pt + pb
+  const r = svgH / 2
+  const renderW = totalW
+  const ox = 0
+  const oy = 0
+  const textEl = `<text x="${renderW / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(fullText)}</text>`
+  const bgEl = `<rect x="${ox}" y="${oy}" width="${totalW}" height="${svgH}" rx="${r}" fill="${bg}"/>`
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${svgH}">${bgEl}${textEl}</svg>`, w: renderW, h: svgH }
+}
+
+export function buildRankingGlassSvg(fullText: string, fs: number, textColor: string, _bg: string, topLight: boolean) {
+  const px = Math.round(fs * 1.0)
+  const pt = Math.round(fs * 0.4)
+  const pb = pt
+  const textW = Math.max(estimateTextWidth(fullText, fs), fs)
+  const totalW = textW + px * 2
+  const rectH = fs + pt + pb
+  const r = Math.round(fs * 0.6)
+  const renderW = totalW
+  const renderH = rectH + Math.round(fs * 0.2)
+  // iOS liquid glass — multi-stop gradient
+  const stops = topLight
+    ? `<stop offset="0%" stop-color="rgba(255,255,255,0.92)"/><stop offset="12%" stop-color="rgba(255,255,255,0.55)"/><stop offset="50%" stop-color="rgba(255,255,255,0.32)"/><stop offset="100%" stop-color="rgba(0,0,0,0.08)"/>`
+    : `<stop offset="0%" stop-color="rgba(255,255,255,0.45)"/><stop offset="10%" stop-color="rgba(255,255,255,0.14)"/><stop offset="50%" stop-color="rgba(255,255,255,0.07)"/><stop offset="100%" stop-color="rgba(0,0,0,0.35)"/>`
+  const borderColor = topLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.22)"
+  const textEl = `<text x="${renderW / 2}" y="${rectH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(fullText)}</text>`
+  const defs = `<defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient></defs>`
+  const bgEl = `<rect x="0" y="0" width="${totalW}" height="${rectH}" rx="${r}" fill="url(#rg)" stroke="${borderColor}" stroke-width="1.5"/>`
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}${bgEl}${textEl}</svg>`, w: renderW, h: renderH }
+}
+
+export function buildRankingBorderedSvg(fullText: string, fs: number, textColor: string, topLight: boolean) {
+  const px = Math.round(fs * 1.0)
+  const pt = Math.round(fs * 0.45)
+  const pb = pt
+  const textW = Math.max(estimateTextWidth(fullText, fs), fs)
+  const totalW = textW + px * 2
+  const svgH = fs + pt + pb
+  const r = Math.round(fs * 0.55)
+  const renderW = totalW
+  const borderW = 2
+  const borderColor = topLight ? "rgba(0,0,0,0.50)" : "rgba(255,255,255,0.60)"
+  const bgFill = topLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)"
+  const textEl = `<text x="${renderW / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(fullText)}</text>`
+  const bgEl = `<rect x="${borderW / 2}" y="${borderW / 2}" width="${renderW - borderW}" height="${svgH - borderW}" rx="${r}" fill="${bgFill}" stroke="${borderColor}" stroke-width="${borderW}"/>`
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${svgH}">${bgEl}${textEl}</svg>`, w: renderW, h: svgH }
+}
+
 export function buildExtraBarSvg(label: string, pw: number, fs: number, textColor: string, bg: string) {
   const pt = Math.round(fs * 0.35)
   const pb = pt
@@ -204,4 +292,52 @@ export function buildExtraDefaultSvg(label: string, fs: number, textColor: strin
   const defs = `<defs><filter id="ds" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="${shadowOff}" stdDeviation="${shadowBlur / 2}" flood-color="rgba(0,0,0,0.3)"/></filter></defs>`
   const textEl = `<text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(label)}</text>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}<path d="${pathD}" fill="${bg}" filter="url(#ds)"/>${textEl}</svg>`, w: renderW, h: renderH }
+}
+
+export function buildExtraPillSvg(label: string, fs: number, textColor: string, bg: string) {
+  const px = Math.round(fs * 1.0)
+  const pt = Math.round(fs * 0.4)
+  const pb = pt
+  const textW = Math.max(estimateTextWidth(label, fs), fs)
+  const totalW = textW + px * 2
+  const svgH = fs + pt + pb
+  const r = svgH / 2
+  const renderW = totalW
+  const textEl = `<text x="${renderW / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(label)}</text>`
+  const bgEl = `<rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" fill="${bg}"/>`
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${svgH}">${bgEl}${textEl}</svg>`, w: renderW, h: svgH }
+}
+
+export function buildExtraGlassSvg(label: string, fs: number, textColor: string, _bg: string, topLight: boolean) {
+  const px = Math.round(fs * 1.0)
+  const pt = Math.round(fs * 0.4)
+  const pb = pt
+  const textW = Math.max(estimateTextWidth(label, fs), fs)
+  const totalW = textW + px * 2
+  const rectH = fs + pt + pb
+  const r = Math.round(fs * 0.6)
+  const renderW = totalW
+  const renderH = rectH + Math.round(fs * 0.2)
+  // iOS liquid glass — multi-stop gradient
+  const stops = topLight
+    ? `<stop offset="0%" stop-color="rgba(255,255,255,0.92)"/><stop offset="12%" stop-color="rgba(255,255,255,0.55)"/><stop offset="50%" stop-color="rgba(255,255,255,0.32)"/><stop offset="100%" stop-color="rgba(0,0,0,0.08)"/>`
+    : `<stop offset="0%" stop-color="rgba(255,255,255,0.45)"/><stop offset="10%" stop-color="rgba(255,255,255,0.14)"/><stop offset="50%" stop-color="rgba(255,255,255,0.07)"/><stop offset="100%" stop-color="rgba(0,0,0,0.35)"/>`
+  const borderColor = topLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.22)"
+  const textEl = `<text x="${renderW / 2}" y="${rectH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(label)}</text>`
+  const defs = `<defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient></defs>`
+  const bgEl = `<rect x="0" y="0" width="${totalW}" height="${rectH}" rx="${r}" fill="url(#eg)" stroke="${borderColor}" stroke-width="1.5"/>`
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}${bgEl}${textEl}</svg>`, w: renderW, h: renderH }
+}
+
+export function buildNetflixRankSvg(rank: number, pw: number) {
+  const fs = Math.round(Math.max(23 * pw / 380, 14))
+  const w = Math.round(fs * 2.4)
+  const h = Math.round(fs * 2.0)
+  const cut = Math.round(fs * 0.35)
+  const topFs = Math.round(fs * 0.5)
+  const rankFs = Math.round(fs * 1.0)
+  const pathD = `M ${cut},0 L ${w},0 L ${w},${h} L 0,${h} L 0,${cut} Z`
+  const textEl = `<text x="${w / 2}" y="${Math.round(h * 0.38)}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${topFs}" fill="#ffffff">TOP</text><text x="${w / 2}" y="${Math.round(h * 0.72)}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="900" font-size="${rankFs}" fill="#ffffff">${rank}</text>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><defs><clipPath id="nf"><path d="${pathD}"/></clipPath></defs><g clip-path="url(#nf)"><rect width="${w}" height="${h}" rx="2" fill="#E50914"/></g>${textEl}</svg>`
+  return { svg, w, h }
 }

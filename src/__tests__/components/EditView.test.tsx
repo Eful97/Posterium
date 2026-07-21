@@ -11,17 +11,7 @@ const mockSelected: SearchResult = {
   title: "Fight Club",
   name: "",
   poster_path: "/fc.jpg",
-  genre_ids: [18],
-  vote_average: 8.4,
-  overview: "",
   release_date: "1999-10-15",
-  original_language: "en",
-  adult: false,
-  backdrop_path: null,
-  original_title: "",
-  popularity: 0,
-  video: false,
-  vote_count: 0,
 }
 
 describe("EditView", () => {
