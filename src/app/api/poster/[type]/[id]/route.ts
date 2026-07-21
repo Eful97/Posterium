@@ -412,7 +412,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     // 8. Blur + badge color extraction + logo resize (parallel)
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
-    let qRankingBadgeStyle = req.nextUrl.searchParams.get("rs") || (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined) || sd.rankingBadgeStyle || "default"
+    const rawRs = req.nextUrl.searchParams.get("rs")
+    let qRankingBadgeStyle = (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined)
+      || (rawRs && rawRs !== "default" ? rawRs : undefined)
+      || sd.rankingBadgeStyle
+      || "default"
     const qRankParam = req.nextUrl.searchParams.get("rank")
     // Stile "netflix" (badge a destra) ha senso solo se c'è un rank numerico — altrimenti badge
     // come "Candidato Oscar" verrebbero spostati a destra senza motivo.

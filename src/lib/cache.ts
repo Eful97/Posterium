@@ -114,6 +114,8 @@ export function cacheInvalidate(tag: string): void {
 export function cacheInvalidatePosterData(): void {
   cacheInvalidate("poster")
   cacheInvalidate("catalog")
+  cacheInvalidate("stremio")
+  cacheInvalidate("badge")
 }
 
 export function cacheStatus(): CacheStatus {
