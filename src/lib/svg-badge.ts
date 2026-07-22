@@ -220,21 +220,21 @@ export async function renderGenreBadge(
 
 function buildNetflixRankBadgeSVG(rank: number, pw: number) {
   const fs = Math.round(Math.max(23 * pw / 380, 14))
-  const w = Math.round(fs * 3.4)
-  const h = Math.round(w * 0.90)
-  const slant = Math.round(w * 0.10)
-  const topFs = Math.round(w * 0.24)
-  const rankFs = Math.round(w * 0.50)
-  const padX = Math.round(fs * 0.4)
+  const w = Math.round(fs * 2.6)
+  const h = Math.round(w * 1.35)
+  const slant = Math.round(w * 0.12)
+  const topFs = Math.round(w * 0.28)
+  const rankFs = Math.round(w * 0.54)
+  const padRight = Math.round(fs * 0.4)
   const padBottom = Math.round(fs * 0.4)
-  const totalW = w + padX * 2
+  const totalW = w + padRight
   const totalH = h + padBottom
 
-  const ribbonMidX = padX + w / 2
+  const ribbonMidX = w / 2
   const ribbonVNotchY = Math.round(h * 0.88)
 
-  // Nastro Netflix top-center premium AAA: gradiente satinato, ombra 3D doppio livello, highlight e text shadow
-  const pathD = `M ${padX} 0 L ${padX + w} 0 L ${padX + w - slant} ${h} L ${ribbonMidX} ${ribbonVNotchY} L ${padX + slant} ${h} Z`
+  // Nastro Netflix top-left: ancorato al bordo sinistro del poster
+  const pathD = `M 0 0 L ${w} 0 L ${w - slant} ${h} L ${ribbonMidX} ${ribbonVNotchY} L 0 ${h} Z`
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
     <defs>
       <linearGradient id="netflixGrad" x1="0" y1="0" x2="0" y2="1">
@@ -242,16 +242,15 @@ function buildNetflixRankBadgeSVG(rank: number, pw: number) {
         <stop offset="50%" stop-color="#E50914"/>
         <stop offset="100%" stop-color="#B20610"/>
       </linearGradient>
-      <filter id="shadow3D" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.7"/>
-        <feDropShadow dx="0" dy="5" stdDeviation="5.5" flood-color="#000000" flood-opacity="0.45"/>
+      <filter id="shadow3D" x="-20%" y="-20%" width="180%" height="180%">
+        <feDropShadow dx="3" dy="3" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.65"/>
       </filter>
       <filter id="textShadow" x="-30%" y="-30%" width="160%" height="160%">
         <feDropShadow dx="0" dy="1.5" stdDeviation="1" flood-color="#000000" flood-opacity="0.65"/>
       </filter>
     </defs>
     <path d="${pathD}" fill="url(#netflixGrad)" filter="url(#shadow3D)"/>
-    <line x1="${padX}" y1="1" x2="${padX + w}" y2="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+    <line x1="0" y1="1" x2="${w}" y2="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
     <text x="${ribbonMidX}" y="${Math.round(h * 0.28)}" fill="#ffffff" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
     <text x="${ribbonMidX}" y="${Math.round(h * 0.60)}" fill="#ffffff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
   </svg>`
