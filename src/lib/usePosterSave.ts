@@ -16,7 +16,7 @@ interface PosterSaveDeps {
   setPreviewPoster: (poster: TMDBImage | null) => void
   setPreviewId: (id: string | null) => void
   posters: TMDBImage[]
-  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; director?: string | null; keywords?: string[]; imdb_id?: string | null }
+  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; awards?: string[]; nominations?: string[]; studios?: string[]; director?: string | null; keywords?: string[]; imdb_id?: string | null }
   /** IMDb Top 250 membership for the selected content. */
   imdbTop250?: boolean
   trendRank: number | null
@@ -164,7 +164,6 @@ export function usePosterSave(deps: PosterSaveDeps) {
       animeRank: animeRankData?.rank ?? null,
       awards: metaInfo.awards ?? [],
       nominations: metaInfo.nominations ?? [],
-      franchise: metaInfo.franchise ?? null,
       studios: metaInfo.studios ?? [],
       director: metaInfo.director ?? null,
       tvType: selected.media_type === "tv" ? metaInfo.type : null,

@@ -11,9 +11,6 @@ type T = (key: string, params?: Record<string, string | number>) => string
 
 const _idT: T = (k) => k
 
-function franchiseKey(name: string): string {
-  return `franchise.${name.toLowerCase().replace(/[\s-]+/g, '_')}`
-}
 
 export function computeBadge(params: {
   upcomingRelease: string | null
@@ -21,8 +18,7 @@ export function computeBadge(params: {
   isNewSeries: boolean
   animeRank: number | null
   trendRank: number | null
-  award: string | null
-  franchise: string | null
+  award: string | null
   nomination: string | null
   studio: string | null
   director: string | null
@@ -70,7 +66,6 @@ export function getAllBadgeOptions(params: {
   animeRank: number | null
   trendRank: number | null
   award: string | null
-  franchise: string | null
   nomination: string | null
   studio: string | null
   director: string | null

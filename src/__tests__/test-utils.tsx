@@ -102,7 +102,7 @@ export const MOCK_CTX: PosteriumCtx = {
   setDefaultNetworkLogo: stubFn,
   trendRank: null,
   mdblistMatch: null,
-  metaInfo: { genres: [], voteAverage: 0, awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null, imdb_id: null }, imdbTop250: false,
+  metaInfo: { genres: [], voteAverage: 0, awards: [], nominations: [], studios: [], director: null, imdb_id: null }, imdbTop250: false,
   previewId: null,
   setPreviewId: stubFn,
   saveConfig: asyncStubFn,

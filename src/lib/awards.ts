@@ -19,8 +19,6 @@ export interface WikidataResult {
   awards: string[]
   nominations: string[]
   studios: string[]
-  franchise: string | null
-  basedOn: string | null
   director: string | null
 }
 
@@ -156,12 +154,6 @@ export function matchTMDBStudios(names: string[]): string[] {
   return [...found]
 }
 
-const FRANCHISES: string[] = []
-
-function matchFranchise(_labels: string[]): string | null {
-  return null
-}
-
 function matchStudios(labels: string[]): string[] {
   const unique = [...new Set(labels.map((l) => l.trim()))].filter(Boolean)
   const found = new Set<string>()
@@ -210,18 +202,6 @@ function matchDirector(name: string | null, t?: (key: string, params?: Record<st
   return null
 }
 
-function categorizeBasedOn(label: string, t?: (key: string, params?: Record<string, string | number>) => string): string | null {
-  const lower = label.toLowerCase()
-  if (/novel|book|romanzo|novella/.test(lower)) return t ? t("badge.basedOn.novel") : "Dal romanzo"
-  if (/comic|graphic novel|manga|fumetto|graphic/.test(lower)) return t ? t("badge.basedOn.comic") : "Dal fumetto"
-  if (/video game|videogame|videogioco/.test(lower)) return t ? t("badge.basedOn.videogame") : "Dal videogioco"
-  if (/true story|memoir|biography|autobiography|based on actual events|real life/.test(lower)) return t ? t("badge.basedOn.trueStory") : "Tratto da una storia vera"
-  if (/short story|tale|fairy tale|fiaba|folklore|legend|myth/.test(lower)) return t ? t("badge.basedOn.story") : "Da un racconto"
-  if (/play|theatre|theater|musical|opera/.test(lower)) return t ? t("badge.basedOn.theater") : "Dal teatro"
-  if (/poem|poetry|poesia/.test(lower)) return t ? t("badge.basedOn.poetry") : "Dalla poesia"
-  return t ? t("badge.basedOn.fallback") : "Tratto da"
-}
-
 const WIKIDATA_CACHE_TTL = 24 * 60 * 60 * 1000
 
 export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv", t?: (key: string, params?: Record<string, string | number>) => string): Promise<WikidataResult> {
@@ -233,13 +213,11 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
 
   const tmdbProp = mediaType === "movie" ? "P4947" : "P4983"
   const networkQuery = mediaType === "tv" ? `OPTIONAL { ?item wdt:P449 ?network . ?network rdfs:label ?networkLabel . FILTER(LANG(?networkLabel) = "en") }` : ""
-  const query = `SELECT ?awardLabel ?nominationLabel ?networkLabel ?franchiseLabel ?basedOnLabel ?directorLabel WHERE {
+  const query = `SELECT ?awardLabel ?nominationLabel ?networkLabel ?directorLabel WHERE {
     ?item wdt:${tmdbProp} "${tmdbId}" .
     OPTIONAL { ?item wdt:P166 ?award . ?award rdfs:label ?awardLabel . FILTER(LANG(?awardLabel) = "en") }
     OPTIONAL { ?item wdt:P1411 ?nomination . ?nomination rdfs:label ?nominationLabel . FILTER(LANG(?nominationLabel) = "en") }
     ${networkQuery}
-    OPTIONAL { ?item wdt:P179 ?franchise . ?franchise rdfs:label ?franchiseLabel . FILTER(LANG(?franchiseLabel) = "en") }
-    OPTIONAL { ?item wdt:P144 ?basedOn . ?basedOn rdfs:label ?basedOnLabel . FILTER(LANG(?basedOnLabel) = "en") }
     OPTIONAL { ?item wdt:P57 ?director . ?director rdfs:label ?directorLabel . FILTER(LANG(?directorLabel) = "en") }
   }`
 
@@ -249,22 +227,14 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
     const awardLabels = new Set<string>()
     const nominationLabels = new Set<string>()
     const networkLabels = new Set<string>()
-    const franchiseLabels = new Set<string>()
-    const basedOnLabels = new Set<string>()
     const directorLabels = new Set<string>()
 
     for (const b of bindings) {
       if (b.awardLabel?.value) awardLabels.add(b.awardLabel.value)
       if (b.nominationLabel?.value) nominationLabels.add(b.nominationLabel.value)
       if (b.networkLabel?.value) networkLabels.add(b.networkLabel.value)
-      if (b.franchiseLabel?.value) franchiseLabels.add(b.franchiseLabel.value)
-      if (b.basedOnLabel?.value) basedOnLabels.add(b.basedOnLabel.value)
       if (b.directorLabel?.value) directorLabels.add(b.directorLabel.value)
     }
-
-    const franchise = matchFranchise([...franchiseLabels])
-    const rawBasedOn = [...basedOnLabels][0]
-    const basedOn = rawBasedOn ? categorizeBasedOn(rawBasedOn, t) : null
 
     const director = [...directorLabels][0] || null
     const directorBadge = matchDirector(director, t)
@@ -273,8 +243,6 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
       awards: matchRules([...awardLabels]),
       nominations: matchRules([...nominationLabels]),
       studios: matchStudios([...networkLabels]),
-      franchise,
-      basedOn,
       director: directorBadge,
     }
 
@@ -282,7 +250,7 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
     cacheSet(cacheKey, result, ["wikidata"], WIKIDATA_CACHE_TTL)
     return result
   } catch {
-    return { awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }
+    return { awards: [], nominations: [], studios: [], director: null }
   }
 }
 

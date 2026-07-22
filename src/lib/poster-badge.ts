@@ -19,7 +19,6 @@ export interface BadgeInput {
   animeRank: number | null
   awards: string[]
   nominations: string[]
-  franchise: string | null
   studios: string[]
   director: string | null
   tvType: string | null | undefined
@@ -100,7 +99,6 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
     animeRank: input.animeRank,
     trendRank: input.trendRank,
     award: awardBadge,
-    franchise: input.franchise,
     nomination,
     studio,
     director: input.director,

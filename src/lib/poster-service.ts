@@ -209,7 +209,6 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     animeRank: animeRankResult,
     awards: wikidataResult.awards,
     nominations: wikidataResult.nominations,
-    franchise: wikidataResult.franchise,
     studios: wikidataResult.studios,
     director: wikidataResult.director,
     tvType: tvType ?? null,

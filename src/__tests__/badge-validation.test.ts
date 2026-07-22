@@ -11,7 +11,7 @@ describe("computeBadge", () => {
     upcomingRelease: null,
     isNewMovie: false, isNewSeries: false,
     animeRank: null, trendRank: null,
-    award: null, franchise: null, nomination: null,
+    award: null, nomination: null,
     studio: null, director: null, extra: null,
   }
 

@@ -37,7 +37,7 @@ vi.mock("@/lib/justwatch", () => ({
 }))
 
 vi.mock("@/lib/awards", () => ({
-  fetchAllWikidata: vi.fn(async () => ({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null })),
+  fetchAllWikidata: vi.fn(async () => ({ awards: [], nominations: [], studios: [], director: null })),
   getAwardBadgeLabel: vi.fn(),
   getNominationBadgeLabel: vi.fn(),
   matchTMDBStudios: vi.fn(() => []),

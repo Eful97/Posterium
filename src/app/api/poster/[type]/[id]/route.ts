@@ -298,7 +298,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return new Response("Poster image not available", { status: 404 })
     }
 
-    const emptyWikidata = { awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }
+    const emptyWikidata = { awards: [], nominations: [], studios: [], director: null }
     const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 4000
     const [wikidataResult, tmdbKeywords, imdbTop250] = await Promise.all([
       Promise.race([

@@ -326,7 +326,7 @@ export default function EditView() {
                           const subGenre = getSubGenreLabel(p.metaInfo.keywords || [], p.lang)
                           const options = getAllBadgeOptions({
                             upcomingRelease, isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank,
-                            award, franchise: p.metaInfo.franchise || null, nomination, studio,
+                            award, nomination, studio,
                             director: p.metaInfo.director || null, subGenre, extra,
                             mediaType: s.media_type === "tv" ? "tv" : "movie",
                             voteAverage: p.metaInfo.voteAverage, tvType, tvStatus,
