@@ -22,12 +22,6 @@ pinned: false
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Screenshot%202026-07-22%20121411.png" alt="Posterium Home" width="100%" />
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Screenshot%202026-07-22%20121434.png" alt="Posterium Editor" width="100%" />
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/Screenshot%202026-07-22%20121455.png" alt="Posterium Badge" width="100%" />
-  <div align="left">
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/1405.jpg" alt="Posterium Badge" width="50%" />
-    <div align="center">
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/66732.jpg" alt="Posterium Badge" width="50%" />
-      <div align="right">
-  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/76479.jpg" alt="Posterium Badge" width="50%" />
 </div>
 <div align="center">
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/1405.jpg" alt="Screenshot 1" width="33%" />
