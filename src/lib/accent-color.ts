@@ -108,17 +108,15 @@ function hslToRgb(H: number, S: number, L: number): AccentResult {
 
 export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: number, height: number, genre: string): AccentResult {
   const step = 2
-  let sumLuma = 0, countLuma = 0
+  let sumR = 0, sumG = 0, sumB = 0, countLuma = 0
 
-  // 12 Hue buckets (30-degree span each)
+  // 12 hue buckets (30° each)
   const buckets = Array.from({ length: 12 }, () => ({
     count: 0,
     totalSat: 0,
-    totalLum: 0,
     hueSin: 0,
     hueCos: 0,
   }))
-
   let totalVibrantWeight = 0
 
   for (let y = 0; y < height; y += step) {
@@ -126,70 +124,61 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
       const i = (y * width + x) * 4
       const pr = pixels[i], pg = pixels[i + 1], pb = pixels[i + 2]
       const alpha = pixels[i + 3]
-
       if (alpha < 128) continue
-      sumLuma += 0.2126 * pr + 0.7152 * pg + 0.0722 * pb
+
+      sumR += pr; sumG += pg; sumB += pb
       countLuma++
 
       const r = pr / 255, g = pg / 255, b = pb / 255
       const max = Math.max(r, g, b), min = Math.min(r, g, b)
       const l = (max + min) / 2, d = max - min
       const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-
-      // Skip dull/grey/black/white pixels
       if (s < 0.12 || l < 0.08 || l > 0.94) continue
 
       const hue = fastHue(r, g, b, d, max)
       const bucketIdx = Math.floor(hue / 30) % 12
       const bkt = buckets[bucketIdx]
-
-      // Weight: saturation^1.5 * chroma
       const weight = Math.pow(s, 1.5) * (1 - Math.abs(l - 0.5) * 1.5)
       bkt.count += weight
       bkt.totalSat += s * weight
-      bkt.totalLum += l * weight
       bkt.hueSin += Math.sin(hue * Math.PI / 180) * weight
       bkt.hueCos += Math.cos(hue * Math.PI / 180) * weight
       totalVibrantWeight += weight
     }
   }
 
-  const bgLum = countLuma > 0 ? sumLuma / countLuma / 255 : 0.5
+  // Compute background relative luminance (WCAG) from average RGB
+  const avgR = countLuma > 0 ? sumR / countLuma : 128
+  const avgG = countLuma > 0 ? sumG / countLuma : 128
+  const avgB = countLuma > 0 ? sumB / countLuma : 128
+  const bgRelLum = relativeLuminance(avgR, avgG, avgB)
 
-  // Fallback if poster is completely monochrome / dark
+  // Fallback for monochrome/flat posters → genre palette color, contrast-adjusted
   if (totalVibrantWeight < 1) {
     const fb = GENRE_FALLBACK[genre] || '#C0C0C0'
     const cr = parseInt(fb.slice(1, 3), 16)
     const cg = parseInt(fb.slice(3, 5), 16)
     const cb = parseInt(fb.slice(5, 7), 16)
-    return pushContrast({ r: cr, g: cg, b: cb }, bgLum)
+    const avgRawLum = countLuma > 0 ? (0.2126 * avgR + 0.7152 * avgG + 0.0722 * avgB) / 255 : 0.5
+    return pushContrast({ r: cr, g: cg, b: cb }, avgRawLum)
   }
 
-  // Find the most vibrant bucket with maximum weight
+  // Find most vibrant hue bucket
   let bestBucket = buckets[0]
   for (const bkt of buckets) {
-    if (bkt.count > bestBucket.count) {
-      bestBucket = bkt
-    }
+    if (bkt.count > bestBucket.count) bestBucket = bkt
   }
 
-  // Use dominant hue from poster, but elegant lightness:
-  // Dark poster  → light pastel version of dominant hue (0.76–0.86) — visible, harmonic
-  // Light poster → medium-dark saturated version     (0.28–0.40)
+  // Dominant hue and saturation from poster
   const avgHue = ((Math.atan2(bestBucket.hueSin, bestBucket.hueCos) * 180 / Math.PI) % 360 + 360) % 360
-  // Keep hue faithful but moderate saturation for elegance
   const avgSat = Math.min(0.72, Math.max(0.45, bestBucket.totalSat / bestBucket.count))
 
-  let targetLum: number
-  if (bgLum < 0.5) {
-    // Dark poster → produce a bright, airy tint of the poster's dominant hue
-    targetLum = Math.min(0.88, Math.max(0.76, 0.80 + (0.5 - bgLum) * 0.16))
-  } else {
-    // Light poster → deeper saturated version
-    targetLum = Math.max(0.28, Math.min(0.40, 0.44 - (bgLum - 0.5) * 0.40))
-  }
+  // Binary search: find the HSL lightness that achieves contrast ≥ 3.0 against poster background.
+  // This automatically makes the badge light on dark posters and dark on light posters,
+  // while always keeping the poster's original hue character.
+  const targetL = findContrastingLightness(avgHue, avgSat, bgRelLum, 3.0)
 
-  const result = hslToRgb(avgHue, avgSat, targetLum)
+  const result = hslToRgb(avgHue, avgSat, targetL)
   result.r = Math.max(0, Math.min(255, result.r))
   result.g = Math.max(0, Math.min(255, result.g))
   result.b = Math.max(0, Math.min(255, result.b))
@@ -197,9 +186,43 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
 }
 
 /**
+ * Binary-search for the HSL lightness value that achieves the target WCAG
+ * contrast ratio against bgRelLum, while staying in a visually pleasant range.
+ * - Dark background (bgRelLum < 0.18) → we search for a lighter badge color
+ * - Light background (bgRelLum ≥ 0.18) → we search for a darker badge color
+ */
+function findContrastingLightness(H: number, S: number, bgRelLum: number, targetContrast: number): number {
+  const wantLight = bgRelLum < 0.18
+
+  let lo = wantLight ? 0.45 : 0.05
+  let hi = wantLight ? 0.95 : 0.50
+  let bestL = wantLight ? 0.80 : 0.30
+
+  for (let iter = 0; iter < 18; iter++) {
+    const mid = (lo + hi) / 2
+    const rgb = hslToRgb(H, S, mid)
+    const lum = relativeLuminance(rgb.r, rgb.g, rgb.b)
+    const contrast = contrastRatio(lum, bgRelLum)
+
+    if (contrast >= targetContrast) {
+      bestL = mid
+      // Achieved contrast — try a less extreme value for elegance
+      if (wantLight) hi = mid
+      else lo = mid
+    } else {
+      // Need more contrast — push more extreme
+      if (wantLight) lo = mid
+      else hi = mid
+    }
+  }
+
+  // Guard: stay off pure white/black
+  return Math.max(0.18, Math.min(0.92, bestL))
+}
+
+/**
  * Spinge la luminanza del colore nella direzione opposta allo sfondo,
- * in modo che il badge sia ben visibile.
- * Sfondo scuro → colore chiaro. Sfondo chiaro → colore scuro.
+ * in modo che il badge sia ben visibile (fallback per poster monocromatici).
  */
 function pushContrast(color: AccentResult, bgLum: number): AccentResult {
   let { r, g, b } = color
