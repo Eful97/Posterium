@@ -250,6 +250,7 @@
     "ui.shadow":  "Ombra",
     "ui.bordo":  "Bordo",
     "ui.vetro":  "Vetro",
+    "ui.neon":  "Neon Glow",
     "ui.netflix": "Netflix",
     "ui.blurDisabled":  "Sfocatura disattivata",
   "ui.selectedCount": "{count} selezionati",

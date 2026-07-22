@@ -10,6 +10,7 @@ function getMeta(s: string, t: (k: string) => string): { icon: React.ReactNode; 
   if (s === "colored") return { icon: <Circle className="w-3 h-3" />, label: t("ui.colored") }
   if (s === "bordo") return { icon: <Square className="w-3 h-3" />, label: t("ui.bordo") }
   if (s === "vetro") return { icon: <GlassWater className="w-3 h-3" />, label: t("ui.vetro") }
+  if (s === "neon") return { icon: <Sparkles className="w-3 h-3 text-cyan-400" />, label: t("ui.neon") }
   if (s === "netflix") return { icon: <Trophy className="w-3 h-3" style={{ color: "#E50914" }} />, label: t("ui.netflix") }
   return { icon: <Sparkles className="w-3 h-3" />, label: s }
 }

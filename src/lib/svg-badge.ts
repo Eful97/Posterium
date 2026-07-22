@@ -2,7 +2,7 @@ import { Resvg } from "@resvg/resvg-js"
 import fs from "fs"
 import path from "path"
 import { textColorForBg } from "./accent-color"
-import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg } from "./badge-svg-shared"
+import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildGenreNeonSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg, buildExtraNeonSvg } from "./badge-svg-shared"
 
 const FONT_REGULAR = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "Inter-Regular.ttf")
 const FONT_BOLD = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "Inter-Bold.ttf")
@@ -131,6 +131,8 @@ export async function buildExtraBadgeSVG(
     result = buildExtraPillSvg(label, fs, fg, bg)
   } else if (isGlass) {
     result = buildExtraGlassSvg(label, fs, fg, bg, !!topLight)
+  } else if (s === "neon") {
+    result = buildExtraNeonSvg(label, fs, accentColor)
   } else {
     result = buildExtraDefaultSvg(label, fs, fg, bg)
   }
@@ -186,6 +188,8 @@ export async function buildGenreBadgeSVG(
     result = buildGenreBorderedSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false)
   } else if (s === "vetro") {
     result = buildGenreGlassSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false)
+  } else if (s === "neon") {
+    result = buildGenreNeonSvg(genreName, voteStr, yearStr, fs, accentColor)
   } else if (isBar) {
     result = buildGenreBarSvg(genreName, voteStr, yearStr, pw, fs, "rgba(0,0,0,0.80)", !!topLight)
   } else if (isPill) {

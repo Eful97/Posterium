@@ -334,7 +334,7 @@ export default function EditView() {
                 <div className="mt-3 pt-3 border-t border-zinc-800/60">
                   <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{p.t("ui.styleGenreBadge")}</label>
                   <div className="px-1">
-                    <BadgeStyleSelector value={p.badgeStyle} options={["shadow","pill","bar","colored","bordo","vetro"]} onChange={p.setBadgeStyle} t={p.t} accentColor={p.accentColor} />
+                    <BadgeStyleSelector value={p.badgeStyle} options={["shadow","pill","bar","colored","bordo","vetro","neon"]} onChange={p.setBadgeStyle} t={p.t} accentColor={p.accentColor} />
                   </div>
                   <div className="flex items-center gap-2 justify-center mt-2 px-1">
                     <input
