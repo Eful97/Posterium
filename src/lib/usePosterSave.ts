@@ -16,7 +16,7 @@ interface PosterSaveDeps {
   setPreviewPoster: (poster: TMDBImage | null) => void
   setPreviewId: (id: string | null) => void
   posters: TMDBImage[]
-  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; director?: string | null }
+  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; director?: string | null; keywords?: string[] }
   trendRank: number | null
   mdblistAnimeList: EnrichedAnimeItem[]
   mappingsMap: Map<string, Mapping>

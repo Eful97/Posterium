@@ -41,6 +41,7 @@ interface PosterState {
     studios?: string[]
     franchise?: string | null
     director?: string | null
+    keywords?: string[]
     type?: string
     status?: string
   }
