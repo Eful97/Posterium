@@ -4,28 +4,29 @@ import { getSubGenreLabel } from "../lib/subgenres"
 describe("subgenres detection", () => {
   it("detects cyberpunk for Blade Runner keywords", () => {
     const keywords = ["cyberpunk", "android", "futuristic city"]
-    expect(getSubGenreLabel(keywords, "it")).toBe("🚀 Cyberpunk")
-    expect(getSubGenreLabel(keywords, "en")).toBe("🚀 Cyberpunk")
+    expect(getSubGenreLabel(keywords, "it")).toBe("Cyberpunk")
+    expect(getSubGenreLabel(keywords, "en")).toBe("Cyberpunk")
   })
 
   it("detects slasher for Scream keywords", () => {
     const keywords = ["slasher", "serial killer", "ghostface"]
-    expect(getSubGenreLabel(keywords, "it")).toBe("🔪 Slasher")
+    expect(getSubGenreLabel(keywords, "it")).toBe("Horror Slasher")
   })
 
-  it("detects time travel for Interstellar keywords", () => {
-    const keywords = ["wormhole", "time travel", "space"]
-    expect(getSubGenreLabel(keywords, "it")).toBe("⏳ Viaggi nel Tempo")
+  it("detects time travel for Back to the Future keywords without false cyberpunk match", () => {
+    const keywords = ["time travel", "delorean", "time machine", "future"]
+    expect(getSubGenreLabel(keywords, "it")).toBe("Viaggi nel Tempo")
   })
 
-  it("detects whodunit for Knives Out keywords", () => {
+  it("detects whodunit for Knives Out keywords with Italian label", () => {
     const keywords = ["murder mystery", "whodunit", "inheritance"]
-    expect(getSubGenreLabel(keywords, "it")).toBe("🕵️ Whodunit")
+    expect(getSubGenreLabel(keywords, "it")).toBe("Giallo col Delitto")
+    expect(getSubGenreLabel(keywords, "en")).toBe("Whodunit")
   })
 
   it("detects zombie for The Walking Dead keywords", () => {
     const keywords = ["zombie apocalypse", "undead"]
-    expect(getSubGenreLabel(keywords, "it")).toBe("🧟 Zombie")
+    expect(getSubGenreLabel(keywords, "it")).toBe("Film di Zombie")
   })
 
   it("returns null when no matching subgenre keywords exist", () => {
