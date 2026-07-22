@@ -68,6 +68,10 @@ describe("computeBadge", () => {
     expect(computeBadge({ ...base, imdbTop250: true, award: "Vincitore Oscar" }, t)?.label).toBe("Vincitore Oscar")
   })
 
+  it("imdbTop250 beats nomination in priority", () => {
+    expect(computeBadge({ ...base, imdbTop250: true, nomination: "Candidato Oscar" }, t)?.label).toBe("Absolute Cinema")
+  })
+
   it("does not show imdbTop250 for TV", () => {
     // The imdbTop250 flag works for both media types, but IMDb chart is movie-only
     const badge = computeBadge({ ...base, imdbTop250: true }, t)

@@ -37,11 +37,11 @@ export function computeBadge(params: {
   if (params.isNewMovie) return { type: "extra", label: t("badge.newMovie") }
   if (params.isNewSeries) return { type: "extra", label: t("badge.newSeries") }
   if (params.award) return { type: "extra", label: params.award }
+  if (params.imdbTop250) return { type: "extra", label: t("badge.absoluteCinema") }
   if (params.nomination) return { type: "extra", label: params.nomination }
   if (params.subGenre) return { type: "extra", label: params.subGenre }
   if (params.director) return { type: "extra", label: params.director }
   if (params.studio) return { type: "extra", label: params.studio }
-  if (params.imdbTop250) return { type: "extra", label: t("badge.absoluteCinema") }
   if (params.extra) return { type: "extra", label: params.extra }
   return null
 }
@@ -89,11 +89,11 @@ export function getAllBadgeOptions(params: {
   if (params.trendRank) options.add(keyed("badge.today"))
   if (params.animeRank) options.add(keyed("badge.anime"))
   if (params.award) options.add(params.award)
+  if (params.mediaType === "movie" && params.imdbTop250) options.add(keyed("badge.absoluteCinema"))
   if (params.nomination) options.add(params.nomination)
   if (params.subGenre) options.add(params.subGenre)
   if (params.director) options.add(params.director)
   if (params.studio) options.add(params.studio)
-  if (params.mediaType === "movie" && params.imdbTop250) options.add(keyed("badge.absoluteCinema"))
   if (params.mediaType === "tv") {
     const tLower = (params.tvType || "").toLowerCase()
     const sLower = (params.tvStatus || "").toLowerCase()
