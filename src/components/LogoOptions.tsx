@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import type { TMDBImage } from "@/lib/types"
 import { LANG_NAMES, groupBy, limitBest, posterUrl } from "@/lib/utils"
 import { useP } from "@/lib/context"
-import { Check, Plus, Trash2 } from "lucide-react"
+import { Check, Plus, Trash2, ChevronDown } from "lucide-react"
 
 interface Props {
   logos: TMDBImage[]
@@ -18,6 +18,12 @@ interface Props {
 export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo, disabled }: Props) {
   const p = useP()
   const [activeLogoGroup, setActiveLogoGroup] = useState("all")
+  const [visibleLogoCount, setVisibleLogoCount] = useState(10)
+
+  useEffect(() => {
+    setVisibleLogoCount(10)
+  }, [logos, activeLogoGroup, lang])
+
   if (logos.length === 0) return (
     <div className="grid grid-cols-2 gap-2">
       {[1, 2, 3, 4].map((i) => (
@@ -45,6 +51,10 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
     ? langGroups
     : langGroups.filter(([language]) => language === activeLogoGroup)
 
+  const totalAvailableLogos = visibleLogoGroups.reduce((acc, [, imgs]) => acc + imgs.length, 0)
+
+  let renderedLogosCount = 0
+
   return (
     <div>
       <div className="flex gap-1 mb-3 overflow-x-auto scrollbar-none">
@@ -64,8 +74,11 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
         <p className="py-8 text-center text-xs text-zinc-500">Nessun logo in questa lingua</p>
       ) : (
         visibleLogoGroups.map(([language, imgs]) => {
-          const best = limitBest(imgs)
+          const quotaLeft = visibleLogoCount - renderedLogosCount
+          if (quotaLeft <= 0) return null
+          const best = limitBest(imgs).slice(0, quotaLeft)
           if (best.length === 0) return null
+          renderedLogosCount += best.length
           return (
             <div key={language} className="mb-4">
               <div className="flex items-center gap-2 mb-2">
@@ -89,6 +102,20 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
           )
         })
       )}
+
+      {totalAvailableLogos > visibleLogoCount && (
+        <button
+          type="button"
+          aria-label="Carica altri loghi"
+          onClick={() => setVisibleLogoCount((prev) => prev + 10)}
+          className="w-full mb-3 py-2 px-3 text-xs font-semibold rounded-xl bg-white/[0.06] border border-white/10 text-zinc-300 hover:bg-white/[0.12] hover:border-white/20 hover:text-white active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <ChevronDown className="w-4 h-4" />
+          Carica altri loghi (+{Math.min(10, totalAvailableLogos - visibleLogoCount)})
+          <span className="text-[10px] text-zinc-500 font-normal">({visibleLogoCount} di {totalAvailableLogos})</span>
+        </button>
+      )}
+
       {selectedLogo && (
         <div className="mt-3 rounded-lg border border-accent-orange/20 bg-accent-orange/10 px-2.5 py-2 text-[11px] text-accent-orange flex items-center gap-1.5">
           <Check className="w-3 h-3" />Logo selezionato
