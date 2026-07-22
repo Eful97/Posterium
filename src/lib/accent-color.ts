@@ -175,17 +175,11 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
 
   // Extract bucket's average HSL / RGB
   const avgHue = ((Math.atan2(bestBucket.hueSin, bestBucket.hueCos) * 180 / Math.PI) % 360 + 360) % 360
-  const avgSat = Math.min(0.85, Math.max(0.40, bestBucket.totalSat / bestBucket.count))
+  const avgSat = Math.min(0.88, Math.max(0.55, bestBucket.totalSat / bestBucket.count))
 
-  // Determine target lightness based on background contrast
-  // Sfondo scuro (bgLum < 0.5) -> lightness 0.72 - 0.86
-  // Sfondo chiaro (bgLum >= 0.5) -> lightness 0.25 - 0.42
-  let targetLum: number
-  if (bgLum < 0.5) {
-    targetLum = Math.min(0.86, Math.max(0.72, 0.76 + (0.5 - bgLum) * 0.20))
-  } else {
-    targetLum = Math.max(0.25, Math.min(0.42, 0.50 - (bgLum - 0.5) * 0.50))
-  }
+  // Preserve rich, vivid lightness (0.38 - 0.52) for solid premium badge color
+  const rawLum = bestBucket.totalLum / bestBucket.count
+  const targetLum = Math.max(0.38, Math.min(0.52, rawLum > 0 ? rawLum : 0.45))
 
   const result = hslToRgb(avgHue, avgSat, targetLum)
   result.r = Math.max(0, Math.min(255, result.r))
