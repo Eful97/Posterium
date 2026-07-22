@@ -17,13 +17,18 @@ const SUB_GENRES: SubGenreRule[] = [
   },
   {
     key: "cyberpunk",
-    keywords: ["cyberpunk", "android", "cybernetics", "dystopia", "dystopian", "virtual reality", "artificial intelligence"],
+    // NOTE: "dystopia/dystopian/virtual reality/artificial intelligence
+    // they caused false positives on non-cyberpunk movies (e.g. The Handmaid's Tale,
+    // Her, Ready Player One). Cyberpunk is distinctive enough from its core terms.
+    keywords: ["cyberpunk", "android", "cybernetics"],
     labels: { it: "Cyberpunk", en: "Cyberpunk", fr: "Cyberpunk", de: "Cyberpunk", es: "Cyberpunk" },
   },
 
   {
     key: "whodunit",
-    keywords: ["whodunit", "murder mystery", "detective", "investigation", "private investigator", "sleuth"],
+    // NOTE: "detective" and "investigation" removed — they are too broad and
+    // triggered false positives on generic police procedurals.
+    keywords: ["whodunit", "murder mystery", "private investigator", "sleuth"],
     labels: { it: "Giallo col Delitto", en: "Whodunit", fr: "Whodunit", de: "Whodunit", es: "Whodunit" },
   },
   {
@@ -33,7 +38,9 @@ const SUB_GENRES: SubGenreRule[] = [
   },
   {
     key: "zombie",
-    keywords: ["zombie", "zombies", "undead", "infected", "apocalypse zombie"],
+    // NOTE: "infected" removed — medical/virus outbreak keywords would falsely
+    // trigger the zombie badge on non-zombie contagion thrillers.
+    keywords: ["zombie", "zombies", "undead", "apocalypse zombie"],
     labels: { it: "Film di Zombie", en: "Zombie", fr: "Film de zombies", de: "Zombie", es: "Zombis" },
   },
   {
@@ -48,7 +55,9 @@ const SUB_GENRES: SubGenreRule[] = [
   },
   {
     key: "superhero",
-    keywords: ["superhero", "marvel comics", "dc comics", "vigilante", "comic book"],
+    // NOTE: "vigilante" removed — it triggered false positives on non-superhero
+    // revenge thrillers (Death Wish, The Equalizer, Taxi Driver).
+    keywords: ["superhero", "marvel comics", "dc comics", "comic book"],
     labels: { it: "Supereroi", en: "Superhero", fr: "Super-héros", de: "Superhelden", es: "Superhéroes" },
   },
   {
@@ -58,12 +67,16 @@ const SUB_GENRES: SubGenreRule[] = [
   },
   {
     key: "postapocalyptic",
-    keywords: ["post-apocalyptic", "wasteland", "nuclear winter", "survival horror"],
+    // NOTE: "survival horror" removed — it is a video-game genre tag that appears
+    // on non-post-apocalyptic survival horror games/movies (e.g. The Descent).
+    keywords: ["post-apocalyptic", "wasteland", "nuclear winter"],
     labels: { it: "Post-Apocalittico", en: "Post-Apocalyptic", fr: "Post-apocalyptique", de: "Postapokalyptisch", es: "Postapocalíptico" },
   },
   {
     key: "foundfootage",
     keywords: ["found footage", "mockumentary", "handheld camera"],
+    // NOTE: "mockumentary" can appear on comedy mockumentaries (This Is Spinal Tap),
+    // but these rarely overlap with TMDB horror keywords. Acceptable low risk.
     labels: { it: "Found Footage", en: "Found Footage", fr: "Found Footage", de: "Found Footage", es: "Metraje encontrado" },
   },
   {
@@ -73,7 +86,7 @@ const SUB_GENRES: SubGenreRule[] = [
   },
   {
     key: "spaghettiwestern",
-    keywords: ["spaghetti western", "bounty hunter", "gunslinger", "wild west"],
+    keywords: ["spaghetti western", "gunslinger", "wild west"],
     labels: { it: "Spaghetti Western", en: "Western", fr: "Western", de: "Western", es: "Western" },
   },
   {
@@ -83,17 +96,20 @@ const SUB_GENRES: SubGenreRule[] = [
   },
   {
     key: "spaceopera",
-    keywords: ["space opera", "space travel", "intergalactic", "alien invasion", "spacecraft"],
+    // NOTE: "space travel", "alien invasion", and "spacecraft" removed — they
+    // flagged hard sci-fi (The Martian, Interstellar) and alien-invasion action
+    // as space opera. Core terms are sufficient for Star Wars / Mandalorian / Trek.
+    keywords: ["space opera", "space western", "intergalactic"],
     labels: { it: "Space Opera", en: "Space Opera", fr: "Space Opera", de: "Space Opera", es: "Space Opera" },
   },
 ]
 
 function matchKeywordPattern(keyword: string, kwPattern: string): boolean {
-  if (kwPattern.length <= 3) {
-    const regex = new RegExp(`\\b${kwPattern}\\b`, "i")
-    return regex.test(keyword)
-  }
-  return keyword.includes(kwPattern)
+  // Word-boundary matching for all patterns prevents substring false
+  // positives (e.g. "ghost" matching "ghostbusters").
+  const escaped = kwPattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const regex = new RegExp(`\\b${escaped}\\b`, "i")
+  return regex.test(keyword)
 }
 
 export function getSubGenreLabel(keywords: string[], locale = "it"): string | null {

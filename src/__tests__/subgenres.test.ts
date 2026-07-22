@@ -30,4 +30,19 @@ describe("subgenres detection", () => {
     const keywords = ["family", "school", "friendship"]
     expect(getSubGenreLabel(keywords, "it")).toBeNull()
   })
+
+  it("detects space opera for The Mandalorian, not spaghetti western", () => {
+    const keywords = ["bounty hunter", "affectation", "space western", "space opera", "space exploration", "quest"]
+    expect(getSubGenreLabel(keywords, "it")).toBe("Space Opera")
+  })
+
+  it("detects spaghetti western for a real western with gunslinger", () => {
+    const keywords = ["gunslinger", "wild west", "saloon"]
+    expect(getSubGenreLabel(keywords, "it")).toBe("Spaghetti Western")
+  })
+
+  it("does not trigger spaghetti western from generic bounty hunter alone", () => {
+    const keywords = ["bounty hunter", "action", "crime"]
+    expect(getSubGenreLabel(keywords, "it")).toBeNull()
+  })
 })
