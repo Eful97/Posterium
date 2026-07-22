@@ -384,7 +384,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const logoOffsetX = qOx ? Number(qOx) || null : mapping?.logoOffsetX ?? null
     const logoOffsetY = qOy ? Number(qOy) || null : mapping?.logoOffsetY ?? null
 
-    const queryExtra = req.nextUrl.searchParams.get("extra") || undefined
+    const queryExtra = req.nextUrl.searchParams.get("extra") || null
     const qNetLogo = req.nextUrl.searchParams.get("netLogo")
 
     const locale = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
