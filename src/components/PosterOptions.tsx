@@ -167,14 +167,25 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   }, [sortByFit, cleanPosters, scoreMap])
 
   const [visibleCleanCount, setVisibleCleanCount] = useState(12)
+  const [visibleLangCount, setVisibleLangCount] = useState(12)
 
   useEffect(() => {
     setVisibleCleanCount(12)
+    setVisibleLangCount(12)
   }, [p.selected?.id, activeGroup, sortByFit])
 
   const visibleCleanPosters = useMemo(() => {
     return displayPosters.slice(0, visibleCleanCount)
   }, [displayPosters, visibleCleanCount])
+
+  const activeClean = activeGroup === "clean"
+  const activeLangImgs = useMemo(() => {
+    return !activeClean ? langGroups.find(([l]) => l === activeGroup)?.[1] ?? [] : []
+  }, [activeClean, langGroups, activeGroup])
+
+  const visibleLangImgs = useMemo(() => {
+    return activeLangImgs.slice(0, visibleLangCount)
+  }, [activeLangImgs, visibleLangCount])
 
   const toggleRotation = (filePath: string) => {
     p.setRotationPosters((prev) => {
@@ -207,9 +218,6 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       if (fallback) selectPoster(fallback)
     }
   }
-
-  const activeClean = activeGroup === "clean"
-  const activeLangImgs = !activeClean ? langGroups.find(([l]) => l === activeGroup)?.[1] ?? [] : []
 
   function shortPath(p: string): string {
     return p.length > 18 ? `${p.slice(0, 10)}...${p.slice(-6)}` : p
@@ -414,12 +422,27 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       )}
 
       {!activeClean && (
-        <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
-          {activeLangImgs.map((img) => {
-            const stagger = idx++
-            return <PosterBtn key={img.file_path} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
-          })}
-        </div>
+        <>
+          <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
+            {visibleLangImgs.map((img) => {
+              const stagger = idx++
+              return <PosterBtn key={img.file_path} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
+            })}
+          </div>
+
+          {activeLangImgs.length > visibleLangCount && (
+            <button
+              type="button"
+              aria-label="Carica altri poster"
+              onClick={() => setVisibleLangCount((prev) => prev + 12)}
+              className="w-full mt-3 py-2 px-3 text-xs font-semibold rounded-xl bg-white/[0.06] border border-white/10 text-zinc-300 hover:bg-white/[0.12] hover:border-white/20 hover:text-white active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <ChevronDown className="w-4 h-4" />
+              Carica altri poster (+{Math.min(12, activeLangImgs.length - visibleLangCount)})
+              <span className="text-[10px] text-zinc-500 font-normal">({visibleLangCount} di {activeLangImgs.length})</span>
+            </button>
+          )}
+        </>
       )}
 
       {activeClean && p.rotationPosters.length > 0 && (
