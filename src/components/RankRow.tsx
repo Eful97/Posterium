@@ -15,35 +15,73 @@ interface RankItem {
   rank: number
 }
 
-function rankBadge(rank: number) {
-  const twoDigit = rank >= 10
+function NetflixRankNumber({ rank }: { rank: number }) {
+  const isDouble = rank >= 10
+  const numStr = String(rank)
+  
   return (
-    <span className="absolute top-[1%] left-[1%] flex items-center justify-center z-20" style={{ width: twoDigit ? '44px' : '34px', height: '34px' }}>
-      <span className="absolute inset-0 rounded-xl bg-black/50 backdrop-blur-sm" />
-      <span className="relative text-base md:text-xl font-bold leading-none text-white"
-        style={{ filter: "drop-shadow(1px 2px 3px rgba(0,0,0,0.50))" }}
+    <div className="relative pointer-events-none select-none flex items-center justify-end h-full pr-1 md:pr-2 z-0">
+      <svg
+        viewBox={isDouble ? "0 0 160 180" : "0 0 95 180"}
+        className="h-[145px] md:h-[220px] w-auto overflow-visible"
+        aria-hidden="true"
       >
-        {rank}
-      </span>
-    </span>
+        <text
+          x={isDouble ? "80" : "47.5"}
+          y="155"
+          textAnchor="middle"
+          fill="#141414"
+          stroke="#595959"
+          strokeWidth="6"
+          strokeLinejoin="miter"
+          fontSize="170"
+          fontWeight="900"
+          fontFamily="Impact, 'Arial Black', sans-serif"
+          style={{ letterSpacing: isDouble ? "-16px" : "0" }}
+        >
+          {numStr}
+        </text>
+        <text
+          x={isDouble ? "80" : "47.5"}
+          y="155"
+          textAnchor="middle"
+          fill="#000000"
+          stroke="#737373"
+          strokeWidth="3"
+          strokeLinejoin="miter"
+          fontSize="170"
+          fontWeight="900"
+          fontFamily="Impact, 'Arial Black', sans-serif"
+          style={{ letterSpacing: isDouble ? "-16px" : "0" }}
+        >
+          {numStr}
+        </text>
+      </svg>
+    </div>
   )
 }
 
 const RankCard = React.memo(function RankCard({ item, onClick, isFirst, staggerIndex }: { item: RankItem; onClick: () => void; isFirst?: boolean; staggerIndex?: number }) {
   const imgSrc = item.poster_path || item.posterPath
   const label = item.title || item.name || ""
+  const isDouble = item.rank >= 10
+
   return (
     <button
       onClick={onClick}
-      aria-label={label}
-      className="group rank-btn relative text-left flex-shrink-0 scroll-snap-start animate-stagger-in"
-      style={staggerIndex !== undefined ? { animationDelay: `${staggerIndex * 60}ms` } : undefined}
+      aria-label={`${item.rank}. ${label}`}
+      className="group rank-btn relative text-left flex-shrink-0 scroll-snap-start animate-stagger-in flex items-center"
+      style={staggerIndex !== undefined ? { animationDelay: `${staggerIndex * 50}ms` } : undefined}
     >
-      <div className="flex items-end">
-        <div
-          className={`poster-slide relative ${isFirst ? "" : "-ml-8 md:-ml-14"} z-10 w-[170px] md:w-72 shrink-0 transition-transform duration-200 drop-shadow-[4px_0_6px_rgba(0,0,0,0.7)]`}
-        >
-          <div className="aspect-[2/3] bg-zinc-800 rounded-lg overflow-hidden shadow-xl transition-all duration-300 relative">
+      <div className="flex items-center">
+        {/* Giant Netflix Rank Number (left of poster, partially under overlapping edge) */}
+        <div className={`shrink-0 ${isDouble ? "w-[75px] md:w-[115px]" : "w-[45px] md:w-[70px]"} h-[145px] md:h-[220px] flex items-center justify-end z-0`}>
+          <NetflixRankNumber rank={item.rank} />
+        </div>
+
+        {/* Poster Card overlapping number */}
+        <div className="relative -ml-4 md:-ml-7 z-10 w-[110px] md:w-[160px] shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:z-20">
+          <div className="aspect-[2/3] bg-zinc-900 rounded-md overflow-hidden shadow-2xl transition-all duration-300 relative border border-zinc-800/80 group-hover:border-zinc-500/50">
             {imgSrc ? (
               // eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL
               <img
@@ -51,19 +89,18 @@ const RankCard = React.memo(function RankCard({ item, onClick, isFirst, staggerI
                 alt={label}
                 loading="lazy"
                 decoding="async"
-                className="w-full h-full object-cover transition-transform duration-300"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             ) : (
-              <div className="w-full h-full bg-zinc-700 flex items-center justify-center text-2xl font-bold text-zinc-500">
+              <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-xl font-bold text-zinc-600">
                 {item.rank}
               </div>
             )}
-            <div className="absolute inset-x-0 bottom-0 h-6 md:h-9 bg-black/70 backdrop-blur-sm flex items-center px-2 pointer-events-none rounded-b-lg" />
-            <p className="absolute bottom-0 left-2 right-2 h-6 md:h-9 flex items-center text-[9px] md:text-xs text-white font-medium truncate leading-tight">
+            <div className="absolute inset-x-0 bottom-0 h-7 md:h-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-end p-1.5 pointer-events-none rounded-b-md" />
+            <p className="absolute bottom-1 left-1.5 right-1.5 text-[9px] md:text-[11px] text-zinc-100 font-semibold truncate leading-snug drop-shadow-md">
               {label}
             </p>
           </div>
-          {rankBadge(item.rank)}
         </div>
       </div>
     </button>
