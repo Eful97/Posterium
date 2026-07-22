@@ -7,8 +7,8 @@ import { ScrollReveal } from "@/components/ScrollReveal"
 
 export function CataloghiView() {
   const p = useP()
-  const movieTrending = p.trending.filter((r) => r.media_type === "movie").slice(0, 20).map((r, idx) => ({ ...r, rank: idx + 1 }))
-  const tvTrending = p.trending.filter((r) => r.media_type === "tv").slice(0, 20).map((r, idx) => ({ ...r, rank: idx + 1 }))
+  const movieTrending = p.trending.filter((r) => r.media_type === "movie").slice(0, 20)
+  const tvTrending = p.trending.filter((r) => r.media_type === "tv").slice(0, 20)
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-scale-in">
@@ -65,7 +65,7 @@ export function CataloghiView() {
                         <RankRow
                           key={mediaType}
                           label={mediaType === "movie" ? p.t("ui.movieLabel") : p.t("ui.tvLabel")}
-                          items={items.map((i, iIdx) => ({ ...i, poster_path: i.posterPath, name: i.title, rank: i.rank || (iIdx + 1) }))}
+                          items={items.map((i) => ({ ...i, poster_path: i.posterPath, name: i.title }))}
                           onItemClick={(item) => {
                             if (item.tmdbId) p.navigateToPoster(
                               toSearchResult({ id: item.tmdbId, media_type: mediaType as string, title: item.title ?? "", name: item.title ?? "", poster_path: item.posterPath })
@@ -89,7 +89,7 @@ export function CataloghiView() {
         <ScrollReveal animation="fade-up" threshold={0.05}>
           <div className="mb-12">
             <h2 className="section-heading text-xl font-bold mb-6">{p.t("ui.trendingAnime")}</h2>
-            <RankRow label={p.t("ui.anime")} items={p.mdblistAnimeList.map((item, idx) => ({ ...item, rank: idx + 1 }))} onItemClick={(item) => p.navigateToPoster(toSearchResult(item))} />
+            <RankRow label={p.t("ui.anime")} items={p.mdblistAnimeList} onItemClick={(item) => p.navigateToPoster(toSearchResult(item))} />
           </div>
         </ScrollReveal>
       )}
