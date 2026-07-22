@@ -438,6 +438,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         imdbTop250: !!imdbTop250,
       }
       const badgeComputed = computeTopBadge(badgeInput, t, locale)
+      console.log(`[debug] ${mediaType}/${tmdbId} (imdb:${imdbId}) top250:${!!imdbTop250} badge:${badgeComputed.badge?.label ?? "null"} vote:${voteAverage} genre:${genreName} awards:[${wikidataResult.awards}] dir:${wikidataResult.director}`)
       completePosterRender(null)
       return Response.json({
         meta: {
