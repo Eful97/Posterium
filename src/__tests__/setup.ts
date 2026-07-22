@@ -18,6 +18,7 @@ const itDict: Record<string, string> = {
   "badge.miniseries": "Miniserie",
   "badge.returning": "Ritorna",
   "badge.bingeWorthy": "Absolute Cinema",
+  "badge.absoluteCinema": "Absolute Cinema",
   "badge.trending": "Di tendenza",
   "badge.trendingSeries": "Serie di tendenza",
   "badge.trendingAnime": "Anime di tendenza",

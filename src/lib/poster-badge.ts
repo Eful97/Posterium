@@ -3,7 +3,7 @@
  * Used by both the server route and client hooks, ensuring the same badge
  * logic applies in preview (WYSIWYG) and final poster.
  */
-import { computeBadge, computeExtraFallback, type BadgeResult } from "./badge-priority"
+import { computeBadge, computeAbsoluteCinema, type BadgeResult } from "./badge-priority"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
 import { getUpcomingReleaseLabel } from "./release-badge"
 import { getSubGenreLabel } from "./subgenres"
@@ -26,6 +26,8 @@ export interface BadgeInput {
   tvStatus: string | null | undefined
   networkLogoMatched?: boolean
   keywords?: string[]
+  /** IMDb Top 250 badge flag — resolved externally (async fetch). */
+  imdbTop250?: boolean
 }
 
 export interface ComputedTopBadge {
@@ -77,11 +79,9 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
   const studioBadge = input.studios.length ? input.studios[0] : null
   const isNetStudio = isNetworkStudio(studioBadge)
   const studio = (input.networkLogoMatched || isNetStudio) ? null : studioBadge
-  const extraFallback = computeExtraFallback({
+  const extraFallback = computeAbsoluteCinema({
     mediaType: input.mediaType,
-    voteAverage: input.voteAverage,
-    tvType: input.tvType,
-    tvStatus: input.tvStatus,
+    imdbTop250: !!input.imdbTop250,
   }, t)
 
   const upcomingRelease = getUpcomingReleaseLabel({
@@ -105,6 +105,7 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
     studio,
     director: input.director,
     subGenre: subGenreBadge,
+    imdbTop250: !!input.imdbTop250,
     extra: extraFallback,
   }, t)
 

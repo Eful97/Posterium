@@ -16,7 +16,9 @@ interface PosterSaveDeps {
   setPreviewPoster: (poster: TMDBImage | null) => void
   setPreviewId: (id: string | null) => void
   posters: TMDBImage[]
-  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; director?: string | null; keywords?: string[] }
+  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; director?: string | null; keywords?: string[]; imdb_id?: string | null }
+  /** IMDb Top 250 membership for the selected content. */
+  imdbTop250?: boolean
   trendRank: number | null
   mdblistAnimeList: EnrichedAnimeItem[]
   mappingsMap: Map<string, Mapping>
@@ -68,7 +70,7 @@ export interface SaveConfigOverrides {
 export function usePosterSave(deps: PosterSaveDeps) {
   const {
     selected, previewPoster, selectedLogo, setSelectedLogo, setPreviewPoster, setPreviewId,
-    posters, metaInfo, trendRank, mdblistAnimeList, mappingsMap, loadMappings,
+    posters, metaInfo, imdbTop250, trendRank, mdblistAnimeList, mappingsMap, loadMappings,
     logoScale, logoOffsetX, logoOffsetY,
     selectedBackdrop, setSelectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY,
     setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
@@ -167,6 +169,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
       director: metaInfo.director ?? null,
       tvType: selected.media_type === "tv" ? metaInfo.type : null,
       tvStatus: selected.media_type === "tv" ? metaInfo.status : null,
+      imdbTop250: !!imdbTop250,
     }
     const computed = computeTopBadge(badgeInput, t, lang)
     const isUpcomingReleaseBadge = !!computed.upcomingRelease && computed.badge?.type === "extra" && computed.badge.label === computed.upcomingRelease

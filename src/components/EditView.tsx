@@ -9,7 +9,7 @@ import { EditorPanel } from "@/components/EditorPanel"
 import { Toggle } from "@/components/Toggle"
 import { SliderRow } from "@/components/SliderRow"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "@/lib/awards"
-import { computeExtraFallback, getAllBadgeOptions } from "@/lib/badge-priority"
+import { computeAbsoluteCinema, getAllBadgeOptions } from "@/lib/badge-priority"
 import { getSubGenreLabel } from "@/lib/subgenres"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { isPrefixedKey, badgeKey } from "@/lib/i18n"
@@ -316,7 +316,7 @@ export default function EditView() {
                           const studio = p.metaInfo.studios?.length ? p.metaInfo.studios[0] : null
                           const tvType = s.media_type === "tv" ? p.metaInfo.type : null
                           const tvStatus = s.media_type === "tv" ? p.metaInfo.status : null
-                          const extra = computeExtraFallback({ mediaType: s.media_type === "tv" ? "tv" : "movie", voteAverage: p.metaInfo.voteAverage, tvType, tvStatus }, p.t)
+                          const extra = s.media_type === "tv" ? (tvType?.toLowerCase() === "miniseries" || tvType?.toLowerCase() === "miniserie" ? p.t("badge.miniseries") : tvStatus?.toLowerCase() === "returning series" || tvStatus?.toLowerCase() === "in corso" ? p.t("badge.returning") : null) : null
                           const upcomingRelease = getUpcomingReleaseLabel({
                             mediaType: s.media_type === "tv" ? "tv" : "movie",
                             releaseDate: p.metaInfo.release_date,
@@ -330,6 +330,7 @@ export default function EditView() {
                             director: p.metaInfo.director || null, subGenre, extra,
                             mediaType: s.media_type === "tv" ? "tv" : "movie",
                             voteAverage: p.metaInfo.voteAverage, tvType, tvStatus,
+                            imdbTop250: !!p.imdbTop250,
                           })
                           return options.map((o) => {
                             const display = isPrefixedKey(o) ? p.t(badgeKey(o)) : o

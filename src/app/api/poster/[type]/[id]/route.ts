@@ -14,6 +14,7 @@ import { createT } from "@/lib/i18n"
 import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, type MDBListEntry } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
+import { isImdbTop250 } from "@/lib/imdb-top250"
 import { getEffectiveRotationState, tryRotatePoster } from "@/lib/poster-rotation"
 import { mappingVersionParam } from "@/lib/stremio-poster-url"
 import { RENDER_VERSION } from "@/lib/render-version"
@@ -127,6 +128,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let tmdbStudios: string[] = []
   let tmdbNetworks: string[] = []
   let productionCompanies: string[] = []
+  let imdbId: string | null = null
 
   const queryPoster = req.nextUrl.searchParams.get("poster")
   const queryLogo = req.nextUrl.searchParams.get("logo")
@@ -147,6 +149,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
     if (queryGenre) genreName = queryGenre
     if (queryVote) voteAverage = Number(queryVote)
+    imdbId = req.nextUrl.searchParams.get("imdbId") || null
     showBadges = true
     etag = `"${Date.now()}"`
   } else if (mapping) {
@@ -178,7 +181,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         getImages(mediaType, tmdbId, imageLangs, apiKey),
         getExternalIds(mediaType, tmdbId, apiKey).catch(() => ({ imdb_id: null })),
       ])
-      const imdbId = extIds.imdb_id
+      imdbId = extIds.imdb_id
       const aggregated = imdbId ? await fetchAggregatedRating(imdbId).catch(() => null) : null
       genreName = details.genres[0]?.name || null
       voteAverage = aggregated?.average ?? details.vote_average ?? 0
@@ -297,7 +300,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     const emptyWikidata = { awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }
     const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 4000
-    const [wikidataResult, tmdbKeywords] = await Promise.all([
+    const [wikidataResult, tmdbKeywords, imdbTop250] = await Promise.all([
       Promise.race([
         rankingEnabledEarly
           ? fetchAllWikidata(tmdbId, mediaType, t).catch(() => emptyWikidata)
@@ -307,6 +310,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       rankingEnabledEarly
         ? getKeywords(mediaType, tmdbId, req.nextUrl.searchParams.get("api_key") || undefined).catch(() => [])
         : Promise.resolve([]),
+      (rankingEnabledEarly && imdbId)
+        ? isImdbTop250(imdbId).catch(() => false)
+        : Promise.resolve(false),
     ])
 
     const rankingRank = rankingResult ?? mapping?.badgeRank ?? mapping?.trendRank ?? null
@@ -412,7 +418,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       tvType, tvStatus, releaseDate, firstAirDate,
       wikidataResult, tmdbKeywords, locale, t,
       qLabel, queryExtra, qNetLogo, sd,
-      accentOverride,
+      accentOverride, imdbTop250,
     }
     const composited = await generatePosterBuffer(genInput)
 

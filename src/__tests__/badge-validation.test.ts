@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { computeBadge, computeExtraFallback } from "@/lib/badge-priority"
+import { computeBadge, computeAbsoluteCinema } from "@/lib/badge-priority"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { mappingSchema } from "@/lib/validation"
 import { createT } from "@/lib/i18n"
@@ -60,6 +60,16 @@ describe("computeBadge", () => {
     expect(computeBadge({ ...base, subGenre: "Viaggi nel Tempo", director: "Di Christopher Nolan" }, t)?.label).toBe("Viaggi nel Tempo")
   })
 
+  it("prioritizes imdbTop250 before generic extra", () => {
+    expect(computeBadge({ ...base, imdbTop250: true, extra: "Da divorare" }, t)?.label).toBe("Absolute Cinema")
+  })
+
+  it("does not show imdbTop250 for TV", () => {
+    // The imdbTop250 flag works for both media types, but IMDb chart is movie-only
+    const badge = computeBadge({ ...base, imdbTop250: true }, t)
+    expect(badge?.label).toBe("Absolute Cinema")
+  })
+
   it("falls back to extra when nothing else matches", () => {
     expect(computeBadge({ ...base, extra: "Da divorare" }, t)?.label).toBe("Da divorare")
   })
@@ -73,25 +83,21 @@ describe("computeBadge", () => {
   })
 })
 
-describe("computeExtraFallback", () => {
-  it("returns Absolute Cinema for movies with vote >= 8.3", () => {
-    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 8.4, tvType: null, tvStatus: null }, t)).toBe("Absolute Cinema")
+describe("computeAbsoluteCinema (replaces old computeExtraFallback)", () => {
+  it("returns Absolute Cinema for movies in IMDb Top 250", () => {
+    expect(computeAbsoluteCinema({ mediaType: "movie", imdbTop250: true }, t)).toBe("Absolute Cinema")
   })
 
-  it("returns null for movies with vote < 8.3", () => {
-    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 7.0, tvType: null, tvStatus: null }, t)).toBeNull()
+  it("returns null for movies NOT in IMDb Top 250", () => {
+    expect(computeAbsoluteCinema({ mediaType: "movie", imdbTop250: false }, t)).toBeNull()
   })
 
-  it("returns Miniserie for TV with that type", () => {
-    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 7.0, tvType: "Miniseries", tvStatus: null }, t)).toBe("Miniserie")
+  it("returns null for TV even if imdbTop250 is true (chart is movie-only)", () => {
+    expect(computeAbsoluteCinema({ mediaType: "tv", imdbTop250: true }, t)).toBeNull()
   })
 
-  it("returns Ritorna for returning series", () => {
-    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 7.0, tvType: null, tvStatus: "Returning Series" }, t)).toBe("Ritorna")
-  })
-
-  it("returns Absolute Cinema for high-rated TV", () => {
-    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 9.0, tvType: null, tvStatus: "Ended" }, t)).toBe("Absolute Cinema")
+  it("returns key when no t function provided", () => {
+    expect(computeAbsoluteCinema({ mediaType: "movie", imdbTop250: true })).toBe("badge.absoluteCinema")
   })
 })
 

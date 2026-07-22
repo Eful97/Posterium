@@ -114,7 +114,9 @@ export interface PosteriumCtx {
   setDefaultNetworkLogo: (v: boolean | ((prev: boolean) => boolean)) => void
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
-  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null; keywords?: string[] }
+  /** Pre-resolved IMDb Top 250 membership for the current metaInfo. */
+  imdbTop250: boolean
+  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null; keywords?: string[]; imdb_id?: string | null }
   previewId: string | null
   setPreviewId: React.Dispatch<React.SetStateAction<string | null>>
   saveConfig: () => Promise<void>
@@ -237,13 +239,14 @@ export function usePosterium(): PosteriumCtx {
   const [urlPattern, setUrlPattern] = useState("")
   const [copied, setCopied] = useState(false)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
-  const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null; keywords?: string[] }>({ genres: [], voteAverage: 0 })
+  const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; franchise?: string | null; basedOn?: string | null; director?: string | null; keywords?: string[]; imdb_id?: string | null }>({ genres: [], voteAverage: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [trendRank, setTrendRank] = useState<number | null>(null)
   const [mdblistMatch, setMdblistMatch] = useState<{ key: string; rank: number } | null>(null)
   const [showLangPicker, setShowLangPicker] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
+  const [imdbTop250, setImdbTop250] = useState(false)
   const [accentColor, setAccentColor] = useState("#555555")
   const [topEdgeColor, setTopEdgeColor] = useState("#555555")
   const [rotationPosters, setRotationPosters] = useState<string[]>([])
@@ -295,6 +298,16 @@ export function usePosterium(): PosteriumCtx {
   const setDefaultGlobalBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultGlobalBadges) : v; defaults.update({ defaultGlobalBadges: next }) }
   const setDefaultRankingBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultRankingBadges) : v; defaults.update({ defaultRankingBadges: next }) }
   const setDefaultAutoRotateClean = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultAutoRotateClean) : v; defaults.update({ defaultAutoRotateClean: next }) }
+  // Auto-resolve IMDb Top 250 membership
+  useEffect(() => {
+    const imdbId = metaInfo.imdb_id
+    if (!imdbId) { setImdbTop250(false); return }
+    fetch(`/api/imdb-top250?imdbId=${encodeURIComponent(imdbId)}`)
+      .then((r) => r.json())
+      .then((d) => setImdbTop250(!!d.inTop250))
+      .catch(() => setImdbTop250(false))
+  }, [metaInfo.imdb_id])
+
   const setDefaultLogoFitEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultLogoFitEnabled) : v; defaults.update({ defaultLogoFitEnabled: next }) }
 
   const hasBadges = globalBadges && metaInfo.genres.length > 0 && metaInfo.voteAverage > 0
@@ -600,7 +613,7 @@ export function usePosterium(): PosteriumCtx {
       if (details.title) navigation.setSelected((prev) => ({ ...prev!, title: details.title! }))
       if (details.name) navigation.setSelected((prev) => ({ ...prev!, name: details.name! }))
       const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: { name: string }) => n.name) : (details.production_companies || []).map((c: { name: string }) => c.name)
-      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, type: details.type ?? undefined, status: details.status ?? undefined, release_date: details.release_date ?? undefined, first_air_date: details.first_air_date ?? undefined, last_air_date: details.last_air_date ?? undefined, next_episode_to_air: details.next_episode_to_air ?? undefined, number_of_seasons: details.number_of_seasons ?? undefined, number_of_episodes: details.number_of_episodes ?? undefined, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks).length ? matchTMDBStudios(tmdbNetworks) : (awardData?.studios || []), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null, director: awardData?.director || null, keywords: awardData?.keywords || [] })
+      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, imdb_id: details.imdb_id ?? undefined, type: details.type ?? undefined, status: details.status ?? undefined, release_date: details.release_date ?? undefined, first_air_date: details.first_air_date ?? undefined, last_air_date: details.last_air_date ?? undefined, next_episode_to_air: details.next_episode_to_air ?? undefined, number_of_seasons: details.number_of_seasons ?? undefined, number_of_episodes: details.number_of_episodes ?? undefined, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks).length ? matchTMDBStudios(tmdbNetworks) : (awardData?.studios || []), franchise: awardData?.franchise || null, basedOn: awardData?.basedOn || null, director: awardData?.director || null, keywords: awardData?.keywords || [] })
       setTrendRank(rankData.rank || null)
       const extImdbId = item.imdb_id || details.imdb_id
       if (extImdbId) {
@@ -786,6 +799,7 @@ export function usePosterium(): PosteriumCtx {
     defaultNetworkLogo, setDefaultNetworkLogo,
     trendRank,
     mdblistMatch,
+    imdbTop250,
     metaInfo,
     previewId: navigation.previewId, setPreviewId: navigation.setPreviewId,
     saveConfig, removeMapping, mappingsMap,
@@ -826,7 +840,7 @@ export function usePosterium(): PosteriumCtx {
     rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
     defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled,
-    trendRank, mdblistMatch, metaInfo, navigation.previewId,
+    trendRank, mdblistMatch, imdbTop250, metaInfo, navigation.previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,

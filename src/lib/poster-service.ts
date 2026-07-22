@@ -81,6 +81,8 @@ export interface GenerationInput {
   qNetLogo: string | null
   sd: ServerDefaults
   accentOverride: { genreColor: string; rankColor: string } | null
+  /** Pre-resolved IMDb Top 250 membership. Falls back gracefully when falsy. */
+  imdbTop250?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -109,7 +111,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     mapping, tmdbNetworks, productionCompanies, tmdbStudios,
     tvType, tvStatus, releaseDate, firstAirDate,
     wikidataResult, tmdbKeywords, locale, t,
-    qLabel, queryExtra, qNetLogo, sd, accentOverride,
+    qLabel, queryExtra, qNetLogo, sd, accentOverride, imdbTop250,
   } = input
 
   // -----------------------------------------------------------------------
@@ -213,6 +215,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     tvType: tvType ?? null,
     tvStatus,
     keywords: [...tmdbKeywords],
+    imdbTop250: !!imdbTop250,
   }
   const computed = computeTopBadge(badgeInput, t, locale)
   const studioBadge = computed.studioBadge
