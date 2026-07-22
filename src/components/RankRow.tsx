@@ -155,15 +155,18 @@ export function RankRow({
           onWheel={(e) => { if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.preventDefault() }}
           onScroll={handleScroll}
         >
-          {items.map((item, idx) => (
-            <RankCard
-              key={item.tmdbId ?? item.id ?? `rank-${idx}`}
-              item={item}
-              onClick={() => onItemClick(item)}
-              isFirst={idx === 0}
-              staggerIndex={idx}
-            />
-          ))}
+          {items.map((rawItem, idx) => {
+            const item = { ...rawItem, rank: rawItem.rank || (idx + 1) }
+            return (
+              <RankCard
+                key={item.tmdbId ?? item.id ?? `rank-${idx}`}
+                item={item}
+                onClick={() => onItemClick(item)}
+                isFirst={idx === 0}
+                staggerIndex={idx}
+              />
+            )
+          })}
         </div>
         <div className="hidden md:block absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background via-background/60 to-transparent pointer-events-none z-30 rounded-r-lg" />
         <ScrollButton direction="left" onClick={() => scroll("left")} />
