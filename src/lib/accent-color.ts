@@ -109,17 +109,24 @@ function hslToRgb(H: number, S: number, L: number): AccentResult {
 export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: number, height: number, genre: string): AccentResult {
   const step = 2
   let sumLuma = 0, countLuma = 0
-  // Circular mean for weighted average hue (by saturation×chroma)
-  let hueSin = 0, hueCos = 0, totalW = 0
-  // Quadrant energy: warm (red/orange/yellow), green, cool (cyan/blue), purple
-  let qWarm = 0, qGreen = 0, qCool = 0, qPurple = 0
+
+  // 12 Hue buckets (30-degree span each)
+  const buckets = Array.from({ length: 12 }, () => ({
+    count: 0,
+    totalSat: 0,
+    totalLum: 0,
+    hueSin: 0,
+    hueCos: 0,
+  }))
+
+  let totalVibrantWeight = 0
 
   for (let y = 0; y < height; y += step) {
     for (let x = 0; x < width; x += step) {
       const i = (y * width + x) * 4
       const pr = pixels[i], pg = pixels[i + 1], pb = pixels[i + 2]
       const alpha = pixels[i + 3]
-      // Skip transparent/semi-transparent pixels (e.g. logo PNG)
+
       if (alpha < 128) continue
       sumLuma += 0.2126 * pr + 0.7152 * pg + 0.0722 * pb
       countLuma++
@@ -128,29 +135,29 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
       const max = Math.max(r, g, b), min = Math.min(r, g, b)
       const l = (max + min) / 2, d = max - min
       const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-      if (s < 0.08 || l < 0.05 || l > 0.95) continue
+
+      // Skip dull/grey/black/white pixels
+      if (s < 0.12 || l < 0.08 || l > 0.94) continue
 
       const hue = fastHue(r, g, b, d, max)
-      // Weight: saturation × chroma (squared to emphasise pure colours)
-      const chroma = s * (1 - Math.abs(l - 0.5) * 2)
-      const w = chroma * chroma
+      const bucketIdx = Math.floor(hue / 30) % 12
+      const bkt = buckets[bucketIdx]
 
-      hueSin += Math.sin(hue * Math.PI / 180) * w
-      hueCos += Math.cos(hue * Math.PI / 180) * w
-      totalW += w
-
-      // Hue quadrant classification
-      if (hue < 60 || hue >= 330) qWarm += w
-      else if (hue >= 60 && hue < 180) qGreen += w
-      else if (hue >= 180 && hue < 270) qCool += w
-      else qPurple += w
+      // Weight: saturation^1.5 * chroma
+      const weight = Math.pow(s, 1.5) * (1 - Math.abs(l - 0.5) * 1.5)
+      bkt.count += weight
+      bkt.totalSat += s * weight
+      bkt.totalLum += l * weight
+      bkt.hueSin += Math.sin(hue * Math.PI / 180) * weight
+      bkt.hueCos += Math.cos(hue * Math.PI / 180) * weight
+      totalVibrantWeight += weight
     }
   }
 
   const bgLum = countLuma > 0 ? sumLuma / countLuma / 255 : 0.5
 
-  // No chromatic pixels → use genre fallback
-  if (totalW === 0) {
+  // Fallback if poster is completely monochrome / dark
+  if (totalVibrantWeight < 1) {
     const fb = GENRE_FALLBACK[genre] || '#C0C0C0'
     const cr = parseInt(fb.slice(1, 3), 16)
     const cg = parseInt(fb.slice(3, 5), 16)
@@ -158,73 +165,29 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
     return pushContrast({ r: cr, g: cg, b: cb }, bgLum)
   }
 
-  // Weighted average hue (circular mean)
-  const avgHue = ((Math.atan2(hueSin, hueCos) * 180 / Math.PI) % 360 + 360) % 360
-
-  // Quadrant proportions
-  const tq = qWarm + qGreen + qCool + qPurple
-  const pWarm = qWarm / tq, pGreen = qGreen / tq, pCool = qCool / tq, pPurple = qPurple / tq
-
-  // --- Generate accent colour based on poster character ---
-  let targetHue: number, targetSat: number, targetLum: number
-
-  if (bgLum < 0.5) {
-    // DARK POSTER → light, desaturated accent
-    // Flatter curve: mostly 0.78-0.88 regardless of how dark the poster is
-    targetLum = Math.min(0.90, 0.78 + (0.5 - bgLum) * 0.25)
-
-    // Determine the dominant colour region
-    const isRed = (avgHue < 30 || avgHue >= 340) && pWarm > 0.35
-    const isGreen = pGreen > 0.35
-    const isBlue = pCool > 0.40
-    const isPurple = pPurple > 0.25 || (pWarm > 0.30 && avgHue >= 320)
-    // Mixed warm+green (e.g. Breaking Bad's yellow-green palette)
-    const isMixedGreenWarm = pGreen > 0.30 && pWarm > 0.30 && !isRed && !isBlue
-
-    if (isBlue) {
-      // Cool-dominant (blue/cyan) → warm cream complement
-      targetHue = 43
-      targetSat = Math.min(0.55, 0.30 + (0.5 - bgLum) * 0.35)
-    } else if (isPurple && !isMixedGreenWarm) {
-      // Strong purple/magenta/pink → cool blue-grey complement
-      targetHue = 200
-      targetSat = Math.min(0.30, 0.15 + (0.5 - bgLum) * 0.15)
-    } else if (isGreen && !isMixedGreenWarm) {
-      // Pure green-dominant → lavender/purple complement
-      targetHue = 275
-      targetSat = Math.min(0.45, 0.20 + (0.5 - bgLum) * 0.30)
-    } else if (isMixedGreenWarm || (isGreen && pWarm > 0.30)) {
-      // Mixed green+warm → green-toned accent (matches poster's green character)
-      // Use a fixed green hue rather than avgHue for a cleaner green
-      targetHue = 115
-      targetSat = Math.min(0.40, 0.20 + (0.5 - bgLum) * 0.25)
-    } else if (isRed) {
-      // Strong red → desaturated red accent (matches poster)
-      targetHue = avgHue
-      targetSat = Math.min(0.40, 0.20 + (0.5 - bgLum) * 0.25)
-    } else if (pWarm > 0.35) {
-      // Warm-dominant (orange/yellow) → warm cream
-      targetHue = 40
-      targetSat = Math.min(0.50, 0.25 + (0.5 - bgLum) * 0.30)
-    } else {
-      // Mixed/neutral → warm cream default
-      targetHue = 45
-      targetSat = Math.min(0.50, 0.30 + (0.5 - bgLum) * 0.30)
+  // Find the most vibrant bucket with maximum weight
+  let bestBucket = buckets[0]
+  for (const bkt of buckets) {
+    if (bkt.count > bestBucket.count) {
+      bestBucket = bkt
     }
-  } else {
-    // LIGHT POSTER → darker, more muted accent
-    targetLum = Math.max(0.30, 0.55 - (bgLum - 0.5) * 0.80)
-    targetSat = 0.20
-    targetHue = (pWarm > 0.35 || pPurple > 0.25) ? 200 : 40
   }
 
-  // Clamp
-  targetLum = Math.max(0.15, Math.min(0.90, targetLum))
-  targetSat = Math.max(0.08, Math.min(0.65, targetSat))
-  targetHue = ((targetHue % 360) + 360) % 360
+  // Extract bucket's average HSL / RGB
+  const avgHue = ((Math.atan2(bestBucket.hueSin, bestBucket.hueCos) * 180 / Math.PI) % 360 + 360) % 360
+  const avgSat = Math.min(0.85, Math.max(0.40, bestBucket.totalSat / bestBucket.count))
 
-  const result = hslToRgb(targetHue, targetSat, targetLum)
-  // Ensure valid range
+  // Determine target lightness based on background contrast
+  // Sfondo scuro (bgLum < 0.5) -> lightness 0.72 - 0.86
+  // Sfondo chiaro (bgLum >= 0.5) -> lightness 0.25 - 0.42
+  let targetLum: number
+  if (bgLum < 0.5) {
+    targetLum = Math.min(0.86, Math.max(0.72, 0.76 + (0.5 - bgLum) * 0.20))
+  } else {
+    targetLum = Math.max(0.25, Math.min(0.42, 0.50 - (bgLum - 0.5) * 0.50))
+  }
+
+  const result = hslToRgb(avgHue, avgSat, targetLum)
   result.r = Math.max(0, Math.min(255, result.r))
   result.g = Math.max(0, Math.min(255, result.g))
   result.b = Math.max(0, Math.min(255, result.b))
