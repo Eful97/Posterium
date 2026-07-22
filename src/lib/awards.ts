@@ -156,37 +156,9 @@ export function matchTMDBStudios(names: string[]): string[] {
   return [...found]
 }
 
-const FRANCHISES = [
-  "MCU", "DC Extended Universe",
-  "Star Wars", "Star Trek",
-  "Harry Potter", "Wizarding World", "The Lord of the Rings", "Middle-earth",
-  "James Bond", "Jurassic Park", "Jurassic World",
-  "Fast & Furious", "Mission: Impossible", "John Wick",
-  "The Hunger Games", "Twilight",
-  "Pirates of the Caribbean", "Indiana Jones",
-  "The Conjuring Universe",
-  "Godzilla", "King Kong", "MonsterVerse",
-  "Toy Story", "Shrek", "How to Train Your Dragon",
-  "Despicable Me", "Minions", "Ice Age", "Madagascar",
-  "The Matrix", "Terminator", "Die Hard", "Rocky", "Rambo",
-  "Alien", "Predator",
-  "X-Men", "The Avengers", "Spider-Man", "Batman", "Superman",
-  "The Witcher", "Game of Thrones", "Breaking Bad", "The Walking Dead",
-  "Scream", "Halloween", "Ghostbusters", "Back to the Future",
-  "Jaws", "Mad Max", "Planet of the Apes",
-]
+const FRANCHISES: string[] = []
 
-function matchFranchise(labels: string[]): string | null {
-  for (const fr of FRANCHISES) {
-    const fLower = fr.toLowerCase()
-    for (const label of labels) {
-      const lower = label.toLowerCase().trim()
-      if (lower === fLower || lower.includes(fLower)) {
-        return fr
-      }
-      if (fr === "MCU" && lower.includes("marvel cinematic")) return "MCU"
-    }
-  }
+function matchFranchise(_labels: string[]): string | null {
   return null
 }
 
