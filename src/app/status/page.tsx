@@ -179,17 +179,6 @@ export default function StatusPage() {
                   ) : (
                     <p className="text-xs text-zinc-500">{t("ui.statusCacheEmpty")}</p>
                   )}
-                  <div className="pt-3 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={clearCache}
-                      disabled={clearingCache}
-                      className="px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-200 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {clearingCache ? t("ui.statusCacheClearing") : t("ui.statusCacheClear")}
-                    </button>
-                    {cacheMessage && <span className="text-xs text-zinc-500">{cacheMessage}</span>}
-                  </div>
                 </div>
               ) : (
                 <p className="text-xs text-zinc-500">{t("ui.statusCacheUnavailable")}</p>
