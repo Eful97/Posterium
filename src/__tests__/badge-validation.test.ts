@@ -52,12 +52,12 @@ describe("computeBadge", () => {
     expect(computeBadge({ ...base, trendRank: 3 }, t)?.rank).toBe(3)
   })
 
-  it("prioritizes award over franchise", () => {
-    expect(computeBadge({ ...base, award: "Vincitore Oscar", franchise: "MCU" }, t)?.label).toBe("Vincitore Oscar")
+  it("prioritizes nomination over subgenre", () => {
+    expect(computeBadge({ ...base, nomination: "Candidato Oscar", subGenre: "Viaggi nel Tempo" }, t)?.label).toBe("Candidato Oscar")
   })
 
-  it("prioritizes franchise over nomination", () => {
-    expect(computeBadge({ ...base, franchise: "MCU", nomination: "Candidato Oscar" }, t)?.label).toBe("MCU")
+  it("prioritizes subgenre over director", () => {
+    expect(computeBadge({ ...base, subGenre: "Viaggi nel Tempo", director: "Di Christopher Nolan" }, t)?.label).toBe("Viaggi nel Tempo")
   })
 
   it("falls back to extra when nothing else matches", () => {

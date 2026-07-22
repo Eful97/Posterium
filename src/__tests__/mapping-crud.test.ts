@@ -57,13 +57,13 @@ describe("badge priority edge cases", () => {
     })).toBeNull()
   })
 
-  it("shows studio over director", () => {
+  it("shows director over studio", () => {
     const r = computeBadge({
       upcomingRelease: null,
       isNewMovie: false, isNewSeries: false, animeRank: null, trendRank: null,
       award: null, franchise: null, nomination: null, studio: "Netflix", director: "Di Nolan", extra: null,
     })
-    expect(r?.label).toBe("Netflix")
+    expect(r?.label).toBe("Di Nolan")
   })
 
   it("shows director when studio is null", () => {
