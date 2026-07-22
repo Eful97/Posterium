@@ -169,16 +169,28 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
     if (bkt.count > bestBucket.count) bestBucket = bkt
   }
 
-  // Dominant hue and saturation from poster
-  const avgHue = ((Math.atan2(bestBucket.hueSin, bestBucket.hueCos) * 180 / Math.PI) % 360 + 360) % 360
-  const avgSat = Math.min(0.72, Math.max(0.45, bestBucket.totalSat / bestBucket.count))
+  // Dominant hue of the poster
+  const posterHue = ((Math.atan2(bestBucket.hueSin, bestBucket.hueCos) * 180 / Math.PI) % 360 + 360) % 360
 
-  // Binary search: find the HSL lightness that achieves contrast ≥ 3.0 against poster background.
-  // This automatically makes the badge light on dark posters and dark on light posters,
-  // while always keeping the poster's original hue character.
-  const targetL = findContrastingLightness(avgHue, avgSat, bgRelLum, 3.0)
+  // --- Split-Complementary Harmony (+150°) ---
+  // Rotating by 150° gives a badge color that is:
+  //   - Harmonious with the poster by color theory
+  //   - Naturally contrasting (not the same hue family as the bg)
+  // Examples:
+  //   Blue-violet (251°) → 251+150 = 41° → warm orange  🟠
+  //   Orange-sandy (35°) → 35+150  = 185° → cool cyan   🩵
+  //   Green (120°)       → 120+150 = 270° → violet      🟣
+  //   Red (0°)           → 0+150   = 150° → teal        🩵
+  //   Cyan (180°)        → 180+150 = 330° → pink-rose   🌸
+  const badgeHue = (posterHue + 150) % 360
 
-  const result = hslToRgb(avgHue, avgSat, targetL)
+  // Higher saturation since we're using a contrasting hue (not blending, but popping)
+  const badgeSat = Math.min(0.82, Math.max(0.55, bestBucket.totalSat / bestBucket.count))
+
+  // Binary search: find lightness that achieves contrast ≥ 3.0 against poster background.
+  const targetL = findContrastingLightness(badgeHue, badgeSat, bgRelLum, 3.0)
+
+  const result = hslToRgb(badgeHue, badgeSat, targetL)
   result.r = Math.max(0, Math.min(255, result.r))
   result.g = Math.max(0, Math.min(255, result.g))
   result.b = Math.max(0, Math.min(255, result.b))
