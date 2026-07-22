@@ -43,13 +43,14 @@ pinned: false
 
 ## ✨ Feature Principali
 
-- 🎨 **Loghi e Poster Clean** — Posizionamento drag & drop, scala/offset regolabili, fit-scoring automatico con intelligenza visiva e ricerca loghi multi-lingua.
-- 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA (da Wikidata), saghe/franchise e registi cult.
-- 🍿 **Nastro Netflix Top 10** — Badge con il caratteristico nastro rosso Netflix e affiancamento automatico del logo della piattaforma.
-- ⭐ **Rating Accurato** — Voto medio bilanciato IMDb + TMDB.
-- 🌀 **Sfocatura Sfondo Nativa (Sharp C++)** — Effetto blur sul fondo generato in ~10-20ms.
-- 🔄 **Rotazione Poster 24h** — Cambia automaticamente locandina pulita ogni giorno per ogni film/serie.
-- 📡 **Integrazione Stremio Istantanea** — Generazione dinamica tramite manifest di Stremio con caching intelligente.
+- 🖼️ **Selezione Poster Clean in 1-Click** — Scegli la tua locandina pulita (senza testo) preferita con un singolo click e fissala per sempre su Stremio. Supporta l'algoritmo *Best Fit* che rileva in automatico il poster perfetto per il logo.
+- 🎨 **Personalizzazione Badge Completa** — 6 stili per badge genere/rating (*Shadow, Pill, Bar, Colored, Bordo, Vetro*) e 5 stili per badge trend (*Default, Bar, Colored, Pill, Nastro Netflix*). Colori accent adattivi al poster e testo libero personalizzato per singolo titolo.
+- 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch Italia, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA/Emmy (da Wikidata), saghe/franchise e registi cult.
+- 🍿 **Nastro Netflix Top 10** — Badge con l'iconico nastro rosso verticale allineato a sinistra e affiancamento automatico del logo della piattaforma.
+- ⭐ **Rating Accurato** — Voto medio bilanciato ed imparziale IMDb + TMDB.
+- 🌀 **Sfocatura Sfondo Nativa (Sharp C++)** — Effetto blur sul fondo ultra-rapido generato in soli ~10-20ms.
+- 🔄 **Rotazione Poster 24h** — Cambia automaticamente locandina pulita ogni giorno tra i poster selezionati.
+- 📡 **Integrazione Stremio Istantanea** — Generazione dinamica tramite manifest Stremio con caching e warmup automatico.
 
 ---
 
