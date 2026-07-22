@@ -91,7 +91,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Circle className="w-3 h-3" /> {p.t("ui.styleRankingDefault")}</label>
       <BadgeStyleSelector value={p.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill"]} onChange={p.setDefaultRankingBadgeStyle} t={p.t} accentColor={p.accentColor} />
       <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5 mt-1"><Palette className="w-3 h-3" /> {p.t("ui.styleDefault")}</label>
-      <BadgeStyleSelector value={p.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored", "bordo", "vetro", "neon"]} onChange={p.setDefaultBadgeStyle} t={p.t} />
+      <BadgeStyleSelector value={p.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored", "bordo", "vetro"]} onChange={p.setDefaultBadgeStyle} t={p.t} />
       <hr className="border-zinc-700 my-1" />
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-zinc-400">{p.t("ui.blurDefault")}</span>

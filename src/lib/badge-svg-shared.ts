@@ -166,22 +166,6 @@ export function buildGenreGlassSvg(genreName: string, voteStr: string, yearStr: 
   return { svg, w: renderW, h: renderH }
 }
 
-export function buildGenreNeonSvg(genreName: string, voteStr: string, yearStr: string, fs: number, accentColor?: string, textOffsetX = 0) {
-  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr)
-  const safePad = genreBadgeSafePad(fs)
-  const neonPad = Math.max(Math.round(fs * 0.4), 6)
-  const neonColor = accentColor && accentColor !== "#555555" ? accentColor : "#06B6D4"
-  const renderW = dims.textContentW + neonPad * 2 + safePad * 2 + 12
-  const rectH = dims.svgH
-  const renderH = rectH + 12
-  const r = Math.round(fs * 0.6)
-  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: (rectH + 12) / 2 })
-  const defs = `<defs><filter id="nf" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="${neonColor}" flood-opacity="0.95"/><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="${neonColor}" flood-opacity="0.65"/></filter></defs>`
-  const bgRect = `<rect x="6" y="6" width="${renderW - 12}" height="${rectH}" rx="${r}" fill="rgba(10,10,14,0.88)" stroke="${neonColor}" stroke-width="1.8" filter="url(#nf)"/>`
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}${bgRect}<g fill="${neonColor}">${textParts}</g></svg>`
-  return { svg, w: renderW, h: renderH }
-}
-
 export function buildRankingBarSvg(fullText: string, pw: number, fs: number, textColor: string, bg: string) {
   const pt = Math.round(fs * 0.35)
   const pb = pt
@@ -342,23 +326,6 @@ export function buildExtraGlassSvg(label: string, fs: number, textColor: string,
   const textEl = `<text x="${renderW / 2}" y="${rectH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(label)}</text>`
   const defs = `<defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient></defs>`
   const bgEl = `<rect x="0" y="0" width="${totalW}" height="${rectH}" rx="${r}" fill="url(#eg)" stroke="${borderColor}" stroke-width="1.5"/>`
-  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}${bgEl}${textEl}</svg>`, w: renderW, h: renderH }
-}
-
-export function buildExtraNeonSvg(label: string, fs: number, accentColor?: string) {
-  const px = Math.round(fs * 1.0)
-  const pt = Math.round(fs * 0.4)
-  const pb = pt
-  const textW = Math.max(estimateTextWidth(label, fs), fs)
-  const totalW = textW + px * 2
-  const rectH = fs + pt + pb
-  const r = Math.round(fs * 0.6)
-  const neonColor = accentColor && accentColor !== "#555555" ? accentColor : "#06B6D4"
-  const renderW = totalW + 12
-  const renderH = rectH + 12
-  const textEl = `<text x="${renderW / 2}" y="${renderH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${neonColor}"${textFitAttrs(textW)}>${escSvg(label)}</text>`
-  const defs = `<defs><filter id="ne" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="${neonColor}" flood-opacity="0.95"/><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="${neonColor}" flood-opacity="0.65"/></filter></defs>`
-  const bgEl = `<rect x="6" y="6" width="${totalW}" height="${rectH}" rx="${r}" fill="rgba(10,10,14,0.88)" stroke="${neonColor}" stroke-width="1.8" filter="url(#ne)"/>`
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}${bgEl}${textEl}</svg>`, w: renderW, h: renderH }
 }
 

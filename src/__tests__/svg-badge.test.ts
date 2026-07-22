@@ -116,12 +116,6 @@ describe("buildGenreBadgeSVG", () => {
     expect(badge).not.toBeNull()
     expect(badge!.w).toBe(1000)
   })
-
-  it("renders neon style genre badge", async () => {
-    const badge = await buildGenreBadgeSVG("Fantascienza", 9.1, 1000, "2024", "neon", "#06B6D4", false)
-    expect(badge).not.toBeNull()
-    expect(badge!.w).toBeGreaterThan(50)
-  })
 })
 
 describe("buildRankingBadgeSVG", () => {
