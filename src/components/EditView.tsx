@@ -169,7 +169,16 @@ export default function EditView() {
             <div className="animate-fade-scale-in" style={{animationDelay: "0ms"}}>
             <EditorPanel title={p.t("ui.previewSection")}>
               <div className="flex flex-col items-center">
-                <div role="img" aria-label={`Preview of ${p.selected?.title || p.selected?.name || ""} poster with ${p.selectedLogo ? "logo" : "no logo"}`} className={`preview-frame w-full max-w-[360px] rounded-[1.35rem] overflow-hidden relative ${p.previewPoster ? "preview-frame-active" : ""}`}>
+                <div className="relative w-full max-w-[360px]">
+                  <div
+                    className="absolute -inset-6 rounded-3xl opacity-40 blur-3xl pointer-events-none transition-all duration-700 ease-out"
+                    style={{
+                      background: p.accentColor && p.accentColor !== "#555555"
+                        ? `radial-gradient(circle at 50% 50%, ${p.accentColor}, transparent 70%)`
+                        : "radial-gradient(circle at 50% 50%, rgba(255, 100, 48, 0.40), transparent 70%)",
+                    }}
+                  />
+                  <div role="img" aria-label={`Preview of ${p.selected?.title || p.selected?.name || ""} poster with ${p.selectedLogo ? "logo" : "no logo"}`} className={`preview-frame w-full rounded-[1.35rem] overflow-hidden relative ${p.previewPoster ? "preview-frame-active" : ""}`}>
                   <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-950/70 overflow-hidden rounded-[1.2rem]">
                     {p.previewUrl ? (
                       <>
@@ -200,6 +209,7 @@ export default function EditView() {
                     )}
                   </div>
                 </div>
+              </div>
 
                 {p.selected && (
                   <div className="mt-4 w-full text-center select-text">
@@ -250,6 +260,7 @@ export default function EditView() {
             {/* RIGHT: Edit */}
             <div className="animate-fade-scale-in-panel-right" style={{animationDelay: "80ms"}}>
             <EditorPanel tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
+              <div key={activeRightTab} className="animate-fade-in space-y-3">
               {activeRightTab === "logo" && <>
                 <LogoOptions logos={p.logos} selectedLogo={p.selectedLogo} lang={p.lang} selectLogo={p.selectLogo} removeLogo={p.removeLogo} disabled={!cleanPoster} />
                 {!cleanPoster && <p className="text-xs text-zinc-500 text-center mt-2 px-1">{p.t("ui.logoHint")}</p>}
@@ -380,6 +391,7 @@ export default function EditView() {
                   <SliderRow icon={<ArrowUpDown className="w-3.5 h-3.5" />} label="Y" value={p.logoOffsetY} min={p.logoBounds.minY} max={p.logoBounds.maxY} boundsMin={p.logoBounds.minY} boundsMax={p.logoBounds.maxY} onChange={p.setLogoOffsetY} onDoubleClick={() => p.setLogoOffsetY(0)} editingValue={p.editingValue} editText={p.editText} setEditingValue={p.setEditingValue} setEditText={p.setEditText} editingKey="oy" />
                 </div>
               </>}
+              </div>
             </EditorPanel>
             </div>
 

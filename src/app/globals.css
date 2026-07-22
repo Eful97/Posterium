@@ -544,12 +544,14 @@ input[type="range"]::-moz-range-thumb {
     rgba(24,24,27,0.78);
   border: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 14px 30px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease;
+  transform-style: preserve-3d;
 }
 
 .poster-tile:hover {
-  border-color: rgba(255,255,255,0.18);
-  box-shadow: 0 18px 42px rgba(0,0,0,0.34), 0 0 0 1px rgba(255,100,48,0.06);
-  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.22);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.40), 0 0 20px rgba(255,100,48,0.12);
+  transform: perspective(600px) rotateX(3deg) rotateY(-3deg) translateY(-3px) scale(1.02);
 }
 
 .poster-tile-active {
