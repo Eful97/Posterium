@@ -48,18 +48,20 @@ pinned: false
 - 🚫 **Blacklist poster esclusi** — Escludi singoli poster dalla selezione/rotazione per ogni titolo, con salvataggio immediato
 - ⚙️ **Impostazioni globali** — Salva stili badge (tutti i 6 stili genere e 5 stili ranking incluso Netflix), blur e rotazione come predefiniti applicati a tutti i nuovi salvataggi
 - 🏆 **Badge premi** — Vincitore e Candidato Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David da Wikidata
+- ⭐ **Absolute Cinema** — Badge automatico per i film della classifica **IMDb Top 250** con dataset curato a latenza zero
+- ⚡ **Blur sfocatura nativa in C++** — Pipeline `sharp.composite()` ad alta efficienza per il sfumato del poster (~10-20ms per immagine)
 - 🎬 **Badge franchise** — Marvel Cinematic Universe, Harry Potter, James Bond e 52 saghe da Wikidata (tradotte in italiano)
 - 🎥 **Badge regista** — Di Hitchcock, Di Nolan, Di Fellini e 71 registi IMDb Top 70 da Wikidata
-- 📡 **Badge network** — Netflix, HBO, Disney+, Prime Video, Rai, Mediaset e altri da TMDB
+- 📡 **Badge network** — Logos HD vettoriali/PNG per Netflix, HBO Max, Disney+, Prime Video, Apple TV+, Paramount+, Rai, Crunchyroll
 - 🎌 **Anime rank** — Top trending anime da MDBList *(richiede chiave MDBList)*
-- 📐 **Server-side rendering** — Resvg (SVG → PNG) per badge, Sharp per poster/logo/backdrop
+- 📐 **Server-side rendering** — Resvg (SVG → PNG) per badge, Sharp per poster/logo/backdrop/blur
 - 🚀 **Poster ottimizzati per Stremio** — Output JPEG 500×750, URL versionati con `rv`, ETag e header CDN/stale-while-revalidate
 - 🐳 **Docker** — Deployabile su HF Spaces, Vercel, server proprio
 - ⚡ **Standalone output** — Next.js standalone per immagini Docker minime
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **253 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
+- ✅ **315 test** — Suite completa di unit e integration test su URL builder, cache, badge priority, IMDb Top 250, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
 
 ---
 
