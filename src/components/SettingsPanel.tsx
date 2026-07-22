@@ -112,10 +112,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
         <Toggle value={p.defaultLogoFitEnabled} onChange={p.setDefaultLogoFitEnabled} />
       </div>
       <hr className="border-zinc-700 my-1" />
-      <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Circle className="w-3 h-3" /> Light Mode</span>
-        <Toggle value={p.theme === "light"} onChange={(v) => p.setTheme(v ? "light" : "dark")} />
-      </div>
+
       <button type="button" onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {p.t("ui.saved")}</> : <><Save className="w-3 h-3" /> {p.t("ui.saveDefaults")}</>}</span></button>
       <hr className="border-zinc-700 my-1" />
       <MenuItem icon={<Download className="w-3 h-3 text-accent-orange" />} label={p.t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />

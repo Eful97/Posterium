@@ -74,11 +74,11 @@ describe("computeBadge", () => {
 })
 
 describe("computeExtraFallback", () => {
-  it("returns Il più votato for movies with vote >= 8.5", () => {
-    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 8.5, tvType: null, tvStatus: null }, t)).toBe("Il più votato")
+  it("returns ⭐ IMDb Top 250 for movies with vote >= 8.3", () => {
+    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 8.4, tvType: null, tvStatus: null }, t)).toBe("⭐ IMDb Top 250")
   })
 
-  it("returns null for movies with vote < 8.5", () => {
+  it("returns null for movies with vote < 8.3", () => {
     expect(computeExtraFallback({ mediaType: "movie", voteAverage: 7.0, tvType: null, tvStatus: null }, t)).toBeNull()
   })
 
@@ -90,8 +90,8 @@ describe("computeExtraFallback", () => {
     expect(computeExtraFallback({ mediaType: "tv", voteAverage: 7.0, tvType: null, tvStatus: "Returning Series" }, t)).toBe("Ritorna")
   })
 
-  it("returns Da divorare for high-rated TV", () => {
-    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 9.0, tvType: null, tvStatus: "Ended" }, t)).toBe("Da divorare")
+  it("returns ⭐ IMDb Top 250 for high-rated TV", () => {
+    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 9.0, tvType: null, tvStatus: "Ended" }, t)).toBe("⭐ IMDb Top 250")
   })
 })
 

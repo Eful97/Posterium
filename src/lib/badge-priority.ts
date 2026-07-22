@@ -52,13 +52,13 @@ export function computeExtraFallback(params: {
 }, _t?: T): string | null {
   const t = _t || _idT
   if (params.mediaType === "movie") {
-    return params.voteAverage >= 8.5 ? t("badge.topRated") : null
+    return params.voteAverage >= 8.3 ? t("badge.topRated") : null
   }
   const tvTypeLower = (params.tvType || "").toLowerCase()
   const tvStatusLower = (params.tvStatus || "").toLowerCase()
   if (tvTypeLower === "miniseries" || tvTypeLower === "miniserie") return t("badge.miniseries")
   if (tvStatusLower === "returning series" || tvStatusLower === "in corso") return t("badge.returning")
-  if (params.voteAverage >= 8.5) return t("badge.bingeWorthy")
+  if (params.voteAverage >= 8.3) return t("badge.bingeWorthy")
   return null
 }
 
@@ -95,13 +95,13 @@ export function getAllBadgeOptions(params: {
   if (params.subGenre) options.add(params.subGenre)
   if (params.director) options.add(params.director)
   if (params.studio) options.add(params.studio)
-  if (params.mediaType === "movie" && params.voteAverage >= 8.5) options.add(keyed("badge.topRated"))
+  if (params.mediaType === "movie" && params.voteAverage >= 8.3) options.add(keyed("badge.topRated"))
   if (params.mediaType === "tv") {
     const tLower = (params.tvType || "").toLowerCase()
     const sLower = (params.tvStatus || "").toLowerCase()
     if (tLower === "miniseries" || tLower === "miniserie") options.add(keyed("badge.miniseries"))
     if (sLower === "returning series" || sLower === "in corso") options.add(keyed("badge.returning"))
-    if (params.voteAverage >= 8.5) options.add(keyed("badge.bingeWorthy"))
+    if (params.voteAverage >= 8.3) options.add(keyed("badge.bingeWorthy"))
   }
   options.delete("")
   return [...options]
