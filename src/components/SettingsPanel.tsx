@@ -118,22 +118,8 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       </div>
       <button type="button" onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {p.t("ui.saved")}</> : <><Save className="w-3 h-3" /> {p.t("ui.saveDefaults")}</>}</span></button>
       <hr className="border-zinc-700 my-1" />
-      <MenuItem icon={<Upload className="w-3 h-3" />} label={p.t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
-      <MenuItem icon={<Download className="w-3 h-3" />} label={p.t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />
-      <button type="button" onClick={async () => {
-        try {
-          const resp = await fetch("/api/mappings/export")
-          const json = await resp.json()
-          const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" })
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement("a")
-          a.href = url
-          a.download = `posterium-backup-${new Date().toISOString().slice(0, 10)}.json`
-          a.click()
-          URL.revokeObjectURL(url)
-          toast.success("Backup exported successfully")
-        } catch { toast.error("Export failed") }
-      }} className="w-full flex items-center gap-2 px-2 py-2 rounded-xl text-xs font-medium text-zinc-300 hover:bg-white/[0.07] active:scale-[0.98] transition-all duration-150"><Download className="w-3 h-3" /> Export as file</button>
+      <MenuItem icon={<Download className="w-3 h-3 text-accent-orange" />} label={p.t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
+      <MenuItem icon={<Upload className="w-3 h-3 text-blue-400" />} label={p.t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />
       <MenuItem aria-label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} icon={<Trash2 className="w-3 h-3" />} label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} onClick={clearCache} danger />
     </>
   )

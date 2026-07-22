@@ -33,12 +33,20 @@ export function useMappingsStore() {
   }, [])
 
   const exportData = useCallback(async () => {
-    const data = await http("/api/mappings/export")
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url; a.download = "posterium-mappings.json"; a.click()
-    URL.revokeObjectURL(url)
+    try {
+      const data = await http<{ mappings: Mapping[] }>("/api/mappings/export")
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `posterium-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      import("sonner").then(({ toast }) => toast.success(t("ui.saved") || "Backup esportato con successo!"))
+    } catch (e) {
+      console.error("[posterium] Export failed:", e)
+      import("sonner").then(({ toast }) => toast.error("Errore durante l'esportazione"))
+    }
   }, [])
 
   const importData = useCallback(() => {
