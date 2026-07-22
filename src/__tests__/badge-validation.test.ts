@@ -64,8 +64,8 @@ describe("computeBadge", () => {
     expect(computeBadge({ ...base, imdbTop250: true, extra: "Da divorare" }, t)?.label).toBe("Absolute Cinema")
   })
 
-  it("prioritizes imdbTop250 over award (American Beauty case)", () => {
-    expect(computeBadge({ ...base, imdbTop250: true, award: "Vincitore Oscar" }, t)?.label).toBe("Absolute Cinema")
+  it("award beats imdbTop250 in priority (original hierarchy)", () => {
+    expect(computeBadge({ ...base, imdbTop250: true, award: "Vincitore Oscar" }, t)?.label).toBe("Vincitore Oscar")
   })
 
   it("does not show imdbTop250 for TV", () => {

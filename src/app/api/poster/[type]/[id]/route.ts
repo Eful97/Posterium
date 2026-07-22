@@ -310,9 +310,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       rankingEnabledEarly
         ? getKeywords(mediaType, tmdbId, req.nextUrl.searchParams.get("api_key") || undefined).catch(() => [])
         : Promise.resolve([]),
-      (rankingEnabledEarly && imdbId)
-        ? isImdbTop250(imdbId).catch(() => false)
-        : Promise.resolve(false),
+      (async () => {
+        if (!rankingEnabledEarly) return false
+        const effectiveId = imdbId || (await getExternalIds(mediaType, tmdbId, req.nextUrl.searchParams.get("api_key") || undefined).catch(() => null))?.imdb_id || null
+        if (!effectiveId) return false
+        if (!imdbId) imdbId = effectiveId
+        return isImdbTop250(effectiveId)
+      })(),
     ])
 
     const rankingRank = rankingResult ?? mapping?.badgeRank ?? mapping?.trendRank ?? null
