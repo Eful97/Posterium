@@ -44,6 +44,7 @@ interface PosterState {
     keywords?: string[]
     type?: string
     status?: string
+    imdb_id?: string | null
   }
   trendRank: number | null
   mdblistAnimeList: EnrichedAnimeItem[]
@@ -83,6 +84,8 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
     const genre = ps.metaInfo.genres[0]?.name
     if (genre) params.push(`genreName=${encodeURIComponent(genre)}`)
     if (ps.metaInfo.voteAverage > 0) params.push(`voteAverage=${ps.metaInfo.voteAverage}`)
+    const imdbId = ps.metaInfo.imdb_id || ps.selected.imdb_id
+    if (imdbId) params.push(`imdbId=${encodeURIComponent(imdbId)}`)
   }
   if (ps.selectedLogo && ps.previewPoster?.iso_639_1 === null) {
     params.push(`logo=${encodeURIComponent(ps.selectedLogo.file_path)}`)
