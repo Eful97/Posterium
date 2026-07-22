@@ -176,7 +176,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
             aW = Math.round(aW * s); aH = Math.round(aH * s)
             resized = await sharp(resized).resize(aW, aH, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
           }
-          return { input: resized, top: Math.max(0, Math.round(layout.top + (layout.height - aH))), left: Math.round(layout.left + ((layout.width - aW) / 2)) } as const
+          return { input: resized, top: Math.max(0, Math.round(layout.top + (layout.height - aH))), left: Math.round(layout.left + ((layout.width - aW) / 2)), w: aW, h: aH } as const
         })()
       : Promise.resolve(null),
   ])
@@ -329,12 +329,25 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     })
   }
   if (networkLogoResult) {
-    const isNetflixRank = safeRankBadgeResult && rankingBadgeStyle === "netflix"
-    composites.push({
-      input: networkLogoResult.png,
-      top: 15,
-      left: isNetflixRank ? Math.round(safeRankBadgeResult!.w + 10) : 23,
-    })
+    if (logoResult) {
+      const netW = networkLogoResult.w
+      const netH = networkLogoResult.h
+      const gap = Math.round(10 * STD_W / 380)
+      const netTop = Math.max(15, logoResult.top - netH - gap)
+      const netLeft = Math.round((STD_W - netW) / 2)
+      composites.push({
+        input: networkLogoResult.png,
+        top: netTop,
+        left: netLeft,
+      })
+    } else {
+      const isNetflixRank = safeRankBadgeResult && rankingBadgeStyle === "netflix"
+      composites.push({
+        input: networkLogoResult.png,
+        top: 15,
+        left: isNetflixRank ? Math.round(safeRankBadgeResult!.w + 10) : 23,
+      })
+    }
   }
 
   // -----------------------------------------------------------------------
