@@ -54,7 +54,8 @@ vi.mock("@/lib/ratings", () => ({
 vi.mock("@/lib/tmdb", () => ({
   getDetails: vi.fn(),
   getImages: vi.fn(),
-  getExternalIds: vi.fn(),
+  getExternalIds: vi.fn(async () => ({ imdb_id: null })),
+  getKeywords: vi.fn(async () => []),
 }))
 
 const mockedGetById = vi.mocked(getById)

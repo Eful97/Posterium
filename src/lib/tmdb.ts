@@ -118,6 +118,22 @@ export async function getExternalIds(mediaType: "movie" | "tv", id: number, apiK
   return data as TMDBExternalIds
 }
 
+export interface TMDBKeywordsResponse {
+  id: number
+  keywords?: { id: number; name: string }[]
+  results?: { id: number; name: string }[]
+}
+
+export async function getKeywords(mediaType: "movie" | "tv", id: number, apiKey?: string): Promise<string[]> {
+  try {
+    const data = (await tmdbFetch(`/${mediaType}/${id}/keywords`, apiKey)) as TMDBKeywordsResponse
+    const list = data.keywords || data.results || []
+    return list.map((k) => k.name)
+  } catch {
+    return []
+  }
+}
+
 export interface TMDBDetails {
   id: number
   title?: string

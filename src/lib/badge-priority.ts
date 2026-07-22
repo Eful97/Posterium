@@ -26,6 +26,7 @@ export function computeBadge(params: {
   nomination: string | null
   studio: string | null
   director: string | null
+  subGenre?: string | null
   extra: string | null
 }, _t?: T): BadgeResult | null {
   const t = _t || _idT
@@ -39,6 +40,7 @@ export function computeBadge(params: {
   if (params.nomination) return { type: "extra", label: params.nomination }
   if (params.studio) return { type: "extra", label: params.studio }
   if (params.director) return { type: "extra", label: params.director }
+  if (params.subGenre) return { type: "extra", label: params.subGenre }
   if (params.extra) return { type: "extra", label: params.extra }
   return null
 }

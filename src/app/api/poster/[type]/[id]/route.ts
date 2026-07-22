@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import sharp from "sharp"
 import "@/lib/sharp-config"
-import { getImages, getDetails, getExternalIds, type TMDBImage, type TMDBCompany } from "@/lib/tmdb"
+import { getImages, getDetails, getExternalIds, getKeywords, type TMDBImage, type TMDBCompany } from "@/lib/tmdb"
 import { getJWRankings } from "@/lib/justwatch"
 import { getById, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
@@ -324,6 +324,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const wikidataPromise = rankingEnabledEarly
       ? fetchAllWikidata(tmdbId, mediaType, t).catch(() => emptyWikidata)
       : Promise.resolve(emptyWikidata)
+    const keywordsPromise = rankingEnabledEarly
+      ? getKeywords(mediaType, tmdbId, req.nextUrl.searchParams.get("api_key") || undefined).catch(() => [])
+      : Promise.resolve([])
     const rankingRank = rankingResult ?? mapping?.badgeRank ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
@@ -529,11 +532,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const targetCenter = Math.round(30 * STD_H / 570)
 
     const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 4000
-    const wikidataResult = await Promise.race([
-      wikidataPromise,
-      new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>(
-        (resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), WIKIDATA_TIMEOUT)
-      ),
+    const [wikidataResult, tmdbKeywords] = await Promise.all([
+      Promise.race([
+        wikidataPromise,
+        new Promise<{ awards: string[]; nominations: string[]; studios: string[]; franchise: string | null; basedOn: string | null; director: string | null }>(
+          (resolve) => setTimeout(() => resolve({ awards: [], nominations: [], studios: [], franchise: null, basedOn: null, director: null }), WIKIDATA_TIMEOUT)
+        ),
+      ]),
+      keywordsPromise,
     ])
 
     // Use shared badge computation — same logic as client preview
@@ -551,6 +557,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       director: wikidataResult.director,
       tvType: tvType ?? null,
       tvStatus,
+      keywords: tmdbKeywords,
     }
     const locale = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
     const computed = computeTopBadge(badgeInput, t, locale)

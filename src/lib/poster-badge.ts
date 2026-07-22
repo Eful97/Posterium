@@ -6,6 +6,7 @@
 import { computeBadge, computeExtraFallback, type BadgeResult } from "./badge-priority"
 import { getAwardBadgeLabel, getNominationBadgeLabel } from "./awards"
 import { getUpcomingReleaseLabel } from "./release-badge"
+import { getSubGenreLabel } from "./subgenres"
 
 export type BadgeT = (key: string, params?: Record<string, string | number>) => string
 
@@ -24,6 +25,7 @@ export interface BadgeInput {
   tvType: string | null | undefined
   tvStatus: string | null | undefined
   networkLogoMatched?: boolean
+  keywords?: string[]
 }
 
 export interface ComputedTopBadge {
@@ -34,6 +36,7 @@ export interface ComputedTopBadge {
   readonly extraFallback: string | null
   readonly awardBadge: string | null
   readonly studioBadge: string | null
+  readonly subGenreBadge: string | null
 }
 
 export function isNetworkStudio(studioName: string | null): boolean {
@@ -88,6 +91,8 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
     locale: locale || "it",
   })
 
+  const subGenreBadge = getSubGenreLabel(input.keywords || [], locale)
+
   const badge = computeBadge({
     upcomingRelease,
     isNewMovie,
@@ -99,6 +104,7 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
     nomination,
     studio,
     director: input.director,
+    subGenre: subGenreBadge,
     extra: extraFallback,
   }, t)
 
@@ -110,5 +116,6 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
     extraFallback,
     awardBadge,
     studioBadge,
+    subGenreBadge,
   }
 }
