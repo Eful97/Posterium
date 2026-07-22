@@ -74,8 +74,8 @@ describe("computeBadge", () => {
 })
 
 describe("computeExtraFallback", () => {
-  it("returns ⭐ IMDb Top 250 for movies with vote >= 8.3", () => {
-    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 8.4, tvType: null, tvStatus: null }, t)).toBe("⭐ IMDb Top 250")
+  it("returns 🎬 Absolute Cinema for movies with vote >= 8.3", () => {
+    expect(computeExtraFallback({ mediaType: "movie", voteAverage: 8.4, tvType: null, tvStatus: null }, t)).toBe("🎬 Absolute Cinema")
   })
 
   it("returns null for movies with vote < 8.3", () => {
@@ -90,8 +90,8 @@ describe("computeExtraFallback", () => {
     expect(computeExtraFallback({ mediaType: "tv", voteAverage: 7.0, tvType: null, tvStatus: "Returning Series" }, t)).toBe("Ritorna")
   })
 
-  it("returns ⭐ IMDb Top 250 for high-rated TV", () => {
-    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 9.0, tvType: null, tvStatus: "Ended" }, t)).toBe("⭐ IMDb Top 250")
+  it("returns 🎬 Absolute Cinema for high-rated TV", () => {
+    expect(computeExtraFallback({ mediaType: "tv", voteAverage: 9.0, tvType: null, tvStatus: "Ended" }, t)).toBe("🎬 Absolute Cinema")
   })
 })
 
