@@ -155,7 +155,7 @@ export default function EditView() {
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,1fr)_minmax(400px,480px)_minmax(300px,1fr)] gap-5 items-stretch w-full max-w-[1360px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
 
             {/* LEFT: Poster */}
-            <div className="animate-fade-scale-in-panel-left" style={{animationDelay: "80ms"}}>
+            <div className="order-2 lg:order-1 animate-fade-scale-in-panel-left" style={{animationDelay: "80ms"}}>
             <EditorPanel aria-label={`${p.selected?.title || ""} — Poster selection`} tabs={leftTabs} activeTab={activePosterTab} onTabChange={setActivePosterTab}>
               {p.loadingImages ? (
                 <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div>
@@ -166,7 +166,7 @@ export default function EditView() {
             </div>
 
             {/* CENTER: Preview */}
-            <div className="animate-fade-scale-in" style={{animationDelay: "0ms"}}>
+            <div className="order-1 lg:order-2 animate-fade-scale-in" style={{animationDelay: "0ms"}}>
             <EditorPanel title={p.t("ui.previewSection")}>
               <div className="flex flex-col items-center">
                 <div className="relative w-full max-w-[360px]">
@@ -258,7 +258,7 @@ export default function EditView() {
             </div>
 
             {/* RIGHT: Edit */}
-            <div className="animate-fade-scale-in-panel-right" style={{animationDelay: "80ms"}}>
+            <div className="order-3 lg:order-3 animate-fade-scale-in-panel-right" style={{animationDelay: "80ms"}}>
             <EditorPanel tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
               <div key={activeRightTab} className="animate-fade-in space-y-3">
               {activeRightTab === "logo" && <>
