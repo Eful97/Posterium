@@ -36,6 +36,8 @@ export function computeBadge(params: {
   if (params.trendRank) return { type: "rank", label: t("badge.today"), rank: params.trendRank }
   if (params.isNewMovie) return { type: "extra", label: t("badge.newMovie") }
   if (params.isNewSeries) return { type: "extra", label: t("badge.newSeries") }
+  // IMDb Top 250 has higher priority than individual awards/nominations
+  if (params.imdbTop250) return { type: "extra", label: t("badge.absoluteCinema") }
   if (params.award) return { type: "extra", label: params.award }
   if (params.nomination) return { type: "extra", label: params.nomination }
   if (params.subGenre) return { type: "extra", label: params.subGenre }
