@@ -166,10 +166,10 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
     )
   }, [sortByFit, cleanPosters, scoreMap])
 
-  const [visibleCleanCount, setVisibleCleanCount] = useState(20)
+  const [visibleCleanCount, setVisibleCleanCount] = useState(12)
 
   useEffect(() => {
-    setVisibleCleanCount(20)
+    setVisibleCleanCount(12)
   }, [p.selected?.id, activeGroup, sortByFit])
 
   const visibleCleanPosters = useMemo(() => {
@@ -353,11 +353,11 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
             <button
               type="button"
               aria-label="Carica altri poster"
-              onClick={() => setVisibleCleanCount((prev) => prev + 20)}
+              onClick={() => setVisibleCleanCount((prev) => prev + 12)}
               className="w-full mt-3 py-2 px-3 text-xs font-semibold rounded-xl bg-white/[0.06] border border-white/10 text-zinc-300 hover:bg-white/[0.12] hover:border-white/20 hover:text-white active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
             >
               <ChevronDown className="w-4 h-4" />
-              Carica altri poster (+{Math.min(20, displayPosters.length - visibleCleanCount)})
+              Carica altri poster (+{Math.min(12, displayPosters.length - visibleCleanCount)})
               <span className="text-[10px] text-zinc-500 font-normal">({visibleCleanCount} di {displayPosters.length})</span>
             </button>
           )}
