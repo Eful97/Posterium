@@ -429,16 +429,16 @@ Genera un poster personalizzato via URL.
 
 ### Priorità badge top
 
-1. 🆕 **Nuovo film / Nuova serie** — <2 settimane
+1. 📅 **In Arrivo / Prossima Uscita** — Uscita programmata
 2. 🎌 **Anime rank** — MDBList top anime *(richiede `MDBLIST_API_KEY`)*
 3. 🔥 **Trend rank** — JustWatch Italia
-4. 🏆 **Vincitore** — Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David (Wikidata P166)
-5. 🎬 **Franchise** — MCU, Harry Potter, James Bond, Star Wars e 50+ saghe (Wikidata P179)
-6. 🏅 **Candidato** — Stessi premi, nomination (Wikidata P1411)
-7. 📡 **Network / Studio** — Netflix, HBO, Disney+, Warner Bros., Pixar, Studio Ghibli e altri (TMDB)
+4. 🆕 **Nuovo film / Nuova serie** — <2 settimane dalla release
+5. 🏆 **Vincitore** — Oscar, Cannes, Venezia, BAFTA, Golden Globe, Emmy, David (Wikidata P166)
+6. 🏅 **Candidato** — Nomination premi (Wikidata P1411)
+7. 📡 **Studio** — A24, Studio Ghibli, Columbia Pictures e altri (TMDB)
 8. 🎥 **Di [Regista]** — 66 registi IMDb Top 70 (Wikidata P57)
-9. 📺 **Miniserie / Ritorna**
-10. ⭐ **Da divorare / Il più votato** — voto aggregato ≥ 8.5
+9. 🏷️ **Sottogenere** — Viaggi nel Tempo, Cyberpunk, Giallo col Delitto, Horror Slasher, Film di Rapina, Paranormale, Post-Apocalittico, Supereroi e altri
+10. 📺 **Fallback Extra** — Miniserie, In corso, Il più votato (voto aggregato ≥ 8.5)
 
 ### Badge genere/rating
 
