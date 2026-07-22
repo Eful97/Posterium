@@ -329,25 +329,12 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     })
   }
   if (networkLogoResult) {
-    if (logoResult) {
-      const netW = networkLogoResult.w
-      const netH = networkLogoResult.h
-      const gap = Math.round(10 * STD_W / 380)
-      const netTop = Math.max(15, logoResult.top - netH - gap)
-      const netLeft = Math.round((STD_W - netW) / 2)
-      composites.push({
-        input: networkLogoResult.png,
-        top: netTop,
-        left: netLeft,
-      })
-    } else {
-      const isNetflixRank = safeRankBadgeResult && rankingBadgeStyle === "netflix"
-      composites.push({
-        input: networkLogoResult.png,
-        top: 15,
-        left: isNetflixRank ? Math.round(safeRankBadgeResult!.w + 10) : 23,
-      })
-    }
+    const isNetflixRank = safeRankBadgeResult && rankingBadgeStyle === "netflix"
+    composites.push({
+      input: networkLogoResult.png,
+      top: 15,
+      left: isNetflixRank ? Math.round(safeRankBadgeResult!.w + 10) : 23,
+    })
   }
 
   // -----------------------------------------------------------------------
