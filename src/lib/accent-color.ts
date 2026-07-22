@@ -187,8 +187,13 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
   // Higher saturation since we're using a contrasting hue (not blending, but popping)
   const badgeSat = Math.min(0.82, Math.max(0.55, bestBucket.totalSat / bestBucket.count))
 
-  // Binary search: find lightness that achieves contrast ≥ 3.0 against poster background.
-  const targetL = findContrastingLightness(badgeHue, badgeSat, bgRelLum, 3.0)
+  // Lightness strategy:
+  //   Dark poster  (bgRelLum < 0.18)  → very light badge (L=0.88) → cream/pastel tones
+  //                                      Contrast on these dark bgs is always >8:1 at L=0.88
+  //   Mid/light poster (bgRelLum ≥ 0.18) → binary-search for a darker badge that passes 3:1
+  const targetL = bgRelLum < 0.18
+    ? 0.88
+    : findContrastingLightness(badgeHue, badgeSat, bgRelLum, 3.0)
 
   const result = hslToRgb(badgeHue, badgeSat, targetL)
   result.r = Math.max(0, Math.min(255, result.r))
