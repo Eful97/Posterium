@@ -8,7 +8,7 @@ import { saveDefaults } from "@/lib/save-defaults"
 import { SliderRow } from "@/components/SliderRow"
 import { Toggle } from "@/components/Toggle"
 import { BadgeStyleSelector, SecretInput, MenuItem } from "@/components/ui"
-import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles, Tv } from "lucide-react"
+import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles, Tv, Flame } from "lucide-react"
 
 interface Props {
   tmdbKeyInput: string
@@ -31,6 +31,13 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   const [clearStatus, setClearStatus] = useState<"idle" | "clearing" | "cleared">("idle")
   const [tmdbKeyError, setTmdbKeyError] = useState<string | undefined>(undefined)
   const [mdblistKeyError, setMdblistKeyError] = useState<string | undefined>(undefined)
+  const [cacheCount, setCacheCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch("/api/cache/status").then(r => r.ok ? r.json() : null).then(data => {
+      if (data && typeof data.totalEntries === "number") setCacheCount(data.totalEntries)
+    }).catch(() => null)
+  }, [])
 
   useEffect(() => {
     if (!mobile) return
@@ -117,7 +124,24 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <hr className="border-zinc-700 my-1" />
       <MenuItem icon={<Download className="w-3 h-3 text-accent-orange" />} label={p.t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
       <MenuItem icon={<Upload className="w-3 h-3 text-blue-400" />} label={p.t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />
-      <MenuItem aria-label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} icon={<Trash2 className="w-3 h-3" />} label={clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")} onClick={clearCache} danger />
+      <div className="pt-2 border-t border-zinc-800 space-y-1.5">
+        <div className="flex items-center justify-between text-[11px] font-medium text-zinc-400 px-1">
+          <span className="flex items-center gap-1.5"><Flame className="w-3 h-3 text-amber-400" /> Diagnostica & Cache</span>
+          <span className="text-zinc-500 text-[10px] font-mono">{cacheCount !== null ? `${cacheCount} item` : "1-Click"}</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button type="button" onClick={async () => {
+            try {
+              toast.info("Ripopolamento cache cataloghi avviato...")
+              await http<{ ok: boolean }>("/api/warmup", { method: "POST", retries: 0 })
+              toast.success("Cache cataloghi aggiornata con successo!")
+            } catch {
+              toast.error("Impossibile avviare il warmup")
+            }
+          }} className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 active:scale-[0.98] transition-all"><Flame className="w-3 h-3" /> Warmup</button>
+          <button type="button" onClick={clearCache} className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 active:scale-[0.98] transition-all"><Trash2 className="w-3 h-3" />{clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")}</button>
+        </div>
+      </div>
     </>
   )
 
