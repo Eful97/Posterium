@@ -8,10 +8,7 @@ describe("subgenres detection", () => {
     expect(getSubGenreLabel(keywords, "en")).toBe("Cyberpunk")
   })
 
-  it("detects slasher for Scream keywords", () => {
-    const keywords = ["slasher", "serial killer", "ghostface"]
-    expect(getSubGenreLabel(keywords, "it")).toBe("Horror Slasher")
-  })
+
 
   it("detects time travel for Back to the Future keywords without false cyberpunk match", () => {
     const keywords = ["time travel", "delorean", "time machine", "future"]

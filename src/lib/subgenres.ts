@@ -20,11 +20,7 @@ const SUB_GENRES: SubGenreRule[] = [
     keywords: ["cyberpunk", "android", "cybernetics", "dystopia", "dystopian", "virtual reality", "artificial intelligence"],
     labels: { it: "Cyberpunk", en: "Cyberpunk", fr: "Cyberpunk", de: "Cyberpunk", es: "Cyberpunk" },
   },
-  {
-    key: "slasher",
-    keywords: ["slasher", "serial killer", "masked killer", "teen horror"],
-    labels: { it: "Horror Slasher", en: "Slasher", fr: "Slasher", de: "Slasher", es: "Slasher" },
-  },
+
   {
     key: "whodunit",
     keywords: ["whodunit", "murder mystery", "detective", "investigation", "private investigator", "sleuth"],
