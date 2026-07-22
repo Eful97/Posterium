@@ -65,16 +65,10 @@ function normalizeCatalogType(type: string): StremioCatalogType {
   return type === "movie" ? "movie" : "series"
 }
 
-async function posteriumPosterUrl(
-  req: NextRequest,
-  type: "movie" | "series",
-  id: number,
-  rank?: number,
-  label?: string
-): Promise<string> {
+async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number): Promise<string> {
   const defaults = getServerDefaults()
   const mapping = await getById(type === "series" ? "tv" : "movie", id)
-  const url = buildStremioPosterUrl({
+  return buildStremioPosterUrl({
     origin: getOriginFromRequest(req),
     type,
     id,
@@ -82,13 +76,7 @@ async function posteriumPosterUrl(
     mapping,
     apiKey: process.env.TMDB_API_KEY,
     lang: "it",
-  })
-  if (rank) {
-    url.searchParams.set("rank", String(rank))
-    url.searchParams.set("rs", "netflix")
-    if (label) url.searchParams.set("label", label)
-  }
-  return url.toString()
+  }).toString()
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
@@ -119,11 +107,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         return { d, tmdbId: id }
       }))
       const validResults = results.filter((r): r is { d: { imdb_id?: string; title?: string; name?: string; release_date?: string; first_air_date?: string }; tmdbId: number } => r !== null)
-      metas = await Promise.all(validResults.map(async (r, index) => ({
+      metas = await Promise.all(validResults.map(async (r) => ({
         id: r.d.imdb_id || r.tmdbId.toString(),
         type: stType,
         name: r.d.title || r.d.name || "",
-        poster: await posteriumPosterUrl(req, stType, r.tmdbId, index + 1, "Oggi"),
+        poster: await posteriumPosterUrl(req, stType, r.tmdbId),
         releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
       })))
     } else if (catalogId.startsWith("posterium-anime")) {
@@ -142,11 +130,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             return { d, tmdbId: item.tmdb, imdb: item.imdb }
           }))
           const validResults = results.filter((r): r is { d: { imdb_id?: string; name?: string; first_air_date?: string }; tmdbId: number; imdb?: string } => r !== null)
-          metas = await Promise.all(validResults.map(async (r, index) => ({
+          metas = await Promise.all(validResults.map(async (r) => ({
             id: r.d.imdb_id || r.imdb || r.tmdbId.toString(),
             type: "series",
             name: r.d.name || "",
-            poster: await posteriumPosterUrl(req, "series", r.tmdbId, index + 1, "Anime"),
+            poster: await posteriumPosterUrl(req, "series", r.tmdbId),
             releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
           })))
         }
@@ -164,11 +152,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           const itemsWithTmdb = items.slice(0, 10).flatMap((item) => (
             item.tmdbId ? [{ ...item, tmdbId: item.tmdbId }] : []
           ))
-          metas = await Promise.all(itemsWithTmdb.map(async (item, index) => ({
+          metas = await Promise.all(itemsWithTmdb.map(async (item) => ({
             id: item.tmdbId.toString(),
             type: stType,
             name: item.title,
-            poster: await posteriumPosterUrl(req, stType, item.tmdbId, item.rank || (index + 1), "Oggi"),
+            poster: await posteriumPosterUrl(req, stType, item.tmdbId),
             releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
           })))
         }

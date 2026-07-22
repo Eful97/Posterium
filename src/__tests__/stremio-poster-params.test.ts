@@ -44,7 +44,7 @@ describe("buildStremioPosterSearchParams", () => {
     expect(params.get("bf")).toBe("60")
     expect(params.get("bd")).toBe("40")
     expect(params.get("bs")).toBe("shadow")
-    expect(params.get("rs")).toBe("netflix")
+    expect(params.get("rs")).toBe("default")
   })
 
   it("keeps the public Stremio poster URL version in sync with renderer changes", () => {

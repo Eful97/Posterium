@@ -19,7 +19,7 @@ const DEFAULT_STREMIO_POSTER_PARAMS = {
   globalBadges: true,
   rankingBadges: true,
   badgeStyle: "shadow",
-  rankingBadgeStyle: "netflix",
+  rankingBadgeStyle: "default",
   gradientHeight: 30,
   blurIntensity: 5,
   blurFade: 60,
