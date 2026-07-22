@@ -573,7 +573,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qNetLogo = req.nextUrl.searchParams.get("netLogo")
     const globalNetLogo = sd.networkLogo !== false
     const mappingNetLogo = mapping?.networkLogo !== false
-    const netLogoEnabled = globalNetLogo && mappingNetLogo && qNetLogo !== "0" && qRankingBadgeStyle !== "netflix"
+    const netLogoEnabled = globalNetLogo && mappingNetLogo && qNetLogo !== "0"
     const networkCandidates = [
       ...tmdbNetworks,
       ...productionCompanies,
