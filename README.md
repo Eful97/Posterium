@@ -9,7 +9,7 @@ pinned: false
 ---
 
 <p align="center">
-  <img src="public/posterium.svg" alt="Posterium" width="400" />
+  <img src="public/posterium.png" alt="Posterium" width="400" />
 </p>
 
 <p align="center"><strong>Genera poster personalizzati</strong> di film e serie TV — loghi, badge trend, rating, premi e classifiche, renderizzati dinamicamente via API.</p>
