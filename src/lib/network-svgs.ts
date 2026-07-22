@@ -35,7 +35,7 @@ const NETWORK_TARGET_W: Record<string, number> = {
   netflix: 26,
   hbo: 52,
   disney: 72,
-  prime: 74,
+  prime: 56,
   apple: 54,
   paramount: 72,
   rai: 44,
