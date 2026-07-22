@@ -33,7 +33,7 @@ const SUB_GENRES: SubGenreRule[] = [
   {
     key: "heist",
     keywords: ["heist", "bank robbery", "caper", "robbery", "master thief"],
-    labels: { it: "Colpo Grosso", en: "Heist", fr: "Film de braquage", de: "Heist", es: "Robos" },
+    labels: { it: "Film di Rapina", en: "Heist", fr: "Film de braquage", de: "Heist", es: "Robos" },
   },
   {
     key: "zombie",
