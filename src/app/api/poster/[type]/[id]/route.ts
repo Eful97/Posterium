@@ -42,6 +42,8 @@ import {
 } from "@/lib/poster-render-helpers"
 import { generatePosterBuffer, type GenerationInput } from "@/lib/poster-service"
 
+import { resolveImdbToTmdb } from "@/lib/imdb-resolver"
+
 type RouteParams = { type: string; id: string }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
@@ -50,7 +52,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   warmFonts()
   const { type, id } = await params
   const mediaType = (["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "")) ? "tv" : "movie"
-  const tmdbId = Number(id)
+  let tmdbId = Number(id)
+  if (isNaN(tmdbId) || tmdbId <= 0) {
+    if (typeof id === "string" && id.startsWith("tt")) {
+      const resolved = await resolveImdbToTmdb(id, mediaType)
+      if (resolved) tmdbId = resolved
+    }
+  }
+
   if (isNaN(tmdbId) || tmdbId <= 0) {
     return new Response("Invalid ID", { status: 400 })
   }
