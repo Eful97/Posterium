@@ -7,7 +7,7 @@ import { LANG_NAMES, groupBy } from "@/lib/utils"
 import { PosterBtn } from "@/components/PosterBtn"
 import { useP } from "@/lib/context"
 import { usePosterFit } from "@/lib/usePosterFit"
-import { RotateCcw, Check, Clock, Sparkles, ArrowUpDown, EyeOff } from "lucide-react"
+import { RotateCcw, Check, Clock, Sparkles, ArrowUpDown, EyeOff, ChevronDown } from "lucide-react"
 
 interface Props {
   posters: TMDBImage[]
@@ -166,6 +166,16 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
     )
   }, [sortByFit, cleanPosters, scoreMap])
 
+  const [visibleCleanCount, setVisibleCleanCount] = useState(20)
+
+  useEffect(() => {
+    setVisibleCleanCount(20)
+  }, [p.selected?.id, activeGroup, sortByFit])
+
+  const visibleCleanPosters = useMemo(() => {
+    return displayPosters.slice(0, visibleCleanCount)
+  }, [displayPosters, visibleCleanCount])
+
   const toggleRotation = (filePath: string) => {
     p.setRotationPosters((prev) => {
       if (prev.includes(filePath)) return prev.filter((f) => f !== filePath)
@@ -298,45 +308,60 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       )}
 
       {activeClean && hasClean && (
-        <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
-          {displayPosters.map((img) => {
-            const stagger = idx++
-            const inRotation = p.rotationPosters.includes(img.file_path)
-            const isBestFit = bestFitPath === img.file_path
-            const showBadge = isBestFit && bestScore >= 0.45
-            const isHighScore = bestScore >= 0.65
-            return (
-              <div key={img.file_path} className={`relative group rounded-xl overflow-hidden ${isBestFit && bestScore >= 0.45 ? `ring-1 ${isHighScore ? "ring-orange-400/70 shadow-[0_0_18px_rgba(255,100,48,0.18)]" : "ring-amber-400/50"}` : ""}`}>
-                <PosterBtn staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/50 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
-                {showBadge && (
-                  <div className={`absolute left-1.5 top-1.5 z-20 rounded-md border px-1.5 py-0.5 text-[8px] font-semibold backdrop-blur-md pointer-events-none ${isHighScore ? "border-orange-300/30 bg-black/60 text-orange-200" : "border-amber-300/25 bg-black/55 text-amber-200"}`}>
-                    <Sparkles className="w-2.5 h-2.5 inline mr-0.5" />
-                    {isHighScore ? "Best fit" : "Fit migliore"}
+        <>
+          <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
+            {visibleCleanPosters.map((img) => {
+              const stagger = idx++
+              const inRotation = p.rotationPosters.includes(img.file_path)
+              const isBestFit = bestFitPath === img.file_path
+              const showBadge = isBestFit && bestScore >= 0.45
+              const isHighScore = bestScore >= 0.65
+              return (
+                <div key={img.file_path} className={`relative group rounded-xl overflow-hidden ${isBestFit && bestScore >= 0.45 ? `ring-1 ${isHighScore ? "ring-orange-400/70 shadow-[0_0_18px_rgba(255,100,48,0.18)]" : "ring-amber-400/50"}` : ""}`}>
+                  <PosterBtn staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/50 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
+                  {showBadge && (
+                    <div className={`absolute left-1.5 top-1.5 z-20 rounded-md border px-1.5 py-0.5 text-[8px] font-semibold backdrop-blur-md pointer-events-none ${isHighScore ? "border-orange-300/30 bg-black/60 text-orange-200" : "border-amber-300/25 bg-black/55 text-amber-200"}`}>
+                      <Sparkles className="w-2.5 h-2.5 inline mr-0.5" />
+                      {isHighScore ? "Best fit" : "Fit migliore"}
+                    </div>
+                  )}
+                  <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <button
+                      aria-label={inRotation ? p.t("ui.removeFromRotation") : p.t("ui.addToRotation")}
+                      onClick={(e) => { e.stopPropagation(); toggleRotation(img.file_path) }}
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 ${inRotation ? "bg-accent-orange text-white border-accent-orange shadow-sm shadow-accent-orange/40" : "bg-black/55 border-white/10 text-zinc-200 hover:bg-accent-orange/90 hover:text-white hover:border-accent-orange/60"}`}
+                      title={inRotation ? p.t("ui.removeFromRotation") : p.t("ui.addToRotation")}
+                    >
+                      {inRotation ? <Check className="w-3.5 h-3.5" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      aria-label="Escludi poster"
+                      onClick={(e) => { e.stopPropagation(); excludePoster(img.file_path) }}
+                      className="w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 bg-black/55 border-white/10 text-zinc-300 hover:bg-red-500/90 hover:text-white hover:border-red-400/60"
+                      title="Escludi poster"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                )}
-                <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                  <button
-                    aria-label={inRotation ? p.t("ui.removeFromRotation") : p.t("ui.addToRotation")}
-                    onClick={(e) => { e.stopPropagation(); toggleRotation(img.file_path) }}
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 ${inRotation ? "bg-accent-orange text-white border-accent-orange shadow-sm shadow-accent-orange/40" : "bg-black/55 border-white/10 text-zinc-200 hover:bg-accent-orange/90 hover:text-white hover:border-accent-orange/60"}`}
-                    title={inRotation ? p.t("ui.removeFromRotation") : p.t("ui.addToRotation")}
-                  >
-                    {inRotation ? <Check className="w-3.5 h-3.5" /> : <RotateCcw className="w-3.5 h-3.5" />}
-                  </button>
-                  <button
-                    aria-label="Escludi poster"
-                    onClick={(e) => { e.stopPropagation(); excludePoster(img.file_path) }}
-                    className="w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 bg-black/55 border-white/10 text-zinc-300 hover:bg-red-500/90 hover:text-white hover:border-red-400/60"
-                    title="Escludi poster"
-                  >
-                    <EyeOff className="w-3.5 h-3.5" />
-                  </button>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+
+          {displayPosters.length > visibleCleanCount && (
+            <button
+              type="button"
+              aria-label="Carica altri poster"
+              onClick={() => setVisibleCleanCount((prev) => prev + 20)}
+              className="w-full mt-3 py-2 px-3 text-xs font-semibold rounded-xl bg-white/[0.06] border border-white/10 text-zinc-300 hover:bg-white/[0.12] hover:border-white/20 hover:text-white active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <ChevronDown className="w-4 h-4" />
+              Carica altri poster (+{Math.min(20, displayPosters.length - visibleCleanCount)})
+              <span className="text-[10px] text-zinc-500 font-normal">({visibleCleanCount} di {displayPosters.length})</span>
+            </button>
+          )}
+        </>
       )}
 
       {activeClean && showFitDebug && hasFitData && (
