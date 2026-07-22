@@ -33,7 +33,8 @@ pinned: false
 - 🎯 **Loghi** — Seleziona loghi ufficiali puliti, posizionali con drag & drop e slider Scala/X/Y, filtro per lingua (Tutti/Italiano/English/Senza lingua) e fallback automatico su lingua originale
 - 🔥 **Badge trend** — Classifica JustWatch, tendenze MDBList, badge semi-trasparenti adattivi con ombra proporzionale e text-shadow sincronizzato
 - 🏷️ **Badge genere/rating** — Genere, •, ★ e voto medio, 6 stili (shadow/pill/bar/colored/bordo/vetro), con overflow protection, anno, accent color e text color adattivo
-- 🏆 **Badge ranking/extra** — Classifica JustWatch, tendenze MDBList, badge personalizzati, 5 stili (default/bar/colored/pill/netflix) con l'iconica bandierina drolla fisso in alto a destra per Netflix Top 10 / Top 3
+- 🎬 **Resa poster cinematografica (AAA Polish)** — Gradiente cromatico adattivo al colore dominante del film, vignettatura cinematografica sferica, bilanciamento vividezza/contrasto OLED, icone dorate per le valutazioni e doppie ombre 3D con bordi lucidi di contorno
+- 🏆 **Badge ranking/extra & Nastro Netflix** — Classifica JustWatch, tendenze MDBList, badge personalizzati, 5 stili (default/bar/colored/pill/netflix) con il nastro rosso allineato in alto a sinistra per Netflix Top 10 / Top 3 e affiancamento automatico del logo network
 - ✏️ **Badge personalizzato** — Sostituisci il badge automatico con testo libero, per ogni titolo individualmente
 - 🎨 **Blur fondo** — Intensità, fade, oscurità regolabili, sincronizzato client ↔ server (sostituisce il gradiente)
 - 📊 **Rating** — Media tra IMDb (da MDBList o OMDb) e TMDb (da TMDB), per un voto bilanciato e accurato
@@ -55,7 +56,7 @@ pinned: false
 - 💾 **Runtime cache poster** — Cache in memoria con stale refresh, coalescing dei render duplicati e warmup dei poster salvati
 - 🗑️ **Svuota cache** — Pulsante nelle impostazioni per forzare la pulizia della cache in memoria
 - 🧩 **UI condivisa** — Componenti riutilizzabili: BadgeStyleSelector, SecretInput, MenuItem, SectionCard (design system)
-- ✅ **245 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
+- ✅ **253 test** — Suite di test su URL builder, cache, badge priority, types, mappings, storage persistente, header CDN, versioning, compositing poster, parametri Stremio, scoring poster-fit
 
 ---
 
@@ -456,7 +457,7 @@ Badge in alto, 5 stili:
 - **Bar** — barra full-width in alto, più sottile
 - **Colored** — pillola colorata con il colore dominante, testo adattivo
 - **Pill** — pillola moderna arrotondata
-- **Netflix** — nastro verticale rosso dritto allineato in alto a destra (TOP 10 / TOP 3), con fallback automatico allo stile default se non in classifica
+- **Netflix** — nastro verticale rosso allineato in alto a sinistra (TOP 10 / TOP 3), con affiancamento automatico del logo network ed elisione dei badge testuali duplicati, con fallback allo stile default se non in classifica
 
 Il testo del badge ranking/extra si adatta automaticamente alla larghezza. Rendering SVG server-side con Resvg.
 
