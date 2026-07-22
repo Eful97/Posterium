@@ -187,6 +187,20 @@ topEdgeColor: string
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
+export const AppCtx = createContext<PosteriumCtx | null>(null)
+export const EditCtx = createContext<PosteriumCtx | null>(null)
+
+export function useAppCtx(): PosteriumCtx {
+  const v = useContext(AppCtx)
+  if (!v) throw new Error("useAppCtx must be inside PosteriumProvider")
+  return v
+}
+
+export function useEditCtx(): PosteriumCtx {
+  const v = useContext(EditCtx)
+  if (!v) throw new Error("useEditCtx must be inside PosteriumProvider")
+  return v
+}
 
 export function useP() {
   const ctx = useContext(Ctx)
@@ -195,7 +209,13 @@ export function useP() {
 }
 
 export function PosteriumProvider({ value, children }: { value: PosteriumCtx; children: React.ReactNode }) {
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
+  return (
+    <AppCtx.Provider value={value}>
+      <EditCtx.Provider value={value}>
+        <Ctx.Provider value={value}>{children}</Ctx.Provider>
+      </EditCtx.Provider>
+    </AppCtx.Provider>
+  )
 }
 
 export function usePosterium(): PosteriumCtx {
