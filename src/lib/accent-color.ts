@@ -173,13 +173,21 @@ export function findAccentColor(pixels: Uint8ClampedArray | Buffer, width: numbe
     }
   }
 
-  // Extract bucket's average HSL / RGB
+  // Use dominant hue from poster, but elegant lightness:
+  // Dark poster  → light pastel version of dominant hue (0.76–0.86) — visible, harmonic
+  // Light poster → medium-dark saturated version     (0.28–0.40)
   const avgHue = ((Math.atan2(bestBucket.hueSin, bestBucket.hueCos) * 180 / Math.PI) % 360 + 360) % 360
-  const avgSat = Math.min(0.88, Math.max(0.55, bestBucket.totalSat / bestBucket.count))
+  // Keep hue faithful but moderate saturation for elegance
+  const avgSat = Math.min(0.72, Math.max(0.45, bestBucket.totalSat / bestBucket.count))
 
-  // Preserve rich, vivid lightness (0.38 - 0.52) for solid premium badge color
-  const rawLum = bestBucket.totalLum / bestBucket.count
-  const targetLum = Math.max(0.38, Math.min(0.52, rawLum > 0 ? rawLum : 0.45))
+  let targetLum: number
+  if (bgLum < 0.5) {
+    // Dark poster → produce a bright, airy tint of the poster's dominant hue
+    targetLum = Math.min(0.88, Math.max(0.76, 0.80 + (0.5 - bgLum) * 0.16))
+  } else {
+    // Light poster → deeper saturated version
+    targetLum = Math.max(0.28, Math.min(0.40, 0.44 - (bgLum - 0.5) * 0.40))
+  }
 
   const result = hslToRgb(avgHue, avgSat, targetLum)
   result.r = Math.max(0, Math.min(255, result.r))
