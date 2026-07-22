@@ -29,9 +29,12 @@ pinned: false
       <div align="right">
   <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/76479.jpg" alt="Posterium Badge" width="50%" />
 </div>
-
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/1405.jpg" alt="Screenshot 1" width="33%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/66732.jpg" alt="Screenshot 2" width="33%" />
+  <img src="https://raw.githubusercontent.com/Eful97/Posterium/master/public/Screen/76479.jpg" alt="Screenshot 3" width="33%" />
+</div>
 ---
-
 ## ✨ Features
 
 - 🔍 **Ricerca TMDB** — Cerca film e serie TV in italiano e inglese
