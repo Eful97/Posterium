@@ -41,6 +41,7 @@ import {
   topLuminance,
 } from "@/lib/poster-render-helpers"
 import { generatePosterBuffer, type GenerationInput } from "@/lib/poster-service"
+import { computeTopBadge } from "@/lib/poster-badge"
 
 import { resolveImdbToTmdb } from "@/lib/imdb-resolver"
 
@@ -417,7 +418,94 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         ? { genreColor: mapping.accentColor, rankColor: mapping.accentColor }
         : null
 
-    // 9. Generate poster buffer
+    // 9. Debug mode — return JSON with all computed data instead of rendering
+    const isDebug = req.nextUrl.searchParams.get("debug") === "1"
+    if (isDebug) {
+      const badgeInput = {
+        mediaType: mediaType as "movie" | "tv",
+        releaseDate: releaseDate ?? null,
+        firstAirDate: firstAirDate ?? null,
+        voteAverage: voteAverage ?? 0,
+        trendRank: finalRank,
+        animeRank: animeRankResult,
+        awards: wikidataResult.awards,
+        nominations: wikidataResult.nominations,
+        studios: tmdbStudios.length ? [...tmdbStudios] : [...productionCompanies, ...tmdbNetworks],
+        director: wikidataResult.director,
+        tvType: tvType ?? null,
+        tvStatus,
+        keywords: [...tmdbKeywords],
+        imdbTop250: !!imdbTop250,
+      }
+      const badgeComputed = computeTopBadge(badgeInput, t, locale)
+      completePosterRender(null)
+      return Response.json({
+        meta: {
+          tmdbId,
+          mediaType,
+          locale,
+          imdbId,
+          imdbTop250: !!imdbTop250,
+          renderVersion: RENDER_VERSION,
+        },
+        images: {
+          poster: posterPath,
+          logo: logoPath,
+          backdrop: backdropPath,
+        },
+        genre: { name: genreName, year: releaseDate?.slice(0, 4) },
+        vote: { average: voteAverage },
+        rankings: {
+          justwatch: rankingResult,
+          anime: animeRankResult,
+          finalRank,
+          qRank: req.nextUrl.searchParams.get("rank") || null,
+          qLabel,
+        },
+        wikidata: {
+          awards: wikidataResult.awards,
+          nominations: wikidataResult.nominations,
+          studios: wikidataResult.studios,
+          director: wikidataResult.director,
+        },
+        keywords: [...tmdbKeywords],
+        badge: {
+          computed: {
+            badge: badgeComputed.badge,
+            upcomingRelease: badgeComputed.upcomingRelease,
+            awardBadge: badgeComputed.awardBadge,
+            studioBadge: badgeComputed.studioBadge,
+            subGenreBadge: badgeComputed.subGenreBadge,
+            extraFallback: badgeComputed.extraFallback,
+          },
+          settings: {
+            badgesEnabled,
+            rankingEnabled,
+            badgeStyle,
+            rankingBadgeStyle,
+            customBadge: queryExtra,
+          },
+        },
+        appearance: {
+          topLight,
+          blurEnabled,
+          blurHeight,
+          blurIntensity,
+          blurFade,
+          blurDarkness,
+          gradientHeight: blurHeight,
+          accentColor: accentOverride?.genreColor || null,
+        },
+        logos: {
+          scale: logoScale,
+          offsetX: logoOffsetX,
+          offsetY: logoOffsetY,
+          networkLogo: qNetLogo !== "0",
+        },
+      })
+    }
+
+    // 10. Generate poster buffer
     const genInput: GenerationInput = {
       posterBuf, logoFetch, backdropFetch,
       backdropScale, backdropOffsetX, backdropOffsetY,
