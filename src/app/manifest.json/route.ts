@@ -5,10 +5,16 @@ import { getOriginFromRequest } from "@/lib/poster-public-url"
 
 export async function GET(req: NextRequest) {
   const domain = getOriginFromRequest(req)
+  const user = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user")
+  const config = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c")
+
+  const suffix = user ? `.${user.slice(0, 8)}` : config ? `.${config.slice(0, 8)}` : ""
+  const addonId = `org.posterium${suffix}`
+
   return Response.json({
-    id: "org.posterium",
+    id: addonId,
     version: APP_VERSION,
-    name: "Posterium",
+    name: user ? `Posterium (${user.slice(0, 8)})` : "Posterium",
     description: "Custom poster manager for Stremio — loghi, badge trend, premi e rating",
     resources: ["catalog", "poster"],
     types: ["movie", "series"],

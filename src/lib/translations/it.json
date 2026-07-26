@@ -95,6 +95,9 @@
     "ui.clean":  "Clean",
     "ui.copied":  "Copiato!",
     "ui.copyUrl":  "AIOmetadata URL",
+    "ui.saveProfile":  "Salva profilo",
+    "ui.copyProfileUrl":  "URL profilo",
+    "ui.copiedProfile":  "Copiato!",
     "ui.installCatalog":  "Installa catalogo",
     "ui.myPostersBtn":  "I miei poster",
     "ui.settings":  "Impostazioni",
@@ -212,5 +215,15 @@
     "ui.movieLabel":  "Film",
     "ui.tvLabel":  "Serie TV",
     "ui.posterExamples":  "Esempi di poster",
-    "ui.posterExamplesDesc":  "Layout reali generati con badge, loghi e gradienti"
+    "ui.posterExamplesDesc":  "Layout reali generati con badge, loghi e gradienti",
+    "ui.profileTitle":  "Salva Profilo",
+    "ui.profileSubtitle":  "Proteggi la configurazione del tuo poster con una password",
+    "ui.profileUuidLabel":  "Il tuo UUID Profilo",
+    "ui.profilePasswordLabel":  "Password del Profilo",
+    "ui.profilePasswordPlaceholder":  "Inserisci una password",
+    "ui.profilePasswordHint":  "Questa password sarà richiesta per modificare il profilo in futuro. Le richieste poster via Stremio funzionano senza password.",
+    "ui.profilePasswordRequired":  "Inserisci una password",
+    "ui.profileWrongPassword":  "Password errata",
+    "ui.profileSaved":  "Profilo salvato! URL copiato negli appunti.",
+    "ui.saving":  "Salvataggio..."
 }

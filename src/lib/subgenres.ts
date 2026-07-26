@@ -12,7 +12,7 @@ export interface SubGenreRule {
 const SUB_GENRES: SubGenreRule[] = [
   {
     key: "timetravel",
-    keywords: ["time travel", "time loop", "timeline", "time machine", "wormhole", "time manipulation"],
+    keywords: ["time travel", "time loop", "time machine", "wormhole", "time manipulation"],
     labels: { it: "Viaggi nel Tempo", en: "Time Travel", fr: "Voyage temporel", de: "Zeitreise", es: "Viajes en el tiempo" },
   },
   {
@@ -29,7 +29,7 @@ const SUB_GENRES: SubGenreRule[] = [
     // NOTE: "detective" and "investigation" removed — they are too broad and
     // triggered false positives on generic police procedurals.
     keywords: ["whodunit", "murder mystery", "private investigator", "sleuth"],
-    labels: { it: "Giallo col Delitto", en: "Whodunit", fr: "Whodunit", de: "Whodunit", es: "Whodunit" },
+    labels: { it: "Giallo", en: "Whodunit", fr: "Whodunit", de: "Whodunit", es: "Whodunit" },
   },
   {
     key: "heist",

@@ -95,6 +95,9 @@
     "ui.clean":  "Sauber",
     "ui.copied":  "Kopiert!",
     "ui.copyUrl":  "AIOmetadata URL",
+    "ui.saveProfile":  "Profil speichern",
+    "ui.copyProfileUrl":  "Profil-URL",
+    "ui.copiedProfile":  "Kopiert!",
     "ui.installCatalog":  "Katalog installieren",
     "ui.myPostersBtn":  "Meine Poster",
     "ui.settings":  "Einstellungen",
@@ -200,5 +203,15 @@
     "ui.autoRotateDefault":  "Auto-Rotation 24h Standard",
     "ui.logoFitEnabled":  "Automatische Logo-Kompatibilität",
     "ui.addToRotation":  "Zur Rotation hinzufügen",
-    "ui.removeFromRotation":  "Aus Rotation entfernen"
+    "ui.removeFromRotation":  "Aus Rotation entfernen",
+    "ui.profileTitle":  "Save Profile",
+    "ui.profileSubtitle":  "Protect your poster configuration with a password",
+    "ui.profileUuidLabel":  "Your Profile UUID",
+    "ui.profilePasswordLabel":  "Profile Password",
+    "ui.profilePasswordPlaceholder":  "Enter a password",
+    "ui.profilePasswordHint":  "This password will be required to modify your poster profile in the future. Stremio poster requests work without a password.",
+    "ui.profilePasswordRequired":  "Please enter a password",
+    "ui.profileWrongPassword":  "Wrong password",
+    "ui.profileSaved":  "Profile saved! URL copied to clipboard.",
+    "ui.saving":  "Saving..."
 }

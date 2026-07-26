@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { SearchResult, TMDBImage, Mapping } from "./types"
-import { posterUrl, titleOf, yearOf, STREAMING_PLATFORMS } from "./utils"
+import { posterUrl, titleOf, yearOf, STREAMING_PLATFORMS, getDomain } from "./utils"
 import { findAccentColor, topEdgeAverage } from "./accent-color"
 import { matchTMDBStudios } from "./awards"
 import { setLang as setI18nLang, t } from "./i18n"
@@ -17,6 +17,7 @@ import { useDefaults } from "./useDefaults"
 import { usePosterSave } from "./usePosterSave"
 import { computeLogoOffsetBounds } from "./logo-layout"
 import { useOutsideDismiss } from "./useOutsideDismiss"
+import type { PosteriumUserConfig } from "./config-token"
 
 export type ViewType = "search" | "myposters" | "edit" | "cataloghi"
 
@@ -169,6 +170,12 @@ export interface PosteriumCtx {
   importData: () => void
   copyUrl: () => Promise<void>
   copied: boolean
+  saveAndCopyProfileUrl: () => Promise<void>
+  profileCopied: boolean
+  profileId: string | null
+  setProfileId: React.Dispatch<React.SetStateAction<string | null>>
+  profilePassword: string
+  setProfilePassword: (v: string) => void
   accentColor: string
   setAccentColor: (v: string) => void
 topEdgeColor: string
@@ -238,6 +245,19 @@ export function usePosterium(): PosteriumCtx {
 
   const [urlPattern, setUrlPattern] = useState("")
   const [copied, setCopied] = useState(false)
+  const [profileId, setProfileId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null
+    try { return localStorage.getItem("posterium_profile_id") } catch { return null }
+  })
+  const [profileCopied, setProfileCopied] = useState(false)
+  const [profilePassword, setProfilePassword] = useState<string>(() => {
+    if (typeof window === "undefined") return ""
+    try { return localStorage.getItem("posterium_profile_password") || "" } catch { return "" }
+  })
+  const setProfilePasswordPersist = useCallback((v: string) => {
+    setProfilePassword(v)
+    try { localStorage.setItem("posterium_profile_password", v) } catch {}
+  }, [])
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
   const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; director?: string | null; keywords?: string[]; imdb_id?: string | null }>({ genres: [], voteAverage: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -398,9 +418,39 @@ export function usePosterium(): PosteriumCtx {
     setUrlPattern(buildUrlPattern({
       globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
       customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo,
-      tmdbKey, lang,
+      tmdbKey, lang, profileId,
     }))
-  }, [globalBadges, rankingBadges, networkLogo, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+  }, [globalBadges, rankingBadges, networkLogo, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang, profileId]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+
+  // Auto-sync profile configuration when profileId is active
+  const lastSyncRef = useRef<string>("")
+  useEffect(() => {
+    if (!profileId) return
+    const config = {
+      globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
+      blurEnabled, blurIntensity, blurFade, blurDarkness,
+      gradientHeight, networkLogo, autoRotateClean, logoFitEnabled: true,
+      customBadge: customBadge || undefined,
+    }
+    const payloadStr = JSON.stringify({ config, profileId, tmdbKey, mdblistApiKey })
+    if (lastSyncRef.current === payloadStr) return
+
+    const timer = setTimeout(() => {
+      lastSyncRef.current = payloadStr
+      fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          config,
+          profileId,
+          password: profilePassword || undefined,
+          apiKeys: { tmdbKey: tmdbKey || undefined, mdblistApiKey: mdblistApiKey || undefined },
+        }),
+      }).catch((e) => console.error("[profile] Auto-sync failed:", e))
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [profileId, profilePassword, globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, autoRotateClean, customBadge, tmdbKey, mdblistApiKey])
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -726,6 +776,43 @@ export function usePosterium(): PosteriumCtx {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const saveAndCopyProfileUrl = useCallback(async () => {
+    const config: PosteriumUserConfig = {
+      globalBadges,
+      rankingBadges,
+      badgeStyle: badgeStyle as PosteriumUserConfig["badgeStyle"],
+      rankingBadgeStyle: rankingBadgeStyle as PosteriumUserConfig["rankingBadgeStyle"],
+      blurEnabled,
+      blurIntensity,
+      blurFade,
+      blurDarkness,
+      gradientHeight,
+      networkLogo,
+      autoRotateClean,
+      logoFitEnabled: defaultLogoFitEnabled,
+      customBadge: customBadge || undefined,
+    }
+    try {
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config, profileId: profileId || undefined, password: profilePassword || undefined }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const newProfileId = data.profileId as string
+      setProfileId(newProfileId)
+      try { localStorage.setItem("posterium_profile_id", newProfileId) } catch {}
+      const url = `${getDomain()}/api/poster/:type/:id?u=${newProfileId}`
+      await navigator.clipboard.writeText(url)
+      setProfileCopied(true)
+      setTimeout(() => setProfileCopied(false), 2000)
+    } catch (e) {
+      console.error("[posterium] Failed to save profile:", e)
+      import("sonner").then(({ toast }) => toast.error("Errore nel salvare il profilo"))
+    }
+  }, [globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, autoRotateClean, defaultLogoFitEnabled, customBadge, profileId, profilePassword])
+
   const posterActivePath = navigation.previewPoster?.file_path
 
   const { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig: savePosterConfig } = usePosterSave({
@@ -738,7 +825,7 @@ export function usePosterium(): PosteriumCtx {
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
-    setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, lang,
+    setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, lang, profileId,
   })
 
   const saveConfig = useCallback(async () => {
@@ -818,7 +905,8 @@ export function usePosterium(): PosteriumCtx {
     showKey, setShowKey, setTmdbKey,
     mdblistApiKey, setMdblistApiKey: setMdblistApiKeyFn,
     exportData, importData, removeRecentSearch: search.removeRecentSearch,
-    copyUrl, copied,
+    copyUrl, copied, saveAndCopyProfileUrl, profileCopied, profileId, setProfileId,
+    profilePassword, setProfilePassword: setProfilePasswordPersist,
     accentColor, setAccentColor,
     topEdgeColor,
     rotationPosters, setRotationPosters,
@@ -844,7 +932,7 @@ export function usePosterium(): PosteriumCtx {
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
-    tmdbKeyInput, showKey, copied,
+    tmdbKeyInput, showKey, copied, profileCopied, profileId,
     accentColor, setAccentColor,
     topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, logoDisabled, setLogoDisabled, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,

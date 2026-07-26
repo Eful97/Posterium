@@ -13,6 +13,8 @@ export interface BuildStremioPosterUrlInput {
   readonly mapping?: Mapping | null
   readonly apiKey?: string
   readonly lang?: string | null
+  readonly config?: string | null
+  readonly user?: string | null
 }
 
 export function mappingVersionParam(mapping: Mapping | null | undefined): string | null {
@@ -27,6 +29,8 @@ export function buildStremioPosterUrl(input: BuildStremioPosterUrlInput): URL {
   })
 
   const params = buildStremioPosterSearchParams({
+    config: input.config,
+    user: input.user,
     apiKey: input.apiKey,
     lang: input.lang || "it",
     globalBadges: input.defaults.globalBadges,

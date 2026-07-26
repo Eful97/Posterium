@@ -17,7 +17,7 @@ describe("subgenres detection", () => {
 
   it("detects whodunit for Knives Out keywords with Italian label", () => {
     const keywords = ["murder mystery", "whodunit", "inheritance"]
-    expect(getSubGenreLabel(keywords, "it")).toBe("Giallo col Delitto")
+    expect(getSubGenreLabel(keywords, "it")).toBe("Giallo")
     expect(getSubGenreLabel(keywords, "en")).toBe("Whodunit")
   })
 

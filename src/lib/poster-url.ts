@@ -54,8 +54,11 @@ interface PosterState {
   tmdbKey: string
 }
 
-export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string }): string {
-  let url = `${getPosterPublicBaseUrl()}/api/poster/{type}/{tmdb_id}`
+export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string; profileId?: string | null }): string {
+  if (bp.profileId) {
+    return `${getPosterPublicBaseUrl()}/api/poster/{type}/{id}?u=${bp.profileId}`
+  }
+  let url = `${getPosterPublicBaseUrl()}/api/poster/{type}/{id}`
   const params = buildStremioPosterSearchParams({
     apiKey: bp.tmdbKey,
     lang: bp.lang,
@@ -69,7 +72,8 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
     blurDarkness: bp.blurDarkness,
     blurEnabled: bp.blurEnabled,
   })
-  url += "?" + params.toString()
+  const str = params.toString()
+  if (str) url += "?" + str
   return url
 }
 

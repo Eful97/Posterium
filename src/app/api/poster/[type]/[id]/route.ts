@@ -44,6 +44,8 @@ import { generatePosterBuffer, type GenerationInput } from "@/lib/poster-service
 import { computeTopBadge } from "@/lib/poster-badge"
 
 import { resolveImdbToTmdb } from "@/lib/imdb-resolver"
+import { decodeConfig } from "@/lib/config-token"
+import { getProfile, getFullProfileData } from "@/lib/profile-store"
 
 type RouteParams = { type: string; id: string }
 
@@ -69,6 +71,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let mapping = await getById(mediaType, tmdbId)
   const sd = getServerDefaults()
 
+  // Decode optional stateless config token (stile AIOMetadata / RPDB)
+  const configToken = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c")
+  let configOverride = configToken ? decodeConfig(configToken) : null
+
+  // UUID-based profile override (stile RPDB / ElfHosted / AIOMetadata)
+  // Se presente, sovrascrive sia il config token che i poster personalizzati per quell'utente
+  const profileId = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user") || null
+  if (profileId) {
+    const fullProfile = await getFullProfileData(profileId)
+    if (fullProfile) {
+      configOverride = fullProfile.config
+      const userMapping = fullProfile.mappings?.[`${mediaType}:${tmdbId}`]
+      if (userMapping) {
+        mapping = userMapping
+      }
+    }
+  }
+
   // Auto-rotate clean poster
   const rotationState = getEffectiveRotationState(mapping)
   const isRotating = rotationState.isRotating
@@ -84,10 +104,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   // 2. Cache key
   const sdHash = hashKey(JSON.stringify(sd))
   const cacheParams = normalizePosterCacheParams(req.nextUrl.searchParams)
+  cacheParams.delete("config")
+  cacheParams.delete("c")
+  cacheParams.delete("u")
+  cacheParams.delete("user")
   const cachedRank = mapping?.trendRank ?? null
   const rotateKey = isRotating ? `:ci${mapping?.cleanPosterIndex ?? "x"}` : ""
   const mapVersion = mapping?.updatedAt ? `:mu${mapping.updatedAt}` : ""
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}`
+  const configHash = configOverride ? hashKey(JSON.stringify(configOverride)) : ""
+  const userKey = profileId ? `:u${profileId}` : ""
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}${userKey}`
   const currentMappingVersion = mappingVersionParam(mapping)
   const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams, {
     hasMapping: !!mapping,
@@ -225,7 +251,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         const qLogoFit = req.nextUrl.searchParams.get("logoFit")
-        const logoFitEnabled = qLogoFit !== null ? qLogoFit !== "0" : sd.defaultLogoFitEnabled !== false
+        const logoFitEnabled = qLogoFit !== null ? qLogoFit !== "0" : (configOverride !== null ? configOverride.logoFitEnabled : sd.defaultLogoFitEnabled !== false)
         if (logoPath && logoFitEnabled) {
           try {
             const fitStart = Date.now()
@@ -374,6 +400,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const rawRs = req.nextUrl.searchParams.get("rs")
     let rankingBadgeStyle = (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined)
       || (rawRs && rawRs !== "default" ? rawRs : undefined)
+      || (configOverride?.rankingBadgeStyle && configOverride.rankingBadgeStyle !== "default" ? configOverride.rankingBadgeStyle : undefined)
       || sd.rankingBadgeStyle
       || "default"
     const qRankParam = req.nextUrl.searchParams.get("rank")
@@ -384,17 +411,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       rankingBadgeStyle = "default"
     }
 
-    const blurEnabled = req.nextUrl.searchParams.get("be") !== "0"
-    const blurHeight = req.nextUrl.searchParams.get("gradHeight") ? Math.max(Number(req.nextUrl.searchParams.get("gradHeight")), 5) : 30
-    const blurIntensity = req.nextUrl.searchParams.get("blur") ? Math.max(Number(req.nextUrl.searchParams.get("blur")), 1) : 5
-    const blurFade = req.nextUrl.searchParams.get("bf") ? Math.max(Number(req.nextUrl.searchParams.get("bf")), 0) : 60
-    const blurDarkness = req.nextUrl.searchParams.get("bd") ? Math.max(Number(req.nextUrl.searchParams.get("bd")), 0) : 40
+    const qBe = req.nextUrl.searchParams.get("be")
+    const blurEnabled = qBe !== null ? qBe !== "0" : (configOverride !== null ? configOverride.blurEnabled : true)
+    const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
+    const blurHeight = qGradHeight ? Math.max(Number(qGradHeight), 5) : (configOverride !== null ? Math.max(configOverride.gradientHeight, 5) : 30)
+    const qBlur = req.nextUrl.searchParams.get("blur")
+    const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : (configOverride !== null ? Math.max(configOverride.blurIntensity, 1) : 5)
+    const qBf = req.nextUrl.searchParams.get("bf")
+    const blurFade = qBf ? Math.max(Number(qBf), 0) : (configOverride !== null ? Math.max(configOverride.blurFade, 0) : 60)
+    const qBd = req.nextUrl.searchParams.get("bd")
+    const blurDarkness = qBd ? Math.max(Number(qBd), 0) : (configOverride !== null ? Math.max(configOverride.blurDarkness, 0) : 40)
 
     const hasQuery = !!queryPoster || !!mapping
-    const badgesEnabled = hasQuery ? (qBadges !== null ? qBadges !== "0" : showBadges) : true
-    const rankingEnabled = hasQuery ? (qRanking !== null ? qRanking !== "0" : rankingBadges) : true
+    const badgesEnabled = hasQuery ? (qBadges !== null ? qBadges !== "0" : (configOverride !== null ? configOverride.globalBadges : showBadges)) : true
+    const rankingEnabled = hasQuery ? (qRanking !== null ? qRanking !== "0" : (configOverride !== null ? configOverride.rankingBadges : rankingBadges)) : true
     const badgeStyle = req.nextUrl.searchParams.get("bs")
       || (mapping?.badgeStyle && mapping.badgeStyle !== "shadow" ? mapping.badgeStyle : undefined)
+      || configOverride?.badgeStyle
       || sd.badgeStyle || "shadow"
 
     const qScale = req.nextUrl.searchParams.get("scale")
@@ -404,8 +437,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const logoOffsetX = qOx ? Number(qOx) || null : mapping?.logoOffsetX ?? null
     const logoOffsetY = qOy ? Number(qOy) || null : mapping?.logoOffsetY ?? null
 
-    const queryExtra = req.nextUrl.searchParams.get("extra") || null
-    const qNetLogo = req.nextUrl.searchParams.get("netLogo")
+    const queryExtra = req.nextUrl.searchParams.get("extra") || configOverride?.customBadge || null
+    const qNetLogo = req.nextUrl.searchParams.get("netLogo") ?? (configOverride !== null ? (configOverride.networkLogo ? null : "0") : null)
 
     const locale = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
     const targetCenter = Math.round(30 * STD_H / 570)

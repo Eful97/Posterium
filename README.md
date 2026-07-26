@@ -50,7 +50,8 @@ pinned: false
 - ⭐ **Rating Accurato** — Voto medio bilanciato ed imparziale IMDb + TMDB.
 - 🌀 **Sfocatura Sfondo Nativa (Sharp C++)** — Effetto blur sul fondo ultra-rapido generato in soli ~10-20ms.
 - 🔄 **Rotazione Poster 24h** — Cambia automaticamente locandina pulita ogni giorno tra i poster selezionati.
-- ⚡ **Generatore Stremio Addon Proxy** — Incolla il link `manifest.json` di qualsiasi add-on Stremio (Cyberflix, Cinemeta, Streaming Catalogs, Torrentio, ecc.) per iniettare automaticamente i poster dinamici di Posterium nei cataloghi esterni!
+- 🔐 **Profilo Cloud (UUID + Password)** — Salva e carica la tua configurazione su server con password protetta. Il tuo UUID personale si collega automaticamente a Stremio per avere i poster personalizzati ovunque.
+- ⚡ **Generatore Stremio Addon Proxy** — Incolla il link `manifest.json` di qualsiasi add-on Stremio (Cyberflix, Cinemeta, Streaming Catalogs, Torrentio, ecc.) per iniettare automaticamente i poster dinamici di Posterium nei cataloghi esterni! Supporta anche il parametro `?u=` per profili personalizzati.
 - 📡 **Integrazione Stremio Istantanea** — Generazione dinamica tramite manifest Stremio con caching e warmup automatico.
 
 ---
@@ -128,6 +129,7 @@ docker run -p 8080:8080 -e TMDB_API_KEY=la_tua_chiave_tmdb posterium
 | `KV_REST_API_URL` | ❌ | URL Upstash Redis per salvataggio persistente cloud |
 | `KV_REST_API_TOKEN` | ❌ | Token Upstash Redis |
 | `ADMIN_TOKEN` | ❌ | Protegge gli endpoint di gestione cache (`/api/cache/clear`) |
+| `POSTERIUM_DATA_DIR` | ❌ | Percorso personalizzato per dati persistenti (default: `./data/`) |
 
 ---
 

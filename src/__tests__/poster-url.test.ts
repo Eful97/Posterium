@@ -46,7 +46,7 @@ describe("buildUrlPattern", () => {
 
   it("contains domain and route pattern", () => {
     const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "key", lang: "it" })
-    expect(url).toContain("/api/poster/{type}/{tmdb_id}")
+    expect(url).toContain("/api/poster/{type}/{id}")
   })
 
   it("uses poster CDN base URL when configured", () => {
@@ -54,7 +54,12 @@ describe("buildUrlPattern", () => {
 
     const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "key", lang: "it" })
 
-    expect(url).toContain("https://cdn.posterium.example/api/poster/{type}/{tmdb_id}")
+    expect(url).toContain("https://cdn.posterium.example/api/poster/{type}/{id}")
+  })
+
+  it("returns clean AIOMetadata URL pattern when profileId is set", () => {
+    const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "key", lang: "it", profileId: "550e8400-e29b-41d4-a716-446655440000" })
+    expect(url).toContain("/api/poster/{type}/{id}?u=550e8400-e29b-41d4-a716-446655440000")
   })
 
   it("includes api_key param", () => {

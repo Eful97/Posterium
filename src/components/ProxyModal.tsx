@@ -24,8 +24,9 @@ export function ProxyModal({ isOpen, onClose }: Props) {
   if (!isOpen) return null
 
   const domain = typeof window !== "undefined" ? window.location.origin : ""
+  const userParam = p.profileId ? `&u=${p.profileId}` : ""
   const proxyUrl = targetUrl.trim()
-    ? `${domain}/api/proxy/manifest?url=${encodeURIComponent(targetUrl.trim())}`
+    ? `${domain}/api/proxy/manifest?url=${encodeURIComponent(targetUrl.trim())}${userParam}`
     : ""
 
   const handleCopy = async () => {

@@ -16,6 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
   const origin = getOriginFromRequest(req)
   const searchParams = req.nextUrl.searchParams
   const rawTargetUrl = searchParams.get("target") || searchParams.get("url")
+  const userUuid = searchParams.get("u") || searchParams.get("user") || null
 
   if (!rawTargetUrl) {
     return Response.json({ error: "Missing target URL parameter (?url= or ?target=)" }, { status: 400, headers: corsHeaders() })
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
   const firstPath = path[0] || ""
 
   // 1. Manifest Proxy
-  if (firstPath === "manifest" || targetUrl.endsWith("manifest.json")) {
+  if (firstPath === "manifest") {
     try {
       const manifestRes = await fetch(targetUrl, { signal: AbortSignal.timeout(10000) })
       if (!manifestRes.ok) {
@@ -66,9 +67,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
     const data = await res.json()
 
     if (data && Array.isArray(data.metas)) {
-      data.metas = rewriteMetasPosters(data.metas as StremioItemMeta[], origin)
+      data.metas = rewriteMetasPosters(data.metas as StremioItemMeta[], origin, userUuid)
     } else if (data && data.meta) {
-      data.meta = rewriteSingleMetaPoster(data.meta as StremioItemMeta, origin)
+      data.meta = rewriteSingleMetaPoster(data.meta as StremioItemMeta, origin, userUuid)
     }
 
     return Response.json(data, { headers: corsHeaders() })

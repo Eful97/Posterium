@@ -13,6 +13,8 @@ export interface StremioPosterParamsInput {
   readonly blurDarkness?: number
   readonly blurEnabled?: boolean
   readonly networkLogo?: boolean
+  readonly config?: string | null
+  readonly user?: string | null
 }
 
 const DEFAULT_STREMIO_POSTER_PARAMS = {
@@ -35,6 +37,8 @@ export function buildStremioPosterSearchParams(input: StremioPosterParamsInput):
   const blurEnabled = input.blurEnabled ?? DEFAULT_STREMIO_POSTER_PARAMS.blurEnabled
   const networkLogo = input.networkLogo ?? DEFAULT_STREMIO_POSTER_PARAMS.networkLogo
 
+  if (input.config) params.set("config", input.config)
+  if (input.user) params.set("u", input.user)
   if (input.apiKey) params.set("api_key", input.apiKey)
   if (!globalBadges) params.set("badges", "0")
   if (!rankingBadges) params.set("ranking", "0")

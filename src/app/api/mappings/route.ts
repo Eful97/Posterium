@@ -7,6 +7,7 @@ import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
+import { getFullProfileData, createOrUpdateProfile } from "@/lib/profile-store"
 
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
   }
-  await upsert({
+  const newMapping = {
     ...parsed.data,
     logoPath: parsed.data.logoPath ?? null,
     originalPosterPath: parsed.data.originalPosterPath ?? null,
@@ -45,7 +46,27 @@ export async function POST(req: NextRequest) {
     backdropPath: parsed.data.backdropPath ?? null,
     logoDisabled: parsed.data.logoDisabled ?? undefined,
     updatedAt: new Date().toISOString(),
-  })
+  }
+
+  await upsert(newMapping)
+
+  const profileId = typeof body.profileId === "string" && body.profileId.length > 0 ? body.profileId : null
+  if (profileId) {
+    const fullProfile = await getFullProfileData(profileId)
+    if (fullProfile) {
+      const updatedMappings = {
+        ...(fullProfile.mappings || {}),
+        [`${newMapping.mediaType}:${newMapping.tmdbId}`]: newMapping,
+      }
+      await createOrUpdateProfile(
+        fullProfile.config,
+        profileId,
+        undefined,
+        fullProfile.apiKeys,
+        updatedMappings,
+      )
+    }
+  }
   cacheInvalidatePosterData()
   // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano
   const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`

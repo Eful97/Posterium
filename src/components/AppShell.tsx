@@ -12,6 +12,7 @@ import { CataloghiView } from "@/components/CataloghiView"
 import EditView from "@/components/EditView"
 import { ToastProvider } from "@/components/Toast"
 import { ProxyModal } from "@/components/ProxyModal"
+import { ProfileModal } from "@/components/ProfileModal"
 import { RefreshCw, Settings, Globe, HeartPulse, Sparkles } from "lucide-react"
 
 export function AppShell() {
@@ -19,6 +20,7 @@ export function AppShell() {
   const [refreshing, setRefreshing] = useState(false)
   const [installed, setInstalled] = useState(false)
   const [proxyOpen, setProxyOpen] = useState(false)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [closingLang, setClosingLang] = useState(false)
   const [closingSettings, setClosingSettings] = useState(false)
   const closingLangRef = useRef<ReturnType<typeof setTimeout>>(null)
@@ -41,6 +43,15 @@ export function AppShell() {
     }
   }, [])
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!p.profileId) {
+        setProfileModalOpen(true)
+      }
+    }, 100)
+    return () => clearTimeout(t)
+  }, [p.profileId])
+
 return (
     <ToastProvider>
     <div className="app-shell text-foreground relative overflow-x-hidden">
@@ -61,24 +72,31 @@ return (
         />
       )}
       {p.showLangPicker && <LangPicker onPick={p.pickLang} />}
-      <div className="relative z-10 max-w-[1680px] mx-auto px-4 pt-5 md:pt-3 pb-20 md:pb-6 pb-[max(5rem,env(safe-area-inset-bottom)+4rem)]">
-        <div className="hidden md:flex justify-end items-center gap-2 mb-4">
-          <button aria-label={p.copied ? p.t("ui.copied") : p.t("ui.copyUrl")} onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="top-action-button top-action-button-primary px-5 text-sm font-semibold bg-accent-orange text-white border border-accent-orange/50 shadow-lg shadow-accent-orange/25 disabled:opacity-40 press-scale">{p.copied ? p.t("ui.copied") : p.t("ui.copyUrl")}</button>
-          <button aria-label={p.t("ui.installCatalog")} onClick={async () => { const url = `https://${window.location.host}/manifest.json`; await navigator.clipboard.writeText(url); setInstalled(true); setTimeout(() => setInstalled(false), 2000) }} disabled={!p.urlPattern} className="top-action-button px-3 text-sm font-semibold bg-white/[0.06] border border-white/10 text-zinc-400 hover:text-zinc-200 press-scale">{installed ? p.t("ui.copied") : <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>{p.t("ui.installCatalog")}</span>}</button>
-          <button aria-label="Addon Proxy" onClick={() => setProxyOpen(true)} className="top-action-button px-3 text-sm font-semibold flex items-center gap-1.5 bg-white/[0.06] border border-white/10 text-accent-orange hover:bg-accent-orange/15 hover:border-accent-orange/40 press-scale"><Sparkles className="w-3.5 h-3.5" />Proxy</button>
-          <button aria-label={p.t("ui.myPostersBtn")} onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.replaceState({ view: "myposters" }, ""); p.setView("myposters") } }} className="top-action-button px-3 text-sm font-semibold bg-white/[0.06] border border-white/10 text-zinc-200 press-scale">{p.t("ui.myPostersBtn")} ({p.mappings.length})</button>
-          <div className="relative" ref={p.settingsRef}>
-            <button aria-label={p.t("ui.settings")} onClick={(e) => { e.stopPropagation(); p.setSettingsOpen((o) => !o) }} className="top-action-button px-3 text-sm font-semibold flex items-center gap-2 bg-white/[0.06] border border-white/10 text-zinc-200 press-scale">{p.t("ui.settings")}</button>
-            <div className="hidden md:block">{p.settingsOpen && <SettingsPanel tmdbKeyInput={p.tmdbKeyInput} setTmdbKeyInput={p.setTmdbKeyInput} setTmdbKey={p.setTmdbKey} setSettingsOpen={p.setSettingsOpen} exportData={p.exportData} importData={p.importData} mdblistApiKey={p.mdblistApiKey} setMdblistApiKey={p.setMdblistApiKey} />}</div>
-          </div>
+      {/* desktop toolbar - fixed to right edge, outside centered container */}
+      <div className="hidden md:flex justify-end items-center gap-2 absolute top-4 right-4 z-20 max-w-full">
+        <button aria-label={p.copied ? p.t("ui.copied") : p.t("ui.copyUrl")} onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="top-action-button top-action-button-primary px-5 text-sm font-semibold bg-accent-orange text-white border border-accent-orange/50 shadow-lg shadow-accent-orange/25 disabled:opacity-40 press-scale">{p.copied ? p.t("ui.copied") : p.t("ui.copyUrl")}</button>
+        <button aria-label={p.t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="top-action-button px-3 text-sm font-semibold bg-white/[0.06] border border-white/10 text-zinc-400 hover:text-zinc-200 press-scale">
+          <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" /></svg>{p.t("ui.saveProfile")}</span>
+        </button>
+        <button aria-label={p.t("ui.installCatalog")} onClick={async () => { const uParam = p.profileId ? `?u=${p.profileId}` : ""; const url = `${window.location.origin}/manifest.json${uParam}`; await navigator.clipboard.writeText(url); setInstalled(true); setTimeout(() => setInstalled(false), 2000) }} disabled={!p.urlPattern && !p.profileId} className="top-action-button px-3 text-sm font-semibold bg-white/[0.06] border border-white/10 text-zinc-400 hover:text-zinc-200 press-scale">{installed ? p.t("ui.copied") : <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>{p.t("ui.installCatalog")}</span>}</button>
+        <button aria-label="Addon Proxy" onClick={() => setProxyOpen(true)} className="top-action-button px-3 text-sm font-semibold flex items-center gap-1.5 bg-white/[0.06] border border-white/10 text-accent-orange hover:bg-accent-orange/15 hover:border-accent-orange/40 press-scale"><Sparkles className="w-3.5 h-3.5" />Proxy</button>
+        <button aria-label={p.t("ui.myPostersBtn")} onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.replaceState({ view: "myposters" }, ""); p.setView("myposters") } }} className="top-action-button px-3 text-sm font-semibold bg-white/[0.06] border border-white/10 text-zinc-200 press-scale">{p.t("ui.myPostersBtn")} ({p.mappings.length})</button>
+        <div className="relative" ref={p.settingsRef}>
+          <button aria-label={p.t("ui.settings")} onClick={(e) => { e.stopPropagation(); p.setSettingsOpen((o) => !o) }} className="top-action-button px-3 text-sm font-semibold flex items-center gap-2 bg-white/[0.06] border border-white/10 text-zinc-200 press-scale">{p.t("ui.settings")}</button>
+          <div className="hidden md:block">{p.settingsOpen && <SettingsPanel tmdbKeyInput={p.tmdbKeyInput} setTmdbKeyInput={p.setTmdbKeyInput} setTmdbKey={p.setTmdbKey} setSettingsOpen={p.setSettingsOpen} exportData={p.exportData} importData={p.importData} mdblistApiKey={p.mdblistApiKey} setMdblistApiKey={p.setMdblistApiKey} />}</div>
         </div>
+      </div>
+      <div className="relative z-10 max-w-[1680px] mx-auto px-4 pt-5 md:pt-[68px] pb-20 md:pb-6 pb-[max(5rem,env(safe-area-inset-bottom)+4rem)]">
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
           <>
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
           <img onClick={p.goHome} src="/posterium.png" alt="Posterium" decoding="async" className="header-logo h-16 md:h-20 w-auto mb-6 md:mb-5 cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
             <button aria-label={p.t("ui.copyUrl")} onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="top-action-button top-action-button-primary h-11 px-4 text-xs font-semibold bg-accent-orange text-white border border-accent-orange/50 shadow-lg shadow-accent-orange/25 disabled:opacity-40">{p.copied ? p.t("ui.copied") : p.t("ui.copyUrl")}</button>
-            <button aria-label={p.t("ui.installCatalog")} onClick={async () => { const url = `https://${window.location.host}/manifest.json`; await navigator.clipboard.writeText(url); setInstalled(true); setTimeout(() => setInstalled(false), 2000) }} disabled={!p.urlPattern} className="top-action-button h-11 px-3 text-[11px] font-semibold bg-white/[0.06] border border-white/10 text-zinc-400 hover:text-zinc-200">{installed ? p.t("ui.copied") : <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>{p.t("ui.installCatalog")}</span>}</button>
+            <button aria-label={p.t("ui.installCatalog")} onClick={async () => { const uParam = p.profileId ? `?u=${p.profileId}` : ""; const url = `${window.location.origin}/manifest.json${uParam}`; await navigator.clipboard.writeText(url); setInstalled(true); setTimeout(() => setInstalled(false), 2000) }} disabled={!p.urlPattern && !p.profileId} className="top-action-button h-11 px-3 text-[11px] font-semibold bg-white/[0.06] border border-white/10 text-zinc-400 hover:text-zinc-200">{installed ? p.t("ui.copied") : <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>{p.t("ui.installCatalog")}</span>}</button>
+            <button aria-label={p.t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="top-action-button h-11 px-3 text-[11px] font-semibold bg-white/[0.06] border border-white/10 text-zinc-400 hover:text-zinc-200">
+              <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" /></svg>{p.t("ui.saveProfile")}</span>
+            </button>
             <button aria-label="Addon Proxy" onClick={() => setProxyOpen(true)} className="top-action-button h-11 px-3 text-[11px] font-semibold bg-white/[0.06] border border-white/10 text-accent-orange flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" />Proxy</button>
             <button aria-label={p.t("ui.myPostersBtn")} onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.replaceState({ view: "myposters" }, ""); p.setView("myposters") } }} className="top-action-button h-11 px-3 text-xs font-semibold bg-white/[0.06] border border-white/10 text-zinc-200">{p.t("ui.myPostersBtn")} ({p.mappings.length})</button>
             <button aria-label={p.t("ui.settings")} onClick={() => p.setSettingsOpen(true)} className="top-action-button h-11 w-11 flex items-center justify-center text-sm bg-white/[0.06] border border-white/10 text-zinc-200 press-scale"><Settings className="w-5 h-5" /></button>
@@ -87,6 +105,7 @@ return (
         </div>
 
         <ProxyModal isOpen={proxyOpen} onClose={() => setProxyOpen(false)} />
+        <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
         <div key={p.view} className="animate-fade-scale-in">
           {p.view === "search" ? <SearchView /> : p.view === "myposters" ? <MyPostersView /> : p.view === "cataloghi" ? <CataloghiView /> : <EditView />}
         </div>

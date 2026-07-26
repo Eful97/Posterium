@@ -58,6 +58,7 @@ interface PosterSaveDeps {
   setLogoOffsetY: (v: number) => void
   networkLogo: boolean
   lang: string
+  profileId?: string | null
 }
 
 export interface SaveConfigOverrides {
@@ -232,6 +233,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
           excludedPosters: nextExcludedPosters.length > 0 ? nextExcludedPosters : undefined,
           logoDisabled: logoDisabled || undefined,
           networkLogo: networkLogo !== undefined ? networkLogo : undefined,
+          profileId: deps.profileId || undefined,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)

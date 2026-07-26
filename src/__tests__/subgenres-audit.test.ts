@@ -9,7 +9,7 @@ describe("identity — each rule matches its core keyword", () => {
   const cases: { key: string; keyword: string; expected: string }[] = [
     { key: "timetravel",        keyword: "time travel",          expected: "Viaggi nel Tempo" },
     { key: "cyberpunk",         keyword: "cyberpunk",            expected: "Cyberpunk" },
-    { key: "whodunit",          keyword: "whodunit",             expected: "Giallo col Delitto" },
+    { key: "whodunit",          keyword: "whodunit",             expected: "Giallo" },
     { key: "heist",             keyword: "heist",                expected: "Film di Rapina" },
     { key: "zombie",            keyword: "zombie",               expected: "Film di Zombie" },
     { key: "vampire",           keyword: "vampire",              expected: "Vampiri" },
@@ -106,7 +106,7 @@ describe("false positive vectors (overly broad keyword patterns)", () => {
 
   // WHODUNIT: "sleuth" is specific enough — it genuinely indicates mystery content
   it("correctly flags sleuth as whodunit (keyword is specific enough)", () => {
-    expect(getSubGenreLabel(["sleuth", "mysterious"], "it")).toBe("Giallo col Delitto")
+    expect(getSubGenreLabel(["sleuth", "mysterious"], "it")).toBe("Giallo")
   })
 
   // SUPERHERO: "vigilante" is very broad

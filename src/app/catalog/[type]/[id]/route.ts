@@ -65,7 +65,7 @@ function normalizeCatalogType(type: string): StremioCatalogType {
   return type === "movie" ? "movie" : "series"
 }
 
-async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number): Promise<string> {
+async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number, configParam?: string | null, userParam?: string | null): Promise<string> {
   const defaults = getServerDefaults()
   const mapping = await getById(type === "series" ? "tv" : "movie", id)
   return buildStremioPosterUrl({
@@ -76,6 +76,8 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
     mapping,
     apiKey: process.env.TMDB_API_KEY,
     lang: "it",
+    config: configParam || undefined,
+    user: userParam || undefined,
   }).toString()
 }
 
@@ -86,8 +88,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const { type: mediaType, id: rawId } = await params
   const catalogId = rawId.replace(/\.json$/, "")
   const stType = normalizeCatalogType(mediaType)
+  const configParam = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c") || undefined
+  const userParam = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user") || undefined
 
-  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}`
+  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}${configParam ? `:cfg${configParam}` : ""}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
 
@@ -111,7 +115,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         id: r.d.imdb_id || r.tmdbId.toString(),
         type: stType,
         name: r.d.title || r.d.name || "",
-        poster: await posteriumPosterUrl(req, stType, r.tmdbId),
+        poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam),
         releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
       })))
     } else if (catalogId.startsWith("posterium-anime")) {
@@ -134,7 +138,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             id: r.d.imdb_id || r.imdb || r.tmdbId.toString(),
             type: "series",
             name: r.d.name || "",
-            poster: await posteriumPosterUrl(req, "series", r.tmdbId),
+            poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam),
             releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
           })))
         }
@@ -156,7 +160,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             id: item.tmdbId.toString(),
             type: stType,
             name: item.title,
-            poster: await posteriumPosterUrl(req, stType, item.tmdbId),
+            poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam),
             releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
           })))
         }
