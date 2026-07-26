@@ -245,15 +245,9 @@ export function usePosterium(): PosteriumCtx {
 
   const [urlPattern, setUrlPattern] = useState("")
   const [copied, setCopied] = useState(false)
-  const [profileId, setProfileId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null
-    try { return localStorage.getItem("posterium_profile_id") } catch { return null }
-  })
+  const [profileId, setProfileId] = useState<string | null>(null)
   const [profileCopied, setProfileCopied] = useState(false)
-  const [profilePassword, setProfilePassword] = useState<string>(() => {
-    if (typeof window === "undefined") return ""
-    try { return localStorage.getItem("posterium_profile_password") || "" } catch { return "" }
-  })
+  const [profilePassword, setProfilePassword] = useState<string>("")
   const setProfilePasswordPersist = useCallback((v: string) => {
     setProfilePassword(v)
     try { localStorage.setItem("posterium_profile_password", v) } catch {}
@@ -358,6 +352,10 @@ export function usePosterium(): PosteriumCtx {
     setMdblistApiKey(mdblistKey)
     const savedTheme = localStorage.getItem("posterium_theme")
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme)
+    const savedProfileId = localStorage.getItem("posterium_profile_id")
+    if (savedProfileId) setProfileId(savedProfileId)
+    const savedProfilePassword = localStorage.getItem("posterium_profile_password")
+    if (savedProfilePassword) setProfilePassword(savedProfilePassword)
   }, [])
 
   const setTmdbKey = (val: string) => {
