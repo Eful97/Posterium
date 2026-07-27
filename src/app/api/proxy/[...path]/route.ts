@@ -42,9 +42,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
       const origManifest = await manifestRes.json()
       const baseUrl = targetUrl.replace(/\/manifest\.json$/, "").replace(/\/$/, "")
 
+      const userSuffix = userUuid ? `.${userUuid.slice(0, 8)}` : ""
       const proxiedManifest = {
         ...origManifest,
-        id: `org.posterium.proxy.${Buffer.from(baseUrl).toString("base64url").slice(0, 16)}`,
+        id: `org.posterium.proxy.${Buffer.from(baseUrl).toString("base64url").slice(0, 12)}${userSuffix}`,
         name: `${origManifest.name || "Addon"} (Posterium)`,
         description: `${origManifest.description || ""} — Poster personalizzati via Posterium`.trim(),
         logo: origManifest.logo || `${origin}/App.png`,

@@ -191,7 +191,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
               id: imdbId || item.tmdbId.toString(),
               type: stType,
               name: item.title,
-              poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam),
+              poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam),
               releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
             }
           }))
