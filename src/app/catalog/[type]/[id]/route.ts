@@ -7,6 +7,7 @@ import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
+import { getExternalIds } from "@/lib/tmdb"
 
 interface StremioMeta {
   id: string
@@ -81,6 +82,12 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
   }).toString()
 }
 
+/** TMDB /tv/{id} non include imdb_id — serve chiamata extra a external_ids */
+async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number): Promise<string | null> {
+  if (mediaType === "movie") return null // /movie/{id} già include imdb_id
+  return getExternalIds("tv", tmdbId).then(r => r.imdb_id ?? null).catch(() => null)
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const rl = rateLimit(rateLimitKey(req), "catalog")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
@@ -111,36 +118,47 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         return { d, tmdbId: id }
       }))
       const validResults = results.filter((r): r is { d: { imdb_id?: string; title?: string; name?: string; release_date?: string; first_air_date?: string }; tmdbId: number } => r !== null)
-      metas = await Promise.all(validResults.map(async (r) => ({
-        id: r.d.imdb_id || r.tmdbId.toString(),
-        type: stType,
-        name: r.d.title || r.d.name || "",
-        poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam),
-        releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
-      })))
+      metas = await Promise.all(validResults.map(async (r) => {
+        const imdbId = r.d.imdb_id || (stType === "series" ? await resolveImdbId("tv", r.tmdbId) : null)
+        return {
+          id: imdbId || r.tmdbId.toString(),
+          type: stType,
+          name: r.d.title || r.d.name || "",
+          poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam),
+          releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
+        }
+      }))
     } else if (catalogId.startsWith("posterium-anime")) {
       const key = process.env.MDBLIST_API_KEY
       if (key) {
         const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${key}`, { signal: AbortSignal.timeout(10000) })
         if (res.ok) {
-          const data = await res.json()
-          const results = await Promise.all((data || []).slice(0, 20).map(async (item: { tmdb?: number; imdb?: string; title?: string }) => {
-            if (!item.tmdb) return null
-            const url = `https://api.themoviedb.org/3/tv/${item.tmdb}?api_key=${process.env.TMDB_API_KEY}&language=it-IT`
+          const body = await res.json()
+          const payload = body?.data || body
+          const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
+          const items = rawItems.slice(0, 20)
+          const results = await Promise.all(items.map(async (item: { tmdb?: number; tmdb_id?: number; imdb?: string; imdb_id?: string; title?: string; ids?: { tmdb?: number } }) => {
+            const tmdbId = item.tmdb_id ?? item.tmdb ?? item.ids?.tmdb
+            const imdbId = item.imdb_id || item.imdb
+            if (!tmdbId) return null
+            const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${process.env.TMDB_API_KEY}&language=it-IT`
             const r2 = await fetch(url, { signal: AbortSignal.timeout(10000) })
             if (!r2.ok) return null
             const d = await r2.json()
             if (!d?.id) return null
-            return { d, tmdbId: item.tmdb, imdb: item.imdb }
+            return { d, tmdbId, imdb: imdbId }
           }))
           const validResults = results.filter((r): r is { d: { imdb_id?: string; name?: string; first_air_date?: string }; tmdbId: number; imdb?: string } => r !== null)
-          metas = await Promise.all(validResults.map(async (r) => ({
-            id: r.d.imdb_id || r.imdb || r.tmdbId.toString(),
-            type: "series",
-            name: r.d.name || "",
-            poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam),
-            releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
-          })))
+          metas = await Promise.all(validResults.map(async (r) => {
+            const imdbId = r.d.imdb_id || r.imdb || await resolveImdbId("tv", r.tmdbId)
+            return {
+              id: imdbId || r.tmdbId.toString(),
+              type: "series",
+              name: r.d.name || "",
+              poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam, userParam),
+              releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
+            }
+          }))
         }
       }
     } else {
@@ -156,13 +174,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           const itemsWithTmdb = items.slice(0, 10).flatMap((item) => (
             item.tmdbId ? [{ ...item, tmdbId: item.tmdbId }] : []
           ))
-          metas = await Promise.all(itemsWithTmdb.map(async (item) => ({
-            id: item.tmdbId.toString(),
-            type: stType,
-            name: item.title,
-            poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam),
-            releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
-          })))
+          metas = await Promise.all(itemsWithTmdb.map(async (item) => {
+            const imdbId = stType === "series" ? await resolveImdbId("tv", item.tmdbId) : null
+            return {
+              id: imdbId || item.tmdbId.toString(),
+              type: stType,
+              name: item.title,
+              poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam),
+              releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
+            }
+          }))
         }
       }
     }
