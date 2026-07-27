@@ -85,10 +85,17 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
   }).toString()
 }
 
+/** Cache locale per la risoluzione IMDb ID — evita chiamate duplicate a TMDB */
+const imdbIdCache = new Map<number, string | null>()
+
 /** TMDB /tv/{id} non include imdb_id — serve chiamata extra a external_ids */
 async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number): Promise<string | null> {
   if (mediaType === "movie") return null // /movie/{id} già include imdb_id
-  return getExternalIds("tv", tmdbId).then(r => r.imdb_id ?? null).catch(() => null)
+  const cached = imdbIdCache.get(tmdbId)
+  if (cached !== undefined) return cached
+  const result = await getExternalIds("tv", tmdbId).then(r => r.imdb_id ?? null).catch(() => null)
+  imdbIdCache.set(tmdbId, result)
+  return result
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
