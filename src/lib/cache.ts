@@ -27,7 +27,8 @@ const MAX_ENTRIES = Number.isFinite(ENV_MAX_ENTRIES) && ENV_MAX_ENTRIES > 100 ? 
 const ENV_MAX_MB = process.env.POSTERIUM_CACHE_MAX_MB ? parseFloat(process.env.POSTERIUM_CACHE_MAX_MB) : 150
 const MAX_BYTES = (Number.isFinite(ENV_MAX_MB) && ENV_MAX_MB > 10 ? ENV_MAX_MB : 150) * 1024 * 1024
 const EVICT_BATCH = 20
-const REFRESH_HOUR = 3
+const ENV_REFRESH_HOUR = process.env.POSTERIUM_CACHE_REFRESH_HOUR ? parseInt(process.env.POSTERIUM_CACHE_REFRESH_HOUR, 10) : 3
+const REFRESH_HOUR = Number.isFinite(ENV_REFRESH_HOUR) && ENV_REFRESH_HOUR >= 0 && ENV_REFRESH_HOUR <= 23 ? ENV_REFRESH_HOUR : 3
 
 let totalBytes = 0
 
@@ -55,16 +56,16 @@ function ttlForTags(tags: string[]): number {
 function isExpired(entry: CacheEntry<unknown>): boolean {
   const refreshHour = isScheduledRefresh(entry.tags)
   if (refreshHour !== null) {
-    const now = new Date()
-    const todayRefresh = new Date(now)
-    todayRefresh.setHours(refreshHour, 0, 0, 0)
+    // Use UTC so the refresh time is the same regardless of server timezone
+    const now = Date.now()
+    const nowDate = new Date(now)
+    const todayRefresh = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), nowDate.getUTCDate(), refreshHour, 0, 0, 0)
 
     if (now >= todayRefresh) {
-      return entry.timestamp < todayRefresh.getTime()
+      return entry.timestamp < todayRefresh
     } else {
-      const yesterdayRefresh = new Date(todayRefresh)
-      yesterdayRefresh.setDate(yesterdayRefresh.getDate() - 1)
-      return entry.timestamp < yesterdayRefresh.getTime()
+      const yesterdayRefresh = todayRefresh - 86400000
+      return entry.timestamp < yesterdayRefresh
     }
   }
   const ttl = entry.ttl || ttlForTags(entry.tags)
