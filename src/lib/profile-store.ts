@@ -78,9 +78,22 @@ let memCache: Record<string, ProfileData> | null = null
 let memCacheTime = 0
 const MEM_CACHE_TTL = 2000
 
+/** Consecutive write failures — resets to 0 on success */
+let writeFailures = 0
+
 function enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
   const run = writeQueue.then(task, task)
-  writeQueue = run.then(() => undefined, () => undefined)
+  writeQueue = run.then(
+    () => { writeFailures = 0 },
+    (error) => {
+      writeFailures++
+      const msg = error instanceof Error ? error.message : String(error)
+      log.error("Write queue task failed", { error: msg, consecutiveFailures: writeFailures })
+      if (writeFailures >= 5) {
+        log.error("Write queue has 5+ consecutive failures — check disk permissions or storage backend")
+      }
+    },
+  )
   return run
 }
 
