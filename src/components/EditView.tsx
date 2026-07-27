@@ -29,6 +29,7 @@ export default function EditView() {
   const [now] = useState(() => Date.now())
   const [previewLoading, setPreviewLoading] = useState(false)
   const [loadProgress, setLoadProgress] = useState(0)
+  const loadDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [activeRightTab, setActiveRightTab] = useState<"logo" | "badge" | "transform">("logo")
   const [activePosterTab, setActivePosterTab] = useState("clean")
   const [imgSrc, setImgSrc] = useState("")
@@ -52,7 +53,8 @@ export default function EditView() {
     setImageError(false)
     setLoadProgress(0)
     if (!p.previewUrl) { setImgSrc(""); setPreviewLoading(false); return }
-    setPreviewLoading(true)
+    // show loading bar only if request takes >200ms
+    loadDelayRef.current = setTimeout(() => setPreviewLoading(true), 200)
     // keep old img visible while new one loads — no flicker
     const url = p.previewUrl
     const xhr = new XMLHttpRequest()
@@ -65,6 +67,7 @@ export default function EditView() {
       }
     }
     xhr.onload = () => {
+      if (loadDelayRef.current) { clearTimeout(loadDelayRef.current); loadDelayRef.current = null }
       if (xhr.status === 200) {
         const blob = xhr.response
         const objUrl = URL.createObjectURL(blob)
@@ -72,17 +75,18 @@ export default function EditView() {
         prevObjUrlRef.current = objUrl
         setImgSrc(objUrl)
         setLoadProgress(100)
-        setTimeout(() => setPreviewLoading(false), 200)
+        setPreviewLoading(false)
       } else {
         setImageError(true)
         setPreviewLoading(false)
       }
     }
-    xhr.onerror = () => { setImageError(true); setPreviewLoading(false); toastRef.current.error("Failed to load poster preview") }
+    xhr.onerror = () => { if (loadDelayRef.current) { clearTimeout(loadDelayRef.current); loadDelayRef.current = null }; setImageError(true); setPreviewLoading(false); toastRef.current.error("Failed to load poster preview") }
     xhr.send()
     return () => {
       xhr.abort()
       xhrRef.current = null
+      if (loadDelayRef.current) { clearTimeout(loadDelayRef.current); loadDelayRef.current = null }
     }
   }, [p.previewUrl])
 
