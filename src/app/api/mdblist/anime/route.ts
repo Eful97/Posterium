@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("mdblist-anime")
 
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
@@ -58,7 +61,7 @@ const cached = cacheGet<MdblistItem[]>(cacheKey)
               media_type: 'tv',
             }
           }
-        } catch (e) { console.error("[mdblist:anime] TMDB lookup failed:", e) }
+        } catch (e) { log.error("TMDB lookup failed", { error: e instanceof Error ? e.message : String(e) }) }
       }
 
       // Fallback: find by IMDB ID
@@ -85,5 +88,5 @@ const cached = cacheGet<MdblistItem[]>(cacheKey)
     const filtered = results.filter(Boolean)
     if (filtered.length > 0) cacheSet(cacheKey, filtered, ["mdblist"])
     return Response.json(filtered)
-  } catch (e) { console.error("[mdblist:anime] Fetch failed:", e); return Response.json([]) }
+  } catch (e) { log.error("Fetch failed", { error: e instanceof Error ? e.message : String(e) }); return Response.json([]) }
 }

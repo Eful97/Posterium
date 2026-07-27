@@ -100,8 +100,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const stType = normalizeCatalogType(mediaType)
   const configParam = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c") || undefined
   const userParam = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user") || undefined
+  const mdblistKeyParam = req.nextUrl.searchParams.get("mdblist_key") || undefined
 
-  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}${configParam ? `:cfg${configParam}` : ""}`
+  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}${configParam ? `:cfg${configParam}` : ""}${mdblistKeyParam ? `:mk${mdblistKeyParam.slice(0, 8)}` : ""}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
 
@@ -132,7 +133,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         }
       }))
     } else if (catalogId.startsWith("posterium-anime")) {
-      const key = process.env.MDBLIST_API_KEY
+      const key = mdblistKeyParam || process.env.MDBLIST_API_KEY
       if (key) {
         const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${key}`, { signal: AbortSignal.timeout(10000) })
         if (res.ok) {

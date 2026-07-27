@@ -2,6 +2,9 @@ import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { MDBLISTS, MDBListEntry } from "@/lib/mdblist"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("mdblist")
 
 const MDBLISTS_URL: Record<string, string> = {
   mdblistMovie: 'https://api.mdblist.com/lists/snoak/trending-movies',
@@ -62,7 +65,7 @@ let parsedItems: MdblistRawItem[] = []
         return Response.json({ match })
       }
     }
-  } catch (e) { console.error("[mdblist] Fetch failed:", e) }
+  } catch (e) { log.error("Fetch failed", { error: e instanceof Error ? e.message : String(e) }) }
   cacheSet(cacheKey, null, ["mdblist"])
   return Response.json({ match: null })
 }
