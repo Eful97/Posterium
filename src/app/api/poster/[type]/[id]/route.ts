@@ -261,7 +261,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         const qLogoFit = req.nextUrl.searchParams.get("logoFit")
-        const logoFitEnabled = qLogoFit !== null ? qLogoFit !== "0" : (configOverride !== null ? configOverride.logoFitEnabled : sd.defaultLogoFitEnabled !== false)
+        const logoFitEnabled = qLogoFit !== null ? qLogoFit !== "0" : (configOverride !== null ? configOverride.logoFitEnabled : sd.defaultLogoFitEnabled === true)
         if (logoPath && logoFitEnabled) {
           try {
             const fitStart = Date.now()
