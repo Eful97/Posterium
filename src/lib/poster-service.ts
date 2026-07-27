@@ -7,7 +7,6 @@ import {
   extractBadgeColor,
   fitBadgeToCanvas,
   fitCompositeToCanvas,
-  renderCompositeLayers,
   isValidHex,
   PosterComposite,
 } from "./poster-render-helpers"
@@ -83,6 +82,15 @@ export interface GenerationInput {
   accentOverride: { genreColor: string; rankColor: string } | null
   /** Pre-resolved IMDb Top 250 membership. Falls back gracefully when falsy. */
   imdbTop250?: boolean
+}
+
+// ---- Vignette SVG cache (constant, render once) ----
+let _vignettePng: Buffer | null = null
+async function getVignette(): Promise<Buffer> {
+  if (!_vignettePng) {
+    _vignettePng = await sharp(Buffer.from(cinematicVignetteSVG(STD_W, STD_H))).png().toBuffer()
+  }
+  return _vignettePng
 }
 
 // ---------------------------------------------------------------------------
@@ -189,7 +197,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     .modulate({ brightness: 1.01, saturation: 1.06 })
     .toBuffer()
 
-  const vigBuf = await sharp(Buffer.from(cinematicVignetteSVG(STD_W, STD_H))).png().toBuffer()
+  const vigBuf = await getVignette()
   composites.push({ input: vigBuf, top: 0, left: 0 })
   if (logoResult) composites.push(logoResult)
 
@@ -341,9 +349,9 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   // -----------------------------------------------------------------------
   const safeComposites = (await Promise.all(composites.map((layer) => fitCompositeToCanvas(layer, STD_W, STD_H))))
     .filter((layer): layer is PosterComposite => layer !== null)
-  const compositedBase = await renderCompositeLayers(renderBaseBuf, safeComposites, STD_W, STD_H)
 
-  return await sharp(compositedBase)
+  return await sharp(renderBaseBuf)
+    .composite(safeComposites)
     .jpeg({ quality: 70 })
     .toBuffer()
 }

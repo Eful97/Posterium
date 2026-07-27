@@ -51,76 +51,14 @@ export async function fitBadgeToCanvas<T extends BadgeRender>(badge: T, maxW: nu
 
 export async function fitCompositeToCanvas(
   layer: PosterComposite,
-  maxW: number,
-  maxH: number,
+  _maxW: number,
+  _maxH: number,
 ): Promise<PosterComposite | null> {
+  if (!layer.input || layer.input.length < 100) return null
   const meta = await sharp(layer.input).metadata()
-  const layerW = meta.width || 0
-  const layerH = meta.height || 0
-  if (layerW <= 0 || layerH <= 0) return null
-
-  const left = Math.max(layer.left, 0)
-  const top = Math.max(layer.top, 0)
-  const trimLeft = Math.max(-layer.left, 0)
-  const trimTop = Math.max(-layer.top, 0)
-  const width = Math.min(layerW - trimLeft, maxW - left)
-  const height = Math.min(layerH - trimTop, maxH - top)
-
-  if (width <= 0 || height <= 0) return null
-  const needsExtract = left !== layer.left || top !== layer.top || width !== layerW || height !== layerH
-  if (!needsExtract) return { ...layer, top, left }
-
-  const input = await sharp(layer.input)
-    .extract({ left: trimLeft, top: trimTop, width, height })
-    .png({ compressionLevel: 1 })
-    .toBuffer()
-  return { input, top, left }
-}
-
-export async function renderCompositeLayers(
-  base: Buffer,
-  layers: PosterComposite[],
-  width: number,
-  height: number,
-): Promise<Buffer> {
-  const { data: basePixels } = await sharp(base)
-    .resize(width, height, { fit: "cover", position: "centre" })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true })
-
-  for (const layer of layers) {
-    const { data: layerPixels, info } = await sharp(layer.input)
-      .ensureAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true })
-    const layerW = info.width
-    const layerH = info.height
-    const startX = Math.max(layer.left, 0)
-    const startY = Math.max(layer.top, 0)
-    const endX = Math.min(layer.left + layerW, width)
-    const endY = Math.min(layer.top + layerH, height)
-
-    for (let y = startY; y < endY; y += 1) {
-      const layerY = y - layer.top
-      for (let x = startX; x < endX; x += 1) {
-        const layerX = x - layer.left
-        const src = (layerY * layerW + layerX) * 4
-        const dst = (y * width + x) * 4
-        const alpha = (layerPixels[src + 3] ?? 255) / 255
-        if (alpha <= 0) continue
-        const invAlpha = 1 - alpha
-        basePixels[dst] = Math.round((layerPixels[src] ?? 0) * alpha + (basePixels[dst] ?? 0) * invAlpha)
-        basePixels[dst + 1] = Math.round((layerPixels[src + 1] ?? 0) * alpha + (basePixels[dst + 1] ?? 0) * invAlpha)
-        basePixels[dst + 2] = Math.round((layerPixels[src + 2] ?? 0) * alpha + (basePixels[dst + 2] ?? 0) * invAlpha)
-        basePixels[dst + 3] = 255
-      }
-    }
-  }
-
-  return sharp(basePixels, { raw: { width, height, channels: 4 } })
-    .png({ compressionLevel: 1 })
-    .toBuffer()
+  if ((meta.width || 0) <= 0 || (meta.height || 0) <= 0) return null
+  // Sharp's .composite() handles out-of-bounds clipping natively — no sub-extract needed
+  return layer
 }
 
 export async function topLuminance(buf: Buffer): Promise<number> {

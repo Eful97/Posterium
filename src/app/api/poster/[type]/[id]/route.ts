@@ -309,60 +309,69 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const hasQueryEarly = !!queryPoster || !!mapping
     const rankingEnabledEarly = hasQueryEarly ? (qRankingEarly !== null ? qRankingEarly !== "0" : rankingBadges) : true
 
-    // 5. Fetch images + rankings + wikidata (parallel I/O)
-    const [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult] = await Promise.all([
-      fetchImg(imgSrc(posterPath)).catch(() => null),
-      logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
-      backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
-      rankingEnabledEarly
-        ? getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
-          .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
-          .catch(() => null)
-        : Promise.resolve(null),
-      (rankingEnabledEarly && mediaType === "tv")
-        ? (() => {
-            try {
-              const cached = cacheGet("mdblist:anime:top10")
-              if (cached && Array.isArray(cached)) {
-                const idx = cached.findIndex((e) => Number((e as MDBListEntry).tmdb) === tmdbId || (e as EnrichedAnimeItem).id === tmdbId)
-                return Promise.resolve(idx >= 0 ? idx + 1 : null)
-              }
-              return fetchMDBList("mdblistAnime").then((entries) => {
-                if (!Array.isArray(entries)) return null
-                cacheSet("mdblist:anime:top10", entries, ["mdblist"])
-                const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
-                return idx >= 0 ? idx + 1 : null
-              }).catch(() => null)
-            } catch { return Promise.resolve(null) }
-          })()
-        : Promise.resolve(null),
+    // 5. Fetch all data in parallel: images + rankings + wikidata + keywords + imdbTop250
+    //    All dependencies are available before this point — no Block B depends on Block A
+    const emptyWikidata = { awards: [], nominations: [], studios: [], director: null }
+    const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 4000
+    const [
+      [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult],
+      [wikidataResult, tmdbKeywords, imdbTop250],
+    ] = await Promise.all([
+      // Block A: images + ranking data
+      Promise.all([
+        fetchImg(imgSrc(posterPath)).catch(() => null),
+        logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
+        backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
+        rankingEnabledEarly
+          ? getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
+            .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
+            .catch(() => null)
+          : Promise.resolve(null),
+        (rankingEnabledEarly && mediaType === "tv")
+          ? (() => {
+              try {
+                const cached = cacheGet("mdblist:anime:top10")
+                if (cached && Array.isArray(cached)) {
+                  const idx = cached.findIndex((e) => Number((e as MDBListEntry).tmdb) === tmdbId || (e as EnrichedAnimeItem).id === tmdbId)
+                  return Promise.resolve(idx >= 0 ? idx + 1 : null)
+                }
+                return fetchMDBList("mdblistAnime").then((entries) => {
+                  if (!Array.isArray(entries)) return null
+                  cacheSet("mdblist:anime:top10", entries, ["mdblist"])
+                  const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
+                  return idx >= 0 ? idx + 1 : null
+                }).catch(() => null)
+              } catch { return Promise.resolve(null) }
+            })()
+          : Promise.resolve(null),
+      ]),
+      // Block B: badge data (independent of Block A — runs concurrently)
+      Promise.all([
+        Promise.race([
+          rankingEnabledEarly
+            ? fetchAllWikidata(tmdbId, mediaType, t).catch(() => emptyWikidata)
+            : Promise.resolve(emptyWikidata),
+          new Promise<typeof emptyWikidata>((r) => setTimeout(() => r(emptyWikidata), WIKIDATA_TIMEOUT)),
+        ]),
+        rankingEnabledEarly
+          ? getKeywords(mediaType, tmdbId, resolveRequestApiKey(req)).catch(() => [])
+          : Promise.resolve([]),
+        (async () => {
+          if (!rankingEnabledEarly) return false
+          if (!imdbId) {
+            const extIds = await getExternalIds(mediaType, tmdbId, resolveRequestApiKey(req)).catch(() => null)
+            if (extIds?.imdb_id) imdbId = extIds.imdb_id
+          }
+          if (!imdbId) return false
+          return isImdbTop250(imdbId)
+        })(),
+      ]),
     ])
 
     if (!originalBuf) {
       completePosterRender(null)
       return new Response("Poster image not available", { status: 404, headers: corsHeaders() })
     }
-
-    const emptyWikidata = { awards: [], nominations: [], studios: [], director: null }
-    const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 4000
-    const [wikidataResult, tmdbKeywords, imdbTop250] = await Promise.all([
-      Promise.race([
-        rankingEnabledEarly
-          ? fetchAllWikidata(tmdbId, mediaType, t).catch(() => emptyWikidata)
-          : Promise.resolve(emptyWikidata),
-        new Promise<typeof emptyWikidata>((r) => setTimeout(() => r(emptyWikidata), WIKIDATA_TIMEOUT)),
-      ]),
-      rankingEnabledEarly
-        ? getKeywords(mediaType, tmdbId, resolveRequestApiKey(req)).catch(() => [])
-        : Promise.resolve([]),
-      (async () => {
-        if (!rankingEnabledEarly) return false
-        const effectiveId = imdbId || (await getExternalIds(mediaType, tmdbId, resolveRequestApiKey(req)).catch(() => null))?.imdb_id || null
-        if (!effectiveId) return false
-        if (!imdbId) imdbId = effectiveId
-        return isImdbTop250(effectiveId)
-      })(),
-    ])
 
     const rankingRank = rankingResult ?? mapping?.badgeRank ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")

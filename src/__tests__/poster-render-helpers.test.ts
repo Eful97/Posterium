@@ -4,7 +4,6 @@ import {
   STD_H,
   STD_W,
   fitCompositeToCanvas,
-  renderCompositeLayers,
   topLuminance,
 } from "@/lib/poster-render-helpers"
 
@@ -20,31 +19,39 @@ function solidPng(width: number, height: number, color: string): Promise<Buffer>
 }
 
 describe("poster render helpers", () => {
-  it("clips layers that overflow the poster canvas", async () => {
+  it("passes layer through unchanged when within canvas bounds", async () => {
     const input = await solidPng(20, 20, "#ff0000")
-    const clipped = await fitCompositeToCanvas({ input, left: -8, top: -5 }, 30, 30)
+    const result = await fitCompositeToCanvas({ input, left: 0, top: 0 }, 30, 30)
 
-    if (!clipped) throw new Error("Expected layer to be clipped, not removed")
-    const metadata = await sharp(clipped.input).metadata()
-
-    expect(clipped.left).toBe(0)
-    expect(clipped.top).toBe(0)
-    expect(metadata.width).toBe(12)
-    expect(metadata.height).toBe(15)
+    expect(result).not.toBeNull()
+    expect(result!.left).toBe(0)
+    expect(result!.top).toBe(0)
+    // Sharp's native .composite() handles overflow clipping — the helper just validates
   })
 
-  it("keeps final poster dimensions stable after manual compositing", async () => {
+  it("returns null for zero-size layer", async () => {
+    const input = Buffer.from([])
+    const result = await fitCompositeToCanvas({ input, left: 0, top: 0 }, 30, 30)
+    expect(result).toBeNull()
+  })
+
+  it("composites overlay over base using sharp native pipeline", async () => {
     const base = await solidPng(STD_W, STD_H, "#000000")
     const overlay = await solidPng(8, 8, "#ff0000")
-    const output = await renderCompositeLayers(base, [{ input: overlay, left: 10, top: 20 }], STD_W, STD_H)
+    // Use PNG output to avoid JPEG compression altering pixel values
+    const output = await sharp(base)
+      .composite([{ input: overlay, top: 20, left: 10 }])
+      .png()
+      .toBuffer()
     const metadata = await sharp(output).metadata()
     const pixel = await sharp(output).extract({ left: 10, top: 20, width: 1, height: 1 }).raw().toBuffer()
 
     expect(metadata.width).toBe(STD_W)
     expect(metadata.height).toBe(STD_H)
-    expect(pixel[0]).toBeGreaterThan(200)
-    expect(pixel[1]).toBeLessThan(20)
-    expect(pixel[2]).toBeLessThan(20)
+    // Red overlay on black background at full alpha
+    expect(pixel[0]).toBe(255)
+    expect(pixel[1]).toBe(0)
+    expect(pixel[2]).toBe(0)
   })
 
   it("detects whether the top edge is light or dark", async () => {

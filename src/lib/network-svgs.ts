@@ -4,6 +4,9 @@ import { createLogger } from "@/lib/logger"
 
 const log = createLogger("network-svgs")
 
+/** Cache for pre-rendered network logos — keyed by networkKey:pw */
+const networkLogoCache = new Map<string, { png: Buffer; w: number; h: number }>()
+
 export interface NetworkSvgResult {
   svg: string
   w: number
@@ -59,6 +62,10 @@ function getNetworkKey(networkName: string): string | null {
 }
 
 async function loadNetworkPng(networkKey: string, pw: number): Promise<{ png: Buffer; w: number; h: number } | null> {
+  const cacheKey = `${networkKey}:${pw}`
+  const cached = networkLogoCache.get(cacheKey)
+  if (cached) return cached
+
   const filename = NETWORK_FILES[networkKey]
   if (!filename) return null
   const filePath = path.join(NETWORKS_DIR, filename)
@@ -96,7 +103,9 @@ async function loadNetworkPng(networkKey: string, pw: number): Promise<{ png: Bu
     .png()
     .toBuffer({ resolveWithObject: true })
 
-    return { png: finalPng, w: finalInfo.width, h: finalInfo.height }
+    const result = { png: finalPng, w: finalInfo.width, h: finalInfo.height }
+    networkLogoCache.set(cacheKey, result)
+    return result
   } catch (e) {
     log.error(`Failed to load PNG for ${networkKey}`, { error: e instanceof Error ? e.message : String(e) })
     return null
