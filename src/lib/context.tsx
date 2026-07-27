@@ -427,7 +427,7 @@ export function usePosterium(): PosteriumCtx {
     const config = {
       globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
       blurEnabled, blurIntensity, blurFade, blurDarkness,
-      gradientHeight, networkLogo, autoRotateClean, logoFitEnabled: true,
+      gradientHeight, networkLogo, autoRotateClean, logoFitEnabled: defaultLogoFitEnabled,
       customBadge: customBadge || undefined,
     }
     const payloadStr = JSON.stringify({ config, profileId, tmdbKey, mdblistApiKey })
@@ -448,7 +448,7 @@ export function usePosterium(): PosteriumCtx {
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [profileId, profilePassword, globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, autoRotateClean, customBadge, tmdbKey, mdblistApiKey])
+  }, [profileId, profilePassword, globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, autoRotateClean, defaultLogoFitEnabled, customBadge, tmdbKey, mdblistApiKey])
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {

@@ -72,7 +72,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
         gradientHeight: p.gradientHeight,
         networkLogo: p.networkLogo,
         autoRotateClean: p.autoRotateClean,
-        logoFitEnabled: true,
+        logoFitEnabled: p.defaultLogoFitEnabled,
         customBadge: p.customBadge || undefined,
       }
       const apiKeys = {

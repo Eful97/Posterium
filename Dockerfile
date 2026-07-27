@@ -12,12 +12,12 @@ RUN if [ ! -f package.json ]; then \
 FROM node:20-bullseye AS deps
 WORKDIR /app
 COPY --from=source /src/package.json /src/package-lock.json ./
-RUN npm ci --omit=dev 2>/dev/null || npm install --omit=dev
+RUN npm install --omit=dev --no-audit --no-fund
 
 FROM node:20-bullseye AS builder
 WORKDIR /app
 COPY --from=source /src/package.json /src/package-lock.json ./
-RUN npm install
+RUN npm install --no-audit --no-fund
 COPY --from=source /src ./
 RUN npm run build
 
