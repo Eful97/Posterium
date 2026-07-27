@@ -2,6 +2,9 @@ import { NextRequest } from "next/server"
 import { getJWRankings } from "@/lib/justwatch"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("trending-rank")
 
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
@@ -20,7 +23,7 @@ export async function GET(req: NextRequest) {
       cacheSet(cacheKey, body, ["rank", "justwatch"])
       return Response.json(body, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })
     }
-  } catch (e) { console.error("[trending/rank] Fetch failed:", e) }
+  } catch (e) { log.error("Fetch failed", { error: e instanceof Error ? e.message : String(e) }) }
   const body = { rank: null }
   cacheSet(cacheKey, body, ["rank", "justwatch"])
   return Response.json(body, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })

@@ -4,7 +4,10 @@ import { cacheInvalidatePosterData } from "@/lib/cache"
 import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
+import { createLogger } from "@/lib/logger"
 import { z } from "zod"
+
+const log = createLogger("defaults")
 
 const defaultsSchema = z.object({
   badgeStyle: z.string().optional(),
@@ -52,7 +55,7 @@ export async function PUT(req: NextRequest) {
     const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
     void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error)
-      console.warn(`[defaults] Catalog warmup failed for ${catalog.id}: ${message}`)
+      log.warn(`Catalog warmup failed for ${catalog.id}`, { error: message })
     })
   }
   return Response.json({ ok: true })

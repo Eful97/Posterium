@@ -1,4 +1,7 @@
 import { cacheGet, cacheSet } from "./cache"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("imdb-resolver")
 
 export async function resolveImdbToTmdb(imdbId: string, mediaType: "movie" | "tv"): Promise<number | null> {
   const cleanId = imdbId.trim()
@@ -29,7 +32,7 @@ export async function resolveImdbToTmdb(imdbId: string, mediaType: "movie" | "tv
       return tmdbId
     }
   } catch (e) {
-    console.error(`[imdb-resolver] Failed to resolve ${cleanId}:`, e)
+    log.error(`Failed to resolve ${cleanId}`, { error: e instanceof Error ? e.message : String(e) })
   }
 
   return null

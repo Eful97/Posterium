@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server"
 import { selectAcceptedPosterPath } from "@/lib/poster-fit-adjust"
 import { rankBestFitPosters, selectAutoFitCandidates } from "@/lib/poster-auto-fit"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("poster-fit-api")
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
 const FETCH_TIMEOUT_MS = 5_000
@@ -107,7 +110,7 @@ export async function POST(req: NextRequest) {
           height: candidate.height ?? 0,
         }
       } catch (err) {
-        console.warn(`[poster-fit] Skipping ${candidate.file_path}: ${err instanceof Error ? err.message : "Unknown error"}`)
+        log.warn(`Skipping ${candidate.file_path}`, { error: err instanceof Error ? err.message : "Unknown error" })
         return null
       } finally {
         clearTimeout(timer)

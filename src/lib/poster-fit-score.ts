@@ -1,5 +1,8 @@
 import sharp from "sharp"
 import { computeLogoLayout } from "@/lib/logo-layout"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("poster-fit-score")
 
 export interface PosterFitInput {
   posterBuffer: Buffer
@@ -464,7 +467,7 @@ export async function rankPostersByFit(
         hasBadges,
         offsetYVariants,
       }).catch((err: Error) => {
-        console.warn(`[poster-fit] Score failed for ${p.posterPath}: ${err.message}`)
+        log.warn(`Score failed for ${p.posterPath}`, { error: err.message })
         return null
       }),
     ),

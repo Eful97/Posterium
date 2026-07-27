@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { createLogger } from "@/lib/logger"
 import { jsonGzip } from "@/lib/json-response"
+
+const log = createLogger("trending-tv-week")
 
 const TMDB_BASE = "https://api.themoviedb.org/3"
 const TMDB_KEY = process.env.TMDB_API_KEY || ""
@@ -46,7 +49,7 @@ export async function GET(req: NextRequest) {
     cacheSet(cacheKey, body, ["tmdb", "trending", "anime"])
     return jsonGzip(body, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" })
   } catch (err) {
-    console.error("[tmdb/trending/tv/week] Error:", err)
+    log.error("TV week fetch failed", { error: err instanceof Error ? err.message : String(err) })
     return jsonGzip({ results: [] }, 200, { "Cache-Control": "no-store" })
   }
 }

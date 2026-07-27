@@ -9,6 +9,9 @@ import {
   verifyProfilePassword,
 } from "@/lib/profile-store"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("profile")
 
 /**
  * POST /api/profile
@@ -100,7 +103,7 @@ export async function POST(req: NextRequest) {
 
     return Response.json({ profileId, url })
   } catch (error) {
-    console.error("[profile] POST error:", error instanceof Error ? error.message : String(error))
+    log.error("POST failed", { error: error instanceof Error ? error.message : String(error) })
     return Response.json({ error: "Failed to create/update profile" }, { status: 500 })
   }
 }

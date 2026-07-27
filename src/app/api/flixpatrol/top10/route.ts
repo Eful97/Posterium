@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server"
 import { getTop10, getSupportedPlatforms } from "@/lib/flixpatrol"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("flixpatrol-api")
 
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
@@ -16,7 +19,7 @@ export async function GET(req: NextRequest) {
     const data = await getTop10(platform, country, apiKey)
     return Response.json(data, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })
   } catch (err) {
-    console.error("FlixPatrol top10 error:", err)
+    log.error("Top10 fetch failed", { error: err instanceof Error ? err.message : String(err) })
     return Response.json({ error: "Failed to fetch FlixPatrol data" }, { status: 500, headers: { "Cache-Control": "no-store" } })
   }
 }

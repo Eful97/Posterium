@@ -1,5 +1,8 @@
 import fs from "fs"
 import path from "path"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("network-svgs")
 
 export interface NetworkSvgResult {
   svg: string
@@ -95,7 +98,7 @@ async function loadNetworkPng(networkKey: string, pw: number): Promise<{ png: Bu
 
     return { png: finalPng, w: finalInfo.width, h: finalInfo.height }
   } catch (e) {
-    console.error(`[network-svgs] Failed to load PNG for ${networkKey}:`, e)
+    log.error(`Failed to load PNG for ${networkKey}`, { error: e instanceof Error ? e.message : String(e) })
     return null
   }
 }

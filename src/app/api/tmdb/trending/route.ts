@@ -2,7 +2,10 @@ import { NextRequest } from "next/server"
 import { getJWRankings } from "@/lib/justwatch"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { createLogger } from "@/lib/logger"
 import { jsonGzip } from "@/lib/json-response"
+
+const log = createLogger("trending")
 
 const TMDB_BASE = "https://api.themoviedb.org/3"
 const TMDB_KEY = process.env.TMDB_API_KEY!
@@ -82,7 +85,7 @@ export async function GET(req: NextRequest) {
     cacheSet(cacheKey, body, ["tmdb", "trending", country])
     return jsonGzip(body, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" })
   } catch (err) {
-    console.error("Trending error:", err)
+    log.error("Trending fetch failed", { error: err instanceof Error ? err.message : String(err) })
     return jsonGzip({ movies: [], tv: [] }, 200, { "Cache-Control": "no-store" })
   }
 }

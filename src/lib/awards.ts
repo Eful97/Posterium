@@ -1,4 +1,7 @@
 import { cacheGet, cacheSet } from "./cache"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("awards")
 
 interface AwardRule {
   keywords: string[]
@@ -32,7 +35,7 @@ function isBreakerOpen(): boolean {
   if (breakerOpenUntil > Date.now()) return true
   if (breakerFailures >= BREAKER_THRESHOLD) {
     breakerOpenUntil = Date.now() + BREAKER_BACKOFF_MS
-    console.warn(`[wikidata] Circuit breaker opened for ${BREAKER_BACKOFF_MS}ms (${breakerFailures} failures)`)
+    log.warn(`Circuit breaker opened for ${BREAKER_BACKOFF_MS}ms (${breakerFailures} failures)`)
     return true
   }
   return false

@@ -1,4 +1,7 @@
 import { cacheGet, cacheSet } from "./cache"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("ratings")
 
 const MDBLIST = "https://mdblist.com/api"
 
@@ -69,7 +72,7 @@ export async function fetchAggregatedRating(
         }
       }
     }
-  } catch (e) { console.error("[ratings] MDBList fetch failed:", e) }
+  } catch (e) { log.error("MDBList fetch failed", { error: e instanceof Error ? e.message : String(e) }) }
 
   return null
 }
