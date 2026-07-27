@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import sharp from "sharp"
-import "@/lib/sharp-config"
+import { initSharp } from "@/lib/sharp-config"
 import { getImages, getDetails, getExternalIds, getKeywords, resolveRequestApiKey, type TMDBImage, type TMDBCompany } from "@/lib/tmdb"
 import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
@@ -49,6 +49,8 @@ import { getProfile, getFullProfileData } from "@/lib/profile-store"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("poster")
+
+initSharp()
 
 type RouteParams = { type: string; id: string }
 
