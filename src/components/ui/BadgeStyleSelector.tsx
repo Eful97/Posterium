@@ -1,17 +1,26 @@
 "use client"
 
-import { Moon, Pill as PillIcon, BarChart3, Circle, Square, Sparkles, GlassWater, Trophy } from "lucide-react"
-
-function getMeta(s: string, t: (k: string) => string): { icon: React.ReactNode; label: string } {
-  if (s === "shadow") return { icon: <Moon className="w-3 h-3" />, label: t("ui.shadow") }
-  if (s === "pill") return { icon: <PillIcon className="w-3 h-3" />, label: t("ui.pill") }
-  if (s === "bar") return { icon: <BarChart3 className="w-3 h-3" />, label: t("ui.bar") }
-  if (s === "default") return { icon: <Circle className="w-3 h-3" />, label: t("ui.bsDefault") }
-  if (s === "colored") return { icon: <Circle className="w-3 h-3" />, label: t("ui.colored") }
-  if (s === "bordo") return { icon: <Square className="w-3 h-3" />, label: t("ui.bordo") }
-  if (s === "vetro") return { icon: <GlassWater className="w-3 h-3" />, label: t("ui.vetro") }
-  if (s === "netflix") return { icon: <Trophy className="w-3 h-3" style={{ color: "#E50914" }} />, label: t("ui.netflix") }
-  return { icon: <Sparkles className="w-3 h-3" />, label: s }
+function BadgePreview({ style, accentColor }: { style: string; accentColor?: string }) {
+  const base = "inline-flex items-center justify-center text-[8px] font-black leading-none w-7 h-4 rounded select-none"
+  const ac = accentColor && accentColor !== "#555555" ? accentColor : "#fb923c"
+  switch (style) {
+    case "shadow":
+      return <span className={`${base} bg-transparent text-white`} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.4)" }}>Aa</span>
+    case "pill":
+      return <span className={`${base} text-white`} style={{ background: "rgba(255,255,255,0.18)", padding: "0 3px" }}>Aa</span>
+    case "bar":
+      return <span className={`${base} text-white w-7`} style={{ background: "rgba(255,255,255,0.12)", borderRadius: 1 }}>Aa</span>
+    case "colored":
+      return <span className={`${base} text-black font-black`} style={{ background: ac }}>Aa</span>
+    case "bordo":
+      return <span className={`${base} text-white`} style={{ border: "1px solid rgba(255,255,255,0.5)", borderRadius: 3, background: "transparent" }}>Aa</span>
+    case "vetro":
+      return <span className={`${base} text-white`} style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.15)" }}>Aa</span>
+    case "default":
+      return <span className={`${base} text-white/70`}>Aa</span>
+    default:
+      return <span className={`${base} text-white/50`}>~</span>
+  }
 }
 
 export function BadgeStyleSelector({
@@ -32,7 +41,6 @@ export function BadgeStyleSelector({
   return (
     <div className="flex gap-1 flex-wrap">
       {options.map((s) => {
-        const meta = getMeta(s, t)
         const isActive = value === s
         const isDisabled = disabled?.includes(s) ?? false
         return (
@@ -40,7 +48,7 @@ export function BadgeStyleSelector({
             key={s}
             type="button"
             onClick={() => !isDisabled && onChange(s)}
-            className={`flex-1 min-w-[60px] px-2 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 ${
+            className={`flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 rounded-lg transition-all duration-150 ${
               isDisabled
                 ? "bg-white/5 text-zinc-600 cursor-not-allowed opacity-50"
                 : isActive
@@ -48,11 +56,9 @@ export function BadgeStyleSelector({
                   : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"
             }`}
           >
-            <span className="flex items-center gap-1 justify-center">
-              {s === "colored" && accentColor && accentColor !== "#555555"
-                ? <Circle className="w-3 h-3" style={{ color: accentColor }} />
-                : meta.icon}
-              {meta.label}
+            <BadgePreview style={s} accentColor={accentColor} />
+            <span className="text-[10px] font-semibold leading-tight">
+              {s === "shadow" ? t("ui.shadow") : s === "pill" ? t("ui.pill") : s === "bar" ? t("ui.bar") : s === "default" ? t("ui.bsDefault") : s === "colored" ? t("ui.colored") : s === "bordo" ? t("ui.bordo") : s === "vetro" ? t("ui.vetro") : s === "netflix" ? t("ui.netflix") : s}
             </span>
           </button>
         )

@@ -190,6 +190,8 @@ topEdgeColor: string
   autoSaveExcludedPosters: (nextExcluded: string[], nextRotationPosters?: string[], nextPreviewPoster?: TMDBImage) => Promise<void>
   theme: "dark" | "light"
   setTheme: React.Dispatch<React.SetStateAction<"dark" | "light">>
+  uiAccent: boolean
+  setUiAccent: React.Dispatch<React.SetStateAction<boolean>>
   serviceErrors: Record<string, boolean>
   setServiceErrors: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
   hasNetflixRank: boolean
@@ -234,6 +236,12 @@ export function usePosterium(): PosteriumCtx {
   const [tmdbKeyInput, setTmdbKeyInput] = useState("")
   const [showKey, setShowKey] = useState(false)
   const [theme, setTheme] = useState<"dark" | "light">("dark")
+  const [uiAccent, setUiAccent] = useState(() => typeof window !== "undefined" && localStorage.getItem("posterium_ui_accent") === "true")
+  useEffect(() => { localStorage.setItem("posterium_ui_accent", String(uiAccent)) }, [uiAccent])
+  // Sync uiAccent toggle to <html> class
+  useEffect(() => {
+    document.documentElement.classList.toggle("ui-accent", uiAccent)
+  }, [uiAccent])
   const keyInit = useRef(false)
   const langInit = useRef(false)
 
@@ -913,6 +921,7 @@ export function usePosterium(): PosteriumCtx {
     logoDisabled, setLogoDisabled,
     autoSaveExcludedPosters,
     theme, setTheme,
+    uiAccent, setUiAccent,
     serviceErrors, setServiceErrors,
     hasNetflixRank,
     t,
@@ -935,6 +944,6 @@ export function usePosterium(): PosteriumCtx {
     topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, logoDisabled, setLogoDisabled, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
-    theme, serviceErrors, hasNetflixRank,
+    theme, uiAccent, serviceErrors, hasNetflixRank,
   ])
 }

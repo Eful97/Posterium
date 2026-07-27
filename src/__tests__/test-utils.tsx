@@ -175,6 +175,8 @@ export const MOCK_CTX: PosteriumCtx = {
   autoSaveExcludedPosters: asyncStubFn,
   theme: "dark",
   setTheme: stubFn,
+  uiAccent: false,
+  setUiAccent: stubFn,
   serviceErrors: {},
   setServiceErrors: stubFn,
   hasNetflixRank: false,

@@ -114,6 +114,10 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><RotateCcw className="w-3 h-3" /> {p.t("ui.autoRotateDefault")}</span>
         <Toggle value={p.defaultAutoRotateClean} onChange={p.setDefaultAutoRotateClean} />
       </div>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Palette className="w-3 h-3" /> Tinta UI dinamica</span>
+        <Toggle value={p.uiAccent} onChange={p.setUiAccent} />
+      </div>
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> {p.t("ui.logoFitEnabled")}</span>
         <Toggle value={p.defaultLogoFitEnabled} onChange={p.setDefaultLogoFitEnabled} />
