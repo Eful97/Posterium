@@ -15,18 +15,23 @@ export interface PosterCandidate {
   readonly height?: number
 }
 
+export interface PosterFitSelection {
+  readonly posterPath: string | null
+  readonly posterBuffer?: Buffer
+}
+
 interface SelectBestLogoFitPosterInput {
   readonly posters: readonly PosterCandidate[]
   readonly logoPath: string
   readonly fetchImage: (path: string) => Promise<Buffer>
+  readonly fetchCandidateImage?: (path: string) => Promise<Buffer>
   readonly logoScale?: number | null
   readonly logoOffsetX?: number | null
   readonly logoOffsetY?: number | null
   readonly hasBadges: boolean
-  readonly renderVersion?: number
 }
 
-const TMDB_CANDIDATE_COUNT = 12
+const TMDB_CANDIDATE_COUNT = 8
 const AUTO_FIT_TIMEOUT_MS = 2000
 const CACHE_TTL = 24 * 60 * 60 * 1000
 const CACHE_MAX_ENTRIES = 500
@@ -38,19 +43,19 @@ interface CacheEntry {
 
 const autoFitCache = new Map<string, CacheEntry>()
 
-function cacheKey(candidates: readonly PosterCandidate[], input: SelectBestLogoFitPosterInput, renderVersion?: number): string {
+function cacheKey(candidates: readonly PosterCandidate[], input: SelectBestLogoFitPosterInput): string {
   const posterSignature = candidates.map((poster) => poster.file_path).join(",")
-  return `auto-fit:${posterSignature}:${input.logoPath}:${input.logoScale ?? "auto"}:${input.logoOffsetX ?? 0}:${input.logoOffsetY ?? 0}:${input.hasBadges}:${renderVersion ?? 0}`
+  return `auto-fit:${posterSignature}:${input.logoPath}:${input.logoScale ?? "auto"}:${input.logoOffsetX ?? 0}:${input.logoOffsetY ?? 0}:${input.hasBadges}`
 }
 
-function cacheGet(key: string): string | null {
+function cacheGet(key: string): PosterFitSelection | null {
   const entry = autoFitCache.get(key)
   if (!entry) return null
   if (Date.now() - entry.createdAt > CACHE_TTL) {
     autoFitCache.delete(key)
     return null
   }
-  return entry.posterPath
+  return { posterPath: entry.posterPath }
 }
 
 function cacheSet(key: string, posterPath: string): void {
@@ -122,17 +127,17 @@ export async function rankBestFitPosters(
   return adjustFitResults({ ranked, posterEntries })
 }
 
-export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPosterInput): Promise<string | null> {
+export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPosterInput): Promise<PosterFitSelection | null> {
   const candidates = selectAutoFitCandidates(input.posters)
 
   const firstCandidate = candidates[0]?.file_path ?? null
-  if (candidates.length < 2) return firstCandidate
+  if (candidates.length < 2) return { posterPath: firstCandidate }
 
-  const key = cacheKey(candidates, input, input.renderVersion)
+  const key = cacheKey(candidates, input)
   const cached = cacheGet(key)
   if (cached) return cached
 
-  const fallbackResult = firstCandidate
+  const fallbackResult: PosterFitSelection = { posterPath: firstCandidate }
 
   let logoBuffer: Buffer
   try {
@@ -148,11 +153,12 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
     return fallbackResult
   }
 
+  const fetchPoster = input.fetchCandidateImage ?? input.fetchImage
   const posterBuffersRaw = await Promise.all(
     candidates.map(async (poster): Promise<PosterBufferEntry | null> => {
       try {
         const buf = await withTimeout(
-          input.fetchImage(poster.file_path),
+          fetchPoster(poster.file_path),
           null,
           AUTO_FIT_TIMEOUT_MS,
         )
@@ -179,9 +185,14 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
     [-20, 0, 20],
   )
 
-  const selectedPosterPath = selectAcceptedPosterPath(rankedResults, fallbackResult)
+  const selectedPosterPath = selectAcceptedPosterPath(rankedResults, fallbackResult.posterPath)
+  const selectedPoster = selectedPosterPath ? usablePosters.find((p) => p.posterPath === selectedPosterPath) : undefined
+  const result: PosterFitSelection = {
+    posterPath: selectedPosterPath,
+    posterBuffer: selectedPoster?.posterBuffer,
+  }
   if (selectedPosterPath) cacheSet(key, selectedPosterPath)
-  return selectedPosterPath
+  return result
 }
 
 export function clearAutoFitCache(): void {

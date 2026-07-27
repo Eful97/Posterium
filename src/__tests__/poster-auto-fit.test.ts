@@ -59,7 +59,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/dark.jpg")
+    expect(selected?.posterPath).toBe("/dark.jpg")
   })
 
   it("returns the only clean poster without scoring", async () => {
@@ -75,7 +75,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/single.jpg")
+    expect(selected?.posterPath).toBe("/single.jpg")
     expect(fetchCount).toBe(0)
   })
 
@@ -115,8 +115,8 @@ describe("selectBestLogoFitPosterPath", () => {
 
     const second = await selectBestLogoFitPosterPath(input)
 
-    expect(first).toBe("/dark.jpg")
-    expect(second).toBe("/dark.jpg")
+    expect(first?.posterPath).toBe("/dark.jpg")
+    expect(second?.posterPath).toBe("/dark.jpg")
     expect(fetchCount).toBe(callsAfterFirst)
   })
 
@@ -141,7 +141,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: false,
     })
 
-    expect(selected).toBe("/poster.jpg")
+    expect(selected?.posterPath).toBe("/poster.jpg")
   })
 
   it("handles partial poster fetch failures gracefully", async () => {
@@ -165,7 +165,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/poster1.jpg")
+    expect(selected?.posterPath).toBe("/poster1.jpg")
   })
 
   it("returns fallback when all poster fetches fail", async () => {
@@ -182,7 +182,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/a.jpg")
+    expect(selected?.posterPath).toBe("/a.jpg")
   })
 
   it("filters out non-clean posters from candidates", async () => {
@@ -214,7 +214,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/clean.jpg")
+    expect(selected?.posterPath).toBe("/clean.jpg")
     expect(fetchCount).toBe(0)
   })
 
@@ -241,7 +241,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/clean.jpg")
+    expect(selected?.posterPath).toBe("/clean.jpg")
   })
 
   it("does not penalize poster with light texture below threshold", async () => {
@@ -277,7 +277,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/subtle.jpg")
+    expect(selected?.posterPath).toBe("/subtle.jpg")
   })
 
   it("cache does not collide between different poster lists with same logo", async () => {
@@ -323,8 +323,8 @@ describe("selectBestLogoFitPosterPath", () => {
     const resultA = await selectBestLogoFitPosterPath(inputA)
     const resultB = await selectBestLogoFitPosterPath(inputB)
 
-    expect(resultA).toBe("/a1.jpg")
-    expect(resultB).toBe("/b1.jpg")
+    expect(resultA?.posterPath).toBe("/a1.jpg")
+    expect(resultB?.posterPath).toBe("/b1.jpg")
   })
 
   it("includes first 8 TMDB posters even if metadata is worse", async () => {
@@ -354,7 +354,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/p7.jpg")
+    expect(selected?.posterPath).toBe("/p7.jpg")
   })
 
   it("only analyzes the first 8 valid TMDB clean posters", async () => {
@@ -387,8 +387,8 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBeDefined()
-    expect(fetchCount).toBeLessThanOrEqual(13)
+    expect(selected?.posterPath).toBeDefined()
+    expect(fetchCount).toBeLessThanOrEqual(9)
   })
 
   it("avoids duplicates in candidate pool", async () => {
@@ -450,7 +450,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/valid.jpg")
+    expect(selected?.posterPath).toBe("/valid.jpg")
     expect(fetches.get("/square.jpg")).toBeUndefined()
   })
 
@@ -477,7 +477,7 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/first.jpg")
+    expect(selected?.posterPath).toBe("/first.jpg")
   })
 
   it("penalizes logo color conflicts in the logo zone", async () => {
@@ -503,6 +503,6 @@ describe("selectBestLogoFitPosterPath", () => {
       hasBadges: true,
     })
 
-    expect(selected).toBe("/dark.jpg")
+    expect(selected?.posterPath).toBe("/dark.jpg")
   })
 })

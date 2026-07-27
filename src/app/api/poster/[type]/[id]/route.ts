@@ -156,6 +156,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   // 4. Resolve poster/logo/backdrop paths
   let posterPath: string | null = null
+  let posterPathBuffer: Buffer | null = null
   let logoPath: string | null = null
   let backdropPath: string | null = null
   let backdropScale = 100
@@ -251,11 +252,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           const anyLogo = images.logos[0]
           const chosenLogo = langLogo || itLogo || enLogo || origLogo || anyLogo
           if (chosenLogo && !langLogo && !itLogo && !enLogo && origLogo) {
-            log.warn("Logo fallback to original_language", { lang: details.original_language, mediaType, tmdbId })
+            log.info("Logo fallback to original_language", { lang: details.original_language, mediaType, tmdbId })
           } else if (chosenLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
-            log.warn("Logo fallback to any (first available)", { mediaType, tmdbId })
+            log.info("Logo fallback to any (first available)", { mediaType, tmdbId })
           } else if (!chosenLogo) {
-            log.warn("No logo available", { mediaType, tmdbId })
+            log.info("No logo available", { mediaType, tmdbId })
           }
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
@@ -267,19 +268,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             const bestFit = await selectBestLogoFitPosterPath({
               posters: images.posters, logoPath,
               fetchImage: async (path: string) => {
-                const res = await fetch(imgSrc(path))
+                const res = await fetch(imgSrc(path), { signal: AbortSignal.timeout(5000) })
                 if (!res.ok) throw new Error(`HTTP ${res.status}`)
                 return Buffer.from(await res.arrayBuffer())
               },
-              hasBadges: true, renderVersion: RENDER_VERSION,
+              fetchCandidateImage: async (path: string) => {
+                const url = path.startsWith("http") ? path : `https://image.tmdb.org/t/p/w342${path}`
+                const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                return Buffer.from(await res.arrayBuffer())
+              },
+              hasBadges: true,
             })
             const fitMs = Date.now() - fitStart
-            if (bestFit && bestFit !== clean.file_path) {
-              log.info("Best-fit: improved poster selected", { mediaType, tmdbId, bestFit, original: clean.file_path, ms: fitMs })
+            if (bestFit && bestFit.posterPath && bestFit.posterPath !== clean.file_path) {
+              log.info("Best-fit: improved poster selected", { mediaType, tmdbId, bestFit: bestFit.posterPath, original: clean.file_path, ms: fitMs })
             } else {
               log.info("Best-fit: first clean already optimal", { mediaType, tmdbId, ms: fitMs })
             }
-            posterPath = bestFit ?? clean.file_path
+            posterPath = bestFit?.posterPath ?? clean.file_path
+            if (bestFit?.posterBuffer) posterPathBuffer = bestFit.posterBuffer
           } catch (e) {
             log.error("Best-fit: fallback to first clean", { mediaType, tmdbId, error: e instanceof Error ? e.message : String(e) })
             posterPath = clean.file_path
@@ -319,7 +327,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     ] = await Promise.all([
       // Block A: images + ranking data
       Promise.all([
-        fetchImg(imgSrc(posterPath)).catch(() => null),
+        posterPathBuffer
+          ? Promise.resolve(posterPathBuffer)
+          : fetchImg(imgSrc(posterPath)).catch(() => null),
         logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
         backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
         rankingEnabledEarly

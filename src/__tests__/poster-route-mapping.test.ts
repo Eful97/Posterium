@@ -24,7 +24,7 @@ vi.mock("@/lib/server-defaults", () => ({
 }))
 
 vi.mock("@/lib/poster-auto-fit", () => ({
-  selectBestLogoFitPosterPath: vi.fn(async () => "/best-fit.jpg"),
+  selectBestLogoFitPosterPath: vi.fn(async () => ({ posterPath: "/best-fit.jpg" })),
 }))
 
 vi.mock("@/lib/svg-badge", () => ({

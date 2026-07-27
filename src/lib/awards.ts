@@ -142,13 +142,20 @@ const NETWORKS = [
   "Studio Ghibli", "Sony Pictures",
 ]
 
+/** Match network name with word boundaries to avoid false positives (e.g. "rai" in "raindrop") */
+function nameMatchesNetwork(name: string, network: string): boolean {
+  if (name === network) return true
+  // Use word boundary: matches "rai cinema" but not "raindrop" or "tutorial"
+  return new RegExp(`\\b${network}\\b`).test(name)
+}
+
 export function matchTMDBStudios(names: string[]): string[] {
   const found = new Set<string>()
   for (const name of names) {
     const lower = name.toLowerCase().trim()
     for (const net of NETWORKS) {
       const nLower = net.toLowerCase()
-      if (lower === nLower || lower.includes(nLower)) {
+      if (lower === nLower || nameMatchesNetwork(lower, nLower)) {
         found.add(net)
         break
       }
@@ -164,7 +171,7 @@ function matchStudios(labels: string[]): string[] {
     const lower = label.toLowerCase()
     for (const net of NETWORKS) {
       const nLower = net.toLowerCase()
-      if (lower === nLower || lower.includes(nLower)) {
+      if (lower === nLower || nameMatchesNetwork(lower, nLower)) {
         found.add(net)
         break
       }
