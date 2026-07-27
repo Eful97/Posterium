@@ -53,7 +53,7 @@ export default function EditView() {
     setLoadProgress(0)
     if (!p.previewUrl) { setImgSrc(""); setPreviewLoading(false); return }
     setPreviewLoading(true)
-    setImgSrc("")
+    // keep old img visible while new one loads — no flicker
     const url = p.previewUrl
     const xhr = new XMLHttpRequest()
     xhrRef.current = xhr
