@@ -255,13 +255,13 @@ export function ProfileModal({ isOpen, onClose }: Props) {
                 <div className="font-semibold text-accent-orange">📌 Link per AIOMetadata & Stremio:</div>
                 <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/60 border border-white/5">
                   <div className="truncate font-mono text-[10px] text-zinc-300">
-                    {typeof window !== "undefined" ? `${window.location.origin}/api/poster/{type}/{id}?u=${activeUuid}` : ""}
+                    {typeof window !== "undefined" ? `${window.location.origin}/api/poster/{type}/{imdb_id}?u=${activeUuid}` : ""}
                   </div>
                   <button
                     type="button"
                     onClick={async () => {
                       if (typeof window !== "undefined") {
-                        await navigator.clipboard.writeText(`${window.location.origin}/api/poster/{type}/{id}?u=${activeUuid}`)
+                        await navigator.clipboard.writeText(`${window.location.origin}/api/poster/{type}/{imdb_id}?u=${activeUuid}`)
                         toast.success(p.t("ui.copied"))
                       }
                     }}

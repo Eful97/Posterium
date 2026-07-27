@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     const mappings = body.mappings && typeof body.mappings === "object" ? body.mappings : undefined
 
     const profileId = await createOrUpdateProfile(config, existingProfileId, password, apiKeys, mappings)
-    const url = `${getDomain()}/api/poster/{type}/{id}?u=${profileId}`
+    const url = `${getDomain()}/api/poster/{type}/{imdb_id}?u=${profileId}`
 
     return Response.json({ profileId, url })
   } catch (error) {
