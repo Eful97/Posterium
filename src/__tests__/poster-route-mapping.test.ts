@@ -58,6 +58,7 @@ vi.mock("@/lib/tmdb", () => ({
   getImages: vi.fn(),
   getExternalIds: vi.fn(async () => ({ imdb_id: null })),
   getKeywords: vi.fn(async () => []),
+  resolveRequestApiKey: vi.fn((req: { nextUrl?: { searchParams: URLSearchParams } }) => req.nextUrl?.searchParams.get("api_key") || undefined),
 }))
 
 vi.mock("@/lib/profile-store", () => ({

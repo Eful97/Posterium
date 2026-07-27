@@ -6,6 +6,19 @@ const fetchCache = new Map<string, { data: unknown; timestamp: number }>()
 const CACHE_TTL = 5 * 60 * 1000
 const CACHE_MAX = 500
 
+/**
+ * Risolve la chiave API TMDB/MDBList dalla richiesta.
+ * Priorità: header x-api-key > query param api_key > env var.
+ * L'header evita che la chiave appaia nei log del proxy/CDN.
+ */
+export function resolveRequestApiKey(req: { headers: Headers | { get: (name: string) => string | null }; nextUrl?: { searchParams: URLSearchParams } }): string | undefined {
+  const headerKey = req.headers.get("x-api-key")
+  if (headerKey) return headerKey
+  const queryKey = req.nextUrl?.searchParams.get("api_key")
+  if (queryKey) return queryKey
+  return TMDB_API_KEY || undefined
+}
+
 const inflight = new Map<string, Promise<unknown>>()
 
 async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {

@@ -4,7 +4,7 @@ import { buildPosterPublicUrl, getOriginFromRequest } from "@/lib/poster-public-
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"
 import { getAll } from "@/lib/store"
-import { getTrending } from "@/lib/tmdb"
+import { getTrending, resolveRequestApiKey } from "@/lib/tmdb"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("warmup")
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     return new Response("Unauthorized", { status: 401 })
   }
 
-  const apiKey = req.nextUrl.searchParams.get("api_key") || process.env.TMDB_API_KEY || undefined
+  const apiKey = resolveRequestApiKey(req)
   const lang = req.nextUrl.searchParams.get("lang") || "it"
   const concurrency = boundedInt({ value: req.nextUrl.searchParams.get("concurrency"), fallback: 3, min: 1, max: 8 })
   const trendingLimit = boundedInt({ value: req.nextUrl.searchParams.get("trending"), fallback: 50, min: 0, max: 100 })

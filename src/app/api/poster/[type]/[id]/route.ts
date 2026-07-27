@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import sharp from "sharp"
 import "@/lib/sharp-config"
-import { getImages, getDetails, getExternalIds, getKeywords, type TMDBImage, type TMDBCompany } from "@/lib/tmdb"
+import { getImages, getDetails, getExternalIds, getKeywords, resolveRequestApiKey, type TMDBImage, type TMDBCompany } from "@/lib/tmdb"
 import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
@@ -213,7 +213,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
   } else {
     const preferredLanguage = req.nextUrl.searchParams.get("lang") || "it"
-    const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
+    const apiKey = resolveRequestApiKey(req)
     try {
       const details = await getDetails(mediaType, tmdbId, preferredLanguage, apiKey)
       const origLang = details.original_language
@@ -351,11 +351,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         new Promise<typeof emptyWikidata>((r) => setTimeout(() => r(emptyWikidata), WIKIDATA_TIMEOUT)),
       ]),
       rankingEnabledEarly
-        ? getKeywords(mediaType, tmdbId, req.nextUrl.searchParams.get("api_key") || undefined).catch(() => [])
+        ? getKeywords(mediaType, tmdbId, resolveRequestApiKey(req)).catch(() => [])
         : Promise.resolve([]),
       (async () => {
         if (!rankingEnabledEarly) return false
-        const effectiveId = imdbId || (await getExternalIds(mediaType, tmdbId, req.nextUrl.searchParams.get("api_key") || undefined).catch(() => null))?.imdb_id || null
+        const effectiveId = imdbId || (await getExternalIds(mediaType, tmdbId, resolveRequestApiKey(req)).catch(() => null))?.imdb_id || null
         if (!effectiveId) return false
         if (!imdbId) imdbId = effectiveId
         return isImdbTop250(effectiveId)
@@ -384,7 +384,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (mapping?.firstAirDate) firstAirDate = mapping.firstAirDate
         if (tmdbNetworks.length === 0 && productionCompanies.length === 0) {
           try {
-            const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
+            const apiKey = resolveRequestApiKey(req)
             const preferredLang = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
             const details = await getDetails(mediaType, tmdbId, preferredLang, apiKey)
             if (!releaseDate) releaseDate = details.release_date || null
