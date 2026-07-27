@@ -95,9 +95,10 @@ export function readCachedPoster(cacheKey: string): { readonly payload: PosterCa
   }
 }
 
-export function writeCachedPoster(cacheKey: string, payload: PosterCachePayload): void {
-  cacheSet(cacheKey, payload.buffer, ["poster"])
-  cacheSet(`${cacheKey}:headers`, { etag: payload.etag }, ["poster"])
+export function writeCachedPoster(cacheKey: string, payload: PosterCachePayload, mappingTag?: string): void {
+  const tags = mappingTag ? ["poster", mappingTag] : ["poster"]
+  cacheSet(cacheKey, payload.buffer, tags)
+  cacheSet(`${cacheKey}:headers`, { etag: payload.etag }, tags)
 }
 
 export function getPendingPoster(cacheKey: string): Promise<PosterCachePayload | null> | null {

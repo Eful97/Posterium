@@ -148,6 +148,15 @@ export function cacheInvalidatePosterData(): void {
   cacheInvalidate("badge")
 }
 
+/**
+ * Invalida solo la cache relativa a un mapping specifico (poster + badge).
+ * Più mirato di cacheInvalidatePosterData() che svuota tutto.
+ */
+export function cacheInvalidatePosterDataFor(type: string, tmdbId: number): void {
+  const mappingTag = `poster:${type}:${tmdbId}`
+  cacheInvalidate(mappingTag)
+}
+
 export function cacheStatus(): CacheStatus {
   const tagCounts = new Map<string, number>()
   let totalEntries = 0
