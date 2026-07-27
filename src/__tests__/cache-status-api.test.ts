@@ -27,6 +27,9 @@ describe("GET /api/cache/status", () => {
         { tag: "stremio", count: 1 },
       ],
       untaggedEntries: 1,
+      totalBytes: expect.any(Number),
+      maxBytes: expect.any(Number),
+      maxEntries: expect.any(Number),
     })
   })
 
@@ -51,6 +54,9 @@ describe("GET /api/cache/status", () => {
       totalEntries: 0,
       taggedEntries: [],
       untaggedEntries: 0,
+      totalBytes: 0,
+      maxBytes: expect.any(Number),
+      maxEntries: expect.any(Number),
     })
   })
 })

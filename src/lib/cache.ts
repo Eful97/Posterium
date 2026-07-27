@@ -14,6 +14,9 @@ export type CacheStatus = {
   readonly totalEntries: number
   readonly taggedEntries: readonly CacheTagStats[]
   readonly untaggedEntries: number
+  readonly totalBytes: number
+  readonly maxBytes: number
+  readonly maxEntries: number
 }
 
 const store = new Map<string, CacheEntry<unknown>>()
@@ -21,8 +24,12 @@ const store = new Map<string, CacheEntry<unknown>>()
 const MAX_TTL = 30 * 60 * 1000
 const ENV_MAX_ENTRIES = process.env.POSTERIUM_CACHE_MAX ? parseInt(process.env.POSTERIUM_CACHE_MAX, 10) : 2000
 const MAX_ENTRIES = Number.isFinite(ENV_MAX_ENTRIES) && ENV_MAX_ENTRIES > 100 ? ENV_MAX_ENTRIES : 2000
+const ENV_MAX_MB = process.env.POSTERIUM_CACHE_MAX_MB ? parseFloat(process.env.POSTERIUM_CACHE_MAX_MB) : 150
+const MAX_BYTES = (Number.isFinite(ENV_MAX_MB) && ENV_MAX_MB > 10 ? ENV_MAX_MB : 150) * 1024 * 1024
 const EVICT_BATCH = 20
 const REFRESH_HOUR = 3
+
+let totalBytes = 0
 
 const TAG_TTL: Record<string, number> = {}
 
@@ -81,29 +88,55 @@ function startCleanup() {
       return
     }
     for (const [key, entry] of store) {
-      if (isExpired(entry)) store.delete(key)
+      if (isExpired(entry)) deleteEntry(key)
     }
   }, 60_000)
 }
 
-function makeSpace(count: number): void {
-  if (store.size + count < MAX_ENTRIES) return
+/**
+ * Stima la dimensione in bytes di un valore per il memory tracking.
+ * Per Buffer usa byteLength, per gli oggetti usa JSON.stringify.
+ */
+function estimateBytes(data: unknown): number {
+  if (Buffer.isBuffer(data)) return data.byteLength
+  if (typeof data === "string") return Buffer.byteLength(data)
+  try {
+    return Buffer.byteLength(JSON.stringify(data))
+  } catch {
+    // Circular references or non-serializable — fallback a 1KB
+    return 1024
+  }
+}
+
+function makeSpace(count: number, incomingBytes: number = 0): void {
+  if (store.size + count < MAX_ENTRIES && totalBytes + incomingBytes < MAX_BYTES) return
   // Map preserves insertion order; delete+set on read promotes accessed entries to end.
   // First keys are the least recently used. Evict in batches.
   let evicted = 0
-  const limit = Math.min(store.size + count - MAX_ENTRIES + EVICT_BATCH, store.size)
+  const entryLimit = Math.min(store.size + count - MAX_ENTRIES + EVICT_BATCH, store.size)
+  const byteTarget = totalBytes + incomingBytes - Math.floor(MAX_BYTES * 0.9)
   for (const key of store.keys()) {
-    if (evicted >= limit) break
+    if (evicted >= entryLimit && totalBytes <= byteTarget) break
+    const entry = store.get(key)
+    if (entry) {
+      totalBytes -= estimateBytes(entry.data)
+    }
     store.delete(key)
     evicted++
   }
+}
+
+function deleteEntry(key: string): void {
+  const entry = store.get(key)
+  if (entry) totalBytes -= estimateBytes(entry.data)
+  store.delete(key)
 }
 
 export function cacheGet<T>(key: string): T | null {
   const entry = store.get(key) as CacheEntry<T> | undefined
   if (!entry) return null
   if (isExpired(entry)) {
-    store.delete(key)
+    deleteEntry(key)
     return null
   }
   // Promote to most-recently-used (Map preserves insertion order)
@@ -125,9 +158,15 @@ export function cacheGetStale<T>(key: string): { data: T | null; stale: boolean 
 
 export function cacheSet<T>(key: string, data: T, tags: string[] = [], ttlMs?: number): void {
   if (!cleanupActive) startCleanup()
+  const incomingBytes = estimateBytes(data)
   if (!store.has(key)) {
-    makeSpace(1)
+    makeSpace(1, incomingBytes)
+  } else {
+    // Sottrai i byte dell'entry esistente prima di rimpiazzarla
+    const existing = store.get(key)
+    if (existing) totalBytes -= estimateBytes(existing.data)
   }
+  totalBytes += incomingBytes
   store.set(key, { data, timestamp: Date.now(), tags, ttl: ttlMs })
 }
 
@@ -137,7 +176,7 @@ export function cacheHas(key: string): boolean {
 
 export function cacheInvalidate(tag: string): void {
   for (const [key, entry] of store) {
-    if (entry.tags.includes(tag)) store.delete(key)
+    if (entry.tags.includes(tag)) deleteEntry(key)
   }
 }
 
@@ -162,8 +201,14 @@ export function cacheStatus(): CacheStatus {
   let totalEntries = 0
   let untaggedEntries = 0
 
+  // Cleanup pass: remove expired entries and adjust byte count
+  const expiredKeys: string[] = []
+  for (const [key, entry] of store) {
+    if (isExpired(entry)) expiredKeys.push(key)
+  }
+  for (const key of expiredKeys) deleteEntry(key)
+
   for (const entry of store.values()) {
-    if (isExpired(entry)) continue
     totalEntries += 1
 
     if (entry.tags.length === 0) {
@@ -184,11 +229,15 @@ export function cacheStatus(): CacheStatus {
     totalEntries,
     taggedEntries,
     untaggedEntries,
+    totalBytes,
+    maxBytes: MAX_BYTES,
+    maxEntries: MAX_ENTRIES,
   }
 }
 
 export function cacheClear(): void {
   store.clear()
+  totalBytes = 0
   if (cleanupTimer) {
     clearInterval(cleanupTimer)
     cleanupTimer = null
