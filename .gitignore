@@ -61,3 +61,17 @@ next-env.d.ts
 
 MARKETING.md
 $null
+
+# ai tool configs (local copies)
+/.aider-desk/
+/.qwen/
+
+# default next.js starter assets (unused)
+public/file.svg
+public/globe.svg
+public/next.svg
+public/vercel.svg
+public/window.svg
+
+# skill lockfile (auto-generated)
+skills-lock.json
