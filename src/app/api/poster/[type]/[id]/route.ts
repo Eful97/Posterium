@@ -46,8 +46,15 @@ import { computeTopBadge } from "@/lib/poster-badge"
 import { resolveImdbToTmdb } from "@/lib/imdb-resolver"
 import { decodeConfig } from "@/lib/config-token"
 import { getProfile, getFullProfileData } from "@/lib/profile-store"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("poster")
 
 type RouteParams = { type: string; id: string }
+
+function corsHeaders(): Record<string, string> {
+  return { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" }
+}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const rl = rateLimit(rateLimitKey(req), "poster")
@@ -64,7 +71,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   }
 
   if (isNaN(tmdbId) || tmdbId <= 0) {
-    return new Response("Invalid ID", { status: 400 })
+    return new Response("Invalid ID", { status: 400, headers: corsHeaders() })
   }
 
   // 1. Get mapping + server defaults (no network)
@@ -97,7 +104,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const rotated = await tryRotatePoster(mapping, rotationState)
       if (rotated) mapping = rotated
     } catch (error) {
-      console.warn(`[poster] Auto-rotate failed: ${error instanceof Error ? error.message : String(error)}`)
+      log.warn("Auto-rotate failed", { error: error instanceof Error ? error.message : String(error) })
     }
   }
 
@@ -242,11 +249,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           const anyLogo = images.logos[0]
           const chosenLogo = langLogo || itLogo || enLogo || origLogo || anyLogo
           if (chosenLogo && !langLogo && !itLogo && !enLogo && origLogo) {
-            console.warn(`[poster] Logo fallback to original_language "${details.original_language}" for ${mediaType}/${tmdbId}`)
+            log.warn("Logo fallback to original_language", { lang: details.original_language, mediaType, tmdbId })
           } else if (chosenLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
-            console.warn(`[poster] Logo fallback to any (first available) for ${mediaType}/${tmdbId}`)
+            log.warn("Logo fallback to any (first available)", { mediaType, tmdbId })
           } else if (!chosenLogo) {
-            console.warn(`[poster] No logo available for ${mediaType}/${tmdbId}`)
+            log.warn("No logo available", { mediaType, tmdbId })
           }
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
@@ -266,18 +273,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             })
             const fitMs = Date.now() - fitStart
             if (bestFit && bestFit !== clean.file_path) {
-              console.log(`[best-fit] ${mediaType}/${tmdbId}: migliorato ${bestFit} (primo ${clean.file_path}) ${fitMs}ms`)
+              log.info("Best-fit: improved poster selected", { mediaType, tmdbId, bestFit, original: clean.file_path, ms: fitMs })
             } else {
-              console.log(`[best-fit] ${mediaType}/${tmdbId}: primo clean già ottimale ${fitMs}ms`)
+              log.info("Best-fit: first clean already optimal", { mediaType, tmdbId, ms: fitMs })
             }
             posterPath = bestFit ?? clean.file_path
           } catch (e) {
-            console.error(`[best-fit] ${mediaType}/${tmdbId}: fallback al primo clean`, e)
+            log.error("Best-fit: fallback to first clean", { mediaType, tmdbId, error: e instanceof Error ? e.message : String(e) })
             posterPath = clean.file_path
           }
         } else {
-          if (logoPath) console.log(`[best-fit] ${mediaType}/${tmdbId}: disabilitato da config`)
-          else console.log(`[best-fit] ${mediaType}/${tmdbId}: nessun logo, skip`)
+          if (logoPath) log.info("Best-fit: disabled by config", { mediaType, tmdbId })
+          else log.info("Best-fit: no logo, skip", { mediaType, tmdbId })
           posterPath = clean.file_path
         }
       } else {
@@ -286,13 +293,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const chosen = langPoster || origPoster || images.posters[0]
         if (chosen) posterPath = chosen.file_path
       }
-    } catch (e) { console.error("[poster] Auto image fetch failed:", e) }
+    } catch (e) { log.error("Auto image fetch failed", { error: e instanceof Error ? e.message : String(e) }) }
     etag = `"${Date.now()}"`
   }
 
   if (!posterPath) {
     completePosterRender(null)
-    return new Response("Poster not found", { status: 404 })
+    return new Response("Poster not found", { status: 404, headers: corsHeaders() })
   }
 
   try {
@@ -331,7 +338,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     if (!originalBuf) {
       completePosterRender(null)
-      return new Response("Poster image not available", { status: 404 })
+      return new Response("Poster image not available", { status: 404, headers: corsHeaders() })
     }
 
     const emptyWikidata = { awards: [], nominations: [], studios: [], director: null }
@@ -387,7 +394,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             if (details.networks) tmdbNetworks = details.networks.map((n: TMDBCompany) => n.name)
             if (details.production_companies) productionCompanies = details.production_companies.map((c: TMDBCompany) => c.name)
             if (tmdbNetworks.length || productionCompanies.length) tmdbStudios = matchTMDBStudios([...tmdbNetworks, ...productionCompanies])
-          } catch (e) { console.error("[poster] Details fetch failed:", e) }
+          } catch (e) { log.error("Details fetch failed", { error: e instanceof Error ? e.message : String(e) }) }
         }
       })(),
     ])
@@ -471,7 +478,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         imdbTop250: !!imdbTop250,
       }
       const badgeComputed = computeTopBadge(badgeInput, t, locale)
-      console.log(`[debug] ${mediaType}/${tmdbId} (imdb:${imdbId}) top250:${!!imdbTop250} badge:${badgeComputed.badge?.label ?? "null"} vote:${voteAverage} genre:${genreName} awards:[${wikidataResult.awards}] dir:${wikidataResult.director}`)
+      log.info("Debug mode", { mediaType, tmdbId, imdbId, imdbTop250: !!imdbTop250, badge: badgeComputed.badge?.label ?? "null", vote: voteAverage, genre: genreName })
       completePosterRender(null)
       return Response.json({
         meta: {
@@ -564,7 +571,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster, isPreview) })
   } catch (e) {
     completePosterRender(null)
-    console.error("Poster generation failed:", e)
-    return new Response("Poster generation failed", { status: 500 })
+    log.error("Poster generation failed", { error: e instanceof Error ? e.message : String(e) })
+    return new Response("Poster generation failed", { status: 500, headers: corsHeaders() })
   }
 }

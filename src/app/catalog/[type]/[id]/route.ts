@@ -8,6 +8,9 @@ import { getById } from "@/lib/store"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { getExternalIds } from "@/lib/tmdb"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("catalog")
 
 interface StremioMeta {
   id: string
@@ -192,7 +195,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     if (metas.length > 0) cacheSet(cacheKey, body, ["stremio", "catalog"])
     return catalogResponse(body)
   } catch (e) {
-    console.error("Catalog error:", e)
+    log.error("Catalog error", { error: e instanceof Error ? e.message : String(e) })
     return catalogResponse({ metas: [] })
   }
 }

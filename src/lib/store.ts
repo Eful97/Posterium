@@ -2,8 +2,11 @@ import fsp from "node:fs/promises"
 import path from "node:path"
 import type { Mapping } from "@/lib/types"
 import { DATA_DIR } from "@/lib/data-dir"
+import { createLogger } from "@/lib/logger"
 
 export type { Mapping }
+
+const log = createLogger("store")
 
 const useKv = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN
 
@@ -14,7 +17,7 @@ export function getStorageMode(): "kv" | "file" {
 const debugStore = process.env.POSTERIUM_DEBUG === "1"
 
 if (!useKv && debugStore) {
-  console.log(`[store] Data directory: ${DATA_DIR}, file: ${path.join(DATA_DIR, "mappings.json")}`)
+  log.info("Data directory", { dir: DATA_DIR, file: path.join(DATA_DIR, "mappings.json") })
 }
 
 // ---- Vercel KV helpers ----
@@ -79,7 +82,7 @@ function enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
 async function ensureDataDir() {
   await fsp.mkdir(DATA_DIR, { recursive: true }).catch((e) => {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error(`[store] Failed to create data dir '${DATA_DIR}': ${msg}`)
+    log.error(`Failed to create data dir '${DATA_DIR}': ${msg}`)
     throw new Error(`Cannot create data directory: ${msg}`)
   })
 }
@@ -102,7 +105,7 @@ async function loadFromDisk(): Promise<Record<string, Mapping>> {
       return {}
     }
     const message = error instanceof Error ? error.message : String(error)
-    console.warn(`[store] Failed to load mappings: ${message}`)
+    log.warn("Failed to load mappings", { error: message })
     return memCache ?? {}
   }
 }
@@ -130,10 +133,10 @@ async function persist(data: Record<string, Mapping>) {
     await fsp.rename(tmp, DATA_FILE)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error(`[store] Failed to write mappings to ${DATA_FILE}: ${msg}`)
+    log.error("Failed to write mappings", { file: DATA_FILE, error: msg })
     if (msg.includes("EACCES") || msg.includes("EPERM")) {
-      console.error(`[store] Permission error — check that '${DATA_DIR}' is writable by the current user`)
-      console.error("[store] If using HF Storage Bucket, verify it's linked in Space Settings -> Storage")
+      log.error("Permission error — check that data dir is writable", { dir: DATA_DIR })
+      log.error("If using HF Storage Bucket, verify it's linked in Space Settings -> Storage")
     }
     throw new Error(`Cannot persist mappings: ${msg}`)
   }

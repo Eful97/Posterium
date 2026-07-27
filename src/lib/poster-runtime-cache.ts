@@ -1,5 +1,8 @@
 import type { NextRequest } from "next/server"
 import { cacheGetStale, cacheSet } from "@/lib/cache"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("poster-cache")
 
 export const POSTER_REFRESH_PARAM = "__poster_refresh"
 
@@ -41,9 +44,16 @@ export function isImmutablePosterRequest(searchParams: URLSearchParams, state: I
   return state.mappingVersionMatches === true
 }
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Expose-Headers": "ETag, Cache-Control",
+}
+
 export function posterHeaders(etag: string, immutable: boolean, isPreview: boolean = false): PosterHeaders {
   if (isPreview) {
     return {
+      ...CORS_HEADERS,
       "Content-Type": "image/jpeg",
       "Cache-Control": PREVIEW_CACHE_CONTROL,
       "Pragma": "no-cache",
@@ -52,6 +62,7 @@ export function posterHeaders(etag: string, immutable: boolean, isPreview: boole
     }
   }
   return {
+    ...CORS_HEADERS,
     "Content-Type": "image/jpeg",
     "Cache-Control": immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : POSTER_CACHE_CONTROL,
     "CDN-Cache-Control": immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : POSTER_CDN_CACHE_CONTROL,
@@ -62,6 +73,7 @@ export function posterHeaders(etag: string, immutable: boolean, isPreview: boole
 
 export function posterNotModifiedHeaders(etag: string, immutable: boolean): PosterHeaders {
   return {
+    ...CORS_HEADERS,
     "Cache-Control": immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : POSTER_CACHE_CONTROL,
     "CDN-Cache-Control": immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : POSTER_CDN_CACHE_CONTROL,
     "Surrogate-Control": immutable ? "max-age=31536000" : "max-age=86400, stale-while-revalidate=604800",
@@ -110,10 +122,7 @@ export function schedulePosterRefresh(req: NextRequest): void {
   void fetch(url, { signal: AbortSignal.timeout(60_000) })
     .then((res) => res.arrayBuffer())
     .catch((error: unknown) => {
-      if (error instanceof Error) {
-        console.error("[poster] Background refresh failed:", error.message)
-        return
-      }
-      console.error("[poster] Background refresh failed")
+      const msg = error instanceof Error ? error.message : String(error)
+      log.error("Background refresh failed", { error: msg })
     })
 }

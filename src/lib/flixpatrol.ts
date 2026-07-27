@@ -1,6 +1,9 @@
 import fs from "node:fs"
 import path from "node:path"
 import { DATA_DIR } from "@/lib/data-dir"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("flixpatrol")
 
 const CATALOG_URL = "https://raw.githubusercontent.com/0xConstant1/fp-crawler/main/catalogs/italy.json"
 const TMDB_BASE = "https://api.themoviedb.org/3"
@@ -66,7 +69,7 @@ function loadCache(): CacheData {
         return raw as CacheData
       }
     }
-  } catch (e) { console.error("[flixpatrol] Failed to load cache:", e) }
+  } catch (e) { log.error("Failed to load cache", { error: e instanceof Error ? e.message : String(e) }) }
   return { timestamp: 0, catalog: null }
 }
 
@@ -125,7 +128,7 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
       cache.timestamp = Date.now()
       saveCache(cache)
     } catch (e) {
-      console.error("[flixpatrol] Failed to fetch fresh catalog:", e)
+      log.error("Failed to fetch fresh catalog", { error: e instanceof Error ? e.message : String(e) })
       if (!catalog) throw e
     }
   }

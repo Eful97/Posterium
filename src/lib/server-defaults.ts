@@ -2,6 +2,9 @@ import fs from "node:fs/promises"
 import { existsSync } from "node:fs"
 import path from "node:path"
 import { DATA_DIR } from "@/lib/data-dir"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("server-defaults")
 
 export interface ServerDefaults {
   badgeStyle?: string
@@ -26,7 +29,7 @@ let writeQueue = Promise.resolve()
 
 function logDefaultsError(action: string, error: unknown): void {
   const message = error instanceof Error ? error.message : String(error)
-  console.warn(`[server-defaults] ${action}: ${message}`)
+  log.warn(action, { error: message })
 }
 
 async function loadFromDisk(): Promise<ServerDefaults> {

@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { rewriteMetasPosters, rewriteSingleMetaPoster, type StremioItemMeta } from "@/lib/addon-proxy"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("addon-proxy")
 
 function corsHeaders() {
   return {
@@ -49,7 +52,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
 
       return Response.json(proxiedManifest, { headers: corsHeaders() })
     } catch (e) {
-      console.error("[addon-proxy] Manifest proxy error:", e)
+      log.error("Manifest proxy error", { error: e instanceof Error ? e.message : String(e) })
       return Response.json({ error: "Error fetching manifest" }, { status: 500, headers: corsHeaders() })
     }
   }
@@ -74,7 +77,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
 
     return Response.json(data, { headers: corsHeaders() })
   } catch (e) {
-    console.error("[addon-proxy] Resource proxy error:", e)
+    log.error("Resource proxy error", { error: e instanceof Error ? e.message : String(e) })
     return Response.json({ error: "Proxy resource error" }, { status: 500, headers: corsHeaders() })
   }
 }

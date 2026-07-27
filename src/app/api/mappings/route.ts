@@ -8,6 +8,9 @@ import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getFullProfileData, createOrUpdateProfile } from "@/lib/profile-store"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("mappings")
 
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
@@ -84,14 +87,14 @@ export async function POST(req: NextRequest) {
     await fetch(warmUrl, { signal: AbortSignal.timeout(25000) })
   })().catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error)
-    console.warn(`[mappings] Poster warmup failed: ${message}`)
+    log.warn("Poster warmup failed", { error: message })
   })
   // Warm catalog cache — ricostruisci cataloghi principali in background
   for (const catalog of getWarmupCatalogs()) {
     const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
     void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error)
-      console.warn(`[mappings] Catalog warmup failed for ${catalog.id}: ${message}`)
+      log.warn("Catalog warmup failed", { catalog: catalog.id, error: message })
     })
   }
   return Response.json({ ok: true })

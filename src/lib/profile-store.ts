@@ -4,6 +4,9 @@ import crypto from "node:crypto"
 import { DATA_DIR } from "@/lib/data-dir"
 import type { PosteriumUserConfig } from "@/lib/config-token"
 import type { Mapping } from "@/lib/types"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("profile-store")
 
 export type { PosteriumUserConfig }
 
@@ -104,7 +107,7 @@ async function loadProfilesFromDisk(): Promise<Record<string, ProfileData>> {
       memCacheTime = Date.now()
       return {}
     }
-    console.warn("[profile-store] Failed to load profiles:", error instanceof Error ? error.message : String(error))
+    log.warn("Failed to load profiles", { error: error instanceof Error ? error.message : String(error) })
     return memCache ?? {}
   }
 }
@@ -128,7 +131,7 @@ async function persistProfiles(data: Record<string, ProfileData>) {
     await fsp.writeFile(tmp, JSON.stringify(data, null, 2))
     await fsp.rename(tmp, PROFILES_FILE)
   } catch (e) {
-    console.error("[profile-store] Failed to write profiles:", e instanceof Error ? e.message : String(e))
+    log.error("Failed to write profiles", { error: e instanceof Error ? e.message : String(e) })
     throw e
   }
 }

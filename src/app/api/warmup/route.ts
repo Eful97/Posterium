@@ -5,8 +5,11 @@ import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"
 import { getAll } from "@/lib/store"
 import { getTrending } from "@/lib/tmdb"
+import { createLogger } from "@/lib/logger"
 
-const WARMUP_TOKEN = process.env.ADMIN_TOKEN || process.env.WARMUP_TOKEN
+const log = createLogger("warmup")
+
+const WARMUP_TOKEN = process.env.POSTERIUM_ADMIN_TOKEN || process.env.ADMIN_TOKEN || process.env.WARMUP_TOKEN
 
 type PosterRouteType = "movie" | "series"
 type WarmupStatus = "ok" | "fail"
@@ -146,7 +149,7 @@ export async function POST(req: NextRequest) {
           await res.arrayBuffer()
           return { ...target, status: "ok" }
         } catch (error: unknown) {
-          if (error instanceof Error) console.error("[warmup] Poster failed:", error.message)
+          if (error instanceof Error) log.error("Poster failed", { error: error.message })
           return { ...target, status: "fail" }
         }
       }))
@@ -160,7 +163,7 @@ export async function POST(req: NextRequest) {
       results,
     })
   } catch (error: unknown) {
-    if (error instanceof Error) console.error("[warmup] Failed:", error.message)
+    if (error instanceof Error) log.error("Failed", { error: error.message })
     return new Response("Warmup failed", { status: 500 })
   }
 }

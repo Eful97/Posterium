@@ -57,13 +57,22 @@ export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter:
 
 export function rateLimitKey(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")
-  const ip = forwarded?.split(",")[0]?.trim() || "local"
-  return ip
+  if (forwarded) return forwarded.split(",")[0]?.trim()
+  const realIp = request.headers.get("x-real-ip")
+  if (realIp) return realIp.trim()
+  const cfIp = request.headers.get("cf-connecting-ip")
+  if (cfIp) return cfIp.trim()
+  return "local"
 }
 
 export function rateLimitResponse(retryAfter: number): Response {
   return new Response(JSON.stringify({ error: "Troppe richieste. Attendi qualche secondo." }), {
     status: 429,
-    headers: { "Content-Type": "application/json", "Retry-After": String(retryAfter) },
+    headers: {
+      "Content-Type": "application/json",
+      "Retry-After": String(retryAfter),
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "*",
+    },
   })
 }
