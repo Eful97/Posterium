@@ -119,6 +119,104 @@ docker run -p 8080:8080 -e TMDB_API_KEY=la_tua_chiave_tmdb posterium
 
 ---
 
+### 🖥️ Deploy VPS (Docker Compose, Multi-Utente)
+
+Per chi vuole hostare Posterium su un **VPS** e condividerlo con famiglia/amici.
+
+#### Prerequisiti
+
+- VPS con Docker e `docker compose` (1 CPU, 512MB RAM minimo — 1GB consigliato)
+- Un dominio (opzionale, ma consigliato per HTTPS)
+- `TMDB_API_KEY` (obbligatoria)
+
+#### Setup rapido
+
+```bash
+# 1. Clona
+git clone https://github.com/Eful97/Posterium && cd Posterium
+
+# 2. Crea .env
+cat > .env << 'EOF'
+TMDB_API_KEY=la_tua_chiave
+POSTERIUM_ADMIN_TOKEN=un_token_segreto_casuale
+EOF
+
+# 3. Avvia
+docker compose up -d
+```
+
+L'app è su `http://IP_VPS:8080`. Manifest Stremio: `http://IP_VPS:8080/manifest.json`.
+
+#### Reverse proxy con Caddy (HTTPS automatico)
+
+Crea `caddy/Caddyfile`:
+```
+tuodominio.com {
+    reverse_proxy posterium:8080
+}
+```
+
+Aggiorna `docker-compose.yml`, aggiungi sotto `services`:
+```yaml
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+    depends_on:
+      - posterium
+
+volumes:
+  caddy-data:
+```
+
+Riavvia: `docker compose up -d`.
+
+#### Multi-Utente (Profili)
+
+Chi condivide lo stesso server può creare un profilo personale via `POST /api/profile`:
+
+```json
+{
+  "config": {
+    "globalBadges": true,
+    "rankingBadges": true,
+    "badgeStyle": "colored",
+    "rankingBadgeStyle": "netflix",
+    "blurEnabled": true,
+    "blurIntensity": 5,
+    "blurFade": 60,
+    "blurDarkness": 40,
+    "gradientHeight": 30,
+    "networkLogo": true,
+    "autoRotateClean": true,
+    "logoFitEnabled": false
+  },
+  "password": "scelta_dall_utente"
+}
+```
+
+Risposta: `{ "profileId": "uuid-generato", "url": "..." }`.
+
+Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati, senza interferire con gli altri.
+
+> **Protezione admin**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env`. Le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`) richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`.
+
+#### Note produzione
+
+- **Memoria**: Posterium usa ~200MB base + cache. Il `docker-compose.yml` limita a 512MB.
+- **Persistenza**: I dati (mapping, profili, default) sono in un volume Docker `posterium-data`.
+- **CDN**: Se hai una CDN (Cloudflare, Bunny), imposta `POSTER_CDN_URL` per generare URL poster col CDN.
+- **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello.
+- **Cache**: I poster generati sono in memoria (max 2000 entry / 150MB). Un restart svuota la cache (i poster si rigenerano al prossimo accesso).
+
+---
+
 ## 🔑 Variabili d'Ambiente
 
 | Variabile | Obbligatoria | Descrizione |
@@ -126,10 +224,21 @@ docker run -p 8080:8080 -e TMDB_API_KEY=la_tua_chiave_tmdb posterium
 | `TMDB_API_KEY` | ✅ | Chiave API TMDB (v3) |
 | `MDBLIST_API_KEY` | ❌ | Per classifiche anime e voto IMDb aggregato |
 | `OMDB_API_KEY` | ❌ | Fallback per voto IMDb quando MDBList non è fornito |
-| `KV_REST_API_URL` | ❌ | URL Upstash Redis per salvataggio persistente cloud |
+| `KV_REST_API_URL` | ❌ | URL Upstash Redis per persistenza cloud (alternativa a file JSON) |
 | `KV_REST_API_TOKEN` | ❌ | Token Upstash Redis |
-| `ADMIN_TOKEN` | ❌ | Protegge gli endpoint di gestione cache (`/api/cache/clear`) |
-| `POSTERIUM_DATA_DIR` | ❌ | Percorso personalizzato per dati persistenti (default: `./data/`) |
+| `POSTERIUM_ADMIN_TOKEN` | ❌ | Protegge route admin (`/api/mappings`, `/api/cache/clear`, `/api/defaults`) |
+| `ADMIN_TOKEN` | ❌ | Alias per POSTERIUM_ADMIN_TOKEN (legacy) |
+| `POSTERIUM_DATA_DIR` | ❌ | Percorso dati persistenti (default: `./data/`) |
+| `POSTERIUM_CACHE_MAX` | ❌ | Max entry cache in-memory (default: 2000) |
+| `POSTERIUM_CACHE_MAX_MB` | ❌ | Max MB cache in-memory (default: 150) |
+| `POSTERIUM_CACHE_REFRESH_HOUR` | ❌ | Ora UTC refresh programmato poster/catalog (default: 3) |
+| `POSTERIUM_LOG_LEVEL` | ❌ | Livello log: `debug`, `info`, `warn`, `error` (default: `info`) |
+| `POSTERIUM_LOG_FORMAT` | ❌ | Formato log JSON se impostato a `json` |
+| `SHARP_CONCURRENCY` | ❌ | Thread Sharp per resize immagini (default: 2) |
+| `SHARP_CACHE_MEMORY_MB` | ❌ | Cache Sharp in MB (default: 64) |
+| `WARMUP_TOKEN` | ❌ | Token per endpoint `/api/warmup` (fallback a POSTERIUM_ADMIN_TOKEN) |
+| `POSTER_CDN_URL` / `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | URL CDN per generare link poster col CDN |
+| `WIKIDATA_TIMEOUT` | ❌ | Timeout ms per fetch Wikidata badge premi (default: 4000) |
 
 ---
 

@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  posterium:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: posterium:latest
+    container_name: posterium
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # ── Obbligatorie ──
+      - TMDB_API_KEY=${TMDB_API_KEY:?TMDB_API_KEY is required — set in .env or shell}
+
+      # ── Opzionali — API ──
+      - MDBLIST_API_KEY=${MDBLIST_API_KEY:-}
+      - OMDB_API_KEY=${OMDB_API_KEY:-}
+
+      # ── Opzionali — Admin & Sicurezza ──
+      - POSTERIUM_ADMIN_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}
+      - WARMUP_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}
+
+      # ── Opzionali — Persistenza distribuita ──
+      - KV_REST_API_URL=${KV_REST_API_URL:-}
+      - KV_REST_API_TOKEN=${KV_REST_API_TOKEN:-}
+
+      # ── Opzionali — Cache ──
+      - POSTERIUM_CACHE_MAX=${POSTERIUM_CACHE_MAX:-2000}
+      - POSTERIUM_CACHE_MAX_MB=${POSTERIUM_CACHE_MAX_MB:-150}
+      - POSTERIUM_CACHE_REFRESH_HOUR=${POSTERIUM_CACHE_REFRESH_HOUR:-3}
+
+      # ── Opzionali — Sharp (ottimizzazione CPU/RAM) ──
+      - SHARP_CONCURRENCY=${SHARP_CONCURRENCY:-2}
+      - SHARP_CACHE_MEMORY_MB=${SHARP_CACHE_MEMORY_MB:-64}
+
+      # ── Opzionali — Logging ──
+      - POSTERIUM_LOG_LEVEL=${POSTERIUM_LOG_LEVEL:-info}
+      - POSTERIUM_LOG_FORMAT=${POSTERIUM_LOG_FORMAT:-}
+
+      # ── Opzionali — CDN ──
+      - POSTER_CDN_URL=${POSTER_CDN_URL:-}
+      - NEXT_PUBLIC_POSTER_CDN_URL=${NEXT_PUBLIC_POSTER_CDN_URL:-}
+
+      # ── Runtime ──
+      - NODE_ENV=production
+      - PORT=8080
+      - HOSTNAME=0.0.0.0
+    volumes:
+      - posterium-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+volumes:
+  posterium-data:
+    driver: local

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { rewriteMetasPosters, rewriteSingleMetaPoster, type StremioItemMeta } from "@/lib/addon-proxy"
+import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("addon-proxy")
@@ -14,7 +15,28 @@ function corsHeaders() {
   }
 }
 
+/** Blocca richieste a IP privati / localhost per prevenire SSRF */
+function isBlockedTarget(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    const hostname = parsed.hostname.toLowerCase()
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0" || hostname === "::1") return true
+    if (hostname.endsWith(".local") || hostname.endsWith(".internal")) return true
+    if (hostname.startsWith("10.")) return true
+    if (hostname.startsWith("192.168.")) return true
+    // Blocca solo 172.16.0.0/12 (non tutto 172.x.x.x)
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return true
+    if (parsed.port && Number(parsed.port) < 1024) return true
+    return false
+  } catch {
+    return true
+  }
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const rl = rateLimit(rateLimitKey(req), "default")
+  if (!rl.ok) return rateLimitResponse(rl.retAfter)
+
   const { path } = await params
   const origin = getOriginFromRequest(req)
   const searchParams = req.nextUrl.searchParams
@@ -28,6 +50,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
   let targetUrl = rawTargetUrl.trim()
   if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
     targetUrl = `https://${targetUrl}`
+  }
+
+  if (isBlockedTarget(targetUrl)) {
+    log.warn("Blocked SSRF attempt", { target: targetUrl })
+    return Response.json({ error: "Invalid target URL" }, { status: 400, headers: corsHeaders() })
   }
 
   const firstPath = path[0] || ""
