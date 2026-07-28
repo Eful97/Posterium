@@ -11,7 +11,7 @@ test("home loads and exposes main actions", async ({ page }) => {
   await expect(page.getByRole("button", { name: /AIOMetadata URL/i })).toBeVisible()
   await expect(page.getByRole("button", { name: /Installa catalogo/i })).toBeVisible()
   await expect(page.getByRole("button", { name: /I miei poster/i })).toBeVisible()
-  await expect(page.getByRole("button", { name: /Impostazioni|settings/i })).toBeVisible()
+  await expect(page.getByRole("button", { name: /Impostazioni|settings/i }).first()).toBeVisible()
 })
 
 test("home works on mobile", async ({ page }) => {

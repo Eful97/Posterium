@@ -241,6 +241,43 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 | `WIKIDATA_TIMEOUT` | ❌ | Timeout ms per fetch Wikidata badge premi (default: 4000) |
 
 ---
+	
+## 🧪 Test
+
+Posterium usa [Playwright](https://playwright.dev/) per test E2E e visual regression.
+
+### Setup
+
+```bash
+npx playwright install chromium
+```
+
+### Eseguire i test
+
+```bash
+# Test visivi (screenshot — sempre attivi)
+npx playwright test e2e/posterium-visual.spec.ts
+
+# Smoke test (funzionali)
+npx playwright test e2e/posterium-smoke.spec.ts
+
+# Tutti i test
+npx playwright test e2e/
+```
+
+Con `TMDB_API_KEY` nell'ambiente vengono attivati automaticamente anche i test di regressione visiva sui poster generati (confronto screenshot per ogni stile badge, gradiente, blur).
+
+### Aggiornare gli snapshot
+
+Se una modifica intenzionale altera l'aspetto dell'interfaccia o dei poster:
+
+```bash
+npx playwright test --update-snapshots
+```
+
+Poi committa i nuovi `.png` generati in `e2e/posterium-visual.spec.ts-snapshots/`.
+
+---
 
 ## 🙏 Credits
 
