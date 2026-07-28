@@ -97,6 +97,24 @@ App version: `0.15.2` — RENDER_VERSION: `90` — rv: `90`
 - `src/lib/badge-priority.ts` — logica priorità badge (condivisa)
 - `src/lib/logo-layout.ts` — geometria condivisa logo preview/server
 - `src/app/api/poster/[type]/[id]/route.ts` — composizione poster finale (preview + Stremio usano la stessa route)
+- `e2e/posterium-visual.spec.ts` — test di regressione visiva (screenshot) per poster e interfaccia
+- `e2e/posterium-smoke.spec.ts` — smoke test funzionali
+
+### Test di regressione visiva
+
+> **Dopo ogni modifica ai parametri di resa visiva in QUALSIASI file sopra elencato**, esegui `npx playwright test e2e/posterium-visual.spec.ts` per verificare che la sincronizzazione client/server sia corretta.
+
+| Regola | Dettaglio |
+|---|---|
+| Comando | `npx playwright test e2e/posterium-visual.spec.ts` (solo test visivi) |
+| Suite completa | `npx playwright test e2e/` (include smoke test) |
+| API key | I test poster API richiedono `TMDB_API_KEY` nell'ambiente — senza, vengono saltati automaticamente |
+| Snapshot intenzionali | Se la modifica ALTERA INTENZIONALMENTE l'aspetto, aggiorna con `npx playwright test --update-snapshots` e committa i nuovi `.png` |
+| RENDER_VERSION | Ogni modifica ai parametri di resa (font, padding, gap, colori, gradienti, blur, logo) DEVE incrementare `RENDER_VERSION` in `src/lib/render-version.ts` e aggiornare il valore `rv` in questo file. I test visivi confermano la coerenza della modifica. |
+
+Test attivi:
+- **4 screenshot fissi**: home full-page, home viewport, home mobile, /status — sempre attivi
+- **20 test poster API** (10 funzionali + 10 visual): badge shadow/pill/bar/colored, ranking, extra, gradienti up/down, blur, clean — attivi solo con `TMDB_API_KEY`
 <!-- END: posterium-project-rules -->
 
 ---
