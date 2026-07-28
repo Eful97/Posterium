@@ -1,0 +1,96 @@
+"use client"
+
+import { createContext, useContext, useMemo, type ReactNode } from "react"
+import type { PosteriumCtx } from "@/lib/context"
+import type { Lang } from "@/lib/i18n"
+
+/**
+ * SettingsCtx — subset di PosteriumCtx per impostazioni (chiavi API, tema, lingua, profilo).
+ * Deriva dal padre via memo: cambia solo quando cambiano le impostazioni,
+ * non quando cambiano badge/search/nav.
+ */
+export interface SettingsCtx {
+  tmdbKey: string
+  setTmdbKey: (v: string) => void
+  tmdbKeyInput: string
+  setTmdbKeyInput: React.Dispatch<React.SetStateAction<string>>
+  showKey: boolean
+  setShowKey: React.Dispatch<React.SetStateAction<boolean>>
+  mdblistApiKey: string
+  setMdblistApiKey: (v: string) => void
+  theme: "dark" | "light"
+  setTheme: React.Dispatch<React.SetStateAction<"dark" | "light">>
+  uiAccent: boolean
+  setUiAccent: React.Dispatch<React.SetStateAction<boolean>>
+  lang: string
+  t: (key: string, params?: Record<string, string | number>) => string
+  pickLang: (l: string) => void
+  profileId: string | null
+  setProfileId: React.Dispatch<React.SetStateAction<string | null>>
+  profilePassword: string
+  setProfilePassword: (v: string) => void
+  exportData: () => Promise<void>
+  importData: () => void
+  copyUrl: () => Promise<void>
+  saveAndCopyProfileUrl: () => Promise<void>
+}
+
+const Ctx = createContext<SettingsCtx | null>(null)
+
+export function useSettingsCtx() {
+  const v = useContext(Ctx)
+  if (!v) throw new Error("useSettingsCtx must be inside PosteriumProvider")
+  return v
+}
+
+export function SettingsProvider({
+  value,
+  children,
+}: {
+  value: PosteriumCtx
+  children: ReactNode
+}) {
+  const settingsCtx = useMemo<SettingsCtx>(
+    () => ({
+      tmdbKey: value.tmdbKey,
+      setTmdbKey: value.setTmdbKey,
+      tmdbKeyInput: value.tmdbKeyInput,
+      setTmdbKeyInput: value.setTmdbKeyInput,
+      showKey: value.showKey,
+      setShowKey: value.setShowKey,
+      mdblistApiKey: value.mdblistApiKey,
+      setMdblistApiKey: value.setMdblistApiKey,
+      theme: value.theme,
+      setTheme: value.setTheme,
+      uiAccent: value.uiAccent,
+      setUiAccent: value.setUiAccent,
+      lang: value.lang,
+      t: value.t,
+      pickLang: value.pickLang,
+      profileId: value.profileId,
+      setProfileId: value.setProfileId,
+      profilePassword: value.profilePassword,
+      setProfilePassword: value.setProfilePassword,
+      exportData: value.exportData,
+      importData: value.importData,
+      copyUrl: value.copyUrl,
+      saveAndCopyProfileUrl: value.saveAndCopyProfileUrl,
+    }),
+    [
+      value.tmdbKey, value.setTmdbKey,
+      value.tmdbKeyInput, value.setTmdbKeyInput,
+      value.showKey, value.setShowKey,
+      value.mdblistApiKey, value.setMdblistApiKey,
+      value.theme, value.setTheme,
+      value.uiAccent, value.setUiAccent,
+      value.lang,
+      value.t, value.pickLang,
+      value.profileId, value.setProfileId,
+      value.profilePassword, value.setProfilePassword,
+      value.exportData, value.importData,
+      value.copyUrl, value.saveAndCopyProfileUrl,
+    ],
+  )
+
+  return <Ctx.Provider value={settingsCtx}>{children}</Ctx.Provider>
+}

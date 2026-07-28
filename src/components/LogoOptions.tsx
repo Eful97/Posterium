@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react"
 import type { TMDBImage } from "@/lib/types"
 import { LANG_NAMES, groupBy, limitBest, posterUrl } from "@/lib/utils"
-import { useP } from "@/lib/context"
+import { useT } from "@/lib/contexts/TranslationContext"
+import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { Check, Plus, Trash2, ChevronDown } from "lucide-react"
 
 interface Props {
@@ -16,7 +17,8 @@ interface Props {
 }
 
 export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo, lang, selectLogo, removeLogo, disabled }: Props) {
-  const p = useP()
+  const { t } = useT()
+  const { logoDisabled, setLogoDisabled } = usePosterEditor()
   const [activeLogoGroup, setActiveLogoGroup] = useState("all")
   const [visibleLogoCount, setVisibleLogoCount] = useState(10)
 
@@ -90,7 +92,7 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
                 {best.map((img) => {
                   const isActive = selectedLogo?.file_path === img.file_path
                   return (
-                    <button key={img.file_path} disabled={disabled} onClick={() => selectLogo(img)} className={`poster-tile group relative p-2 rounded-xl transition-all duration-200 ease-out flex items-center justify-center h-20 ${disabled ? "opacity-40 cursor-not-allowed" : ""} ${isActive ? "poster-tile-active bg-accent-orange/10" : ""}`} title={isActive ? p.t("ui.logoSelected") : undefined}>
+                    <button key={img.file_path} disabled={disabled} onClick={() => selectLogo(img)} className={`poster-tile group relative p-2 rounded-xl transition-all duration-200 ease-out flex items-center justify-center h-20 ${disabled ? "opacity-40 cursor-not-allowed" : ""} ${isActive ? "poster-tile-active bg-accent-orange/10" : ""}`} title={isActive ? t("ui.logoSelected") : undefined}>
                       {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
                       <img src={posterUrl(img.file_path, "w154")} alt="" loading="lazy" decoding="async" className="max-h-14 max-w-full object-contain transition-transform duration-200 group-hover:scale-110" />
                       {isActive && <div className="absolute top-1 right-1 rounded-md bg-accent-orange text-white p-0.5 shadow-sm shadow-accent-orange/40"><Check className="w-3 h-3" /></div>}
@@ -122,13 +124,13 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
         </div>
       )}
       {!selectedLogo && (
-        <button aria-label={p.logoDisabled ? p.t("ui.removeLogo") : "Abilita loghi"} disabled={disabled} onClick={() => p.setLogoDisabled(!p.logoDisabled)} className={`mt-3 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : p.logoDisabled ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"}`}>
-          <span className="flex items-center justify-center gap-1.5">{p.logoDisabled ? "Loghi disabilitati" : "Disabilita loghi"}</span>
+        <button aria-label={logoDisabled ? t("ui.removeLogo") : "Abilita loghi"} disabled={disabled} onClick={() => setLogoDisabled(!logoDisabled)} className={`mt-3 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : logoDisabled ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"}`}>
+          <span className="flex items-center justify-center gap-1.5">{logoDisabled ? "Loghi disabilitati" : "Disabilita loghi"}</span>
         </button>
       )}
       {selectedLogo && (
-        <button aria-label={p.t("ui.removeLogo")} disabled={disabled} onClick={removeLogo} className={`mt-2 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-red-300 hover:border-red-500/30"}`}>
-          <span className="flex items-center justify-center gap-1.5"><Trash2 className="w-3 h-3" />{p.t("ui.removeLogo")}</span>
+        <button aria-label={t("ui.removeLogo")} disabled={disabled} onClick={removeLogo} className={`mt-2 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-red-300 hover:border-red-500/30"}`}>
+          <span className="flex items-center justify-center gap-1.5"><Trash2 className="w-3 h-3" />{t("ui.removeLogo")}</span>
         </button>
       )}
     </div>

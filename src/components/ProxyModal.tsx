@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import { toast } from "sonner"
 import { X, Copy, ExternalLink, Sparkles, Check, Link2 } from "lucide-react"
 import { useP } from "@/lib/context"
+import { useT } from "@/lib/contexts/TranslationContext"
 
 interface Props {
   isOpen: boolean
@@ -18,6 +19,7 @@ const POPULAR_PRESETS = [
 
 export function ProxyModal({ isOpen, onClose }: Props) {
   const p = useP()
+  const { t } = useT()
   const [targetUrl, setTargetUrl] = useState("")
   const [copied, setCopied] = useState(false)
 
@@ -34,10 +36,10 @@ export function ProxyModal({ isOpen, onClose }: Props) {
     try {
       await navigator.clipboard.writeText(proxyUrl)
       setCopied(true)
-      toast.success(p.t("ui.copied"))
+      toast.success(t("ui.copied"))
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error(p.t("ui.saveError"))
+      toast.error(t("ui.saveError"))
     }
   }
 

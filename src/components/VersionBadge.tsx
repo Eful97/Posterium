@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useP } from "@/lib/context"
+import { useT } from "@/lib/contexts/TranslationContext"
+import { useSettingsCtx } from "@/lib/contexts/SettingsContext"
 import { APP_VERSION } from "@/generated/app-version"
 
 const CURRENT_VERSION = APP_VERSION
@@ -47,7 +48,7 @@ async function getLatestVersion(force = false): Promise<string | null> {
 }
 
 export function VersionBadge() {
-  const p = useP()
+  const { t } = useT()
   const [updateTag, setUpdateTag] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
 
@@ -71,7 +72,7 @@ export function VersionBadge() {
       <span className="text-xs text-zinc-400 font-mono bg-black/40 backdrop-blur-sm px-2 py-1 rounded-lg">v{CURRENT_VERSION}</span>
       <button
         onClick={handleCheck}
-        title={p.t("ui.checkUpdates")}
+        title={t("ui.checkUpdates")}
         className={`text-xs text-zinc-500 hover:text-accent active:scale-90 transition-all duration-150 ${checking ? "animate-spin" : ""}`}
       >
         ↻
@@ -83,7 +84,7 @@ export function VersionBadge() {
           rel="noopener noreferrer"
           className="text-xs font-semibold bg-accent-orange text-white hover:bg-accent-orange/90 px-2 py-1 rounded-lg transition-all duration-150 shadow-lg shadow-accent-orange/25"
         >
-          {p.t("ui.updateAvailable", { version: updateTag })}
+          {t("ui.updateAvailable", { version: updateTag })}
         </a>
       )}
     </div>

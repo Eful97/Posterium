@@ -6,6 +6,8 @@ import type { TMDBImage } from "@/lib/types"
 import { LANG_NAMES, groupBy } from "@/lib/utils"
 import { PosterBtn } from "@/components/PosterBtn"
 import { useP } from "@/lib/context"
+import { useT } from "@/lib/contexts/TranslationContext"
+import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { usePosterFit } from "@/lib/usePosterFit"
 import { RotateCcw, Check, Clock, Sparkles, ArrowUpDown, EyeOff, ChevronDown } from "lucide-react"
 
@@ -21,8 +23,10 @@ interface Props {
 
 export function PosterOptions({ posters, posterActivePath, lang, selectPoster, activeGroup: controlledActiveGroup, onActiveGroupChange, showTabs = true }: Props) {
   const p = useP()
+  const { t } = useT()
+  const ed = usePosterEditor()
 
-  const excludedSet = useMemo(() => new Set(p.excludedPosters), [p.excludedPosters])
+  const excludedSet = useMemo(() => new Set(ed.excludedPosters), [ed.excludedPosters])
 
   const cleanPosters = useMemo(() => posters.filter((img) => img.iso_639_1 === null && !excludedSet.has(img.file_path)), [posters, excludedSet])
   const hasClean = cleanPosters.length > 0
@@ -61,13 +65,13 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   let idx = 0
 
   const { bestFitPath, results, loading: fitLoading } = usePosterFit({
-    enabled: p.defaultLogoFitEnabled,
+    enabled: ed.defaultLogoFitEnabled,
     selectedLogo: p.selectedLogo,
     cleanPosters,
-    logoScale: p.logoScale,
-    logoOffsetX: p.logoOffsetX,
-    logoOffsetY: p.logoOffsetY,
-    hasBadges: p.globalBadges,
+    logoScale: ed.logoScale,
+    logoOffsetX: ed.logoOffsetX,
+    logoOffsetY: ed.logoOffsetY,
+    hasBadges: ed.globalBadges,
   })
 
   const scoreMap = useMemo(() => new Map(results.map((r) => [r.posterPath, r.adjustedScore])), [results])
@@ -100,12 +104,12 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   useEffect(() => {
     if (isSavedPoster) return
     if (topFitRotationPosters.length === 0 || fitLoading) return
-    if (p.rotationPosters.length > 0) { populatedRotationRef.current = false; return }
+    if (ed.rotationPosters.length > 0) { populatedRotationRef.current = false; return }
     if (populatedRotationRef.current) return
     populatedRotationRef.current = true
-    p.setRotationPosters(topFitRotationPosters)
-    if (p.defaultAutoRotateClean && topFitRotationPosters.length > 1) {
-      p.setAutoRotateClean(true)
+    ed.setRotationPosters(topFitRotationPosters)
+    if (ed.defaultAutoRotateClean && topFitRotationPosters.length > 1) {
+      ed.setAutoRotateClean(true)
     }
   }, [topFitRotationPosters, fitLoading, isSavedPoster]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only on fit results
 
@@ -119,24 +123,24 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   }, [p.selected?.id])
 
   const autoSelectFitKey = useMemo(() => {
-    if (!p.defaultLogoFitEnabled || !bestPoster || !p.selectedLogo) return null
+    if (!ed.defaultLogoFitEnabled || !bestPoster || !p.selectedLogo) return null
     return JSON.stringify([
       bestPoster.file_path,
       cleanPosters.map((poster) => poster.file_path),
       p.selectedLogo.file_path,
-      p.logoScale,
-      p.logoOffsetX,
-      p.logoOffsetY,
-      p.globalBadges,
+      ed.logoScale,
+      ed.logoOffsetX,
+      ed.logoOffsetY,
+      ed.globalBadges,
     ])
   }, [
     bestPoster,
     cleanPosters,
-    p.defaultLogoFitEnabled,
-    p.globalBadges,
-    p.logoOffsetX,
-    p.logoOffsetY,
-    p.logoScale,
+    ed.defaultLogoFitEnabled,
+    ed.globalBadges,
+    ed.logoOffsetX,
+    ed.logoOffsetY,
+    ed.logoScale,
     p.selectedLogo,
   ])
 
@@ -188,32 +192,32 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   }, [activeLangImgs, visibleLangCount])
 
   const toggleRotation = (filePath: string) => {
-    p.setRotationPosters((prev) => {
+    ed.setRotationPosters((prev) => {
       if (prev.includes(filePath)) return prev.filter((f) => f !== filePath)
       return [...prev, filePath]
     })
   }
 
   const toggleAutoRotateClean = () => {
-    const next = !p.autoRotateClean
+    const next = !ed.autoRotateClean
     if (next && topFitRotationPosters.length > 0) {
-      p.setRotationPosters(topFitRotationPosters)
+      ed.setRotationPosters(topFitRotationPosters)
     }
-    p.setAutoRotateClean(next)
+    ed.setAutoRotateClean(next)
   }
 
   const [excludedSaveState, setExcludedSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
 
   const excludePoster = (filePath: string) => {
-    const nextExcluded = Array.from(new Set([...p.excludedPosters, filePath]))
-    const nextRotationPosters = p.rotationPosters.filter((path) => path !== filePath)
-    p.setExcludedPosters(nextExcluded)
-    p.setRotationPosters(nextRotationPosters)
+    const nextExcluded = Array.from(new Set([...ed.excludedPosters, filePath]))
+    const nextRotationPosters = ed.rotationPosters.filter((path) => path !== filePath)
+    ed.setExcludedPosters(nextExcluded)
+    ed.setRotationPosters(nextRotationPosters)
     setExcludedSaveState("saving")
     const fallback = posterActivePath === filePath
       ? displayPosters.find((poster) => poster.file_path !== filePath)
       : undefined
-    p.autoSaveExcludedPosters(nextExcluded, nextRotationPosters, fallback).then(() => { setExcludedSaveState("saved"); toast.success(p.t("ui.posterExcluded")) }).catch(() => { setExcludedSaveState("error"); toast.error(p.t("ui.saveError")) })
+    p.autoSaveExcludedPosters(nextExcluded, nextRotationPosters, fallback).then(() => { setExcludedSaveState("saved"); toast.success(t("ui.posterExcluded")) }).catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) })
     if (posterActivePath === filePath) {
       if (fallback) selectPoster(fallback)
     }
@@ -254,15 +258,15 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
               <Check className="w-3 h-3" />Best fit selezionato
             </div>
           )}
-          {p.rotationPosters.length > 1 && (
+          {ed.rotationPosters.length > 1 && (
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3" />{p.t("ui.autoRotate")}</span>
+              <span className="text-[11px] text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3" />{t("ui.autoRotate")}</span>
               <button
-                aria-label={p.autoRotateClean ? p.t("ui.removeFromRotation") : p.t("ui.autoRotate")}
+                aria-label={ed.autoRotateClean ? t("ui.removeFromRotation") : t("ui.autoRotate")}
                 onClick={toggleAutoRotateClean}
-                className={`px-2 py-1 text-[11px] font-semibold rounded-lg border transition-all ${p.autoRotateClean ? "bg-accent-orange/20 text-accent-orange border-accent-orange/25 animate-pulse-ring" : "bg-white/5 text-zinc-400 border-white/10"}`}
+                className={`px-2 py-1 text-[11px] font-semibold rounded-lg border transition-all ${ed.autoRotateClean ? "bg-accent-orange/20 text-accent-orange border-accent-orange/25 animate-pulse-ring" : "bg-white/5 text-zinc-400 border-white/10"}`}
               >
-                {p.autoRotateClean ? <><Check className="w-3 h-3 inline mr-1" />ON</> : "OFF"}
+                {ed.autoRotateClean ? <><Check className="w-3 h-3 inline mr-1" />ON</> : "OFF"}
               </button>
             </div>
           )}
@@ -320,7 +324,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
           <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
             {visibleCleanPosters.map((img) => {
               const stagger = idx++
-              const inRotation = p.rotationPosters.includes(img.file_path)
+              const inRotation = ed.rotationPosters.includes(img.file_path)
               const isBestFit = bestFitPath === img.file_path
               const showBadge = isBestFit && bestScore >= 0.45
               const isHighScore = bestScore >= 0.65
@@ -336,10 +340,10 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
                   )}
                   <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
-                      aria-label={inRotation ? p.t("ui.removeFromRotation") : p.t("ui.addToRotation")}
+                      aria-label={inRotation ? t("ui.removeFromRotation") : t("ui.addToRotation")}
                       onClick={(e) => { e.stopPropagation(); toggleRotation(img.file_path) }}
                       className={`w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 ${inRotation ? "bg-accent-orange text-white border-accent-orange shadow-sm shadow-accent-orange/40" : "bg-black/55 border-white/10 text-zinc-200 hover:bg-accent-orange/90 hover:text-white hover:border-accent-orange/60"}`}
-                      title={inRotation ? p.t("ui.removeFromRotation") : p.t("ui.addToRotation")}
+                      title={inRotation ? t("ui.removeFromRotation") : t("ui.addToRotation")}
                     >
                       {inRotation ? <Check className="w-3.5 h-3.5" /> : <RotateCcw className="w-3.5 h-3.5" />}
                     </button>
@@ -418,7 +422,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       )}
 
       {activeClean && !hasClean && (
-        <p className="text-center py-12 text-zinc-400 text-xs">{p.t("ui.loading")}</p>
+        <p className="text-center py-12 text-zinc-400 text-xs">{t("ui.loading")}</p>
       )}
 
       {!activeClean && (
@@ -445,24 +449,24 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
         </>
       )}
 
-      {activeClean && p.rotationPosters.length > 0 && (
-        <p className="text-[11px] text-zinc-500 mt-1.5 px-1">{p.rotationPosters.length} {p.t("ui.selectedCount", { count: p.rotationPosters.length })}</p>
+      {activeClean && ed.rotationPosters.length > 0 && (
+        <p className="text-[11px] text-zinc-500 mt-1.5 px-1">{ed.rotationPosters.length} {t("ui.selectedCount", { count: ed.rotationPosters.length })}</p>
       )}
-      {activeClean && p.excludedPosters.length > 0 && (
+      {activeClean && ed.excludedPosters.length > 0 && (
         <div className="mt-2 flex items-center justify-between rounded-lg border border-zinc-800/70 bg-white/5 px-2.5 py-2">
           <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-            <span>{p.excludedPosters.length} {p.excludedPosters.length === 1 ? 'poster escluso' : 'poster esclusi'}</span>
+            <span>{ed.excludedPosters.length} {ed.excludedPosters.length === 1 ? 'poster escluso' : 'poster esclusi'}</span>
             {excludedSaveState === "saving" && <span className="text-[10px] text-zinc-500 animate-pulse">salvataggio...</span>}
             {excludedSaveState === "saved" && <span className="text-[10px] text-green-500">salvato</span>}
             {excludedSaveState === "error" && <span className="text-[10px] text-red-400">errore</span>}
           </span>
-          <button onClick={() => { p.setExcludedPosters([]); setExcludedSaveState("saving"); p.autoSaveExcludedPosters([], p.rotationPosters).then(() => { setExcludedSaveState("saved"); toast.success(p.t("ui.cancel")) }).catch(() => { setExcludedSaveState("error"); toast.error(p.t("ui.saveError")) }) }} className="text-[11px] text-accent-orange hover:text-orange-300">
+          <button onClick={() => { ed.setExcludedPosters([]); setExcludedSaveState("saving"); p.autoSaveExcludedPosters([], ed.rotationPosters).then(() => { setExcludedSaveState("saved"); toast.success(t("ui.cancel")) }).catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) }) }} className="text-[11px] text-accent-orange hover:text-orange-300">
             Ripristina
           </button>
         </div>
       )}
 
-      {posters.length === 0 && <p className="text-center py-12 text-zinc-400">{p.t("ui.loading")}</p>}
+      {posters.length === 0 && <p className="text-center py-12 text-zinc-400">{t("ui.loading")}</p>}
     </div>
   )
 }

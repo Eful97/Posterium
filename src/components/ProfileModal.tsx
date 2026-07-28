@@ -4,6 +4,8 @@ import React, { useState } from "react"
 import { toast } from "sonner"
 import { X, Copy, Check, Lock, Fingerprint, User } from "lucide-react"
 import { useP } from "@/lib/context"
+import { useT } from "@/lib/contexts/TranslationContext"
+import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 
 interface Props {
   isOpen: boolean
@@ -12,6 +14,8 @@ interface Props {
 
 export function ProfileModal({ isOpen, onClose }: Props) {
   const p = useP()
+  const { t } = useT()
+  const ed = usePosterEditor()
   const [tab, setTab] = useState<"save" | "load">("save")
   const [password, setPassword] = useState("")
   const [loadUuid, setLoadUuid] = useState("")
@@ -48,32 +52,32 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       setUuidCopied(true)
       setTimeout(() => setUuidCopied(false), 2000)
     } catch {
-      toast.error(p.t("ui.saveError"))
+      toast.error(t("ui.saveError"))
     }
   }
 
   const handleSave = async () => {
     setError("")
     if (!password) {
-      setError(p.t("ui.profilePasswordRequired"))
+      setError(t("ui.profilePasswordRequired"))
       return
     }
     setSaving(true)
     try {
       const config = {
-        globalBadges: p.globalBadges,
-        rankingBadges: p.rankingBadges,
-        badgeStyle: p.badgeStyle,
-        rankingBadgeStyle: p.rankingBadgeStyle,
-        blurEnabled: p.blurEnabled,
-        blurIntensity: p.blurIntensity,
-        blurFade: p.blurFade,
-        blurDarkness: p.blurDarkness,
-        gradientHeight: p.gradientHeight,
-        networkLogo: p.networkLogo,
-        autoRotateClean: p.autoRotateClean,
-        logoFitEnabled: p.defaultLogoFitEnabled,
-        customBadge: p.customBadge || undefined,
+        globalBadges: ed.globalBadges,
+        rankingBadges: ed.rankingBadges,
+        badgeStyle: ed.badgeStyle,
+        rankingBadgeStyle: ed.rankingBadgeStyle,
+        blurEnabled: ed.blurEnabled,
+        blurIntensity: ed.blurIntensity,
+        blurFade: ed.blurFade,
+        blurDarkness: ed.blurDarkness,
+        gradientHeight: ed.gradientHeight,
+        networkLogo: ed.networkLogo,
+        autoRotateClean: ed.autoRotateClean,
+        logoFitEnabled: ed.defaultLogoFitEnabled,
+        customBadge: ed.customBadge || undefined,
       }
       const apiKeys = {
         tmdbKey: p.tmdbKeyInput || undefined,
@@ -91,7 +95,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || (res.status === 401 ? p.t("ui.profileWrongPassword") : p.t("ui.saveError")))
+        setError(data.error || (res.status === 401 ? t("ui.profileWrongPassword") : t("ui.saveError")))
         return
       }
       const newProfileId = data.profileId as string
@@ -100,11 +104,11 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       }
       p.setProfileId(newProfileId)
       p.setProfilePassword(password)
-      toast.success(p.t("ui.profileSaved"))
+      toast.success(t("ui.profileSaved"))
       onClose()
     } catch (e) {
       console.error("[posterium] Failed to save profile:", e)
-      setError(p.t("ui.saveError"))
+      setError(t("ui.saveError"))
     } finally {
       setSaving(false)
     }
@@ -118,7 +122,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       return
     }
     if (!loadPassword) {
-      setError(p.t("ui.profilePasswordRequired"))
+      setError(t("ui.profilePasswordRequired"))
       return
     }
     setLoadingProfile(true)
@@ -134,7 +138,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || (res.status === 401 ? p.t("ui.profileWrongPassword") : "Profilo non trovato o errore nel caricamento"))
+        setError(data.error || (res.status === 401 ? t("ui.profileWrongPassword") : "Profilo non trovato o errore nel caricamento"))
         return
       }
 
@@ -147,16 +151,16 @@ export function ProfileModal({ isOpen, onClose }: Props) {
 
       // Apply loaded config settings if present
       if (data.config) {
-        if (typeof data.config.globalBadges === "boolean") p.setDefaultGlobalBadges(data.config.globalBadges)
-        if (typeof data.config.rankingBadges === "boolean") p.setDefaultRankingBadges(data.config.rankingBadges)
-        if (data.config.badgeStyle) p.setDefaultBadgeStyle(data.config.badgeStyle)
-        if (data.config.rankingBadgeStyle) p.setDefaultRankingBadgeStyle(data.config.rankingBadgeStyle)
-        if (typeof data.config.blurEnabled === "boolean") p.setBlurEnabled(data.config.blurEnabled)
-        if (typeof data.config.blurIntensity === "number") p.setBlurIntensity(data.config.blurIntensity)
-        if (typeof data.config.blurFade === "number") p.setBlurFade(data.config.blurFade)
-        if (typeof data.config.blurDarkness === "number") p.setBlurDarkness(data.config.blurDarkness)
-        if (typeof data.config.gradientHeight === "number") p.setGradientHeight(data.config.gradientHeight)
-        if (typeof data.config.networkLogo === "boolean") p.setNetworkLogo(data.config.networkLogo)
+        if (typeof data.config.globalBadges === "boolean") ed.setDefaultGlobalBadges(data.config.globalBadges)
+        if (typeof data.config.rankingBadges === "boolean") ed.setDefaultRankingBadges(data.config.rankingBadges)
+        if (data.config.badgeStyle) ed.setDefaultBadgeStyle(data.config.badgeStyle)
+        if (data.config.rankingBadgeStyle) ed.setDefaultRankingBadgeStyle(data.config.rankingBadgeStyle)
+        if (typeof data.config.blurEnabled === "boolean") ed.setBlurEnabled(data.config.blurEnabled)
+        if (typeof data.config.blurIntensity === "number") ed.setBlurIntensity(data.config.blurIntensity)
+        if (typeof data.config.blurFade === "number") ed.setBlurFade(data.config.blurFade)
+        if (typeof data.config.blurDarkness === "number") ed.setBlurDarkness(data.config.blurDarkness)
+        if (typeof data.config.gradientHeight === "number") ed.setGradientHeight(data.config.gradientHeight)
+        if (typeof data.config.networkLogo === "boolean") ed.setNetworkLogo(data.config.networkLogo)
       }
 
       if (data.apiKeys?.tmdbKey) {
@@ -189,8 +193,8 @@ export function ProfileModal({ isOpen, onClose }: Props) {
               <Fingerprint className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">{p.t("ui.profileTitle")}</h3>
-              <p className="text-xs text-zinc-400">{!p.profileId ? "Crea o accedi ad un profilo per iniziare" : p.t("ui.profileSubtitle")}</p>
+              <h3 className="text-base font-bold text-white">{t("ui.profileTitle")}</h3>
+              <p className="text-xs text-zinc-400">{!p.profileId ? "Crea o accedi ad un profilo per iniziare" : t("ui.profileSubtitle")}</p>
             </div>
           </div>
           {p.profileId && (
@@ -231,7 +235,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
             <div className="space-y-3">
               <label className="block text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-accent-orange" />
-                {p.t("ui.profileUuidLabel")}
+                {t("ui.profileUuidLabel")}
               </label>
               <div className="flex items-center gap-2">
                 <div className="flex-1 p-3 rounded-xl bg-black/60 border border-white/10 text-[11px] font-mono text-zinc-200 truncate">
@@ -262,7 +266,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
                     onClick={async () => {
                       if (typeof window !== "undefined") {
                         await navigator.clipboard.writeText(`${window.location.origin}/api/poster/{type}/{imdb_id}?u=${activeUuid}`)
-                        toast.success(p.t("ui.copied"))
+                        toast.success(t("ui.copied"))
                       }
                     }}
                     className="px-2 py-1 text-[10px] font-semibold rounded bg-white/10 hover:bg-accent-orange/20 text-zinc-200 hover:text-accent-orange shrink-0"
@@ -279,7 +283,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
                     onClick={async () => {
                       if (typeof window !== "undefined") {
                         await navigator.clipboard.writeText(`${window.location.origin}/manifest.json?u=${activeUuid}`)
-                        toast.success(p.t("ui.copied"))
+                        toast.success(t("ui.copied"))
                       }
                     }}
                     className="px-2 py-1 text-[10px] font-semibold rounded bg-white/10 hover:bg-accent-orange/20 text-zinc-200 hover:text-accent-orange shrink-0"
@@ -293,17 +297,17 @@ export function ProfileModal({ isOpen, onClose }: Props) {
             <div className="space-y-3">
               <label className="block text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-accent-orange" />
-                {p.t("ui.profilePasswordLabel")}
+                {t("ui.profilePasswordLabel")}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError("") }}
-                placeholder={p.t("ui.profilePasswordPlaceholder")}
+                placeholder={t("ui.profilePasswordPlaceholder")}
                 className="w-full h-10 px-3 rounded-xl bg-black/40 border border-white/10 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-accent-orange/60"
                 autoComplete="new-password"
               />
-              <p className="text-[10px] text-zinc-500 leading-relaxed">{p.t("ui.profilePasswordHint")}</p>
+              <p className="text-[10px] text-zinc-500 leading-relaxed">{t("ui.profilePasswordHint")}</p>
             </div>
 
             <button
@@ -320,7 +324,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
               ) : (
                 <Check className="w-4 h-4" />
               )}
-              {saving ? p.t("ui.saving") : p.t("ui.saveProfile")}
+              {saving ? t("ui.saving") : t("ui.saveProfile")}
             </button>
             {error && (
               <div className="p-3 rounded-xl bg-red-900/30 border border-red-500/30 text-[11px] text-red-300 text-center">

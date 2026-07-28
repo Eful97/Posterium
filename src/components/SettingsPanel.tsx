@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { toast } from "sonner"
 import { useP } from "@/lib/context"
+import { useT } from "@/lib/contexts/TranslationContext"
+import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { ApiError, http } from "@/lib/http"
 import { saveDefaults } from "@/lib/save-defaults"
 import { SliderRow } from "@/components/SliderRow"
@@ -24,6 +26,8 @@ interface Props {
 
 export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSettingsOpen, exportData, importData, mdblistApiKey, setMdblistApiKey, mobile }: Props) {
   const p = useP()
+  const { t } = useT()
+  const ed = usePosterEditor()
   const [editVal, setEditVal] = useState<string | null>(null)
   const [editTxt, setEditTxt] = useState("")
   const [saved, setSaved] = useState(false)
@@ -67,67 +71,67 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
     try {
       await http<{ ok: boolean }>("/api/cache/clear", { method: "POST", retries: 0 })
       setClearStatus("cleared")
-      toast.success(p.t("ui.cleared"))
+      toast.success(t("ui.cleared"))
       setTimeout(() => setClearStatus("idle"), 1500)
     } catch (error) {
       setClearStatus("idle")
       const message = error instanceof ApiError && error.status === 401
-        ? p.t("ui.clearCacheUnauthorized")
-        : p.t("ui.clearCacheError")
+        ? t("ui.clearCacheUnauthorized")
+        : t("ui.clearCacheError")
       toast.error(message)
     }
   }
 
   const content = (
     <>
-      <SecretInput label={p.t("ui.tmdbKey")} icon={<Key />} value={tmdbKeyInput} onChange={setTmdbKeyInput} onBlur={() => { setTmdbKey(tmdbKeyInput); if (tmdbKeyInput.length < 20) { setTmdbKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setTmdbKeyError(undefined) } }} onKeyDown={(e) => { if (e.key === "Enter") { setTmdbKey(tmdbKeyInput); setSettingsOpen(false) } }} placeholder={p.t("ui.tmdbKeyPlaceholder")} error={tmdbKeyError} />
-      <SecretInput label={p.t("ui.mdblistKey")} icon={<Clipboard />} value={mdblistApiKey} onChange={(v) => { setMdblistApiKey(v); localStorage.setItem("mdblist_key", v) }} onBlur={() => { if (mdblistApiKey.length > 0 && mdblistApiKey.length < 20) { setMdblistKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setMdblistKeyError(undefined) } }} placeholder={p.t("ui.mdblistKeyPlaceholder")} error={mdblistKeyError} />
+      <SecretInput label={t("ui.tmdbKey")} icon={<Key />} value={tmdbKeyInput} onChange={setTmdbKeyInput} onBlur={() => { setTmdbKey(tmdbKeyInput); if (tmdbKeyInput.length < 20) { setTmdbKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setTmdbKeyError(undefined) } }} onKeyDown={(e) => { if (e.key === "Enter") { setTmdbKey(tmdbKeyInput); setSettingsOpen(false) } }} placeholder={t("ui.tmdbKeyPlaceholder")} error={tmdbKeyError} />
+      <SecretInput label={t("ui.mdblistKey")} icon={<Clipboard />} value={mdblistApiKey} onChange={(v) => { setMdblistApiKey(v); localStorage.setItem("mdblist_key", v) }} onBlur={() => { if (mdblistApiKey.length > 0 && mdblistApiKey.length < 20) { setMdblistKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setMdblistKeyError(undefined) } }} placeholder={t("ui.mdblistKeyPlaceholder")} error={mdblistKeyError} />
       <div className="flex items-center justify-between">
-        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Star className="w-3 h-3" /> {p.t("ui.genreRatingBadge")}</span>
-        <Toggle value={p.defaultGlobalBadges} onChange={p.setDefaultGlobalBadges} />
+        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Star className="w-3 h-3" /> {t("ui.genreRatingBadge")}</span>
+        <Toggle value={ed.defaultGlobalBadges} onChange={ed.setDefaultGlobalBadges} />
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {p.t("ui.trendBadge")}</span>
-        <Toggle value={p.defaultRankingBadges} onChange={p.setDefaultRankingBadges} />
+        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {t("ui.trendBadge")}</span>
+        <Toggle value={ed.defaultRankingBadges} onChange={ed.setDefaultRankingBadges} />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Tv className="w-3 h-3" /> Logo Network</span>
-        <Toggle value={p.defaultNetworkLogo} onChange={(v) => { p.setDefaultNetworkLogo(v); p.setNetworkLogo(v) }} />
+        <Toggle value={ed.defaultNetworkLogo} onChange={(v) => { ed.setDefaultNetworkLogo(v); ed.setNetworkLogo(v) }} />
       </div>
       <hr className="border-zinc-700 my-1" />
-      <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Circle className="w-3 h-3" /> {p.t("ui.styleRankingDefault")}</label>
-      <BadgeStyleSelector value={p.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill"]} onChange={p.setDefaultRankingBadgeStyle} t={p.t} accentColor={p.accentColor} />
-      <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5 mt-1"><Palette className="w-3 h-3" /> {p.t("ui.styleDefault")}</label>
-      <BadgeStyleSelector value={p.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored", "bordo", "vetro"]} onChange={p.setDefaultBadgeStyle} t={p.t} />
+      <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Circle className="w-3 h-3" /> {t("ui.styleRankingDefault")}</label>
+      <BadgeStyleSelector value={ed.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill"]} onChange={ed.setDefaultRankingBadgeStyle} t={t} accentColor={p.accentColor} />
+      <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5 mt-1"><Palette className="w-3 h-3" /> {t("ui.styleDefault")}</label>
+      <BadgeStyleSelector value={ed.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored", "bordo", "vetro"]} onChange={ed.setDefaultBadgeStyle} t={t} />
       <hr className="border-zinc-700 my-1" />
       <div className="flex items-center justify-between mt-1">
-        <span className="text-xs text-zinc-400">{p.t("ui.blurDefault")}</span>
-        <Toggle value={p.defaultBlurEnabled} onChange={p.setDefaultBlurEnabled} />
+        <span className="text-xs text-zinc-400">{t("ui.blurDefault")}</span>
+        <Toggle value={ed.defaultBlurEnabled} onChange={ed.setDefaultBlurEnabled} />
       </div>
-      {p.defaultBlurEnabled && <>
-        <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={p.t("ui.height")} value={p.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => p.setDefaultGradientHeight(v)} onDoubleClick={() => p.setDefaultGradientHeight(30)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="gh" suffix="%" />
-        <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={p.t("ui.intensity")} value={p.defaultBlurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => p.setDefaultBlurIntensity(v)} onDoubleClick={() => p.setDefaultBlurIntensity(5)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bi" suffix="px" />
-        <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={p.t("ui.fade")} value={p.defaultBlurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setDefaultBlurFade(v)} onDoubleClick={() => p.setDefaultBlurFade(60)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bf" suffix="%" />
-        <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={p.t("ui.darkness")} value={p.defaultBlurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => p.setDefaultBlurDarkness(v)} onDoubleClick={() => p.setDefaultBlurDarkness(40)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bd" suffix="%" />
+      {ed.defaultBlurEnabled && <>
+        <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => ed.setDefaultGradientHeight(v)} onDoubleClick={() => ed.setDefaultGradientHeight(30)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="gh" suffix="%" />
+        <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={t("ui.intensity")} value={ed.defaultBlurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => ed.setDefaultBlurIntensity(v)} onDoubleClick={() => ed.setDefaultBlurIntensity(5)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bi" suffix="px" />
+        <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={t("ui.fade")} value={ed.defaultBlurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setDefaultBlurFade(v)} onDoubleClick={() => ed.setDefaultBlurFade(60)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bf" suffix="%" />
+        <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={t("ui.darkness")} value={ed.defaultBlurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setDefaultBlurDarkness(v)} onDoubleClick={() => ed.setDefaultBlurDarkness(40)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bd" suffix="%" />
       </>}
       <div className="flex items-center justify-between mt-1">
-        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><RotateCcw className="w-3 h-3" /> {p.t("ui.autoRotateDefault")}</span>
-        <Toggle value={p.defaultAutoRotateClean} onChange={p.setDefaultAutoRotateClean} />
+        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><RotateCcw className="w-3 h-3" /> {t("ui.autoRotateDefault")}</span>
+        <Toggle value={ed.defaultAutoRotateClean} onChange={ed.setDefaultAutoRotateClean} />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Palette className="w-3 h-3" /> Tinta UI dinamica</span>
         <Toggle value={p.uiAccent} onChange={p.setUiAccent} />
       </div>
       <div className="flex items-center justify-between mt-1">
-        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> {p.t("ui.logoFitEnabled")}</span>
-        <Toggle value={p.defaultLogoFitEnabled} onChange={p.setDefaultLogoFitEnabled} />
+        <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> {t("ui.logoFitEnabled")}</span>
+        <Toggle value={ed.defaultLogoFitEnabled} onChange={ed.setDefaultLogoFitEnabled} />
       </div>
       <hr className="border-zinc-700 my-1" />
 
-      <button type="button" onClick={() => { saveDefaults(p); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {p.t("ui.saved")}</> : <><Save className="w-3 h-3" /> {p.t("ui.saveDefaults")}</>}</span></button>
+      <button type="button" onClick={() => { saveDefaults(p, ed); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {t("ui.saved")}</> : <><Save className="w-3 h-3" /> {t("ui.saveDefaults")}</>}</span></button>
       <hr className="border-zinc-700 my-1" />
-      <MenuItem icon={<Download className="w-3 h-3 text-accent-orange" />} label={p.t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
-      <MenuItem icon={<Upload className="w-3 h-3 text-blue-400" />} label={p.t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />
+      <MenuItem icon={<Download className="w-3 h-3 text-accent-orange" />} label={t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
+      <MenuItem icon={<Upload className="w-3 h-3 text-blue-400" />} label={t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />
       <div className="pt-2 border-t border-zinc-800 space-y-1.5">
         <div className="flex items-center justify-between text-[11px] font-medium text-zinc-400 px-1">
           <span className="flex items-center gap-1.5"><Flame className="w-3 h-3 text-amber-400" /> Diagnostica & Cache</span>
@@ -143,7 +147,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
               toast.error("Impossibile avviare il warmup")
             }
           }} className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 active:scale-[0.98] transition-all"><Flame className="w-3 h-3" /> Warmup</button>
-          <button type="button" onClick={clearCache} className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 active:scale-[0.98] transition-all"><Trash2 className="w-3 h-3" />{clearStatus === "cleared" ? p.t("ui.cleared") : p.t("ui.clearCache")}</button>
+          <button type="button" onClick={clearCache} className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 active:scale-[0.98] transition-all"><Trash2 className="w-3 h-3" />{clearStatus === "cleared" ? t("ui.cleared") : t("ui.clearCache")}</button>
         </div>
       </div>
     </>

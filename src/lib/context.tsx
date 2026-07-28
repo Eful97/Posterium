@@ -13,11 +13,14 @@ import { useTrending } from "./useTrending"
 import { useSearch } from "./useSearch"
 import { useNavigation } from "./useNavigation"
 import { useMappingsStore } from "./useMappingsStore"
-import { useDefaults } from "./useDefaults"
+import { usePosterEditor, PosterEditorProvider } from "./contexts/PosterEditorContext"
 import { usePosterSave } from "./usePosterSave"
 import { computeLogoOffsetBounds } from "./logo-layout"
 import { useOutsideDismiss } from "./useOutsideDismiss"
 import type { PosteriumUserConfig } from "./config-token"
+import { SearchProvider } from "./contexts/SearchContext"
+import { SettingsProvider } from "./contexts/SettingsContext"
+import { TranslationProvider } from "./contexts/TranslationContext"
 
 export type ViewType = "search" | "myposters" | "edit" | "cataloghi"
 
@@ -46,73 +49,8 @@ export interface PosteriumCtx {
   selectLogo: (logo: TMDBImage) => Promise<void>
   removeLogo: () => Promise<void>
   logoBounds: { minX: number; maxX: number; minY: number; maxY: number }
-  logoScale: number
-  setLogoScale: React.Dispatch<React.SetStateAction<number>>
-  logoOffsetX: number
-  setLogoOffsetX: React.Dispatch<React.SetStateAction<number>>
-  logoOffsetY: number
-  setLogoOffsetY: React.Dispatch<React.SetStateAction<number>>
-  backdrops: TMDBImage[]
-  selectedBackdrop: TMDBImage | null
-  setSelectedBackdrop: React.Dispatch<React.SetStateAction<TMDBImage | null>>
-  backdropScale: number
-  setBackdropScale: React.Dispatch<React.SetStateAction<number>>
-  backdropOffsetX: number
-  setBackdropOffsetX: React.Dispatch<React.SetStateAction<number>>
-  backdropOffsetY: number
-  setBackdropOffsetY: React.Dispatch<React.SetStateAction<number>>
   selectBackdrop: (img: TMDBImage) => void
   removeBackdrop: () => void
-  editingValue: string | null
-  setEditingValue: React.Dispatch<React.SetStateAction<string | null>>
-  editText: string
-  setEditText: React.Dispatch<React.SetStateAction<string>>
-  globalBadges: boolean
-  setGlobalBadges: React.Dispatch<React.SetStateAction<boolean>>
-  rankingBadges: boolean
-  setRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
-  customBadge: string | null
-  setCustomBadge: React.Dispatch<React.SetStateAction<string | null>>
-  gradientHeight: number
-  setGradientHeight: React.Dispatch<React.SetStateAction<number>>
-  blurIntensity: number
-  setBlurIntensity: React.Dispatch<React.SetStateAction<number>>
-  blurFade: number
-  setBlurFade: React.Dispatch<React.SetStateAction<number>>
-  blurDarkness: number
-  setBlurDarkness: React.Dispatch<React.SetStateAction<number>>
-  blurEnabled: boolean
-  setBlurEnabled: React.Dispatch<React.SetStateAction<boolean>>
-  badgeStyle: string
-  setBadgeStyle: React.Dispatch<React.SetStateAction<string>>
-  rankingBadgeStyle: string
-  setRankingBadgeStyle: React.Dispatch<React.SetStateAction<string>>
-  defaultBadgeStyle: string
-  setDefaultBadgeStyle: React.Dispatch<React.SetStateAction<string>>
-  defaultRankingBadgeStyle: string
-  setDefaultRankingBadgeStyle: React.Dispatch<React.SetStateAction<string>>
-  defaultBlurEnabled: boolean
-  setDefaultBlurEnabled: React.Dispatch<React.SetStateAction<boolean>>
-  defaultBlurIntensity: number
-  setDefaultBlurIntensity: React.Dispatch<React.SetStateAction<number>>
-  defaultBlurFade: number
-  setDefaultBlurFade: React.Dispatch<React.SetStateAction<number>>
-  defaultBlurDarkness: number
-  setDefaultBlurDarkness: React.Dispatch<React.SetStateAction<number>>
-  defaultGradientHeight: number
-  setDefaultGradientHeight: React.Dispatch<React.SetStateAction<number>>
-  defaultGlobalBadges: boolean
-  setDefaultGlobalBadges: React.Dispatch<React.SetStateAction<boolean>>
-  defaultRankingBadges: boolean
-  setDefaultRankingBadges: React.Dispatch<React.SetStateAction<boolean>>
-  defaultAutoRotateClean: boolean
-  setDefaultAutoRotateClean: React.Dispatch<React.SetStateAction<boolean>>
-  defaultLogoFitEnabled: boolean
-  setDefaultLogoFitEnabled: React.Dispatch<React.SetStateAction<boolean>>
-  networkLogo: boolean
-  setNetworkLogo: (v: boolean | ((prev: boolean) => boolean)) => void
-  defaultNetworkLogo: boolean
-  setDefaultNetworkLogo: (v: boolean | ((prev: boolean) => boolean)) => void
   trendRank: number | null
   mdblistMatch: { key: string; rank: number } | null
   /** Pre-resolved IMDb Top 250 membership for the current metaInfo. */
@@ -179,14 +117,6 @@ export interface PosteriumCtx {
   accentColor: string
   setAccentColor: (v: string) => void
 topEdgeColor: string
-  rotationPosters: string[]
-  setRotationPosters: React.Dispatch<React.SetStateAction<string[]>>
-  autoRotateClean: boolean
-  setAutoRotateClean: React.Dispatch<React.SetStateAction<boolean>>
-  excludedPosters: string[]
-  setExcludedPosters: React.Dispatch<React.SetStateAction<string[]>>
-  logoDisabled: boolean
-  setLogoDisabled: React.Dispatch<React.SetStateAction<boolean>>
   autoSaveExcludedPosters: (nextExcluded: string[], nextRotationPosters?: string[], nextPreviewPoster?: TMDBImage) => Promise<void>
   theme: "dark" | "light"
   setTheme: React.Dispatch<React.SetStateAction<"dark" | "light">>
@@ -223,10 +153,35 @@ export function PosteriumProvider({ value, children }: { value: PosteriumCtx; ch
   return (
     <AppCtx.Provider value={value}>
       <EditCtx.Provider value={value}>
-        <Ctx.Provider value={value}>{children}</Ctx.Provider>
+        <TranslationProvider value={value}>
+          <SettingsProvider value={value}>
+            <SearchProvider value={value}>
+              <Ctx.Provider value={value}>{children}</Ctx.Provider>
+            </SearchProvider>
+          </SettingsProvider>
+        </TranslationProvider>
       </EditCtx.Provider>
     </AppCtx.Provider>
   )
+}
+
+/**
+ * PosteriumRoot — racchiude la creazione dello stato e la catena provider.
+ * PosterEditorProvider wrappa l'esterno così usa useDefaults() in autonomia.
+ * Il PosteriumProvider interno riceve tutto lo stato (inclusi editor fields
+ * per backward compat via useP()).
+ */
+export function PosteriumRoot({ children }: { children: React.ReactNode }) {
+  return (
+    <PosterEditorProvider>
+      <PosteriumRootInner>{children}</PosteriumRootInner>
+    </PosterEditorProvider>
+  )
+}
+
+function PosteriumRootInner({ children }: { children: React.ReactNode }) {
+  const value = usePosterium()
+  return <PosteriumProvider value={value}>{children}</PosteriumProvider>
 }
 
 export function usePosterium(): PosteriumCtx {
@@ -249,7 +204,55 @@ export function usePosterium(): PosteriumCtx {
   const trending = useTrending(tmdbKey, mdblistApiKey)
   const search = useSearch(tmdbKey, lang)
   const { mappings, mappingsMap, loadMappings, removeMapping, exportData, importData } = useMappingsStore()
-  const defaults = useDefaults()
+  const editorCtx = usePosterEditor()
+  const {
+    // Badges
+    globalBadges, setGlobalBadges,
+    rankingBadges, setRankingBadges,
+    badgeStyle, setBadgeStyle,
+    rankingBadgeStyle, setRankingBadgeStyle,
+    customBadge, setCustomBadge,
+    networkLogo, setNetworkLogo,
+    // Defaults
+    defaultBadgeStyle, setDefaultBadgeStyle,
+    defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
+    defaultBlurEnabled, setDefaultBlurEnabled,
+    defaultBlurIntensity, setDefaultBlurIntensity,
+    defaultBlurFade, setDefaultBlurFade,
+    defaultBlurDarkness, setDefaultBlurDarkness,
+    defaultGradientHeight, setDefaultGradientHeight,
+    defaultGlobalBadges, setDefaultGlobalBadges,
+    defaultRankingBadges, setDefaultRankingBadges,
+    defaultAutoRotateClean, setDefaultAutoRotateClean,
+    defaultLogoFitEnabled, setDefaultLogoFitEnabled,
+    defaultNetworkLogo, setDefaultNetworkLogo,
+    loadDefaultsToState,
+    // Blur
+    blurEnabled, setBlurEnabled,
+    blurIntensity, setBlurIntensity,
+    blurFade, setBlurFade,
+    blurDarkness, setBlurDarkness,
+    // Gradient
+    gradientHeight, setGradientHeight,
+    // Logo
+    logoScale, setLogoScale,
+    logoOffsetX, setLogoOffsetX,
+    logoOffsetY, setLogoOffsetY,
+    logoDisabled, setLogoDisabled,
+    // Backdrop
+    backdrops, setBackdrops,
+    selectedBackdrop, setSelectedBackdrop,
+    backdropScale, setBackdropScale,
+    backdropOffsetX, setBackdropOffsetX,
+    backdropOffsetY, setBackdropOffsetY,
+    // Editing UI
+    editingValue, setEditingValue,
+    editText, setEditText,
+    // Rotation
+    rotationPosters, setRotationPosters,
+    autoRotateClean, setAutoRotateClean,
+    excludedPosters, setExcludedPosters,
+  } = editorCtx
 
   const [urlPattern, setUrlPattern] = useState("")
   const [copied, setCopied] = useState(false)
@@ -271,10 +274,6 @@ export function usePosterium(): PosteriumCtx {
   const [imdbTop250, setImdbTop250] = useState(false)
   const [accentColor, setAccentColor] = useState("#555555")
   const [topEdgeColor, setTopEdgeColor] = useState("#555555")
-  const [rotationPosters, setRotationPosters] = useState<string[]>([])
-  const [autoRotateClean, setAutoRotateClean] = useState(false)
-  const [excludedPosters, setExcludedPosters] = useState<string[]>([])
-  const [logoDisabled, setLogoDisabled] = useState(false)
   const [serviceErrors, setServiceErrors] = useState<Record<string, boolean>>({})
 
   const [loadingImages, setLoadingImages] = useState(false)
@@ -284,42 +283,11 @@ export function usePosterium(): PosteriumCtx {
   const [posterScrollInfo, setPosterScrollInfo] = useState({ top: 0, height: 100 })
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Appearance state
-  const [logoScale, setLogoScale] = useState(75)
-  const [logoOffsetX, setLogoOffsetX] = useState(0)
-  const [logoOffsetY, setLogoOffsetY] = useState(0)
-  const [backdrops, setBackdrops] = useState<TMDBImage[]>([])
-  const [selectedBackdrop, setSelectedBackdrop] = useState<TMDBImage | null>(null)
-  const [backdropScale, setBackdropScale] = useState(100)
-  const [backdropOffsetX, setBackdropOffsetX] = useState(0)
-  const [backdropOffsetY, setBackdropOffsetY] = useState(0)
-  const [editingValue, setEditingValue] = useState<string | null>(null)
-  const [editText, setEditText] = useState("")
 
-  // Badge state (delegated to useDefaults)
-  const { globalBadges, rankingBadges, networkLogo, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo, loadDefaultsToState } = defaults
-  const [customBadge, setCustomBadge] = useState<string | null>(null)
-  const setGlobalBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(globalBadges) : v; defaults.update({ globalBadges: next }) }
-  const setRankingBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(rankingBadges) : v; defaults.update({ rankingBadges: next }) }
-  const setNetworkLogo = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(networkLogo) : v; defaults.update({ networkLogo: next }) }
-  const setDefaultNetworkLogo = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultNetworkLogo) : v; defaults.update({ defaultNetworkLogo: next }) }
-  const setGradientHeight = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(gradientHeight) : v; defaults.update({ gradientHeight: next }) }
-  const setBlurIntensity = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurIntensity) : v; defaults.update({ blurIntensity: next }) }
-  const setBlurFade = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurFade) : v; defaults.update({ blurFade: next }) }
-  const setBlurDarkness = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(blurDarkness) : v; defaults.update({ blurDarkness: next }) }
-  const setBlurEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(blurEnabled) : v; defaults.update({ blurEnabled: next }) }
-  const setBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(badgeStyle) : v; defaults.update({ badgeStyle: next }) }
-  const setRankingBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(rankingBadgeStyle) : v; defaults.update({ rankingBadgeStyle: next }) }
-  const setDefaultBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(defaultBadgeStyle) : v; defaults.update({ defaultBadgeStyle: next }) }
-  const setDefaultRankingBadgeStyle = (v: string | ((prev: string) => string)) => { const next = typeof v === "function" ? v(defaultRankingBadgeStyle) : v; defaults.update({ defaultRankingBadgeStyle: next }) }
-  const setDefaultBlurEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultBlurEnabled) : v; defaults.update({ defaultBlurEnabled: next }) }
-  const setDefaultBlurIntensity = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurIntensity) : v; defaults.update({ defaultBlurIntensity: next }) }
-  const setDefaultBlurFade = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurFade) : v; defaults.update({ defaultBlurFade: next }) }
-  const setDefaultBlurDarkness = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultBlurDarkness) : v; defaults.update({ defaultBlurDarkness: next }) }
-  const setDefaultGradientHeight = (v: number | ((prev: number) => number)) => { const next = typeof v === "function" ? v(defaultGradientHeight) : v; defaults.update({ defaultGradientHeight: next }) }
-  const setDefaultGlobalBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultGlobalBadges) : v; defaults.update({ defaultGlobalBadges: next }) }
-  const setDefaultRankingBadges = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultRankingBadges) : v; defaults.update({ defaultRankingBadges: next }) }
-  const setDefaultAutoRotateClean = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultAutoRotateClean) : v; defaults.update({ defaultAutoRotateClean: next }) }
+  // Appearance state (logo, backdrop, editing — owned by PosterEditorProvider via usePosterEditor())
+  const hasBadges = globalBadges && metaInfo.genres.length > 0 && metaInfo.voteAverage > 0
+  const hasNetflixRank = !!(trendRank || (navigation.selected && trending.mdblistAnimeList.some((a: EnrichedAnimeItem) => a.id === navigation.selected!.id)))
+
   // Auto-resolve IMDb Top 250 membership
   useEffect(() => {
     const imdbId = metaInfo.imdb_id
@@ -329,11 +297,6 @@ export function usePosterium(): PosteriumCtx {
       .then((d) => setImdbTop250(!!d.inTop250))
       .catch(() => setImdbTop250(false))
   }, [metaInfo.imdb_id])
-
-  const setDefaultLogoFitEnabled = (v: boolean | ((prev: boolean) => boolean)) => { const next = typeof v === "function" ? v(defaultLogoFitEnabled) : v; defaults.update({ defaultLogoFitEnabled: next }) }
-
-  const hasBadges = globalBadges && metaInfo.genres.length > 0 && metaInfo.voteAverage > 0
-  const hasNetflixRank = !!(trendRank || (navigation.selected && trending.mdblistAnimeList.some((a: EnrichedAnimeItem) => a.id === navigation.selected!.id)))
 
   // Appearance state
 
@@ -859,37 +822,8 @@ export function usePosterium(): PosteriumCtx {
     openSections, toggleSection: (key: string) => setOpenSections((prev) => ({ ...prev, [key]: !(prev[key] ?? true) })),
     posterScrollRef, posterScrollInfo, setPosterScrollInfo,
     selectPoster, selectLogo, removeLogo,
-    logoBounds, logoScale, setLogoScale,
-    logoOffsetX, setLogoOffsetX, logoOffsetY, setLogoOffsetY,
-    backdrops, selectedBackdrop, setSelectedBackdrop,
-    backdropScale, setBackdropScale,
-    backdropOffsetX, setBackdropOffsetX,
-    backdropOffsetY, setBackdropOffsetY,
+    logoBounds,
     selectBackdrop, removeBackdrop,
-    editingValue, setEditingValue, editText, setEditText,
-    globalBadges, setGlobalBadges,
-    rankingBadges, setRankingBadges,
-    customBadge, setCustomBadge,
-    gradientHeight, setGradientHeight,
-    blurIntensity, setBlurIntensity,
-    blurFade, setBlurFade,
-    blurDarkness, setBlurDarkness,
-    blurEnabled, setBlurEnabled,
-    badgeStyle, setBadgeStyle,
-    rankingBadgeStyle, setRankingBadgeStyle,
-    defaultBadgeStyle, setDefaultBadgeStyle,
-    defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
-    defaultBlurEnabled, setDefaultBlurEnabled,
-    defaultBlurIntensity, setDefaultBlurIntensity,
-    defaultBlurFade, setDefaultBlurFade,
-    defaultBlurDarkness, setDefaultBlurDarkness,
-    defaultGradientHeight, setDefaultGradientHeight,
-    defaultGlobalBadges, setDefaultGlobalBadges,
-    defaultRankingBadges, setDefaultRankingBadges,
-    defaultAutoRotateClean, setDefaultAutoRotateClean,
-    defaultLogoFitEnabled, setDefaultLogoFitEnabled,
-    networkLogo, setNetworkLogo,
-    defaultNetworkLogo, setDefaultNetworkLogo,
     trendRank,
     mdblistMatch,
     imdbTop250,
@@ -915,10 +849,6 @@ export function usePosterium(): PosteriumCtx {
     profilePassword, setProfilePassword: setProfilePasswordPersist,
     accentColor, setAccentColor,
     topEdgeColor,
-    rotationPosters, setRotationPosters,
-    autoRotateClean, setAutoRotateClean,
-    excludedPosters, setExcludedPosters,
-    logoDisabled, setLogoDisabled,
     autoSaveExcludedPosters,
     theme, setTheme,
     uiAccent, setUiAccent,
@@ -929,19 +859,14 @@ export function usePosterium(): PosteriumCtx {
   }), [
     navigation.selected, navigation.view, navigation.posters, loadingImages, navigation.previewPoster, navigation.selectedLogo,
     navigation.logos, posterActivePath, previewUrl, urlPattern, lang,
-    openSections, posterScrollInfo, logoBounds, logoScale,
-    logoOffsetX, logoOffsetY, editingValue, editText,
-    globalBadges, rankingBadges, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle,
-    rankingBadgeStyle,
-    defaultBadgeStyle, defaultRankingBadgeStyle, defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness, defaultGradientHeight,
-    defaultGlobalBadges, defaultRankingBadges, defaultAutoRotateClean, defaultLogoFitEnabled,
+    openSections, posterScrollInfo, logoBounds,
     trendRank, mdblistMatch, imdbTop250, metaInfo, navigation.previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
     tmdbKeyInput, showKey, copied, profileCopied, profileId,
     accentColor, setAccentColor,
-    topEdgeColor, rotationPosters, autoRotateClean, excludedPosters, logoDisabled, setLogoDisabled, autoSaveExcludedPosters,
+    topEdgeColor, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
     theme, uiAccent, serviceErrors, hasNetflixRank,

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { useP } from "@/lib/context"
+import { useT } from "@/lib/contexts/TranslationContext"
 import { Search, ArrowRight, AlertCircle } from "lucide-react"
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, onBlur, error }: Props) {
-  const p = useP()
+  const { t } = useT()
   const [text, setText] = useState(value || "")
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -45,12 +45,12 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
         suppressHydrationWarning
         ref={inputRef}
         value={text}
-        aria-label={large ? p.t("ui.searchAriaLabelLarge") : p.t("ui.searchAriaLabel")}
+        aria-label={large ? t("ui.searchAriaLabelLarge") : t("ui.searchAriaLabel")}
         onChange={(e) => { setText(e.target.value); onChange?.(e.target.value) }}
         onFocus={() => { setFocused(true); onFocus?.() }}
         onBlur={() => { setFocused(false); onBlur?.() }}
         onKeyDown={(e) => { if (e.key === "Enter" && text.length >= 2 && tmdbKey) { onSearch(text) } }}
-        placeholder={large ? p.t("ui.searchPlaceholderLarge") : p.t("ui.searchPlaceholder")}
+        placeholder={large ? t("ui.searchPlaceholderLarge") : t("ui.searchPlaceholder")}
         className="flex-1 bg-transparent text-xs md:text-sm outline-none placeholder:text-zinc-500 focus:placeholder:text-zinc-400 px-2 h-full transition-colors duration-200"
       />
       {!focused && text.length === 0 && (
@@ -62,7 +62,7 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
       {text.length > 0 && (
         <button
           type="button"
-          aria-label={p.t("ui.searchButton")}
+          aria-label={t("ui.searchButton")}
           onClick={() => { if (text.length >= 2 && tmdbKey) { onSearch(text) } }}
           disabled={!tmdbKey}
           className="shrink-0 w-10 h-10 mr-1.5 flex items-center justify-center bg-accent-orange text-white rounded-full hover:shadow-lg hover:shadow-accent-orange/30 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-200"

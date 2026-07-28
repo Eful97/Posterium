@@ -1,20 +1,21 @@
 import type { PosteriumCtx } from "@/lib/context"
+import type { PosterEditorCtx } from "@/lib/contexts/PosterEditorContext"
 
-export function saveDefaults(p: PosteriumCtx) {
+export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMap: PosteriumCtx["mappingsMap"] }, ed: PosterEditorCtx) {
   const d = {
-    globalBadges: p.defaultGlobalBadges,
-    rankingBadges: p.defaultRankingBadges,
-    badgeStyle: p.defaultBadgeStyle,
-    rankingBadgeStyle: p.defaultRankingBadgeStyle,
-    blurEnabled: p.defaultBlurEnabled,
-    blurIntensity: p.defaultBlurIntensity,
-    blurFade: p.defaultBlurFade,
-    blurDarkness: p.defaultBlurDarkness,
-    gradientHeight: p.defaultGradientHeight,
-    autoRotateClean: p.defaultAutoRotateClean,
-    defaultLogoFitEnabled: p.defaultLogoFitEnabled,
-    defaultNetworkLogo: p.defaultNetworkLogo,
-    networkLogo: p.defaultNetworkLogo,
+    globalBadges: ed.defaultGlobalBadges,
+    rankingBadges: ed.defaultRankingBadges,
+    badgeStyle: ed.defaultBadgeStyle,
+    rankingBadgeStyle: ed.defaultRankingBadgeStyle,
+    blurEnabled: ed.defaultBlurEnabled,
+    blurIntensity: ed.defaultBlurIntensity,
+    blurFade: ed.defaultBlurFade,
+    blurDarkness: ed.defaultBlurDarkness,
+    gradientHeight: ed.defaultGradientHeight,
+    autoRotateClean: ed.defaultAutoRotateClean,
+    defaultLogoFitEnabled: ed.defaultLogoFitEnabled,
+    defaultNetworkLogo: ed.defaultNetworkLogo,
+    networkLogo: ed.defaultNetworkLogo,
   }
   localStorage.setItem("badgeDefaults", JSON.stringify(d))
   void fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
@@ -24,14 +25,14 @@ export function saveDefaults(p: PosteriumCtx) {
     })
   const key = p.selected ? `${p.selected.media_type}:${p.selected.id}` : null
   const mapping = key ? p.mappingsMap.get(key) : undefined
-  if (!mapping?.badgeStyle) p.setBadgeStyle(d.badgeStyle)
-  if (!mapping?.rankingBadgeStyle) p.setRankingBadgeStyle(d.rankingBadgeStyle)
-  p.setGlobalBadges(d.globalBadges)
-  p.setRankingBadges(d.rankingBadges)
-  p.setNetworkLogo(d.networkLogo)
-  p.setBlurEnabled(d.blurEnabled)
-  p.setBlurIntensity(d.blurIntensity)
-  p.setBlurFade(d.blurFade)
-  p.setBlurDarkness(d.blurDarkness)
-  p.setGradientHeight(d.gradientHeight)
+  if (!mapping?.badgeStyle) ed.setBadgeStyle(d.badgeStyle)
+  if (!mapping?.rankingBadgeStyle) ed.setRankingBadgeStyle(d.rankingBadgeStyle)
+  ed.setGlobalBadges(d.globalBadges)
+  ed.setRankingBadges(d.rankingBadges)
+  ed.setNetworkLogo(d.networkLogo)
+  ed.setBlurEnabled(d.blurEnabled)
+  ed.setBlurIntensity(d.blurIntensity)
+  ed.setBlurFade(d.blurFade)
+  ed.setBlurDarkness(d.blurDarkness)
+  ed.setGradientHeight(d.gradientHeight)
 }

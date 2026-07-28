@@ -1,19 +1,19 @@
 "use client"
 
 import { PICKER_LANGS, LANG_FLAGS } from "@/lib/utils"
-import { useP } from "@/lib/context"
+import { useT } from "@/lib/contexts/TranslationContext"
 import { Globe } from "lucide-react"
 
 export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
-  const p = useP()
+  const { t, lang } = useT()
   return (
     <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
       <div className="w-full max-w-lg mx-4">
         <div className="text-center mb-10">
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
           <img src="/posterium.png" alt="Posterium" loading="eager" decoding="async" className="h-auto w-[min(92vw,390px)] mx-auto mb-4 hover:brightness-110 transition-all duration-150" />
-          <h2 className="text-2xl font-bold text-zinc-100">{p.t("ui.welcome")}</h2>
-          <p className="text-sm text-zinc-400 mt-1.5">{p.t("ui.welcomeSubtitle")}</p>
+          <h2 className="text-2xl font-bold text-zinc-100">{t("ui.welcome")}</h2>
+          <p className="text-sm text-zinc-400 mt-1.5">{t("ui.welcomeSubtitle")}</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {PICKER_LANGS.map((l) => (

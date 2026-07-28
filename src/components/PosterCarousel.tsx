@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useP } from "@/lib/context"
+import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult } from "@/lib/types"
 
 const EXAMPLES = [
@@ -37,6 +38,7 @@ const SCROLL_SPEED = 0.5 // px per frame
 
 export function PosterCarousel() {
   const p = useP()
+  const { t } = useT()
   const containerRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number>(0)
   const posRef = useRef(0)
@@ -103,7 +105,7 @@ export function PosterCarousel() {
     <div className="mt-14 max-w-5xl mx-auto px-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="section-heading text-xl font-bold">
-          {p.t("ui.posterExamples")}
+          {t("ui.posterExamples")}
         </h2>
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2">
@@ -118,7 +120,7 @@ export function PosterCarousel() {
         </div>
       </div>
       <p className="text-xs text-zinc-500 mb-6">
-        {p.t("ui.posterExamplesDesc")}
+        {t("ui.posterExamplesDesc")}
       </p>
 
       <div
