@@ -9,6 +9,7 @@ import {
   verifyProfilePassword,
 } from "@/lib/profile-store"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
+import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("profile")
@@ -138,9 +139,11 @@ export async function GET(req: NextRequest) {
 /**
  * DELETE /api/profile?u=<UUID>
  *
- * Elimina un profilo.
+ * Elimina un profilo. Richiede admin token per evitare eliminazioni
+ * non autorizzate (i profile UUID sono esposti nelle URL dei poster).
  */
 export async function DELETE(req: NextRequest) {
+  if (!checkAdminToken(req)) return adminAuthResponse()
   const uuid = req.nextUrl.searchParams.get("u")
   if (!uuid) {
     return Response.json({ error: "Missing 'u' query parameter" }, { status: 400 })

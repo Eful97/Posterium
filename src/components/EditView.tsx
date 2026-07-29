@@ -116,7 +116,7 @@ export default function EditView() {
                   <div
                     className="absolute -inset-6 rounded-3xl opacity-40 blur-3xl pointer-events-none transition-all duration-700 ease-out"
                     style={{
-                      background: p.accentColor && p.accentColor !== "#555555"
+                      background: p.accentColor
                         ? `radial-gradient(circle at 50% 50%, ${p.accentColor}, transparent 70%)`
                         : "radial-gradient(circle at 50% 50%, rgba(232, 93, 42, 0.30), transparent 70%)",
                     }}

@@ -1,8 +1,8 @@
 "use client"
 
-function BadgePreview({ style, accentColor }: { style: string; accentColor?: string }) {
+function BadgePreview({ style, accentColor }: { style: string; accentColor?: string | null }) {
   const base = "inline-flex items-center justify-center text-[8px] font-black leading-none w-7 h-4 rounded select-none"
-  const ac = accentColor && accentColor !== "#555555" ? accentColor : "#fb923c"
+  const ac = accentColor || "#fb923c"
   switch (style) {
     case "shadow":
       return <span className={`${base} bg-transparent text-white`} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.4)" }}>Aa</span>
@@ -35,7 +35,7 @@ export function BadgeStyleSelector({
   options: readonly string[]
   onChange: (v: string) => void
   t: (k: string) => string
-  accentColor?: string
+  accentColor?: string | null
   disabled?: readonly string[]
 }) {
   return (

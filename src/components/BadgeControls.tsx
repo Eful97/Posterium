@@ -34,10 +34,10 @@ export function BadgeControls() {
         <div className="px-1">
           <BadgeStyleSelector value={ed.rankingBadgeStyle} options={["default","colored","pill"]} onChange={ed.setRankingBadgeStyle} t={t} accentColor={p.accentColor} />
         </div>
-        {p.accentColor === "#555555" && (
+        {!p.accentColor && (
           <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{t("ui.noDominantColor") || "No dominant color — using fallback"}</div>
         )}
-        {p.accentColor !== "#555555" && (
+        {p.accentColor && (
           <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">Accent color condiviso con badge genere</div>
         )}
       </div>
@@ -115,21 +115,21 @@ export function BadgeControls() {
         <div className="flex items-center gap-2 justify-center mt-2 px-1">
           <input
             type="color"
-            value={p.accentColor === "#555555" ? "#000000" : p.accentColor}
+            value={!p.accentColor ? "#000000" : p.accentColor}
             onChange={(e) => p.setAccentColor(e.target.value)}
             className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded"
           />
           <input
             type="text"
-            value={p.accentColor}
+            value={p.accentColor ?? ""}
             onChange={(e) => { const v = e.target.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) p.setAccentColor(v) }}
-            onBlur={(e) => { if (!/^#[0-9a-fA-F]{6}$/.test(e.target.value)) e.target.value = p.accentColor }}
+            onBlur={(e) => { if (!/^#[0-9a-fA-F]{6}$/.test(e.target.value)) e.target.value = p.accentColor ?? "" }}
             className="w-20 text-center text-[11px] bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent font-mono text-zinc-300"
             placeholder="#555555"
           />
-          {p.accentColor !== "#555555" && (
+          {p.accentColor && (
             <button
-              onClick={() => p.setAccentColor("#555555")}
+              onClick={() => p.setAccentColor(null)}
               className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors px-1"
               title="Reset to auto-detect"
             >↺</button>

@@ -48,8 +48,8 @@ interface PosterState {
   }
   trendRank: number | null
   mdblistAnimeList: EnrichedAnimeItem[]
-  topEdgeColor: string
-  accentColor?: string
+  topEdgeColor: string | null
+  accentColor?: string | null
   lang: string
   tmdbKey: string
 }
@@ -112,7 +112,7 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   params.push(`rs=${bp.rankingBadgeStyle}`)
   if (!bp.blurEnabled) params.push("be=0")
   if (bp.networkLogo === false) params.push("netLogo=0")
-  if (ps.accentColor && ps.accentColor !== "#555555") params.push(`ac=${encodeURIComponent(ps.accentColor)}`)
+  if (ps.accentColor) params.push(`ac=${encodeURIComponent(ps.accentColor)}`)
   const topLight = computeTopLight(ps.topEdgeColor)
   params.push(`tl=${topLight ? "1" : "0"}`)
   if (bp.rankingBadges) {
@@ -124,10 +124,9 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   return `${getDomain()}/api/poster/${ps.selected.media_type}/${ps.selected.id}${qs}`
 }
 
-function computeTopLight(hexColor: string): boolean {
+function computeTopLight(hexColor: string | null): boolean {
   const h = hexColor
-  if (h.length < 7) return true
-  if (h === "#555555") return true
+  if (!h || h.length < 7) return true
   const r = parseInt(h.slice(1, 3), 16) / 255
   const g = parseInt(h.slice(3, 5), 16) / 255
   const b = parseInt(h.slice(5, 7), 16) / 255

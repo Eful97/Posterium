@@ -114,9 +114,9 @@ export interface PosteriumCtx {
   setProfileId: React.Dispatch<React.SetStateAction<string | null>>
   profilePassword: string
   setProfilePassword: (v: string) => void
-  accentColor: string
-  setAccentColor: (v: string) => void
-topEdgeColor: string
+  accentColor: string | null
+  setAccentColor: (v: string | null) => void
+  topEdgeColor: string | null
   autoSaveExcludedPosters: (nextExcluded: string[], nextRotationPosters?: string[], nextPreviewPoster?: TMDBImage) => Promise<void>
   theme: "dark" | "light"
   setTheme: React.Dispatch<React.SetStateAction<"dark" | "light">>
@@ -272,8 +272,8 @@ export function usePosterium(): PosteriumCtx {
   const [showLangPicker, setShowLangPicker] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
   const [imdbTop250, setImdbTop250] = useState(false)
-  const [accentColor, setAccentColor] = useState("#555555")
-  const [topEdgeColor, setTopEdgeColor] = useState("#555555")
+  const [accentColor, setAccentColor] = useState<string | null>(null)
+  const [topEdgeColor, setTopEdgeColor] = useState<string | null>(null)
   const [serviceErrors, setServiceErrors] = useState<Record<string, boolean>>({})
 
   const [loadingImages, setLoadingImages] = useState(false)
@@ -464,7 +464,7 @@ export function usePosterium(): PosteriumCtx {
       root.style.setProperty("--color-edge-r", "85")
       root.style.setProperty("--color-edge-g", "85")
       root.style.setProperty("--color-edge-b", "85")
-      setAccentColor("#555555"); setTopEdgeColor("#555555"); return
+      setAccentColor(null); setTopEdgeColor(null); return
     }
     const genreName = metaInfo.genres[0]?.name
     let cancelled = false

@@ -50,7 +50,7 @@ interface PosterSaveDeps {
   autoRotateClean: boolean
   defaultAutoRotateClean: boolean
   excludedPosters: string[]
-  accentColor: string
+  accentColor: string | null
   logoDisabled: boolean
   setLogoDisabled: (v: boolean) => void
   setLogoScale: (v: number) => void

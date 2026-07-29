@@ -32,7 +32,7 @@ const basePosterState = {
   },
   trendRank: null,
   mdblistAnimeList: [],
-  topEdgeColor: "#555555",
+  topEdgeColor: null,
   lang: "it",
   tmdbKey: "test-key",
 }
@@ -225,7 +225,7 @@ describe("buildPreviewUrl", () => {
   })
 
   it("does not include ac param when accentColor is default", () => {
-    const url = buildPreviewUrl({ ...basePosterState, accentColor: "#555555" }, baseBadgeParams)
+    const url = buildPreviewUrl({ ...basePosterState, accentColor: null }, baseBadgeParams)
     expect(url).not.toContain("ac=")
   })
 

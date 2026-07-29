@@ -117,12 +117,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   cacheParams.delete("c")
   cacheParams.delete("u")
   cacheParams.delete("user")
+  if (typeof cacheParams.sort === "function") cacheParams.sort()
   const cachedRank = mapping?.trendRank ?? null
   const rotateKey = isRotating ? `:ci${mapping?.cleanPosterIndex ?? "x"}` : ""
   const mapVersion = mapping?.updatedAt ? `:mu${mapping.updatedAt}` : ""
   const configHash = configOverride ? hashKey(JSON.stringify(configOverride)) : ""
   const userKey = profileId ? `:u${profileId}` : ""
   const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}${userKey}`
+  const etagBase = hashKey(`v${RENDER_VERSION}:${type}:${id}:sd${sdHash}:${cacheParams.toString()}${configHash ? `:${configHash}` : ""}`)
   const currentMappingVersion = mappingVersionParam(mapping)
   const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams, {
     hasMapping: !!mapping,
@@ -191,13 +193,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       backdropScale = Number(req.nextUrl.searchParams.get("bscale") || "100")
       if (!Number.isFinite(backdropScale) || backdropScale <= 0) backdropScale = 100
       backdropOffsetX = Number(req.nextUrl.searchParams.get("box") || "0")
+      if (!Number.isFinite(backdropOffsetX)) backdropOffsetX = 0
       backdropOffsetY = Number(req.nextUrl.searchParams.get("boy") || "0")
+      if (!Number.isFinite(backdropOffsetY)) backdropOffsetY = 0
     }
     if (queryGenre) genreName = queryGenre
-    if (queryVote) voteAverage = Number(queryVote)
+    if (queryVote) { voteAverage = Number(queryVote); if (!Number.isFinite(voteAverage)) voteAverage = null }
     imdbId = req.nextUrl.searchParams.get("imdbId") || null
     showBadges = true
-    etag = `"${Date.now()}"`
+    etag = `"p${etagBase}"`
   } else if (mapping) {
     posterPath = mapping.posterPath
     logoPath = queryLogo || mapping.logoPath
@@ -304,7 +308,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         if (chosen) posterPath = chosen.file_path
       }
     } catch (e) { log.error("Auto image fetch failed", { error: e instanceof Error ? e.message : String(e) }) }
-    etag = `"${Date.now()}"`
+    etag = `"a${etagBase}"`
   }
 
   if (!posterPath) {
@@ -392,22 +396,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
     const qTopLight = req.nextUrl.searchParams.get("tl")
 
-    // Luminance + tv details (parallel)
+    // Apply mapping TV metadata (synchronous — no race, no side-effects in parallel closures)
+    if (mapping?.tvType) tvType = mapping.tvType
+    if (mapping?.tvStatus) tvStatus = mapping.tvStatus
+    if (mapping?.releaseDate) releaseDate = mapping.releaseDate
+    if (mapping?.firstAirDate) firstAirDate = mapping.firstAirDate
+
+    // Luminance + optional TV details fetch (parallel, independent)
     const [topLum] = await Promise.all([
       (async (): Promise<number | null> => {
         if (qTopLight !== null) return null
         return await topLuminance(posterBuf)
       })(),
-      (async () => {
-        if (mapping?.tvType) tvType = mapping.tvType
-        if (mapping?.tvStatus) tvStatus = mapping.tvStatus
-        if (mapping?.releaseDate) releaseDate = mapping.releaseDate
-        if (mapping?.firstAirDate) firstAirDate = mapping.firstAirDate
-        if (tmdbNetworks.length === 0 && productionCompanies.length === 0) {
-          try {
+      (tmdbNetworks.length === 0 && productionCompanies.length === 0)
+        ? (async () => {
             const apiKey = resolveRequestApiKey(req)
             const preferredLang = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
-            const details = await getDetails(mediaType, tmdbId, preferredLang, apiKey)
+            const details = await getDetails(mediaType, tmdbId, preferredLang, apiKey).catch(() => null)
+            if (!details) return
             if (!releaseDate) releaseDate = details.release_date || null
             if (!firstAirDate) firstAirDate = details.first_air_date || null
             if (!tvType) tvType = details.type || null
@@ -415,9 +421,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             if (details.networks) tmdbNetworks = details.networks.map((n: TMDBCompany) => n.name)
             if (details.production_companies) productionCompanies = details.production_companies.map((c: TMDBCompany) => c.name)
             if (tmdbNetworks.length || productionCompanies.length) tmdbStudios = matchTMDBStudios([...tmdbNetworks, ...productionCompanies])
-          } catch (e) { log.error("Details fetch failed", { error: e instanceof Error ? e.message : String(e) }) }
-        }
-      })(),
+          })().catch((e: unknown) => { log.error("Details fetch failed", { error: e instanceof Error ? e.message : String(e) }) })
+        : Promise.resolve(),
     ])
 
     const topLight = qTopLight !== null ? qTopLight === "1" : (topLum ?? 0.5) > 0.60
@@ -426,29 +431,36 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qBadges = req.nextUrl.searchParams.get("badges")
     const qRanking = req.nextUrl.searchParams.get("ranking")
     const rawRs = req.nextUrl.searchParams.get("rs")
-    let rankingBadgeStyle = (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined)
-      || (rawRs && rawRs !== "default" ? rawRs : undefined)
-      || (configOverride?.rankingBadgeStyle && configOverride.rankingBadgeStyle !== "default" ? configOverride.rankingBadgeStyle : undefined)
+    let rankingBadgeStyle = mapping?.rankingBadgeStyle
+      || rawRs
+      || configOverride?.rankingBadgeStyle
       || sd.rankingBadgeStyle
       || "default"
     const qRankParam = req.nextUrl.searchParams.get("rank")
     const hasRank = !!(animeRankResult || rankingResult || mapping?.badgeRank || mapping?.trendRank || qRankParam || finalRank)
-    if (hasRank && (rankingBadgeStyle === "default" || rankingBadgeStyle === "netflix")) {
+    // "default" = auto-detect: mostra il badge stile Netflix se c'è un rank,
+    // altrimenti badge standard. Se il sorgente (mapping/query/config) specifica
+    // un valore esplicito (bar/pill/colored/netflix), viene rispettato senza override.
+    if (hasRank && rankingBadgeStyle === "default") {
       rankingBadgeStyle = "netflix"
-    } else if (rankingBadgeStyle === "netflix" && !hasRank) {
+    } else if (!hasRank && rankingBadgeStyle === "netflix") {
       rankingBadgeStyle = "default"
     }
 
     const qBe = req.nextUrl.searchParams.get("be")
     const blurEnabled = qBe !== null ? qBe !== "0" : (configOverride !== null ? configOverride.blurEnabled : true)
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
-    const blurHeight = qGradHeight ? Math.max(Number(qGradHeight), 5) : (configOverride !== null ? Math.max(configOverride.gradientHeight, 5) : 30)
+    const rawGradHeight = qGradHeight ? Number(qGradHeight) : NaN
+    const blurHeight = Number.isFinite(rawGradHeight) ? Math.max(rawGradHeight, 5) : (configOverride !== null ? Math.max(configOverride.gradientHeight, 5) : 30)
     const qBlur = req.nextUrl.searchParams.get("blur")
-    const blurIntensity = qBlur ? Math.max(Number(qBlur), 1) : (configOverride !== null ? Math.max(configOverride.blurIntensity, 1) : 5)
+    const rawBlur = qBlur ? Number(qBlur) : NaN
+    const blurIntensity = Number.isFinite(rawBlur) ? Math.max(rawBlur, 1) : (configOverride !== null ? Math.max(configOverride.blurIntensity, 1) : 5)
     const qBf = req.nextUrl.searchParams.get("bf")
-    const blurFade = qBf ? Math.max(Number(qBf), 0) : (configOverride !== null ? Math.max(configOverride.blurFade, 0) : 60)
+    const rawBf = qBf ? Number(qBf) : NaN
+    const blurFade = Number.isFinite(rawBf) ? Math.max(rawBf, 0) : (configOverride !== null ? Math.max(configOverride.blurFade, 0) : 60)
     const qBd = req.nextUrl.searchParams.get("bd")
-    const blurDarkness = qBd ? Math.max(Number(qBd), 0) : (configOverride !== null ? Math.max(configOverride.blurDarkness, 0) : 40)
+    const rawBd = qBd ? Number(qBd) : NaN
+    const blurDarkness = Number.isFinite(rawBd) ? Math.max(rawBd, 0) : (configOverride !== null ? Math.max(configOverride.blurDarkness, 0) : 40)
 
     const hasQuery = !!queryPoster || !!mapping
     const badgesEnabled = hasQuery ? (qBadges !== null ? qBadges !== "0" : (configOverride !== null ? configOverride.globalBadges : showBadges)) : true

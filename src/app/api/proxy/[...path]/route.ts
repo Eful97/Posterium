@@ -16,17 +16,32 @@ function corsHeaders() {
 }
 
 /** Blocca richieste a IP privati / localhost per prevenire SSRF */
+function isPrivateHost(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1" ||
+    hostname === "[::]" ||
+    hostname.endsWith(".local") ||
+    hostname.endsWith(".internal") ||
+    hostname.startsWith("10.") ||
+    hostname.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+    /^169\.254\./.test(hostname)
+  )
+}
+
 function isBlockedTarget(url: string): boolean {
   try {
     const parsed = new URL(url)
     const hostname = parsed.hostname.toLowerCase()
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0" || hostname === "::1") return true
-    if (hostname.endsWith(".local") || hostname.endsWith(".internal")) return true
-    if (hostname.startsWith("10.")) return true
-    if (hostname.startsWith("192.168.")) return true
-    // Blocca solo 172.16.0.0/12 (non tutto 172.x.x.x)
-    if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return true
-    if (parsed.port && Number(parsed.port) < 1024) return true
+    // Blocca IP privati e localhost
+    if (isPrivateHost(hostname)) {
+      // Per IP privati, blocca anche porte basse (servizi interni)
+      if (parsed.port && Number(parsed.port) < 1024) return true
+      return true
+    }
     return false
   } catch {
     return true

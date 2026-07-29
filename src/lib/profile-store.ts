@@ -8,6 +8,43 @@ import { createLogger } from "@/lib/logger"
 
 const log = createLogger("profile-store")
 
+// ---- Encryption helpers for API keys (AES-256-GCM) ----
+
+const ENCRYPTION_KEY_SECRET = process.env.PROFILE_ENCRYPTION_KEY
+
+function deriveEncryptionKey(): Buffer | null {
+  if (!ENCRYPTION_KEY_SECRET) return null
+  return crypto.createHash("sha256").update(ENCRYPTION_KEY_SECRET).digest()
+}
+
+const ENC_PREFIX = "v1"
+
+function encryptValue(plaintext: string, key: Buffer): string {
+  const iv = crypto.randomBytes(12)
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv)
+  let encrypted = cipher.update(plaintext, "utf8", "hex")
+  encrypted += cipher.final("hex")
+  const authTag = cipher.getAuthTag().toString("hex")
+  return `${ENC_PREFIX}:${iv.toString("hex")}:${authTag}:${encrypted}`
+}
+
+function decryptValue(ciphertext: string, key: Buffer): string | null {
+  try {
+    const parts = ciphertext.split(":")
+    if (parts[0] !== ENC_PREFIX || parts.length !== 4) return null
+    const iv = Buffer.from(parts[1], "hex")
+    const authTag = Buffer.from(parts[2], "hex")
+    const encrypted = parts[3]
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv)
+    decipher.setAuthTag(authTag)
+    let decrypted = decipher.update(encrypted, "hex", "utf8")
+    decrypted += decipher.final("utf8")
+    return decrypted
+  } catch {
+    return null
+  }
+}
+
 export type { PosteriumUserConfig }
 
 export interface ProfileData {
@@ -196,9 +233,25 @@ export async function createOrUpdateProfile(
   const existing = existingProfileId ? await getFullProfile(existingProfileId) : null
   const uuid = existing ? existingProfileId! : (existingProfileId || generateProfileId())
 
+  // Encrypt apiKeys at rest if encryption key is configured
+  const encKey = deriveEncryptionKey()
+  let storedApiKeys: ProfileData["apiKeys"] | undefined
+  if (apiKeys) {
+    if (encKey) {
+      storedApiKeys = {}
+      if (apiKeys.tmdbKey) storedApiKeys.tmdbKey = encryptValue(apiKeys.tmdbKey, encKey)
+      if (apiKeys.mdblistApiKey) storedApiKeys.mdblistApiKey = encryptValue(apiKeys.mdblistApiKey, encKey)
+    } else {
+      storedApiKeys = apiKeys
+    }
+  } else {
+    // Keep existing keys as-is (already encrypted or legacy plaintext)
+    storedApiKeys = existing?.apiKeys
+  }
+
   const data: ProfileData = {
     config,
-    apiKeys: apiKeys ?? existing?.apiKeys,
+    apiKeys: storedApiKeys,
     mappings: mappings ?? existing?.mappings,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -233,7 +286,25 @@ export async function getFullProfileData(profileId: string): Promise<ProfileData
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId)) {
     return null
   }
-  return getFullProfile(profileId)
+  const raw = await getFullProfile(profileId)
+  if (!raw) return null
+
+  // Decrypt apiKeys if encryption is configured
+  const encKey = deriveEncryptionKey()
+  if (!encKey || !raw.apiKeys) return raw
+
+  // Copy to avoid mutating the internal cache reference
+  const result: ProfileData = { ...raw }
+  result.apiKeys = { ...raw.apiKeys }
+  if (result.apiKeys.tmdbKey) {
+    const d = decryptValue(result.apiKeys.tmdbKey, encKey)
+    if (d) result.apiKeys.tmdbKey = d
+  }
+  if (result.apiKeys.mdblistApiKey) {
+    const d = decryptValue(result.apiKeys.mdblistApiKey, encKey)
+    if (d) result.apiKeys.mdblistApiKey = d
+  }
+  return result
 }
 
 export async function verifyProfilePassword(profileId: string, password: string): Promise<boolean> {
