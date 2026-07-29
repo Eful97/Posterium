@@ -118,7 +118,7 @@ export default function EditView() {
                     style={{
                       background: p.accentColor && p.accentColor !== "#555555"
                         ? `radial-gradient(circle at 50% 50%, ${p.accentColor}, transparent 70%)`
-                        : "radial-gradient(circle at 50% 50%, rgba(255, 100, 48, 0.40), transparent 70%)",
+                        : "radial-gradient(circle at 50% 50%, rgba(232, 93, 42, 0.30), transparent 70%)",
                     }}
                   />
                   <PosterPreview
@@ -132,8 +132,8 @@ export default function EditView() {
 
                 {p.selected && (
                   <div className="mt-4 w-full text-center select-text">
-                    <h2 className="text-lg font-bold text-zinc-50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_2px_8px_rgba(0,0,0,0.7)]">{p.titleOf(p.selected)}</h2>
-                    <p className="text-xs text-zinc-300 mt-0.5 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">{p.yearOf(p.selected)} {p.selected.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")}</p>
+                    <h2 className="text-lg font-bold text-zinc-50">{p.titleOf(p.selected)}</h2>
+                    <p className="text-xs text-zinc-300 mt-0.5">{p.yearOf(p.selected)} {p.selected.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")}</p>
                     <p className="text-xs text-zinc-500 mt-1 preview-meta-info">TMDB: <a href={`https://www.themoviedb.org/${p.selected.media_type}/${p.selected.id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 hover:text-white underline underline-offset-2">{p.selected.id}</a>{p.selected.imdb_id ? <> • IMDB: <a href={`https://www.imdb.com/title/${p.selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 hover:text-white underline underline-offset-2">{p.selected.imdb_id}</a></> : ""}</p>
                   </div>
                 )}
@@ -259,7 +259,7 @@ export default function EditView() {
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-lg md:text-xl font-bold text-zinc-50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">{t("ui.heroTitle")}</h1>
+                  <h1 className="text-lg md:text-xl font-bold text-zinc-50">{t("ui.heroTitle")}</h1>
                   <p className="text-xs text-zinc-400 mt-0.5">{t("ui.heroSubtitle")}</p>
                 </div>
               </div>

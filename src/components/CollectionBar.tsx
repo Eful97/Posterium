@@ -111,7 +111,7 @@ export function CollectionBar({
           onClick={() => onSelect(null)}
           className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 active:scale-95 ${
             activeId === null
-              ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/25 shadow-[0_0_12px_rgba(255,100,48,0.18)]"
+              ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/25 shadow-[0_0_10px_rgba(232,93,42,0.12)]"
               : "collection-chip-glass text-zinc-400 hover:text-zinc-300"
           }`}
         >
@@ -148,7 +148,7 @@ export function CollectionBar({
                 <div
                   className={`flex items-stretch rounded-xl border transition-all duration-150 overflow-hidden ${
                     isActive
-                      ? "bg-accent-orange/15 text-accent-orange border-accent-orange/25 shadow-[0_0_12px_rgba(255,100,48,0.18)]"
+                      ? "bg-accent-orange/15 text-accent-orange border-accent-orange/25 shadow-[0_0_10px_rgba(232,93,42,0.12)]"
                       : "collection-chip-glass text-zinc-400"
                   }`}
                 >
