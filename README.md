@@ -44,7 +44,7 @@ pinned: false
 ## ✨ Feature Principali
 
 - 🖼️ **Selezione Poster Clean in 1-Click** — Scegli la tua locandina pulita (senza testo) preferita con un singolo click e fissala per sempre su Stremio. Supporta l'algoritmo *Best Fit* che rileva in automatico il poster perfetto per il logo.
-- 🎨 **Personalizzazione Badge Completa** — 6 stili per badge genere/rating (*Shadow, Pill, Bar, Colored, Bordo, Vetro*) e 5 stili per badge trend (*Default, Bar, Colored, Pill, Nastro Netflix*). Colori accent adattivi al poster e testo libero personalizzato per singolo titolo.
+- 🎨 **Personalizzazione Badge Completa** — 6 stili per badge genere/rating (*Shadow, Pill, Bar, Colored, Bordo, Vetro*) e 6 stili per badge trend (*Default, Bar, Colored, Pill, Vetro, Nastro Netflix*). Colori accent adattivi al poster e testo libero personalizzato per singolo titolo.
 - 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch Italia, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA/Emmy (da Wikidata), saghe/franchise e registi cult.
 - 🍿 **Nastro Netflix Top 10** — Badge con l'iconico nastro rosso verticale allineato a sinistra e affiancamento automatico del logo della piattaforma.
 - ⭐ **Rating Accurato** — Voto medio bilanciato ed imparziale IMDb + TMDB.
@@ -228,6 +228,8 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 | `KV_REST_API_TOKEN` | ❌ | Token Upstash Redis |
 | `POSTERIUM_ADMIN_TOKEN` | ❌ | Protegge route admin (`/api/mappings`, `/api/cache/clear`, `/api/defaults`) |
 | `ADMIN_TOKEN` | ❌ | Alias per POSTERIUM_ADMIN_TOKEN (legacy) |
+| `ENCRYPTION_KEY_SECRET` | ❌ | Chiave per firma HMAC-SHA256 dei token di configurazione profilo (rende i token URL immutabili) |
+| `CONFIG_HMAC_SECRET` | ❌ | Chiave alternativa per firma HMAC (fallback a ENCRYPTION_KEY_SECRET) |
 | `POSTERIUM_DATA_DIR` | ❌ | Percorso dati persistenti (default: `./data/`) |
 | `POSTERIUM_CACHE_MAX` | ❌ | Max entry cache in-memory (default: 2000) |
 | `POSTERIUM_CACHE_MAX_MB` | ❌ | Max MB cache in-memory (default: 150) |
@@ -244,17 +246,28 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 	
 ## 🧪 Test
 
-Posterium usa [Playwright](https://playwright.dev/) per test E2E e visual regression.
+Posterium usa [Vitest](https://vitest.dev/) per test unitari e [Playwright](https://playwright.dev/) per test E2E e visual regression.
 
-### Setup
+### Test unitari (Vitest)
+
+Oltre 390 test su store, API, componenti React, badge SVG, poster-fit, profili e utilità.
+
+```bash
+# Esecuzione singola
+npx vitest run
+
+# Modalità watch (sviluppo)
+npx vitest
+
+# Con coverage
+npx vitest run --coverage
+```
+
+### Test E2E (Playwright)
 
 ```bash
 npx playwright install chromium
-```
 
-### Eseguire i test
-
-```bash
 # Test visivi (screenshot — sempre attivi)
 npx playwright test e2e/posterium-visual.spec.ts
 
