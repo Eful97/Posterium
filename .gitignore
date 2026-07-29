@@ -75,3 +75,4 @@ public/window.svg
 
 # skill lockfile (auto-generated)
 skills-lock.json
+.env
