@@ -29,17 +29,20 @@ function rankBadge(rank: number) {
   )
 }
 
-const RankCard = React.memo(function RankCard({ item, onClick, staggerIndex }: { item: RankItem; onClick: () => void; isFirst?: boolean; staggerIndex?: number }) {
+const RankCard = React.memo(function RankCard({ item, onClick, isFirst, staggerIndex }: { item: RankItem; onClick: () => void; isFirst?: boolean; staggerIndex?: number }) {
   const imgSrc = item.poster_path || item.posterPath
   const label = item.title || item.name || ""
   return (
     <button
       onClick={onClick}
       aria-label={label}
-      className="group rank-btn relative text-left flex-shrink-0 scroll-snap-start animate-stagger-in hover:z-10"
+      className="group rank-btn relative text-left flex-shrink-0 animate-stagger-in snap-start"
       style={staggerIndex !== undefined ? { animationDelay: `${staggerIndex * 60}ms` } : undefined}
     >
-      <div className="w-[170px] md:w-72 shrink-0 transition-transform duration-200 hover:scale-[1.03]">
+      <div className="flex items-end">
+        <div
+          className={`poster-slide relative ${isFirst ? "" : "-ml-8 md:-ml-14"} z-10 w-[170px] md:w-72 shrink-0`}
+        >
         <div className="aspect-[2/3] bg-zinc-800 rounded-xl overflow-hidden shadow-lg transition-all duration-200 relative border border-white/10">
           {imgSrc ? (
             // eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL
@@ -61,6 +64,7 @@ const RankCard = React.memo(function RankCard({ item, onClick, staggerIndex }: {
           </p>
         </div>
         {rankBadge(item.rank)}
+      </div>
       </div>
     </button>
   )
@@ -110,8 +114,7 @@ export function RankRow({
       <div className="relative group/scroll bg-[#121620] border border-white/10 rounded-2xl p-2 shadow-xl">
         <div
           ref={scrollRef}
-          className="flex overflow-x-auto md:overflow-x-hidden gap-1.5 pb-1 pr-4 scrollbar-none scroll-smooth scroll-snap-x"
-          onWheel={(e) => { if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.preventDefault() }}
+          className="flex overflow-x-scroll gap-0 pb-1 scrollbar-none scroll-smooth"
           onScroll={handleScroll}
         >
           {items.map((item, idx) => (
@@ -119,6 +122,7 @@ export function RankRow({
               key={item.tmdbId ?? item.id ?? `rank-${idx}`}
               item={item}
               onClick={() => onItemClick(item)}
+              isFirst={idx === 0}
               staggerIndex={idx}
             />
           ))}
