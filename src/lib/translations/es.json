@@ -213,5 +213,8 @@
     "ui.profilePasswordRequired":  "Please enter a password",
     "ui.profileWrongPassword":  "Wrong password",
     "ui.profileSaved":  "Profile saved! URL copied to clipboard.",
-    "ui.saving":  "Saving..."
+    "ui.saving":  "Saving...",
+    "ui.viewGrid":  "Cuadrícula",
+    "ui.viewMoodboard":  "Mood Board",
+    "ui.quickView":  "Vista rápida"
 }

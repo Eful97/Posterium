@@ -14,6 +14,7 @@ import EditView from "@/components/EditView"
 import { ToastProvider } from "@/components/Toast"
 import { ProxyModal } from "@/components/ProxyModal"
 import { ProfileModal } from "@/components/ProfileModal"
+import { OnboardingTour } from "@/components/OnboardingTour"
 import { RefreshCw, Settings, Globe, HeartPulse, Sparkles } from "lucide-react"
 
 export function AppShell() {
@@ -55,6 +56,7 @@ export function AppShell() {
   }, [p.profileId])
 
 return (
+    <>
     <ToastProvider>
     <div className="app-shell text-foreground relative overflow-x-hidden">
       <VersionBadge />
@@ -78,8 +80,8 @@ return (
       <div className="hidden md:flex absolute top-4 right-4 z-20">
         {p.settingsOpen && <div className="hidden md:block fixed inset-0 z-40" onClick={() => p.setSettingsOpen(false)} />}
         <div className="floating-group relative z-50">
-          <button aria-label={p.copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-accent-orange hover:bg-white/[0.08] press-scale"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-          <button aria-label={t("ui.installCatalog")} onClick={async () => { const uParam = p.profileId ? `?u=${p.profileId}` : ""; const url = `${window.location.origin}/manifest.json${uParam}`; await navigator.clipboard.writeText(url); setInstalled(true); setTimeout(() => setInstalled(false), 2000) }} disabled={!p.urlPattern && !p.profileId} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-zinc-300 hover:bg-white/[0.08] press-scale"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+          <button suppressHydrationWarning aria-label={p.copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-accent-orange hover:bg-white/[0.08] press-scale"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          <button suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const uParam = p.profileId ? `?u=${p.profileId}` : ""; const url = `${window.location.origin}/manifest.json${uParam}`; await navigator.clipboard.writeText(url); setInstalled(true); setTimeout(() => setInstalled(false), 2000) }} disabled={!p.urlPattern && !p.profileId} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-zinc-300 hover:bg-white/[0.08] press-scale"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
           <button aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" /></svg></button>
           <button aria-label="Addon Proxy" onClick={() => setProxyOpen(true)} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-accent-orange hover:bg-white/[0.08] press-scale"><Sparkles className="w-4 h-4" /></button>
           <div className="h-5 w-px bg-white/10 self-center" />
@@ -153,5 +155,7 @@ return (
       )}
     </div>
     </ToastProvider>
+    <OnboardingTour />
+    </>
   )
 }

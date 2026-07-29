@@ -1,0 +1,158 @@
+"use client"
+
+import React, { useState, useEffect } from "react"
+import { Search, Sparkles, Image, MonitorSmartphone, ChevronRight, ChevronLeft, X } from "lucide-react"
+
+const STEPS = [
+  {
+    icon: Search,
+    title: "Cerca un film o serie TV",
+    description:
+      "Digita il titolo nella barra di ricerca per trovare il tuo film o serie preferita. Posterium cerca su TMDB e ti mostra i risultati con poster, anno e genere.",
+  },
+  {
+    icon: Sparkles,
+    title: "Personalizza badge e stili",
+    description:
+      "Scegli tra 6 stili per badge genere/rating, 5 stili per badge trend, sfocatura sfondo, gradienti e colori accent che si adattano automaticamente al poster.",
+  },
+  {
+    icon: Image,
+    title: "Scegli locandina o logo",
+    description:
+      "Seleziona una locandina pulita con un click o aggiungi il logo originale del film. L'algoritmo Best Fit trova automaticamente il miglior poster per il logo.",
+  },
+  {
+    icon: MonitorSmartphone,
+    title: "Salva e vedi su Stremio",
+    description:
+      "Salva il poster personalizzato e sarà subito visibile su Stremio! Crea un profilo cloud con password per portare le tue impostazioni su qualsiasi dispositivo.",
+  },
+]
+
+const LS_KEY = "posterium_onboarding_done"
+
+export function OnboardingTour() {
+  const [show, setShow] = useState(false)
+  const [step, setStep] = useState(0)
+  const [leaving, setLeaving] = useState(false)
+
+  useEffect(() => {
+    const done = localStorage.getItem(LS_KEY)
+    if (!done) setShow(true)
+  }, [])
+
+  const close = () => {
+    setLeaving(true)
+    setTimeout(() => {
+      localStorage.setItem(LS_KEY, "true")
+      setShow(false)
+      setLeaving(false)
+    }, 150)
+  }
+
+  if (!show) return null
+
+  const StepIcon = STEPS[step].icon
+  const isLast = step === STEPS.length - 1
+
+  return (
+    <div
+      className={`fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-150 ${
+        leaving ? "opacity-0" : "opacity-100 animate-fade-in"
+      }`}
+    >
+      <div
+        className={`relative w-full max-w-sm rounded-2xl surface-card overflow-hidden shadow-2xl shadow-black/60 transition-all duration-200 ${
+          leaving ? "scale-95 opacity-0" : "scale-100 opacity-100 animate-scale-in"
+        }`}
+      >
+        {/* Close button */}
+        <button
+          onClick={close}
+          aria-label="Chiudi"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-zinc-500 hover:bg-white/10 hover:text-zinc-300 transition-all duration-200 active:scale-90 z-10"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Slide content */}
+        <div className="px-6 pt-10 pb-4 text-center">
+          {/* Icon */}
+          <div className="w-16 h-16 rounded-2xl bg-accent-orange/10 flex items-center justify-center mx-auto mb-5">
+            <StepIcon className="w-7 h-7 text-accent-orange" />
+          </div>
+
+          {/* Title */}
+          <h3 className="text-lg font-bold text-white mb-2">
+            {STEPS[step].title}
+          </h3>
+
+          {/* Description */}
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            {STEPS[step].description}
+          </p>
+        </div>
+
+        {/* Dots + Navigation */}
+        <div className="px-6 pb-5">
+          {/* Dots */}
+          <div className="flex items-center justify-center gap-2 mb-5">
+            {STEPS.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setStep(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  i === step
+                    ? "w-6 bg-accent-orange"
+                    : "w-1.5 bg-zinc-600 hover:bg-zinc-500"
+                }`}
+                aria-label={`Slide ${i + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Navigation buttons */}
+          <div className="flex items-center gap-3">
+            {step > 0 ? (
+              <button
+                onClick={() => setStep((s) => s - 1)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium text-zinc-300 hover:bg-white/5 hover:text-white transition-all duration-150 active:scale-95"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Indietro
+              </button>
+            ) : (
+              <div className="flex-1" />
+            )}
+
+            {isLast ? (
+              <button
+                onClick={close}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold bg-accent-orange text-white hover:brightness-110 transition-all duration-150 active:scale-95 shadow-lg shadow-accent-orange/20"
+              >
+                Inizia!
+              </button>
+            ) : (
+              <button
+                onClick={() => setStep((s) => s + 1)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium text-white bg-white/10 hover:bg-white/20 transition-all duration-150 active:scale-95"
+              >
+                Avanti
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Skip */}
+        <button
+          onClick={close}
+          className="w-full py-2.5 text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-150 border-t border-white/5"
+        >
+          Salta tutorial
+        </button>
+      </div>
+    </div>
+  )
+}

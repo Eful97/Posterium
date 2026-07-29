@@ -7,6 +7,11 @@ import { toSearchResult } from "@/lib/types"
 import { posterUrl, LANG_NAMES } from "@/lib/utils"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { Search, X, Check, Square, Trash2, Calendar, ArrowUpAZ, ChevronDown, Clapperboard, Tv, Flag, Clipboard } from "lucide-react"
+import { MoodBoardTile } from "@/components/MoodBoardTile"
+import { PosterLightbox } from "@/components/PosterLightbox"
+import { CollectionBar } from "@/components/CollectionBar"
+import { useCollections } from "@/lib/useCollections"
+import type { Mapping } from "@/lib/types"
 
 export function MyPostersView() {
   const p = useP()
@@ -23,6 +28,16 @@ export function MyPostersView() {
   const [typeClosing, setTypeClosing] = useState(false)
   const [sortClosing, setSortClosing] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [lightbox, setLightbox] = useState<{ mapping: Mapping; rect: DOMRect } | null>(null)
+  const [activeCollection, setActiveCollection] = useState<string | null>(null)
+  const {
+    collections,
+    createCollection,
+    deleteCollection,
+    renameCollection,
+    addToCollection,
+    removeFromCollection,
+  } = useCollections()
   const typeRef = useRef<HTMLDivElement>(null)
   const sortRef = useRef<HTMLDivElement>(null)
   const typeCloseTimer = useRef<ReturnType<typeof setTimeout>>(null)
@@ -66,6 +81,14 @@ export function MyPostersView() {
     setShowDeleteAll(false)
   }
 
+  const countByCollection = useMemo(() => {
+    const acc: Record<string, number> = {}
+    for (const col of collections) {
+      acc[col.id] = col.posterIds.filter((k) => mappings.some((m) => `${m.mediaType}:${m.tmdbId}` === k)).length
+    }
+    return acc
+  }, [collections, mappings])
+
   const filtered = useMemo(() => {
     return mappings
       .filter((m) => {
@@ -76,8 +99,14 @@ export function MyPostersView() {
         if (typeFilter === "anime") return m.mediaType === "tv" && (m.genreName || "").toLowerCase().includes("anim")
         return true
       })
+      .filter((m) => {
+        if (!activeCollection) return true
+        const key = `${m.mediaType}:${m.tmdbId}`
+        const col = collections.find((c) => c.id === activeCollection)
+        return col?.posterIds.includes(key) ?? false
+      })
       .sort((a, b) => sortBy === "updated" ? b.updatedAt.localeCompare(a.updatedAt) : a.title.localeCompare(b.title))
-  }, [mappings, filter, sortBy, typeFilter])
+  }, [mappings, filter, sortBy, typeFilter, activeCollection, collections])
 
   useEffect(() => {
     if (!typeOpen) return
@@ -148,6 +177,24 @@ export function MyPostersView() {
         </div>
       </div>
 
+      {mappings.length > 0 && (
+        <div className="px-4 max-w-7xl mx-auto mb-3">
+          <CollectionBar
+            collections={collections}
+            activeId={activeCollection}
+            onSelect={setActiveCollection}
+            onCreate={createCollection}
+            onRename={renameCollection}
+            onDelete={(id) => {
+              if (activeCollection === id) setActiveCollection(null)
+              deleteCollection(id)
+            }}
+            countByCollection={countByCollection}
+            totalCount={mappings.length}
+          />
+        </div>
+      )}
+
       {selected.size > 0 && (
         <div className="flex items-center justify-between gap-3 mb-4 mx-auto max-w-7xl w-full px-4 animate-fade-scale-in">
           <span className="text-sm font-semibold text-zinc-200 tabular-nums">{t("ui.selectedCount", { count: selected.size })}</span>
@@ -176,6 +223,24 @@ export function MyPostersView() {
                 {t("ui.searchCta")}
               </button>
             </>
+          ) : activeCollection ? (
+            <>
+              <div className="empty-state-illustration mb-4">
+                <svg className="w-10 h-10 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6" opacity="0.3"/>
+                  <line x1="8" y1="12" x2="21" y2="12" opacity="0.3"/>
+                  <line x1="8" y1="18" x2="21" y2="18" opacity="0.3"/>
+                  <line x1="3" y1="6" x2="3.01" y2="6"/>
+                  <line x1="3" y1="12" x2="3.01" y2="12"/>
+                  <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+              </div>
+              <p className="text-zinc-300 text-sm font-medium mb-1">Questa collezione è vuota</p>
+              <p className="text-zinc-500 text-xs mb-4">Apri un poster per aggiungerlo a questa collezione.</p>
+              <button onClick={() => setActiveCollection(null)} className="px-4 py-2 text-xs rounded-xl bg-surface hover:bg-surface2 text-zinc-300 transition-colors press-scale">
+                Mostra tutti i poster ({mappings.length})
+              </button>
+            </>
           ) : (
             <>
               <div className="empty-state-illustration mb-4">
@@ -194,45 +259,37 @@ export function MyPostersView() {
           )}
         </div>
       )}
-      <div className="mx-auto grid grid-cols-3 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] lg:grid-cols-5 gap-3 md:gap-4 max-w-7xl justify-items-center">
-        {filtered.map((m, idx) => {
-          const key = `${m.mediaType}:${m.tmdbId}`
-          return (
-            <button key={key} onClick={() => { if (selectMode) toggleSelect(key); else navigateToPoster(toSearchResult({ id: m.tmdbId, media_type: m.mediaType, title: m.title, name: m.title, poster_path: m.posterPath }), "myposters") }} aria-label={`${m.title} — ${m.logoPath ? "with logo" : "clean poster"} — ${m.mediaType}`} aria-pressed={selectMode && selected.has(key)} className={`surface-card group relative rounded-2xl overflow-hidden transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in hover:-translate-y-0.5 ${selectMode ? (selected.has(key) ? "ring-2 ring-red-400/50 border-red-400/70" : "") : ""}`} style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
-                {m.posterPath && <div className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none" style={{ backgroundImage: `url(${posterUrl(m.posterPath, "w92")})`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(24px) saturate(1.4)", transform: "scale(1.3)" }} />}
-                <div className="aspect-[2/3] bg-zinc-900/80 overflow-hidden relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
-                  {m.posterPath ? <img src={posterUrl(m.posterPath, "w342")} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).parentElement?.classList.add("show-fallback") }} /> : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-zinc-800/50 to-zinc-900/80 gap-2">
-                      <svg className="w-8 h-8 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><polygon points="9.5 8 15.5 12 9.5 16 9.5 8" fill="currentColor" stroke="none"/></svg>
-                      <span className="text-[10px] font-medium text-zinc-600">{m.title?.charAt(0)?.toUpperCase() || "?"}</span>
-                    </div>
-                  )}
-                  {m.logoPath && (
-                    <div className="absolute inset-x-0 bottom-[7.33%] flex items-center justify-center">
-                      <div style={{ width: `${m.logoScale ?? 75}%` }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
-                        <img src={posterUrl(m.logoPath, "w154")} alt="" loading="lazy" decoding="async" className="w-full" style={{ objectFit: "contain" }} />
-                      </div>
-                    </div>
-                  )}
-                {selectMode && (
-                  <div className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${selected.has(key) ? "bg-red-500 border-red-500 shadow-lg shadow-red-500/30 scale-110" : "border-white/40 bg-black/30 hover:border-white/60"}`}>
-                    {selected.has(key) && <Check className="w-3 h-3 text-white drop-shadow" />}
-                  </div>
-                )}
-              </div>
-              <div className="px-2 py-2.5 text-center">
-                <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{m.title}</p>
-                <p className="text-xs text-zinc-400">{m.language ? LANG_NAMES[m.language] || m.language : t("ui.clean")}{m.logoPath ? t("ui.withLogo") : ""}</p>
-              </div>
-              {!selectMode && (
-                <span onClick={(e) => { e.stopPropagation(); removeMapping(m) }} className="absolute top-1.5 left-1.5 w-6 h-6 rounded-lg bg-red-900/70 flex items-center justify-center text-xs text-red-300 hover:bg-red-800 hover:text-red-200 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg shadow-black/30"><Trash2 className="w-3.5 h-3.5" /></span>
-              )}
-            </button>
-          )
-        })}
+      {/* Mood Board layout */}
+      <div className="mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 max-w-7xl">
+        {filtered.map((m, idx) => (
+          <MoodBoardTile
+            key={`${m.mediaType}:${m.tmdbId}`}
+            mapping={m}
+            idx={idx}
+            selectMode={selectMode}
+            selected={selected}
+            onSelect={() => toggleSelect(`${m.mediaType}:${m.tmdbId}`)}
+            onOpen={() => navigateToPoster(toSearchResult({ id: m.tmdbId, media_type: m.mediaType, title: m.title, name: m.title, poster_path: m.posterPath }), "myposters")}
+            onQuickView={(e) => {
+              const tileEl = (e.target as HTMLElement).closest("button")
+              const rect = tileEl?.getBoundingClientRect()
+              if (rect) setLightbox({ mapping: m, rect })
+            }}
+            onRemove={(e) => { e.stopPropagation(); removeMapping(m) }}
+            collectionCount={collections.filter((c) => c.posterIds.includes(`${m.mediaType}:${m.tmdbId}`)).length}
+            t={t}
+          />
+        ))}
       </div>
+      <PosterLightbox
+        lightbox={lightbox}
+        onClose={() => setLightbox(null)}
+        posterUrlFn={posterUrl}
+        t={t}
+        collections={collections}
+        onAddToCollection={addToCollection}
+        onRemoveFromCollection={removeFromCollection}
+      />
     </div>
   )
 }

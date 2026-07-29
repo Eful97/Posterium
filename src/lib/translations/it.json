@@ -225,5 +225,8 @@
     "ui.profilePasswordRequired":  "Inserisci una password",
     "ui.profileWrongPassword":  "Password errata",
     "ui.profileSaved":  "Profilo salvato! URL copiato negli appunti.",
-    "ui.saving":  "Salvataggio..."
+    "ui.saving":  "Salvataggio...",
+    "ui.viewGrid":  "Griglia",
+    "ui.viewMoodboard":  "Mood Board",
+    "ui.quickView":  "Anteprima rapida"
 }
