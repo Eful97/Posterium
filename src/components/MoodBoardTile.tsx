@@ -4,6 +4,7 @@ import React from "react"
 import { Check, Trash2, Maximize2, Folder } from "lucide-react"
 import { posterUrl } from "@/lib/utils"
 import type { Mapping } from "@/lib/types"
+import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 
 interface MoodBoardTileProps {
   mapping: Mapping
@@ -40,32 +41,33 @@ export function MoodBoardTile({
       : t("ui.tvSeries")
 
   return (
-    <button
-      onClick={() => { if (selectMode) onSelect(); else onOpen() }}
-      aria-label={`${m.title} — ${m.logoPath ? "with logo" : "clean poster"} — ${m.mediaType}`}
-      aria-pressed={selectMode && isSelected}
-      className={`surface-card group relative rounded-xl overflow-hidden transition-all duration-200 ease-out w-full animate-stagger-in ${
-        selectMode
-          ? isSelected
-            ? "ring-2 ring-red-400/50 border-red-400/70"
-            : ""
-          : "hover:-translate-y-0.5"
-      }`}
+    <div
+      className="animate-stagger-in"
       style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
     >
-      {/* Ambient blur background */}
-      {m.posterPath && (
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none"
-          style={{
-            backgroundImage: `url(${posterUrl(m.posterPath, "w92")})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "blur(24px) saturate(1.4)",
-            transform: "scale(1.3)",
-          }}
-        />
-      )}
+      <div
+        onClick={() => { if (selectMode) onSelect(); else onOpen() }}
+        role="button"
+        tabIndex={0}
+        aria-label={`${m.title} — ${m.logoPath ? "with logo" : "clean poster"} — ${m.mediaType}`}
+        aria-pressed={selectMode && isSelected}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault()
+            if (selectMode) onSelect(); else onOpen()
+          }
+        }}
+        className={`surface-card relative z-10 rounded-xl overflow-hidden transition-all duration-300 ease-out w-full border border-white/10 shadow-2xl ${
+          selectMode
+            ? isSelected
+              ? "ring-2 ring-red-400/50 border-red-400/70"
+              : ""
+            : ""
+        }`}
+      >
+        {/* NuvioDesktop-style depth: bordo superiore + riflesso glass */}
+        <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
+        <div className="relative z-[1]">
 
       <div className="aspect-[2/3] bg-zinc-900/80 overflow-hidden relative">
         {/* Poster image */}
@@ -76,7 +78,7 @@ export function MoodBoardTile({
             alt={m.title}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none"
               ;(e.target as HTMLImageElement).parentElement?.classList.add("show-fallback")
@@ -173,6 +175,9 @@ export function MoodBoardTile({
           </div>
         )}
       </div>
-    </button>
-  )
+      </div>
+      <PosterDepthSheen sheenStrength={20} />
+    </div>
+  </div>
+)
 }

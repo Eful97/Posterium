@@ -62,6 +62,7 @@ export interface PosteriumCtx {
   removeMapping: (m: Mapping) => void
   mappingsMap: Map<string, Mapping>
   goHome: () => void
+  sourceView: "edit" | "search" | "myposters" | "cataloghi" | null
   navigateToPoster: (item: SearchResult, source?: string) => void
   refreshLists: () => Promise<void>
   tmdbKey: string
@@ -830,7 +831,7 @@ export function usePosterium(): PosteriumCtx {
     metaInfo,
     previewId: navigation.previewId, setPreviewId: navigation.setPreviewId,
     saveConfig, removeMapping, mappingsMap,
-    goHome: navigation.goHome, navigateToPoster: (item: SearchResult, source?: string) => { navigation.navigateToPoster(item, source); openPosterBrowser(item) },
+    goHome: navigation.goHome, sourceView: navigation.sourceView, navigateToPoster: (item: SearchResult, source?: string) => { navigation.navigateToPoster(item, source); openPosterBrowser(item) },
     refreshLists: trending.refreshLists,
     tmdbKey, setQuery: search.setQuery, doSearch: search.doSearch, loadMore: search.loadMore,
     titleOf, yearOf, posterUrl,

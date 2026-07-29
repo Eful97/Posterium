@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react"
 import { useP } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
-import { LANG_NAMES, groupBy } from "@/lib/utils"
+import { LANG_NAMES, groupBy, posterUrl } from "@/lib/utils"
 import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
 import { EditorPanel } from "@/components/EditorPanel"
@@ -13,6 +13,7 @@ import { SearchBar } from "@/components/SearchBar"
 import { PosterCarousel } from "@/components/PosterCarousel"
 import { ScrollReveal } from "@/components/ScrollReveal"
 import { PosterPreview } from "@/components/PosterPreview"
+import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 import { BadgeControls } from "@/components/BadgeControls"
 import { TransformControls } from "@/components/TransformControls"
 import { usePosterPreview } from "@/lib/usePosterPreview"
@@ -94,6 +95,17 @@ export default function EditView() {
     <div>
       {p.selected && (
         <div className="flex flex-col items-center">
+          <div className="w-full max-w-[1360px] mx-auto mb-3 flex items-center justify-between">
+            <button
+              onClick={() => { window.history.back() }}
+              className="text-xs text-zinc-300 hover:text-white transition-all inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 active:scale-95 shadow-sm"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span>{p.sourceView === "cataloghi" ? "Torna ai cataloghi" : p.sourceView === "myposters" ? "Torna ai miei poster" : "Torna indietro"}</span>
+            </button>
+          </div>
           {searchBar}
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,1fr)_minmax(400px,480px)_minmax(300px,1fr)] gap-5 items-stretch w-full max-w-[1360px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
 
@@ -112,22 +124,40 @@ export default function EditView() {
             <div className="order-1 lg:order-2 animate-fade-scale-in" style={{animationDelay: "0ms"}}>
             <EditorPanel title={t("ui.previewSection")}>
               <div className="flex flex-col items-center">
-                <div className="relative w-full max-w-[360px]">
+                <div className="relative isolate w-full max-w-[360px] my-2 rounded-[1.35rem]">
+                  {/* NuvioDesktop-style depth edge */}
+                  <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
+                  {/* Poster Image Ambient Depth Glow */}
+                  {p.previewPoster?.file_path && (
+                    <div
+                      className="absolute -inset-6 rounded-3xl opacity-75 blur-2xl pointer-events-none transition-all duration-700 ease-out z-0"
+                      style={{
+                        backgroundImage: `url(${posterUrl(p.previewPoster.file_path, "w185")})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        filter: "blur(32px) saturate(1.8)",
+                      }}
+                    />
+                  )}
+                  {/* Accent Glow */}
                   <div
-                    className="absolute -inset-6 rounded-3xl opacity-40 blur-3xl pointer-events-none transition-all duration-700 ease-out"
+                    className="absolute -inset-8 rounded-3xl opacity-45 blur-3xl pointer-events-none transition-all duration-700 ease-out z-0"
                     style={{
                       background: p.accentColor
                         ? `radial-gradient(circle at 50% 50%, ${p.accentColor}, transparent 70%)`
-                        : "radial-gradient(circle at 50% 50%, rgba(232, 93, 42, 0.30), transparent 70%)",
+                        : "radial-gradient(circle at 50% 50%, rgba(232, 93, 42, 0.40), transparent 70%)",
                     }}
                   />
-                  <PosterPreview
-                    previewLoading={previewLoading}
-                    loadProgress={loadProgress}
-                    imageError={imageError}
-                    setImageError={setImageError}
-                    imgSrc={imgSrc}
-                  />
+                  <div className="relative z-[1]">
+                    <PosterPreview
+                      previewLoading={previewLoading}
+                      loadProgress={loadProgress}
+                      imageError={imageError}
+                      setImageError={setImageError}
+                      imgSrc={imgSrc}
+                    />
+                  </div>
+                  <PosterDepthSheen sheenStrength={20} />
                 </div>
 
                 {p.selected && (

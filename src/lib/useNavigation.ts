@@ -13,6 +13,8 @@ export function useNavigation() {
   const [logos, setLogos] = useState<TMDBImage[]>([])
   const fetchIdRef = useRef(0)
 
+  const [sourceView, setSourceView] = useState<"edit" | "search" | "myposters" | "cataloghi" | null>(null)
+
   const setView = useCallback((v: "edit" | "search" | "myposters" | "cataloghi") => {
     setViewState(v)
   }, [])
@@ -26,6 +28,7 @@ export function useNavigation() {
     setPreviewId(null)
     setPosters([])
     setLogos([])
+    setSourceView(null)
   }, [])
 
   const incrementFetchId = useCallback(() => {
@@ -33,8 +36,11 @@ export function useNavigation() {
   }, [])
 
   const navigateToPoster = useCallback((item: SearchResult, _source?: string) => {
-    window.history.pushState({ source: _source || null }, "", window.location.href)
-  }, [])
+    const src = (_source as "edit" | "search" | "myposters" | "cataloghi") || view || "edit"
+    setSourceView(src)
+    window.history.replaceState({ view: src }, "", window.location.href)
+    window.history.pushState({ view: "edit", source: src }, "", window.location.href)
+  }, [view])
 
   const goHome = useCallback(() => {
     setViewState("edit")
@@ -43,27 +49,40 @@ export function useNavigation() {
     setSelectedLogo(null)
     setPreviewId(null)
     setPosters([])
+    setSourceView(null)
   }, [])
 
   useEffect(() => {
     const handler = (e: PopStateEvent) => {
       const source = e.state?.source
-      if (source === "myposters") {
+      const targetView = e.state?.view || source
+
+      if (targetView === "cataloghi" || source === "cataloghi") {
+        setViewState("cataloghi")
+        setSelected(null)
+        setPreviewPoster(null)
+        setSelectedLogo(null)
+        setPreviewId(null)
+      } else if (targetView === "myposters" || source === "myposters") {
         setViewState("myposters")
         setSelected(null)
         setPreviewPoster(null)
         setSelectedLogo(null)
         setPreviewId(null)
-      } else if (e.state?.view === "search") {
+      } else if (targetView === "search" || source === "search") {
         setViewState("search")
         setSelected(null)
         setPreviewPoster(null)
         setSelectedLogo(null)
         setPreviewId(null)
-      } else if (e.state?.view === "myposters") {
-        setViewState("myposters")
-      } else if (e.state?.view === "cataloghi") {
-        setViewState("cataloghi")
+      } else if (targetView === "edit") {
+        setViewState("edit")
+        if (!e.state?.selected) {
+          setSelected(null)
+          setPreviewPoster(null)
+          setSelectedLogo(null)
+          setPreviewId(null)
+        }
       } else {
         resetState()
       }
@@ -74,6 +93,7 @@ export function useNavigation() {
 
   return {
     view, setView,
+    sourceView, setSourceView,
     selected, setSelected,
     previewPoster, setPreviewPoster,
     selectedLogo, setSelectedLogo,

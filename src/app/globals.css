@@ -867,12 +867,167 @@ select:focus-visible {
 .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 
 .poster-slide {
-  transition: translate 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: translate 0.3s ease-out;
   backface-visibility: hidden;
 }
 
 .rank-btn:hover ~ .rank-btn .poster-slide {
   translate: 55px 0;
+}
+
+/* ═══════════════════════════════════════════════
+   Simkl-style List Card — 5 poster sovrapposti, hover slide
+   ═══════════════════════════════════════════════ */
+.simkl-list-card {
+  display: block;
+  width: 400px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)),
+    rgba(20, 22, 28, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out;
+  flex-shrink: 0;
+}
+
+.simkl-list-card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 16px 48px var(--pg-glow, rgba(0,0,0,0.40)),
+    0 0 24px var(--pg-glow, transparent);
+}
+
+/* Card singola (1 poster) — più stretta */
+.simkl-list-card--single {
+  width: 180px;
+}
+.simkl-list-card--single .posters {
+  height: auto;
+  aspect-ratio: 2/3;
+  padding: 0;
+}
+.simkl-list-card--single .posters img {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  transform: none !important;
+  translate: none !important;
+  margin-left: 0 !important;
+  box-shadow: none;
+}
+.simkl-list-card--single:hover .posters img {
+  transform: none !important;
+}
+
+/* Contenitore dei poster */
+.posters {
+  position: relative;
+  height: 185px;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px 14px 0;
+}
+
+/* Ogni poster */
+.posters > *,
+.poster-placeholder {
+  width: 115px;
+  height: 170px;
+  border-radius: 6px;
+  box-shadow:
+    -4px 6px 18px rgba(0, 0, 0, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease-out, translate 0.3s ease-out;
+}
+
+.posters > *:hover {
+  box-shadow:
+    -6px 10px 24px rgba(0, 0, 0, 0.60),
+    0 0 20px var(--pg-glow, rgba(255, 255, 255, 0.08));
+}
+
+.posters > img {
+  object-fit: cover;
+}
+
+/* Placeholder quando manca poster_path */
+.poster-placeholder {
+  background: #2a2d35;
+}
+
+.posters > * {
+  transition: translate 0.3s ease-out;
+  will-change: translate;
+  backface-visibility: hidden;
+}
+
+/* Posizione di partenza (sovrapposti con margin-left — tutti visibili) */
+.posters > *:nth-child(1) { margin-left: 0; z-index: 5; }
+.posters > *:nth-child(2) { margin-left: -51px; z-index: 4; }
+.posters > *:nth-child(3) { margin-left: -51px; z-index: 3; }
+.posters > *:nth-child(4) { margin-left: -51px; z-index: 2; }
+.posters > *:nth-child(5) { margin-left: -51px; z-index: 1; }
+
+/* Hover stile RankRow: i poster a sinistra di quello selezionato slittano via.
+   Quello sotto il mouse resta fermo — si sposta il left sibling. */
+.posters:has(> *:nth-child(2):hover) > *:nth-child(1) {
+  translate: -40px 0;
+}
+.posters:has(> *:nth-child(3):hover) > *:nth-child(1),
+.posters:has(> *:nth-child(3):hover) > *:nth-child(2) {
+  translate: -40px 0;
+}
+.posters:has(> *:nth-child(4):hover) > *:nth-child(1),
+.posters:has(> *:nth-child(4):hover) > *:nth-child(2),
+.posters:has(> *:nth-child(4):hover) > *:nth-child(3) {
+  translate: -40px 0;
+}
+.posters:has(> *:nth-child(5):hover) > *:nth-child(1),
+.posters:has(> *:nth-child(5):hover) > *:nth-child(2),
+.posters:has(> *:nth-child(5):hover) > *:nth-child(3),
+.posters:has(> *:nth-child(5):hover) > *:nth-child(4) {
+  translate: -40px 0;
+}
+
+/* Info sotto */
+.info {
+  padding: 16px 18px 18px;
+}
+
+.info h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.grid-hint {
+  font-size: 0.7rem;
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+.simkl-list-card:hover .grid-hint {
+  opacity: 0.7;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.82rem;
+  opacity: 0.85;
 }
 
 /* Counter badge — glass pill per contatori numerici */

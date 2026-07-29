@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useP } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult } from "@/lib/types"
+import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 
 const EXAMPLES = [
   // --- Film ---
@@ -153,15 +154,17 @@ export function PosterCarousel() {
                 >
                   <div
                     onClick={() => p.navigateToPoster(toSearchResult({ id: ex.id, media_type: ex.type, title: ex.title, name: ex.title }))}
-                    className="relative bg-zinc-900/60 border border-zinc-800/40 rounded-2xl overflow-hidden hover:border-zinc-700/60 hover:border-accent-orange/20 transition-all duration-300 group cursor-pointer"
+                    className="relative isolate bg-zinc-900/60 border border-zinc-800/40 rounded-2xl overflow-hidden hover:border-zinc-700/60 hover:border-accent-orange/20 transition-all duration-300 group cursor-pointer"
                   >
+                    <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
+                    <div className="relative z-[1]">
                     <div className="aspect-[2/3] relative overflow-hidden bg-zinc-800">
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent z-10" />
                       {/* eslint-disable-next-line @next/next/no-img-element -- dynamic poster URL */}
                       <img
                         src={posterUrl}
                         alt={ex.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover"
                         loading="lazy"
                       />
                       <div className="absolute bottom-3 left-3 right-3 z-30">
@@ -176,6 +179,8 @@ export function PosterCarousel() {
                       <h3 className="text-xs font-semibold text-zinc-100 group-hover:text-white transition-colors duration-200">{ex.title}</h3>
                       <p className="text-[10px] text-zinc-400 group-hover:text-zinc-200 mt-1 leading-relaxed transition-colors duration-200">{ex.desc}</p>
                     </div>
+                    </div>
+                    <PosterDepthSheen sheenStrength={20} />
                     <div className="absolute top-2 right-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <div className="w-6 h-6 rounded-full bg-accent-orange/80 flex items-center justify-center shadow-lg">
                         <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
