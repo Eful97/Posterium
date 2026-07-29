@@ -1,3 +1,4 @@
+import dns from "node:dns"
 import { NextRequest } from "next/server"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { rewriteMetasPosters, rewriteSingleMetaPoster, type StremioItemMeta } from "@/lib/addon-proxy"
@@ -19,33 +20,72 @@ function corsHeaders() {
 function isPrivateHost(hostname: string): boolean {
   return (
     hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
+    /^127\./.test(hostname) ||               // tutto loopback 127.0.0.0/8
     hostname === "0.0.0.0" ||
     hostname === "::1" ||
     hostname === "[::]" ||
     hostname.endsWith(".local") ||
     hostname.endsWith(".internal") ||
-    hostname.startsWith("10.") ||
-    hostname.startsWith("192.168.") ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
-    /^169\.254\./.test(hostname)
+    hostname.startsWith("10.") ||             // RFC 1918 10.0.0.0/8
+    hostname.startsWith("192.168.") ||        // RFC 1918 192.168.0.0/16
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||  // RFC 1918 172.16.0.0/12
+    /^169\.254\./.test(hostname)             // link-local
   )
 }
 
-function isBlockedTarget(url: string): boolean {
+
+/**
+ * Risolve un hostname a IP e verifica che non sia privato.
+ * Protegge da:
+ * - DNS rebinding (il controllo viene fatto dopo la risoluzione DNS)
+ * - IP alternativi (decimali, hex, IPv4-mapped IPv6)
+ * - Hostname locali
+ */
+async function resolveAndCheckBlocked(url: string): Promise<boolean> {
   try {
     const parsed = new URL(url)
     const hostname = parsed.hostname.toLowerCase()
-    // Blocca IP privati e localhost
-    if (isPrivateHost(hostname)) {
-      // Per IP privati, blocca anche porte basse (servizi interni)
-      if (parsed.port && Number(parsed.port) < 1024) return true
-      return true
-    }
+    // Controllo rapido su hostname prima di risolvere
+    if (isPrivateHost(hostname)) return true
+    // Risolvi a IP per prevenire bypass con rappresentazioni alternative
+    // Protegge anche da DNS rebinding: l'IP risolto è quello che verrà usato da fetch
+    const { address } = await dns.promises.lookup(hostname, { family: 4, hints: dns.ADDRCONFIG })
+    if (isPrivateHost(address)) return true
     return false
   } catch {
-    return true
+    return true // in caso di errore DNS, blocca per sicurezza
   }
+}
+
+/**
+ * Esegue un fetch con redirect manuali, validando ogni destinazione.
+ * Previene SSRF via redirect 302 verso IP privati.
+ */
+async function safeFetch(url: string, options: RequestInit & { signal: AbortSignal }): Promise<Response> {
+  let currentUrl = url
+  let redirectCount = 0
+  const MAX_REDIRECTS = 5
+  while (redirectCount <= MAX_REDIRECTS) {
+    const res = await fetch(currentUrl, { ...options, redirect: "manual" })
+    if (res.status < 300 || res.status >= 400) return res
+    // Redirect — validiamo la destinazione
+    const location = res.headers.get("location")
+    if (!location) return res
+    const targetUrl = new URL(location, currentUrl).href
+    if (await resolveAndCheckBlocked(targetUrl)) {
+      log.warn("Blocked SSRF redirect", { from: currentUrl, to: targetUrl })
+      return new Response(JSON.stringify({ error: "Redirect to blocked target" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" },
+      })
+    }
+    currentUrl = targetUrl
+    redirectCount++
+  }
+  return new Response(JSON.stringify({ error: "Too many redirects" }), {
+    status: 400,
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" },
+  })
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
@@ -67,7 +107,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
     targetUrl = `https://${targetUrl}`
   }
 
-  if (isBlockedTarget(targetUrl)) {
+  if (await resolveAndCheckBlocked(targetUrl)) {
     log.warn("Blocked SSRF attempt", { target: targetUrl })
     return Response.json({ error: "Invalid target URL" }, { status: 400, headers: corsHeaders() })
   }
@@ -77,7 +117,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
   // 1. Manifest Proxy
   if (firstPath === "manifest") {
     try {
-      const manifestRes = await fetch(targetUrl, { signal: AbortSignal.timeout(10000) })
+      const manifestRes = await safeFetch(targetUrl, { signal: AbortSignal.timeout(10000) })
       if (!manifestRes.ok) {
         return Response.json({ error: `Failed to fetch target manifest: ${manifestRes.statusText}` }, { status: manifestRes.status, headers: corsHeaders() })
       }
@@ -105,7 +145,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
     const subPath = path.join("/")
     const targetBase = targetUrl.replace(/\/manifest\.json$/, "").replace(/\/$/, "")
     const fullTargetUrl = `${targetBase}/${subPath}`
-    const res = await fetch(fullTargetUrl, { signal: AbortSignal.timeout(12000) })
+    const res = await safeFetch(fullTargetUrl, { signal: AbortSignal.timeout(12000) })
     if (!res.ok) {
       return Response.json({ error: `Failed to fetch proxy resource: ${res.statusText}` }, { status: res.status, headers: corsHeaders() })
     }

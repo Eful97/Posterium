@@ -38,14 +38,18 @@ export function OnboardingTour() {
   const [leaving, setLeaving] = useState(false)
 
   useEffect(() => {
-    const done = localStorage.getItem(LS_KEY)
-    if (!done) setShow(true)
+    try {
+      const done = localStorage.getItem(LS_KEY)
+      if (!done) setShow(true)
+    } catch {
+      setShow(true)
+    }
   }, [])
 
   const close = () => {
     setLeaving(true)
     setTimeout(() => {
-      localStorage.setItem(LS_KEY, "true")
+      try { localStorage.setItem(LS_KEY, "true") } catch {}
       setShow(false)
       setLeaving(false)
     }, 150)

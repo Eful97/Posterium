@@ -2,8 +2,10 @@
  * Stateless URL Config Token (stile AIOMetadata / RPDB)
  *
  * Codifica le preferenze utente in un token URL-safe compatto.
- * Il server lo decodifica al volo, senza bisogno di database o login.
+ * Firmato con HMAC-SHA256 per prevenire manomissioni.
  */
+
+import crypto from "node:crypto"
 
 export interface PosteriumUserConfig {
   globalBadges: boolean
@@ -21,32 +23,53 @@ export interface PosteriumUserConfig {
   customBadge?: string
 }
 
+const HMAC_SECRET = process.env.ENCRYPTION_KEY_SECRET || process.env.CONFIG_HMAC_SECRET || ""
+
 /**
- * Encode a PosteriumUserConfig into a compact URL-safe Base64 token.
- * Non contiene padding `=`, e i caratteri `+` / `/` sono sostituiti
- * con `-` / `_` per sicurezza negli URL.
+ * Encode a PosteriumUserConfig into a compact signed URL-safe token.
+ * Formato: `base64url-json.hmac-base64url`
+ * Se HMAC_SECRET non è configurato, genera un token senza firma (dev/test).
  */
 export function encodeConfig(config: PosteriumUserConfig): string {
   const json = JSON.stringify(config)
-  const base64 = Buffer.from(json, "utf-8").toString("base64")
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+  const b64 = Buffer.from(json, "utf-8").toString("base64url")
+  if (!HMAC_SECRET) return b64
+  const sig = crypto.createHmac("sha256", HMAC_SECRET).update(json).digest("base64url")
+  return `${b64}.${sig}`
 }
 
 /**
  * Decode a config token back to a PosteriumUserConfig.
- * Accetta sia il formato URL-safe (con - _) che il base64 tradizionale.
- * Restituisce null in caso di token malformato o dati non validi (fail-safe).
+ * Verifica la firma HMAC se presente e se HMAC_SECRET è configurato.
+ * Accetta token legacy (senza firma) solo in assenza di HMAC_SECRET.
+ * Restituisce null in caso di token malformato o firma non valida (fail-safe).
  */
 export function decodeConfig(token: string): PosteriumUserConfig | null {
   try {
-    // Normalizza: ripristina + / dal formato URL-safe
-    const normalized = token.replace(/-/g, "+").replace(/_/g, "/")
-    // Ripristina il padding
-    const remainder = normalized.length % 4
-    const padded = remainder !== 0
-      ? normalized + "=".repeat(4 - remainder)
-      : normalized
-    const json = Buffer.from(padded, "base64").toString("utf-8")
+    let json: string
+    const dotIdx = token.lastIndexOf(".")
+
+    if (dotIdx > 0) {
+      // Formato firmato: base64url.hmacsig
+      const b64 = token.slice(0, dotIdx)
+      const sig = token.slice(dotIdx + 1)
+      json = Buffer.from(b64, "base64url").toString("utf-8")
+      if (HMAC_SECRET) {
+        const expected = crypto.createHmac("sha256", HMAC_SECRET).update(json).digest("base64url")
+        if (expected.length !== sig.length) return null
+        if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return null
+      }
+    } else {
+      // Token legacy (senza firma) — accettato solo in dev/test
+      if (HMAC_SECRET) return null
+      const normalized = token.replace(/-/g, "+").replace(/_/g, "/")
+      const remainder = normalized.length % 4
+      const padded = remainder !== 0
+        ? normalized + "=".repeat(4 - remainder)
+        : normalized
+      json = Buffer.from(padded, "base64").toString("utf-8")
+    }
+
     const parsed = JSON.parse(json) as Record<string, unknown>
 
     // Validazione strict dei campi richiesti
@@ -76,7 +99,6 @@ export function decodeConfig(token: string): PosteriumUserConfig | null {
 
     return {
       ...parsed as unknown as PosteriumUserConfig,
-      // Arrotonda i numeri per evitare drift floating-point
       blurIntensity: Math.round(parsed.blurIntensity as number),
       blurFade: Math.round(parsed.blurFade as number),
       blurDarkness: Math.round(parsed.blurDarkness as number),

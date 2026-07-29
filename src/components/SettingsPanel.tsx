@@ -85,7 +85,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   const content = (
     <>
       <SecretInput label={t("ui.tmdbKey")} icon={<Key />} value={tmdbKeyInput} onChange={setTmdbKeyInput} onBlur={() => { setTmdbKey(tmdbKeyInput); if (tmdbKeyInput.length < 20) { setTmdbKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setTmdbKeyError(undefined) } }} onKeyDown={(e) => { if (e.key === "Enter") { setTmdbKey(tmdbKeyInput); setSettingsOpen(false) } }} placeholder={t("ui.tmdbKeyPlaceholder")} error={tmdbKeyError} />
-      <SecretInput label={t("ui.mdblistKey")} icon={<Clipboard />} value={mdblistApiKey} onChange={(v) => { setMdblistApiKey(v); localStorage.setItem("mdblist_key", v) }} onBlur={() => { if (mdblistApiKey.length > 0 && mdblistApiKey.length < 20) { setMdblistKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setMdblistKeyError(undefined) } }} placeholder={t("ui.mdblistKeyPlaceholder")} error={mdblistKeyError} />
+      <SecretInput label={t("ui.mdblistKey")} icon={<Clipboard />} value={mdblistApiKey} onChange={(v) => { setMdblistApiKey(v); try { localStorage.setItem("mdblist_key", v) } catch {} }} onBlur={() => { if (mdblistApiKey.length > 0 && mdblistApiKey.length < 20) { setMdblistKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setMdblistKeyError(undefined) } }} placeholder={t("ui.mdblistKeyPlaceholder")} error={mdblistKeyError} />
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Star className="w-3 h-3" /> {t("ui.genreRatingBadge")}</span>
         <Toggle value={ed.defaultGlobalBadges} onChange={ed.setDefaultGlobalBadges} />

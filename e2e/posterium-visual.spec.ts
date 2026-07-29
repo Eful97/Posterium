@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { test, expect, type Page, type APIRequestContext } from "@playwright/test"
 
 const hasTmdbKey = !!(process.env.TMDB_API_KEY?.length)
 const MOVIE_TMDB = 19995 // Avatar
@@ -7,7 +7,7 @@ const MEDIA_TYPE = "movie"
 // Helper: get a valid poster path for the test movie
 let _posterPath: string
 
-async function getPosterPath(request: Parameters<NonNullable<Parameters<typeof test.beforeAll>[0]>>[0]["request"]): Promise<string> {
+async function getPosterPath(request: APIRequestContext): Promise<string> {
   if (_posterPath) return _posterPath
   const url = `/api/tmdb/${MOVIE_TMDB}/images?type=${MEDIA_TYPE}&languages=en,null&api_key=${process.env.TMDB_API_KEY}`
   const res = await request.get(url)
@@ -19,7 +19,7 @@ async function getPosterPath(request: Parameters<NonNullable<Parameters<typeof t
 }
 
 // Helper: render a poster URL in the page and return a locator for the <img>
-async function renderPoster(page: Parameters<NonNullable<Parameters<typeof test>[0]>>[0], posterUrl: string) {
+async function renderPoster(page: Page, posterUrl: string) {
   await page.setViewportSize({ width: 1280, height: 1600 })
   await page.setContent(`
     <html>

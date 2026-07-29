@@ -68,17 +68,23 @@ export function MyPostersView() {
   const deleteSelected = async () => {
     const toDelete = mappings.filter((m) => selected.has(`${m.mediaType}:${m.tmdbId}`))
     setDeleting(true)
-    await Promise.all(toDelete.map((m) => removeMapping(m)))
-    setDeleting(false)
-    setSelected(new Set())
-    setSelectMode(false)
+    try {
+      await Promise.all(toDelete.map((m) => removeMapping(m)))
+      setSelected(new Set())
+      setSelectMode(false)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const deleteAll = async () => {
     setDeleting(true)
-    await Promise.all(mappings.map((m) => removeMapping(m)))
-    setDeleting(false)
-    setShowDeleteAll(false)
+    try {
+      await Promise.all(mappings.map((m) => removeMapping(m)))
+      setShowDeleteAll(false)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const countByCollection = useMemo(() => {

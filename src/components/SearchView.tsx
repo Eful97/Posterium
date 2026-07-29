@@ -27,8 +27,11 @@ export function SearchView() {
 
   const handleLoadMore = async () => {
     setLoadingMore(true)
-    await s.loadMore()
-    setLoadingMore(false)
+    try {
+      await s.loadMore()
+    } finally {
+      setLoadingMore(false)
+    }
   }
 
   return (

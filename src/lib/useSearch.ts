@@ -18,7 +18,11 @@ function readRecentSearches(): string[] {
 
 function writeRecentSearches(searches: string[]): void {
   if (typeof window === "undefined" || !window.localStorage) return
-  window.localStorage.setItem("recent_searches", JSON.stringify(searches))
+  try {
+    window.localStorage.setItem("recent_searches", JSON.stringify(searches))
+  } catch {
+    // localStorage non disponibile
+  }
 }
 
 export function useSearch(tmdbKey: string, lang: string) {

@@ -50,8 +50,6 @@ import { createLogger } from "@/lib/logger"
 
 const log = createLogger("poster")
 
-initSharp()
-
 type RouteParams = { type: string; id: string }
 
 function corsHeaders(): Record<string, string> {
@@ -59,9 +57,10 @@ function corsHeaders(): Record<string, string> {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  initSharp()
   const rl = rateLimit(rateLimitKey(req), "poster")
-  if (!rl.ok) return rateLimitResponse(rl.retAfter)
   warmFonts()
+  if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { type, id } = await params
   const mediaType = (["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "")) ? "tv" : "movie"
   let tmdbId = Number(id)
@@ -277,6 +276,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                 return Buffer.from(await res.arrayBuffer())
               },
               fetchCandidateImage: async (path: string) => {
+                if (path.startsWith("http") && !path.startsWith("https://image.tmdb.org/t/p/")) {
+                  throw new Error("Blocked external URL in fetchCandidateImage")
+                }
                 const url = path.startsWith("http") ? path : `https://image.tmdb.org/t/p/w342${path}`
                 const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
                 if (!res.ok) throw new Error(`HTTP ${res.status}`)

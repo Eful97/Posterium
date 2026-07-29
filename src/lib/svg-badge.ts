@@ -1,4 +1,3 @@
-import { Resvg } from "@resvg/resvg-js"
 import fs from "fs"
 import path from "path"
 import { textColorForBg } from "./accent-color"
@@ -86,6 +85,7 @@ function wrapSvg(svg: string): string {
 }
 
 export async function renderSVG(svgStr: string, w: number): Promise<Buffer> {
+  const { Resvg } = await import("@resvg/resvg-js")
   const resvg = new Resvg(svgStr, {
     fitTo: { mode: "width", value: w },
     font: {

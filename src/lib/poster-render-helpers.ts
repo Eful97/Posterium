@@ -33,7 +33,13 @@ export function isValidHex(color: string): boolean {
 }
 
 export function imgSrc(path: string): string {
-  if (path.startsWith("http")) return path
+  if (path.startsWith("http")) {
+    // SSRF protection: only allow TMDB image CDN
+    if (!path.startsWith("https://image.tmdb.org/t/p/")) {
+      throw new Error(`Blocked external image URL: ${path.slice(0, 60)}...`)
+    }
+    return path
+  }
   return `${IMG_BASE}/w500${path}`
 }
 

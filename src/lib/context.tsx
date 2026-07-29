@@ -186,14 +186,27 @@ function PosteriumRootInner({ children }: { children: React.ReactNode }) {
 }
 
 export function usePosterium(): PosteriumCtx {
+  // Helper per localStorage: evita crash in Safari ITP / Brave Shield / Firefox Strict
+  const safeGetItem = useCallback((key: string): string | null => {
+    try { return localStorage.getItem(key) } catch { return null }
+  }, [])
+  const safeSetItem = useCallback((key: string, val: string): void => {
+    try { localStorage.setItem(key, val) } catch { /* localStorage non disponibile */ }
+  }, [])
+
   const [lang, setLang] = useState("it")
   const [tmdbKey, setTmdbKeyState] = useState("")
   const [mdblistApiKey, setMdblistApiKey] = useState("")
   const [tmdbKeyInput, setTmdbKeyInput] = useState("")
   const [showKey, setShowKey] = useState(false)
   const [theme, setTheme] = useState<"dark" | "light">("dark")
-  const [uiAccent, setUiAccent] = useState(() => typeof window !== "undefined" && localStorage.getItem("posterium_ui_accent") === "true")
-  useEffect(() => { localStorage.setItem("posterium_ui_accent", String(uiAccent)) }, [uiAccent])
+  // Lettura differita in useEffect per evitare hydration mismatch client/server
+  const [uiAccent, setUiAccent] = useState(false)
+  useEffect(() => {
+    const saved = safeGetItem("posterium_ui_accent")
+    if (saved === "true") setUiAccent(true)
+  }, [safeGetItem])
+  useEffect(() => { safeSetItem("posterium_ui_accent", String(uiAccent)) }, [uiAccent, safeSetItem])
   // Sync uiAccent toggle to <html> class
   useEffect(() => {
     document.documentElement.classList.toggle("ui-accent", uiAccent)
@@ -262,8 +275,8 @@ export function usePosterium(): PosteriumCtx {
   const [profilePassword, setProfilePassword] = useState<string>("")
   const setProfilePasswordPersist = useCallback((v: string) => {
     setProfilePassword(v)
-    try { localStorage.setItem("posterium_profile_password", v) } catch {}
-  }, [])
+    safeSetItem("posterium_profile_password", v)
+  }, [safeSetItem])
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
   const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; director?: string | null; keywords?: string[]; imdb_id?: string | null }>({ genres: [], voteAverage: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -317,50 +330,50 @@ export function usePosterium(): PosteriumCtx {
   useEffect(() => {
     if (keyInit.current) return
     keyInit.current = true
-    const saved = localStorage.getItem("tmdb_key") || ""
+    const saved = safeGetItem("tmdb_key") || ""
     setTmdbKeyState(saved)
     setTmdbKeyInput(saved)
-    const mdblistKey = localStorage.getItem("mdblist_key") || ""
+    const mdblistKey = safeGetItem("mdblist_key") || ""
     setMdblistApiKey(mdblistKey)
-    const savedTheme = localStorage.getItem("posterium_theme")
+    const savedTheme = safeGetItem("posterium_theme")
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme)
-    const savedProfileId = localStorage.getItem("posterium_profile_id")
+    const savedProfileId = safeGetItem("posterium_profile_id")
     if (savedProfileId) setProfileId(savedProfileId)
-    const savedProfilePassword = localStorage.getItem("posterium_profile_password")
+    const savedProfilePassword = safeGetItem("posterium_profile_password")
     if (savedProfilePassword) setProfilePassword(savedProfilePassword)
-  }, [])
+  }, [safeGetItem])
 
   const setTmdbKey = (val: string) => {
     setTmdbKeyState(val)
     setTmdbKeyInput(val)
-    localStorage.setItem("tmdb_key", val)
+    safeSetItem("tmdb_key", val)
   }
 
   const setMdblistApiKeyFn = (val: string) => {
     setMdblistApiKey(val)
-    localStorage.setItem("mdblist_key", val)
+    safeSetItem("mdblist_key", val)
   }
 
   useEffect(() => {
     document.documentElement.classList.toggle("light-mode", theme === "light")
-    localStorage.setItem("posterium_theme", theme)
-  }, [theme])
+    safeSetItem("posterium_theme", theme)
+  }, [theme, safeSetItem])
 
   useEffect(() => {
     if (langInit.current) return
     langInit.current = true
-    const saved = localStorage.getItem("preferred_lang")
+    const saved = safeGetItem("preferred_lang")
     if (saved) {
       setLang(saved)
     } else {
       setShowLangPicker(true)
     }
-  }, [])
+  }, [safeGetItem])
 
   const pickLang = (l: string) => {
     setLang(l)
     setI18nLang(l)
-    localStorage.setItem("preferred_lang", l)
+    safeSetItem("preferred_lang", l)
     setShowLangPicker(false)
   }
 
@@ -739,6 +752,8 @@ export function usePosterium(): PosteriumCtx {
       setLoadingImages(false)
     }
   }
+  const openPosterBrowserRef = useRef(openPosterBrowser)
+  openPosterBrowserRef.current = openPosterBrowser
 
   const copyUrl = async () => {
     await navigator.clipboard.writeText(urlPattern)
@@ -772,7 +787,7 @@ export function usePosterium(): PosteriumCtx {
       const data = await res.json()
       const newProfileId = data.profileId as string
       setProfileId(newProfileId)
-      try { localStorage.setItem("posterium_profile_id", newProfileId) } catch {}
+      safeSetItem("posterium_profile_id", newProfileId)
       const url = `${getDomain()}/api/poster/:type/:id?u=${newProfileId}`
       await navigator.clipboard.writeText(url)
       setProfileCopied(true)
@@ -831,7 +846,7 @@ export function usePosterium(): PosteriumCtx {
     metaInfo,
     previewId: navigation.previewId, setPreviewId: navigation.setPreviewId,
     saveConfig, removeMapping, mappingsMap,
-    goHome: navigation.goHome, sourceView: navigation.sourceView, navigateToPoster: (item: SearchResult, source?: string) => { navigation.navigateToPoster(item, source); openPosterBrowser(item) },
+    goHome: navigation.goHome, sourceView: navigation.sourceView, navigateToPoster: (item: SearchResult, source?: string) => { navigation.navigateToPoster(item, source); openPosterBrowserRef.current(item) },
     refreshLists: trending.refreshLists,
     tmdbKey, setQuery: search.setQuery, doSearch: search.doSearch, loadMore: search.loadMore,
     titleOf, yearOf, posterUrl,

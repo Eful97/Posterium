@@ -24,7 +24,4 @@ export function initSharp(): void {
   }
 }
 
-// Backward compat: init automatico al primo import
-initSharp()
-
 export default sharp

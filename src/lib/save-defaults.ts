@@ -1,6 +1,10 @@
 import type { PosteriumCtx } from "@/lib/context"
 import type { PosterEditorCtx } from "@/lib/contexts/PosterEditorContext"
 
+function safeSetItem(key: string, val: string) {
+  try { localStorage.setItem(key, val) } catch { /* localStorage non disponibile */ }
+}
+
 export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMap: PosteriumCtx["mappingsMap"] }, ed: PosterEditorCtx) {
   const d = {
     globalBadges: ed.defaultGlobalBadges,
@@ -17,7 +21,7 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
     defaultNetworkLogo: ed.defaultNetworkLogo,
     networkLogo: ed.defaultNetworkLogo,
   }
-  localStorage.setItem("badgeDefaults", JSON.stringify(d))
+  safeSetItem("badgeDefaults", JSON.stringify(d))
   void fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
     .catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error)

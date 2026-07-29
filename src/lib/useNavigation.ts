@@ -54,6 +54,7 @@ export function useNavigation() {
 
   useEffect(() => {
     const handler = (e: PopStateEvent) => {
+      incrementFetchId()
       const source = e.state?.source
       const targetView = e.state?.view || source
 

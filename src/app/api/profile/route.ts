@@ -10,6 +10,7 @@ import {
 } from "@/lib/profile-store"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
 import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
+import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("profile")
@@ -32,6 +33,9 @@ export async function POST(req: NextRequest) {
 
     // Login / Load action: authenticate existing profile and return full profile data
     if (body.action === "load" || body.action === "login") {
+      // Rate limiting per IP per prevenire brute-force sugli UUID profilo
+      const rl = rateLimit(rateLimitKey(req), "default")
+      if (!rl.ok) return rateLimitResponse(rl.retAfter)
       const profileId = typeof body.profileId === "string" ? body.profileId.trim() : ""
       const password = typeof body.password === "string" ? body.password : ""
       if (!profileId || !password) {
