@@ -26,6 +26,8 @@ export interface PosterEditorCtx {
   setCustomBadge: (v: string | null | ((prev: string | null) => string | null)) => void
   networkLogo: boolean
   setNetworkLogo: (v: boolean | ((prev: boolean) => boolean)) => void
+  ribbonSide: "left" | "right"
+  setRibbonSide: (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => void
 
   // ---- Defaults ----
   defaultBadgeStyle: string
@@ -52,6 +54,8 @@ export interface PosterEditorCtx {
   setDefaultLogoFitEnabled: (v: boolean | ((prev: boolean) => boolean)) => void
   defaultNetworkLogo: boolean
   setDefaultNetworkLogo: (v: boolean | ((prev: boolean) => boolean)) => void
+  defaultRibbonSide: "left" | "right"
+  setDefaultRibbonSide: (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => void
   loadDefaultsToState: () => void
 
   // ---- Blur ----
@@ -126,13 +130,13 @@ export function PosterEditorProvider({
   const defaults = useDefaults()
 
   const {
-    globalBadges, rankingBadges, networkLogo,
+    globalBadges, rankingBadges, networkLogo, ribbonSide,
     gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled,
     badgeStyle, rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle,
     defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness,
     defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges,
-    defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo,
+    defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo, defaultRibbonSide,
     loadDefaultsToState, update,
   } = defaults
 
@@ -151,6 +155,11 @@ export function PosterEditorProvider({
       const next = typeof v === "function" ? v(networkLogo) : v
       update({ networkLogo: next })
     }, [networkLogo, update])
+  const setRibbonSide = useCallback(
+    (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => {
+      const next = typeof v === "function" ? v(ribbonSide) : v
+      update({ ribbonSide: next })
+    }, [ribbonSide, update])
   const setGradientHeight = useCallback(
     (v: number | ((prev: number) => number)) => {
       const next = typeof v === "function" ? v(gradientHeight) : v
@@ -246,6 +255,11 @@ export function PosterEditorProvider({
       const next = typeof v === "function" ? v(defaultNetworkLogo) : v
       update({ defaultNetworkLogo: next })
     }, [defaultNetworkLogo, update])
+  const setDefaultRibbonSide = useCallback(
+    (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => {
+      const next = typeof v === "function" ? v(defaultRibbonSide) : v
+      update({ defaultRibbonSide: next })
+    }, [defaultRibbonSide, update])
 
   // ---- Logo state ----
   const [logoScale, setLogoScale] = useState(75)
@@ -287,6 +301,8 @@ export function PosterEditorProvider({
       setCustomBadge,
       networkLogo,
       setNetworkLogo,
+      ribbonSide,
+      setRibbonSide,
 
       // Defaults
       defaultBadgeStyle,
@@ -313,6 +329,8 @@ export function PosterEditorProvider({
       setDefaultLogoFitEnabled,
       defaultNetworkLogo,
       setDefaultNetworkLogo,
+      defaultRibbonSide,
+      setDefaultRibbonSide,
       loadDefaultsToState,
 
       // Blur
@@ -373,6 +391,7 @@ export function PosterEditorProvider({
       rankingBadgeStyle, setRankingBadgeStyle,
       customBadge, setCustomBadge,
       networkLogo, setNetworkLogo,
+      ribbonSide, setRibbonSide,
 
       // Defaults
       defaultBadgeStyle, setDefaultBadgeStyle,
@@ -387,6 +406,7 @@ export function PosterEditorProvider({
       defaultAutoRotateClean, setDefaultAutoRotateClean,
       defaultLogoFitEnabled, setDefaultLogoFitEnabled,
       defaultNetworkLogo, setDefaultNetworkLogo,
+      defaultRibbonSide, setDefaultRibbonSide,
       loadDefaultsToState,
 
       // Blur

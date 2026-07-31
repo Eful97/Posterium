@@ -202,6 +202,8 @@ export default function EditView() {
                         blurFade: ed.blurFade,
                         blurDarkness: ed.blurDarkness,
                         blurEnabled: ed.blurEnabled,
+                        networkLogo: ed.networkLogo,
+                        ribbonSide: ed.ribbonSide,
                       })
                       if (!url) return
                       window.open(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`, "_blank")

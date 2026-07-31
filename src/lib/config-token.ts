@@ -21,6 +21,8 @@ export interface PosteriumUserConfig {
   autoRotateClean: boolean
   logoFitEnabled: boolean
   customBadge?: string
+  /** Modalità layout nastro Netflix + logo network: "left" (Nuvio, default) o "right" (Stremio). */
+  ribbonSide?: "left" | "right"
 }
 
 const HMAC_SECRET = process.env.ENCRYPTION_KEY_SECRET || process.env.CONFIG_HMAC_SECRET || ""
@@ -96,6 +98,7 @@ export function decodeConfig(token: string): PosteriumUserConfig | null {
     }
 
     if (parsed.customBadge !== undefined && typeof parsed.customBadge !== "string") return null
+    if (parsed.ribbonSide !== undefined && parsed.ribbonSide !== "left" && parsed.ribbonSide !== "right") return null
 
     // Clamp difensivo dei numeri: impedisce a valori estremi da token firmato
     // (o profilo) di raggiungere sharp.blur con sigma enormi o gradienti fuori scala.

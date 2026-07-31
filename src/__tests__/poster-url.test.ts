@@ -194,6 +194,21 @@ describe("buildPreviewUrl", () => {
     expect(url).toContain("lang=it")
   })
 
+  it("includes side=right when ribbonSide is right (Stremio mode)", () => {
+    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, ribbonSide: "right" })
+    expect(url).toContain("side=right")
+  })
+
+  it("does not include side param when ribbonSide is left (Nuvio mode)", () => {
+    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, ribbonSide: "left" })
+    expect(url).not.toContain("side=")
+  })
+
+  it("includes netLogo=0 when networkLogo is false", () => {
+    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, networkLogo: false })
+    expect(url).toContain("netLogo=0")
+  })
+
   it("includes gradHeight, blur, bf, bd, bs, rs", () => {
     const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, gradientHeight: 50, blurIntensity: 8, blurFade: 70, blurDarkness: 50, badgeStyle: "pill", rankingBadgeStyle: "bar" })
     expect(url).toContain("gradHeight=50")

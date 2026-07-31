@@ -13,6 +13,7 @@ export interface StremioPosterParamsInput {
   readonly blurDarkness?: number
   readonly blurEnabled?: boolean
   readonly networkLogo?: boolean
+  readonly ribbonSide?: "left" | "right"
   readonly config?: string | null
   readonly user?: string | null
 }
@@ -43,6 +44,7 @@ export function buildStremioPosterSearchParams(input: StremioPosterParamsInput):
   if (!globalBadges) params.set("badges", "0")
   if (!rankingBadges) params.set("ranking", "0")
   if (!networkLogo) params.set("netLogo", "0")
+  if (input.ribbonSide === "right") params.set("side", "right")
   params.set("lang", input.lang || "it")
   if (!blurEnabled) params.set("be", "0")
   params.set("gradHeight", String(input.gradientHeight ?? DEFAULT_STREMIO_POSTER_PARAMS.gradientHeight))

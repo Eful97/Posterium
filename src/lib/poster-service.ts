@@ -52,6 +52,8 @@ export interface GenerationInput {
   rankingBadgeStyle: string
   topLight: boolean
   targetCenter: number
+  /** Modalità layout nastro Netflix + logo network: "left" (Nuvio, default) o "right" (Stremio). */
+  ribbonSide: "left" | "right"
 
   // Logo
   logoScale: number | null
@@ -113,7 +115,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     backdropScale, backdropOffsetX, backdropOffsetY,
     blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
     badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
-    rankingBadgeStyle, topLight, targetCenter,
+    rankingBadgeStyle, topLight, targetCenter, ribbonSide,
     logoScale, logoOffsetX, logoOffsetY,
     mediaType, finalRank, animeRankResult, rankingResult,
     mapping, tmdbNetworks, productionCompanies, tmdbStudios,
@@ -271,7 +273,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentColorGenre, topLight)
     : null
   const rankBadgeKey = topBadge
-    ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, accentColorRank)
+    ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, accentColorRank, ribbonSide)
     : null
 
   const [genreBadgeResult, rankBadgeResult] = await Promise.all([
@@ -299,7 +301,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
                   .then((r) => { const v = { ...r, isRank: false }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                   .catch(() => null)
               } else {
-                p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, rankingBadgeStyle, accentColorRank)
+                p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, rankingBadgeStyle, accentColorRank, ribbonSide)
                   .then((r) => { const v = { ...r, isRank: true }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                   .catch(() => null)
               }
@@ -326,21 +328,41 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
       composites.push({ input: safeGenreBadgeResult.png, top: badgeY, left: Math.round((STD_W - safeGenreBadgeResult.w) / 2) })
     }
   }
+  const isRightRibbon = ribbonSide === "right"
   if (safeRankBadgeResult) {
     const isBar = rankingBadgeStyle === "bar"
     const isNetflix = rankingBadgeStyle === "netflix"
+    let left: number
+    if (isBar) {
+      left = 0 // bar full-width: resta ancorata a sinistra
+    } else if (isNetflix && isRightRibbon) {
+      left = Math.round(STD_W - safeRankBadgeResult.w) // nastro Netflix a destra (Stremio)
+    } else if (isNetflix) {
+      left = 0 // nastro Netflix a sinistra (Nuvio, default)
+    } else {
+      left = Math.round((STD_W - safeRankBadgeResult.w) / 2)
+    }
     composites.push({
       input: safeRankBadgeResult.png,
       top: 0,
-      left: (isBar || isNetflix) ? 0 : Math.round((STD_W - safeRankBadgeResult.w) / 2),
+      left,
     })
   }
   if (networkLogoResult) {
     const isNetflixRank = safeRankBadgeResult && rankingBadgeStyle === "netflix"
+    let left: number
+    if (isRightRibbon) {
+      // Stremio: logo network ancorato a destra, a sinistra del nastro quando presente
+      left = isNetflixRank
+        ? Math.round(STD_W - safeRankBadgeResult!.w - 10 - networkLogoResult.w)
+        : Math.round(STD_W - 23 - networkLogoResult.w)
+    } else {
+      left = isNetflixRank ? Math.round(safeRankBadgeResult!.w + 10) : 23
+    }
     composites.push({
       input: networkLogoResult.png,
       top: 15,
-      left: isNetflixRank ? Math.round(safeRankBadgeResult!.w + 10) : 23,
+      left,
     })
   }
 

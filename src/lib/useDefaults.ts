@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react"
 
+export type RibbonSide = "left" | "right"
+
 export interface DefaultsState {
   defaultBadgeStyle: string
   defaultRankingBadgeStyle: string
@@ -15,9 +17,11 @@ export interface DefaultsState {
   defaultAutoRotateClean: boolean
   defaultLogoFitEnabled: boolean
   defaultNetworkLogo: boolean
+  defaultRibbonSide: RibbonSide
   globalBadges: boolean
   rankingBadges: boolean
   networkLogo: boolean
+  ribbonSide: RibbonSide
   gradientHeight: number
   blurIntensity: number
   blurFade: number
@@ -40,9 +44,11 @@ const DEFAULTS: DefaultsState = {
   defaultAutoRotateClean: false,
   defaultLogoFitEnabled: true,
   defaultNetworkLogo: true,
+  defaultRibbonSide: "left",
   globalBadges: true,
   rankingBadges: true,
   networkLogo: true,
+  ribbonSide: "left",
   gradientHeight: 30,
   blurIntensity: 5,
   blurFade: 60,
@@ -75,6 +81,8 @@ interface StoredDefaults {
   defaultAutoRotateClean?: boolean
   defaultLogoFitEnabled?: boolean
   defaultNetworkLogo?: boolean
+  defaultRibbonSide?: RibbonSide
+  ribbonSide?: RibbonSide
   autoRotateClean?: boolean
 }
 
@@ -105,9 +113,11 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
     defaultAutoRotateClean: d.defaultAutoRotateClean ?? d.autoRotateClean ?? false,
     defaultLogoFitEnabled: d.defaultLogoFitEnabled ?? true,
     defaultNetworkLogo: d.defaultNetworkLogo ?? d.networkLogo ?? true,
+    defaultRibbonSide: d.defaultRibbonSide ?? d.ribbonSide ?? "left",
     globalBadges: d.globalBadges ?? true,
     rankingBadges: d.rankingBadges ?? true,
     networkLogo: d.networkLogo ?? true,
+    ribbonSide: d.ribbonSide ?? "left",
     gradientHeight: d.gradientHeight ?? 30,
     blurIntensity: d.blurIntensity ?? 5,
     blurFade: d.blurFade ?? 60,

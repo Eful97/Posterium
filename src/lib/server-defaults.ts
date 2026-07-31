@@ -19,6 +19,7 @@ export interface ServerDefaults {
   autoRotateClean?: boolean
   defaultLogoFitEnabled?: boolean
   networkLogo?: boolean
+  ribbonSide?: "left" | "right"
 }
 
 const FILE = path.join(DATA_DIR, "defaults.json")

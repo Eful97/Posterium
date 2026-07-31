@@ -492,6 +492,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     const queryExtra = req.nextUrl.searchParams.get("extra") || configOverride?.customBadge || null
     const qNetLogo = req.nextUrl.searchParams.get("netLogo") ?? (configOverride !== null ? (configOverride.networkLogo ? null : "0") : null)
+    // Modalità layout nastro Netflix + logo network: query `side=right` (Stremio), mapping salvato o config/profilo
+    const qSide = req.nextUrl.searchParams.get("side")
+    const ribbonSide: "left" | "right" = qSide === "right" || mapping?.ribbonSide === "right" || configOverride?.ribbonSide === "right" ? "right" : "left"
 
     const locale = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
     const targetCenter = Math.round(30 * STD_H / 570)
@@ -598,7 +601,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       backdropScale, backdropOffsetX, backdropOffsetY,
       blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
       badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
-      rankingBadgeStyle, topLight, targetCenter,
+      rankingBadgeStyle, topLight, targetCenter, ribbonSide,
       logoScale, logoOffsetX, logoOffsetY,
       mediaType: mediaType as "movie" | "tv",
       finalRank, animeRankResult, rankingResult,

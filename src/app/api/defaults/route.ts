@@ -22,6 +22,7 @@ const defaultsSchema = z.object({
   autoRotateClean: z.boolean().optional(),
   defaultLogoFitEnabled: z.boolean().optional(),
   networkLogo: z.boolean().optional(),
+  ribbonSide: z.enum(["left", "right"]).optional(),
 })
 
 export async function GET() {

@@ -8,7 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
-App version: `0.15.2` — RENDER_VERSION: `91` — rv: `91`
+App version: `0.15.2` — RENDER_VERSION: `92` — rv: `92`
 
 ### Badge Genere/Rating (GenreRatingBadges)
 > **WYSIWYG**: il preview client usa `<img src={previewUrl}>` che carica `/api/poster/{type}/{id}` — lo stesso endpoint usato da Stremio. Non c'è duplicazione: preview = poster finale.
@@ -45,7 +45,7 @@ App version: `0.15.2` — RENDER_VERSION: `91` — rv: `91`
 | Testo | `topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"` |
 | Stabilizzazione testo | `textLength` + `lengthAdjust="spacingAndGlyphs"` sul `<text>` per evitare differenze metriche tra Windows/local e Linux/HF |
 | Overflow protection | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
-| Posizione | Composito a `top: 0, left: round((pw - w) / 2)` |
+| Posizione | Composito a `top: 0, left: round((pw - w) / 2)` (default/bar/pill/colored); nastro Netflix a `left: 0` (Nuvio) o `left: STD_W - w` specchiato (Stremio, `side=right`); logo network segue a destra del nastro (`w + 10`) o a sinistra (`STD_W - w - 10 - logoW`) |
 
 ### Gradiente fondo poster
 | Parametro | Server (`badges.ts:bottomGradientSVG`) |
@@ -72,7 +72,8 @@ App version: `0.15.2` — RENDER_VERSION: `91` — rv: `91`
 | `label` | `badge.rankLabel \|\| badge.label` | `qLabel` — override label ranking |
 | `extra` | `badge.label` (se extra) o `customBadge` | `queryExtra` — forza badge extra |
 | `bs` | `badgeStyle` | `qBs` — "shadow"/"pill"/"bar"/"colored" |
-| `rs` | `rankingBadgeStyle` | `qRs` — "default"/"bar"/"colored" |
+| `rs` | `rankingBadgeStyle` | `qRs` — "default"/"bar"/"colored"/"netflix" |
+| `side` | `ribbonSide === "right" ? "right" : null` (modalità Stremio; default Nuvio = sinistra) | `qSide` — "right" sposta nastro Netflix (specchiato) + logo network a destra |
 | `ac` | `accentColor` (da `extractBadgeColor()`) | `qAc` — override colore accent |
 
 ### Bordo poster

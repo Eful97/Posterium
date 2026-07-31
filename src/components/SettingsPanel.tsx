@@ -98,6 +98,29 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Tv className="w-3 h-3" /> Logo Network</span>
         <Toggle value={ed.defaultNetworkLogo} onChange={(v) => { ed.setDefaultNetworkLogo(v); ed.setNetworkLogo(v) }} />
       </div>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs text-zinc-400 flex items-center gap-1.5 shrink-0"><Flame className="w-3 h-3" /> Posizione badge</span>
+        <div className="flex gap-1 flex-1 max-w-[160px]">
+          <button
+            type="button"
+            onClick={() => { ed.setDefaultRibbonSide("left"); ed.setRibbonSide("left") }}
+            className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
+              ed.defaultRibbonSide === "left"
+                ? "bg-white/20 text-white shadow-sm"
+                : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"
+            }`}
+          >Nuvio</button>
+          <button
+            type="button"
+            onClick={() => { ed.setDefaultRibbonSide("right"); ed.setRibbonSide("right") }}
+            className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
+              ed.defaultRibbonSide === "right"
+                ? "bg-white/20 text-white shadow-sm"
+                : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"
+            }`}
+          >Stremio</button>
+        </div>
+      </div>
       <hr className="border-zinc-700 my-1" />
       <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5"><Circle className="w-3 h-3" /> {t("ui.styleRankingDefault")}</label>
       <BadgeStyleSelector value={ed.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill"]} onChange={ed.setDefaultRankingBadgeStyle} t={t} accentColor={p.accentColor} />

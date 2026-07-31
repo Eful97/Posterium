@@ -170,6 +170,23 @@ describe("buildRankingBadgeSVG", () => {
     expect(svg).toContain('fill="rgba(0,0,0,0.80)"')
     expect(svg).toContain('fill="rgba(255,255,255,0.80)"')
   })
+
+  it("mirrors the ribbon horizontally when side=right (Stremio mode)", () => {
+    const left = buildNetflixRankBadgeSVG(4, 1000, false)
+    const right = buildNetflixRankBadgeSVG(4, 1000, false, "right")
+    const pathL = left.svg.match(/<path d="([^"]+)"/)![1]
+    const pathR = right.svg.match(/<path d="([^"]+)"/)![1]
+    // Path specchiato: parte dall'angolo alto-destro della viewBox
+    const totalW = Number(right.svg.match(/viewBox="0 0 (\d+) (\d+)"/)![1])
+    expect(pathR).toMatch(new RegExp(`^M ${totalW} 0 L`))
+    expect(pathL).not.toBe(pathR)
+    // Ombra invertita: cade verso sinistra (verso il centro del poster)
+    expect(right.svg).toContain('dx="-3" dy="3"')
+    expect(left.svg).toContain('dx="3" dy="3"')
+    // Testo non specchiato: "TOP" e rank restano leggibili
+    expect(right.svg).toContain(">TOP</text>")
+    expect(right.svg).toContain(">4</text>")
+  })
 })
 
 describe("buildExtraBadgeSVG", () => {

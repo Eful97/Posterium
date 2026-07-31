@@ -218,7 +218,7 @@ export async function renderGenreBadge(
 
 // --- Ranking badge ---
 
-export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boolean) {
+export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boolean, side: "left" | "right" = "left") {
   const fs = Math.round(Math.max(23 * pw / 380, 14))
   const w = Math.round(fs * 2.6)
   const h = Math.round(w * 1.35)
@@ -238,21 +238,32 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
   const ribbonMidX = w / 2
   const ribbonVNotchY = Math.round(h * 0.88)
 
-  // Nastro top-left: ancorato al bordo sinistro del poster
-  const pathD = `M 0 0 L ${w} 0 L ${w - slant} ${h} L ${ribbonMidX} ${ribbonVNotchY} L 0 ${h} Z`
+  // Nastro top-left (side="left", default): ancorato al bordo sinistro del poster,
+  // lato sinistro dritto e destro inclinato. Modalità Stremio (side="right"): nastro
+  // specchiato orizzontalmente, ancorato al bordo destro — lato destro dritto e
+  // sinistro inclinato, con il pad (ombra) spostato a sinistra e ombra che cade a sinistra.
+  const isRight = side === "right"
+  const pathD = isRight
+    ? `M ${totalW} 0 L ${padRight} 0 L ${padRight + slant} ${h} L ${totalW - ribbonMidX} ${ribbonVNotchY} L ${totalW} ${h} Z`
+    : `M 0 0 L ${w} 0 L ${w - slant} ${h} L ${ribbonMidX} ${ribbonVNotchY} L 0 ${h} Z`
+  const highlightX1 = isRight ? padRight : 0
+  const highlightX2 = isRight ? totalW : w
+  const textX = isRight ? totalW - ribbonMidX : ribbonMidX
+  const shadowDx = isRight ? -3 : 3
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
     <defs>
       <filter id="shadow3D" x="-20%" y="-20%" width="180%" height="180%">
-        <feDropShadow dx="3" dy="3" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.65"/>
+        <feDropShadow dx="${shadowDx}" dy="3" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.65"/>
       </filter>
       <filter id="textShadow" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="1.5" stdDeviation="1" flood-color="#000000" flood-opacity="0.65"/>
+        <feDropShadow dx="${shadowDx > 0 ? 0 : -1.5}" dy="1.5" stdDeviation="1" flood-color="#000000" flood-opacity="0.65"/>
       </filter>
     </defs>
     <path d="${pathD}" fill="${fill}" filter="url(#shadow3D)"/>
-    <line x1="0" y1="1" x2="${w}" y2="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
-    <text x="${ribbonMidX}" y="${Math.round(h * 0.28)}" fill="${textColor}" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
-    <text x="${ribbonMidX}" y="${Math.round(h * 0.60)}" fill="${textColor}" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
+    <line x1="${highlightX1}" y1="1" x2="${highlightX2}" y2="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+    <text x="${textX}" y="${Math.round(h * 0.28)}" fill="${textColor}" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
+    <text x="${textX}" y="${Math.round(h * 0.60)}" fill="${textColor}" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
   </svg>`
   return { svg, w: totalW, h: totalH }
 }
@@ -264,6 +275,7 @@ export async function buildRankingBadgeSVG(
   topLight?: boolean,
   badgeStyle?: string,
   accentColor?: string,
+  side?: "left" | "right",
 ): Promise<{ png: Buffer; w: number; h: number } | null> {
   const s = badgeStyle || "default"
   const periodText = label || "Oggi"
@@ -286,7 +298,7 @@ export async function buildRankingBadgeSVG(
 
   let result: { svg: string; w: number; h: number }
   if (isNetflix) {
-    result = buildNetflixRankBadgeSVG(rank, pw, !!topLight)
+    result = buildNetflixRankBadgeSVG(rank, pw, !!topLight, side)
   } else if (s === "bar") {
     result = buildRankingBarSvg(fullText, pw, fs, fg, bg)
   } else if (s === "pill") {
@@ -300,9 +312,9 @@ export async function buildRankingBadgeSVG(
 
 export async function renderRankingBadge(
   rank: number, pw: number, label?: string,
-  topLight?: boolean, badgeStyle?: string, accentColor?: string,
+  topLight?: boolean, badgeStyle?: string, accentColor?: string, side?: "left" | "right",
 ): Promise<{ png: Buffer; w: number; h: number }> {
-  const r = await buildRankingBadgeSVG(rank, pw, label, topLight, badgeStyle, accentColor)
+  const r = await buildRankingBadgeSVG(rank, pw, label, topLight, badgeStyle, accentColor, side)
   if (r) return r
   throw new Error(`SVG ranking badge failed: rank=${rank}`)
 }

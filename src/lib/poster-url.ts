@@ -18,6 +18,7 @@ interface BadgeParams {
   blurDarkness: number
   blurEnabled: boolean
   networkLogo?: boolean
+  ribbonSide?: "left" | "right"
 }
 
 interface PosterState {
@@ -71,6 +72,7 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
     blurFade: bp.blurFade,
     blurDarkness: bp.blurDarkness,
     blurEnabled: bp.blurEnabled,
+    ribbonSide: bp.ribbonSide,
   })
   const str = params.toString()
   if (str) url += "?" + str
@@ -112,6 +114,7 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   params.push(`rs=${bp.rankingBadgeStyle}`)
   if (!bp.blurEnabled) params.push("be=0")
   if (bp.networkLogo === false) params.push("netLogo=0")
+  if (bp.ribbonSide === "right") params.push("side=right")
   if (ps.accentColor) params.push(`ac=${encodeURIComponent(ps.accentColor)}`)
   const topLight = computeTopLight(ps.topEdgeColor)
   params.push(`tl=${topLight ? "1" : "0"}`)

@@ -46,6 +46,7 @@ export const mappingSchema = z.object({
   excludedPosters: z.array(z.string()).nullable().optional(),
   logoDisabled: z.boolean().nullable().optional(),
   networkLogo: z.boolean().nullable().optional(),
+  ribbonSide: z.enum(["left", "right"]).nullable().optional(),
   defaultBadgeStyle: z.string().nullable().optional(),
   defaultRankingBadgeStyle: z.string().nullable().optional(),
 })

@@ -89,6 +89,7 @@ export interface Mapping {
   cleanPosterUpdatedAt?: string | null
   autoRotateClean?: boolean | null
   networkLogo?: boolean | null
+  ribbonSide?: "left" | "right" | null
   excludedPosters?: string[] | null
   defaultBadgeStyle?: string | null
   defaultRankingBadgeStyle?: string | null

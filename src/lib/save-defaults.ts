@@ -19,7 +19,9 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
     autoRotateClean: ed.defaultAutoRotateClean,
     defaultLogoFitEnabled: ed.defaultLogoFitEnabled,
     defaultNetworkLogo: ed.defaultNetworkLogo,
+    defaultRibbonSide: ed.defaultRibbonSide,
     networkLogo: ed.defaultNetworkLogo,
+    ribbonSide: ed.defaultRibbonSide,
   }
   safeSetItem("badgeDefaults", JSON.stringify(d))
   void fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
@@ -34,6 +36,7 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
   ed.setGlobalBadges(d.globalBadges)
   ed.setRankingBadges(d.rankingBadges)
   ed.setNetworkLogo(d.networkLogo)
+  ed.setRibbonSide(d.ribbonSide)
   ed.setBlurEnabled(d.blurEnabled)
   ed.setBlurIntensity(d.blurIntensity)
   ed.setBlurFade(d.blurFade)
