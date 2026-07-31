@@ -3,7 +3,9 @@ import sharp from "sharp"
 import { findAccentColor } from "@/lib/accent-color"
 import { GENRE_FALLBACK } from "@/lib/badges"
 
-const IMG_BASE = "https://image.tmdb.org/t/p"
+// Sovrascrivibile via env: nei test E2E punta al mock server locale per
+// rendere il rendering determinista senza dipendere da image.tmdb.org.
+const IMG_BASE = process.env.TMDB_IMG_URL || "https://image.tmdb.org/t/p"
 const MAX_IMG_SIZE = 10 * 1024 * 1024
 
 export const STD_W = 500

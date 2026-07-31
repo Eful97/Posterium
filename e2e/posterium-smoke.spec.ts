@@ -25,8 +25,12 @@ test("home works on mobile", async ({ page }) => {
 })
 
 test("can open an editor from search", async ({ page }) => {
-  const hasTmdbKey = !!(process.env.TMDB_API_KEY?.length)
-  test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
+  // Il gate client del hook di ricerca richiede una tmdbKey non vuota. Con il
+  // mock server la chiave non è reale e non viene validata: basta un valore
+  // per sbloccare il flusso di ricerca.
+  await page.addInitScript(() => {
+    localStorage.setItem("tmdb_key", "mock-tmdb-key-0000000000")
+  })
 
   await page.goto("/")
 

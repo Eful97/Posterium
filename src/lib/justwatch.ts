@@ -1,4 +1,5 @@
-const JW_API = "https://apis.justwatch.com/graphql"
+// Sovrascrivibile via env: nei test E2E punta al mock server locale.
+const JW_API = process.env.JUSTWATCH_API_URL || "https://apis.justwatch.com/graphql"
 
 const QUERY = `query GetStreamingChartInfo($country: Country!, $language: Language!, $filter: StreamingChartsFilter, $first: Int!) {
   streamingCharts(country: $country, filter: $filter, first: $first) {

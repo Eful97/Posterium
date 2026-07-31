@@ -1,21 +1,18 @@
-import { test, expect, type Page, type APIRequestContext } from "@playwright/test"
+import { test, expect, type Page } from "@playwright/test"
 
-const hasTmdbKey = !!(process.env.TMDB_API_KEY?.length)
-const MOVIE_TMDB = 19995 // Avatar
+// I test poster girano SENZA TMDB_API_KEY: le chiamate esterne (TMDB, immagini,
+// JustWatch, Wikidata, IMDb) vengono servite dal mock server locale
+// `e2e/mock-server.mjs`, avviato da playwright.config.ts. Per aggiungere nuovi
+// mock, aggiungi un handler in quel file (vedi header del mock server).
+
+const MOVIE_TMDB = 19995 // Avatar (id usato dai dati fittizi del mock server)
 const MEDIA_TYPE = "movie"
+// Poster path servito dal mock server sotto /t/p/...
+const POSTER_PATH = "/mocked/avatar.jpg"
 
-// Helper: get a valid poster path for the test movie
-let _posterPath: string
-
-async function getPosterPath(request: APIRequestContext): Promise<string> {
-  if (_posterPath) return _posterPath
-  const url = `/api/tmdb/${MOVIE_TMDB}/images?type=${MEDIA_TYPE}&languages=en,null&api_key=${process.env.TMDB_API_KEY}`
-  const res = await request.get(url)
-  if (!res.ok()) return "" as string
-  const data = await res.json()
-  const clean = (data.posters || []).find((p: { iso_639_1: string | null }) => p.iso_639_1 === null)
-  _posterPath = clean?.file_path || data.posters?.[0]?.file_path || ""
-  return _posterPath
+function posterUrl(params: Record<string, string>): string {
+  const qs = new URLSearchParams({ ...params, poster: POSTER_PATH, preview: "1" })
+  return `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?${qs.toString()}`
 }
 
 // Helper: render a poster URL in the page and return a locator for the <img>
@@ -80,17 +77,15 @@ test("status — page renders", async ({ page }) => {
 })
 
 //
-// ─── POSTER API — functional (requires TMDB_API_KEY) ─────────
+// ─── POSTER API — functional ──────────────────────────────────
 //
-// These tests verify the API returns valid images for various
-// badge/gradient/blur configurations.
+// Questi test verificano che l'API restituisca immagini valide per varie
+// configurazioni di badge/gradiente/blur. Non richiedono chiave TMDB.
 
 test.describe("poster API — functional", () => {
 
   test("default badge (shadow style) — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&bs=shadow&badges=1&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "shadow", badges: "1", ranking: "0" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -99,9 +94,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("badge style: pill — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&bs=pill&badges=1&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "pill", badges: "1", ranking: "0" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -109,9 +102,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("badge style: bar — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&bs=bar&badges=1&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "bar", badges: "1", ranking: "0" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -119,9 +110,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("badge style: colored — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&bs=colored&badges=1&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "colored", badges: "1", ranking: "0" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -129,9 +118,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("ranking badge (bar) + label — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&badges=1&ranking=1&rank=3&label=${encodeURIComponent("Top 3")}&rs=bar&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", label: "Top 3", rs: "bar" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -139,9 +126,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("extra badge (custom text) — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&badges=1&ranking=1&extra=${encodeURIComponent("Oscar 2024")}&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", extra: "Oscar 2024" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -149,9 +134,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("gradient up + down — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&badges=1&ranking=0&gradDir=up&gradHeight=30&gradColor=000000&gradOpacity=0.8&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0", gradDir: "up", gradHeight: "30", gradColor: "000000", gradOpacity: "0.8" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -159,9 +142,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("blur enabled — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&badges=1&ranking=0&blur=8&bf=60&bd=40&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0", blur: "8", bf: "60", bd: "40" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -169,9 +150,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("all badges off (clean poster) — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&badges=0&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ badges: "0", ranking: "0" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -179,9 +158,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("full config — valid image", async ({ request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=8.0&badges=1&ranking=1&rank=5&label=${encodeURIComponent("Top 5")}&bs=pill&rs=bar&gradDir=up&gradHeight=25&blur=5&bf=50&bd=30&api_key=${process.env.TMDB_API_KEY}&preview=1`
+    const url = posterUrl({ genreName: "Action", voteAverage: "8.0", badges: "1", ranking: "1", rank: "5", label: "Top 5", bs: "pill", rs: "bar", gradDir: "up", gradHeight: "25", blur: "5", bf: "50", bd: "30" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -190,90 +167,70 @@ test.describe("poster API — functional", () => {
 })
 
 //
-// ─── POSTER API — visual regression (requires TMDB_API_KEY) ──
+// ─── POSTER API — visual regression ───────────────────────────
 //
-// These tests render the poster image in a page and compare
-// screenshots to catch visual regressions in badge rendering,
-// gradient, blur, and overall composition.
+// Questi test rendono il poster in pagina e confrontano gli screenshot per
+// intercettare regressioni visive nel rendering di badge, gradiente, blur e
+// composizione. Deterministici grazie al mock server.
 
 test.describe("poster API — visual regression", () => {
 
-  test("default badge (shadow style) — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&bs=shadow&badges=1&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("default badge (shadow style) — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "shadow", badges: "1", ranking: "0" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-default-shadow.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("pill badge — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&bs=pill&badges=1&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("pill badge — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "pill", badges: "1", ranking: "0" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-pill.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("bar badge — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&bs=bar&badges=1&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("bar badge — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "bar", badges: "1", ranking: "0" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-bar.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("colored badge — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&bs=colored&badges=1&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("colored badge — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "colored", badges: "1", ranking: "0" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-colored.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("ranking badge + label — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&badges=1&ranking=1&rank=3&label=${encodeURIComponent("Top 3")}&rs=bar&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("ranking badge + label — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", label: "Top 3", rs: "bar" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-ranking.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("extra badge — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&badges=1&ranking=1&extra=${encodeURIComponent("Oscar 2024")}&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("extra badge — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", extra: "Oscar 2024" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-extra.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("gradient up — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&badges=1&ranking=0&gradDir=up&gradHeight=30&gradColor=000000&gradOpacity=0.8&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("gradient up — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0", gradDir: "up", gradHeight: "30", gradColor: "000000", gradOpacity: "0.8" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-gradient-up.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("blur enabled — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=7.8&badges=1&ranking=0&blur=8&bf=60&bd=40&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("blur enabled — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0", blur: "8", bf: "60", bd: "40" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-blur.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("clean poster (no badges) — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&badges=0&ranking=0&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("clean poster (no badges) — screenshot", async ({ page }) => {
+    const url = posterUrl({ badges: "0", ranking: "0" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-clean.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("full feature poster — screenshot", async ({ page, request }) => {
-    test.skip(!hasTmdbKey, "TMDB_API_KEY not set")
-    const path = await getPosterPath(request)
-    const url = `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?poster=${encodeURIComponent(path)}&genreName=Action&voteAverage=8.0&badges=1&ranking=1&rank=5&label=${encodeURIComponent("Top 5")}&bs=pill&rs=bar&gradDir=up&gradHeight=25&blur=5&bf=50&bd=30&api_key=${process.env.TMDB_API_KEY}&preview=1`
+  test("full feature poster — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "8.0", badges: "1", ranking: "1", rank: "5", label: "Top 5", bs: "pill", rs: "bar", gradDir: "up", gradHeight: "25", blur: "5", bf: "50", bd: "30" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-full-feature.png", { maxDiffPixelRatio: 0.10 })
   })

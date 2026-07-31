@@ -25,7 +25,10 @@ function isMemFresh(): boolean {
 
 async function fetchTop250Ids(): Promise<string[]> {
   try {
-    const res = await fetch("https://www.imdb.com/chart/top/", {
+    // Chart URL sovrascrivibile via env: nei test E2E punta al mock server
+    // locale, così il fetch resta deterministico (fallback al dataset statico).
+    const chartUrl = process.env.IMDB_CHART_URL || "https://www.imdb.com/chart/top/"
+    const res = await fetch(chartUrl, {
       headers: {
         "User-Agent": USER_AGENT,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",

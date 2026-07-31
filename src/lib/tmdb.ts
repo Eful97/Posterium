@@ -1,6 +1,8 @@
 const TMDB_API_KEY = process.env.TMDB_API_KEY
-const TMDB_BASE = "https://api.themoviedb.org/3"
-const IMG_BASE = "https://image.tmdb.org/t/p"
+// Base URL sovrascrivibili via env: usate dai test E2E per puntare al mock
+// server locale (e2e/mock-server.mjs) senza chiave TMDB reale.
+const TMDB_BASE = process.env.TMDB_BASE_URL || "https://api.themoviedb.org/3"
+const IMG_BASE = process.env.TMDB_IMG_URL || "https://image.tmdb.org/t/p"
 
 const fetchCache = new Map<string, { data: unknown; timestamp: number }>()
 const CACHE_TTL = 5 * 60 * 1000
@@ -22,7 +24,10 @@ export function resolveRequestApiKey(req: { headers: Headers | { get: (name: str
 const inflight = new Map<string, Promise<unknown>>()
 
 async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
-  const key = apiKey || TMDB_API_KEY
+  // In modalità mock (TMDB_BASE_URL impostato) non serve una chiave reale:
+  // il mock server ignora il parametro api_key. In produzione il comportamento
+  // è invariato (chiave obbligatoria).
+  const key = apiKey || TMDB_API_KEY || (process.env.TMDB_BASE_URL ? "mock-key" : undefined)
   if (!key) throw new Error("TMDB API key is missing")
   const url = new URL(`${TMDB_BASE}${path}`)
   url.searchParams.set("api_key", key)

@@ -1,7 +1,11 @@
 import { defineConfig, devices } from "@playwright/test"
 
 const isCi = process.env.CI === "true"
-const port = process.env.PLAYWRIGHT_PORT || (isCi ? "41731" : "3000")
+// Porta locale dedicata ai test: 3100, così `npm run dev` sulla porta 3000
+// non viene riusato senza le env del mock server.
+const port = process.env.PLAYWRIGHT_PORT || (isCi ? "41731" : "3100")
+const mockPort = process.env.MOCK_PORT || "8790"
+const mockUrl = `http://127.0.0.1:${mockPort}`
 
 export default defineConfig({
   testDir: "./e2e",
@@ -23,10 +27,30 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: `node ./node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${port}`,
-    url: `http://127.0.0.1:${port}`,
-    reuseExistingServer: !isCi,
-    timeout: 120_000,
-  },
+  webServer: [
+    // Mock server: sostituisce le API esterne (TMDB, JustWatch, Wikidata, IMDb).
+    {
+      command: `node e2e/mock-server.mjs`,
+      url: `${mockUrl}/healthz`,
+      reuseExistingServer: !isCi,
+      timeout: 30_000,
+    },
+    // App: `next dev` con le base URL esterne puntate al mock server.
+    {
+      command: `node ./node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${port}`,
+      url: `http://127.0.0.1:${port}`,
+      reuseExistingServer: !isCi,
+      timeout: 120_000,
+      env: {
+        // DistDir separato: `next dev` può girare anche con un altro dev server
+        // attivo su .next (lock "already running" di Next 16).
+        NEXT_DIST_DIR: ".next-e2e",
+        TMDB_BASE_URL: `${mockUrl}/3`,
+        TMDB_IMG_URL: `${mockUrl}/t/p`,
+        JUSTWATCH_API_URL: `${mockUrl}/graphql`,
+        WIKIDATA_SPARQL_URL: `${mockUrl}/sparql`,
+        IMDB_CHART_URL: `${mockUrl}/chart/top`,
+      },
+    },
+  ],
 })

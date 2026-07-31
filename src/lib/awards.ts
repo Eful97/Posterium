@@ -80,7 +80,10 @@ async function sparqlQuery(query: string): Promise<Record<string, { value: strin
 
   await acquire()
   try {
-    const url = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(query)}`
+    // Endpoint sovrascrivibile via env: nei test E2E punta al mock server
+    // locale per risposte deterministiche (bindings vuoti).
+    const sparqlBase = process.env.WIKIDATA_SPARQL_URL || "https://query.wikidata.org/sparql"
+    const url = `${sparqlBase}?format=json&query=${encodeURIComponent(query)}`
     // Retry once with jitter on failure (but not on breaker)
     for (let attempt = 0; attempt < 2; attempt++) {
       const timeout = 5000 + Math.round(Math.random() * 1000)

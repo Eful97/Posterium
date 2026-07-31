@@ -1,0 +1,179 @@
+// Mock server per i test E2E di Posterium.
+//
+// Sostituisce le API esterne (TMDB, JustWatch, Wikidata, IMDb) con risposte
+// statiche deterministiche, così i test girano senza TMDB_API_KEY e senza
+// dipendere dalla rete. L'app viene avviata da playwright.config.ts con
+// variabili d'ambiente che puntano i client HTTP a questo server.
+//
+// Come aggiungere un nuovo mock:
+//   1. Aggiungi un handler nel router qui sotto (pattern `if (method === ...)`).
+//   2. Se l'app legge una nuova base URL esterna, aggiungi l'override env in
+//      playwright.config.ts (es. FOO_API_URL) e la route corrispondente qui.
+//
+// Le rotte NON mockate rispondono 501 con un errore esplicito, per far
+// emergere subito chiamate esterne non previste dai test.
+
+import http from "node:http"
+import sharp from "sharp"
+
+const PORT = Number(process.env.MOCK_PORT) || 8790
+const MOCKED_POSTER_PATH = "/mocked/avatar.jpg"
+
+// ---- Dati fittizi deterministi ----
+
+const MOVIE = {
+  id: 19995,
+  title: "Avatar",
+  name: "Avatar",
+  original_language: "en",
+  genres: [{ id: 28, name: "Azione" }],
+  vote_average: 7.9,
+  vote_count: 32000,
+  status: "Released",
+  release_date: "2009-12-10",
+  first_air_date: null,
+  networks: [],
+  production_companies: [{ id: 777, name: "20th Century Studios", logo_path: null, origin_country: "US" }],
+}
+
+const LIST_ITEMS = [
+  MOVIE,
+  { id: 157336, title: "Interstellar", name: "Interstellar", original_language: "en", genres: [{ id: 12, name: "Avventura" }], vote_average: 8.4, vote_count: 38000, status: "Released", release_date: "2014-11-05", first_air_date: null, networks: [], production_companies: [] },
+  { id: 603, title: "Matrix", name: "Matrix", original_language: "en", genres: [{ id: 28, name: "Azione" }], vote_average: 8.2, vote_count: 22000, status: "Released", release_date: "1999-03-30", first_air_date: null, networks: [], production_companies: [] },
+  { id: 27205, title: "Inception", name: "Inception", original_language: "en", genres: [{ id: 28, name: "Azione" }], vote_average: 8.4, vote_count: 36000, status: "Released", release_date: "2010-07-15", first_air_date: null, networks: [], production_companies: [] },
+  { id: 680, title: "Pulp Fiction", name: "Pulp Fiction", original_language: "en", genres: [{ id: 53, name: "Thriller" }], vote_average: 8.5, vote_count: 28000, status: "Released", release_date: "1994-10-14", first_air_date: null, networks: [], production_companies: [] },
+].map((item) => ({ ...item, poster_path: MOCKED_POSTER_PATH }))
+
+function posterItem() {
+  return { aspect_ratio: 0.667, file_path: MOCKED_POSTER_PATH, height: 1500, iso_639_1: null, vote_average: 7.9, width: 1000 }
+}
+
+function detailFor(type) {
+  if (type === "tv") {
+    return { ...MOVIE, name: "Avatar", title: undefined, first_air_date: "2009-12-10", release_date: null }
+  }
+  return { ...MOVIE, title: "Avatar", name: "Avatar", release_date: "2009-12-10", first_air_date: null }
+}
+
+// ---- Poster di esempio: gradiente verticale deterministico ----
+let cachedPoster = null
+async function getPosterBuffer() {
+  if (cachedPoster) return cachedPoster
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a3f55"/>
+      <stop offset="100%" stop-color="#141827"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="600" fill="url(#g)"/>
+</svg>`
+  cachedPoster = await sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toBuffer()
+  return cachedPoster
+}
+
+// ---- Helpers di risposta ----
+
+function respond(res, status, body, contentType) {
+  const buf = typeof body === "string" ? Buffer.from(body, "utf8") : body
+  res.writeHead(status, {
+    "Content-Type": contentType,
+    "Content-Length": buf.length,
+    "Access-Control-Allow-Origin": "*",
+  })
+  res.end(buf)
+}
+
+function json(res, status, body) {
+  respond(res, status, JSON.stringify(body), "application/json")
+}
+
+// ---- Router ----
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`)
+  const { pathname } = url
+  const method = req.method || "GET"
+
+  try {
+    // Readiness per playwright webServer
+    if (method === "GET" && pathname === "/healthz") {
+      return json(res, 200, { ok: true })
+    }
+
+    // Immagini poster (image.tmdb.org/t/p/... → mock)
+    if (method === "GET" && pathname.startsWith("/t/p/")) {
+      return respond(res, 200, await getPosterBuffer(), "image/jpeg")
+    }
+
+    // TMDB API
+    if (pathname === "/3/search/multi") {
+      return json(res, 200, {
+        page: 1,
+        total_pages: 1,
+        total_results: 1,
+        results: [{ ...MOVIE, media_type: "movie", poster_path: MOCKED_POSTER_PATH, popularity: 100 }],
+      })
+    }
+    if (
+      pathname === "/3/movie/popular" ||
+      pathname === "/3/tv/popular" ||
+      pathname.startsWith("/3/trending/")
+    ) {
+      return json(res, 200, { page: 1, total_pages: 1, total_results: LIST_ITEMS.length, results: LIST_ITEMS })
+    }
+    const detailsMatch = pathname.match(/^\/3\/(movie|tv)\/(\d+)$/)
+    if (detailsMatch) {
+      return json(res, 200, detailFor(detailsMatch[1]))
+    }
+    const imagesMatch = pathname.match(/^\/3\/(movie|tv)\/(\d+)\/images$/)
+    if (imagesMatch) {
+      return json(res, 200, { id: Number(imagesMatch[2]), backdrops: [], posters: [posterItem()], logos: [] })
+    }
+    const extIdsMatch = pathname.match(/^\/3\/(movie|tv)\/(\d+)\/external_ids$/)
+    if (extIdsMatch) {
+      // imdb_id volutamente NON in IMDb Top 250, per poster deterministici
+      return json(res, 200, { id: Number(extIdsMatch[2]), imdb_id: "tt1234567" })
+    }
+    const kwMatch = pathname.match(/^\/3\/(movie|tv)\/(\d+)\/keywords$/)
+    if (kwMatch) {
+      return json(res, 200, { id: Number(kwMatch[2]), keywords: [] })
+    }
+
+    // JustWatch GraphQL (rank deterministico per Avatar)
+    if (pathname === "/graphql" && method === "POST") {
+      return json(res, 200, {
+        data: {
+          streamingCharts: {
+            edges: [
+              { streamingChartInfo: { rank: 7 }, node: { content: { externalIds: { tmdbId: 19995 } } } },
+            ],
+          },
+        },
+      })
+    }
+
+    // Wikidata SPARQL: bindings vuoti → nessun award
+    if (pathname === "/sparql") {
+      return json(res, 200, { head: { vars: [] }, results: { bindings: [] } })
+    }
+
+    // IMDb chart minimale: nessun tt-id → fallback al dataset statico
+    if (pathname === "/chart/top/") {
+      return respond(res, 200, "<!doctype html><html><body></body></html>", "text/html")
+    }
+
+    // Fallback esplicito per chiamate non mockate
+    return json(res, 501, { error: `Mock server: endpoint non mockato (${method} ${pathname})` })
+  } catch (err) {
+    console.error("[mock-server] Errore:", err)
+    if (!res.headersSent) {
+      return json(res, 500, { error: `Mock server: errore interno (${String(err)})` })
+    }
+    res.end()
+  }
+})
+
+server.listen(PORT, "127.0.0.1", () => {
+  console.log(`[mock-server] in ascolto su http://127.0.0.1:${PORT}`)
+})
