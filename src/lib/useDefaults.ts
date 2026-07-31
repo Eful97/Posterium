@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 
 export type RibbonSide = "left" | "right"
 
@@ -98,6 +98,10 @@ function readStoredDefaults(): StoredDefaults | null {
   }
 }
 
+function safeSetItem(key: string, val: string) {
+  try { localStorage.setItem(key, val) } catch { /* localStorage non disponibile */ }
+}
+
 function buildFromStored(d: StoredDefaults | null): DefaultsState {
   if (!d) return { ...DEFAULTS }
   return {
@@ -128,6 +132,30 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
   }
 }
 
+/**
+ * Payload dei SOLI default persistiti — allineato allo schema server
+ * (`defaultsSchema` in `/api/defaults`) e allo shape scritto da `saveDefaults`.
+ * Non include i valori "corrente" (globalBadges, badgeStyle…) che dipendono
+ * dal poster in editing.
+ */
+function defaultsToPayload(d: DefaultsState): Record<string, unknown> {
+  return {
+    badgeStyle: d.defaultBadgeStyle,
+    rankingBadgeStyle: d.defaultRankingBadgeStyle,
+    blurEnabled: d.defaultBlurEnabled,
+    blurIntensity: d.defaultBlurIntensity,
+    blurFade: d.defaultBlurFade,
+    blurDarkness: d.defaultBlurDarkness,
+    gradientHeight: d.defaultGradientHeight,
+    globalBadges: d.defaultGlobalBadges,
+    rankingBadges: d.defaultRankingBadges,
+    autoRotateClean: d.defaultAutoRotateClean,
+    defaultLogoFitEnabled: d.defaultLogoFitEnabled,
+    networkLogo: d.defaultNetworkLogo,
+    ribbonSide: d.defaultRibbonSide,
+  }
+}
+
 export function useDefaults() {
   // Stato iniziale deterministico (DEFAULTS): la lettura di localStorage è rimandata
   // al mount via useEffect. Durante la SSR `window` non esiste (readStoredDefaults
@@ -135,16 +163,55 @@ export function useDefaults() {
   // di useState avrebbe prodotto un hydration mismatch con l'HTML renderizzato dal server.
   const [state, setState] = useState<DefaultsState>(() => ({ ...DEFAULTS }))
 
+  // Ref di dedup per l'auto-persist: primato durante l'hydration con il payload appena
+  // caricato, così il primo run dell'effetto di sync trova payload identico e non scrive.
+  const lastPersistRef = useRef<string>("")
+
   useEffect(() => {
-    setState(buildFromStored(readStoredDefaults()))
+    const stored = readStoredDefaults()
+    const hydrated = buildFromStored(stored)
+    setState(hydrated)
+    lastPersistRef.current = JSON.stringify(defaultsToPayload(hydrated))
   }, [])
+
+  // Auto-persist con debounce (1s): ogni cambio dei default scrive su localStorage
+  // e tenta il sync server (/api/defaults). Dedup via payload string — se cambiano
+  // solo i valori "corrente" (globalBadges, badgeStyle…) il payload resta identico
+  // e non viene schedulata nessuna scrittura. Il PUT server può ricevere 401 se è
+  // configurato un POSTERIUM_ADMIN_TOKEN: il catch silenzioso lascia il comportamento
+  // invariato (stesso fail-open del bottone manuale "Save Defaults").
+  useEffect(() => {
+    const payload = defaultsToPayload(state)
+    const payloadStr = JSON.stringify(payload)
+    if (lastPersistRef.current === payloadStr) return
+    lastPersistRef.current = payloadStr
+
+    const timer = setTimeout(() => {
+      safeSetItem("badgeDefaults", payloadStr)
+      fetch("/api/defaults", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: payloadStr,
+      }).catch((error: unknown) => {
+        // Se il PUT fallisce (rete, serverless cold start, 401 admin) resetta il ref
+        // così un successivo cambio di default riprova invece di considerare "sincronizzato".
+        lastPersistRef.current = ""
+        const message = error instanceof Error ? error.message : String(error)
+        console.warn(`[defaults] Auto-sync failed: ${message}`)
+      })
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [state])
 
   const update = useCallback((patch: Partial<DefaultsState>) => {
     setState((prev) => ({ ...prev, ...patch }))
   }, [])
 
   const loadDefaultsToState = useCallback(() => {
-    setState(buildFromStored(readStoredDefaults()))
+    const stored = readStoredDefaults()
+    setState(buildFromStored(stored))
+    lastPersistRef.current = JSON.stringify(defaultsToPayload(buildFromStored(stored)))
   }, [])
 
   return { ...state, update, loadDefaultsToState }
