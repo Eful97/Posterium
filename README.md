@@ -280,7 +280,9 @@ npx playwright test e2e/posterium-smoke.spec.ts
 npx playwright test e2e/
 ```
 
-Con `TMDB_API_KEY` nell'ambiente vengono attivati automaticamente anche i test di regressione visiva sui poster generati (confronto screenshot per ogni stile badge, gradiente, blur).
+I test non richiedono più `TMDB_API_KEY`: le API esterne (TMDB, JustWatch, Wikidata, IMDb) vengono simulate dal mock server locale `e2e/mock-server.mjs`, avviato automaticamente da `playwright.config.ts` con dati deterministici. I test girano anche con `npm run dev` attivo grazie a un `distDir` separato (`.next-e2e`).
+
+Se vuoi aggiungere nuovi mock (per esempio una nuova API esterna), aggiungi un handler in `e2e/mock-server.mjs` e l'override env corrispondente in `playwright.config.ts`.
 
 ### Aggiornare gli snapshot
 

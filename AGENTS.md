@@ -109,13 +109,13 @@ App version: `0.15.2` — RENDER_VERSION: `92` — rv: `92`
 |---|---|
 | Comando | `npx playwright test e2e/posterium-visual.spec.ts` (solo test visivi) |
 | Suite completa | `npx playwright test e2e/` (include smoke test) |
-| API key | I test poster API richiedono `TMDB_API_KEY` nell'ambiente — senza, vengono saltati automaticamente |
+| Dipendenze esterne | Nessuna: i test usano il mock server locale (`e2e/mock-server.mjs`), avviato da `playwright.config.ts`, che serve TMDB/JustWatch/Wikidata/IMDb con dati deterministici. `TMDB_API_KEY` non serve più. Attenzione: serve una porta dedicata e un `distDir` separato (`.next-e2e`), quindi puoi eseguire i test anche con `npm run dev` attivo. |
 | Snapshot intenzionali | Se la modifica ALTERA INTENZIONALMENTE l'aspetto, aggiorna con `npx playwright test --update-snapshots` e committa i nuovi `.png` |
 | RENDER_VERSION | Ogni modifica ai parametri di resa (font, padding, gap, colori, gradienti, blur, logo) DEVE incrementare `RENDER_VERSION` in `src/lib/render-version.ts` e aggiornare il valore `rv` in questo file. I test visivi confermano la coerenza della modifica. |
 
 Test attivi:
 - **4 screenshot fissi**: home full-page, home viewport, home mobile, /status — sempre attivi
-- **20 test poster API** (10 funzionali + 10 visual): badge shadow/pill/bar/colored, ranking, extra, gradienti up/down, blur, clean — attivi solo con `TMDB_API_KEY`
+- **20 test poster API** (10 funzionali + 10 visual): badge shadow/pill/bar/colored, ranking, extra, gradienti up/down, blur, clean — sempre attivi (grazie al mock server)
 <!-- END: posterium-project-rules -->
 
 ---
