@@ -218,7 +218,7 @@ export async function renderGenreBadge(
 
 // --- Ranking badge ---
 
-function buildNetflixRankBadgeSVG(rank: number, pw: number) {
+export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boolean) {
   const fs = Math.round(Math.max(23 * pw / 380, 14))
   const w = Math.round(fs * 2.6)
   const h = Math.round(w * 1.35)
@@ -230,18 +230,18 @@ function buildNetflixRankBadgeSVG(rank: number, pw: number) {
   const totalW = w + padRight
   const totalH = h + padBottom
 
+  // Stessa logica adattiva degli altri badge ranking (tlBg/tlFg):
+  // top chiaro → nastro scuro con testo chiaro; top scuro → nastro chiaro con testo nero.
+  const fill = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
+  const textColor = topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"
+
   const ribbonMidX = w / 2
   const ribbonVNotchY = Math.round(h * 0.88)
 
-  // Nastro Netflix top-left: ancorato al bordo sinistro del poster
+  // Nastro top-left: ancorato al bordo sinistro del poster
   const pathD = `M 0 0 L ${w} 0 L ${w - slant} ${h} L ${ribbonMidX} ${ribbonVNotchY} L 0 ${h} Z`
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
     <defs>
-      <linearGradient id="netflixGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#FF2A33"/>
-        <stop offset="50%" stop-color="#E50914"/>
-        <stop offset="100%" stop-color="#B20610"/>
-      </linearGradient>
       <filter id="shadow3D" x="-20%" y="-20%" width="180%" height="180%">
         <feDropShadow dx="3" dy="3" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.65"/>
       </filter>
@@ -249,10 +249,10 @@ function buildNetflixRankBadgeSVG(rank: number, pw: number) {
         <feDropShadow dx="0" dy="1.5" stdDeviation="1" flood-color="#000000" flood-opacity="0.65"/>
       </filter>
     </defs>
-    <path d="${pathD}" fill="url(#netflixGrad)" filter="url(#shadow3D)"/>
+    <path d="${pathD}" fill="${fill}" filter="url(#shadow3D)"/>
     <line x1="0" y1="1" x2="${w}" y2="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
-    <text x="${ribbonMidX}" y="${Math.round(h * 0.28)}" fill="#ffffff" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
-    <text x="${ribbonMidX}" y="${Math.round(h * 0.60)}" fill="#ffffff" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
+    <text x="${ribbonMidX}" y="${Math.round(h * 0.28)}" fill="${textColor}" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
+    <text x="${ribbonMidX}" y="${Math.round(h * 0.60)}" fill="${textColor}" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
   </svg>`
   return { svg, w: totalW, h: totalH }
 }
@@ -286,7 +286,7 @@ export async function buildRankingBadgeSVG(
 
   let result: { svg: string; w: number; h: number }
   if (isNetflix) {
-    result = buildNetflixRankBadgeSVG(rank, pw)
+    result = buildNetflixRankBadgeSVG(rank, pw, !!topLight)
   } else if (s === "bar") {
     result = buildRankingBarSvg(fullText, pw, fs, fg, bg)
   } else if (s === "pill") {

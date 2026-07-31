@@ -1,7 +1,7 @@
 import sharp from "sharp"
 import { describe, expect, it } from "vitest"
 import { buildGenrePillSvg, buildGenreTextSvg, buildRankingDefaultSvg, buildExtraDefaultSvg } from "@/lib/badge-svg-shared"
-import { buildGenreBadgeSVG, buildRankingBadgeSVG, buildExtraBadgeSVG } from "@/lib/svg-badge"
+import { buildGenreBadgeSVG, buildRankingBadgeSVG, buildExtraBadgeSVG, buildNetflixRankBadgeSVG } from "@/lib/svg-badge"
 
 async function alphaBounds(png: Buffer) {
   const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
@@ -149,6 +149,26 @@ describe("buildRankingBadgeSVG", () => {
     const badge = await buildRankingBadgeSVG(1, 1000, undefined, false, "default", "#555555")
     expect(badge).not.toBeNull()
     expect(badge!.w).toBeGreaterThan(0)
+  })
+
+  it("renders netflix ribbon light with dark text when top is dark", async () => {
+    const badge = await buildRankingBadgeSVG(4, 1000, "Oggi", false, "netflix", "#555555")
+    expect(badge).not.toBeNull()
+    expect(badge!.w).toBeGreaterThan(0)
+  })
+
+  it("uses light ribbon + dark text (tlBg/tlFg) when top is dark", () => {
+    const { svg } = buildNetflixRankBadgeSVG(4, 1000, false)
+    expect(svg).toContain('fill="rgba(255,255,255,0.80)"')
+    expect(svg).toContain('fill="rgba(0,0,0,0.80)"')
+    expect(svg).not.toContain("netflixGrad")
+    expect(svg).not.toContain("#E50914")
+  })
+
+  it("uses dark ribbon + light text (tlBg/tlFg) when top is light", () => {
+    const { svg } = buildNetflixRankBadgeSVG(4, 1000, true)
+    expect(svg).toContain('fill="rgba(0,0,0,0.80)"')
+    expect(svg).toContain('fill="rgba(255,255,255,0.80)"')
   })
 })
 
