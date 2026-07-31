@@ -38,9 +38,15 @@ export function useSearch(tmdbKey: string, lang: string) {
   const [searchPage, setSearchPage] = useState(1)
   const [recentSearches, setRecentSearches] = useState<string[]>(readRecentSearches)
 
+  // Revision counter per scartare risposte stale: se l'utente lancia una nuova
+  // ricerca (o un loadMore) mentre una precedente è ancora in flight, solo
+  // l'ultima richiesta può aggiornare lo stato. Previene il "search race".
+  const revRef = useRef(0)
+
   const doSearch = useCallback(async (q?: string, page = 1) => {
     const searchQuery = q ?? query
     if (searchQuery.length < 2 || !tmdbKey) return
+    const rev = ++revRef.current
     setSearching(true)
     setError(null)
     if (page === 1) setSearchPage(1)
@@ -49,6 +55,8 @@ export function useSearch(tmdbKey: string, lang: string) {
         `/api/tmdb/search?q=${encodeURIComponent(searchQuery)}&language=${lang}&api_key=${tmdbKey}&page=${page}`,
         { timeout: 15000 }
       )
+      // Risposta stale (una ricerca più recente è partita): scarta
+      if (rev !== revRef.current) return
       const newResults = data.results || []
       setResults(page === 1 ? newResults : (prev) => [...prev, ...newResults])
       setTotalResults(data.total_results || 0)
@@ -62,12 +70,13 @@ export function useSearch(tmdbKey: string, lang: string) {
         })
       }
     } catch (e) {
+      if (rev !== revRef.current) return
       console.error("[posterium] Search failed:", e)
       toastRef.current.error("Search failed")
       setError("Search failed. Please try again.")
       if (page === 1) setResults([])
     } finally {
-      setSearching(false)
+      if (rev === revRef.current) setSearching(false)
     }
   }, [query, tmdbKey, lang])
 

@@ -65,12 +65,14 @@ export function CataloghiView() {
   const SCROLL_KEY = "cataloghi:scroll"
 
   useEffect(() => {
-    const saved = sessionStorage.getItem(SCROLL_KEY)
+    // sessionStorage può lanciare (private mode, iframe sandbox): non deve rompere il render
+    let saved: string | null = null
+    try { saved = sessionStorage.getItem(SCROLL_KEY) } catch { /* storage non disponibile */ }
     if (saved) {
       requestAnimationFrame(() => window.scrollTo(0, Number(saved)))
     }
     return () => {
-      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY))
+      try { sessionStorage.setItem(SCROLL_KEY, String(window.scrollY)) } catch { /* storage non disponibile */ }
     }
   }, [])
 

@@ -8,7 +8,7 @@ import { jsonGzip } from "@/lib/json-response"
 const log = createLogger("trending")
 
 const TMDB_BASE = "https://api.themoviedb.org/3"
-const TMDB_KEY = process.env.TMDB_API_KEY!
+const TMDB_KEY = process.env.TMDB_API_KEY || ""
 
 async function tmdbFetch(path: string, apiKey?: string) {
   const url = new URL(`${TMDB_BASE}${path}`)
@@ -23,6 +23,20 @@ async function tmdbFetchImages(mediaType: string, id: number, apiKey?: string) {
   const res = await fetch(`${TMDB_BASE}/${mediaType}/${id}/images?api_key=${apiKey || TMDB_KEY}&include_image_language=it,en,null`)
   if (!res.ok) return null
   return res.json()
+}
+
+/** Esegue `fn` su ogni item con al massimo `limit` chiamate concorrenti. */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let next = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++
+      results[i] = await fn(items[i])
+    }
+  })
+  await Promise.all(workers)
+  return results
 }
 
 interface TrendingItem {
@@ -42,8 +56,9 @@ export async function GET(req: NextRequest) {
   const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
   const country = req.nextUrl.searchParams.get("country") || "IT"
   const cacheKey = `trending:${country}`
+  const acceptEncoding = req.headers.get("accept-encoding")
   const cached = cacheGet<{ movies: TrendingItem[]; tv: TrendingItem[] }>(cacheKey)
-  if (cached) return jsonGzip(cached)
+  if (cached) return jsonGzip(cached, 200, undefined, acceptEncoding)
   try {
     const [movieRanks, tvRanks] = await Promise.all([
       getJWRankings("MOVIE", country).catch(() => [] as { tmdbId: number; rank: number }[]),
@@ -70,22 +85,25 @@ export async function GET(req: NextRequest) {
         first_air_date: details.first_air_date,
       }
     }
-    const movieBatches = movieRanks.map(async (r) => {
+    // Concurrency limiter: ogni enrichItem fa 2 fetch TMDB; senza cap l'esplosione
+    // parallela satura il rate limit TMDB. Pool di 4 alla volta.
+    const CONCURRENCY = 4
+    const movieBatches = await mapLimit(movieRanks, CONCURRENCY, async (r) => {
       const item = await enrichItem(r.tmdbId, "movie")
       if (item) movieResults.push({ ...item, rank: r.rank })
     })
-    const tvBatches = tvRanks.map(async (r) => {
+    const tvBatches = await mapLimit(tvRanks, CONCURRENCY, async (r) => {
       const item = await enrichItem(r.tmdbId, "tv")
       if (item) tvResults.push({ ...item, rank: r.rank })
     })
-    await Promise.all([...movieBatches, ...tvBatches])
+    await Promise.all([movieBatches, tvBatches])
     movieResults.sort((a, b) => a.rank - b.rank)
     tvResults.sort((a, b) => a.rank - b.rank)
     const body = { movies: movieResults, tv: tvResults }
     cacheSet(cacheKey, body, ["tmdb", "trending", country])
-    return jsonGzip(body, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" })
+    return jsonGzip(body, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" }, acceptEncoding)
   } catch (err) {
     log.error("Trending fetch failed", { error: err instanceof Error ? err.message : String(err) })
-    return jsonGzip({ movies: [], tv: [] }, 200, { "Cache-Control": "no-store" })
+    return jsonGzip({ movies: [], tv: [] }, 200, { "Cache-Control": "no-store" }, acceptEncoding)
   }
 }

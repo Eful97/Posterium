@@ -30,8 +30,7 @@ export async function http<T = unknown>(path: string, opts: ApiOptions = {}): Pr
 
       if (!res.ok) {
         if (res.status === 429 && attempt < retries) {
-          const retryAfter = Number(res.headers.get("Retry-After") || 1) * 1000
-          await delay(retryAfter)
+          await delay(parseRetryAfter(res.headers.get("Retry-After")))
           continue
         }
         throw new ApiError(res.status, `API ${res.status}: ${path}`)
@@ -72,6 +71,27 @@ function combineAbortSignals(external: AbortSignal, internal: AbortSignal): { si
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
+}
+
+/**
+ * Parsa l'header `Retry-After` (429). Accetta sia delta-secondi che HTTP-date.
+ * Su input malformato o data già passata torna a un fallback breve; un cap di
+ * 30s evita che un valore gigante (o una data lontana) congelì le retry.
+ */
+function parseRetryAfter(header: string | null): number {
+  const raw = (header || "").trim()
+  if (!raw) return 1000
+  if (/^\d+$/.test(raw)) {
+    const seconds = Math.min(Number(raw), 30)
+    return seconds * 1000
+  }
+  const asDate = Date.parse(raw)
+  if (Number.isFinite(asDate)) {
+    const waitMs = asDate - Date.now()
+    if (waitMs > 0) return Math.min(waitMs, 30_000)
+    return 1000 // data già passata → retry subito
+  }
+  return 1000
 }
 
 function isAbortError(err: unknown): boolean {

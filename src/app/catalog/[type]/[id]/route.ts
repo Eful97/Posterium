@@ -78,7 +78,6 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
     id,
     defaults,
     mapping,
-    apiKey: process.env.TMDB_API_KEY,
     lang: "it",
     config: configParam || undefined,
     user: userParam || undefined,
@@ -87,15 +86,32 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
 
 /** Cache locale per la risoluzione IMDb ID — evita chiamate duplicate a TMDB */
 const imdbIdCache = new Map<number, string | null>()
+const IMDB_ID_CACHE_MAX = 2000
+// Il "non-cachare null su errore" è gestito con una sentinella: un tmdbId viene
+// salvato solo se la risoluzione è "definitiva" (imdb_id presente o assente dalla
+// risposta TMDB). Se getExternalIds lancia (errore di rete/traffico), NON si
+// cachea il null per non congelare un fallimento transitorio per tutta la vita del processo.
+function imdbIdCacheSet(tmdbId: number, value: string | null) {
+  if (imdbIdCache.size >= IMDB_ID_CACHE_MAX) {
+    // Eviction semplice: rimuovi la prima chiave inserita (FIFO) per tenere la cache bounded
+    const oldest = imdbIdCache.keys().next().value
+    if (oldest !== undefined) imdbIdCache.delete(oldest)
+  }
+  imdbIdCache.set(tmdbId, value)
+}
 
 /** TMDB /tv/{id} non include imdb_id — serve chiamata extra a external_ids */
 async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number): Promise<string | null> {
   if (mediaType === "movie") return null // /movie/{id} già include imdb_id
   const cached = imdbIdCache.get(tmdbId)
   if (cached !== undefined) return cached
-  const result = await getExternalIds("tv", tmdbId).then(r => r.imdb_id ?? null).catch(() => null)
-  imdbIdCache.set(tmdbId, result)
-  return result
+  try {
+    const result = await getExternalIds("tv", tmdbId).then(r => r.imdb_id ?? null)
+    imdbIdCacheSet(tmdbId, result)
+    return result
+  } catch {
+    return null // non cacheare: errore transitorio, ritenteremo al prossimo accesso
+  }
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
@@ -118,7 +134,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     if (catalogId.startsWith("posterium-jw")) {
       const ids = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW")
-      const apiKey = process.env.TMDB_API_KEY!
+      // niente non-null assertion: se la chiave manca, il catalog resta vuoto
+      // invece di esplodere con una URL `api_key=undefined`
+      const apiKey = process.env.TMDB_API_KEY || ""
+      if (!apiKey) return catalogResponse({ metas: [] })
       const pathTmdb = stType === "movie" ? "/movie" : "/tv"
       const results = await Promise.all(ids.slice(0, 20).map(async (id) => {
         const url = `https://api.themoviedb.org/3${pathTmdb}/${id}?api_key=${apiKey}&language=it-IT`

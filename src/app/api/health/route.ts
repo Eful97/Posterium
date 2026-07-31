@@ -88,7 +88,7 @@ export async function GET(request: Request) {
 
   const storage = {
     mode: storageMode,
-    dataDir: DATA_DIR,
+    // dataDir NON esposto: rivelerebbe il path assoluto del filesystem (info leak)
     dataDirExists: storageMode === "file" ? await fileExists(DATA_DIR) : null,
     dataDirWritable: storageMode === "file" ? await canWriteDir(DATA_DIR) : null,
     mappingsFileExists: storageMode === "file" ? await fileExists(mappingsFile) : null,

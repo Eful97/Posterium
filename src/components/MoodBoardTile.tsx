@@ -57,7 +57,7 @@ export function MoodBoardTile({
             if (selectMode) onSelect(); else onOpen()
           }
         }}
-        className={`surface-card relative z-10 rounded-xl overflow-hidden transition-all duration-300 ease-out w-full border border-white/10 shadow-2xl ${
+        className={`surface-card group relative z-10 rounded-xl overflow-hidden transition-all duration-300 ease-out w-full border border-white/10 shadow-2xl ${
           selectMode
             ? isSelected
               ? "ring-2 ring-red-400/50 border-red-400/70"
@@ -71,8 +71,8 @@ export function MoodBoardTile({
 
       <div className="aspect-[2/3] bg-zinc-900/80 overflow-hidden relative">
         {/* Poster image */}
-        {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
         {m.posterPath ? (
+          // eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL
           <img
             src={posterUrl(m.posterPath, "w342")}
             alt={m.title}

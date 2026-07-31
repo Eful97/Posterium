@@ -137,13 +137,15 @@ async function readFromMem(): Promise<Record<string, Mapping>> {
 }
 
 async function persist(data: Record<string, Mapping>) {
-  memCache = data
-  memCacheTime = Date.now()
   await ensureDataDir()
   const tmp = `${DATA_FILE}.tmp`
   try {
     await fsp.writeFile(tmp, JSON.stringify(data, null, 2))
     await fsp.rename(tmp, DATA_FILE)
+    // Aggiorna la memCache SOLO dopo la write riuscita: se la persist fallisce,
+    // la memCache resta coerente con il disco e non serve dati mai persistiti.
+    memCache = data
+    memCacheTime = Date.now()
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     log.error("Failed to write mappings", { file: DATA_FILE, error: msg })

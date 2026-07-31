@@ -53,7 +53,7 @@ export function VersionBadge() {
   const [checking, setChecking] = useState(false)
 
   useEffect(() => {
-    window.localStorage?.removeItem("posterium:tag")
+    try { window.localStorage?.removeItem("posterium:tag") } catch { /* storage non disponibile */ }
     getLatestVersion().then((tag) => {
       if (tag && tag !== CURRENT_VERSION) setUpdateTag(tag)
     })

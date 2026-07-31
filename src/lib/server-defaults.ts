@@ -1,5 +1,5 @@
 import fs from "node:fs/promises"
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { DATA_DIR } from "@/lib/data-dir"
 import { createLogger } from "@/lib/logger"
@@ -52,7 +52,7 @@ export function getServerDefaults(): ServerDefaults {
   // (callers are all synchronous — making them all async would be a much larger refactor)
   try {
     if (existsSync(FILE)) {
-      const raw = require("node:fs").readFileSync(FILE, "utf-8")
+      const raw = readFileSync(FILE, "utf-8")
       cached = JSON.parse(raw) as ServerDefaults
     }
   } catch (error) {

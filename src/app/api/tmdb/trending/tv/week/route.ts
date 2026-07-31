@@ -17,8 +17,9 @@ export async function GET(req: NextRequest) {
   const origLang = req.nextUrl.searchParams.get("with_original_language")
   const cacheKey = `trending:tv:week:${origLang || "all"}:${apiKey.slice(0, 6)}`
 
+  const acceptEncoding = req.headers.get("accept-encoding")
   const cached = cacheGet<{ results: unknown[] }>(cacheKey)
-  if (cached) return jsonGzip(cached)
+  if (cached) return jsonGzip(cached, 200, undefined, acceptEncoding)
 
   try {
     let url: string
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
     if (!res.ok) {
-      return jsonGzip({ results: [] }, 200, { "Cache-Control": "no-store" })
+      return jsonGzip({ results: [] }, 200, { "Cache-Control": "no-store" }, acceptEncoding)
     }
 
     const data = await res.json()
@@ -47,9 +48,9 @@ export async function GET(req: NextRequest) {
 
     const body = { results }
     cacheSet(cacheKey, body, ["tmdb", "trending", "anime"])
-    return jsonGzip(body, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" })
+    return jsonGzip(body, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" }, acceptEncoding)
   } catch (err) {
     log.error("TV week fetch failed", { error: err instanceof Error ? err.message : String(err) })
-    return jsonGzip({ results: [] }, 200, { "Cache-Control": "no-store" })
+    return jsonGzip({ results: [] }, 200, { "Cache-Control": "no-store" }, acceptEncoding)
   }
 }

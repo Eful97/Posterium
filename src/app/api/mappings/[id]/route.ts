@@ -73,6 +73,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Rou
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
+  // Stessa validazione del PUT: evita remove() con type/chiavi malformati
+  if (!tmdbId || !type || (type !== "movie" && type !== "tv")) {
+    return Response.json({ error: "Invalid id format" }, { status: 400 })
+  }
   await remove(type as "movie" | "tv", tmdbId)
   cacheInvalidatePosterDataFor(type as "movie" | "tv", tmdbId)
   return Response.json({ ok: true })

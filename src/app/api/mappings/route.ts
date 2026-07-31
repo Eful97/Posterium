@@ -81,7 +81,6 @@ export async function POST(req: NextRequest) {
       id: parsed.data.tmdbId,
       defaults: getServerDefaults(),
       mapping: savedMapping,
-      apiKey: process.env.TMDB_API_KEY,
       lang: parsed.data.language || "it",
     })
     await fetch(warmUrl, { signal: AbortSignal.timeout(25000) })

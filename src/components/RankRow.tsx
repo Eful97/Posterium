@@ -85,7 +85,9 @@ export function RankRow({
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    const saved = sessionStorage.getItem(storageKey)
+    // sessionStorage può lanciare (private mode, iframe sandbox): non deve rompere il render
+    let saved: string | null = null
+    try { saved = sessionStorage.getItem(storageKey) } catch { /* storage non disponibile */ }
     if (saved) el.scrollLeft = Number(saved)
   }, [items.length, storageKey])
 
@@ -98,12 +100,13 @@ export function RankRow({
     const poster = el.querySelector(".rank-btn") as HTMLElement
     const w = poster?.offsetWidth || 192
     el.scrollBy({ left: dir === "left" ? -(w * gap) : w * gap, behavior: "smooth" })
-    requestAnimationFrame(() => sessionStorage.setItem(storageKey, String(el.scrollLeft)))
+    requestAnimationFrame(() => { try { sessionStorage.setItem(storageKey, String(el.scrollLeft)) } catch { /* storage non disponibile */ } })
   }
 
   const handleScroll = () => {
     const el = scrollRef.current
-    if (el) sessionStorage.setItem(storageKey, String(el.scrollLeft))
+    if (!el) return
+    try { sessionStorage.setItem(storageKey, String(el.scrollLeft)) } catch { /* storage non disponibile */ }
   }
 
   return (

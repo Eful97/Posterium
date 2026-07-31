@@ -18,7 +18,7 @@ afterEach(async () => {
 })
 
 describe("GET /api/health", () => {
-  it("returns storage.dataDir pointing to POSTERIUM_DATA_DIR", async () => {
+  it("exposes storage state without leaking the absolute DATA_DIR path", async () => {
     tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "posterium-health-"))
     process.env.POSTERIUM_DATA_DIR = tempDir
     vi.resetModules()
@@ -28,7 +28,8 @@ describe("GET /api/health", () => {
     const res = await GET(req)
     const json = await res.json()
 
-    expect(json.storage.dataDir).toBe(tempDir)
+    // dataDir NON è esposto: rivelerebbe il path assoluto del filesystem (info leak)
+    expect(json.storage.dataDir).toBeUndefined()
     expect(json.storage.dataDirExists).toBe(true)
     expect(json.storage.dataDirWritable).toBe(true)
   })

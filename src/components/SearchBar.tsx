@@ -22,8 +22,11 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
   const inputRef = useRef<HTMLInputElement>(null)
   const h = large ? "h-12" : "h-10"
 
+  // In modalità controllata (value prop) ogni tasto aggiorna sia `text` (dall'onChange)
+  // sia il parent: il setState funzionale con guardia di uguaglianza evita un re-render
+  // ridondante quando il valore in arrivo coincide con quello già in stato.
   useEffect(() => {
-    if (value !== undefined) setText(value)
+    if (value !== undefined) setText((prev) => (prev === value ? prev : value))
   }, [value])
 
   useEffect(() => {

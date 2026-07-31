@@ -35,6 +35,24 @@ export function CollectionBar({
   const scrollRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  const openMenu = (e: React.MouseEvent, colId: string) => {
+    e.stopPropagation()
+    const button = e.currentTarget as HTMLElement
+    const btnRect = button.getBoundingClientRect()
+    const menuWidth = 144
+    let left = btnRect.right - menuWidth
+    if (typeof window !== "undefined") {
+      left = Math.max(12, Math.min(left, window.innerWidth - menuWidth - 12))
+    }
+    setMenuPos({ top: btnRect.bottom + 4, left })
+    setMenuOpen(colId)
+  }
+
+  const closeMenu = () => {
+    setMenuOpen(null)
+    setMenuPos(null)
+  }
+
   useEffect(() => {
     if (creating || editing) inputRef.current?.focus()
   }, [creating, editing])
@@ -64,24 +82,6 @@ export function CollectionBar({
     window.addEventListener("scroll", handler, true)
     return () => window.removeEventListener("scroll", handler, true)
   }, [menuOpen])
-
-  const openMenu = (e: React.MouseEvent, colId: string) => {
-    e.stopPropagation()
-    const button = e.currentTarget as HTMLElement
-    const btnRect = button.getBoundingClientRect()
-    const menuWidth = 144
-    let left = btnRect.right - menuWidth
-    if (typeof window !== "undefined") {
-      left = Math.max(12, Math.min(left, window.innerWidth - menuWidth - 12))
-    }
-    setMenuPos({ top: btnRect.bottom + 4, left })
-    setMenuOpen(colId)
-  }
-
-  const closeMenu = () => {
-    setMenuOpen(null)
-    setMenuPos(null)
-  }
 
   const handleCreate = () => {
     const name = nameInput.trim()

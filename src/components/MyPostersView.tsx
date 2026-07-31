@@ -43,6 +43,15 @@ export function MyPostersView() {
   const typeCloseTimer = useRef<ReturnType<typeof setTimeout>>(null)
   const sortCloseTimer = useRef<ReturnType<typeof setTimeout>>(null)
 
+  // Cleanup dei timer di chiusura dropdown su unmount: evita setState su
+  // componente smontato (warning React) e timer pendenti dopo la navigazione.
+  useEffect(() => {
+    return () => {
+      if (typeCloseTimer.current) clearTimeout(typeCloseTimer.current)
+      if (sortCloseTimer.current) clearTimeout(sortCloseTimer.current)
+    }
+  }, [])
+
   const closeTypeDropdown = useCallback(() => {
     if (typeOpen) {
       setTypeClosing(true)

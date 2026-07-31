@@ -26,6 +26,12 @@ export interface ImmutablePosterRequestState {
 
 const inflight = new Map<string, Promise<PosterCachePayload | null>>()
 
+// Se un render in flight muore (crash/timeout serverless) senza chiamare la
+// funzione di completamento, la promise resterebbe appesa nella map per sempre
+// bloccando ogni richiesta successiva con la stessa cache key su await.
+// Timeout difensivo: dopo N secondi risolve con null e libera la map.
+const INFLIGHT_TIMEOUT_MS = 60_000
+
 export function normalizePosterCacheParams(searchParams: URLSearchParams): URLSearchParams {
   const params = new URLSearchParams(searchParams)
   params.delete("rv")
@@ -40,8 +46,12 @@ export function isPosterRefreshRequest(searchParams: URLSearchParams): boolean {
 
 export function isImmutablePosterRequest(searchParams: URLSearchParams, state: ImmutablePosterRequestState = {}): boolean {
   if (!searchParams.has("rv") || state.isRotating) return false
-  if (!state.hasMapping) return true
-  return state.mappingVersionMatches === true
+  // Senza mapping il poster NON può essere immutable per un anno: viene composto
+  // al volo con dati dinamici (rank JustWatch, premi, IMDb Top 250) che cambiano
+  // di settimana in settimana — un header immutable li congelerebbe alla CDN.
+  // Con mapping, l'immutable richiede anche che il versionamento del mapping
+  // (mv) corrisponda, altrimenti la cache edge può servire un poster stantio.
+  return state.hasMapping === true && state.mappingVersionMatches === true
 }
 
 const CORS_HEADERS = {
@@ -106,12 +116,23 @@ export function getPendingPoster(cacheKey: string): Promise<PosterCachePayload |
 }
 
 export function beginPosterRender(cacheKey: string): (payload: PosterCachePayload | null) => void {
+  // Race guard: non sovrascrivere un render già in corso. Chi arriva dopo
+  // con la stessa cache key ha già atteso getPendingPoster(); se la promise
+  // esiste ancora qui, il complete no-op evita di toccare la map dell'altro.
+  if (inflight.has(cacheKey)) return () => {}
+
   let resolveRender: (payload: PosterCachePayload | null) => void = () => {}
   const promise = new Promise<PosterCachePayload | null>((resolve) => {
     resolveRender = resolve
   })
+  const timer = setTimeout(() => {
+    resolveRender(null)
+    inflight.delete(cacheKey)
+  }, INFLIGHT_TIMEOUT_MS)
+  if (typeof timer.unref === "function") timer.unref()
   inflight.set(cacheKey, promise)
   return (payload) => {
+    clearTimeout(timer)
     resolveRender(payload)
     inflight.delete(cacheKey)
   }

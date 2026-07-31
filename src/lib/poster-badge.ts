@@ -64,11 +64,17 @@ export function isNetworkStudio(studioName: string | null): boolean {
 export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): ComputedTopBadge {
   const now = Date.now()
   const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000
-  const isNewMovie = input.mediaType === "movie" && input.releaseDate
-    ? (now - new Date(input.releaseDate).getTime()) < TWO_WEEKS_MS
+  // Date FUTURE bug: con una data di uscita in avanti, (now - date) era negativo
+  // e quindi < TWO_WEEKS_MS sempre → badge "nuovo" per tutto il periodo pre-release.
+  // Il badge "nuovo" vale SOLO se la data è nel passato e dentro le 2 settimane;
+  // le date future sono gestite dal badge "in arrivo" (upcomingRelease).
+  const releaseTime = input.releaseDate ? new Date(input.releaseDate).getTime() : NaN
+  const isNewMovie = input.mediaType === "movie" && Number.isFinite(releaseTime)
+    ? releaseTime <= now && (now - releaseTime) < TWO_WEEKS_MS
     : false
-  const isNewSeries = input.mediaType === "tv" && input.firstAirDate
-    ? (now - new Date(input.firstAirDate).getTime()) < TWO_WEEKS_MS
+  const firstAirTime = input.firstAirDate ? new Date(input.firstAirDate).getTime() : NaN
+  const isNewSeries = input.mediaType === "tv" && Number.isFinite(firstAirTime)
+    ? firstAirTime <= now && (now - firstAirTime) < TWO_WEEKS_MS
     : false
 
   const awardBadge = input.awards.length ? getAwardBadgeLabel(input.awards, t) : null

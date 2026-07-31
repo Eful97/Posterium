@@ -76,7 +76,11 @@ function loadCache(): CacheData {
 function saveCache(data: CacheData) {
   const dir = path.dirname(CACHE_FILE)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(CACHE_FILE, JSON.stringify(data))
+  // Write atomica: tmp + rename. Se il processo muore a metà scrittura, il file
+  // principale resta intatto e loadCache() continua a funzionare sullo stato valido.
+  const tmp = `${CACHE_FILE}.tmp`
+  fs.writeFileSync(tmp, JSON.stringify(data))
+  fs.renameSync(tmp, CACHE_FILE)
 }
 
 async function fetchCatalog(): Promise<CatalogData> {

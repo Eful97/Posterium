@@ -49,8 +49,10 @@ export async function PUT(req: NextRequest) {
     return Response.json({ error: `Failed to save: ${message}` }, { status: 500 })
   }
   cacheInvalidatePosterData()
-  // Warm catalog cache — ricostruisci cataloghi principali in background
-  const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
+  // Warm catalog cache — ricostruisci cataloghi principali in background.
+  // Usa l'origin della richiesta (host pubblico) invece di 127.0.0.1 che su
+  // runtime serverless non esiste e renderebbe il self-fetch un timeout sicuro.
+  const internalOrigin = new URL(req.url).origin
   for (const catalog of getWarmupCatalogs()) {
     const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
     void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {

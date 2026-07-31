@@ -34,6 +34,13 @@ describe("poster CDN headers", () => {
       isRotating: true,
       mappingVersionMatches: true,
     })).toBe(false)
-    expect(isImmutablePosterRequest(params, { hasMapping: false, isRotating: false })).toBe(true)
+    // Senza mapping il poster contiene dati dinamici (rank, premi, IMDb Top 250):
+    // non può essere immutable per un anno, o la CDN servirebbe badge congelati.
+    expect(isImmutablePosterRequest(params, { hasMapping: false, isRotating: false })).toBe(false)
+    expect(isImmutablePosterRequest(versionedParams, {
+      hasMapping: true,
+      isRotating: false,
+      mappingVersionMatches: false,
+    })).toBe(false)
   })
 })

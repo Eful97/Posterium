@@ -29,6 +29,12 @@ const log = createLogger("profile")
  */
 export async function POST(req: NextRequest) {
   try {
+    // Cap sulla dimensione del body per evitare crescita disco illimitata
+    const contentLength = Number(req.headers.get("content-length") || "0")
+    if (Number.isFinite(contentLength) && contentLength > 100_000) {
+      return Response.json({ error: "Request body too large" }, { status: 413 })
+    }
+
     const body = await req.json()
 
     // Login / Load action: authenticate existing profile and return full profile data
@@ -64,6 +70,10 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Missing or invalid 'config' in request body" }, { status: 400 })
     }
 
+    // Rate limiting anche su create/update (non solo load/login): evita crescita disco illimitata
+    const rlCreate = rateLimit(rateLimitKey(req), "default")
+    if (!rlCreate.ok) return rateLimitResponse(rlCreate.retAfter)
+
     const requiredBools: (keyof PosteriumUserConfig)[] = [
       "globalBadges", "rankingBadges", "blurEnabled",
       "networkLogo", "autoRotateClean", "logoFitEnabled",
@@ -71,6 +81,24 @@ export async function POST(req: NextRequest) {
     for (const key of requiredBools) {
       if (typeof config[key] !== "boolean") {
         return Response.json({ error: `Invalid config: '${key}' must be a boolean` }, { status: 400 })
+      }
+    }
+
+    // Validazione + clamp dei campi numerici: impedisce Infinity/valori estremi
+    // di arrivare al rendering (sharp.blur, gradienti) o di scrivere dati non finiti.
+    const requiredNums: { key: keyof PosteriumUserConfig; min: number; max: number }[] = [
+      { key: "blurIntensity", min: 0, max: 100 },
+      { key: "blurFade", min: 0, max: 100 },
+      { key: "blurDarkness", min: 0, max: 100 },
+      { key: "gradientHeight", min: 5, max: 100 },
+    ]
+    for (const { key, min, max } of requiredNums) {
+      const v = config[key]
+      if (typeof v !== "number" || !Number.isFinite(v)) {
+        return Response.json({ error: `Invalid config: '${key}' must be a finite number` }, { status: 400 })
+      }
+      if (v < min || v > max) {
+        return Response.json({ error: `Invalid config: '${key}' must be between ${min} and ${max}` }, { status: 400 })
       }
     }
 

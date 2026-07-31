@@ -14,9 +14,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const languages = req.nextUrl.searchParams.get("languages") || "en,null,it"
   const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
   const cacheKey = `images:${type}:${id}:${languages}`
+  const acceptEncoding = req.headers.get("accept-encoding")
   const cached = cacheGet(cacheKey)
-  if (cached) return jsonGzip(cached)
+  if (cached) return jsonGzip(cached, 200, undefined, acceptEncoding)
   const data = await getImages(type as "movie" | "tv", Number(id), languages, apiKey).catch(() => ({ posters: [], logos: [], backdrops: [] }))
   cacheSet(cacheKey, data, ["tmdb", "images"])
-  return jsonGzip(data)
+  return jsonGzip(data, 200, undefined, acceptEncoding)
 }

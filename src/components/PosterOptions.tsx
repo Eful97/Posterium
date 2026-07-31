@@ -214,13 +214,19 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
     ed.setExcludedPosters(nextExcluded)
     ed.setRotationPosters(nextRotationPosters)
     setExcludedSaveState("saving")
-    const fallback = posterActivePath === filePath
-      ? displayPosters.find((poster) => poster.file_path !== filePath)
-      : undefined
-    p.autoSaveExcludedPosters(nextExcluded, nextRotationPosters, fallback).then(() => { setExcludedSaveState("saved"); toast.success(t("ui.posterExcluded")) }).catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) })
+    // Se escludiamo il poster attivo, seleziona un fallback valido e passalo al
+    // save: altrimenti il mapping resterebbe agganciato al poster appena escluso.
+    // Cerca prima tra i clean, poi tra tutti i poster (incluse le lingue) non esclusi.
+    let fallback: TMDBImage | undefined
     if (posterActivePath === filePath) {
+      fallback =
+        cleanPosters.find((poster) => poster.file_path !== filePath) ??
+        posters.find((poster) => poster.file_path !== filePath && !nextExcluded.includes(poster.file_path))
       if (fallback) selectPoster(fallback)
     }
+    p.autoSaveExcludedPosters(nextExcluded, nextRotationPosters, fallback)
+      .then(() => { setExcludedSaveState("saved"); toast.success(t("ui.posterExcluded")) })
+      .catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) })
   }
 
   function shortPath(p: string): string {

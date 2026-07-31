@@ -73,7 +73,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
 
         <div className="space-y-3">
           <label className="block text-xs font-semibold text-zinc-300">
-            Incolla il link manifest.json dell'Add-on originale:
+            Incolla il link manifest.json dell&apos;Add-on originale:
           </label>
           <div className="relative">
             <input
@@ -131,7 +131,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
           </div>
         ) : (
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-[11px] text-zinc-400 text-center">
-            Inserisci l'URL di un add-on per generare il tuo link proxy personalizzato.
+            Inserisci l&apos;URL di un add-on per generare il tuo link proxy personalizzato.
           </div>
         )}
       </div>

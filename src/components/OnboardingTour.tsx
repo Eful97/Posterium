@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Search, Sparkles, Image, MonitorSmartphone, ChevronRight, ChevronLeft, X } from "lucide-react"
 
 const STEPS = [
@@ -36,6 +36,7 @@ export function OnboardingTour() {
   const [show, setShow] = useState(false)
   const [step, setStep] = useState(0)
   const [leaving, setLeaving] = useState(false)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     try {
@@ -46,12 +47,20 @@ export function OnboardingTour() {
     }
   }, [])
 
+  // Cleanup del timer di chiusura su unmount: evita setState su componente smontato
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    }
+  }, [])
+
   const close = () => {
     setLeaving(true)
-    setTimeout(() => {
+    closeTimerRef.current = setTimeout(() => {
       try { localStorage.setItem(LS_KEY, "true") } catch {}
       setShow(false)
       setLeaving(false)
+      closeTimerRef.current = null
     }, 150)
   }
 

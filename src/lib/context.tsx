@@ -302,14 +302,27 @@ export function usePosterium(): PosteriumCtx {
   const hasBadges = globalBadges && metaInfo.genres.length > 0 && metaInfo.voteAverage > 0
   const hasNetflixRank = !!(trendRank || (navigation.selected && trending.mdblistAnimeList.some((a: EnrichedAnimeItem) => a.id === navigation.selected!.id)))
 
-  // Auto-resolve IMDb Top 250 membership
+  // Auto-resolve IMDb Top 250 membership.
+  // Guard di race: se metaInfo.imdb_id cambia mentre una fetch è in flight,
+  // la risposta stale per l'id precedente NON deve sovrascrivere lo stato
+  // corrente. fetchIdRef traccia quale id è quello "attivo"; l'AbortController
+  // cancella fisicamente la richiesta precedente.
+  const fetchIdRef = useRef<string | null>(null)
   useEffect(() => {
     const imdbId = metaInfo.imdb_id
-    if (!imdbId) { setImdbTop250(false); return }
-    fetch(`/api/imdb-top250?imdbId=${encodeURIComponent(imdbId)}`)
+    if (!imdbId) { fetchIdRef.current = null; setImdbTop250(false); return }
+    fetchIdRef.current = imdbId
+    const ac = new AbortController()
+    fetch(`/api/imdb-top250?imdbId=${encodeURIComponent(imdbId)}`, { signal: ac.signal })
       .then((r) => r.json())
-      .then((d) => setImdbTop250(!!d.inTop250))
-      .catch(() => setImdbTop250(false))
+      .then((d) => {
+        if (fetchIdRef.current === imdbId) setImdbTop250(!!d.inTop250)
+      })
+      .catch((e) => {
+        if (ac.signal.aborted || fetchIdRef.current !== imdbId) return
+        setImdbTop250(false)
+      })
+    return () => { ac.abort(); if (fetchIdRef.current === imdbId) fetchIdRef.current = null }
   }, [metaInfo.imdb_id])
 
   // Appearance state
@@ -415,11 +428,16 @@ export function usePosterium(): PosteriumCtx {
       gradientHeight, networkLogo, autoRotateClean, logoFitEnabled: defaultLogoFitEnabled,
       customBadge: customBadge || undefined,
     }
-    const payloadStr = JSON.stringify({ config, profileId, tmdbKey, mdblistApiKey })
+    // `profilePassword` è nella chiave di dedup: è una dependency dell'effetto ma non
+    // parte di `config`, quindi senza include un cambio password durante il debounce
+    // veniva perso (l'effetto ripartiva con payload identico e non riprogrammava il POST).
+    const payloadStr = JSON.stringify({ config, profileId, password: profilePassword || undefined, tmdbKey, mdblistApiKey })
+    // Imposta il ref PRIMA dello schedule: così il debounce dedup correttamente anche
+    // se l'effetto riparte con lo stesso payload prima che il timer scatti.
     if (lastSyncRef.current === payloadStr) return
+    lastSyncRef.current = payloadStr
 
     const timer = setTimeout(() => {
-      lastSyncRef.current = payloadStr
       fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -429,7 +447,12 @@ export function usePosterium(): PosteriumCtx {
           password: profilePassword || undefined,
           apiKeys: { tmdbKey: tmdbKey || undefined, mdblistApiKey: mdblistApiKey || undefined },
         }),
-      }).catch((e) => console.error("[profile] Auto-sync failed:", e))
+      }).catch((e) => {
+        console.error("[profile] Auto-sync failed:", e)
+        // Se il POST fallisce (rete giù, serverless cold start), resetta il ref così
+        // un successivo cambio di config riprova invece di considerare "già sincronizzato".
+        lastSyncRef.current = ""
+      })
     }, 1000)
 
     return () => clearTimeout(timer)

@@ -19,7 +19,9 @@ export const mappingSchema = z.object({
   trendPeriod: z.string().nullable().optional(),
   tvType: z.string().nullable().optional(),
   tvStatus: z.string().nullable().optional(),
-  accentColor: z.string().nullable().optional(),
+  // accentColor deve essere un colore hex valido (#rgb/#rrggbb/#rrggbbaa) per non
+  // far arrivare stringhe arbitrarie al rendering SVG dei badge.
+  accentColor: z.string().regex(/^#[0-9a-fA-F]{3,8}$/).nullable().optional(),
   badgeExtra: z.string().nullable().optional(),
   badgeRank: z.number().int().min(0).nullable().optional(),
   badgeLabel: z.string().nullable().optional(),

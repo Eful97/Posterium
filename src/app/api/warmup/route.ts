@@ -1,3 +1,4 @@
+import crypto from "node:crypto"
 import { NextRequest } from "next/server"
 import { getJWRankings } from "@/lib/justwatch"
 import { buildPosterPublicUrl, getOriginFromRequest } from "@/lib/poster-public-url"
@@ -10,6 +11,11 @@ import { createLogger } from "@/lib/logger"
 const log = createLogger("warmup")
 
 const WARMUP_TOKEN = process.env.POSTERIUM_ADMIN_TOKEN || process.env.ADMIN_TOKEN || process.env.WARMUP_TOKEN
+
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))
+}
 
 type PosterRouteType = "movie" | "series"
 type WarmupStatus = "ok" | "fail"
@@ -35,7 +41,6 @@ interface BoundedIntInput {
 interface BuildPosterUrlInput {
   readonly req: NextRequest
   readonly target: WarmupTarget
-  readonly apiKey?: string
   readonly lang: string
 }
 
@@ -72,7 +77,6 @@ function buildPosterUrl(input: BuildPosterUrlInput): URL {
   })
   const defaults = getServerDefaults()
   const params = buildStremioPosterSearchParams({
-    apiKey: input.apiKey,
     lang: input.lang,
     globalBadges: defaults.globalBadges,
     rankingBadges: defaults.rankingBadges,
@@ -89,9 +93,16 @@ function buildPosterUrl(input: BuildPosterUrlInput): URL {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = req.headers.get("authorization")?.replace("Bearer ", "")
-  if (WARMUP_TOKEN && auth !== WARMUP_TOKEN) {
-    return new Response("Unauthorized", { status: 401 })
+  if (!WARMUP_TOKEN) {
+    // Fail-closed in produzione: senza token configurato l'endpoint è bloccato.
+    if (process.env.NODE_ENV === "production") {
+      return new Response("Unauthorized", { status: 401 })
+    }
+  } else {
+    const auth = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim()
+    if (!constantTimeEqual(auth, WARMUP_TOKEN)) {
+      return new Response("Unauthorized", { status: 401 })
+    }
   }
 
   const apiKey = resolveRequestApiKey(req)
@@ -144,7 +155,7 @@ export async function POST(req: NextRequest) {
       const batch = queue.slice(i, i + concurrency)
       const batchResults = await Promise.all(batch.map(async (target): Promise<WarmupResult> => {
         try {
-          const res = await fetch(buildPosterUrl({ req, target, apiKey, lang }), { signal: AbortSignal.timeout(20_000) })
+          const res = await fetch(buildPosterUrl({ req, target, lang }), { signal: AbortSignal.timeout(20_000) })
           if (!res.ok) return { ...target, status: "fail", statusCode: res.status }
           await res.arrayBuffer()
           return { ...target, status: "ok" }

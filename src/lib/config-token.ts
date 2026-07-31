@@ -97,12 +97,16 @@ export function decodeConfig(token: string): PosteriumUserConfig | null {
 
     if (parsed.customBadge !== undefined && typeof parsed.customBadge !== "string") return null
 
+    // Clamp difensivo dei numeri: impedisce a valori estremi da token firmato
+    // (o profilo) di raggiungere sharp.blur con sigma enormi o gradienti fuori scala.
+    const clamp = (v: number, min: number, max: number): number => Math.min(Math.max(Math.round(v), min), max)
+
     return {
       ...parsed as unknown as PosteriumUserConfig,
-      blurIntensity: Math.round(parsed.blurIntensity as number),
-      blurFade: Math.round(parsed.blurFade as number),
-      blurDarkness: Math.round(parsed.blurDarkness as number),
-      gradientHeight: Math.round(parsed.gradientHeight as number),
+      blurIntensity: clamp(parsed.blurIntensity as number, 1, 100),
+      blurFade: clamp(parsed.blurFade as number, 0, 100),
+      blurDarkness: clamp(parsed.blurDarkness as number, 0, 100),
+      gradientHeight: clamp(parsed.gradientHeight as number, 5, 100),
     }
   } catch {
     return null

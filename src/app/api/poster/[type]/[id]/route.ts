@@ -116,6 +116,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   cacheParams.delete("c")
   cacheParams.delete("u")
   cacheParams.delete("user")
+  // api_key non influisce sul rendering: rimuoverla evita frammentazione della
+  // cache per utente e segreti in memoria nelle chiavi.
+  cacheParams.delete("api_key")
   if (typeof cacheParams.sort === "function") cacheParams.sort()
   const cachedRank = mapping?.trendRank ?? null
   const rotateKey = isRotating ? `:ci${mapping?.cleanPosterIndex ?? "x"}` : ""
@@ -190,14 +193,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     backdropPath = queryBackdrop || null
     if (queryBackdrop) {
       backdropScale = Number(req.nextUrl.searchParams.get("bscale") || "100")
-      if (!Number.isFinite(backdropScale) || backdropScale <= 0) backdropScale = 100
+      // Bound inferiore + superiore: un valore come 1e-7 produrrebbe resize(0,0) → 500.
+      if (!Number.isFinite(backdropScale) || backdropScale < 5 || backdropScale > 500) backdropScale = 100
       backdropOffsetX = Number(req.nextUrl.searchParams.get("box") || "0")
       if (!Number.isFinite(backdropOffsetX)) backdropOffsetX = 0
       backdropOffsetY = Number(req.nextUrl.searchParams.get("boy") || "0")
       if (!Number.isFinite(backdropOffsetY)) backdropOffsetY = 0
     }
     if (queryGenre) genreName = queryGenre
-    if (queryVote) { voteAverage = Number(queryVote); if (!Number.isFinite(voteAverage)) voteAverage = null }
+    if (queryVote) {
+      voteAverage = Number(queryVote)
+      if (!Number.isFinite(voteAverage)) voteAverage = null
+      else voteAverage = Math.min(Math.max(voteAverage, 0), 10) // clamp a [0,10]
+    }
     imdbId = req.nextUrl.searchParams.get("imdbId") || null
     showBadges = true
     etag = `"p${etagBase}"`
@@ -212,7 +220,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     voteAverage = mapping.voteAverage ?? null
     showBadges = mapping.showBadges ?? true
     rankingBadges = mapping.rankingBadges ?? true
-    etag = `"v${RENDER_VERSION}:${mapping.updatedAt}:sd${sdHash}"`
+    etag = `"m${etagBase}:${mapping.updatedAt}"`
     if (req.headers.get("If-None-Match") === etag) {
       completePosterRender(null)
       return new Response(null, { status: 304, headers: posterNotModifiedHeaders(etag, immutablePoster) })
@@ -451,18 +459,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     const qBe = req.nextUrl.searchParams.get("be")
     const blurEnabled = qBe !== null ? qBe !== "0" : (configOverride !== null ? configOverride.blurEnabled : true)
+    // Clamp espliciti: impediscono a valori estremi (query o config) di arrivare a
+    // sharp.blur con sigma enormi o gradienti fuori scala (potenziale DoS CPU).
+    const clamp = (v: number, min: number, max: number): number => Math.min(Math.max(v, min), max)
     const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
     const rawGradHeight = qGradHeight ? Number(qGradHeight) : NaN
-    const blurHeight = Number.isFinite(rawGradHeight) ? Math.max(rawGradHeight, 5) : (configOverride !== null ? Math.max(configOverride.gradientHeight, 5) : 30)
+    const blurHeight = Number.isFinite(rawGradHeight) ? clamp(rawGradHeight, 5, 100) : (configOverride !== null ? clamp(configOverride.gradientHeight, 5, 100) : 30)
     const qBlur = req.nextUrl.searchParams.get("blur")
     const rawBlur = qBlur ? Number(qBlur) : NaN
-    const blurIntensity = Number.isFinite(rawBlur) ? Math.max(rawBlur, 1) : (configOverride !== null ? Math.max(configOverride.blurIntensity, 1) : 5)
+    const blurIntensity = Number.isFinite(rawBlur) ? clamp(rawBlur, 1, 100) : (configOverride !== null ? clamp(configOverride.blurIntensity, 1, 100) : 5)
     const qBf = req.nextUrl.searchParams.get("bf")
     const rawBf = qBf ? Number(qBf) : NaN
-    const blurFade = Number.isFinite(rawBf) ? Math.max(rawBf, 0) : (configOverride !== null ? Math.max(configOverride.blurFade, 0) : 60)
+    const blurFade = Number.isFinite(rawBf) ? clamp(rawBf, 0, 100) : (configOverride !== null ? clamp(configOverride.blurFade, 0, 100) : 60)
     const qBd = req.nextUrl.searchParams.get("bd")
     const rawBd = qBd ? Number(qBd) : NaN
-    const blurDarkness = Number.isFinite(rawBd) ? Math.max(rawBd, 0) : (configOverride !== null ? Math.max(configOverride.blurDarkness, 0) : 40)
+    const blurDarkness = Number.isFinite(rawBd) ? clamp(rawBd, 0, 100) : (configOverride !== null ? clamp(configOverride.blurDarkness, 0, 100) : 40)
 
     const hasQuery = !!queryPoster || !!mapping
     const badgesEnabled = hasQuery ? (qBadges !== null ? qBadges !== "0" : (configOverride !== null ? configOverride.globalBadges : showBadges)) : true

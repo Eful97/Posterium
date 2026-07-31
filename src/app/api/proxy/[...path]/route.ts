@@ -24,22 +24,49 @@ function isPrivateHost(hostname: string): boolean {
     hostname === "0.0.0.0" ||
     hostname === "::1" ||
     hostname === "[::]" ||
+    hostname === "::" ||
+    hostname === "[::1]" ||
     hostname.endsWith(".local") ||
     hostname.endsWith(".internal") ||
     hostname.startsWith("10.") ||             // RFC 1918 10.0.0.0/8
     hostname.startsWith("192.168.") ||        // RFC 1918 192.168.0.0/16
     /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||  // RFC 1918 172.16.0.0/12
-    /^169\.254\./.test(hostname)             // link-local
+    /^169\.254\./.test(hostname) ||           // link-local
+    // IPv6 link-local / ULA / unspecified / loopback letterali
+    hostname.startsWith("fc") || hostname.startsWith("fd") ||  // fc00::/7 ULA
+    hostname.startsWith("fe8") || hostname.startsWith("fe9") || hostname.startsWith("fea") || hostname.startsWith("feb") || // fe80::/10 link-local
+    hostname.startsWith("[fc") || hostname.startsWith("[fd") ||
+    hostname.startsWith("[fe8") || hostname.startsWith("[fe9") || hostname.startsWith("[fea") || hostname.startsWith("[feb") ||
+    hostname.startsWith("[::1") ||
+    hostname.startsWith("::ffff:")            // IPv4-mapped IPv6 (:::ffff:a.b.c.d)
   )
+}
+
+/** Verifica se un indirizzo IP risolto (IPv4 o IPv6) è privato/non routabile. */
+function isPrivateIp(address: string): boolean {
+  const lower = address.toLowerCase()
+  if (lower === "::1" || lower === "::" || lower === "[::1]" || lower === "[::]") return true
+  if (lower.startsWith("::ffff:") || lower.startsWith("0:0:0:0:0:ffff:")) {
+    // IPv4-mapped IPv6: estrai il quad e valutalo come IPv4
+    const v4 = lower.split(":").pop() || ""
+    if (isPrivateHost(v4)) return true
+    return /^127\./.test(v4) || v4 === "0.0.0.0"
+  }
+  if (lower.startsWith("fc") || lower.startsWith("fd")) return true // ULA fc00::/7
+  if (lower.startsWith("fe8") || lower.startsWith("fe9") || lower.startsWith("fea") || lower.startsWith("feb")) return true // link-local
+  if (isPrivateHost(lower)) return true
+  return false
 }
 
 
 /**
- * Risolve un hostname a IP e verifica che non sia privato.
+ * Risolve un hostname a IP (entrambe le famiglie) e verifica che nessuno sia privato.
  * Protegge da:
  * - DNS rebinding (il controllo viene fatto dopo la risoluzione DNS)
  * - IP alternativi (decimali, hex, IPv4-mapped IPv6)
  * - Hostname locali
+ * - IPv6 (fetch/undici usa Happy Eyeballs: può connettersi via AAAA anche se il check
+ *   considera solo A — quindi dobbiamo bloccare se QUALSIASI indirizzo risolto è privato)
  */
 async function resolveAndCheckBlocked(url: string): Promise<boolean> {
   try {
@@ -47,10 +74,12 @@ async function resolveAndCheckBlocked(url: string): Promise<boolean> {
     const hostname = parsed.hostname.toLowerCase()
     // Controllo rapido su hostname prima di risolvere
     if (isPrivateHost(hostname)) return true
-    // Risolvi a IP per prevenire bypass con rappresentazioni alternative
-    // Protegge anche da DNS rebinding: l'IP risolto è quello che verrà usato da fetch
-    const { address } = await dns.promises.lookup(hostname, { family: 4, hints: dns.ADDRCONFIG })
-    if (isPrivateHost(address)) return true
+    // Risolvi a IP per prevenire bypass con rappresentazioni alternative.
+    // family 0 + all: tutte le family, tutti gli IP. Blocca se uno qualsiasi è privato.
+    const addresses = await dns.promises.lookup(hostname, { family: 0, all: true })
+    for (const entry of addresses) {
+      if (isPrivateIp(entry.address)) return true
+    }
     return false
   } catch {
     return true // in caso di errore DNS, blocca per sicurezza

@@ -173,13 +173,15 @@ async function readProfilesFromMem(): Promise<Record<string, ProfileData>> {
 }
 
 async function persistProfiles(data: Record<string, ProfileData>) {
-  memCache = data
-  memCacheTime = Date.now()
   await ensureDataDir()
   const tmp = `${PROFILES_FILE}.tmp`
   try {
     await fsp.writeFile(tmp, JSON.stringify(data, null, 2))
     await fsp.rename(tmp, PROFILES_FILE)
+    // Aggiorna la memCache SOLO dopo la write riuscita: se la persist fallisce,
+    // la memCache resta coerente con il disco e non serve dati mai persistiti.
+    memCache = data
+    memCacheTime = Date.now()
   } catch (e) {
     log.error("Failed to write profiles", { error: e instanceof Error ? e.message : String(e) })
     throw e

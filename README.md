@@ -211,8 +211,10 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 
 - **Memoria**: Posterium usa ~200MB base + cache. Il `docker-compose.yml` limita a 512MB.
 - **Persistenza**: I dati (mapping, profili, default) sono in un volume Docker `posterium-data`.
-- **CDN**: Se hai una CDN (Cloudflare, Bunny), imposta `POSTER_CDN_URL` per generare URL poster col CDN.
-- **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello.
+- **CDN**: Se hai una CDN (Cloudflare, Bunny), imposta `POSTER_CDN_URL` per generare URL poster col CDN. I poster **salvati** (mapping con versione) vengono serviti con header `immutable` (cache edge 1 anno); quelli composti al volo senza mapping (rank JustWatch, premi, IMDb Top 250) usano `stale-while-revalidate` per non congelare i badge dinamici alla CDN.
+- **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello. La chiave usa l'ultimo hop `x-forwarded-for` (non falsificabile quando il proxy appende il proprio valore).
+- **Warmup**: `/api/warmup` è **fail-closed in produzione** — senza `WARMUP_TOKEN` (o `POSTERIUM_ADMIN_TOKEN`) risponde `401`. Configura il token se usi una cron di warmup automatico.
+- **Sicurezza**: Il proxy add-on (`/api/proxy`) accetta solo URL con host attendibili (mitigazione SSRF). `/api/health` non espone il percorso assoluto dei dati su disco.
 - **Cache**: I poster generati sono in memoria (max 2000 entry / 150MB). Un restart svuota la cache (i poster si rigenerano al prossimo accesso).
 
 ---

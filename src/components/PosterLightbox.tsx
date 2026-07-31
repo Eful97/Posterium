@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import { X, Star, ExternalLink, Maximize2, Plus, Check } from "lucide-react"
 import type { Mapping } from "@/lib/types"
 import type { PosterCollection } from "@/lib/useCollections"
@@ -27,6 +27,7 @@ export function PosterLightbox({
   const [mounted, setMounted] = useState(false)
   const [closing, setClosing] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const mapping = lightbox?.mapping ?? null
   const rect = lightbox?.rect ?? null
@@ -52,6 +53,16 @@ export function PosterLightbox({
     cardRef.current.style.transformOrigin = `${originX}px ${originY}px`
   }, [mounted, rect])
 
+  const handleClose = useCallback(() => {
+    setClosing(true)
+    closeTimerRef.current = setTimeout(() => {
+      setClosing(false)
+      setMounted(false)
+      onClose()
+      closeTimerRef.current = null
+    }, 150)
+  }, [onClose])
+
   // Keyboard handler
   useEffect(() => {
     if (!mapping) return
@@ -60,16 +71,14 @@ export function PosterLightbox({
     }
     document.addEventListener("keydown", handler)
     return () => document.removeEventListener("keydown", handler)
-  }, [mapping])
+  }, [mapping, handleClose])
 
-  const handleClose = () => {
-    setClosing(true)
-    setTimeout(() => {
-      setClosing(false)
-      setMounted(false)
-      onClose()
-    }, 150)
-  }
+  // Cleanup del timer di chiusura su unmount: evita setState su componente smontato
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    }
+  }, [])
 
   if (!mapping) return null
 

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { selectAcceptedPosterPath } from "@/lib/poster-fit-adjust"
 import { rankBestFitPosters, selectAutoFitCandidates } from "@/lib/poster-auto-fit"
 import { createLogger } from "@/lib/logger"
@@ -7,6 +8,7 @@ const log = createLogger("poster-fit-api")
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
 const FETCH_TIMEOUT_MS = 5_000
+const MAX_CANDIDATES = 8
 
 interface PosterFitBody {
   posterPaths: string[]
@@ -54,6 +56,9 @@ async function fetchImage(url: string, signal: AbortSignal): Promise<Buffer> {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(rateLimitKey(req), "search")
+  if (!rl.ok) return rateLimitResponse(rl.retAfter)
+
   let body: PosterFitBody
   try {
     body = await req.json()
@@ -63,6 +68,11 @@ export async function POST(req: NextRequest) {
 
   if (!body.posterPaths?.length || !body.logoPath) {
     return Response.json({ error: "posterPaths and logoPath are required" }, { status: 400 })
+  }
+
+  // Endpoint CPU/network-heavy: limita il numero di candidati da analizzare.
+  if (body.posterPaths.length > MAX_CANDIDATES) {
+    body.posterPaths = body.posterPaths.slice(0, MAX_CANDIDATES)
   }
 
   const candidates = selectAutoFitCandidates(
