@@ -2,14 +2,17 @@ import crypto from "node:crypto"
 import sharp from "sharp"
 import { findAccentColor } from "@/lib/accent-color"
 import { GENRE_FALLBACK } from "@/lib/badges"
+// Batch B: STD_W/STD_H ora provengono da image-utils.ts (single source of truth)
+import { STD_W, STD_H, computeRegionStats } from "@/lib/image-utils"
 
 // Sovrascrivibile via env: nei test E2E punta al mock server locale per
 // rendere il rendering determinista senza dipendere da image.tmdb.org.
 const IMG_BASE = process.env.TMDB_IMG_URL || "https://image.tmdb.org/t/p"
 const MAX_IMG_SIZE = 10 * 1024 * 1024
 
-export const STD_W = 500
-export const STD_H = 750
+// Re-export per backward compat — tutti i file che importano STD_W/STD_H
+// da poster-render-helpers continuano a funzionare.
+export { STD_W, STD_H }
 export const OUTPUT_W = 500
 export const OUTPUT_H = 750
 
@@ -69,26 +72,25 @@ export async function fitCompositeToCanvas(
   return layer
 }
 
+/**
+ * Compute the luminance of the top strip of the poster (top 8% of STD_H).
+ *
+ * Batch B: delegates to computeRegionStats() from image-utils.ts, so the pixel
+ * loop lives in one place instead of being duplicated here. The region stats
+ * pool caches the result; computeTextPenalty() reuses the pool for its own
+ * crop. Note: extractBadgeColor() has its own pipeline (accent-color.ts) and
+ * does NOT consume this pool.
+ *
+ * The returned values differ slightly (~0.02) from the old topLuminance:
+ * the previous implementation used RGBA stride-4, rounded per-channel means,
+ * and skipped alpha removal; computeRegionStats uses RGB stride-3 with
+ * unrounded Rec.709 luminance. This is why RENDER_VERSION was bumped.
+ */
 export async function topLuminance(buf: Buffer): Promise<number> {
   const stripH = Math.max(Math.round(STD_H * 0.08), 3)
-  const extracted = await sharp(buf)
-    .extract({ left: 0, top: 0, width: STD_W, height: stripH })
-    .raw()
-    .toBuffer()
-  let r = 0
-  let g = 0
-  let b = 0
-  let n = 0
-  for (let i = 0; i < extracted.length; i += 4) {
-    r += extracted[i] ?? 0
-    g += extracted[i + 1] ?? 0
-    b += extracted[i + 2] ?? 0
-    n += 1
-  }
-  r = Math.round(r / n)
-  g = Math.round(g / n)
-  b = Math.round(b / n)
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+  const stats = await computeRegionStats(buf, 0, 0, STD_W, stripH)
+  if (!stats) return 0.5 // fallback: medium luminance
+  return stats.mean / 255
 }
 
 export async function extractBadgeColor(

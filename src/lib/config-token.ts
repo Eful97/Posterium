@@ -6,33 +6,66 @@
  */
 
 import crypto from "node:crypto"
+import { z } from "zod"
+// Batch B: clamp condiviso da image-utils.ts (semantica standard, senza round)
+import { clamp } from "@/lib/image-utils"
 
-export interface PosteriumUserConfig {
-  globalBadges: boolean
-  rankingBadges: boolean
-  badgeStyle: "shadow" | "pill" | "bar" | "colored" | "bordo" | "vetro"
-  rankingBadgeStyle: "default" | "bar" | "colored" | "pill" | "netflix"
-  blurEnabled: boolean
-  blurIntensity: number
-  blurFade: number
-  blurDarkness: number
-  gradientHeight: number
-  networkLogo: boolean
-  autoRotateClean: boolean
-  logoFitEnabled: boolean
-  customBadge?: string
-  /** Modalità layout nastro Netflix + logo network: "left" (Nuvio, default) o "right" (Stremio). */
-  ribbonSide?: "left" | "right"
-}
+// ---- Zod schema (Batch C: sostituisce validazione manuale) ----
+
+const badgeStyleSchema = z.enum(["shadow", "pill", "bar", "colored", "bordo", "vetro"])
+const rankingBadgeStyleSchema = z.enum(["default", "bar", "colored", "pill", "netflix"])
+const ribbonSideSchema = z.enum(["left", "right"])
+
+export const configTokenSchema = z.object({
+  globalBadges: z.boolean(),
+  rankingBadges: z.boolean(),
+  badgeStyle: badgeStyleSchema,
+  rankingBadgeStyle: rankingBadgeStyleSchema,
+  blurEnabled: z.boolean(),
+  blurIntensity: z.number().finite(),
+  blurFade: z.number().finite(),
+  blurDarkness: z.number().finite(),
+  gradientHeight: z.number().finite(),
+  networkLogo: z.boolean(),
+  autoRotateClean: z.boolean(),
+  logoFitEnabled: z.boolean(),
+  customBadge: z.string().optional(),
+  ribbonSide: ribbonSideSchema.optional(),
+})
+
+export type PosteriumUserConfig = z.infer<typeof configTokenSchema>
+
+// ---- HMAC setup ----
 
 const HMAC_SECRET = process.env.ENCRYPTION_KEY_SECRET || process.env.CONFIG_HMAC_SECRET || ""
+
+// In produzione senza secret: encodeConfig lancia e decodeConfig rifiuta i
+// token unsigned (fail-closed, Batch A step 2 + Batch E). Il warning aiuta a
+// individuare la causa quando un deploy parte senza la variabile d'ambiente.
+if (process.env.NODE_ENV === "production" && !HMAC_SECRET) {
+  console.error(
+    "[posterium] CONFIG_HMAC_SECRET (or ENCRYPTION_KEY_SECRET) is not set. " +
+      "Config token encoding/decoding is fail-closed in production — encoding " +
+      "throws and unsigned tokens are rejected. Set the secret to enable tokens.",
+  )
+}
 
 /**
  * Encode a PosteriumUserConfig into a compact signed URL-safe token.
  * Formato: `base64url-json.hmac-base64url`
- * Se HMAC_SECRET non è configurato, genera un token senza firma (dev/test).
+ *
+ * In produzione richiede HMAC_SECRET: senza firma il payload è modificabile
+ * da chiunque abbia accesso a localStorage (XSS, estensione, macchina condivisa),
+ * quindi lancio un errore invece di emettere un token unsigned.
+ * In dev/test senza HMAC_SECRET genera un token unsigned (utile per i test).
  */
 export function encodeConfig(config: PosteriumUserConfig): string {
+  if (process.env.NODE_ENV === "production" && !HMAC_SECRET) {
+    throw new Error(
+      "[posterium] Cannot encode config token without HMAC_SECRET in production. " +
+        "Set CONFIG_HMAC_SECRET (or ENCRYPTION_KEY_SECRET) to enforce token integrity.",
+    )
+  }
   const json = JSON.stringify(config)
   const b64 = Buffer.from(json, "utf-8").toString("base64url")
   if (!HMAC_SECRET) return b64
@@ -62,8 +95,12 @@ export function decodeConfig(token: string): PosteriumUserConfig | null {
         if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return null
       }
     } else {
-      // Token legacy (senza firma) — accettato solo in dev/test
+      // Token legacy (senza firma) — accettato solo in dev/test.
+      // Batch E (fail-closed): in produzione i token unsigned sono rifiutati
+      // anche senza HMAC_SECRET, perché il payload è modificabile da chiunque
+      // abbia accesso a localStorage (XSS, estensione, macchina condivisa).
       if (HMAC_SECRET) return null
+      if (process.env.NODE_ENV === "production") return null
       const normalized = token.replace(/-/g, "+").replace(/_/g, "/")
       const remainder = normalized.length % 4
       const padded = remainder !== 0
@@ -72,45 +109,25 @@ export function decodeConfig(token: string): PosteriumUserConfig | null {
       json = Buffer.from(padded, "base64").toString("utf-8")
     }
 
-    const parsed = JSON.parse(json) as Record<string, unknown>
+    const parsed = JSON.parse(json)
 
-    // Validazione strict dei campi richiesti
-    const REQUIRED_BOOLS: (keyof PosteriumUserConfig)[] = [
-      "globalBadges", "rankingBadges", "blurEnabled",
-      "networkLogo", "autoRotateClean", "logoFitEnabled",
-    ]
-    for (const key of REQUIRED_BOOLS) {
-      if (typeof parsed[key] !== "boolean") return null
-    }
-
-    const REQUIRED_STRINGS: (keyof PosteriumUserConfig)[] = [
-      "badgeStyle", "rankingBadgeStyle",
-    ]
-    for (const key of REQUIRED_STRINGS) {
-      if (typeof parsed[key] !== "string") return null
-    }
-
-    const REQUIRED_NUMS: (keyof PosteriumUserConfig)[] = [
-      "blurIntensity", "blurFade", "blurDarkness", "gradientHeight",
-    ]
-    for (const key of REQUIRED_NUMS) {
-      if (typeof parsed[key] !== "number" || !Number.isFinite(parsed[key])) return null
-    }
-
-    if (parsed.customBadge !== undefined && typeof parsed.customBadge !== "string") return null
-    if (parsed.ribbonSide !== undefined && parsed.ribbonSide !== "left" && parsed.ribbonSide !== "right") return null
+    // Batch C: validazione via Zod — sostituisce la validazione manuale
+    // con type narrowing automatico e messaggi di errore strutturati.
+    const result = configTokenSchema.safeParse(parsed)
+    if (!result.success) return null
 
     // Clamp difensivo dei numeri: impedisce a valori estremi da token firmato
     // (o profilo) di raggiungere sharp.blur con sigma enormi o gradienti fuori scala.
-    const clamp = (v: number, min: number, max: number): number => Math.min(Math.max(Math.round(v), min), max)
-
-    return {
-      ...parsed as unknown as PosteriumUserConfig,
-      blurIntensity: clamp(parsed.blurIntensity as number, 1, 100),
-      blurFade: clamp(parsed.blurFade as number, 0, 100),
-      blurDarkness: clamp(parsed.blurDarkness as number, 0, 100),
-      gradientHeight: clamp(parsed.gradientHeight as number, 5, 100),
+    // L'arrotondamento è esplicito a monte (Batch B: semantica standard di clamp).
+    const clamped: PosteriumUserConfig = {
+      ...result.data,
+      blurIntensity: clamp(Math.round(result.data.blurIntensity), 1, 100),
+      blurFade: clamp(Math.round(result.data.blurFade), 0, 100),
+      blurDarkness: clamp(Math.round(result.data.blurDarkness), 0, 100),
+      gradientHeight: clamp(Math.round(result.data.gradientHeight), 5, 100),
     }
+
+    return clamped
   } catch {
     return null
   }

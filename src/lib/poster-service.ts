@@ -269,11 +269,15 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   // -----------------------------------------------------------------------
   // 5. Render genre + ranking badges (parallel with coalescing)
   // -----------------------------------------------------------------------
+  // Anime ranking: il badge anime mostra il numero grande con "anime" sotto.
+  // Rilevato quando il topBadge è un rank derivato da animeRankResult.
+  const isAnimeRank = topBadge?.type === "rank" && animeRankResult !== null && topBadge.rank === animeRankResult
+
   const genreBadgeKey = (badgesEnabled && genreName && voteAverage && voteAverage > 0)
     ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentColorGenre, topLight)
     : null
   const rankBadgeKey = topBadge
-    ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, accentColorRank, ribbonSide)
+    ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
     : null
 
   const [genreBadgeResult, rankBadgeResult] = await Promise.all([
@@ -301,7 +305,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
                   .then((r) => { const v = { ...r, isRank: false }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                   .catch(() => null)
               } else {
-                p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, rankingBadgeStyle, accentColorRank, ribbonSide)
+                p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
                   .then((r) => { const v = { ...r, isRank: true }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                   .catch(() => null)
               }

@@ -1,8 +1,45 @@
 import sharp from "sharp"
 import { computeLogoLayout } from "@/lib/logo-layout"
 import { createLogger } from "@/lib/logger"
+// Batch B: import shared utilities from image-utils.ts (single source of truth)
+import { STD_W, STD_H, clamp, luma } from "@/lib/image-utils"
 
 const log = createLogger("poster-fit-score")
+
+/**
+ * ## Poster fit scoring algorithm
+ *
+ * `scorePosterLogoFit` ranks candidate posters by how well a logo will sit on
+ * them. The final score is a weighted blend of four metrics, then penalized
+ * multiplicatively when contrast is poor:
+ *
+ * ```
+ * score = (cleanliness*0.35 + contrast*0.30 + lowDetail*0.25 + badgeReadability*0.10)
+ *         × contrastMultiplier
+ * ```
+ *
+ * where:
+ * - **cleanliness** = `1 - clamp(stdDev/80, 0, 1)` — low variance in the logo
+ *   safety area means a clean background. Penalized by skin-tone overlap and
+ *   abrupt gradients.
+ * - **contrast** = `clamp(|logoLuma - bgLuma| * 1.8, 0, 1)` × chromaMultiplier —
+ *   luminance difference between logo and background, scaled by a chroma
+ *   factor that reduces contrast when logo/bg colors are similar.
+ * - **lowDetail** = `1 - clamp(edgeAvg/60, 0, 1)` — low edge density in the
+ *   safety area. Reduced further if the logo covers a high-detail hotspot.
+ * - **badgeReadability** = `1 - clamp(stdDev/90, 0, 1)` in the badge zone
+ *   (bottom 16%), only when badges are enabled.
+ * - **contrastMultiplier** = `min(1, contrast*2.5 + 0.25)` — if contrast is
+ *   poor, the whole score is scaled down. If `contrast < 0.35`, score is
+ *   additionally capped at 0.55.
+ *
+ * When `offsetYVariants` is provided, the score is blended with the worst-case
+ * variant score (`score*0.7 + worstCase*0.3`) to prefer posters robust to
+ * small vertical logo offsets.
+ *
+ * `adjustFitResults` (poster-fit-adjust.ts) then applies text-penalty and
+ * quality bonuses on top of this base score.
+ */
 
 export interface PosterFitInput {
   posterBuffer: Buffer
@@ -27,17 +64,6 @@ export interface PosterFitResult {
   score: number
   metrics: PosterFitMetrics
   reasons: string[]
-}
-
-const STD_W = 500
-const STD_H = 750
-
-function luma(r: number, g: number, b: number): number {
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-
-function clamp(val: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, val))
 }
 
 interface RgbData {

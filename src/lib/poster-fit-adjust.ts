@@ -1,5 +1,7 @@
 import sharp from "sharp"
 import type { PosterFitResult } from "@/lib/poster-fit-score"
+// Batch B: import shared utilities from image-utils.ts (single source of truth)
+import { STD_W, STD_H, clamp, luma } from "@/lib/image-utils"
 
 export interface PosterBufferEntry {
   readonly posterPath: string
@@ -31,18 +33,8 @@ interface FitAdjustmentInput {
   readonly posterEntries: readonly PosterBufferEntry[]
 }
 
-const STD_W = 500
-const STD_H = 750
 const TEXT_PENALTY_CANDIDATES = 6
 export const MIN_ACCEPTED_FIT_SCORE = 0.45
-
-function luma(r: number, g: number, b: number): number {
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-
-function clamp(val: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, val))
-}
 
 function posterQualityScore(voteAverage: number, width: number, height: number): number {
   const tmdbVote = clamp((voteAverage - 2) / 8, 0, 1)

@@ -11,6 +11,9 @@ export const MDBLISTS = [
   { key: 'mdblistAnime', label: 'Anime di tendenza', url: 'https://mdblist.com/lists/snoak/trending-anime-shows' },
 ] as const
 
+// Override nei test E2E: punta al mock server locale (vedi playwright.config.ts).
+const MDBLIST_API_URL = process.env.MDBLIST_API_URL || "https://mdblist.com/api"
+
 export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MDBListEntry[]> {
   const list = MDBLISTS.find(l => l.key === listKey)
   if (!list) return []
@@ -19,7 +22,7 @@ export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MD
     const slug = list.url.split('/').pop()
     const baseUrl = key
       ? `https://api.mdblist.com/lists/snoak/${slug}/items?apikey=${encodeURIComponent(key)}&limit=20`
-      : `https://mdblist.com/api/lists/snoak/${slug}`
+      : `${MDBLIST_API_URL}/lists/snoak/${slug}`
     const res = await fetch(baseUrl, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) return []
     const data = await res.json()

@@ -50,6 +50,7 @@ export default defineConfig({
         JUSTWATCH_API_URL: `${mockUrl}/graphql`,
         WIKIDATA_SPARQL_URL: `${mockUrl}/sparql`,
         IMDB_CHART_URL: `${mockUrl}/chart/top`,
+        MDBLIST_API_URL: `${mockUrl}/mdblist/api`,
       },
     },
   ],

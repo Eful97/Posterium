@@ -218,7 +218,7 @@ export async function renderGenreBadge(
 
 // --- Ranking badge ---
 
-export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boolean, side: "left" | "right" = "left") {
+export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boolean, side: "left" | "right" = "left", isAnime?: boolean) {
   const fs = Math.round(Math.max(23 * pw / 380, 14))
   const w = Math.round(fs * 2.6)
   const h = Math.round(w * 1.35)
@@ -229,6 +229,12 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
   const padBottom = Math.round(fs * 0.4)
   const totalW = w + padRight
   const totalH = h + padBottom
+  // Anime: "anime" sotto il numero (solo per ranking anime)
+  const animeFs = Math.round(w * 0.20)
+  const animePadBottom = isAnime ? Math.round(animeFs * 0.6) : 0
+  const totalHAnime = totalH + animePadBottom
+  const rankY = isAnime ? Math.round(h * 0.52) : Math.round(h * 0.60)
+  const animeY = isAnime ? Math.round(h * 0.82) : 0
 
   // Stessa logica adattiva degli altri badge ranking (tlBg/tlFg):
   // top chiaro → nastro scuro con testo chiaro; top scuro → nastro chiaro con testo nero.
@@ -251,7 +257,10 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
   const textX = isRight ? totalW - ribbonMidX : ribbonMidX
   const shadowDx = isRight ? -3 : 3
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
+  const animeEl = isAnime
+    ? `<text x="${textX}" y="${animeY}" fill="${textColor}" font-family="Inter" font-weight="600" font-size="${animeFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">anime</text>`
+    : ""
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalHAnime}" viewBox="0 0 ${totalW} ${totalHAnime}">
     <defs>
       <filter id="shadow3D" x="-20%" y="-20%" width="180%" height="180%">
         <feDropShadow dx="${shadowDx}" dy="3" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.65"/>
@@ -263,9 +272,10 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
     <path d="${pathD}" fill="${fill}" filter="url(#shadow3D)"/>
     <line x1="${highlightX1}" y1="1" x2="${highlightX2}" y2="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
     <text x="${textX}" y="${Math.round(h * 0.28)}" fill="${textColor}" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
-    <text x="${textX}" y="${Math.round(h * 0.60)}" fill="${textColor}" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
+    <text x="${textX}" y="${rankY}" fill="${textColor}" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
+    ${animeEl}
   </svg>`
-  return { svg, w: totalW, h: totalH }
+  return { svg, w: totalW, h: totalHAnime }
 }
 
 export async function buildRankingBadgeSVG(
@@ -276,6 +286,7 @@ export async function buildRankingBadgeSVG(
   badgeStyle?: string,
   accentColor?: string,
   side?: "left" | "right",
+  isAnime?: boolean,
 ): Promise<{ png: Buffer; w: number; h: number } | null> {
   const s = badgeStyle || "default"
   const periodText = label || "Oggi"
@@ -298,7 +309,7 @@ export async function buildRankingBadgeSVG(
 
   let result: { svg: string; w: number; h: number }
   if (isNetflix) {
-    result = buildNetflixRankBadgeSVG(rank, pw, !!topLight, side)
+    result = buildNetflixRankBadgeSVG(rank, pw, !!topLight, side, isAnime)
   } else if (s === "bar") {
     result = buildRankingBarSvg(fullText, pw, fs, fg, bg)
   } else if (s === "pill") {
@@ -312,9 +323,9 @@ export async function buildRankingBadgeSVG(
 
 export async function renderRankingBadge(
   rank: number, pw: number, label?: string,
-  topLight?: boolean, badgeStyle?: string, accentColor?: string, side?: "left" | "right",
+  topLight?: boolean, badgeStyle?: string, accentColor?: string, side?: "left" | "right", isAnime?: boolean,
 ): Promise<{ png: Buffer; w: number; h: number }> {
-  const r = await buildRankingBadgeSVG(rank, pw, label, topLight, badgeStyle, accentColor, side)
+  const r = await buildRankingBadgeSVG(rank, pw, label, topLight, badgeStyle, accentColor, side, isAnime)
   if (r) return r
   throw new Error(`SVG ranking badge failed: rank=${rank}`)
 }

@@ -1,3 +1,3 @@
-export const RENDER_VERSION = 92
+export const RENDER_VERSION = 94
 
 export const POSTER_URL_VERSION = RENDER_VERSION

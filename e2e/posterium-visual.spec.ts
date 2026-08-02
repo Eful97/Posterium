@@ -10,14 +10,18 @@ const MEDIA_TYPE = "movie"
 // Poster path servito dal mock server sotto /t/p/...
 const POSTER_PATH = "/mocked/avatar.jpg"
 
-function posterUrl(params: Record<string, string>): string {
+function posterUrl(params: Record<string, string>, mediaType = MEDIA_TYPE, id: number | string = MOVIE_TMDB): string {
   const qs = new URLSearchParams({ ...params, poster: POSTER_PATH, preview: "1" })
-  return `/api/poster/${MEDIA_TYPE}/${MOVIE_TMDB}?${qs.toString()}`
+  return `/api/poster/${mediaType}/${id}?${qs.toString()}`
 }
 
 // Helper: render a poster URL in the page and return a locator for the <img>
 async function renderPoster(page: Page, posterUrl: string) {
   await page.setViewportSize({ width: 1280, height: 1600 })
+  // Navigate first so the relative src resolves against the app origin:
+  // `setContent` alone leaves baseURI on about:blank and the /api/poster URL
+  // would never load.
+  await page.goto("/")
   await page.setContent(`
     <html>
       <body style="margin:0;background:#000;display:flex;align-items:flex-start;justify-content:center;">
@@ -203,6 +207,14 @@ test.describe("poster API — visual regression", () => {
     const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", label: "Top 3", rs: "bar" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-ranking.png", { maxDiffPixelRatio: 0.10 })
+  })
+
+  test("anime ranking (netflix ribbon) — screenshot", async ({ page }) => {
+    // media_type=tv + id 19995 (Avatar) nella MDBList anime mockata → animeRankResult=1.
+    // Il mock MDBList anime (mock-server.mjs) mette Avatar in posizione #1.
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rs: "netflix" }, "tv", 19995)
+    const poster = await renderPoster(page, url)
+    await expect(poster).toHaveScreenshot("poster-anime.png", { maxDiffPixelRatio: 0.10 })
   })
 
   test("extra badge — screenshot", async ({ page }) => {

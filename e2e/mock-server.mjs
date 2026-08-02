@@ -163,6 +163,16 @@ const server = http.createServer(async (req, res) => {
       return respond(res, 200, "<!doctype html><html><body></body></html>", "text/html")
     }
 
+    // MDBList (ranking anime): Avatar in posizione #1 → animeRankResult = 1
+    if (method === "GET" && pathname.startsWith("/mdblist/api/lists/snoak/")) {
+      return json(res, 200, {
+        items: [
+          { imdb: "tt0499549", title: "Avatar: The Last Airbender", year: 2024, tmdb: 19995 },
+          { imdb: "tt1740057", title: "Anime Fake #2", year: 2020, tmdb: 88888 },
+        ],
+      })
+    }
+
     // Fallback esplicito per chiamate non mockate
     return json(res, 501, { error: `Mock server: endpoint non mockato (${method} ${pathname})` })
   } catch (err) {
