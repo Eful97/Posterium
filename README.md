@@ -46,7 +46,7 @@ pinned: false
 - 🖼️ **Selezione Poster Clean in 1-Click** — Scegli la tua locandina pulita (senza testo) preferita con un singolo click e fissala per sempre su Stremio. Supporta l'algoritmo *Best Fit* che rileva in automatico il poster perfetto per il logo.
 - 🎨 **Personalizzazione Badge Completa** — 6 stili per badge genere/rating (*Shadow, Pill, Bar, Colored, Bordo, Vetro*) e 5 stili per badge trend (*Default, Bar, Colored, Pill, Nastro Netflix*). Colori accent adattivi al poster e testo libero personalizzato per singolo titolo.
 - 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch Italia, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA/Emmy (da Wikidata), saghe/franchise e registi cult.
-- 🍿 **Nastro Netflix Top 10** — Badge con l'iconico nastro rosso verticale allineato a sinistra e affiancamento automatico del logo della piattaforma.
+- 🍿 **Nastro Netflix Top 10** — Badge con l'iconico nastro rosso verticale allineato a sinistra e affiancamento automatico del logo della piattaforma. Variante dedicata per le classifiche anime (nastro esteso con etichetta *anime* sotto il numero).
 - ⭐ **Rating Accurato** — Voto medio bilanciato ed imparziale IMDb + TMDB.
 - 🌀 **Sfocatura Sfondo Nativa (Sharp C++)** — Effetto blur sul fondo ultra-rapido generato in soli ~10-20ms.
 - 🔄 **Rotazione Poster 24h** — Cambia automaticamente locandina pulita ogni giorno tra i poster selezionati.
@@ -232,14 +232,17 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 | `ADMIN_TOKEN` | ❌ | Alias per POSTERIUM_ADMIN_TOKEN (legacy) |
 | `ENCRYPTION_KEY_SECRET` | ❌ | Chiave per firma HMAC-SHA256 dei token di configurazione profilo (rende i token URL immutabili) |
 | `CONFIG_HMAC_SECRET` | ❌ | Chiave alternativa per firma HMAC (fallback a ENCRYPTION_KEY_SECRET) |
+| `PROFILE_ENCRYPTION_KEY` | ❌ | Chiave AES-256-GCM per cifrare le API key salvate nei profili cloud (`/api/profile`) |
 | `POSTERIUM_DATA_DIR` | ❌ | Percorso dati persistenti (default: `./data/`) |
 | `POSTERIUM_CACHE_MAX` | ❌ | Max entry cache in-memory (default: 2000) |
 | `POSTERIUM_CACHE_MAX_MB` | ❌ | Max MB cache in-memory (default: 150) |
 | `POSTERIUM_CACHE_REFRESH_HOUR` | ❌ | Ora UTC refresh programmato poster/catalog (default: 3) |
 | `POSTERIUM_LOG_LEVEL` | ❌ | Livello log: `debug`, `info`, `warn`, `error` (default: `info`) |
 | `POSTERIUM_LOG_FORMAT` | ❌ | Formato log JSON se impostato a `json` |
+| `POSTERIUM_DEBUG` | ❌ | Log di debug: `1` abilita info aggiuntive (es. path dati) |
 | `SHARP_CONCURRENCY` | ❌ | Thread Sharp per resize immagini (default: 2) |
 | `SHARP_CACHE_MEMORY_MB` | ❌ | Cache Sharp in MB (default: 64) |
+| `SHARP_CACHE_ITEMS` | ❌ | Max elementi cache interna Sharp (default: auto) |
 | `WARMUP_TOKEN` | ❌ | Token per endpoint `/api/warmup` (fallback a POSTERIUM_ADMIN_TOKEN) |
 | `POSTER_CDN_URL` / `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | URL CDN per generare link poster col CDN |
 | `WIKIDATA_TIMEOUT` | ❌ | Timeout ms per fetch Wikidata badge premi (default: 4000) |
@@ -252,7 +255,7 @@ Posterium usa [Vitest](https://vitest.dev/) per test unitari e [Playwright](http
 
 ### Test unitari (Vitest)
 
-Oltre 390 test su store, API, componenti React, badge SVG, poster-fit, profili e utilità.
+Oltre 430 test su store, API, componenti React, badge SVG, poster-fit, profili e utilità.
 
 ```bash
 # Esecuzione singola
