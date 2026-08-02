@@ -184,6 +184,53 @@ describe("GET /api/poster/[type]/[id] with saved mappings", () => {
     )
     expect(requestedUrls.some((url) => url.includes("/logo.png"))).toBe(true)
   })
+
+  it("falls back to the language poster when no logo is available (clean without logo is useless)", async () => {
+    const langPosterBuf = await imageBuffer("#204080", 500, 750)
+    const cleanBuf = await imageBuffer("#101010", 500, 750)
+    const requestedUrls: string[] = []
+
+    mockedGetById.mockResolvedValue(null)
+    mockedGetDetails.mockResolvedValue({
+      id: 42,
+      title: "Gli occhi degli altri",
+      genres: [{ id: 18, name: "Drama" }],
+      vote_average: 7.0,
+      vote_count: 100,
+      original_language: "it",
+      release_date: "2025-01-15",
+      production_companies: [],
+    })
+    mockedGetImages.mockResolvedValue({
+      id: 42,
+      posters: [
+        { file_path: "/clean.jpg", iso_639_1: null, vote_average: 8.0, vote_count: 100, width: 500, height: 750, aspect_ratio: 0.667 },
+        { file_path: "/it-poster.jpg", iso_639_1: "it", vote_average: 7.0, vote_count: 50, width: 500, height: 750, aspect_ratio: 0.667 },
+      ],
+      // Nessun logo disponibile (caso reale: TMDB 1341422 “Gli occhi degli altri”)
+      logos: [],
+      backdrops: [],
+    })
+    mockedGetExternalIds.mockResolvedValue({ imdb_id: "tt34625288" })
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input)
+      requestedUrls.push(url)
+      const body = url.includes("/it-poster.jpg") ? langPosterBuf : cleanBuf
+      return new Response(new Uint8Array(body), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(body.length) },
+      })
+    })
+
+    const req = new NextRequest("http://localhost:3000/api/poster/movie/42")
+    const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "42" }) })
+
+    expect(res.status).toBe(200)
+    // Deve usare il poster in lingua, NON il clean senza logo
+    expect(requestedUrls.some((url) => url.includes("/it-poster.jpg"))).toBe(true)
+    expect(requestedUrls.some((url) => url.includes("/clean.jpg"))).toBe(false)
+  })
 })
 
 describe("GET /api/poster/[type]/[id] error and edge cases", () => {

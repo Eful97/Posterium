@@ -70,13 +70,43 @@ test("home — mobile viewport", async ({ page }) => {
 // ─── STATUS PAGE (no API key needed) ──────────────────────────
 //
 
-test("status — page renders", async ({ page, request }) => {
+test("status — page renders", async ({ page }) => {
+  // Determinismo: la status page renderizza valori live (time in ms, timestamp,
+  // stato cache) che variano a ogni run e con lo stato del server E2E riusato
+  // (reuseExistingServer locale) — l'altezza full-page cambiava tra i run.
+  // Intercettiamo /api/health e /api/cache/status con payload fissi: lo
+  // screenshot non dipende più da timing, cache o piattaforma (node/win32).
+  await page.route("**/api/health", (route) => route.fulfill({
+    json: {
+      status: "healthy",
+      timestamp: "2026-08-02T12:00:00.000Z",
+      tmdb: {
+        apiKey: true,
+        trending: { ok: true, status: 200, time: 42 },
+        search: { ok: true, status: 200, time: 42 },
+        popular: { ok: true, status: 200, time: 41 },
+        externalIds: { ok: true, status: 200, time: 41 },
+      },
+      streaming: {
+        justwatch: { ok: true, status: 200, time: 142 },
+        flixpatrol: { ok: true, status: 200, time: 36 },
+      },
+      system: { node: "v26.4.0", platform: "win32", env: "development" },
+      storage: {
+        mode: "file",
+        dataDirExists: true, dataDirWritable: true,
+        mappingsFileExists: true, dataFileExists: true,
+        mappingsReadable: true, mappingsWritable: true,
+        defaultsFileExists: true, defaultsReadable: true, defaultsWritable: true,
+        mappingCount: 41, mappingsCount: 41,
+        lastMappingUpdatedAt: "2026-08-02T12:00:00.000Z",
+      },
+    },
+  }))
+  await page.route("**/api/cache/status", (route) => route.fulfill({
+    json: { totalEntries: 0, taggedEntries: [], untaggedEntries: 0, totalBytes: 0, maxBytes: 157286400, maxEntries: 2000 },
+  }))
   await page.goto("/status")
-  // Determinismo: il server dev E2E è riusato tra i run (reuseExistingServer
-  // locale) e la card cache cresce con i tag, cambiando l'altezza della pagina
-  // full-page. Svuotiamo la cache prima dello screenshot: gli health check la
-  // ripopolano con lo stesso set deterministico di tag (mock server).
-  await request.post("/api/cache/clear")
   // Give the health check time to load (it's async with multiple fetches)
   await page.waitForTimeout(3000)
   await expect(page).toHaveScreenshot("status-page.png", {

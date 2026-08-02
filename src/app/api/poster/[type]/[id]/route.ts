@@ -307,10 +307,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             log.error("Best-fit: fallback to first clean", { mediaType, tmdbId, error: e instanceof Error ? e.message : String(e) })
             posterPath = clean.file_path
           }
-        } else {
-          if (logoPath) log.info("Best-fit: disabled by config", { mediaType, tmdbId })
-          else log.info("Best-fit: no logo, skip", { mediaType, tmdbId })
+        } else if (logoPath) {
+          // Logo disponibile ma best-fit disabilitato: il clean viene usato
+          // comunque (il logo verrà composto sopra).
+          log.info("Best-fit: disabled by config", { mediaType, tmdbId })
           posterPath = clean.file_path
+        } else {
+          // Nessun logo disponibile: il poster clean senza logo è inutile
+          // (lo spazio è pensato per il logo). Fallback al poster in lingua:
+          // preferita → originale → prima non-clean → clean come ultima spiaggia.
+          const langPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === preferredLanguage)
+          const origPoster = details.original_language ? images.posters.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
+          const nonCleanPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 !== null)
+          const fallbackPoster = langPoster || origPoster || nonCleanPoster || clean
+          log.info("No logo — fallback to language poster", { mediaType, tmdbId, poster: fallbackPoster.file_path })
+          posterPath = fallbackPoster.file_path
         }
       } else {
         const langPoster = images.posters.find((p: TMDBImage) => p.iso_639_1 === preferredLanguage)
