@@ -23,7 +23,7 @@ function BadgePreview({ style, accentColor }: { style: string; accentColor?: str
   }
 }
 
-export function BadgeStyleSelector({
+export function BadgeStyleSelector<S extends string>({
   value,
   options,
   onChange,
@@ -31,12 +31,12 @@ export function BadgeStyleSelector({
   accentColor,
   disabled,
 }: {
-  value: string
-  options: readonly string[]
-  onChange: (v: string) => void
+  value: S
+  options: readonly S[]
+  onChange: (v: S) => void
   t: (k: string) => string
   accentColor?: string | null
-  disabled?: readonly string[]
+  disabled?: readonly S[]
 }) {
   return (
     <div className="flex gap-1 flex-wrap">

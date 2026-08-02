@@ -18,6 +18,7 @@ import type { Mapping } from "./types"
 import type { ServerDefaults } from "./server-defaults"
 import type { WikidataResult } from "./awards"
 import type { BadgeT } from "./poster-badge"
+import type { BadgeStyle, RankingBadgeStyle } from "./badge-styles"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,8 +49,8 @@ export interface GenerationInput {
   rankingEnabled: boolean
   genreName: string | null
   voteAverage: number | null
-  badgeStyle: string
-  rankingBadgeStyle: string
+  badgeStyle: BadgeStyle
+  rankingBadgeStyle: RankingBadgeStyle
   topLight: boolean
   targetCenter: number
   /** Modalità layout nastro Netflix + logo network: "left" (Nuvio, default) o "right" (Stremio). */

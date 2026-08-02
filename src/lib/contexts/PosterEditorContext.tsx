@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useMemo, useCallback } from "react"
 import type { TMDBImage } from "@/lib/types"
 import { useDefaults } from "@/lib/useDefaults"
+import type { BadgeStyle, RankingBadgeStyle } from "@/lib/badge-styles"
 
 /**
  * PosterEditorCtx — possiede il proprio stato di editing (badge defaults,
@@ -18,10 +19,10 @@ export interface PosterEditorCtx {
   setGlobalBadges: (v: boolean | ((prev: boolean) => boolean)) => void
   rankingBadges: boolean
   setRankingBadges: (v: boolean | ((prev: boolean) => boolean)) => void
-  badgeStyle: string
-  setBadgeStyle: (v: string | ((prev: string) => string)) => void
-  rankingBadgeStyle: string
-  setRankingBadgeStyle: (v: string | ((prev: string) => string)) => void
+  badgeStyle: BadgeStyle
+  setBadgeStyle: (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => void
+  rankingBadgeStyle: RankingBadgeStyle
+  setRankingBadgeStyle: (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => void
   customBadge: string | null
   setCustomBadge: (v: string | null | ((prev: string | null) => string | null)) => void
   networkLogo: boolean
@@ -30,10 +31,10 @@ export interface PosterEditorCtx {
   setRibbonSide: (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => void
 
   // ---- Defaults ----
-  defaultBadgeStyle: string
-  setDefaultBadgeStyle: (v: string | ((prev: string) => string)) => void
-  defaultRankingBadgeStyle: string
-  setDefaultRankingBadgeStyle: (v: string | ((prev: string) => string)) => void
+  defaultBadgeStyle: BadgeStyle
+  setDefaultBadgeStyle: (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => void
+  defaultRankingBadgeStyle: RankingBadgeStyle
+  setDefaultRankingBadgeStyle: (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => void
   defaultBlurEnabled: boolean
   setDefaultBlurEnabled: (v: boolean | ((prev: boolean) => boolean)) => void
   defaultBlurIntensity: number
@@ -186,22 +187,22 @@ export function PosterEditorProvider({
       update({ blurEnabled: next })
     }, [blurEnabled, update])
   const setBadgeStyle = useCallback(
-    (v: string | ((prev: string) => string)) => {
+    (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => {
       const next = typeof v === "function" ? v(badgeStyle) : v
       update({ badgeStyle: next })
     }, [badgeStyle, update])
   const setRankingBadgeStyle = useCallback(
-    (v: string | ((prev: string) => string)) => {
+    (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => {
       const next = typeof v === "function" ? v(rankingBadgeStyle) : v
       update({ rankingBadgeStyle: next })
     }, [rankingBadgeStyle, update])
   const setDefaultBadgeStyle = useCallback(
-    (v: string | ((prev: string) => string)) => {
+    (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => {
       const next = typeof v === "function" ? v(defaultBadgeStyle) : v
       update({ defaultBadgeStyle: next })
     }, [defaultBadgeStyle, update])
   const setDefaultRankingBadgeStyle = useCallback(
-    (v: string | ((prev: string) => string)) => {
+    (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => {
       const next = typeof v === "function" ? v(defaultRankingBadgeStyle) : v
       update({ defaultRankingBadgeStyle: next })
     }, [defaultRankingBadgeStyle, update])

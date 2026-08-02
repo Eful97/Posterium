@@ -5,12 +5,13 @@ import { buildStremioPosterSearchParams } from "./stremio-poster-params"
 import { RENDER_VERSION } from "./render-version"
 import type { SearchResult, TMDBImage } from "./types"
 import type { EnrichedAnimeItem } from "./validation"
+import type { BadgeStyle, RankingBadgeStyle } from "./badge-styles"
 
 interface BadgeParams {
   globalBadges: boolean
   rankingBadges: boolean
-  badgeStyle: string
-  rankingBadgeStyle: string
+  badgeStyle: BadgeStyle
+  rankingBadgeStyle: RankingBadgeStyle
   customBadge: string | null
   gradientHeight: number
   blurIntensity: number

@@ -9,11 +9,12 @@ import crypto from "node:crypto"
 import { z } from "zod"
 // Batch B: clamp condiviso da image-utils.ts (semantica standard, senza round)
 import { clamp } from "@/lib/image-utils"
+import { BADGE_STYLES, RANKING_BADGE_STYLES } from "@/lib/badge-styles"
 
 // ---- Zod schema (Batch C: sostituisce validazione manuale) ----
 
-const badgeStyleSchema = z.enum(["shadow", "pill", "bar", "colored", "bordo", "vetro"])
-const rankingBadgeStyleSchema = z.enum(["default", "bar", "colored", "pill", "netflix"])
+const badgeStyleSchema = z.enum(BADGE_STYLES)
+const rankingBadgeStyleSchema = z.enum(RANKING_BADGE_STYLES)
 const ribbonSideSchema = z.enum(["left", "right"])
 
 export const configTokenSchema = z.object({

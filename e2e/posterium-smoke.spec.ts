@@ -30,6 +30,12 @@ test("can open an editor from search", async ({ page }) => {
   // per sbloccare il flusso di ricerca.
   await page.addInitScript(() => {
     localStorage.setItem("tmdb_key", "mock-tmdb-key-0000000000")
+    // Dismiss dei tre modali first-visit (OnboardingTour z-[300], LangPicker
+    // z-[100], ProfileModal z-50): senza i flag i full-screen overlay
+    // intercettano il click sui risultati di ricerca in un contesto fresco.
+    localStorage.setItem("posterium_onboarding_done", "true")
+    localStorage.setItem("preferred_lang", "it")
+    localStorage.setItem("posterium_profile_id", "e2e-smoke-profile")
   })
 
   await page.goto("/")
@@ -41,7 +47,10 @@ test("can open an editor from search", async ({ page }) => {
   await expect(page.getByText(/Avatar/i).first()).toBeVisible({ timeout: 20_000 })
   await page.getByText(/Avatar/i).first().click()
 
-  await expect(page.getByText(/Anteprima/i)).toBeVisible({ timeout: 10_000 })
-  await expect(page.getByText(/Poster/i)).toBeVisible()
-  await expect(page.getByText(/Loghi/i)).toBeVisible()
+  // Editor aperto: i tre pannelli. Selettori non ambigui: il pannello sinistro
+  // non ha heading visibile ("Poster" è solo nell'aria-label della sezione) e
+  // i testi d'aiuto contengono la parola "poster" (strict mode violation).
+  await expect(page.getByRole("heading", { name: "Anteprima" })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole("region", { name: /Poster selection/i })).toBeVisible()
+  await expect(page.getByRole("tab", { name: "Loghi" })).toBeVisible()
 })

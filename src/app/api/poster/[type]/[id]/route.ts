@@ -47,6 +47,7 @@ import { resolveImdbToTmdb } from "@/lib/imdb-resolver"
 import { decodeConfig } from "@/lib/config-token"
 import { getProfile, getFullProfileData } from "@/lib/profile-store"
 import { createLogger } from "@/lib/logger"
+import { resolvePosterRenderConfig } from "@/lib/poster-config"
 
 const log = createLogger("poster")
 
@@ -438,63 +439,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const topLight = qTopLight !== null ? qTopLight === "1" : (topLum ?? 0.5) > 0.60
 
     // 7. Parse blur / badge / logo config from query
-    const qBadges = req.nextUrl.searchParams.get("badges")
-    const qRanking = req.nextUrl.searchParams.get("ranking")
-    const rawRs = req.nextUrl.searchParams.get("rs")
-    let rankingBadgeStyle = mapping?.rankingBadgeStyle
-      || rawRs
-      || configOverride?.rankingBadgeStyle
-      || sd.rankingBadgeStyle
-      || "default"
-    const qRankParam = req.nextUrl.searchParams.get("rank")
-    const hasRank = !!(animeRankResult || rankingResult || mapping?.badgeRank || mapping?.trendRank || qRankParam || finalRank)
-    // "default" = auto-detect: mostra il badge stile Netflix se c'è un rank,
-    // altrimenti badge standard. Se il sorgente (mapping/query/config) specifica
-    // un valore esplicito (bar/pill/colored/netflix), viene rispettato senza override.
-    if (hasRank && rankingBadgeStyle === "default") {
-      rankingBadgeStyle = "netflix"
-    } else if (!hasRank && rankingBadgeStyle === "netflix") {
-      rankingBadgeStyle = "default"
-    }
-
-    const qBe = req.nextUrl.searchParams.get("be")
-    const blurEnabled = qBe !== null ? qBe !== "0" : (configOverride !== null ? configOverride.blurEnabled : true)
-    // Clamp espliciti: impediscono a valori estremi (query o config) di arrivare a
-    // sharp.blur con sigma enormi o gradienti fuori scala (potenziale DoS CPU).
-    const clamp = (v: number, min: number, max: number): number => Math.min(Math.max(v, min), max)
-    const qGradHeight = req.nextUrl.searchParams.get("gradHeight")
-    const rawGradHeight = qGradHeight ? Number(qGradHeight) : NaN
-    const blurHeight = Number.isFinite(rawGradHeight) ? clamp(rawGradHeight, 5, 100) : (configOverride !== null ? clamp(configOverride.gradientHeight, 5, 100) : 30)
-    const qBlur = req.nextUrl.searchParams.get("blur")
-    const rawBlur = qBlur ? Number(qBlur) : NaN
-    const blurIntensity = Number.isFinite(rawBlur) ? clamp(rawBlur, 1, 100) : (configOverride !== null ? clamp(configOverride.blurIntensity, 1, 100) : 5)
-    const qBf = req.nextUrl.searchParams.get("bf")
-    const rawBf = qBf ? Number(qBf) : NaN
-    const blurFade = Number.isFinite(rawBf) ? clamp(rawBf, 0, 100) : (configOverride !== null ? clamp(configOverride.blurFade, 0, 100) : 60)
-    const qBd = req.nextUrl.searchParams.get("bd")
-    const rawBd = qBd ? Number(qBd) : NaN
-    const blurDarkness = Number.isFinite(rawBd) ? clamp(rawBd, 0, 100) : (configOverride !== null ? clamp(configOverride.blurDarkness, 0, 100) : 40)
-
-    const hasQuery = !!queryPoster || !!mapping
-    const badgesEnabled = hasQuery ? (qBadges !== null ? qBadges !== "0" : (configOverride !== null ? configOverride.globalBadges : showBadges)) : true
-    const rankingEnabled = hasQuery ? (qRanking !== null ? qRanking !== "0" : (configOverride !== null ? configOverride.rankingBadges : rankingBadges)) : true
-    const badgeStyle = req.nextUrl.searchParams.get("bs")
-      || (mapping?.badgeStyle && mapping.badgeStyle !== "shadow" ? mapping.badgeStyle : undefined)
-      || configOverride?.badgeStyle
-      || sd.badgeStyle || "shadow"
-
-    const qScale = req.nextUrl.searchParams.get("scale")
-    const qOx = req.nextUrl.searchParams.get("ox")
-    const qOy = req.nextUrl.searchParams.get("oy")
-    const logoScale = qScale ? Number(qScale) || null : mapping?.logoScale ?? null
-    const logoOffsetX = qOx ? Number(qOx) || null : mapping?.logoOffsetX ?? null
-    const logoOffsetY = qOy ? Number(qOy) || null : mapping?.logoOffsetY ?? null
-
-    const queryExtra = req.nextUrl.searchParams.get("extra") || configOverride?.customBadge || null
-    const qNetLogo = req.nextUrl.searchParams.get("netLogo") ?? (configOverride !== null ? (configOverride.networkLogo ? null : "0") : null)
-    // Modalità layout nastro Netflix + logo network: query `side=right` (Stremio), mapping salvato o config/profilo
-    const qSide = req.nextUrl.searchParams.get("side")
-    const ribbonSide: "left" | "right" = qSide === "right" || mapping?.ribbonSide === "right" || configOverride?.ribbonSide === "right" ? "right" : "left"
+    const renderConfig = resolvePosterRenderConfig({
+      searchParams: req.nextUrl.searchParams,
+      mapping,
+      configOverride,
+      sd,
+      hasQuery: !!queryPoster || !!mapping,
+      showBadges,
+      rankingBadges,
+      animeRank: animeRankResult,
+      rankingResult,
+      finalRank,
+    })
+    const {
+      badgeStyle, rankingBadgeStyle,
+      blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
+      badgesEnabled, rankingEnabled,
+      logoScale, logoOffsetX, logoOffsetY,
+      queryExtra, qNetLogo, ribbonSide,
+    } = renderConfig
 
     const locale = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
     const targetCenter = Math.round(30 * STD_H / 570)

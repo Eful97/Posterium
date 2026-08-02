@@ -6,12 +6,13 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { createLogger } from "@/lib/logger"
 import { z } from "zod"
+import { BADGE_STYLES, RANKING_BADGE_STYLES } from "@/lib/badge-styles"
 
 const log = createLogger("defaults")
 
 const defaultsSchema = z.object({
-  badgeStyle: z.string().optional(),
-  rankingBadgeStyle: z.string().optional(),
+  badgeStyle: z.enum(BADGE_STYLES).optional(),
+  rankingBadgeStyle: z.enum(RANKING_BADGE_STYLES).optional(),
   blurEnabled: z.boolean().optional(),
   blurIntensity: z.number().optional(),
   blurFade: z.number().optional(),

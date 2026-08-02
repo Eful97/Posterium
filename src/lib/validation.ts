@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { BADGE_STYLES, RANKING_BADGE_STYLES } from "./badge-styles"
 
 export const mappingSchema = z.object({
   tmdbId: z.number().int().positive(),
@@ -37,8 +38,8 @@ export const mappingSchema = z.object({
   blurFade: z.number().nullable().optional(),
   blurDarkness: z.number().nullable().optional(),
   gradientHeight: z.number().nullable().optional(),
-  badgeStyle: z.string().nullable().optional(),
-  rankingBadgeStyle: z.string().nullable().optional(),
+  badgeStyle: z.enum(BADGE_STYLES).nullable().optional(),
+  rankingBadgeStyle: z.enum(RANKING_BADGE_STYLES).nullable().optional(),
   cleanPosters: z.array(z.string()).nullable().optional(),
   cleanPosterIndex: z.number().int().min(0).nullable().optional(),
   cleanPosterUpdatedAt: z.string().nullable().optional(),
@@ -47,8 +48,8 @@ export const mappingSchema = z.object({
   logoDisabled: z.boolean().nullable().optional(),
   networkLogo: z.boolean().nullable().optional(),
   ribbonSide: z.enum(["left", "right"]).nullable().optional(),
-  defaultBadgeStyle: z.string().nullable().optional(),
-  defaultRankingBadgeStyle: z.string().nullable().optional(),
+  defaultBadgeStyle: z.enum(BADGE_STYLES).nullable().optional(),
+  defaultRankingBadgeStyle: z.enum(RANKING_BADGE_STYLES).nullable().optional(),
 })
 
 export type MappingInput = z.infer<typeof mappingSchema>

@@ -2,6 +2,7 @@ import fs from "fs"
 import path from "path"
 import { textColorForBg } from "./accent-color"
 import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg } from "./badge-svg-shared"
+import type { BadgeStyle, RankingBadgeStyle, ExtraBadgeStyle } from "./badge-styles"
 
 const FONT_REGULAR = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "Inter-Regular.ttf")
 const FONT_BOLD = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "Inter-Bold.ttf")
@@ -102,7 +103,7 @@ export async function buildExtraBadgeSVG(
   label: string,
   pw: number,
   topLight?: boolean,
-  badgeStyle?: string,
+  badgeStyle?: ExtraBadgeStyle,
   accentColor?: string,
 ): Promise<{ png: Buffer; w: number; h: number } | null> {
   const s = badgeStyle || "default"
@@ -142,7 +143,7 @@ export async function buildExtraBadgeSVG(
 
 export async function buildGenreBadgeSVG(
   genreName: string, voteAverage: number, pw: number,
-  year?: string, style?: string, accentColor?: string, topLight?: boolean,
+  year?: string, style?: BadgeStyle, accentColor?: string, topLight?: boolean,
 ): Promise<{ png: Buffer; w: number; h: number } | null> {
   const s = style || "shadow"
   const voteStr = voteAverage ? voteAverage.toFixed(1) : ""
@@ -209,7 +210,7 @@ export async function buildGenreBadgeSVG(
 
 export async function renderGenreBadge(
   genreName: string, voteAverage: number, pw: number,
-  year?: string, style?: string, accentColor?: string, topLight?: boolean,
+  year?: string, style?: BadgeStyle, accentColor?: string, topLight?: boolean,
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const r = await buildGenreBadgeSVG(genreName, voteAverage, pw, year, style, accentColor, topLight)
   if (r) return r
@@ -294,7 +295,7 @@ export async function buildRankingBadgeSVG(
   pw: number,
   label?: string,
   topLight?: boolean,
-  badgeStyle?: string,
+  badgeStyle?: RankingBadgeStyle,
   accentColor?: string,
   side?: "left" | "right",
   isAnime?: boolean,
@@ -334,7 +335,7 @@ export async function buildRankingBadgeSVG(
 
 export async function renderRankingBadge(
   rank: number, pw: number, label?: string,
-  topLight?: boolean, badgeStyle?: string, accentColor?: string, side?: "left" | "right", isAnime?: boolean,
+  topLight?: boolean, badgeStyle?: RankingBadgeStyle, accentColor?: string, side?: "left" | "right", isAnime?: boolean,
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const r = await buildRankingBadgeSVG(rank, pw, label, topLight, badgeStyle, accentColor, side, isAnime)
   if (r) return r
@@ -343,7 +344,7 @@ export async function renderRankingBadge(
 
 export async function renderExtraBadge(
   label: string, pw: number, topLight?: boolean,
-  badgeStyle?: string, accentColor?: string,
+  badgeStyle?: ExtraBadgeStyle, accentColor?: string,
 ): Promise<{ png: Buffer; w: number; h: number }> {
   const r = await buildExtraBadgeSVG(label, pw, topLight, badgeStyle, accentColor)
   if (r) return r

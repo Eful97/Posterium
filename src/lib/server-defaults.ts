@@ -3,12 +3,13 @@ import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { DATA_DIR } from "@/lib/data-dir"
 import { createLogger } from "@/lib/logger"
+import type { BadgeStyle, RankingBadgeStyle } from "@/lib/badge-styles"
 
 const log = createLogger("server-defaults")
 
 export interface ServerDefaults {
-  badgeStyle?: string
-  rankingBadgeStyle?: string
+  badgeStyle?: BadgeStyle
+  rankingBadgeStyle?: RankingBadgeStyle
   blurEnabled?: boolean
   blurIntensity?: number
   blurFade?: number

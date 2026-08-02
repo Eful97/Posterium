@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import type { BadgeStyle, RankingBadgeStyle } from "./badge-styles"
 
 export type RibbonSide = "left" | "right"
 
 export interface DefaultsState {
-  defaultBadgeStyle: string
-  defaultRankingBadgeStyle: string
+  defaultBadgeStyle: BadgeStyle
+  defaultRankingBadgeStyle: RankingBadgeStyle
   defaultBlurEnabled: boolean
   defaultBlurIntensity: number
   defaultBlurFade: number
@@ -27,8 +28,8 @@ export interface DefaultsState {
   blurFade: number
   blurDarkness: number
   blurEnabled: boolean
-  badgeStyle: string
-  rankingBadgeStyle: string
+  badgeStyle: BadgeStyle
+  rankingBadgeStyle: RankingBadgeStyle
 }
 
 const DEFAULTS: DefaultsState = {
@@ -67,10 +68,10 @@ interface StoredDefaults {
   blurFade?: number
   blurDarkness?: number
   blurEnabled?: boolean
-  badgeStyle?: string
-  rankingBadgeStyle?: string
-  defaultBadgeStyle?: string
-  defaultRankingBadgeStyle?: string
+  badgeStyle?: BadgeStyle
+  rankingBadgeStyle?: RankingBadgeStyle
+  defaultBadgeStyle?: BadgeStyle
+  defaultRankingBadgeStyle?: RankingBadgeStyle
   defaultBlurEnabled?: boolean
   defaultBlurIntensity?: number
   defaultBlurFade?: number

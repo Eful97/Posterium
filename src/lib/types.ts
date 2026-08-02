@@ -1,3 +1,5 @@
+import type { BadgeStyle, RankingBadgeStyle } from "./badge-styles"
+
 export interface SearchResult {
   id: number
   media_type: "movie" | "tv"
@@ -77,8 +79,8 @@ export interface Mapping {
   releaseDate?: string | null
   firstAirDate?: string | null
   rankingBadges?: boolean | null
-  badgeStyle?: string | null
-  rankingBadgeStyle?: string | null
+  badgeStyle?: BadgeStyle | null
+  rankingBadgeStyle?: RankingBadgeStyle | null
   blurEnabled?: boolean | null
   blurIntensity?: number | null
   blurFade?: number | null
@@ -91,8 +93,8 @@ export interface Mapping {
   networkLogo?: boolean | null
   ribbonSide?: "left" | "right" | null
   excludedPosters?: string[] | null
-  defaultBadgeStyle?: string | null
-  defaultRankingBadgeStyle?: string | null
+  defaultBadgeStyle?: BadgeStyle | null
+  defaultRankingBadgeStyle?: RankingBadgeStyle | null
   logoDisabled?: boolean | null
   bestFitScore?: number | null
   bestFitReasons?: string[] | null

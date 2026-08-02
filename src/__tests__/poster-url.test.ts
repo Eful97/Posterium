@@ -5,8 +5,8 @@ import { POSTER_URL_VERSION } from "@/lib/render-version"
 const baseBadgeParams = {
   globalBadges: true,
   rankingBadges: true,
-  badgeStyle: "shadow",
-  rankingBadgeStyle: "default",
+  badgeStyle: "shadow" as const,
+  rankingBadgeStyle: "default" as const,
   customBadge: null,
   gradientHeight: 30,
   blurIntensity: 5,

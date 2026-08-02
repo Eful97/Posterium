@@ -149,7 +149,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
 
   const removeBackdrop = useCallback(() => {
     setSelectedBackdrop(null)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- setter refs are stable
 
   const saveConfig = useCallback(async (overrides: SaveConfigOverrides = {}) => {
     const posterToSave = overrides.previewPoster ?? previewPoster

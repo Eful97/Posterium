@@ -70,8 +70,13 @@ test("home — mobile viewport", async ({ page }) => {
 // ─── STATUS PAGE (no API key needed) ──────────────────────────
 //
 
-test("status — page renders", async ({ page }) => {
+test("status — page renders", async ({ page, request }) => {
   await page.goto("/status")
+  // Determinismo: il server dev E2E è riusato tra i run (reuseExistingServer
+  // locale) e la card cache cresce con i tag, cambiando l'altezza della pagina
+  // full-page. Svuotiamo la cache prima dello screenshot: gli health check la
+  // ripopolano con lo stesso set deterministico di tag (mock server).
+  await request.post("/api/cache/clear")
   // Give the health check time to load (it's async with multiple fetches)
   await page.waitForTimeout(3000)
   await expect(page).toHaveScreenshot("status-page.png", {

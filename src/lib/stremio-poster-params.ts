@@ -1,12 +1,13 @@
 import { POSTER_URL_VERSION } from "@/lib/render-version"
+import type { BadgeStyle, RankingBadgeStyle } from "@/lib/badge-styles"
 
 export interface StremioPosterParamsInput {
   readonly apiKey?: string
   readonly lang?: string | null
   readonly globalBadges?: boolean
   readonly rankingBadges?: boolean
-  readonly badgeStyle?: string
-  readonly rankingBadgeStyle?: string
+  readonly badgeStyle?: BadgeStyle
+  readonly rankingBadgeStyle?: RankingBadgeStyle
   readonly gradientHeight?: number
   readonly blurIntensity?: number
   readonly blurFade?: number

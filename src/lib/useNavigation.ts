@@ -90,7 +90,7 @@ export function useNavigation() {
     }
     addEventListener("popstate", handler)
     return () => removeEventListener("popstate", handler)
-  }, [resetState])
+  }, [resetState, incrementFetchId])
 
   return {
     view, setView,
