@@ -20,13 +20,20 @@ export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MD
   const key = apiKey || process.env.MDBLIST_API_KEY
   try {
     const slug = list.url.split('/').pop()
-    const baseUrl = key
-      ? `https://api.mdblist.com/lists/snoak/${slug}/items?apikey=${encodeURIComponent(key)}&limit=20`
-      : `${MDBLIST_API_URL}/lists/snoak/${slug}`
+    // MDBLIST_API_URL esplicito (test E2E: punta al mock server locale) vince
+    // sempre sulla key, così i test restano deterministici anche se lo sviluppatore
+    // ha una MDBLIST_API_KEY in .env.local. In produzione MDBLIST_API_URL è assente
+    // e si usa l'endpoint reale (con key se disponibile).
+    const explicitUrl = process.env.MDBLIST_API_URL
+    const baseUrl = explicitUrl
+      ? `${explicitUrl}/lists/snoak/${slug}`
+      : key
+        ? `https://api.mdblist.com/lists/snoak/${slug}/items?apikey=${encodeURIComponent(key)}&limit=20`
+        : `${MDBLIST_API_URL}/lists/snoak/${slug}`
     const res = await fetch(baseUrl, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) return []
     const data = await res.json()
-    const payload = key ? (data?.data || data) : data
+    const payload = key && !explicitUrl ? (data?.data || data) : data
     const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
     return rawItems.slice(0, 20).map((item: { imdb_id?: string; imdb?: string; title?: string; year?: number; tmdb_id?: number | string; tmdb?: number | string; ids?: { tmdb?: number | string }; id?: number | string }) => ({
       imdb: item.imdb_id || item.imdb || '',

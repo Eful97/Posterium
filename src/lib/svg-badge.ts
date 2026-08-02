@@ -221,7 +221,8 @@ export async function renderGenreBadge(
 export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boolean, side: "left" | "right" = "left", isAnime?: boolean) {
   const fs = Math.round(Math.max(23 * pw / 380, 14))
   const w = Math.round(fs * 2.6)
-  const h = Math.round(w * 1.35)
+  // Anime: nastro allungato verso il basso (h × 1.55) per dare spazio alla scritta "anime".
+  const h = Math.round(w * (isAnime ? 1.55 : 1.35))
   const slant = Math.round(w * 0.12)
   const topFs = Math.round(w * 0.28)
   const rankFs = Math.round(w * 0.54)
@@ -229,12 +230,22 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
   const padBottom = Math.round(fs * 0.4)
   const totalW = w + padRight
   const totalH = h + padBottom
-  // Anime: "anime" sotto il numero (solo per ranking anime)
+  // Anime: "anime" sotto il numero (solo per ranking anime). Con il nastro più
+  // alto, numero e "anime" restano sopra la V-notch del bordo inferiore.
   const animeFs = Math.round(w * 0.20)
   const animePadBottom = isAnime ? Math.round(animeFs * 0.6) : 0
   const totalHAnime = totalH + animePadBottom
-  const rankY = isAnime ? Math.round(h * 0.52) : Math.round(h * 0.60)
-  const animeY = isAnime ? Math.round(h * 0.82) : 0
+  // Anime: TOP, numero e "anime" impilati con la stessa distanza visiva.
+  // Il gap è proporzionale al font più piccolo (topFs/animeFs), così la
+  // spaziatura resta uniforme a ogni scala. Non-anime: posizioni invariate.
+  const topY = isAnime ? Math.round(h * 0.22) : Math.round(h * 0.28)
+  const textGap = isAnime ? Math.round(Math.min(topFs, animeFs) * 0.2) : 0
+  const rankY = isAnime
+    ? topY + Math.round(topFs / 2) + textGap + Math.round(rankFs / 2)
+    : Math.round(h * 0.60)
+  const animeY = isAnime
+    ? rankY + Math.round(rankFs / 2) + textGap + Math.round(animeFs / 2)
+    : 0
 
   // Stessa logica adattiva degli altri badge ranking (tlBg/tlFg):
   // top chiaro → nastro scuro con testo chiaro; top scuro → nastro chiaro con testo nero.
@@ -271,7 +282,7 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
     </defs>
     <path d="${pathD}" fill="${fill}" filter="url(#shadow3D)"/>
     <line x1="${highlightX1}" y1="1" x2="${highlightX2}" y2="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
-    <text x="${textX}" y="${Math.round(h * 0.28)}" fill="${textColor}" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
+    <text x="${textX}" y="${topY}" fill="${textColor}" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
     <text x="${textX}" y="${rankY}" fill="${textColor}" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
     ${animeEl}
   </svg>`
