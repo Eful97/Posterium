@@ -10,7 +10,15 @@ describe("POST /api/mappings — catalog warmup", () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    // NB: NON usare vi.restoreAllMocks() qui. Il warmup della route è
+    // fire-and-forget (fetch dietro getById async, con AbortSignal.timeout
+    // fino a 25s): un fetch ancora in volo dopo il test userebbe il fetch
+    // REALE (porta 3000) e il .catch farebbe log.warn asincrono dopo il
+    // teardown del worker → vitest: "Closing rpc while onUserConsoleLog was
+    // pending". Teniamo il mock attivo per tutto il file: reset di chiamate e
+    // coda once, poi ri-applica il comportamento di default.
+    fetchSpy.mockReset()
+    fetchSpy.mockResolvedValue(new Response(null, { status: 200 }))
   })
 
   it("fires background fetch for poster + catalog URLs after save", async () => {
@@ -70,5 +78,9 @@ describe("POST /api/mappings — catalog warmup", () => {
 
     const res = await POST(req)
     expect(res.status).toBe(200)
+
+    // Assesta il warmup fire-and-forget mentre il mock è ancora attivo, come
+    // nel primo test: evita lavoro di background che oltrepassi il test.
+    await new Promise((r) => setTimeout(r, 50))
   })
 })
