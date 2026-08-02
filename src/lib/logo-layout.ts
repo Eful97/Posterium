@@ -1,5 +1,3 @@
-import { MAX_LOGO_HEIGHT_RATIO } from "./constants"
-
 type LogoLayoutInput = {
   readonly posterW: number
   readonly posterH: number

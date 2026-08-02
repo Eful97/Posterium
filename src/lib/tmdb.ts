@@ -29,14 +29,19 @@ async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
   // è invariato (chiave obbligatoria).
   const key = apiKey || TMDB_API_KEY || (process.env.TMDB_BASE_URL ? "mock-key" : undefined)
   if (!key) throw new Error("TMDB API key is missing")
-  const url = new URL(`${TMDB_BASE}${path}`)
-  url.searchParams.set("api_key", key)
 
-  const cacheKey = url.toString()
+  // Cache key is the URL WITHOUT the api_key so that:
+  //   1. The per-endpoint cache is shared across users (not fragmented by key).
+  //   2. API keys never appear in Map keys (memory safety).
+  const neutralUrl = new URL(`${TMDB_BASE}${path}`)
+  const cacheKey = neutralUrl.toString()
 
-  // In-memory cache (5 min)
+  // In-memory cache (5 min) — promote on hit for LRU eviction
   const cached = fetchCache.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    // Move to end of Map (= most-recently-used position)
+    fetchCache.delete(cacheKey)
+    fetchCache.set(cacheKey, cached)
     return cached.data
   }
 
@@ -44,10 +49,15 @@ async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
   const existing = inflight.get(cacheKey)
   if (existing) return existing
 
+  // Actual fetch URL includes the api_key (kept separate from cacheKey)
+  const fetchUrl = new URL(neutralUrl.toString())
+  fetchUrl.searchParams.set("api_key", key)
+
   const promise = (async () => {
-    const res = await fetch(cacheKey, { signal: AbortSignal.timeout(30000) })
+    const res = await fetch(fetchUrl.toString(), { signal: AbortSignal.timeout(30000) })
     if (!res.ok) throw new Error(`TMDB fetch failed: ${res.status}`)
     const data = await res.json()
+    // Evict LRU (first key = least-recently-used) when at capacity
     if (fetchCache.size >= CACHE_MAX) fetchCache.delete(fetchCache.keys().next().value!)
     fetchCache.set(cacheKey, { data, timestamp: Date.now() })
     return data

@@ -57,7 +57,7 @@ export function MoodBoardTile({
             if (selectMode) onSelect(); else onOpen()
           }
         }}
-        className={`surface-card group relative z-10 rounded-xl overflow-hidden transition-all duration-300 ease-out w-full border border-white/10 shadow-2xl ${
+        className={`surface-card group relative z-10 rounded-xl overflow-hidden transition-all duration-300 ease-out w-full border border-white/10 shadow-2xl hover:-translate-y-[3px] hover:scale-[1.015] hover:shadow-[0_22px_48px_rgba(0,0,0,0.48),0_0_22px_rgba(232,93,42,0.10)] hover:border-white/20 ${
           selectMode
             ? isSelected
               ? "ring-2 ring-red-400/50 border-red-400/70"
@@ -78,7 +78,7 @@ export function MoodBoardTile({
             alt={m.title}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-[400ms] ease-out group-hover:scale-[1.06]"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none"
               ;(e.target as HTMLImageElement).parentElement?.classList.add("show-fallback")

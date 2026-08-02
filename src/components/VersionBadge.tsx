@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useT } from "@/lib/contexts/TranslationContext"
-import { useSettingsCtx } from "@/lib/contexts/SettingsContext"
 import { APP_VERSION } from "@/generated/app-version"
 
 const CURRENT_VERSION = APP_VERSION

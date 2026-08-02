@@ -5,7 +5,7 @@ import { useT } from "@/lib/contexts/TranslationContext"
 import { Globe } from "lucide-react"
 
 export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
-  const { t, lang } = useT()
+  const { t } = useT()
   return (
     <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
       <div className="w-full max-w-lg mx-4">

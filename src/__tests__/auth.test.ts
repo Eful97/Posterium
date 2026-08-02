@@ -73,4 +73,27 @@ describe("checkAdminToken", () => {
     })
     expect(checkAdminToken(req)).toBe(false)
   })
+
+  it("rejects GET /api/mappings without token on a protected instance", async () => {
+    process.env.POSTERIUM_ADMIN_TOKEN = "secret"
+    const req = new NextRequest("http://localhost:3000/api/mappings", { method: "GET" })
+    const { GET } = await import("@/app/api/mappings/route")
+    const res = await GET(req)
+    expect(res.status).toBe(401)
+  })
+
+  it("allows GET /api/mappings on a public instance (no token)", async () => {
+    const req = new NextRequest("http://localhost:3000/api/mappings", { method: "GET" })
+    const { GET } = await import("@/app/api/mappings/route")
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+  })
+
+  it("rejects GET /api/mappings/export without token on a protected instance", async () => {
+    process.env.POSTERIUM_ADMIN_TOKEN = "secret"
+    const req = new NextRequest("http://localhost:3000/api/mappings/export", { method: "GET" })
+    const { GET } = await import("@/app/api/mappings/export/route")
+    const res = await GET(req)
+    expect(res.status).toBe(401)
+  })
 })

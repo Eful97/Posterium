@@ -295,6 +295,7 @@ export function CataloghiView() {
                     }`}
                   >
                     {src ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- remote TMDB poster tiles (lazy, optimized by CDN)
                       <img
                         src={src}
                         alt={item.title}

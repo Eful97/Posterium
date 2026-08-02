@@ -5,8 +5,8 @@ import { GET } from "@/app/api/poster/[type]/[id]/route"
 import { getById } from "@/lib/store"
 import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { getDetails, getImages, getExternalIds } from "@/lib/tmdb"
-import { RENDER_VERSION } from "@/lib/render-version"
 import { cacheClear } from "@/lib/cache"
+import type { Mapping } from "@/lib/types"
 
 vi.mock("@/lib/rate-limit", () => ({
   rateLimit: vi.fn(() => ({ ok: true, retAfter: 0 })),
@@ -264,7 +264,7 @@ describe("GET /api/poster/[type]/[id] error and edge cases", () => {
       originalPosterPath: null,
       language: "it",
       updatedAt: "2026-07-16T10:15:30.000Z",
-    } as any)
+    } as Mapping)
 
     const req = new NextRequest("http://localhost:3000/api/poster/movie/99")
     const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "99" }) })

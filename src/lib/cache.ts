@@ -26,7 +26,6 @@ const ENV_MAX_ENTRIES = process.env.POSTERIUM_CACHE_MAX ? parseInt(process.env.P
 const MAX_ENTRIES = Number.isFinite(ENV_MAX_ENTRIES) && ENV_MAX_ENTRIES > 100 ? ENV_MAX_ENTRIES : 2000
 const ENV_MAX_MB = process.env.POSTERIUM_CACHE_MAX_MB ? parseFloat(process.env.POSTERIUM_CACHE_MAX_MB) : 150
 const MAX_BYTES = (Number.isFinite(ENV_MAX_MB) && ENV_MAX_MB > 10 ? ENV_MAX_MB : 150) * 1024 * 1024
-const EVICT_BATCH = 20
 const ENV_REFRESH_HOUR = process.env.POSTERIUM_CACHE_REFRESH_HOUR ? parseInt(process.env.POSTERIUM_CACHE_REFRESH_HOUR, 10) : 3
 const REFRESH_HOUR = Number.isFinite(ENV_REFRESH_HOUR) && ENV_REFRESH_HOUR >= 0 && ENV_REFRESH_HOUR <= 23 ? ENV_REFRESH_HOUR : 3
 
@@ -113,8 +112,7 @@ function makeSpace(count: number, incomingBytes: number = 0): void {
   if (store.size + count < MAX_ENTRIES && totalBytes + incomingBytes < MAX_BYTES) return
   // Map preserves insertion order; delete+set on read promotes accessed entries to end.
   // First keys are the least recently used. Evict in batches.
-  const byteTarget = totalBytes + incomingBytes - Math.floor(MAX_BYTES * 0.9)
-  let evicted = 0
+  const byteTarget = Math.floor(MAX_BYTES * 0.9) - incomingBytes
   for (const key of store.keys()) {
     // Stop solo quando ENTRAMBI i target sono soddisfatti: entry count sotto il
     // limite E byte sotto il target. Il vecchio blocco su entryLimit lasciava
@@ -125,7 +123,6 @@ function makeSpace(count: number, incomingBytes: number = 0): void {
       totalBytes -= estimateBytes(entry.data)
     }
     store.delete(key)
-    evicted++
   }
 }
 

@@ -33,7 +33,14 @@ body {
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, rgba(232,93,42,0.55), rgba(232,93,42,0.28));
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, rgba(232,93,42,0.82), rgba(232,93,42,0.52));
+}
 
 input[type="range"] {
   -webkit-appearance: none;
@@ -569,8 +576,8 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .surface-card:hover {
-  border-color: rgba(255,255,255,0.12);
-  box-shadow: 0 16px 36px rgba(0,0,0,0.28), 0 0 0 1px rgba(232,93,42,0.06);
+  border-color: rgba(255,255,255,0.15);
+  box-shadow: 0 18px 42px rgba(0,0,0,0.34), 0 0 0 1px rgba(232,93,42,0.10), 0 0 18px rgba(232,93,42,0.07);
 }
 
 .poster-tile {
@@ -583,9 +590,9 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .poster-tile:hover {
-  border-color: rgba(255,255,255,0.16);
-  box-shadow: 0 16px 36px rgba(0,0,0,0.34), 0 0 12px rgba(232,93,42,0.08);
-  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 20px 46px rgba(0,0,0,0.42), 0 0 22px rgba(232,93,42,0.15);
+  transform: translateY(-2px) scale(1.015);
 }
 
 .poster-tile-active {
@@ -702,6 +709,7 @@ input[type="range"]::-moz-range-thumb {
   height: 1.25rem;
   border-radius: 2px;
   background: var(--color-accent-orange);
+  box-shadow: 0 0 8px rgba(232,93,42,0.60), 0 0 20px rgba(232,93,42,0.20);
   flex-shrink: 0;
 }
 
@@ -843,17 +851,19 @@ input[type="range"]::-moz-range-thumb {
   outline: 2px solid var(--color-accent-orange);
   outline-offset: 2px;
   border-radius: 4px;
+  box-shadow: 0 0 0 4px rgba(232,93,42,0.18);
 }
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--color-accent-orange);
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(232,93,42,0.18);
 }
 input:focus-visible,
 select:focus-visible {
   outline: none;
   border-color: var(--color-accent-orange);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-orange) 30%, transparent);
+  box-shadow: 0 0 0 3px rgba(232,93,42,0.22);
 }
 
 /* Search bars: neutral focus instead of orange */

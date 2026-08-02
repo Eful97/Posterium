@@ -8,7 +8,7 @@ import {
   generateProfileId,
   verifyProfilePassword,
 } from "@/lib/profile-store"
-import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
+import { type PosteriumUserConfig } from "@/lib/config-token"
 import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { createLogger } from "@/lib/logger"

@@ -216,5 +216,17 @@
     "ui.saving":  "Saving...",
     "ui.viewGrid":  "Cuadrícula",
     "ui.viewMoodboard":  "Mood Board",
-    "ui.quickView":  "Vista rápida"
+    "ui.quickView":  "Vista rápida",
+    "ui.heroTitle":  "Diseña tus pósters de Stremio",
+    "ui.heroSubtitle":  "Busca una película o serie, personaliza insignias, logotipos y degradados — luego guarda o copia la URL de tu póster.",
+    "ui.heroCatalogsCta":  "Catálogos →",
+    "ui.homeBtn":  "Inicio",
+    "ui.catalogsTitle":  "Catálogos",
+    "ui.catalogsSubtitle":  "Top 20 de JustWatch, clasificaciones de plataformas de streaming y anime en tendencia",
+    "ui.justwatchTop20":  "JustWatch Top 20",
+    "ui.streamingPlatforms":  "Plataformas de streaming",
+    "ui.movieLabel":  "Películas",
+    "ui.tvLabel":  "Series de TV",
+    "ui.posterExamples":  "Ejemplos de pósters",
+    "ui.posterExamplesDesc":  "Diseños reales generados con insignias, logotipos y degradados"
 }

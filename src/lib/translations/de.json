@@ -216,5 +216,17 @@
     "ui.saving":  "Saving...",
     "ui.viewGrid":  "Raster",
     "ui.viewMoodboard":  "Mood Board",
-    "ui.quickView":  "Schnellansicht"
+    "ui.quickView":  "Schnellansicht",
+    "ui.heroTitle":  "Gestalte deine Stremio-Poster",
+    "ui.heroSubtitle":  "Suche einen Film oder eine Serie, passe Badges, Logos und Verläufe an — speichere oder kopiere dann die Poster-URL.",
+    "ui.heroCatalogsCta":  "Kataloge →",
+    "ui.homeBtn":  "Start",
+    "ui.catalogsTitle":  "Kataloge",
+    "ui.catalogsSubtitle":  "JustWatch Top 20, Streaming-Plattform-Charts und Trending-Anime",
+    "ui.justwatchTop20":  "JustWatch Top 20",
+    "ui.streamingPlatforms":  "Streaming-Plattformen",
+    "ui.movieLabel":  "Filme",
+    "ui.tvLabel":  "TV-Serien",
+    "ui.posterExamples":  "Poster-Beispiele",
+    "ui.posterExamplesDesc":  "Echte Layouts mit Badges, Logos und Verläufen generiert"
 }

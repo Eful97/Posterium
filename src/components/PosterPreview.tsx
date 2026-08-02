@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useRef } from "react"
 import { ImageOff, RefreshCw } from "lucide-react"
 import { useP } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"

@@ -115,7 +115,7 @@ App version: `0.15.2` — RENDER_VERSION: `96` — rv: `96`
 
 Test attivi:
 - **4 screenshot fissi**: home full-page, home viewport, home mobile, /status — sempre attivi
-- **20 test poster API** (10 funzionali + 10 visual): badge shadow/pill/bar/colored, ranking, extra, gradienti up/down, blur, clean — sempre attivi (grazie al mock server)
+- **21 test poster API** (10 funzionali + 11 visual): badge shadow/pill/bar/colored, ranking, extra, gradienti up/down, blur, clean, anime — sempre attivi (grazie al mock server)
 <!-- END: posterium-project-rules -->
 
 ---

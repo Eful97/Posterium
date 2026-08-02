@@ -34,26 +34,15 @@ function formatHuman(entry: LogEntry): string {
 function log(level: LogLevel, module: string, message: string, data?: Record<string, unknown>): void {
   if (!shouldLog(level)) return
   const entry: LogEntry = { level, module, message, data, timestamp: new Date().toISOString() }
-  const formatted = toJSON(entry)
-  const human = formatHuman(entry)
+  const formatted = process.env.POSTERIUM_LOG_FORMAT === "json" ? toJSON(entry) : formatHuman(entry)
   switch (level) {
-    case "error": return void console.error(human)
-    case "warn":  return void console.warn(human)
-    default:      return void console.log(human)
+    case "error": return void console.error(formatted)
+    case "warn":  return void console.warn(formatted)
+    default:      return void console.log(formatted)
   }
 }
 
-const noop = () => {}
-
 export function createLogger(module: string) {
-  if (process.env.POSTERIUM_LOG_FORMAT === "json") {
-    return {
-      debug: (msg: string, data?: Record<string, unknown>) => log("debug", module, msg, data),
-      info:  (msg: string, data?: Record<string, unknown>) => log("info", module, msg, data),
-      warn:  (msg: string, data?: Record<string, unknown>) => log("warn", module, msg, data),
-      error: (msg: string, data?: Record<string, unknown>) => log("error", module, msg, data),
-    }
-  }
   return {
     debug: (msg: string, data?: Record<string, unknown>) => log("debug", module, msg, data),
     info:  (msg: string, data?: Record<string, unknown>) => log("info", module, msg, data),

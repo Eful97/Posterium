@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from "react"
 import type { PosteriumCtx } from "@/lib/context"
-import type { Lang } from "@/lib/i18n"
 
 /**
  * SettingsCtx — subset di PosteriumCtx per impostazioni (chiavi API, tema, lingua, profilo).

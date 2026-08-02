@@ -113,7 +113,6 @@ async function kvDeleteProfile(uuid: string): Promise<void> {
 let writeQueue = Promise.resolve()
 let memCache: Record<string, ProfileData> | null = null
 let memCacheTime = 0
-const MEM_CACHE_TTL = 2000
 
 /** Consecutive write failures — resets to 0 on success */
 let writeFailures = 0

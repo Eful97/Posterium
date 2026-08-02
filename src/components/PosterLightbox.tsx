@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useRef, useState } from "react"
-import { X, Star, ExternalLink, Maximize2, Plus, Check } from "lucide-react"
+import { X, Star, ExternalLink, Maximize2, Check } from "lucide-react"
 import type { Mapping } from "@/lib/types"
 import type { PosterCollection } from "@/lib/useCollections"
 

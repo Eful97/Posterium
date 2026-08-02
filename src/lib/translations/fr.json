@@ -216,5 +216,17 @@
     "ui.saving":  "Saving...",
     "ui.viewGrid":  "Grille",
     "ui.viewMoodboard":  "Mood Board",
-    "ui.quickView":  "Aperçu rapide"
+    "ui.quickView":  "Aperçu rapide",
+    "ui.heroTitle":  "Créez vos affiches Stremio",
+    "ui.heroSubtitle":  "Recherchez un film ou une série, personnalisez badges, logos et dégradés — puis enregistrez ou copiez l'URL de votre affiche.",
+    "ui.heroCatalogsCta":  "Catalogues →",
+    "ui.homeBtn":  "Accueil",
+    "ui.catalogsTitle":  "Catalogues",
+    "ui.catalogsSubtitle":  "Top 20 JustWatch, classements des plateformes de streaming et anime tendance",
+    "ui.justwatchTop20":  "JustWatch Top 20",
+    "ui.streamingPlatforms":  "Plateformes de streaming",
+    "ui.movieLabel":  "Films",
+    "ui.tvLabel":  "Séries TV",
+    "ui.posterExamples":  "Exemples d'affiches",
+    "ui.posterExamplesDesc":  "Mises en page réelles générées avec badges, logos et dégradés"
 }

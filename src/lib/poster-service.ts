@@ -118,7 +118,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
     rankingBadgeStyle, topLight, targetCenter, ribbonSide,
     logoScale, logoOffsetX, logoOffsetY,
-    mediaType, finalRank, animeRankResult, rankingResult,
+    mediaType, finalRank, animeRankResult,
     mapping, tmdbNetworks, productionCompanies, tmdbStudios,
     tvType, tvStatus, releaseDate, firstAirDate,
     wikidataResult, tmdbKeywords, locale, t,
@@ -178,15 +178,10 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
             logoScale: uScale, logoOffsetX: uOx, logoOffsetY: uOy,
             hasBadges: !!(badgesEnabled && genreName && voteAverage && voteAverage > 0),
           })
-          let resized = await sharp(logoFetch).resize(layout.width, layout.height, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
+          const resized = await sharp(logoFetch).resize(layout.width, layout.height, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
           const rMeta = await sharp(resized).metadata()
-          let aW = rMeta.width || layout.width
-          let aH = rMeta.height || layout.height
-          if (aW > STD_W || aH > STD_H) {
-            const s = Math.min(STD_W / aW, STD_H / aH)
-            aW = Math.round(aW * s); aH = Math.round(aH * s)
-            resized = await sharp(resized).resize(aW, aH, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
-          }
+          const aW = rMeta.width || layout.width
+          const aH = rMeta.height || layout.height
           return { input: resized, top: Math.max(0, Math.round(layout.top + (layout.height - aH))), left: Math.round(layout.left + ((layout.width - aW) / 2)), w: aW, h: aH } as const
         })()
       : Promise.resolve(null),

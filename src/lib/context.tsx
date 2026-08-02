@@ -9,6 +9,7 @@ import { setLang as setI18nLang, t } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
 import { http } from "./http"
 import { buildUrlPattern, buildPreviewUrl } from "./poster-url"
+import { selectBestLogo, logoBestLogoFallbackReason } from "./logo-selection"
 import { useTrending } from "./useTrending"
 import { useSearch } from "./useSearch"
 import { useNavigation } from "./useNavigation"
@@ -23,6 +24,25 @@ import { SettingsProvider } from "./contexts/SettingsContext"
 import { TranslationProvider } from "./contexts/TranslationContext"
 
 export type ViewType = "search" | "myposters" | "edit" | "cataloghi"
+
+export interface MetaInfo {
+  genres: { id: number; name: string }[]
+  voteAverage: number
+  type?: string
+  status?: string
+  release_date?: string
+  first_air_date?: string
+  last_air_date?: string
+  next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null
+  number_of_seasons?: number
+  number_of_episodes?: number
+  awards?: string[]
+  nominations?: string[]
+  studios?: string[]
+  director?: string | null
+  keywords?: string[]
+  imdb_id?: string | null
+}
 
 export interface PosteriumCtx {
   selected: SearchResult | null
@@ -55,7 +75,7 @@ export interface PosteriumCtx {
   mdblistMatch: { key: string; rank: number } | null
   /** Pre-resolved IMDb Top 250 membership for the current metaInfo. */
   imdbTop250: boolean
-  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; director?: string | null; keywords?: string[]; imdb_id?: string | null }
+  metaInfo: MetaInfo
   previewId: string | null
   setPreviewId: React.Dispatch<React.SetStateAction<string | null>>
   saveConfig: () => Promise<void>
@@ -229,18 +249,16 @@ export function usePosterium(): PosteriumCtx {
     networkLogo, setNetworkLogo,
     ribbonSide,
     // Defaults
-    defaultBadgeStyle, setDefaultBadgeStyle,
-    defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
-    defaultBlurEnabled, setDefaultBlurEnabled,
-    defaultBlurIntensity, setDefaultBlurIntensity,
-    defaultBlurFade, setDefaultBlurFade,
-    defaultBlurDarkness, setDefaultBlurDarkness,
-    defaultGradientHeight, setDefaultGradientHeight,
-    defaultGlobalBadges, setDefaultGlobalBadges,
-    defaultRankingBadges, setDefaultRankingBadges,
-    defaultAutoRotateClean, setDefaultAutoRotateClean,
-    defaultLogoFitEnabled, setDefaultLogoFitEnabled,
-    defaultNetworkLogo, setDefaultNetworkLogo,
+    defaultBadgeStyle,
+    defaultRankingBadgeStyle,
+    defaultBlurEnabled,
+    defaultBlurIntensity,
+    defaultBlurFade,
+    defaultBlurDarkness,
+    defaultGradientHeight,
+    defaultAutoRotateClean,
+    defaultLogoFitEnabled,
+    defaultNetworkLogo,
     loadDefaultsToState,
     // Blur
     blurEnabled, setBlurEnabled,
@@ -255,14 +273,12 @@ export function usePosterium(): PosteriumCtx {
     logoOffsetY, setLogoOffsetY,
     logoDisabled, setLogoDisabled,
     // Backdrop
-    backdrops, setBackdrops,
+    setBackdrops,
     selectedBackdrop, setSelectedBackdrop,
     backdropScale, setBackdropScale,
     backdropOffsetX, setBackdropOffsetX,
     backdropOffsetY, setBackdropOffsetY,
     // Editing UI
-    editingValue, setEditingValue,
-    editText, setEditText,
     // Rotation
     rotationPosters, setRotationPosters,
     autoRotateClean, setAutoRotateClean,
@@ -279,7 +295,7 @@ export function usePosterium(): PosteriumCtx {
     safeSetItem("posterium_profile_password", v)
   }, [safeSetItem])
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
-  const [metaInfo, setMetaInfo] = useState<{ genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; last_air_date?: string; next_episode_to_air?: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons?: number; number_of_episodes?: number; awards?: string[]; nominations?: string[]; studios?: string[]; director?: string | null; keywords?: string[]; imdb_id?: string | null }>({ genres: [], voteAverage: 0 })
+  const [metaInfo, setMetaInfo] = useState<MetaInfo>({ genres: [], voteAverage: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [trendRank, setTrendRank] = useState<number | null>(null)
@@ -319,7 +335,7 @@ export function usePosterium(): PosteriumCtx {
       .then((d) => {
         if (fetchIdRef.current === imdbId) setImdbTop250(!!d.inTop250)
       })
-      .catch((e) => {
+      .catch(() => {
         if (ac.signal.aborted || fetchIdRef.current !== imdbId) return
         setImdbTop250(false)
       })
@@ -588,11 +604,8 @@ export function usePosterium(): PosteriumCtx {
       if (navigation.previewPoster?.iso_639_1 === null && navigation.selectedLogo) {
         const match = (data.logos || []).find((l: TMDBImage) => l.file_path === navigation.selectedLogo!.file_path)
         if (!match) {
-          const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
-          const itLogo = lang !== "it" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
-          const enLogo = lang !== "en" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
-          const firstLogo = data.logos?.[0]
-          navigation.setSelectedLogo(langLogo || itLogo || enLogo || firstLogo || navigation.selectedLogo)
+          const autoLogo = selectBestLogo(data.logos || [], lang)
+          navigation.setSelectedLogo(autoLogo || navigation.selectedLogo)
         }
       }
     }).catch((e) => { console.error("[posterium] Poster image refresh failed:", e) })
@@ -693,19 +706,11 @@ export function usePosterium(): PosteriumCtx {
           foundLogo = (data.logos || []).find((l: TMDBImage) => l.file_path === existing.logoPath)
           navigation.setSelectedLogo(foundLogo ? { file_path: foundLogo.file_path, iso_639_1: existing.language, vote_average: 0, width: foundLogo.width, height: foundLogo.height } : { file_path: existing.logoPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
         } else if (!existing.logoDisabled) {
-          const langLogo = (data.logos || []).find((l: TMDBImage) => l.iso_639_1 === lang)
-          const itLogo = lang !== "it" ? (data.logos || []).find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
-          const enLogo = lang !== "en" ? (data.logos || []).find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
-          const origLogo = details.original_language && details.original_language !== lang ? (data.logos || []).find((l: TMDBImage) => l.iso_639_1 === details.original_language) : undefined
-          const firstLogo = (data.logos || [])[0]
-          const autoLogo = langLogo || itLogo || enLogo || origLogo || firstLogo
-          if (autoLogo && !langLogo && !itLogo && !enLogo && origLogo) {
-            console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
-          } else if (autoLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
-            console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
-          } else if (!autoLogo) {
-            console.warn(`[posterium] No logo available for ${itemType}/${itemId}`)
-          }
+          const autoLogo = selectBestLogo(data.logos || [], lang, details.original_language)
+          const reason = logoBestLogoFallbackReason(autoLogo, lang, details.original_language)
+          if (reason === "origLang") console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
+          else if (reason === "any") console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
+          else if (reason === "none") console.warn(`[posterium] No logo available for ${itemType}/${itemId}`)
           if (autoLogo) {
             navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
             if (autoLogo.width && autoLogo.height) {
@@ -729,19 +734,11 @@ export function usePosterium(): PosteriumCtx {
         const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
         const firstPoster = data.posters?.[0]
         if (clean) {
-          const langLogo = data.logos?.find((l: TMDBImage) => l.iso_639_1 === lang)
-          const itLogo = lang !== "it" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
-          const enLogo = lang !== "en" ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
-          const origLogo = details.original_language && details.original_language !== lang ? data.logos?.find((l: TMDBImage) => l.iso_639_1 === details.original_language) : undefined
-          const firstLogo = data.logos?.[0]
-          const autoLogo = langLogo || itLogo || enLogo || origLogo || firstLogo
-          if (autoLogo && !langLogo && !itLogo && !enLogo && origLogo) {
-            console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
-          } else if (autoLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
-            console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
-          } else if (!autoLogo) {
-            console.warn(`[posterium] No logo available for ${itemType}/${itemId}`)
-          }
+          const autoLogo = selectBestLogo(data.logos || [], lang, details.original_language)
+          const reason = logoBestLogoFallbackReason(autoLogo, lang, details.original_language)
+          if (reason === "origLang") console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
+          else if (reason === "any") console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
+          else if (reason === "none") console.warn(`[posterium] No logo available for ${itemType}/${itemId}`)
           if (autoLogo) {
             navigation.setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
             navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
@@ -821,7 +818,7 @@ export function usePosterium(): PosteriumCtx {
       console.error("[posterium] Failed to save profile:", e)
       import("sonner").then(({ toast }) => toast.error("Errore nel salvare il profilo"))
     }
-  }, [globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, profileId, profilePassword])
+  }, [globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, profileId, profilePassword, safeSetItem])
 
   const posterActivePath = navigation.previewPoster?.file_path
 

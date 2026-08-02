@@ -45,9 +45,10 @@ import { computeTopBadge } from "@/lib/poster-badge"
 
 import { resolveImdbToTmdb } from "@/lib/imdb-resolver"
 import { decodeConfig } from "@/lib/config-token"
-import { getProfile, getFullProfileData } from "@/lib/profile-store"
+import { getFullProfileData } from "@/lib/profile-store"
 import { createLogger } from "@/lib/logger"
 import { resolvePosterRenderConfig } from "@/lib/poster-config"
+import { selectBestLogo, logoBestLogoFallbackReason } from "@/lib/logo-selection"
 
 const log = createLogger("poster")
 
@@ -58,6 +59,7 @@ function corsHeaders(): Record<string, string> {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  const startTime = Date.now()
   initSharp()
   const rl = rateLimit(rateLimitKey(req), "poster")
   warmFonts()
@@ -141,13 +143,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const cachedPoster = readCachedPoster(cacheKey)
   if (cachedPoster.payload) {
     if (!isPreview && req.headers.get("If-None-Match") === cachedPoster.payload.etag) {
+      log.debug("Poster cache: 304", { mediaType, tmdbId, ms: Date.now() - startTime })
       return new Response(null, { status: 304, headers: posterNotModifiedHeaders(cachedPoster.payload.etag, immutablePoster) })
     }
     if (!cachedPoster.stale) {
+      log.debug("Poster cache: fresh hit", { mediaType, tmdbId, ms: Date.now() - startTime })
       return posterResponse(cachedPoster.payload, immutablePoster, isPreview)
     }
     if (!refreshRequest) {
       schedulePosterRefresh(req)
+      log.debug("Poster cache: stale hit (refresh scheduled)", { mediaType, tmdbId, ms: Date.now() - startTime })
       return posterResponse(cachedPoster.payload, immutablePoster, isPreview)
     }
   }
@@ -155,7 +160,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const pendingPoster = getPendingPoster(cacheKey)
   if (pendingPoster) {
     const payload = await pendingPoster
-    if (payload) return posterResponse(payload, immutablePoster)
+    if (payload) {
+      log.debug("Poster cache: coalesced with in-flight render", { mediaType, tmdbId, ms: Date.now() - startTime })
+      return posterResponse(payload, immutablePoster)
+    }
   }
   const completePosterRender = beginPosterRender(cacheKey)
 
@@ -257,19 +265,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (exact) logoPath = exact.file_path
         }
         if (!logoPath) {
-          const langLogo = images.logos.find((l: TMDBImage) => l.iso_639_1 === preferredLanguage)
-          const itLogo = preferredLanguage !== "it" ? images.logos.find((l: TMDBImage) => l.iso_639_1 === "it") : undefined
-          const enLogo = preferredLanguage !== "en" ? images.logos.find((l: TMDBImage) => l.iso_639_1 === "en") : undefined
-          const origLogo = details.original_language && details.original_language !== preferredLanguage ? images.logos.find((l: TMDBImage) => l.iso_639_1 === details.original_language) : undefined
-          const anyLogo = images.logos[0]
-          const chosenLogo = langLogo || itLogo || enLogo || origLogo || anyLogo
-          if (chosenLogo && !langLogo && !itLogo && !enLogo && origLogo) {
-            log.info("Logo fallback to original_language", { lang: details.original_language, mediaType, tmdbId })
-          } else if (chosenLogo && !langLogo && !itLogo && !enLogo && !origLogo) {
-            log.info("Logo fallback to any (first available)", { mediaType, tmdbId })
-          } else if (!chosenLogo) {
-            log.info("No logo available", { mediaType, tmdbId })
-          }
+          const chosenLogo = selectBestLogo(images.logos, preferredLanguage, details.original_language)
+          const reason = logoBestLogoFallbackReason(chosenLogo, preferredLanguage, details.original_language)
+          if (reason === "origLang") log.info("Logo fallback to original_language", { lang: details.original_language, mediaType, tmdbId })
+          else if (reason === "any") log.info("Logo fallback to any (first available)", { mediaType, tmdbId })
+          else if (reason === "none") log.info("No logo available", { mediaType, tmdbId })
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         const qLogoFit = req.nextUrl.searchParams.get("logoFit")
@@ -587,11 +587,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
     const composited = await generatePosterBuffer(genInput)
 
-    // 10. Cache + response
+    // 10. Fix stale auto ETag: include dynamic data (rank, rating) so when it re-renders, the ETag changes
+    if (!mapping && !isPreview) {
+      etag = `${etag.slice(0, -1)}:${finalRank ?? "X"}:${imdbTop250}:${voteAverage ?? "0"}"`
+    }
+
+    // 11. Cache + response
     const payload = { buffer: composited, etag }
     const mappingTag = mapping ? `poster:${mediaType}:${tmdbId}` : undefined
     writeCachedPoster(cacheKey, payload, mappingTag)
     completePosterRender(payload)
+    log.info("Poster rendered", { mediaType, tmdbId, ms: Date.now() - startTime, bytes: composited.byteLength, cached: !!mappingTag })
     return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster, isPreview) })
   } catch (e) {
     completePosterRender(null)

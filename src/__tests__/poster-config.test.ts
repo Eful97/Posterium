@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { resolvePosterRenderConfig, clamp, type PosterRenderConfigInput } from "@/lib/poster-config"
 import type { Mapping } from "@/lib/types"
-import type { ServerDefaults } from "@/lib/server-defaults"
 import type { PosteriumUserConfig } from "@/lib/config-token"
 
 function baseInput(overrides: Partial<PosterRenderConfigInput> = {}): PosterRenderConfigInput {

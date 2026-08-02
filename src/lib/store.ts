@@ -67,7 +67,6 @@ let writeQueue = Promise.resolve()
 // In-memory mirror so reads never go stale during a write
 let memCache: Record<string, Mapping> | null = null
 let memCacheTime = 0
-const MEM_CACHE_TTL = 2000 // 2s before refreshing from disk
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error

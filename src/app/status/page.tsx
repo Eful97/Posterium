@@ -68,8 +68,6 @@ function StatusRow({ label, ok, extra }: { label: string; ok: boolean; extra?: R
 export default function StatusPage() {
   const [data, setData] = useState<HealthData | null>(null)
   const [cacheStatus, setCacheStatus] = useState<CacheStatusData | null>(null)
-  const [clearingCache, setClearingCache] = useState(false)
-  const [cacheMessage, setCacheMessage] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
 
@@ -81,21 +79,6 @@ export default function StatusPage() {
       setCacheStatus(body)
     } catch {
       setCacheStatus(null)
-    }
-  }
-
-  async function clearCache() {
-    setClearingCache(true)
-    setCacheMessage("")
-    try {
-      const res = await fetch("/api/cache/clear", { method: "POST" })
-      if (!res.ok) { setCacheMessage(t("ui.statusCacheClearError")); return }
-      setCacheMessage(t("ui.statusCacheClearSuccess"))
-      await loadCacheStatus()
-    } catch {
-      setCacheMessage(t("ui.statusCacheClearError"))
-    } finally {
-      setClearingCache(false)
     }
   }
 

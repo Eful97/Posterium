@@ -215,8 +215,8 @@ describe("getProfile", () => {
     const uuid = await createOrUpdateProfile(SAMPLE_CONFIG, undefined, "secret123")
     const retrieved = await getProfile(uuid)
     expect(retrieved).toEqual(SAMPLE_CONFIG)
-    expect((retrieved as any).passwordHash).toBeUndefined()
-    expect((retrieved as any).salt).toBeUndefined()
+    expect((retrieved as Record<string, unknown>).passwordHash).toBeUndefined()
+    expect((retrieved as Record<string, unknown>).salt).toBeUndefined()
   })
 })
 

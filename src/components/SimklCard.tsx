@@ -72,6 +72,7 @@ export function SimklCard({ items, title, totalCount, meta = [], onClick, onItem
               <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
               <div className="relative z-[1]">
                 {src ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- remote TMDB poster tiles (lazy, optimized by CDN)
                   <img
                     src={src}
                     alt={item.title ?? item.name ?? ""}

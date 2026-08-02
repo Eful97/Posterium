@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { getById, remove, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheInvalidatePosterData, cacheInvalidatePosterDataFor } from "@/lib/cache"
+import { cacheInvalidatePosterDataFor } from "@/lib/cache"
 import { mappingUpdateSchema } from "@/lib/validation"
 import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 
