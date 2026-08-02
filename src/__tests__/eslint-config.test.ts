@@ -8,18 +8,22 @@ import { ESLint } from "eslint"
 // che generano artefatti di build in `.next-e2e` (distDir di playwright).
 // Senza gli ignore qui sotto, eslint lintava quei file generati e falliva
 // con centinaia di errori (require() style import, @ts-ignore, ...).
+// Nota: `new ESLint({})` carica la flat config completa di Next (lenta,
+// dipendente dal carico CPU) — serve un timeout esplicito oltre i 5s default.
+const ESLINT_TEST_TIMEOUT = 30_000
+
 describe("eslint config", () => {
   it("ignores generated build dirs (.next, .next-e2e)", async () => {
     const eslint = new ESLint({})
     for (const file of [".next/dev/build/probe.js", ".next-e2e/dev/build/probe.js"]) {
       expect(await eslint.isPathIgnored(file), `${file} should be ignored`).toBe(true)
     }
-  })
+  }, ESLINT_TEST_TIMEOUT)
 
   it("does not ignore real source files", async () => {
     const eslint = new ESLint({})
     expect(await eslint.isPathIgnored("src/app/layout.tsx")).toBe(false)
-  })
+  }, ESLINT_TEST_TIMEOUT)
 
   it("lints clean even when a generated artifact with lint errors sits in .next-e2e", async () => {
     const probeDir = path.join(".next-e2e", "dev", "build")
@@ -34,5 +38,5 @@ describe("eslint config", () => {
     } finally {
       await rm(probe, { force: true })
     }
-  })
+  }, ESLINT_TEST_TIMEOUT)
 })
