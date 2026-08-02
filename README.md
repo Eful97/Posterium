@@ -205,7 +205,7 @@ Risposta: `{ "profileId": "uuid-generato", "url": "..." }`.
 
 Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati, senza interferire con gli altri.
 
-> **Protezione admin**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env`. Le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`) richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`.
+> **Protezione admin (opzionale)**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env` per proteggere le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`), che richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`. Senza token configurato le route restano aperte (istanza pubblica, es. HF Spaces).
 
 #### Note produzione
 

@@ -8,8 +8,8 @@ function resolveAdminToken(): string | undefined {
 }
 
 if (!resolveAdminToken()) {
-  log.warn("⚠️  Nessun ADMIN_TOKEN configurato — in produzione le route admin saranno bloccate.")
-  log.warn("   Imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) per abilitare la protezione admin.")
+  log.warn("⚠️  Nessun ADMIN_TOKEN configurato — route admin aperte (istanza pubblica, es. HF Spaces).")
+  log.warn("   Imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) per proteggere le route admin (x-admin-token / Bearer).")
 }
 
 function constantTimeEqual(a: string, b: string): boolean {
@@ -19,8 +19,12 @@ function constantTimeEqual(a: string, b: string): boolean {
 
 export function checkAdminToken(request: Request): boolean {
   const token = resolveAdminToken()
-  // Fail-closed in produzione; in development/test senza token le route admin sono accessibili
-  if (!token) return process.env.NODE_ENV !== "production"
+  // Nessun token configurato → istanza pubblica (HF Spaces, multi-utente via
+  // profili UUID): le route restano aperte. Il client non invia mai il token
+  // admin, quindi bloccare senza token rompe il salvataggio in produzione
+  // (POST /api/mappings → 401). Se un token È configurato, la protezione è
+  // fail-closed: token assente o errato → rifiutato (constant-time).
+  if (!token) return true
 
   const headers = request.headers
   const bearer = headers.get("authorization")?.replace(/^Bearer\s+/i, "")
