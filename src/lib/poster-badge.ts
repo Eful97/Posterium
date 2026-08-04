@@ -94,6 +94,7 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
     releaseDate: input.releaseDate,
     firstAirDate: input.firstAirDate,
     locale: locale || "it",
+    t,
   })
 
   const subGenreBadge = getSubGenreLabel(input.keywords || [], locale)

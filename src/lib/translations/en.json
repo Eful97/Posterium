@@ -6,6 +6,7 @@
     "badge.absoluteCinema":  "Absolute Cinema",
     "badge.miniseries":  "Miniseries",
     "badge.returning":  "Returning",
+    "badge.upcomingRelease":  "Upcoming {date}",
     "badge.trending":  "Trending",
     "badge.trendingSeries":  "Trending Series",
     "badge.trendingAnime":  "Trending Anime",

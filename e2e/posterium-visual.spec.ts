@@ -172,8 +172,10 @@ test.describe("poster API — functional", () => {
     expect(buffer.length).toBeGreaterThan(1000)
   })
 
-  test("gradient up + down — valid image", async ({ request }) => {
-    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0", gradDir: "up", gradHeight: "30", gradColor: "000000", gradOpacity: "0.8" })
+  test("gradient height — valid image", async ({ request }) => {
+    // gradColor/gradOpacity/gradDir non sono più letti dal server (parametri
+    // morti rimossi dai test): l'unico parametro gradiente attivo è gradHeight.
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0", gradHeight: "30" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -197,7 +199,7 @@ test.describe("poster API — functional", () => {
   })
 
   test("full config — valid image", async ({ request }) => {
-    const url = posterUrl({ genreName: "Action", voteAverage: "8.0", badges: "1", ranking: "1", rank: "5", label: "Top 5", bs: "pill", rs: "bar", gradDir: "up", gradHeight: "25", blur: "5", bf: "50", bd: "30" })
+    const url = posterUrl({ genreName: "Action", voteAverage: "8.0", badges: "1", ranking: "1", rank: "5", label: "Top 5", bs: "pill", rs: "bar", gradHeight: "25", blur: "5", bf: "50", bd: "30" })
     const res = await request.get(url)
     expect(res.ok()).toBeTruthy()
     const buffer = await res.body()
@@ -258,10 +260,12 @@ test.describe("poster API — visual regression", () => {
     await expect(poster).toHaveScreenshot("poster-extra.png", { maxDiffPixelRatio: 0.10 })
   })
 
-  test("gradient up — screenshot", async ({ page }) => {
-    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0", gradDir: "up", gradHeight: "30", gradColor: "000000", gradOpacity: "0.8" })
+  test("gradient height — screenshot", async ({ page }) => {
+    // Renamed: gradDir è un parametro morto (il server legge solo gradHeight),
+    // quindi il test verifica l'altezza del gradiente, non la direzione.
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0", gradHeight: "30" })
     const poster = await renderPoster(page, url)
-    await expect(poster).toHaveScreenshot("poster-gradient-up.png", { maxDiffPixelRatio: 0.10 })
+    await expect(poster).toHaveScreenshot("poster-gradient-height.png", { maxDiffPixelRatio: 0.10 })
   })
 
   test("blur enabled — screenshot", async ({ page }) => {
@@ -277,7 +281,7 @@ test.describe("poster API — visual regression", () => {
   })
 
   test("full feature poster — screenshot", async ({ page }) => {
-    const url = posterUrl({ genreName: "Action", voteAverage: "8.0", badges: "1", ranking: "1", rank: "5", label: "Top 5", bs: "pill", rs: "bar", gradDir: "up", gradHeight: "25", blur: "5", bf: "50", bd: "30" })
+    const url = posterUrl({ genreName: "Action", voteAverage: "8.0", badges: "1", ranking: "1", rank: "5", label: "Top 5", bs: "pill", rs: "bar", gradHeight: "25", blur: "5", bf: "50", bd: "30" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-full-feature.png", { maxDiffPixelRatio: 0.10 })
   })

@@ -103,6 +103,16 @@ describe("getUpcomingReleaseLabel", () => {
       })
       expect(result).toBe("In uscita 01.09.26")
     })
+
+    it("honors a custom translator (M14: prefix is no longer hardcoded)", () => {
+      const result = getUpcomingReleaseLabel({
+        mediaType: "movie",
+        releaseDate: "2026-08-15",
+        locale: "en",
+        t: (key, params) => key === "badge.upcomingRelease" ? `Coming soon ${params?.date}` : key,
+      })
+      expect(result).toBe("Coming soon 08.15.26")
+    })
   })
 
   describe("tv / series media type", () => {

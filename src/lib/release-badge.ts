@@ -1,8 +1,14 @@
+export type UpcomingReleaseT = (key: string, params?: Record<string, string | number>) => string
+
+import { t as tGlobal } from "./i18n"
+
 export function getUpcomingReleaseLabel(input: {
   mediaType: "movie" | "tv"
   releaseDate?: string | null
   firstAirDate?: string | null
   locale?: string
+  /** Traduttore per la label — default `t` globale (M14: "In uscita" non è più hardcodato). */
+  t?: UpcomingReleaseT
 }): string | null {
   if (input.mediaType !== "movie") return null
 
@@ -14,7 +20,8 @@ export function getUpcomingReleaseLabel(input: {
 
   if (date.getTime() <= today.getTime()) return null
 
-  return `In uscita ${formatReleaseDate(date, input.locale ?? "it")}`
+  const translate = input.t ?? tGlobal
+  return translate("badge.upcomingRelease", { date: formatReleaseDate(date, input.locale ?? "it") })
 }
 
 function parseTmdbDate(value?: string | null): Date | null {

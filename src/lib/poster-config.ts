@@ -57,18 +57,16 @@ export interface PosterRenderConfig {
 export function resolvePosterRenderConfig(input: PosterRenderConfigInput): PosterRenderConfig {
   const { searchParams: q, mapping, configOverride, sd, hasQuery, showBadges, rankingBadges } = input
 
-  // Ranking style — precedenza: mapping salvato > query `rs` > config token > server defaults > default.
-  // (Identica all'originale: la query era seconda perché il `||` catenato privilegiava mapping.)
-  const rawRs = q.get("rs")
-  let rankingBadgeStyle: RankingBadgeStyle = isRankingBadgeStyle(mapping?.rankingBadgeStyle)
-    ? mapping!.rankingBadgeStyle
-    : isRankingBadgeStyle(rawRs)
-      ? rawRs
-      : isRankingBadgeStyle(configOverride?.rankingBadgeStyle)
-        ? configOverride!.rankingBadgeStyle
-        : isRankingBadgeStyle(sd.rankingBadgeStyle)
-          ? sd.rankingBadgeStyle
-          : DEFAULT_RANKING_BADGE_STYLE
+  // Ranking style — precedenza: query `rs` > mapping salvato > config token > server defaults > default.
+  // (Coerente con `badgeStyle` sotto: la query vince sul mapping — M6 WYSIWYG.
+  // Il sentinel "default" del mapping è trattato come "nessun override", identico
+  // a come "shadow" lo è per badgeStyle.)
+  const rawRs =
+    q.get("rs") ||
+    (mapping?.rankingBadgeStyle && mapping.rankingBadgeStyle !== "default" ? mapping.rankingBadgeStyle : undefined) ||
+    configOverride?.rankingBadgeStyle ||
+    sd.rankingBadgeStyle
+  let rankingBadgeStyle: RankingBadgeStyle = isRankingBadgeStyle(rawRs) ? rawRs : DEFAULT_RANKING_BADGE_STYLE
 
   const qRankParam = q.get("rank")
   const hasRank = !!(input.animeRank || input.rankingResult || mapping?.badgeRank || mapping?.trendRank || qRankParam || input.finalRank)

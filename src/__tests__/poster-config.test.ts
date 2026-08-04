@@ -75,6 +75,26 @@ describe("resolvePosterRenderConfig", () => {
     expect(r.badgeStyle).toBe("pill")
   })
 
+  it("query rs beats mapping, config token and server defaults", () => {
+    // M6: come per bs, la query `rs` vince sul mapping salvato (WYSIWYG).
+    const r = resolvePosterRenderConfig(baseInput({
+      searchParams: new URLSearchParams({ rs: "pill" }),
+      mapping: mapping({ rankingBadgeStyle: "colored" }),
+      configOverride: config({ rankingBadgeStyle: "bar" }),
+      sd: { rankingBadgeStyle: "netflix" },
+    }))
+    expect(r.rankingBadgeStyle).toBe("pill")
+  })
+
+  it("mapping rankingBadgeStyle 'default' is treated as no override (falls to config/sd)", () => {
+    const r = resolvePosterRenderConfig(baseInput({
+      mapping: mapping({ rankingBadgeStyle: "default" }),
+      configOverride: config({ rankingBadgeStyle: "colored" }),
+      sd: { rankingBadgeStyle: "bar" },
+    }))
+    expect(r.rankingBadgeStyle).toBe("colored")
+  })
+
   it("invalid query value does not leak to the renderer (falls back to default rendering)", () => {
     // Fedele all'originale: la query invalida vince sul `||` e il renderer la
     // trattava come default — con i tipi union il confine la converte a "shadow".
