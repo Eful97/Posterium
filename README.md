@@ -114,8 +114,10 @@ npm run dev
 
 # Avvio con Docker
 docker build -t posterium .
-docker run -p 8080:8080 -e TMDB_API_KEY=la_tua_chiave_tmdb posterium
+docker run -p 8080:8080 -v posterium-data:/data -e TMDB_API_KEY=la_tua_chiave_tmdb posterium
 ```
+
+> Il container gira come utente non-root (`nextjs`, uid 1000) e scrive i dati persistenti in `/data` (volume named `posterium-data`). Con Docker Compose il `docker-compose.yml` applica già l'hardening (`cap_drop: ALL`, `no-new-privileges`).
 
 ---
 
@@ -205,16 +207,16 @@ Risposta: `{ "profileId": "uuid-generato", "url": "..." }`.
 
 Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati, senza interferire con gli altri.
 
-> **Protezione admin (opzionale)**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env` per proteggere le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`), che richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`. Senza token configurato le route restano aperte (istanza pubblica, es. HF Spaces).
+> **Protezione admin**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env` per proteggere le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`), che richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`. Senza token configurato le route restano aperte (istanza pubblica, es. HF Spaces), **tranne due operazioni fail-closed che lo richiedono SEMPRE**: `DELETE /api/mappings` (svuota tutti i mapping) e `DELETE /api/profile`. Tutte le mutazioni applicano anche un check CSRF: se la richiesta porta un header `Origin` (i browser lo inviano sempre cross-origin), questo deve combaciare con l'host del server, altrimenti risposta `403`.
 
 #### Note produzione
 
 - **Memoria**: Posterium usa ~200MB base + cache. Il `docker-compose.yml` limita a 512MB.
 - **Persistenza**: I dati (mapping, profili, default) sono in un volume Docker `posterium-data`.
 - **CDN**: Se hai una CDN (Cloudflare, Bunny), imposta `POSTER_CDN_URL` per generare URL poster col CDN. I poster **salvati** (mapping con versione) vengono serviti con header `immutable` (cache edge 1 anno); quelli composti al volo senza mapping (rank JustWatch, premi, IMDb Top 250) usano `stale-while-revalidate` per non congelare i badge dinamici alla CDN.
-- **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello. La chiave usa l'ultimo hop `x-forwarded-for` (non falsificabile quando il proxy appende il proprio valore).
+- **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello. La chiave usa `cf-connecting-ip` → `x-real-ip` → ultimo hop `x-forwarded-for` (header impostati/sovrascritti dai proxy fidati).
 - **Warmup**: `/api/warmup` è **fail-closed in produzione** — senza `WARMUP_TOKEN` (o `POSTERIUM_ADMIN_TOKEN`) risponde `401`. Configura il token se usi una cron di warmup automatico.
-- **Sicurezza**: Il proxy add-on (`/api/proxy`) accetta solo URL con host attendibili (mitigazione SSRF). `/api/health` non espone il percorso assoluto dei dati su disco.
+- **Sicurezza**: Il proxy add-on (`/api/proxy`) mitiga l'SSRF (blocco IP privati/loopback, DNS pin e validazione dei redirect); opzionalmente puoi chiuderlo ai soli domini autorizzati con `POSTERIUM_PROXY_ALLOW_DOMAINS`. `/api/health` non espone il percorso assoluto dei dati su disco.
 - **Cache**: I poster generati sono in memoria (max 2000 entry / 150MB). Un restart svuota la cache (i poster si rigenerano al prossimo accesso).
 
 ---
@@ -230,6 +232,8 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 | `KV_REST_API_TOKEN` | ❌ | Token Upstash Redis |
 | `POSTERIUM_ADMIN_TOKEN` | ❌ | Protegge route admin (`/api/mappings`, `/api/cache/clear`, `/api/defaults`) |
 | `ADMIN_TOKEN` | ❌ | Alias per POSTERIUM_ADMIN_TOKEN (legacy) |
+| `POSTERIUM_PROXY_ALLOW_DOMAINS` | ❌ | Allowlist opzionale (virgole) dei domini ammessi dal proxy add-on `/api/proxy`. Non impostata → aperto (proxare addon arbitrari è la funzione del proxy) |
+| `POSTERIUM_ALLOWED_HOSTS` | ❌ | Allowlist opzionale (virgole) di hostname pubblici per cui fidarsi di `X-Forwarded-Host` (reverse proxy dietro IP/URL non standard) |
 | `ENCRYPTION_KEY_SECRET` | ❌ | Chiave per firma HMAC-SHA256 dei token di configurazione profilo (rende i token URL immutabili) |
 | `CONFIG_HMAC_SECRET` | ❌ | Chiave alternativa per firma HMAC (fallback a ENCRYPTION_KEY_SECRET) |
 | `PROFILE_ENCRYPTION_KEY` | ❌ | Chiave AES-256-GCM per cifrare le API key salvate nei profili cloud (`/api/profile`) |
@@ -255,7 +259,7 @@ Posterium usa [Vitest](https://vitest.dev/) per test unitari e [Playwright](http
 
 ### Test unitari (Vitest)
 
-Oltre 430 test su store, API, componenti React, badge SVG, poster-fit, profili e utilità.
+Oltre 470 test su store, API, componenti React, badge SVG, poster-fit, profili e utilità.
 
 ```bash
 # Esecuzione singola
