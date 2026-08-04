@@ -118,6 +118,49 @@ describe("POST /api/poster-fit", () => {
     expect(json.failed).toBe(1)
   })
 
+  it("rejects an injected posterSize and falls back to w342 (M13 — set chiuso)", async () => {
+    const posterBuf = await makePosterBuffer(20, 20, 30)
+    const logoBuf = await makeLogoBuffer(255, 255, 255)
+    const urls: string[] = []
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url)
+      if (url.includes("/logo")) return new Response(new Uint8Array(logoBuf))
+      return new Response(new Uint8Array(posterBuf))
+    }))
+
+    const req = mockNextRequest({
+      posterPaths: ["/test.jpg"],
+      logoPath: "/logo.png",
+      posterSize: "../../../etc/passwd",
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+    // Il path injected non deve comparire mai nell'URL TMDB: caduta sul default w342.
+    const posterUrl = urls.find((u) => u.includes("test.jpg"))
+    expect(posterUrl).toBe("https://image.tmdb.org/t/p/w342/test.jpg")
+  })
+
+  it("honors a valid posterSize from the closed set (w500)", async () => {
+    const posterBuf = await makePosterBuffer(20, 20, 30)
+    const logoBuf = await makeLogoBuffer(255, 255, 255)
+    const urls: string[] = []
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url)
+      if (url.includes("/logo")) return new Response(new Uint8Array(logoBuf))
+      return new Response(new Uint8Array(posterBuf))
+    }))
+
+    const req = mockNextRequest({
+      posterPaths: ["/test.jpg"],
+      logoPath: "/logo.png",
+      posterSize: "w500",
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+    const posterUrl = urls.find((u) => u.includes("test.jpg"))
+    expect(posterUrl).toBe("https://image.tmdb.org/t/p/w500/test.jpg")
+  })
+
   it("only analyzes up to candidate pool (5+5)", async () => {
     const posterBuf = await makePosterBuffer(20, 20, 30)
     const logoBuf = await makeLogoBuffer(255, 255, 255)
