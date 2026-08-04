@@ -3,11 +3,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { SearchResult, TMDBImage, Mapping } from "./types"
 import { posterUrl, titleOf, yearOf, STREAMING_PLATFORMS, getDomain } from "./utils"
-import { findAccentColor, topEdgeAverage } from "./accent-color"
 import { matchTMDBStudios } from "./awards"
 import { setLang as setI18nLang, t } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
 import { http } from "./http"
+import { useRootColors } from "./useRootColors"
 import { buildUrlPattern, buildPreviewUrl } from "./poster-url"
 import { selectBestLogo, logoBestLogoFallbackReason } from "./logo-selection"
 import { useTrending } from "./useTrending"
@@ -510,60 +510,7 @@ export function usePosterium(): PosteriumCtx {
   }, [])
 
   // --- Color detection ---
-  useEffect(() => {
-    const root = document.documentElement
-    if (!navigation.previewPoster) {
-      root.style.setProperty("--color-accent", "#555555")
-      root.style.setProperty("--color-accent-r", "85")
-      root.style.setProperty("--color-accent-g", "85")
-      root.style.setProperty("--color-accent-b", "85")
-      root.style.setProperty("--color-edge-r", "85")
-      root.style.setProperty("--color-edge-g", "85")
-      root.style.setProperty("--color-edge-b", "85")
-      setAccentColor(null); setTopEdgeColor(null); return
-    }
-    const genreName = metaInfo.genres[0]?.name
-    let cancelled = false
-    const url = posterUrl(navigation.previewPoster.file_path, "w342") + `?cb=${Date.now()}`
-    const img = new Image()
-    img.crossOrigin = "anonymous"
-    const setRootColors = (r: number, g: number, b: number, edgeR: number, edgeG: number, edgeB: number) => {
-      const c = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-      root.style.setProperty("--color-accent", c)
-      root.style.setProperty("--color-accent-r", String(r))
-      root.style.setProperty("--color-accent-g", String(g))
-      root.style.setProperty("--color-accent-b", String(b))
-      const edgeC = `#${edgeR.toString(16).padStart(2, '0')}${edgeG.toString(16).padStart(2, '0')}${edgeB.toString(16).padStart(2, '0')}`
-      root.style.setProperty("--color-edge", edgeC)
-      root.style.setProperty("--color-edge-r", String(edgeR))
-      root.style.setProperty("--color-edge-g", String(edgeG))
-      root.style.setProperty("--color-edge-b", String(edgeB))
-      setAccentColor(c)
-      setTopEdgeColor(edgeC)
-    }
-    img.onload = () => {
-      if (cancelled) return
-      try {
-        const w = Math.min(img.naturalWidth, 342)
-        const h = Math.round(w * img.naturalHeight / img.naturalWidth)
-        if (!w || !h) return
-        const canvas = document.createElement("canvas")
-        canvas.width = w; canvas.height = h
-        const ctx = canvas.getContext("2d")!
-        ctx.imageSmoothingEnabled = false
-        ctx.drawImage(img, 0, 0, w, h)
-        const pixels = ctx.getImageData(0, 0, w, h).data
-        const result = findAccentColor(pixels, w, h, genreName || '')
-        const edge = topEdgeAverage(pixels, w, h)
-
-        setRootColors(result.r, result.g, result.b, edge.r, edge.g, edge.b)
-      } catch { /* color detection is non-critical */ }
-    }
-    img.onerror = () => { if (!cancelled) { setRootColors(85, 85, 85, 85, 85, 85) } }
-    img.src = url
-    return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- color detection runs only when poster changes
-  }, [navigation.previewPoster])
+  useRootColors(navigation.previewPoster, metaInfo.genres[0]?.name, posterUrl, { setAccentColor, setTopEdgeColor })
 
   // --- Caricamento dati item corrente (M16) ---
   // Condiviso tra openPosterBrowser e l'effetto cambio lingua: ricarica
