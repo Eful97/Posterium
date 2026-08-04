@@ -1,6 +1,6 @@
 import type { TMDBImage, SearchResult } from "./types"
 
-export const IMG_BASE = "https://image.tmdb.org/t/p"
+export const IMG_BASE = process.env.NEXT_PUBLIC_TMDB_IMG_URL || "https://image.tmdb.org/t/p"
 
 export function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(" ")
