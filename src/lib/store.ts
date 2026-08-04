@@ -68,6 +68,15 @@ let writeQueue = Promise.resolve()
 let memCache: Record<string, Mapping> | null = null
 let memCacheTime = 0
 
+// Leggere lo stat del file a ogni lettura è costoso su storage remoti
+// (HF Spaces: bucket FUSE con round-trip di rete per ogni stat). Lo stat viene
+// fatto al massimo ogni READ_STAT_TTL_MS; le scritture nostre aggiornano la
+// memCache subito, quindi la staleness è limitata alle scritture di ALTRI
+// processi (multi-istanza) ed è bounded a 500ms. Nei test il TTL è 0 per
+// mantenere il determinismo (i test scrivono il file e lo rileggono subito).
+const READ_STAT_TTL_MS = process.env.NODE_ENV === "test" ? 0 : 500
+let lastStatAt = 0
+
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error
 }
@@ -126,6 +135,9 @@ async function loadFromDisk(): Promise<Record<string, Mapping>> {
  * Fast read via in-memory mirror, refreshing from disk if file was modified.
  */
 async function readFromMem(): Promise<Record<string, Mapping>> {
+  const now = Date.now()
+  if (memCache && now - lastStatAt < READ_STAT_TTL_MS) return memCache
+  lastStatAt = now
   try {
     const stat = await fsp.stat(DATA_FILE)
     if (memCache && stat.mtimeMs <= memCacheTime) return memCache
@@ -176,7 +188,7 @@ export async function upsert(mapping: Mapping) {
     return
   }
   return enqueueWrite(async () => {
-    const data = await loadFromDisk()
+    const data = await readFromMem()
     const key = `${mapping.mediaType}:${mapping.tmdbId}`
     data[key] = { ...mapping, updatedAt: new Date().toISOString() }
     await persist(data)
@@ -189,7 +201,7 @@ export async function remove(type: "movie" | "tv", id: number) {
     return
   }
   return enqueueWrite(async () => {
-    const data = await loadFromDisk()
+    const data = await readFromMem()
     const key = `${type}:${id}`
     delete data[key]
     await persist(data)
@@ -212,7 +224,7 @@ export async function importMappings(mappings: Mapping[]) {
     return
   }
   return enqueueWrite(async () => {
-    const data = await loadFromDisk()
+    const data = await readFromMem()
     for (const m of mappings) {
       const key = `${m.mediaType}:${m.tmdbId}`
       data[key] = m
