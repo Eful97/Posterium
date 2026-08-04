@@ -6,9 +6,10 @@ import { getTop10 } from "@/lib/flixpatrol"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
+import { getDetails, getExternalIds, resolveRequestApiKey, type TMDBDetails } from "@/lib/tmdb"
+import { fetchMDBList } from "@/lib/mdblist"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
-import { getExternalIds } from "@/lib/tmdb"
 import { getJWRankings } from "@/lib/justwatch"
 import { createLogger } from "@/lib/logger"
 
@@ -127,20 +128,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       const ids = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW")
       // niente non-null assertion: se la chiave manca, il catalog resta vuoto
       // invece di esplodere con una URL `api_key=undefined`
-      const apiKey = process.env.TMDB_API_KEY || ""
+      const apiKey = resolveRequestApiKey(req)
       if (!apiKey) return catalogResponse({ metas: [] })
-      const pathTmdb = stType === "movie" ? "/movie" : "/tv"
+      // getDetails() passa dal client TMDB condiviso: cache in-memory (5 min) +
+      // dedup delle richieste concorrenti + rispetto di TMDB_BASE_URL (mock E2E).
       const results = await Promise.all(ids.slice(0, 20).map(async (id) => {
-        const url = `https://api.themoviedb.org/3${pathTmdb}/${id}?api_key=${encodeURIComponent(apiKey)}&language=it-IT`
-        const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
-        if (!res.ok) return null
-        const d = await res.json()
-        if (!d?.id) return null
-        return { d, tmdbId: id }
+        try {
+          const d = await getDetails(stType === "movie" ? "movie" : "tv", id, "it-IT", apiKey)
+          if (!d?.id) return null
+          return { d, tmdbId: id }
+        } catch {
+          return null
+        }
       }))
-      const validResults = results.filter((r): r is { d: { imdb_id?: string; title?: string; name?: string; release_date?: string; first_air_date?: string }; tmdbId: number } => r !== null)
+      const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number } => r !== null)
       metas = await Promise.all(validResults.map(async (r) => {
-        const imdbId = r.d.imdb_id || (stType === "series" ? await resolveImdbId("tv", r.tmdbId) : null)
+        const imdbId = stType === "series" ? await resolveImdbId("tv", r.tmdbId) : null
         return {
           id: imdbId || r.tmdbId.toString(),
           type: stType,
@@ -152,35 +155,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     } else if (catalogId.startsWith("posterium-anime")) {
       const key = mdblistKeyParam || process.env.MDBLIST_API_KEY
       if (key) {
-        const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(10000) })
-        if (res.ok) {
-          const body = await res.json()
-          const payload = body?.data || body
-          const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
-          const items = rawItems.slice(0, 20)
-          const results = await Promise.all(items.map(async (item: { tmdb?: number; tmdb_id?: number; imdb?: string; imdb_id?: string; title?: string; ids?: { tmdb?: number } }) => {
-            const tmdbId = item.tmdb_id ?? item.tmdb ?? item.ids?.tmdb
-            const imdbId = item.imdb_id || item.imdb
-            if (!tmdbId) return null
-            const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${encodeURIComponent(process.env.TMDB_API_KEY || "")}&language=it-IT`
-            const r2 = await fetch(url, { signal: AbortSignal.timeout(10000) })
-            if (!r2.ok) return null
-            const d = await r2.json()
+        // fetchMDBList normalizza la risposta e rispetta MDBLIST_API_URL (mock E2E).
+        const items = await fetchMDBList("mdblistAnime", key)
+        const results = await Promise.all(items.map(async (item) => {
+          const tmdbId = Number(item.tmdb)
+          if (!tmdbId) return null
+          try {
+            const d = await getDetails("tv", tmdbId, "it-IT", resolveRequestApiKey(req))
             if (!d?.id) return null
-            return { d, tmdbId, imdb: imdbId }
-          }))
-          const validResults = results.filter((r): r is { d: { imdb_id?: string; name?: string; first_air_date?: string }; tmdbId: number; imdb?: string } => r !== null)
-          metas = await Promise.all(validResults.map(async (r) => {
-            const imdbId = r.d.imdb_id || r.imdb || await resolveImdbId("tv", r.tmdbId)
-            return {
-              id: imdbId || r.tmdbId.toString(),
-              type: "series",
-              name: r.d.name || "",
-              poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam, userParam),
-              releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
-            }
-          }))
-        }
+            return { d, tmdbId, imdb: item.imdb }
+          } catch {
+            return null
+          }
+        }))
+        const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdb: string } => r !== null)
+        metas = await Promise.all(validResults.map(async (r) => {
+          const imdbId = r.imdb || await resolveImdbId("tv", r.tmdbId)
+          return {
+            id: imdbId || r.tmdbId.toString(),
+            type: "series",
+            name: r.d.name || "",
+            poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam, userParam),
+            releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
+          }
+        }))
       }
     } else {
       let slug = ""
@@ -210,7 +208,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     const body = { metas }
-    if (metas.length > 0) cacheSet(cacheKey, body, ["stremio", "catalog"])
+    // Cache anche i risultati vuoti, ma con TTL breve (60s): un errore o un
+    // catalogo momentaneamente vuoto non deve far martellare le API esterne a
+    // ogni richiesta, e al contempo il recupero non viene ritardato a lungo.
+    cacheSet(cacheKey, body, ["stremio", "catalog"], metas.length > 0 ? undefined : 60_000)
     return catalogResponse(body)
   } catch (e) {
     log.error("Catalog error", { error: e instanceof Error ? e.message : String(e) })
