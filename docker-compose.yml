@@ -47,6 +47,12 @@ services:
       - NODE_ENV=production
       - PORT=8080
       - HOSTNAME=0.0.0.0
+    # Hardening: il container gira come utente non-root (uid 1000) e senza
+    # capability aggiuntive; niente escalation di privilegi.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - posterium-data:/data
     healthcheck:

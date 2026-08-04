@@ -5,6 +5,7 @@ import { cacheClear } from "@/lib/cache"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getTop10 } from "@/lib/flixpatrol"
 import { getById } from "@/lib/store"
+import { __resetJWRankingsCache } from "@/lib/justwatch"
 
 vi.mock("@/lib/flixpatrol", () => ({
   getTop10: vi.fn(),
@@ -23,6 +24,7 @@ function justWatchResponse(tmdbId: number): Response {
       streamingCharts: {
         edges: [
           {
+            streamingChartInfo: { rank: 1 },
             node: {
               content: {
                 externalIds: { tmdbId },
@@ -53,6 +55,7 @@ describe("GET /catalog/[type]/[id]", () => {
     vi.restoreAllMocks()
     mockedGetTop10.mockReset()
     mockedGetById.mockReset()
+    __resetJWRankingsCache()
     cacheClear()
     delete process.env.TMDB_API_KEY
   })

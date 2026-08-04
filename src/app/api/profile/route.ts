@@ -9,7 +9,7 @@ import {
   verifyProfilePassword,
 } from "@/lib/profile-store"
 import { type PosteriumUserConfig } from "@/lib/config-token"
-import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
+import { requireAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { createLogger } from "@/lib/logger"
 
@@ -29,6 +29,7 @@ const log = createLogger("profile")
  */
 export async function POST(req: NextRequest) {
   try {
+    if (!isSameOrigin(req)) return originMismatchResponse()
     // Cap sulla dimensione del body per evitare crescita disco illimitata
     const contentLength = Number(req.headers.get("content-length") || "0")
     if (Number.isFinite(contentLength) && contentLength > 100_000) {
@@ -175,7 +176,10 @@ export async function GET(req: NextRequest) {
  * non autorizzate (i profile UUID sono esposti nelle URL dei poster).
  */
 export async function DELETE(req: NextRequest) {
-  if (!checkAdminToken(req)) return adminAuthResponse()
+  // Eliminazione profilo: richiede SEMPRE admin token, anche su istanze
+  // pubbliche (gli UUID dei profili sono esposti nelle URL dei poster).
+  if (!requireAdminToken(req)) return adminAuthResponse()
+  if (!isSameOrigin(req)) return originMismatchResponse()
   const uuid = req.nextUrl.searchParams.get("u")
   if (!uuid) {
     return Response.json({ error: "Missing 'u' query parameter" }, { status: 400 })

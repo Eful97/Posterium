@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
   if (!query || query.length < 2) {
     return jsonGzip({ results: [], total_results: 0, total_pages: 0 }, 200, undefined, acceptEncoding)
   }
-  const cacheKey = `search:${query}:${language}:${page}`
+  // Cache key normalizzato (trim + lowercase): la ricerca TMDB è case-insensitive,
+  // così "Avatar" e "avatar" condividono lo stesso entry e non si generano miss inutili.
+  const cacheKey = `search:${query.toLowerCase()}:${language}:${page}`
   const cached = cacheGet<{ results: TMDBMediaResult[]; total_results: number; total_pages: number }>(cacheKey)
   if (cached) return jsonGzip(cached, 200, undefined, acceptEncoding)
   try {

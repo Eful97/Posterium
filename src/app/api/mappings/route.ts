@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server"
 import { getAll, getById, upsert, removeAll } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheInvalidatePosterData } from "@/lib/cache"
+import { cacheInvalidatePosterData, cacheInvalidatePosterDataFor } from "@/lib/cache"
 import { mappingSchema } from "@/lib/validation"
-import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
+import { checkAdminToken, requireAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
+  if (!isSameOrigin(req)) return originMismatchResponse()
   const body = await req.json()
   const parsed = mappingSchema.safeParse(body)
   if (!parsed.success) {
@@ -72,7 +73,9 @@ export async function POST(req: NextRequest) {
       )
     }
   }
-  cacheInvalidatePosterData()
+  // Invalidazione mirata al mapping salvato, non globale (i default impattano
+  // tutto, un singolo mapping solo il suo poster/badge).
+  cacheInvalidatePosterDataFor(parsed.data.mediaType, parsed.data.tmdbId)
   // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano
   const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
   void (async () => {
@@ -104,7 +107,10 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
-  if (!checkAdminToken(req)) return adminAuthResponse()
+  // Wipe-all: richiede SEMPRE admin token, anche su istanze pubbliche senza
+  // ADMIN_TOKEN configurato (fail-closed). Nessun client lo invoca.
+  if (!requireAdminToken(req)) return adminAuthResponse()
+  if (!isSameOrigin(req)) return originMismatchResponse()
   await removeAll()
   cacheInvalidatePosterData()
   return Response.json({ ok: true })

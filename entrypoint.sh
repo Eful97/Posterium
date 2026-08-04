@@ -31,20 +31,21 @@ else
   mkdir -p "$DATA_DIR"
 fi
 
-# Test write as root (the actual process user)
+# Test write come utente processuale (nextjs, uid 1000 — il container gira non-root).
 WRITE_TEST=$(touch "$DATA_DIR/.write_test" && rm -f "$DATA_DIR/.write_test" && echo ok 2>&1 || true)
 if [ "$WRITE_TEST" = "ok" ]; then
-  echo "[entrypoint] Storage: WRITABLE (root)"
+  echo "[entrypoint] Storage: WRITABLE (process user)"
 else
-  echo "[entrypoint] Storage: NOT WRITABLE even as root"
+  echo "[entrypoint] Storage: NOT WRITABLE by process user (uid 1000)"
   echo "[entrypoint]"
   echo "[entrypoint] ========================================================"
   echo "[entrypoint] DATA WILL NOT PERSIST ACROSS REBUILDS!"
   echo "[entrypoint]"
   echo "[entrypoint] To fix:"
-  echo "[entrypoint]   1. Create bucket: https://huggingface.co/new-storage"
-  echo "[entrypoint]   2. Link to Space: Settings → Storage → Link bucket"
-  echo "[entrypoint]   3. Factory rebuild"
+  echo "[entrypoint]   1. Ensure /data is owned by uid 1000 (Dockerfile chowns it)"
+  echo "[entrypoint]   2. For HF: create bucket: https://huggingface.co/new-storage"
+  echo "[entrypoint]   3. Link to Space: Settings → Storage → Link bucket"
+  echo "[entrypoint]   4. Factory rebuild"
   echo "[entrypoint] ========================================================"
 fi
 

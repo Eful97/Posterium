@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { getServerDefaults, setServerDefaults } from "@/lib/server-defaults"
 import { cacheInvalidatePosterData } from "@/lib/cache"
-import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
+import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { createLogger } from "@/lib/logger"
@@ -34,6 +34,7 @@ export async function PUT(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "defaults")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
+  if (!isSameOrigin(req)) return originMismatchResponse()
   let body: unknown
   try {
     body = await req.json()
@@ -52,9 +53,11 @@ export async function PUT(req: NextRequest) {
   }
   cacheInvalidatePosterData()
   // Warm catalog cache — ricostruisci cataloghi principali in background.
-  // Usa l'origin della richiesta (host pubblico) invece di 127.0.0.1 che su
-  // runtime serverless non esiste e renderebbe il self-fetch un timeout sicuro.
-  const internalOrigin = new URL(req.url).origin
+  // Usa un origin interno fisso (127.0.0.1) invece dell'origin derivato dall'
+  // header Host della richiesta: quest'ultimo è controllabile dal client
+  // (host header injection → SSRF). Su runtime serverless il self-fetch è un
+  // no-op via catch (timeout) — comportamento accettato.
+  const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
   for (const catalog of getWarmupCatalogs()) {
     const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
     void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {

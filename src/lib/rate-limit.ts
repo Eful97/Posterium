@@ -56,20 +56,25 @@ export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter:
 }
 
 export function rateLimitKey(request: Request): string {
-  // x-forwarded-for può essere spoofato dal client quando il proxy APPENDE (non sovrascrive)
-  // il proprio valore: in quel caso il primo valore è quello inventato. L'ultimo valore è
-  // l'hop aggiunto dal proxy trusted più vicino all'app → non falsificabile. Con un solo
-  // valore (Vercel/Cloudflare che sovrascrivono) il risultato è identico.
+  // Preferenza: header impostati/sovrascritti da proxy trusted (Cloudflare,
+  // HF edge, Nginx) e quindi non falsificabili dal client.
+  // 1) cf-connecting-ip — scritto da Cloudflare, ignora il valore client.
+  // 2) x-real-ip — scritto da Nginx/HF, ignora il valore client.
+  // 3) ultimo hop di x-forwarded-for — con un proxy trusted che APPENDE il
+  //    proprio valore, l'ultimo elemento è l'IP reale del client; MA se il
+  //    deploy esegue senza reverse proxy l'header è interamente spoofabile
+  //    dal client → usare l'ultimo valore resta la scelta migliore senza proxy,
+  //    ma i deploy diretti dovrebbero mettere un reverse proxy in testa.
+  const cfIp = request.headers.get("cf-connecting-ip")
+  if (cfIp) return cfIp.trim()
+  const realIp = request.headers.get("x-real-ip")
+  if (realIp) return realIp.trim()
   const forwarded = request.headers.get("x-forwarded-for")
   if (forwarded) {
     const parts = forwarded.split(",")
     const last = parts[parts.length - 1]?.trim()
     if (last) return last
   }
-  const realIp = request.headers.get("x-real-ip")
-  if (realIp) return realIp.trim()
-  const cfIp = request.headers.get("cf-connecting-ip")
-  if (cfIp) return cfIp.trim()
   return "local"
 }
 

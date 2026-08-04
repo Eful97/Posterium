@@ -13,6 +13,10 @@ const CACHE_FILE = path.join(DATA_DIR, "flixpatrol_cache.json")
 const tmdbCache = new Map<string, { data: unknown; timestamp: number }>()
 const TMDB_CACHE_TTL = 5 * 60 * 1000
 
+// Cache in memoria del catalogo: evita readFileSync (I/O disco) ad ogni richiesta.
+// Il file su disco resta come fallback persistente tra i processi.
+let memCache: CacheData = { timestamp: 0, catalog: null }
+
 const SLUG_TO_PLATFORM: Record<string, string> = {
   netflix: "Netflix",
   disney: "Disney+",
@@ -121,15 +125,24 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
   const platformName = SLUG_TO_PLATFORM[platformSlug]
   if (!platformName) throw new Error(`Unknown platform: ${platformSlug}`)
 
-  const cache = loadCache()
+  const now = Date.now()
   const FOUR_HOURS = 4 * 60 * 60 * 1000
+  let cache = memCache
+  // Memoria stantia → prova il file su disco (fallback persistente) prima di rifare fetch.
+  if (!cache.catalog || now - cache.timestamp > FOUR_HOURS) {
+    const disk = loadCache()
+    if (disk.catalog && now - disk.timestamp <= FOUR_HOURS) {
+      cache = disk
+      memCache = cache
+    }
+  }
   let catalog = cache.catalog
 
-  if (!catalog || Date.now() - cache.timestamp > FOUR_HOURS) {
+  if (!catalog || now - cache.timestamp > FOUR_HOURS) {
     try {
       catalog = await fetchCatalog()
-      cache.catalog = catalog
-      cache.timestamp = Date.now()
+      cache = { catalog, timestamp: now }
+      memCache = cache
       saveCache(cache)
     } catch (e) {
       log.error("Failed to fetch fresh catalog", { error: e instanceof Error ? e.message : String(e) })

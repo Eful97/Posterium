@@ -1,4 +1,5 @@
-import dns from "node:dns"
+import dns, { type LookupOptions } from "node:dns"
+import { Agent } from "undici"
 import { NextRequest } from "next/server"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { rewriteMetasPosters, rewriteSingleMetaPoster, type StremioItemMeta } from "@/lib/addon-proxy"
@@ -6,6 +7,10 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("addon-proxy")
+
+const MAX_RESPONSE_BYTES = 5 * 1024 * 1024
+
+class ProxyBodyTooLargeError extends Error {}
 
 function corsHeaders() {
   return {
@@ -87,15 +92,85 @@ async function resolveAndCheckBlocked(url: string): Promise<boolean> {
 }
 
 /**
+ * Lookup DNS personalizzato per l'Agent undici: risolve il hostname e restituisce
+ * SOLO gli indirizzi pubblici. Chiude il TOCTOU di resolveAndCheckBlocked: la
+ * connessione avviene esattamente sugli IP verificati, senza finestra di
+ * DNS-rebinding tra check e fetch. Se nessun indirizzo è pubblico → errore.
+ */
+function safeLookup(hostname: string, options: LookupOptions, callback: (err: NodeJS.ErrnoException | null, address: dns.LookupAddress[] | string, family?: number) => void) {
+  dns.promises
+    .lookup(hostname, { family: 0, all: true })
+    .then((addresses) => {
+      const safe = addresses.filter((a) => !isPrivateIp(a.address))
+      if (safe.length === 0) {
+        callback(new Error(`Blocked SSRF: no public IP for ${hostname}`), [])
+        return
+      }
+      if (options.all) {
+        callback(null, safe)
+      } else {
+        callback(null, safe[0].address, safe[0].family)
+      }
+    })
+    .catch((err: NodeJS.ErrnoException) => callback(err, []))
+}
+
+/** Agent undici con lookup vincolato agli IP pubblici (DNS pin). */
+const SAFE_AGENT = new Agent({ connect: { lookup: safeLookup } })
+
+/** Allowlist opzionale di domini proxy (POSTERIUM_PROXY_ALLOW_DOMAINS). */
+function isAllowedByAllowlist(url: URL): boolean {
+  const raw = process.env.POSTERIUM_PROXY_ALLOW_DOMAINS
+  if (!raw) return true
+  const domains = raw.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean)
+  if (domains.length === 0) return true
+  const host = url.hostname.toLowerCase()
+  return domains.some((d) => host === d || host.endsWith(`.${d}`))
+}
+
+/** Legge il body JSON applicando un cap sulla dimensione (anti-mem-exhaustion). */
+async function readJsonCapped(res: Response): Promise<unknown> {
+  const declared = res.headers.get("content-length")
+  if (declared && Number(declared) > MAX_RESPONSE_BYTES) {
+    throw new ProxyBodyTooLargeError(`Response exceeds ${MAX_RESPONSE_BYTES} bytes`)
+  }
+  if (!res.body) return res.json()
+  const reader = res.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.byteLength
+    if (total > MAX_RESPONSE_BYTES) {
+      await reader.cancel().catch(() => {})
+      throw new ProxyBodyTooLargeError(`Response exceeds ${MAX_RESPONSE_BYTES} bytes`)
+    }
+    chunks.push(value)
+  }
+  const buf = Buffer.concat(chunks)
+  return JSON.parse(buf.toString("utf-8"))
+}
+
+/**
  * Esegue un fetch con redirect manuali, validando ogni destinazione.
- * Previene SSRF via redirect 302 verso IP privati.
+ * Previene SSRF via redirect 302 verso IP privati. Il DNS pin (SAFE_AGENT)
+ * garantisce che ogni connessione usi solo indirizzi pubblici verificati.
  */
 async function safeFetch(url: string, options: RequestInit & { signal: AbortSignal }): Promise<Response> {
   let currentUrl = url
   let redirectCount = 0
   const MAX_REDIRECTS = 5
   while (redirectCount <= MAX_REDIRECTS) {
-    const res = await fetch(currentUrl, { ...options, redirect: "manual" })
+    if (!isAllowedByAllowlist(new URL(currentUrl))) {
+      log.warn("Blocked by proxy allowlist", { target: currentUrl })
+      return Response.json({ error: "Target domain not allowed" }, { status: 403, headers: corsHeaders() })
+    }
+    // La fetch globale di Node (undici) accetta `dispatcher`; il lib DOM di
+    // Next non lo tipizza, quindi il cast è necessario. Il dispatcher SAFE_AGENT
+    // vincola la connessione agli IP pubblici verificati (DNS pin).
+    const fetchOpts = { ...options, redirect: "manual", dispatcher: SAFE_AGENT } as unknown as RequestInit
+    const res = await fetch(currentUrl, fetchOpts)
     if (res.status < 300 || res.status >= 400) return res
     // Redirect — validiamo la destinazione
     const location = res.headers.get("location")
@@ -150,7 +225,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
       if (!manifestRes.ok) {
         return Response.json({ error: `Failed to fetch target manifest: ${manifestRes.statusText}` }, { status: manifestRes.status, headers: corsHeaders() })
       }
-      const origManifest = await manifestRes.json()
+      const origManifest = (await readJsonCapped(manifestRes)) as Record<string, unknown>
       const baseUrl = targetUrl.replace(/\/manifest\.json$/, "").replace(/\/$/, "")
 
       const userSuffix = userUuid ? `.${userUuid.slice(0, 8)}` : ""
@@ -165,6 +240,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
       return Response.json(proxiedManifest, { headers: corsHeaders() })
     } catch (e) {
       log.error("Manifest proxy error", { error: e instanceof Error ? e.message : String(e) })
+      if (e instanceof ProxyBodyTooLargeError) {
+        return Response.json({ error: "Target manifest too large" }, { status: 413, headers: corsHeaders() })
+      }
       return Response.json({ error: "Error fetching manifest" }, { status: 500, headers: corsHeaders() })
     }
   }
@@ -179,7 +257,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
       return Response.json({ error: `Failed to fetch proxy resource: ${res.statusText}` }, { status: res.status, headers: corsHeaders() })
     }
 
-    const data = await res.json()
+    const data = (await readJsonCapped(res)) as Record<string, unknown> & { metas?: StremioItemMeta[]; meta?: StremioItemMeta }
 
     if (data && Array.isArray(data.metas)) {
       data.metas = rewriteMetasPosters(data.metas as StremioItemMeta[], origin, userUuid)
@@ -190,6 +268,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
     return Response.json(data, { headers: corsHeaders() })
   } catch (e) {
     log.error("Resource proxy error", { error: e instanceof Error ? e.message : String(e) })
+    if (e instanceof ProxyBodyTooLargeError) {
+      return Response.json({ error: "Proxy resource too large" }, { status: 413, headers: corsHeaders() })
+    }
     return Response.json({ error: "Proxy resource error" }, { status: 500, headers: corsHeaders() })
   }
 }

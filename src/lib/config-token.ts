@@ -82,6 +82,13 @@ export function encodeConfig(config: PosteriumUserConfig): string {
  */
 export function decodeConfig(token: string): PosteriumUserConfig | null {
   try {
+    // Batch E (fail-closed): in produzione senza HMAC_SECRET rifiuta QUALSIASI
+    // token — anche in formato firmato `b64.sig`. Senza secret non possiamo
+    // verificare la firma, quindi un token firmato sarebbe indistinguibile da
+    // un payload manomesso. Prima il check evitava solo i token unsigned,
+    // lasciando passare `b64.sig` perché la verifica era dentro `if (HMAC_SECRET)`.
+    if (!HMAC_SECRET && process.env.NODE_ENV === "production") return null
+
     let json: string
     const dotIdx = token.lastIndexOf(".")
 

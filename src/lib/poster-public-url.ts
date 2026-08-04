@@ -12,15 +12,45 @@ function cleanBaseUrl(value: string | undefined): string | null {
   return trimmed.replace(/\/+$/, "")
 }
 
+function hostnameOf(value: string): string | null {
+  // X-Forwarded-Host può essere una lista separata da virgole
+  const first = value.split(",")[0].trim()
+  try {
+    return new URL(`https://${first}`).hostname.toLowerCase()
+  } catch {
+    return null
+  }
+}
+
+/** Allowlist opzionale di hostname pubblici ammessi (POSTERIUM_ALLOWED_HOSTS). */
+function isAllowedHostname(hostname: string): boolean {
+  const raw = process.env.POSTERIUM_ALLOWED_HOSTS
+  if (!raw) return false
+  const allowed = raw.split(",").map((h) => h.trim().toLowerCase()).filter(Boolean)
+  return allowed.includes(hostname)
+}
+
 /**
  * Extract the public origin from a request, accounting for reverse proxies
  * (Koyeb, HF Spaces, etc.) that forward via internal IPs.
+ *
+ * X-Forwarded-Host è fidato solo se combacia con l'Host header originale
+ * (o è in POSTERIUM_ALLOWED_HOSTS): in caso contrario un client può far
+ * generare URL poster che puntano a un dominio arbitrario (host header
+ * injection). Su HF Spaces / proxy fidati XFH == Host → nessun cambiamento
+ * di comportamento.
  */
 export function getOriginFromRequest(req: NextRequest): string {
   const forwardedHost = req.headers.get("X-Forwarded-Host")
   const forwardedProto = req.headers.get("X-Forwarded-Proto") || "https"
   if (forwardedHost) {
-    return `${forwardedProto}://${forwardedHost}`
+    const xfhHost = hostnameOf(forwardedHost)
+    const host = hostnameOf(req.headers.get("host") || "")
+    if (xfhHost && (host === xfhHost || isAllowedHostname(xfhHost))) {
+      return `${forwardedProto}://${forwardedHost}`
+    }
+    // XFH non fidato → fallback all'origin derivato dall'URL della richiesta.
+    return req.nextUrl.origin
   }
   return req.nextUrl.origin
 }

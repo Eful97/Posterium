@@ -33,7 +33,8 @@ ENV SHARP_CACHE_MEMORY_MB=64
 ENV POSTERIUM_DATA_DIR=/data
 
 RUN addgroup --system nodejs
-RUN adduser --system --uid 1001 nextjs
+# uid 1000: coincide con l'owner dello storage HF Spaces (persistenza distribuita).
+RUN adduser --system --uid 1000 nextjs
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/public ./public
@@ -41,6 +42,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && mkdir -p /data && chown nextjs:nodejs /data
+
+# Esegui il server come utente non-root (principio del minimo privilegio).
+USER nextjs
 
 EXPOSE 8080
 

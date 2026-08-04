@@ -1,3 +1,4 @@
+import crypto from "node:crypto"
 import { NextRequest } from "next/server"
 import { getDetails, getExternalIds } from "@/lib/tmdb"
 import { fetchAggregatedRating } from "@/lib/ratings"
@@ -13,7 +14,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
   const mdblistKey = req.nextUrl.searchParams.get("mdblist_key") || undefined
   const mediaType = type === "tv" || type === "series" ? "tv" : "movie"
-  const cacheKey = `details:v9:${type}:${id}:${language}`
+  const tmdbId = Number(id)
+  if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
+    return Response.json({ genres: [], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null })
+  }
+  // mdblist_key cambia il voto aggregato (fetchAggregatedRating) → parte del cache key.
+  const mdblistHash = mdblistKey ? crypto.createHash("sha1").update(mdblistKey).digest("hex").slice(0, 8) : ""
+  const cacheKey = `details:v9:${type}:${tmdbId}:${language}:${mdblistHash || "nomk"}`
   interface Genre { id: number; name: string }
 interface Episode { id: number; name: string; air_date: string | null; episode_number: number; season_number: number }
 
@@ -21,8 +28,8 @@ const cached = cacheGet<{ title?: string; name?: string; genres: Genre[]; voteAv
   if (cached) return Response.json(cached)
   try {
     const [data, extIds] = await Promise.all([
-      getDetails(mediaType, Number(id), language, apiKey),
-      getExternalIds(mediaType, Number(id), apiKey).catch(() => ({ imdb_id: null })),
+      getDetails(mediaType, tmdbId, language, apiKey),
+      getExternalIds(mediaType, tmdbId, apiKey).catch(() => ({ imdb_id: null })),
     ])
     const rating = extIds.imdb_id
       ? (await fetchAggregatedRating(extIds.imdb_id, mdblistKey).catch(() => null))?.average ?? data.vote_average ?? 0

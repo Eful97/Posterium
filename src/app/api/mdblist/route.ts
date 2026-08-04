@@ -23,11 +23,13 @@ export async function GET(req: NextRequest) {
   const cached = cacheGet<{ key: string; rank: number } | null>(cacheKey)
   if (cached !== undefined) return Response.json({ match: cached })
 
+  const apiKey = req.nextUrl.searchParams.get('api_key') || process.env.MDBLIST_API_KEY
+  if (!apiKey) return Response.json({ match: null })
+
   try {
     for (const list of MDBLISTS) {
       const url = MDBLISTS_URL[list.key]
-      const apiKey = req.nextUrl.searchParams.get('api_key') || process.env.MDBLIST_API_KEY
-      const fullUrl = `${url}/items?apikey=${apiKey}&limit=20`
+      const fullUrl = `${url}/items?apikey=${encodeURIComponent(apiKey)}&limit=20`
       const res = await fetch(fullUrl, {
         headers: { 'Accept': 'application/json' },
         signal: AbortSignal.timeout(10000)
@@ -65,7 +67,12 @@ let parsedItems: MdblistRawItem[] = []
         return Response.json({ match })
       }
     }
-  } catch (e) { log.error("Fetch failed", { error: e instanceof Error ? e.message : String(e) }) }
-  cacheSet(cacheKey, null, ["mdblist"])
+  } catch (e) {
+    // Errore di rete: NON cachare il fallimento, ritenta al prossimo accesso.
+    log.error("Fetch failed", { error: e instanceof Error ? e.message : String(e) })
+    return Response.json({ match: null })
+  }
+  // No-match: TTL breve — l'item può comparire in classifica a breve.
+  cacheSet(cacheKey, null, ["mdblist"], 60_000)
   return Response.json({ match: null })
 }

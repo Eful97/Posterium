@@ -1,3 +1,4 @@
+import crypto from "node:crypto"
 import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
@@ -15,7 +16,10 @@ export async function GET(req: NextRequest) {
 
   const apiKey = req.nextUrl.searchParams.get("api_key") || TMDB_KEY
   const origLang = req.nextUrl.searchParams.get("with_original_language")
-  const cacheKey = `trending:tv:week:${origLang || "all"}:${apiKey.slice(0, 6)}`
+  // Hash della chiave API nel cache key — mai il frammento grezzo (i log/status
+  // della cache non devono esporre porzioni di credential).
+  const apiKeyHash = crypto.createHash("sha1").update(apiKey).digest("hex").slice(0, 8)
+  const cacheKey = `trending:tv:week:${origLang || "all"}:${apiKeyHash}`
 
   const acceptEncoding = req.headers.get("accept-encoding")
   const cached = cacheGet<{ results: unknown[] }>(cacheKey)

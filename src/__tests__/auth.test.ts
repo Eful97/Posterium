@@ -1,6 +1,8 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest"
 import { NextRequest } from "next/server"
-import { checkAdminToken } from "@/lib/auth"
+import { checkAdminToken, requireAdminToken, isSameOrigin } from "@/lib/auth"
+
+const originalEnv = { ...process.env }
 
 // Regressione per il bug HF: senza ADMIN_TOKEN configurato, in produzione il
 // salvataggio poster (POST /api/mappings) era bloccato (fail-closed introdotto
@@ -8,8 +10,6 @@ import { checkAdminToken } from "@/lib/auth"
 // Il comportamento corretto: istanza pubblica senza token → route aperte;
 // token configurato → fail-closed (header assente/errato → rifiutato).
 describe("checkAdminToken", () => {
-  const originalEnv = { ...process.env }
-
   beforeEach(() => {
     delete process.env.POSTERIUM_ADMIN_TOKEN
     delete process.env.ADMIN_TOKEN
@@ -95,5 +95,96 @@ describe("checkAdminToken", () => {
     const { GET } = await import("@/app/api/mappings/export/route")
     const res = await GET(req)
     expect(res.status).toBe(401)
+  })
+})
+
+describe("requireAdminToken (fail-closed)", () => {
+  beforeEach(() => {
+    delete process.env.POSTERIUM_ADMIN_TOKEN
+    delete process.env.ADMIN_TOKEN
+  })
+
+  afterEach(() => {
+    process.env = { ...originalEnv }
+  })
+
+  it("rejects when no token is configured (even on a public instance)", () => {
+    Object.assign(process.env, { NODE_ENV: "production" })
+    const req = new NextRequest("http://localhost:3000/api/mappings", { method: "DELETE" })
+    expect(requireAdminToken(req)).toBe(false)
+  })
+
+  it("rejects when a token is configured but the header is missing", () => {
+    process.env.POSTERIUM_ADMIN_TOKEN = "secret"
+    const req = new NextRequest("http://localhost:3000/api/mappings", { method: "DELETE" })
+    expect(requireAdminToken(req)).toBe(false)
+  })
+
+  it("accepts a valid x-admin-token header", () => {
+    process.env.POSTERIUM_ADMIN_TOKEN = "secret"
+    const req = new NextRequest("http://localhost:3000/api/mappings", {
+      method: "DELETE",
+      headers: { "x-admin-token": "secret" },
+    })
+    expect(requireAdminToken(req)).toBe(true)
+  })
+
+  it("rejects a wrong bearer token", () => {
+    process.env.POSTERIUM_ADMIN_TOKEN = "secret"
+    const req = new NextRequest("http://localhost:3000/api/mappings", {
+      method: "DELETE",
+      headers: { authorization: "Bearer wrong" },
+    })
+    expect(requireAdminToken(req)).toBe(false)
+  })
+
+  it("rejects DELETE /api/mappings (wipe-all) without token on a public instance", async () => {
+    Object.assign(process.env, { NODE_ENV: "production" })
+    const req = new NextRequest("http://localhost:3000/api/mappings", { method: "DELETE" })
+    const { DELETE } = await import("@/app/api/mappings/route")
+    const res = await DELETE(req)
+    expect(res.status).toBe(401)
+  })
+})
+
+describe("isSameOrigin (CSRF)", () => {
+  it("passes when no Origin header is present (curl/test/Stremio)", () => {
+    const req = new NextRequest("http://localhost:3000/api/mappings", { method: "POST" })
+    expect(isSameOrigin(req)).toBe(true)
+  })
+
+  it("passes for a same-origin request (Origin host == Host)", () => {
+    const req = new NextRequest("http://localhost:3000/api/mappings", {
+      method: "POST",
+      headers: { origin: "http://localhost:3000" },
+    })
+    expect(isSameOrigin(req)).toBe(true)
+  })
+
+  it("rejects a cross-origin request", () => {
+    const req = new NextRequest("http://localhost:3000/api/mappings", {
+      method: "POST",
+      headers: { origin: "https://evil.example.com" },
+    })
+    expect(isSameOrigin(req)).toBe(false)
+  })
+
+  it("matches against X-Forwarded-Host when present (reverse proxy)", () => {
+    const req = new NextRequest("http://localhost:3000/api/mappings", {
+      method: "POST",
+      headers: {
+        origin: "https://posterium.example.com",
+        "x-forwarded-host": "posterium.example.com",
+      },
+    })
+    expect(isSameOrigin(req)).toBe(true)
+  })
+
+  it("ignores the port when comparing hosts", () => {
+    const req = new NextRequest("http://localhost:3000/api/mappings", {
+      method: "POST",
+      headers: { origin: "http://localhost:8080", host: "localhost:3000" },
+    })
+    expect(isSameOrigin(req)).toBe(true)
   })
 })

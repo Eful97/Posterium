@@ -3,11 +3,13 @@ import { getById, remove, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheInvalidatePosterDataFor } from "@/lib/cache"
 import { mappingUpdateSchema } from "@/lib/validation"
-import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
+import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 
 type RouteParams = { id: string }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  const rl = rateLimit(rateLimitKey(req), "mappings")
+  if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
@@ -20,6 +22,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
+  if (!isSameOrigin(req)) return originMismatchResponse()
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
@@ -70,6 +73,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Rou
   const rl = rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
+  if (!isSameOrigin(req)) return originMismatchResponse()
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)

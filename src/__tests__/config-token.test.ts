@@ -176,6 +176,19 @@ describe("production fail-closed", () => {
     const token = encodeConfig(SAMPLE_CONFIG)
     expect(decodeConfig(token)).toEqual(SAMPLE_CONFIG)
   })
+
+  it("decodeConfig rejects SIGNED-format tokens in production without a secret", async () => {
+    // Regressione C2: in produzione senza secret un token in formato firmato
+    // `b64.sig` NON deve essere accettato. Prima della fix la verifica della
+    // firma era dentro `if (HMAC_SECRET)`, quindi il segmento firma veniva
+    // ignorato e il payload decodificato comunque (fail-open).
+    const b64 = Buffer.from(JSON.stringify(SAMPLE_CONFIG), "utf-8").toString("base64url")
+    const signedFormat = `${b64}.totally-fake-signature`
+
+    vi.stubEnv("NODE_ENV", "production")
+    const { decodeConfig } = await importConfigToken()
+    expect(decodeConfig(signedFormat)).toBeNull()
+  })
 })
 
 describe("defensive clamping on decode", () => {

@@ -10,6 +10,14 @@ const log = createLogger("trending")
 const TMDB_BASE = "https://api.themoviedb.org/3"
 const TMDB_KEY = process.env.TMDB_API_KEY || ""
 
+/** Codici paese supportati da JustWatch (set chiuso — evita cache-miss illimitati). */
+const JW_COUNTRIES = new Set([
+  "AE", "AR", "AT", "AU", "BE", "BG", "BR", "CA", "CH", "CL", "CO", "CZ", "DE", "DK",
+  "EC", "EE", "EG", "ES", "FI", "FR", "GB", "GR", "HK", "HR", "HU", "ID", "IE", "IL",
+  "IN", "IT", "JP", "KR", "LT", "LV", "MX", "MY", "NL", "NO", "NZ", "PE", "PH", "PL",
+  "PT", "RO", "RS", "RU", "SE", "SG", "SI", "SK", "TH", "TR", "UA", "US", "VE", "ZA",
+])
+
 async function tmdbFetch(path: string, apiKey?: string) {
   const url = new URL(`${TMDB_BASE}${path}`)
   url.searchParams.set("api_key", apiKey || TMDB_KEY)
@@ -54,7 +62,8 @@ export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
-  const country = req.nextUrl.searchParams.get("country") || "IT"
+  const rawCountry = req.nextUrl.searchParams.get("country") || "IT"
+  const country = JW_COUNTRIES.has(rawCountry.toUpperCase()) ? rawCountry.toUpperCase() : "IT"
   const cacheKey = `trending:${country}`
   const acceptEncoding = req.headers.get("accept-encoding")
   const cached = cacheGet<{ movies: TrendingItem[]; tv: TrendingItem[] }>(cacheKey)

@@ -63,3 +63,8 @@ export async function getJWRankings(objectType: "MOVIE" | "SHOW", country = "IT"
   rankingsCache.set(cacheKey, { data: result, timestamp: Date.now() })
   return result
 }
+
+/** Solo per i test: svuota la cache condivisa delle classifiche JustWatch. */
+export function __resetJWRankingsCache(): void {
+  rankingsCache.clear()
+}

@@ -366,14 +366,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         (rankingEnabledEarly && mediaType === "tv")
           ? (() => {
               try {
-                const cached = cacheGet("mdblist:anime:top10")
+                const cached = cacheGet("mdblist:anime:top10:raw")
                 if (cached && Array.isArray(cached)) {
                   const idx = cached.findIndex((e) => Number((e as MDBListEntry).tmdb) === tmdbId || (e as EnrichedAnimeItem).id === tmdbId)
                   return Promise.resolve(idx >= 0 ? idx + 1 : null)
                 }
                 return fetchMDBList("mdblistAnime").then((entries) => {
                   if (!Array.isArray(entries)) return null
-                  cacheSet("mdblist:anime:top10", entries, ["mdblist"])
+                  cacheSet("mdblist:anime:top10:raw", entries, ["mdblist"])
                   const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
                   return idx >= 0 ? idx + 1 : null
                 }).catch(() => null)

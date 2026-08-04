@@ -1,3 +1,4 @@
+import crypto from "node:crypto"
 import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
@@ -8,6 +9,7 @@ import { getById } from "@/lib/store"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { getExternalIds } from "@/lib/tmdb"
+import { getJWRankings } from "@/lib/justwatch"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("catalog")
@@ -20,32 +22,19 @@ interface StremioMeta {
   releaseInfo?: string
 }
 
+/** Riutilizza getJWRankings (cache condivisa 30 min + mock server nei test). */
 async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<number[]> {
-  const query = `query GetStreamingChartInfo($country: Country!, $language: Language!, $filter: StreamingChartsFilter, $first: Int!) {
-    streamingCharts(country: $country, filter: $filter, first: $first) {
-      edges {
-        streamingChartInfo { rank }
-        node { ... on MovieOrShowOrSeason { content(country: $country, language: $language) { externalIds { tmdbId } } } }
-      }
-    }
-  }`
   try {
-    const res = await fetch("https://apis.justwatch.com/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Platform": "WEB" },
-      body: JSON.stringify({
-        operationName: "GetStreamingChartInfo",
-        query,
-        variables: { country: "IT", language: "it-IT", filter: { objectType: type, category: "DAILY_POPULARITY_SAME_CONTENT_TYPE" }, first: 20 },
-      }),
-      signal: AbortSignal.timeout(10000),
-    })
-    if (!res.ok) return []
-    const json = await res.json()
-    return (json?.data?.streamingCharts?.edges || [])
-      .map((e: { node?: { content?: { externalIds?: { tmdbId?: number | string } } } }) => Number(e?.node?.content?.externalIds?.tmdbId))
-      .filter((id: number) => id > 0)
-  } catch { return [] }
+    const rows = await getJWRankings(type, "IT", 20)
+    return rows.map((r) => r.tmdbId)
+  } catch {
+    return []
+  }
+}
+
+/** Hash breve e stabile di una chiave per i cache key — mai il frammento grezzo. */
+function hashFragment(value: string): string {
+  return crypto.createHash("sha1").update(value).digest("hex").slice(0, 8)
 }
 
 const PLATFORM_SLUGS: Record<string, string> = {
@@ -120,12 +109,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   const { type: mediaType, id: rawId } = await params
   const catalogId = rawId.replace(/\.json$/, "")
+  // Bound sul catalogId: entra nel cache key e in confronti di prefisso.
+  if (catalogId.length > 80) return catalogResponse({ metas: [] })
   const stType = normalizeCatalogType(mediaType)
   const configParam = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c") || undefined
   const userParam = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user") || undefined
   const mdblistKeyParam = req.nextUrl.searchParams.get("mdblist_key") || undefined
 
-  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}${configParam ? `:cfg${configParam}` : ""}${mdblistKeyParam ? `:mk${mdblistKeyParam.slice(0, 8)}` : ""}`
+  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKeyParam ? `:mk${hashFragment(mdblistKeyParam)}` : ""}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
 
@@ -140,7 +131,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       if (!apiKey) return catalogResponse({ metas: [] })
       const pathTmdb = stType === "movie" ? "/movie" : "/tv"
       const results = await Promise.all(ids.slice(0, 20).map(async (id) => {
-        const url = `https://api.themoviedb.org/3${pathTmdb}/${id}?api_key=${apiKey}&language=it-IT`
+        const url = `https://api.themoviedb.org/3${pathTmdb}/${id}?api_key=${encodeURIComponent(apiKey)}&language=it-IT`
         const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
         if (!res.ok) return null
         const d = await res.json()
@@ -161,7 +152,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     } else if (catalogId.startsWith("posterium-anime")) {
       const key = mdblistKeyParam || process.env.MDBLIST_API_KEY
       if (key) {
-        const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${key}`, { signal: AbortSignal.timeout(10000) })
+        const res = await fetch(`https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(10000) })
         if (res.ok) {
           const body = await res.json()
           const payload = body?.data || body
@@ -171,7 +162,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             const tmdbId = item.tmdb_id ?? item.tmdb ?? item.ids?.tmdb
             const imdbId = item.imdb_id || item.imdb
             if (!tmdbId) return null
-            const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${process.env.TMDB_API_KEY}&language=it-IT`
+            const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${encodeURIComponent(process.env.TMDB_API_KEY || "")}&language=it-IT`
             const r2 = await fetch(url, { signal: AbortSignal.timeout(10000) })
             if (!r2.ok) return null
             const d = await r2.json()

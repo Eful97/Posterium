@@ -55,9 +55,17 @@ async function fetchImage(url: string, signal: AbortSignal): Promise<Buffer> {
   return buf
 }
 
+const MAX_BODY_BYTES = 50_000
+const POSTER_SIZES = new Set(["w342", "w500"])
+
 export async function POST(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "search")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
+
+  const contentLength = Number(req.headers.get("content-length") || "0")
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+    return Response.json({ error: "Request body too large" }, { status: 413 })
+  }
 
   let body: PosterFitBody
   try {
@@ -68,6 +76,11 @@ export async function POST(req: NextRequest) {
 
   if (!body.posterPaths?.length || !body.logoPath) {
     return Response.json({ error: "posterPaths and logoPath are required" }, { status: 400 })
+  }
+
+  // logoPath entra in una URL TMDB: deve essere un path assoluto, non una URL.
+  if (!body.logoPath.startsWith("/")) {
+    return Response.json({ error: "logoPath must be a path starting with '/'" }, { status: 400 })
   }
 
   // Endpoint CPU/network-heavy: limita il numero di candidati da analizzare.
@@ -85,7 +98,9 @@ export async function POST(req: NextRequest) {
     })),
   )
 
-  const posterSize = body.posterSize || "w342"
+  // posterSize entra nel path dell'URL TMDB: set chiuso per evitare
+  // dimensioni/percorsi arbitrari.
+  const posterSize = POSTER_SIZES.has(body.posterSize || "") ? body.posterSize! : "w342"
   const logoScale = body.logoScale ?? 75
   const logoOffsetX = body.logoOffsetX ?? 0
   const logoOffsetY = body.logoOffsetY ?? 0
