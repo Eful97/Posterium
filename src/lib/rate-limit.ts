@@ -1,6 +1,15 @@
 const buckets = new Map<string, { tokens: number; lastRefill: number }>()
 const CLEANUP_INTERVAL = 30 * 60 * 1000
+// Cap sul numero di bucket: gli IP spoofati (X-Forwarded-For senza proxy
+// trusted) possono generare chiavi arbitrarie. Oltre il cap, i bucket più
+// vecchi vengono rimossi (FIFO) per tenere la memoria bounded.
+const MAX_KEYS = 50_000
 let cleanupTimer: ReturnType<typeof setInterval> | null = null
+
+function evictOldest() {
+  const oldest = buckets.keys().next().value
+  if (oldest !== undefined) buckets.delete(oldest)
+}
 
 function startCleanup() {
   if (cleanupTimer) return
@@ -34,6 +43,7 @@ export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter:
   let b = buckets.get(key)
 
   if (!b) {
+    if (buckets.size >= MAX_KEYS) evictOldest()
     b = { tokens: cfg.maxTokens, lastRefill: now }
     buckets.set(key, b)
   }
