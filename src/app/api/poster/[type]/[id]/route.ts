@@ -19,6 +19,7 @@ import { getEffectiveRotationState, tryRotatePoster } from "@/lib/poster-rotatio
 import { mappingVersionParam } from "@/lib/stremio-poster-url"
 import { RENDER_VERSION } from "@/lib/render-version"
 import {
+  acquirePosterRenderSlot,
   beginPosterRender,
   getPendingPoster,
   isImmutablePosterRequest,
@@ -165,7 +166,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return posterResponse(cachedPoster.payload, immutablePoster, isPreview)
     }
     if (!refreshRequest) {
-      schedulePosterRefresh(req)
+      schedulePosterRefresh(req, isPreview)
       log.debug("Poster cache: stale hit (refresh scheduled)", { mediaType, tmdbId, ms: Date.now() - startTime })
       return posterResponse(cachedPoster.payload, immutablePoster, isPreview)
     }
@@ -352,7 +353,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     return new Response("Poster not found", { status: 404, headers: corsHeaders() })
   }
 
+  let releaseRender: (() => void) | null = null
   try {
+    // Semaforo anti-OOM: limita i render costosi concorrenti (sharp composite,
+    // blur, badge SVG→PNG). Se tutti i posti sono occupati per più del timeout,
+    // risponde 503 invece di accodarsi e far crescere l'heap senza bound.
+    releaseRender = await acquirePosterRenderSlot()
+    if (!releaseRender) {
+      completePosterRender(null)
+      return new Response("Server busy: too many concurrent renders", { status: 503, headers: corsHeaders() })
+    }
+
     const qRankingEarly = req.nextUrl.searchParams.get("ranking")
     const hasQueryEarly = !!queryPoster || !!mapping
     const rankingEnabledEarly = hasQueryEarly ? (qRankingEarly !== null ? qRankingEarly !== "0" : rankingBadges) : true
@@ -617,5 +628,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     completePosterRender(null)
     log.error("Poster generation failed", { error: e instanceof Error ? e.message : String(e) })
     return new Response("Poster generation failed", { status: 500, headers: corsHeaders() })
+  } finally {
+    releaseRender?.()
   }
 }

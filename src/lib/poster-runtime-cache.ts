@@ -26,6 +26,11 @@ export interface ImmutablePosterRequestState {
 
 const inflight = new Map<string, Promise<PosterCachePayload | null>>()
 
+const refreshInFlight = new Set<string>()
+const lastRefreshAt = new Map<string, number>()
+const MIN_REFRESH_INTERVAL_MS = 60_000
+const MAX_REFRESH_TRACKED = 500
+
 // Se un render in flight muore (crash/timeout serverless) senza chiamare la
 // funzione di completamento, la promise resterebbe appesa nella map per sempre
 // bloccando ogni richiesta successiva con la stessa cache key su await.
@@ -138,13 +143,86 @@ export function beginPosterRender(cacheKey: string): (payload: PosterCachePayloa
   }
 }
 
-export function schedulePosterRefresh(req: NextRequest): void {
+export function schedulePosterRefresh(req: NextRequest, isPreview: boolean = false): void {
+  // Le preview (`preview=1`) non vengono servite alle CDN: rigenerarle in
+  // background è inutile. Il refresh serve solo per riscaldare la cache edge.
+  if (isPreview) return
   const url = new URL(req.url)
   url.searchParams.set(POSTER_REFRESH_PARAM, "1")
+  const key = url.toString()
+  // Dedup: non avviare due refresh concorrenti per la stessa URL.
+  if (refreshInFlight.has(key)) return
+  // Min-interval: evita che un titolo sotto attacco (o una catena di stale hit)
+  // generi un self-fetch a ogni richiesta — la cache locale viene comunque
+  // rigenerata dalla prima richiesta che arriva con il param di refresh.
+  const now = Date.now()
+  const last = lastRefreshAt.get(key)
+  if (last !== undefined && now - last < MIN_REFRESH_INTERVAL_MS) return
+  if (lastRefreshAt.size >= MAX_REFRESH_TRACKED) lastRefreshAt.delete(lastRefreshAt.keys().next().value!)
+  lastRefreshAt.set(key, now)
+  refreshInFlight.add(key)
   void fetch(url, { signal: AbortSignal.timeout(60_000) })
     .then((res) => res.arrayBuffer())
     .catch((error: unknown) => {
       const msg = error instanceof Error ? error.message : String(error)
-      log.error("Background refresh failed", { error: msg })
+      log.warn("Background refresh failed", { error: msg })
     })
+    .finally(() => { refreshInFlight.delete(key) })
+}
+
+// ---------------------------------------------------------------------------
+// Render concurrency limiter (anti-OOM)
+// ---------------------------------------------------------------------------
+// Un cache-miss tiene in memoria poster originali + logo + backdrop + buffer
+// RGBA e i risultati delle composizioni sharp (decine di MB per richiesta).
+// Su istanze con heap limitato (Docker: --max-old-space-size=384) un burst di
+// miss su titoli diversi può portare a OOM senza backpressure. Questo limiter
+// serializza i render costosi: le richieste in eccesso attendono un posto per
+// un tempo limitato, poi ricevono 503 invece di accodarsi all'infinito.
+
+const MAX_CONCURRENT_RENDERS = (() => {
+  const raw = process.env.POSTERIUM_MAX_CONCURRENT_RENDERS
+  const n = raw ? parseInt(raw, 10) : 4
+  return Number.isFinite(n) && n > 0 && n <= 32 ? n : 4
+})()
+const RENDER_SLOT_WAIT_MS = 5000
+
+let activeRenders = 0
+const renderWaiters: Array<() => void> = []
+
+function releaseRenderSlot(): void {
+  activeRenders = Math.max(0, activeRenders - 1)
+  const next = renderWaiters.shift()
+  if (next) next()
+}
+
+/** Acquisisce un posto di render. Risolve con la release function, o null se il timeout scade. */
+export async function acquirePosterRenderSlot(): Promise<(() => void) | null> {
+  if (activeRenders < MAX_CONCURRENT_RENDERS) {
+    activeRenders++
+    return releaseRenderSlot
+  }
+  return new Promise<(() => void) | null>((resolve) => {
+    let settled = false
+    const timer = setTimeout(() => {
+      if (settled) return
+      settled = true
+      const i = renderWaiters.indexOf(handoff)
+      if (i >= 0) renderWaiters.splice(i, 1)
+      resolve(null)
+    }, RENDER_SLOT_WAIT_MS)
+    const handoff = () => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(releaseRenderSlot)
+    }
+    renderWaiters.push(handoff)
+  })
+}
+
+/** Solo per i test: svuota lo stato del limiter. */
+export function __resetPosterRenderLimiter(): void {
+  activeRenders = 0
+  renderWaiters.length = 0
 }
