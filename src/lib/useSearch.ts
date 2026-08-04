@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { http } from "./http"
 import type { SearchResult } from "./types"
 import { useToast } from "@/components/Toast"
@@ -43,6 +43,13 @@ export function useSearch(tmdbKey: string, lang: string) {
   // l'ultima richiesta può aggiornare lo stato. Previene il "search race".
   const revRef = useRef(0)
 
+  // Persistenza recent searches: side-effect fuori dagli updater (purezza) —
+  // gli updater React possono girare più volte (StrictMode) e non devono avere
+  // effetti collaterali.
+  useEffect(() => {
+    writeRecentSearches(recentSearches)
+  }, [recentSearches])
+
   const doSearch = useCallback(async (q?: string, page = 1) => {
     const searchQuery = q ?? query
     if (searchQuery.length < 2 || !tmdbKey) return
@@ -63,11 +70,7 @@ export function useSearch(tmdbKey: string, lang: string) {
       setTotalPages(data.total_pages || 0)
       if (page === 1) {
         setSearchPage(1)
-        setRecentSearches((prev) => {
-          const next = [searchQuery, ...prev.filter((s) => s !== searchQuery)].slice(0, 5)
-          writeRecentSearches(next)
-          return next
-        })
+        setRecentSearches((prev) => [searchQuery, ...prev.filter((s) => s !== searchQuery)].slice(0, 5))
       }
     } catch (e) {
       if (rev !== revRef.current) return
@@ -80,19 +83,23 @@ export function useSearch(tmdbKey: string, lang: string) {
     }
   }, [query, tmdbKey, lang])
 
+  // Ref-guard contro doppi loadMore: setSearchPage è async, quindi due chiamate
+  // ravvicinate vedrebbero lo stesso searchPage e lancerebbero fetch duplicate.
+  const loadMoreRef = useRef(false)
   const loadMore = useCallback(async () => {
-    if (searching || searchPage >= totalPages) return
+    if (searching || searchPage >= totalPages || loadMoreRef.current) return
+    loadMoreRef.current = true
     const nextPage = searchPage + 1
     setSearchPage(nextPage)
-    await doSearch(query, nextPage)
+    try {
+      await doSearch(query, nextPage)
+    } finally {
+      loadMoreRef.current = false
+    }
   }, [query, searchPage, totalPages, searching, doSearch])
 
   const removeRecentSearch = useCallback((search: string) => {
-    setRecentSearches((prev) => {
-      const next = prev.filter((s) => s !== search)
-      writeRecentSearches(next)
-      return next
-    })
+    setRecentSearches((prev) => prev.filter((s) => s !== search))
   }, [])
 
   return { query, setQuery, results, setResults, searching, error, setError, totalResults, totalPages, searchPage, recentSearches, doSearch, loadMore, removeRecentSearch }

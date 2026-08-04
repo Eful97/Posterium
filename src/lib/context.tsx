@@ -79,7 +79,7 @@ export interface PosteriumCtx {
   previewId: string | null
   setPreviewId: React.Dispatch<React.SetStateAction<string | null>>
   saveConfig: () => Promise<void>
-  removeMapping: (m: Mapping) => void
+  removeMapping: (m: Mapping) => Promise<void>
   mappingsMap: Map<string, Mapping>
   goHome: () => void
   sourceView: "edit" | "search" | "myposters" | "cataloghi" | null
@@ -563,17 +563,59 @@ export function usePosterium(): PosteriumCtx {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- color detection runs only when poster changes
   }, [navigation.previewPoster])
 
+  // --- Caricamento dati item corrente (M16) ---
+  // Condiviso tra openPosterBrowser e l'effetto cambio lingua: ricarica
+  // dettagli + rank + awards + immagini, aggiornando metaInfo (generi/voto/badge),
+  // trendRank, mdblistMatch, posters/logos/backdrops e titolo. La guardia
+  // fetchIdRef evita che una risposta stale sovrascriva la selezione corrente.
+  async function loadCurrentItemData(item: SearchResult, fetchId: number) {
+    const itemId = item.id
+    const itemType = item.media_type
+    const mdblistParam = mdblistApiKey ? "&mdblist_key=" + encodeURIComponent(mdblistApiKey) : ""
+    const detailsUrl = `/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistParam}`
+    const [details, rankData, awardData] = await Promise.all([
+      http<{ genres: { id: number; name: string }[]; voteAverage: number; voteCount: number; status: string | null; type: string | null; release_date: string | null; first_air_date: string | null; last_air_date: string | null; next_episode_to_air: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons: number | null; number_of_episodes: number | null; title: string | null; name: string | null; imdb_id: string | null; networks: { name: string }[]; production_companies: { name: string }[]; original_language: string }>(detailsUrl, { timeout: 30000 }).catch((e) => { console.error("[posterium] Details fetch failed:", e); setServiceErrors((prev) => ({ ...prev, tmdb: true })); return { genres: [] as { id: number; name: string }[], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null, networks: [] as { name: string }[], production_companies: [] as { name: string }[], original_language: "en" } }),
+      http<{ rank: number | null }>(`/api/trending/rank?type=${itemType}&id=${itemId}&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 15000 }).catch(() => ({ rank: null })),
+      http<{ awards: string[]; nominations: string[]; studios: string[]; director: string | null; keywords: string[] }>(`/api/awards/${itemType}/${itemId}?api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 15000 }).catch(() => ({ awards: [] as string[], nominations: [] as string[], studios: [] as string[], director: null, keywords: [] as string[] })),
+    ])
+    const origLang = details.original_language
+    const imageLangs = origLang && origLang !== lang && origLang !== "en" ? `${lang},en,null,${origLang}` : `${lang},en,null`
+    const data = await http<{ posters: TMDBImage[]; logos: TMDBImage[]; backdrops: TMDBImage[] }>(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${imageLangs}&api_key=${tmdbKey}`, { timeout: 30000 }).catch(() => ({ posters: [] as TMDBImage[], logos: [] as TMDBImage[], backdrops: [] as TMDBImage[] }))
+    if (navigation.fetchIdRef.current !== fetchId) return null
+    navigation.setSelected({ ...item, imdb_id: details.imdb_id })
+    navigation.setPosters(data.posters || [])
+    navigation.setLogos(data.logos || [])
+    setBackdrops(data.backdrops || [])
+    if (details.title) navigation.setSelected((prev) => ({ ...prev!, title: details.title! }))
+    if (details.name) navigation.setSelected((prev) => ({ ...prev!, name: details.name! }))
+    const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: { name: string }) => n.name) : (details.production_companies || []).map((c: { name: string }) => c.name)
+    setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, imdb_id: details.imdb_id ?? undefined, type: details.type ?? undefined, status: details.status ?? undefined, release_date: details.release_date ?? undefined, first_air_date: details.first_air_date ?? undefined, last_air_date: details.last_air_date ?? undefined, next_episode_to_air: details.next_episode_to_air ?? undefined, number_of_seasons: details.number_of_seasons ?? undefined, number_of_episodes: details.number_of_episodes ?? undefined, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks).length ? matchTMDBStudios(tmdbNetworks) : (awardData?.studios || []), director: awardData?.director || null, keywords: awardData?.keywords || [] })
+    setTrendRank(rankData.rank || null)
+    const extImdbId = item.imdb_id || details.imdb_id
+    if (extImdbId) {
+      http<{ match?: { key: string; rank: number } }>(`/api/mdblist?imdb=${extImdbId}&api_key=${mdblistApiKey}`, { timeout: 15000 }).then((d) => {
+        if (d?.match) {
+          setMdblistMatch(d.match)
+        }
+      }).catch((e) => { console.error("[posterium] MDBList lookup failed:", e) })
+    }
+    if (!item.poster_path && data.posters?.length > 0) {
+      const first = data.posters.find((p: TMDBImage) => p.iso_639_1) || data.posters[0]
+      navigation.setSelected((prev) => ({ ...prev!, poster_path: first.file_path }))
+    }
+    return { details, data, itemId, itemType }
+  }
+
   // --- Poster image refresh ---
   useEffect(() => {
     if (!navigation.selected || !tmdbKey) return
-    const itemId = navigation.selected.id
-    const itemType = navigation.selected.media_type
+    const item = navigation.selected
     const fetchId = navigation.incrementFetchId()
-    http<{ posters: TMDBImage[]; logos: TMDBImage[]; backdrops: TMDBImage[] }>(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${lang},en,null&api_key=${tmdbKey}`, { timeout: 30000 }).then((data) => {
-      if (navigation.fetchIdRef.current !== fetchId) return
-      navigation.setPosters(data.posters || [])
-      navigation.setLogos(data.logos || [])
-      setBackdrops(data.backdrops || [])
+    // M16: riusa loadCurrentItemData così al cambio lingua si ricaricano anche
+    // dettagli/genere/voto/badge, non solo le immagini.
+    loadCurrentItemData(item, fetchId).then((loaded) => {
+      if (!loaded) return
+      const { data } = loaded
       if (navigation.previewPoster) {
         const match = (data.posters || []).find((p: TMDBImage) => p.file_path === navigation.previewPoster!.file_path)
         if (!match) {
@@ -665,38 +707,9 @@ export function usePosterium(): PosteriumCtx {
     }
 
     try {
-      const mdblistParam = mdblistApiKey ? "&mdblist_key=" + encodeURIComponent(mdblistApiKey) : ""
-      const detailsUrl = `/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistParam}`
-      const [details, rankData, awardData] = await Promise.all([
-        http<{ genres: { id: number; name: string }[]; voteAverage: number; voteCount: number; status: string | null; type: string | null; release_date: string | null; first_air_date: string | null; last_air_date: string | null; next_episode_to_air: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons: number | null; number_of_episodes: number | null; title: string | null; name: string | null; imdb_id: string | null; networks: { name: string }[]; production_companies: { name: string }[]; original_language: string }>(detailsUrl, { timeout: 30000 }).catch((e) => { console.error("[posterium] Details fetch failed:", e); setServiceErrors((prev) => ({ ...prev, tmdb: true })); return { genres: [] as { id: number; name: string }[], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null, networks: [] as { name: string }[], production_companies: [] as { name: string }[], original_language: "en" } }),
-        http<{ rank: number | null }>(`/api/trending/rank?type=${itemType}&id=${itemId}&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 15000 }).catch(() => ({ rank: null })),
-        http<{ awards: string[]; nominations: string[]; studios: string[]; director: string | null; keywords: string[] }>(`/api/awards/${itemType}/${itemId}?api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 15000 }).catch(() => ({ awards: [] as string[], nominations: [] as string[], studios: [] as string[], director: null, keywords: [] as string[] })),
-      ])
-      const origLang = details.original_language
-      const imageLangs = origLang && origLang !== lang && origLang !== "en" ? `${lang},en,null,${origLang}` : `${lang},en,null`
-      const data = await http<{ posters: TMDBImage[]; logos: TMDBImage[]; backdrops: TMDBImage[] }>(`/api/tmdb/${itemId}/images?type=${itemType}&languages=${imageLangs}&api_key=${tmdbKey}`, { timeout: 30000 }).catch(() => ({ posters: [] as TMDBImage[], logos: [] as TMDBImage[], backdrops: [] as TMDBImage[] }))
-      if (navigation.fetchIdRef.current !== fetchId) return
-      navigation.setSelected({ ...item, imdb_id: details.imdb_id })
-      navigation.setPosters(data.posters || [])
-      navigation.setLogos(data.logos || [])
-      setBackdrops(data.backdrops || [])
-      if (details.title) navigation.setSelected((prev) => ({ ...prev!, title: details.title! }))
-      if (details.name) navigation.setSelected((prev) => ({ ...prev!, name: details.name! }))
-      const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: { name: string }) => n.name) : (details.production_companies || []).map((c: { name: string }) => c.name)
-      setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, imdb_id: details.imdb_id ?? undefined, type: details.type ?? undefined, status: details.status ?? undefined, release_date: details.release_date ?? undefined, first_air_date: details.first_air_date ?? undefined, last_air_date: details.last_air_date ?? undefined, next_episode_to_air: details.next_episode_to_air ?? undefined, number_of_seasons: details.number_of_seasons ?? undefined, number_of_episodes: details.number_of_episodes ?? undefined, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks).length ? matchTMDBStudios(tmdbNetworks) : (awardData?.studios || []), director: awardData?.director || null, keywords: awardData?.keywords || [] })
-      setTrendRank(rankData.rank || null)
-      const extImdbId = item.imdb_id || details.imdb_id
-      if (extImdbId) {
-        http<{ match?: { key: string; rank: number } }>(`/api/mdblist?imdb=${extImdbId}&api_key=${mdblistApiKey}`, { timeout: 15000 }).then((d) => {
-          if (d?.match) {
-            setMdblistMatch(d.match)
-          }
-        }).catch((e) => { console.error("[posterium] MDBList lookup failed:", e) })
-      }
-      if (!item.poster_path && data.posters?.length > 0) {
-        const first = data.posters.find((p: TMDBImage) => p.iso_639_1) || data.posters[0]
-        navigation.setSelected((prev) => ({ ...prev!, poster_path: first.file_path }))
-      }
+      const loaded = await loadCurrentItemData(item, fetchId)
+      if (!loaded) return
+      const { details, data } = loaded
       const existing = mappingsMap.get(`${itemType}:${itemId}`)
       if (existing) {
         const foundPoster = (data.posters || []).find((p: TMDBImage) => p.file_path === existing.posterPath)
@@ -725,7 +738,6 @@ export function usePosterium(): PosteriumCtx {
           const foundBackdrop = data.backdrops.find((b: TMDBImage) => b.file_path === existing.backdropPath)
           setSelectedBackdrop(foundBackdrop || { file_path: existing.backdropPath, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
         }
-        setTrendRank(rankData.rank ?? existing.trendRank ?? null)
         setNetworkLogo(existing.networkLogo ?? defaultNetworkLogo)
       } else {
         setLogoDisabled(false)
@@ -902,7 +914,7 @@ export function usePosterium(): PosteriumCtx {
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
-    tmdbKeyInput, showKey, copied, profileCopied, profileId,
+    tmdbKeyInput, showKey, copied, profileCopied, profileId, mdblistApiKey, profilePassword,
     accentColor, setAccentColor,
     topEdgeColor, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,

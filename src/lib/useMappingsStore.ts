@@ -19,8 +19,9 @@ export function useMappingsStore() {
   const loadMappings = useCallback(async () => {
     try {
       const res = await fetch("/api/mappings")
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
-      setMappings(data.mappings)
+      setMappings(Array.isArray(data.mappings) ? data.mappings : [])
     } catch (e) { console.error("[posterium] Failed to load mappings:", e) }
   }, [])
 

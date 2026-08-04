@@ -200,6 +200,7 @@
     "ui.noPosterSelected":  "Nessun poster selezionato",
     "ui.withLogo":  " + logo",
     "ui.delete":  "Elimina",
+    "ui.deleteFailed":  "Errore nella cancellazione di {count} poster",
     "ui.autoRotate":  "Rotazione 24h",
     "ui.autoRotateDefault":  "Rotazione poster ogni 24h",
     "ui.logoFitEnabled":  "Compatibilità logo automatica",

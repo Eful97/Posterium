@@ -200,6 +200,7 @@
     "ui.noPosterSelected":  "Aucune affiche sélectionnée",
     "ui.withLogo":  " + logo",
     "ui.delete":  "Supprimer",
+    "ui.deleteFailed":  "Erreur lors de la suppression de {count} affiches",
     "ui.autoRotate":  "Rotation 24h",
     "ui.autoRotateDefault":  "Rotation 24h par défaut",
     "ui.logoFitEnabled":  "Compatibilité logo automatique",

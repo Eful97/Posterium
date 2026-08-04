@@ -128,9 +128,6 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       bestPoster.file_path,
       cleanPosters.map((poster) => poster.file_path),
       p.selectedLogo.file_path,
-      ed.logoScale,
-      ed.logoOffsetX,
-      ed.logoOffsetY,
       ed.globalBadges,
     ])
   }, [
@@ -138,9 +135,6 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
     cleanPosters,
     ed.defaultLogoFitEnabled,
     ed.globalBadges,
-    ed.logoOffsetX,
-    ed.logoOffsetY,
-    ed.logoScale,
     p.selectedLogo,
   ])
 

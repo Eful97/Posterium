@@ -113,7 +113,6 @@ export function usePosterSave(deps: PosterSaveDeps) {
   }, [selected, previewPoster, mappingsMap, posters]) // eslint-disable-line react-hooks/exhaustive-deps -- setter refs are stable
 
   const removeLogo = useCallback(async () => {
-    setSelectedLogo(null)
     if (!selected) return
     const key = `${selected.media_type}:${selected.id}`
     const existing = mappingsMap.get(key)
@@ -121,24 +120,33 @@ export function usePosterSave(deps: PosterSaveDeps) {
       import("sonner").then(({ toast }) => toast(t("ui.noMappingUpdate")))
       return
     }
-    await http(`/api/mappings/${key}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tmdbId: selected.id, mediaType: selected.media_type, title: titleOf(selected),
-        posterPath: previewPoster?.file_path || selected.poster_path!, logoPath: null,
-        originalPosterPath: selected.poster_path, language: previewPoster?.iso_639_1 || null,
-        logoScale, logoOffsetX, logoOffsetY,
-        genreName: metaInfo.genres[0]?.name || null,
-        voteAverage: metaInfo.voteAverage || null,
-        trendRank: trendRank ?? null,
-        logoDisabled: true,
-      }),
-    })
-    import("sonner").then(({ toast }) => toast(t("ui.logoRemoved")))
-    loadMappings()
-    if (selected) setPreviewId(`${selected.media_type}:${selected.id}`)
-  }, [selected, previewPoster, logoScale, logoOffsetX, logoOffsetY, metaInfo, trendRank, mappingsMap, loadMappings]) // eslint-disable-line react-hooks/exhaustive-deps -- setter refs are stable
+    const logoPrecedente = selectedLogo
+    try {
+      await http(`/api/mappings/${key}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tmdbId: selected.id, mediaType: selected.media_type, title: titleOf(selected),
+          posterPath: previewPoster?.file_path || selected.poster_path!, logoPath: null,
+          originalPosterPath: selected.poster_path, language: previewPoster?.iso_639_1 || null,
+          logoScale, logoOffsetX, logoOffsetY,
+          genreName: metaInfo.genres[0]?.name || null,
+          voteAverage: metaInfo.voteAverage || null,
+          trendRank: trendRank ?? null,
+          logoDisabled: true,
+        }),
+      })
+      setSelectedLogo(null)
+      import("sonner").then(({ toast }) => toast(t("ui.logoRemoved")))
+      loadMappings()
+      if (selected) setPreviewId(`${selected.media_type}:${selected.id}`)
+    } catch (e) {
+      console.error("[posterium] Remove logo failed:", e)
+      // M17: rollback dello stato se il PUT non va a buon fine
+      if (logoPrecedente) setSelectedLogo(logoPrecedente)
+      import("sonner").then(({ toast }) => toast(t("ui.saveError")))
+    }
+  }, [selected, selectedLogo, previewPoster, logoScale, logoOffsetX, logoOffsetY, metaInfo, trendRank, mappingsMap, loadMappings]) // eslint-disable-line react-hooks/exhaustive-deps -- setter refs are stable
 
   const selectBackdrop = useCallback((img: TMDBImage) => {
     setSelectedBackdrop(img)

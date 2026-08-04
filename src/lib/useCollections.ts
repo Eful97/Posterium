@@ -70,6 +70,32 @@ function reducer(state: PosterCollection[], action: Action): PosterCollection[] 
 
 const INITIAL_STATE: PosterCollection[] = []
 
+// ── Helpers ────────────────────────────────────────────────────────
+function uuid(): string {
+  // crypto.randomUUID richiede un contesto sicuro (HTTPS/localhost); su
+  // HTTP non protetto è assente → fallback con getRandomValues.
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID()
+    }
+  } catch {}
+  const buf = new Uint8Array(16)
+  let filled = false
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+      crypto.getRandomValues(buf)
+      filled = true
+    }
+  } catch {}
+  if (!filled) {
+    for (let i = 0; i < buf.length; i++) buf[i] = Math.floor(Math.random() * 256)
+  }
+  buf[6] = (buf[6] & 0x0f) | 0x40
+  buf[8] = (buf[8] & 0x3f) | 0x80
+  const hex = Array.from(buf, (b) => b.toString(16).padStart(2, "0")).join("")
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 // ── Hook ───────────────────────────────────────────────────────────
 export function useCollections() {
   const [collections, dispatch] = useReducer(reducer, INITIAL_STATE)
@@ -94,7 +120,7 @@ export function useCollections() {
     dispatch({
       type: "CREATE",
       payload: {
-        id: crypto.randomUUID(),
+        id: uuid(),
         name: name.trim(),
         posterIds: [],
         createdAt: Date.now(),

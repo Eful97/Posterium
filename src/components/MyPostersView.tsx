@@ -74,13 +74,26 @@ export function MyPostersView() {
     })
   }
 
+  // Cancella N mapping e riporta il numero di fallimenti: con Promise.all una
+  // singola HTTP non-2xx farebbe fallire tutto senza feedback e lascerebbe i
+  // restanti non eliminati (alcuni già rimossi lato server, altri no).
+  const removeMany = useCallback(async (items: Mapping[]) => {
+    const results = await Promise.allSettled(items.map((m) => removeMapping(m)))
+    return results.filter((r) => r.status === "rejected").length
+  }, [removeMapping])
+
   const deleteSelected = async () => {
     const toDelete = mappings.filter((m) => selected.has(`${m.mediaType}:${m.tmdbId}`))
+    if (toDelete.length === 0) return
     setDeleting(true)
     try {
-      await Promise.all(toDelete.map((m) => removeMapping(m)))
-      setSelected(new Set())
-      setSelectMode(false)
+      const failed = await removeMany(toDelete)
+      if (failed > 0) {
+        import("sonner").then(({ toast }) => toast.error(t("ui.deleteFailed", { count: failed })))
+      } else {
+        setSelected(new Set())
+        setSelectMode(false)
+      }
     } finally {
       setDeleting(false)
     }
@@ -89,8 +102,12 @@ export function MyPostersView() {
   const deleteAll = async () => {
     setDeleting(true)
     try {
-      await Promise.all(mappings.map((m) => removeMapping(m)))
-      setShowDeleteAll(false)
+      const failed = await removeMany(mappings)
+      if (failed > 0) {
+        import("sonner").then(({ toast }) => toast.error(t("ui.deleteFailed", { count: failed })))
+      } else {
+        setShowDeleteAll(false)
+      }
     } finally {
       setDeleting(false)
     }

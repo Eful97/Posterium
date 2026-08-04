@@ -215,7 +215,7 @@ export default function EditView() {
                       const hasMapping = p.mappingsMap.get(key)
                       if (!hasMapping) return null
                       return (
-                        <button aria-label={t("ui.remove")} onClick={() => { p.removeMapping(hasMapping); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="py-2 px-3 rounded-xl text-[11px] font-semibold bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.97] transition-all duration-200">{t("ui.remove")}</button>
+                        <button aria-label={t("ui.remove")} onClick={() => { p.removeMapping(hasMapping).catch((e) => console.error("[posterium] Remove mapping failed:", e)); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="py-2 px-3 rounded-xl text-[11px] font-semibold bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.97] transition-all duration-200">{t("ui.remove")}</button>
                       )
                     })()}
                   </div>

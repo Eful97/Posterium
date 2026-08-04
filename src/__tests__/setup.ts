@@ -18,6 +18,7 @@ const itDict: Record<string, string> = {
   "badge.miniseries": "Miniserie",
   "badge.returning": "Ritorna",
   "badge.upcomingRelease": "In uscita {date}",
+  "ui.deleteFailed": "Errore nella cancellazione di {count} poster",
   "badge.bingeWorthy": "Absolute Cinema",
   "badge.absoluteCinema": "Absolute Cinema",
   "badge.trending": "Di tendenza",

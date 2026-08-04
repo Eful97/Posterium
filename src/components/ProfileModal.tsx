@@ -75,6 +75,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
         blurDarkness: ed.blurDarkness,
         gradientHeight: ed.gradientHeight,
         networkLogo: ed.networkLogo,
+        ribbonSide: ed.ribbonSide,
         autoRotateClean: ed.autoRotateClean,
         logoFitEnabled: ed.defaultLogoFitEnabled,
         customBadge: ed.customBadge || undefined,
@@ -161,6 +162,10 @@ export function ProfileModal({ isOpen, onClose }: Props) {
         if (typeof data.config.blurDarkness === "number") ed.setBlurDarkness(data.config.blurDarkness)
         if (typeof data.config.gradientHeight === "number") ed.setGradientHeight(data.config.gradientHeight)
         if (typeof data.config.networkLogo === "boolean") ed.setNetworkLogo(data.config.networkLogo)
+        if (data.config.ribbonSide === "left" || data.config.ribbonSide === "right") ed.setRibbonSide(data.config.ribbonSide)
+        if (typeof data.config.autoRotateClean === "boolean") ed.setAutoRotateClean(data.config.autoRotateClean)
+        if (typeof data.config.logoFitEnabled === "boolean") ed.setDefaultLogoFitEnabled(data.config.logoFitEnabled)
+        if (typeof data.config.customBadge === "string") ed.setCustomBadge(data.config.customBadge)
       }
 
       if (data.apiKeys?.tmdbKey) {

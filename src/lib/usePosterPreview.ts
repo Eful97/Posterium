@@ -22,6 +22,10 @@ export function usePosterPreview() {
     setLoadProgress(0)
     
     if (!p.previewUrl) {
+      if (prevObjUrlRef.current) {
+        URL.revokeObjectURL(prevObjUrlRef.current)
+        prevObjUrlRef.current = ""
+      }
       setImgSrc("")
       setPreviewLoading(false)
       return
@@ -83,6 +87,18 @@ export function usePosterPreview() {
       }
     }
   }, [p.previewUrl])
+
+  // Revoca l'object URL residuo SOLO allo smontaggio. La cleanup dell'effetto
+  // sopra non può revocare: durante il caricamento della nuova preview l'immagine
+  // vecchia deve restare valida (no-flicker).
+  useEffect(() => {
+    return () => {
+      if (prevObjUrlRef.current) {
+        URL.revokeObjectURL(prevObjUrlRef.current)
+        prevObjUrlRef.current = ""
+      }
+    }
+  }, [])
 
   return {
     imageError,

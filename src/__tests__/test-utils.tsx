@@ -42,7 +42,7 @@ export const MOCK_CTX: PosteriumCtx = {
   previewId: null,
   setPreviewId: stubFn,
   saveConfig: asyncStubFn,
-  removeMapping: stubFn,
+  removeMapping: asyncStubFn,
   mappingsMap: new Map(),
   goHome: stubFn,
   navigateToPoster: stubFn,

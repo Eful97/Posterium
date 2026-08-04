@@ -73,6 +73,7 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
     blurFade: bp.blurFade,
     blurDarkness: bp.blurDarkness,
     blurEnabled: bp.blurEnabled,
+    networkLogo: bp.networkLogo,
     ribbonSide: bp.ribbonSide,
   })
   const str = params.toString()
