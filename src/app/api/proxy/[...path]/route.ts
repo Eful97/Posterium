@@ -119,7 +119,7 @@ function safeLookup(hostname: string, options: LookupOptions, callback: (err: No
 const SAFE_AGENT = new Agent({ connect: { lookup: safeLookup } })
 
 /** Allowlist opzionale di domini proxy (POSTERIUM_PROXY_ALLOW_DOMAINS). */
-function isAllowedByAllowlist(url: URL): boolean {
+export function isAllowedByAllowlist(url: URL): boolean {
   const raw = process.env.POSTERIUM_PROXY_ALLOW_DOMAINS
   if (!raw) return true
   const domains = raw.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean)
