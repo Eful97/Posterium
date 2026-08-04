@@ -47,12 +47,23 @@ pinned: false
 - 🎨 **Personalizzazione Badge Completa** — 6 stili per badge genere/rating (*Shadow, Pill, Bar, Colored, Bordo, Vetro*) e 5 stili per badge trend (*Default, Bar, Colored, Pill, Nastro Netflix*). Colori accent adattivi al poster e testo libero personalizzato per singolo titolo.
 - 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch Italia, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA/Emmy (da Wikidata), saghe/franchise e registi cult.
 - 🍿 **Nastro Netflix Top 10** — Badge con l'iconico nastro rosso verticale allineato a sinistra e affiancamento automatico del logo della piattaforma. Variante dedicata per le classifiche anime (nastro esteso con etichetta *anime* sotto il numero).
+- 🎭 **Loghi Network Automatici** — Logo ufficiale della piattaforma sovrapposto automaticamente al poster: Netflix, HBO Max, Disney+, Prime Video, Apple TV+, Paramount+, Rai, Crunchyroll, Sky/NOW, Mediaset Infinity, Tubi e Pluto TV.
 - ⭐ **Rating Accurato** — Voto medio bilanciato ed imparziale IMDb + TMDB.
 - 🌀 **Sfocatura Sfondo Nativa (Sharp C++)** — Effetto blur sul fondo ultra-rapido generato in soli ~10-20ms.
 - 🔄 **Rotazione Poster 24h** — Cambia automaticamente locandina pulita ogni giorno tra i poster selezionati.
 - 🔐 **Profilo Cloud (UUID + Password)** — Salva e carica la tua configurazione su server con password protetta. Il tuo UUID personale si collega automaticamente a Stremio per avere i poster personalizzati ovunque.
 - ⚡ **Generatore Stremio Addon Proxy** — Incolla il link `manifest.json` di qualsiasi add-on Stremio (Cyberflix, Cinemeta, Streaming Catalogs, Torrentio, ecc.) per iniettare automaticamente i poster dinamici di Posterium nei cataloghi esterni! Supporta anche il parametro `?u=` per profili personalizzati.
 - 📡 **Integrazione Stremio Istantanea** — Generazione dinamica tramite manifest Stremio con caching e warmup automatico.
+
+---
+
+## 🎭 Loghi Network Supportati
+
+Posterium riconosce automaticamente rete/produttore dal catalogo (TMDB, Wikidata, studio badge) e sovrappone il logo ufficiale della piattaforma accanto al badge di ranking (nastro Netflix, extra) quando il titolo appartiene alla rete.
+
+Supportati: **Netflix**, **HBO Max**, **Disney+**, **Prime Video**, **Apple TV+**, **Paramount+**, **Rai**, **Crunchyroll**, **Sky** (include **NOW**, stesso servizio di streaming), **Mediaset Infinity**, **Tubi**, **Pluto TV**.
+
+> I loghi provengono da [Wikimedia Commons](https://commons.wikimedia.org/) e sono serviti da `public/networks/`. Il matching è case-insensitive e specifico: ad esempio *NOW* viene riconosciuto solo come parola intera (evitando falsi positivi tipo *Snowfall*), mentre *Sky* copre anche *Sky Atlantic* e *Sky Italia*.
 
 ---
 
@@ -259,7 +270,7 @@ Posterium usa [Vitest](https://vitest.dev/) per test unitari e [Playwright](http
 
 ### Test unitari (Vitest)
 
-Oltre 470 test su store, API, componenti React, badge SVG, poster-fit, profili e utilità.
+Oltre 480 test su store, API, componenti React, badge SVG, poster-fit, profili e utilità.
 
 ```bash
 # Esecuzione singola

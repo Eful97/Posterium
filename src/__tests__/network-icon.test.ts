@@ -38,9 +38,6 @@ describe("network-svgs", () => {
   })
 
   it("returns null for removed/unknown network", () => {
-    const mediaset = getNetworkSvgResult("Mediaset", 500)
-    expect(mediaset).toBeNull()
-
     const hulu = getNetworkSvgResult("Hulu", 500)
     expect(hulu).toBeNull()
 
@@ -49,6 +46,48 @@ describe("network-svgs", () => {
 
     const res = getNetworkSvgResult("Unknown Indie Studio", 500)
     expect(res).toBeNull()
+  })
+
+  it("matches Sky networks", () => {
+    expect(getNetworkSvgResult("Sky")?.networkKey).toBe("sky")
+    expect(getNetworkSvgResult("Sky Atlantic")?.networkKey).toBe("sky")
+    expect(getNetworkSvgResult("Sky Italia")?.networkKey).toBe("sky")
+  })
+
+  it("matches NOW as Sky (same service)", () => {
+    expect(getNetworkSvgResult("NOW")?.networkKey).toBe("sky")
+    expect(getNetworkSvgResult("Now TV")?.networkKey).toBe("sky")
+    // substring collisions must NOT match
+    expect(getNetworkSvgResult("Snowfall")).toBeNull()
+    expect(getNetworkSvgResult("Nowhere")).toBeNull()
+  })
+
+  it("matches Mediaset networks", () => {
+    expect(getNetworkSvgResult("Mediaset")?.networkKey).toBe("mediaset")
+    expect(getNetworkSvgResult("Mediaset Infinity")?.networkKey).toBe("mediaset")
+  })
+
+  it("matches Tubi and Pluto TV", () => {
+    expect(getNetworkSvgResult("Tubi")?.networkKey).toBe("tubi")
+    expect(getNetworkSvgResult("Pluto TV")?.networkKey).toBe("pluto")
+  })
+
+  it("renders PNG buffers for the imported network logos", async () => {
+    const cases: [string, string][] = [
+      ["Sky", "sky"],
+      ["NOW", "sky"], // NOW è un alias di Sky
+      ["Mediaset", "mediaset"],
+      ["Tubi", "tubi"],
+      ["Pluto TV", "pluto"],
+    ]
+    for (const [name, key] of cases) {
+      const res = await renderNetworkLogoBadge(name, 500)
+      expect(res, `logo for ${key}`).not.toBeNull()
+      expect(res!.networkKey).toBe(key)
+      expect(res!.png).toBeInstanceOf(Buffer)
+      expect(res!.w).toBeGreaterThan(0)
+      expect(res!.h).toBeGreaterThan(0)
+    }
   })
 
   it("renders network PNG buffer without throwing", async () => {

@@ -34,6 +34,10 @@ const NETWORK_FILES: Record<string, string> = {
   paramount: "Paramount_Plus.png",
   rai: "Logo_of_RAI_(2016).png",
   crunchyroll: "Crunchyroll_Logo.png",
+  sky: "Sky_Group_logo_2020.png",
+  mediaset: "Mediaset_Infinity_logo.png",
+  tubi: "Tubi logo.png",
+  pluto: "Pluto_TV_logo_2024.png",
 }
 
 // Target rendered widths (at pw=380) — height is proportional via sharp
@@ -46,6 +50,10 @@ const NETWORK_TARGET_W: Record<string, number> = {
   paramount: 72,
   rai: 44,
   crunchyroll: 28,
+  sky: 48,
+  mediaset: 64,
+  tubi: 90,
+  pluto: 64,
 }
 
 function getNetworkKey(networkName: string): string | null {
@@ -58,6 +66,11 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("paramount")) return "paramount"
   if (lower === "rai" || lower.startsWith("rai ")) return "rai"
   if (lower.includes("crunchyroll")) return "crunchyroll"
+  if (lower.includes("mediaset")) return "mediaset"
+  if (lower.includes("tubi")) return "tubi"
+  if (lower.includes("pluto")) return "pluto"
+  // NOW è lo stesso servizio di Sky (streaming Sky) → stesso logo, alias a sky
+  if (lower.includes("sky") || /\bnow\b/.test(lower)) return "sky"
   return null
 }
 
