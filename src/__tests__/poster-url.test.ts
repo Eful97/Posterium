@@ -261,7 +261,8 @@ describe("buildPreviewUrl", () => {
 
   it("includes rv= render version param", () => {
     const url = buildPreviewUrl(basePosterState, baseBadgeParams)
-    expect(url).toMatch(/rv=\d+/)
+    // RENDER_VERSION è auto-generato come hash esadecimale (scripts/write-render-version.mjs).
+    expect(url).toMatch(/rv=[0-9a-f]+/)
   })
 
   it("includes customBadge as extra param", () => {
