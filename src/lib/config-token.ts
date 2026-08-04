@@ -32,6 +32,7 @@ export const configTokenSchema = z.object({
   logoFitEnabled: z.boolean(),
   customBadge: z.string().optional(),
   ribbonSide: ribbonSideSchema.optional(),
+  watchlistBadge: z.boolean().optional(),
 })
 
 export type PosteriumUserConfig = z.infer<typeof configTokenSchema>

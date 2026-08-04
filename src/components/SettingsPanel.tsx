@@ -10,7 +10,7 @@ import { saveDefaults } from "@/lib/save-defaults"
 import { SliderRow } from "@/components/SliderRow"
 import { Toggle } from "@/components/Toggle"
 import { BadgeStyleSelector, SecretInput, MenuItem } from "@/components/ui"
-import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles, Tv, Flame } from "lucide-react"
+import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles, Tv, Flame, Bookmark, Link2, Unlink } from "lucide-react"
 
 interface Props {
   tmdbKeyInput: string
@@ -36,6 +36,45 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   const [tmdbKeyError, setTmdbKeyError] = useState<string | undefined>(undefined)
   const [mdblistKeyError, setMdblistKeyError] = useState<string | undefined>(undefined)
   const [cacheCount, setCacheCount] = useState<number | null>(null)
+  const [traktConnected, setTraktConnected] = useState<boolean | null>(null)
+  const [simklConnected, setSimklConnected] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const check = async () => {
+      if (!p.profileId) { setTraktConnected(false); setSimklConnected(false); return }
+      const [t, s] = await Promise.all([
+        fetch(`/api/trakt/status?profile=${p.profileId}`).then((r) => r.json()).catch(() => null),
+        fetch(`/api/simkl/status?profile=${p.profileId}`).then((r) => r.json()).catch(() => null),
+      ])
+      setTraktConnected(!!t?.connected)
+      setSimklConnected(!!s?.connected)
+    }
+    check()
+  }, [p.profileId])
+
+  const connectOAuth = (platform: "trakt" | "simkl") => {
+    if (!p.profileId) return
+    const win = window.open(`/api/${platform}/auth/start?profile=${p.profileId}`, "_blank", "width=560,height=720,popup=yes")
+    const checkStatus = async () => {
+      const res = await fetch(`/api/${platform}/status?profile=${p.profileId}`).then((r) => r.json()).catch(() => null)
+      if (res?.connected) {
+        clearInterval(interval)
+        if (win && !win.closed) win.close()
+        if (platform === "trakt") setTraktConnected(true); else setSimklConnected(true)
+      } else if (win?.closed) {
+        clearInterval(interval)
+      }
+    }
+    const interval = setInterval(checkStatus, 1500)
+    setTimeout(() => clearInterval(interval), 120_000)
+  }
+
+  const disconnectOAuth = async (platform: "trakt" | "simkl") => {
+    if (!p.profileId) return
+    await fetch(`/api/${platform}/disconnect?profile=${p.profileId}`, { method: "POST" }).catch(() => null)
+    if (platform === "trakt") setTraktConnected(false); else setSimklConnected(false)
+  }
+
 
   useEffect(() => {
     fetch("/api/cache/status").then(r => r.ok ? r.json() : null).then(data => {
@@ -150,6 +189,33 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
         <Toggle value={ed.defaultLogoFitEnabled} onChange={ed.setDefaultLogoFitEnabled} />
       </div>
       <hr className="border-zinc-700 my-1" />
+
+      <div className="pt-1">
+        <p className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1.5 px-1 pb-2"><Bookmark className="w-3 h-3 text-accent-orange" /> {t("ui.integrations")}</p>
+        {!p.profileId && <p className="text-[10px] text-zinc-500 px-1 pb-2">{t("ui.integrationsNoProfile")}</p>}
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            disabled={!p.profileId}
+            onClick={() => (traktConnected ? disconnectOAuth("trakt") : connectOAuth("trakt"))}
+            className={`w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium border transition-all disabled:opacity-40 ${
+              traktConnected ? "bg-green-500/10 text-green-300 border-green-500/25" : "bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10"
+            }`}
+          >
+            {traktConnected ? <><Unlink className="w-3 h-3" /> {t("ui.disconnectTrakt")}</> : <><Link2 className="w-3 h-3" /> {t("ui.connectTrakt")}</>}
+          </button>
+          <button
+            type="button"
+            disabled={!p.profileId}
+            onClick={() => (simklConnected ? disconnectOAuth("simkl") : connectOAuth("simkl"))}
+            className={`w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium border transition-all disabled:opacity-40 ${
+              simklConnected ? "bg-green-500/10 text-green-300 border-green-500/25" : "bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10"
+            }`}
+          >
+            {simklConnected ? <><Unlink className="w-3 h-3" /> {t("ui.disconnectSimkl")}</> : <><Link2 className="w-3 h-3" /> {t("ui.connectSimkl")}</>}
+          </button>
+        </div>
+      </div>
 
       <button type="button" onClick={() => { saveDefaults(p, ed); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {t("ui.saved")}</> : <><Save className="w-3 h-3" /> {t("ui.saveDefaults")}</>}</span></button>
       <hr className="border-zinc-700 my-1" />

@@ -261,9 +261,26 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 | `WARMUP_TOKEN` | ❌ | Token per endpoint `/api/warmup` (fallback a POSTERIUM_ADMIN_TOKEN) |
 | `POSTER_CDN_URL` / `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | URL CDN per generare link poster col CDN |
 | `WIKIDATA_TIMEOUT` | ❌ | Timeout ms per fetch Wikidata badge premi (default: 4000) |
+| `TRAKT_CLIENT_ID` | ❌ | Client ID dell'app Trakt (OAuth) per l'integrazione watchlist "Da guardare" |
+| `TRAKT_CLIENT_SECRET` | ❌ | Client Secret dell'app Trakt |
+| `SIMKL_CLIENT_ID` | ❌ | Client ID dell'app Simkl (OAuth) per l'integrazione watchlist "Da guardare" |
+| `SIMKL_CLIENT_SECRET` | ❌ | Client Secret dell'app Simkl |
 
 ---
-	
+
+## 🎬 Integrazioni Trakt / Simkl (badge "Da guardare")
+
+Collega il tuo account Trakt o Simkl al profilo e attiva il badge **"Da guardare"**: i poster dei titoli presenti nella tua watchlist mostrano un badge esclusivo dedicato.
+
+1. **Registra un'app** su [Trakt](https://trakt.tv/oauth/applications) e su [Simkl](https://simkl.com/settings/developer/) con `Redirect URI` = `https://<tuo-dominio>/api/<trakt|simkl>/auth/callback`.
+2. Imposta in `.env` le credenziali: `TRAKT_CLIENT_ID`, `TRAKT_CLIENT_SECRET`, `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET`.
+3. Nell'app, apri **Impostazioni → Integrazioni** e collega Trakt/Simkl (popup OAuth).
+4. Nell'editor poster, attiva **Badge Da guardare**. I token OAuth sono salvati nel profilo (cifrati se `PROFILE_ENCRYPTION_KEY` è configurata).
+
+Il badge funziona solo con le URL poster profilo (`?u={profileId}`): il server legge la watchlist (cache 10 min) e ri-renderizza automaticamente quando la watchlist cambia (la cache-key include la version della watchlist).
+
+---
+
 ## 🧪 Test
 
 Posterium usa [Vitest](https://vitest.dev/) per test unitari e [Playwright](https://playwright.dev/) per test E2E e visual regression.

@@ -3,6 +3,7 @@ import path from "node:path"
 import crypto from "node:crypto"
 import { DATA_DIR } from "@/lib/data-dir"
 import type { PosteriumUserConfig } from "@/lib/config-token"
+import type { OAuthTokens, WatchlistPlatform } from "@/lib/integrations"
 import type { Mapping } from "@/lib/types"
 import { createLogger } from "@/lib/logger"
 
@@ -47,12 +48,33 @@ function decryptValue(ciphertext: string, key: Buffer): string | null {
 
 export type { PosteriumUserConfig }
 
+// I token OAuth (access/refresh) sono segreti quanto le apiKeys: vengono
+// crittografati a riposo con la stessa chiave. I campi non sensibili
+// (expires_at, username) restano in chiaro.
+function encryptTokens(tokens: OAuthTokens, key: Buffer): OAuthTokens {
+  return {
+    ...tokens,
+    access_token: encryptValue(tokens.access_token, key),
+    refresh_token: encryptValue(tokens.refresh_token, key),
+  }
+}
+
+function decryptTokens(tokens: OAuthTokens, key: Buffer): OAuthTokens {
+  return {
+    ...tokens,
+    access_token: decryptValue(tokens.access_token, key) ?? tokens.access_token,
+    refresh_token: decryptValue(tokens.refresh_token, key) ?? tokens.refresh_token,
+  }
+}
+
 export interface ProfileData {
   config: PosteriumUserConfig
   apiKeys?: {
     tmdbKey?: string
     mdblistApiKey?: string
   }
+  traktTokens?: OAuthTokens
+  simklTokens?: OAuthTokens
   mappings?: Record<string, Mapping>
   passwordHash?: string
   salt?: string
@@ -253,6 +275,8 @@ export async function createOrUpdateProfile(
   const data: ProfileData = {
     config,
     apiKeys: storedApiKeys,
+    traktTokens: existing?.traktTokens,
+    simklTokens: existing?.simklTokens,
     mappings: mappings ?? existing?.mappings,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -292,20 +316,48 @@ export async function getFullProfileData(profileId: string): Promise<ProfileData
 
   // Decrypt apiKeys if encryption is configured
   const encKey = deriveEncryptionKey()
-  if (!encKey || !raw.apiKeys) return raw
+  if (!encKey) return raw
 
   // Copy to avoid mutating the internal cache reference
   const result: ProfileData = { ...raw }
-  result.apiKeys = { ...raw.apiKeys }
-  if (result.apiKeys.tmdbKey) {
-    const d = decryptValue(result.apiKeys.tmdbKey, encKey)
-    if (d) result.apiKeys.tmdbKey = d
+  if (raw.apiKeys) {
+    result.apiKeys = { ...raw.apiKeys }
+    if (result.apiKeys.tmdbKey) {
+      const d = decryptValue(result.apiKeys.tmdbKey, encKey)
+      if (d) result.apiKeys.tmdbKey = d
+    }
+    if (result.apiKeys.mdblistApiKey) {
+      const d = decryptValue(result.apiKeys.mdblistApiKey, encKey)
+      if (d) result.apiKeys.mdblistApiKey = d
+    }
   }
-  if (result.apiKeys.mdblistApiKey) {
-    const d = decryptValue(result.apiKeys.mdblistApiKey, encKey)
-    if (d) result.apiKeys.mdblistApiKey = d
-  }
+  if (result.traktTokens) result.traktTokens = decryptTokens(result.traktTokens, encKey)
+  if (result.simklTokens) result.simklTokens = decryptTokens(result.simklTokens, encKey)
   return result
+}
+
+/**
+ * Aggiorna (o rimuove) i token OAuth di una piattaforma per un profilo.
+ * Usato dal callback OAuth. I token sono crittografati a riposo quando
+ * PROFILE_ENCRYPTION_KEY è configurata.
+ */
+export async function setProfileTokens(profileId: string, platform: WatchlistPlatform, tokens: OAuthTokens | null): Promise<void> {
+  const existing = await getFullProfile(profileId)
+  if (!existing) throw new Error("Profile not found")
+
+  const encKey = deriveEncryptionKey()
+  const stored = tokens ? (encKey ? encryptTokens(tokens, encKey) : tokens) : undefined
+  const data: ProfileData = {
+    ...existing,
+    [platform === "trakt" ? "traktTokens" : "simklTokens"]: stored,
+    updatedAt: new Date().toISOString(),
+  }
+
+  if (useKv) {
+    await kvSetProfile(profileId, data)
+  } else {
+    await fileSetProfile(profileId, data)
+  }
 }
 
 export async function verifyProfilePassword(profileId: string, password: string): Promise<boolean> {

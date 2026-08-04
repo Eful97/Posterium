@@ -10,7 +10,7 @@ import {
   isValidHex,
   PosterComposite,
 } from "./poster-render-helpers"
-import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "./svg-badge"
+import { renderGenreBadge, renderRankingBadge, renderExtraBadge, renderWatchlistBadge } from "./svg-badge"
 import { renderFirstMatchingNetworkLogoBadge } from "./network-svgs"
 import { computeLogoLayout } from "./logo-layout"
 import { computeTopBadge, isNetworkStudio, type BadgeInput } from "./poster-badge"
@@ -47,6 +47,8 @@ export interface GenerationInput {
   // Badge flags
   badgesEnabled: boolean
   rankingEnabled: boolean
+  /** Badge "Da guardare": l'utente connesso ha il titolo nella watchlist Trakt/Simkl. */
+  watchlistBadge: boolean
   genreName: string | null
   voteAverage: number | null
   badgeStyle: BadgeStyle
@@ -115,7 +117,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     posterBuf, logoFetch, backdropFetch,
     backdropScale, backdropOffsetX, backdropOffsetY,
     blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
-    badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
+    badgesEnabled, rankingEnabled, watchlistBadge, genreName, voteAverage, badgeStyle,
     rankingBadgeStyle, topLight, targetCenter, ribbonSide,
     logoScale, logoOffsetX, logoOffsetY,
     mediaType, finalRank, animeRankResult,
@@ -226,8 +228,10 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   const studioBadge = computed.studioBadge
   const isNetStudio = isNetworkStudio(studioBadge)
 
-  let topBadge: { type: "extra"; label: string } | { type: "rank"; rank: number; label: string } | null = null
-  if (rankingEnabled) {
+  let topBadge: { type: "extra"; label: string } | { type: "rank"; rank: number; label: string } | { type: "watchlist"; label: string } | null = null
+  if (watchlistBadge) {
+    topBadge = { type: "watchlist" as const, label: t("badge.watchlist") }
+  } else if (rankingEnabled) {
     if (queryExtra) {
       topBadge = { type: "extra" as const, label: queryExtra }
     } else if (computed.badge) {
@@ -267,13 +271,13 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   // -----------------------------------------------------------------------
   // Anime ranking: il badge anime mostra il numero grande con "anime" sotto.
   // Rilevato quando il topBadge è un rank derivato da animeRankResult.
-  const isAnimeRank = topBadge?.type === "rank" && animeRankResult !== null && topBadge.rank === animeRankResult
+  const isAnimeRank = topBadge !== null && topBadge.type === "rank" && animeRankResult !== null && topBadge.rank === animeRankResult
 
   const genreBadgeKey = (badgesEnabled && genreName && voteAverage && voteAverage > 0)
     ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentColorGenre, topLight)
     : null
   const rankBadgeKey = topBadge
-    ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
+    ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : topBadge.type === "watchlist" ? `wl:${topBadge.label}` : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
     : null
 
   const [genreBadgeResult, rankBadgeResult] = await Promise.all([
@@ -298,6 +302,10 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
               let p: Promise<{ png: Buffer; w: number; h: number; isRank?: boolean } | null>
               if (topBadge!.type === "extra") {
                 p = renderExtraBadge(topBadge!.label, STD_W, topLight, rankingBadgeStyle, accentColorRank)
+                  .then((r) => { const v = { ...r, isRank: false }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
+                  .catch(() => null)
+              } else if (topBadge!.type === "watchlist") {
+                p = renderWatchlistBadge(topBadge!.label, STD_W)
                   .then((r) => { const v = { ...r, isRank: false }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                   .catch(() => null)
               } else {

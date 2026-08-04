@@ -286,3 +286,76 @@ test.describe("poster API — visual regression", () => {
     await expect(poster).toHaveScreenshot("poster-full-feature.png", { maxDiffPixelRatio: 0.10 })
   })
 })
+
+// ─── WATCHLIST BADGE (Trakt/Simkl) ────────────────────────────
+// Crea un profilo con `watchlistBadge` attivo, associa i token Trakt via
+// callback OAuth (mock), poi verifica che il badge compaia SOLO sui titoli
+// presenti nella watchlist del mock (Avatar/19995).
+
+const PROFILE_CONFIG = {
+  globalBadges: true,
+  rankingBadges: false,
+  badgeStyle: "shadow",
+  rankingBadgeStyle: "default",
+  blurEnabled: false,
+  blurIntensity: 10,
+  blurFade: 0,
+  blurDarkness: 0,
+  gradientHeight: 25,
+  networkLogo: false,
+  autoRotateClean: false,
+  logoFitEnabled: false,
+  ribbonSide: "left",
+  watchlistBadge: true,
+} as const
+
+async function createWatchlistProfile(request: import("@playwright/test").APIRequestContext): Promise<string> {
+  const res = await request.post("/api/profile", { data: { config: PROFILE_CONFIG, password: "e2e-watchlist-pass" } })
+  expect(res.ok()).toBeTruthy()
+  const body = (await res.json()) as { profileId: string }
+  const cb = await request.get(`/api/trakt/auth/callback?code=mock-code&state=${body.profileId}`)
+  expect(cb.status()).toBeLessThan(500)
+  return body.profileId
+}
+
+test.describe("watchlist badge (Trakt/Simkl)", () => {
+  // URL con TUTTI i parametri di resa espliciti: l'unica differenza tra
+  // with/without profilo è il badge watchlist (niente interferenze dai default).
+  function fullPosterUrl(id: number): string {
+    const params = new URLSearchParams({
+      genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0",
+      bs: "shadow", rs: "default", be: "1", gradHeight: "25", blur: "10", bf: "0", bd: "0",
+      netLogo: "0", side: "left", tl: "0", poster: POSTER_PATH, preview: "1",
+    })
+    return `/api/poster/movie/${id}?${params.toString()}`
+  }
+
+  test("appears only for titles in watchlist — functional", async ({ request }) => {
+    const profileId = await createWatchlistProfile(request)
+
+    const avatarWith = await request.get(`${fullPosterUrl(19995)}&u=${profileId}`)
+    const avatarWithout = await request.get(fullPosterUrl(19995))
+    const notInWlWith = await request.get(`${fullPosterUrl(88888)}&u=${profileId}`)
+    const notInWlWithout = await request.get(fullPosterUrl(88888))
+
+    expect(avatarWith.ok()).toBeTruthy()
+    expect(notInWlWith.ok()).toBeTruthy()
+
+    const wBuf = await avatarWith.body()
+    const w0Buf = await avatarWithout.body()
+    // Avatar è nella watchlist del mock → il badge cambia l'output
+    expect(wBuf.equals(w0Buf)).toBeFalsy()
+
+    const nBuf = await notInWlWith.body()
+    const n0Buf = await notInWlWithout.body()
+    // 88888 NON è nella watchlist → output identico con/senza profilo
+    expect(nBuf.equals(n0Buf)).toBeTruthy()
+  })
+
+  test("watchlist badge — screenshot", async ({ page, request }) => {
+    const profileId = await createWatchlistProfile(request)
+    const base = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "0", bs: "shadow" })
+    const poster = await renderPoster(page, `${base}&u=${profileId}`)
+    await expect(poster).toHaveScreenshot("poster-watchlist.png", { maxDiffPixelRatio: 0.10 })
+  })
+})

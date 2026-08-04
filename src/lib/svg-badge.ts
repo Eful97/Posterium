@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 import { textColorForBg } from "./accent-color"
-import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg } from "./badge-svg-shared"
+import { estimateTextWidth, escSvg, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg } from "./badge-svg-shared"
 import type { BadgeStyle, RankingBadgeStyle, ExtraBadgeStyle } from "./badge-styles"
 
 const FONT_REGULAR = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "Inter-Regular.ttf")
@@ -349,4 +349,48 @@ export async function renderExtraBadge(
   const r = await buildExtraBadgeSVG(label, pw, topLight, badgeStyle, accentColor)
   if (r) return r
   throw new Error(`SVG extra badge failed: ${label}`)
+}
+
+// --- Watchlist badge ("Da guardare") ---
+// Design esclusivo dedicato a Trakt/Simkl (grafica in fase di definizione).
+// Per ora: pill con gradiente accent → violetto Simkl + icona segnalibro.
+// Renderer isolato: la pipeline lo usa solo quando l'utente ha il titolo in
+// watchlist e il toggle "watchlistBadge" è attivo.
+
+export async function renderWatchlistBadge(
+  label: string,
+  pw: number,
+): Promise<{ png: Buffer; w: number; h: number }> {
+  const maxBadgeW = pw - 20
+  let finalFs = 23 * pw / 380
+  const iconW = Math.round(finalFs * 1.3)
+  const projectedW = estimateTextWidth(label, finalFs) + iconW + Math.round(finalFs * 2) + Math.round(finalFs * 0.6) * 2
+  if (projectedW > maxBadgeW) {
+    finalFs = Math.max(maxBadgeW / projectedW * finalFs, 10)
+  }
+
+  const fs = Math.round(finalFs)
+  const padX = Math.round(fs * 0.9)
+  const textW = Math.ceil(estimateTextWidth(label, fs))
+  const w = textW + iconW + padX * 2
+  const svgH = Math.max(Math.round(fs * 1.8), 24)
+  const iconY = Math.round((svgH - fs) / 2)
+  const textX = padX + iconW + Math.round(fs * 0.5)
+  const gid = "wlgrad"
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${svgH}">
+  <defs>
+    <linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e85d2a"/>
+      <stop offset="100%" stop-color="#9b59b6"/>
+    </linearGradient>
+  </defs>
+  <rect x="0.5" y="0.5" width="${w - 1}" height="${svgH - 1}" rx="${svgH / 2}" fill="url(#${gid})"/>
+  <rect x="0.5" y="0.5" width="${w - 1}" height="${svgH - 1}" rx="${svgH / 2}" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1"/>
+  <svg x="${padX}" y="${iconY}" width="${iconW}" height="${fs}" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+  <text x="${textX}" y="${Math.round(svgH / 2)}" font-family="Inter" font-weight="700" font-size="${fs}" fill="#ffffff" text-anchor="start" dominant-baseline="central">${escSvg(label)}</text>
+</svg>`
+
+  const png = await renderSVG(wrapSvg(svg), w)
+  return { png, w, h: svgH }
 }
