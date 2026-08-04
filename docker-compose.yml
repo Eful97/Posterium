@@ -21,6 +21,11 @@ services:
       # ── Opzionali — Admin & Sicurezza ──
       - POSTERIUM_ADMIN_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}
       - WARMUP_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}
+      # Firma dei config token URL (CONFIG_HMAC_SECRET) e cifratura a riposo di
+      # apiKeys/token OAuth dei profili (PROFILE_ENCRYPTION_KEY). Senza queste
+      # variabili i token non sono firmati e i segreti viaggiano in chiaro su disco.
+      - CONFIG_HMAC_SECRET=${CONFIG_HMAC_SECRET:-}
+      - PROFILE_ENCRYPTION_KEY=${PROFILE_ENCRYPTION_KEY:-}
 
       # ── Opzionali — Persistenza distribuita ──
       - KV_REST_API_URL=${KV_REST_API_URL:-}

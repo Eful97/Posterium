@@ -7,6 +7,7 @@ import {
   deleteProfile,
   generateProfileId,
   verifyProfilePassword,
+  type ProfileData,
 } from "@/lib/profile-store"
 import { type PosteriumUserConfig } from "@/lib/config-token"
 import { requireAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
@@ -52,16 +53,22 @@ export async function POST(req: NextRequest) {
       if (!existing) {
         return Response.json({ error: "Profile not found" }, { status: 404 })
       }
+      // Le apiKeys (e i token OAuth) sono credenziali: vengono restituite SOLO
+      // dopo la verifica della password. Un profilo legacy senza password resta
+      // pubblico per config/mappings (come GET /api/profile), ma non espone le
+      // chiavi — l'UUID compare nelle URL dei poster e non è un segreto.
+      let authorizedApiKeys: ProfileData["apiKeys"] = {}
       if (existing.passwordHash && existing.salt) {
         const valid = await verifyProfilePassword(profileId, password)
         if (!valid) {
           return Response.json({ error: "Invalid password" }, { status: 401 })
         }
+        authorizedApiKeys = existing.apiKeys || {}
       }
       return Response.json({
         profileId,
         config: existing.config,
-        apiKeys: existing.apiKeys || {},
+        apiKeys: authorizedApiKeys,
         mappings: existing.mappings || {},
       })
     }

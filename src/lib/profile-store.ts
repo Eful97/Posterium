@@ -13,6 +13,10 @@ const log = createLogger("profile-store")
 
 const ENCRYPTION_KEY_SECRET = process.env.PROFILE_ENCRYPTION_KEY
 
+if (process.env.NODE_ENV === "production" && !ENCRYPTION_KEY_SECRET) {
+  log.warn("PROFILE_ENCRYPTION_KEY non impostata — apiKeys e token OAuth dei profili verranno salvati in chiaro su disco/KV. Imposta la variabile per cifrarli a riposo (AES-256-GCM).")
+}
+
 function deriveEncryptionKey(): Buffer | null {
   if (!ENCRYPTION_KEY_SECRET) return null
   return crypto.createHash("sha256").update(ENCRYPTION_KEY_SECRET).digest()
@@ -136,6 +140,12 @@ let writeQueue = Promise.resolve()
 let memCache: Record<string, ProfileData> | null = null
 let memCacheTime = 0
 
+// Come store.ts: lo stat del file a ogni lettura è costoso su storage remoti
+// (HF Spaces FUSE). Stat al massimo ogni READ_STAT_TTL_MS; 0 nei test per
+// mantenere il determinismo.
+const READ_STAT_TTL_MS = process.env.NODE_ENV === "test" ? 0 : 500
+let lastStatAt = 0
+
 /** Consecutive write failures — resets to 0 on success */
 let writeFailures = 0
 
@@ -184,6 +194,9 @@ async function loadProfilesFromDisk(): Promise<Record<string, ProfileData>> {
 }
 
 async function readProfilesFromMem(): Promise<Record<string, ProfileData>> {
+  const now = Date.now()
+  if (memCache && now - lastStatAt < READ_STAT_TTL_MS) return memCache
+  lastStatAt = now
   try {
     const stat = await fsp.stat(PROFILES_FILE)
     if (memCache && stat.mtimeMs <= memCacheTime) return memCache
@@ -216,7 +229,7 @@ async function fileGetProfile(uuid: string): Promise<ProfileData | null> {
 
 async function fileSetProfile(uuid: string, data: ProfileData): Promise<void> {
   return enqueueWrite(async () => {
-    const all = await loadProfilesFromDisk()
+    const all = await readProfilesFromMem()
     all[uuid] = data
     await persistProfiles(all)
   })
@@ -224,7 +237,7 @@ async function fileSetProfile(uuid: string, data: ProfileData): Promise<void> {
 
 async function fileDeleteProfile(uuid: string): Promise<void> {
   return enqueueWrite(async () => {
-    const data = await loadProfilesFromDisk()
+    const data = await readProfilesFromMem()
     delete data[uuid]
     await persistProfiles(data)
   })

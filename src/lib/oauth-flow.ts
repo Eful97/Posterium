@@ -7,6 +7,7 @@
 import type { NextRequest } from "next/server"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { setProfileTokens } from "@/lib/profile-store"
+import { isSameOrigin, originMismatchResponse } from "@/lib/auth"
 import type { OAuthTokens, WatchlistPlatform } from "@/lib/integrations"
 
 export interface OAuthPlatformConfig {
@@ -68,6 +69,11 @@ export async function handleOAuthStatus(req: NextRequest, cfg: OAuthPlatformConf
 
 export async function handleOAuthDisconnect(req: NextRequest, cfg: OAuthPlatformConfig): Promise<Response> {
   if (req.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405 })
+  // CSRF guard: una richiesta cross-origin da browser (Origin header presente e
+  // diverso dall'host) non deve poter scollegare la watchlist di un profilo.
+  // Il profile UUID è esposto nelle URL dei poster, quindi non è un segreto.
+  // I client non-browser (curl, tooling) non inviano Origin e passano.
+  if (!isSameOrigin(req)) return originMismatchResponse()
   const profile = req.nextUrl.searchParams.get("profile")
   if (!profile || !UUID_RE.test(profile)) {
     return Response.json({ error: "Invalid 'profile' query parameter" }, { status: 400 })
