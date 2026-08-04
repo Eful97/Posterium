@@ -672,13 +672,13 @@ input[type="range"]::-moz-range-thumb {
   width: max-content;
 }
 
-.floating-group button,
-.floating-group a {
+.floating-group > button,
+.floating-group > a {
   position: relative;
 }
 
-.floating-group button:hover::after,
-.floating-group a:hover::after {
+.floating-group > button:hover::after,
+.floating-group > a:hover::after {
   content: attr(aria-label);
   position: absolute;
   top: calc(100% + 6px);
