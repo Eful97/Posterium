@@ -47,7 +47,6 @@ import { computeTopBadge } from "@/lib/poster-badge"
 import { resolveImdbToTmdb } from "@/lib/imdb-resolver"
 import { decodeConfig } from "@/lib/config-token"
 import { getFullProfileData } from "@/lib/profile-store"
-import { getProfileWatchlist } from "@/lib/watchlist"
 import { createLogger } from "@/lib/logger"
 import { resolvePosterRenderConfig } from "@/lib/poster-config"
 import { selectBestLogo, logoBestLogoFallbackReason } from "@/lib/logo-selection"
@@ -114,18 +113,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
   }
 
-  // Badge "Da guardare": se il profilo ha Trakt/Simkl connesso e il toggle è
-  // attivo, verifichiamo (con cache TTL) se il titolo è nella watchlist.
-  // watchlistVersion entra nella cache-key → il badge appare/sparisce quando
-  // l'utente modifica la watchlist, senza bump manuali.
-  let watchlistBadge = false
-  let watchlistVersion = ""
-  if (profileId && configOverride?.watchlistBadge) {
-    const snapshot = await getProfileWatchlist(profileId)
-    watchlistVersion = snapshot.version
-    watchlistBadge = snapshot.keys.has(`${mediaType}:${tmdbId}`)
-  }
-
   // 2. Cache key
   const sdHash = hashKey(JSON.stringify(sd))
   const cacheParams = normalizePosterCacheParams(req.nextUrl.searchParams)
@@ -142,9 +129,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const mapVersion = mapping?.updatedAt ? `:mu${mapping.updatedAt}` : ""
   const configHash = configOverride ? hashKey(JSON.stringify(configOverride)) : ""
   const userKey = profileId ? `:u${profileId}` : ""
-  const watchlistKey = watchlistBadge || watchlistVersion ? `:wv${watchlistVersion || "x"}` : ""
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}${userKey}${watchlistKey}`
-  const etagBase = hashKey(`v${RENDER_VERSION}:${type}:${id}:sd${sdHash}:${cacheParams.toString()}${configHash ? `:${configHash}` : ""}${watchlistKey}`)
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}${userKey}`
+  const etagBase = hashKey(`v${RENDER_VERSION}:${type}:${id}:sd${sdHash}:${cacheParams.toString()}${configHash ? `:${configHash}` : ""}`)
   const currentMappingVersion = mappingVersionParam(mapping)
   const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams, {
     hasMapping: !!mapping,
@@ -599,7 +585,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       posterBuf, logoFetch, backdropFetch,
       backdropScale, backdropOffsetX, backdropOffsetY,
       blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
-      badgesEnabled, rankingEnabled, watchlistBadge, genreName, voteAverage, badgeStyle,
+      badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
       rankingBadgeStyle, topLight, targetCenter, ribbonSide,
       logoScale, logoOffsetX, logoOffsetY,
       mediaType: mediaType as "movie" | "tv",

@@ -25,8 +25,6 @@ export interface PosterEditorCtx {
   setRankingBadgeStyle: (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => void
   customBadge: string | null
   setCustomBadge: (v: string | null | ((prev: string | null) => string | null)) => void
-  watchlistBadge: boolean
-  setWatchlistBadge: (v: boolean | ((prev: boolean) => boolean)) => void
   networkLogo: boolean
   setNetworkLogo: (v: boolean | ((prev: boolean) => boolean)) => void
   ribbonSide: "left" | "right"
@@ -289,9 +287,6 @@ export function PosterEditorProvider({
   // ---- Custom badge ----
   const [customBadge, setCustomBadge] = useState<string | null>(null)
 
-  // ---- Badge watchlist (Trakt/Simkl) ----
-  const [watchlistBadge, setWatchlistBadge] = useState(false)
-
   const editorCtx = useMemo<PosterEditorCtx>(
     () => ({
       // Badges
@@ -305,8 +300,6 @@ export function PosterEditorProvider({
       setRankingBadgeStyle,
       customBadge,
       setCustomBadge,
-      watchlistBadge,
-      setWatchlistBadge,
       networkLogo,
       setNetworkLogo,
       ribbonSide,
@@ -398,7 +391,6 @@ export function PosterEditorProvider({
       badgeStyle, setBadgeStyle,
       rankingBadgeStyle, setRankingBadgeStyle,
       customBadge, setCustomBadge,
-      watchlistBadge, setWatchlistBadge,
       networkLogo, setNetworkLogo,
       ribbonSide, setRibbonSide,
 

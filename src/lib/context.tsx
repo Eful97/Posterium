@@ -246,7 +246,6 @@ export function usePosterium(): PosteriumCtx {
     badgeStyle, setBadgeStyle,
     rankingBadgeStyle, setRankingBadgeStyle,
     customBadge, setCustomBadge,
-    watchlistBadge,
     networkLogo, setNetworkLogo,
     ribbonSide,
     // Defaults
@@ -445,7 +444,6 @@ export function usePosterium(): PosteriumCtx {
       blurEnabled, blurIntensity, blurFade, blurDarkness,
       gradientHeight, networkLogo, ribbonSide, autoRotateClean, logoFitEnabled: defaultLogoFitEnabled,
       customBadge: customBadge || undefined,
-      watchlistBadge: watchlistBadge || undefined,
     }
     // `profilePassword` è nella chiave di dedup: è una dependency dell'effetto ma non
     // parte di `config`, quindi senza include un cambio password durante il debounce
@@ -475,7 +473,7 @@ export function usePosterium(): PosteriumCtx {
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [profileId, profilePassword, globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, watchlistBadge, tmdbKey, mdblistApiKey])
+  }, [profileId, profilePassword, globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, tmdbKey, mdblistApiKey])
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -488,14 +486,14 @@ export function usePosterium(): PosteriumCtx {
         logoScale, logoOffsetX, logoOffsetY,
         backdropScale, backdropOffsetX, backdropOffsetY,
         metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
-        topEdgeColor, accentColor, lang, tmdbKey, profileId,
+        topEdgeColor, accentColor, lang, tmdbKey,
       },
       { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide }
     )
     setPreviewUrl(url)
   }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, selectedBackdrop,
     logoScale, logoOffsetX, logoOffsetY, backdropScale, backdropOffsetX, backdropOffsetY,
-    metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, accentColor, lang, tmdbKey, profileId,
+    metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, accentColor, lang, tmdbKey,
     globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide])
 
   useEffect(() => {
@@ -759,7 +757,6 @@ export function usePosterium(): PosteriumCtx {
       autoRotateClean,
       logoFitEnabled: defaultLogoFitEnabled,
       customBadge: customBadge || undefined,
-      watchlistBadge: watchlistBadge || undefined,
     }
     try {
       const res = await fetch("/api/profile", {
@@ -780,7 +777,7 @@ export function usePosterium(): PosteriumCtx {
       console.error("[posterium] Failed to save profile:", e)
       import("sonner").then(({ toast }) => toast.error("Errore nel salvare il profilo"))
     }
-  }, [globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, watchlistBadge, profileId, profilePassword, safeSetItem])
+  }, [globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, profileId, profilePassword, safeSetItem])
 
   const posterActivePath = navigation.previewPoster?.file_path
 

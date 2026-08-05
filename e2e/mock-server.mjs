@@ -173,29 +173,6 @@ const server = http.createServer(async (req, res) => {
       })
     }
 
-    // Trakt (TRAKT_API_URL → mock): OAuth token + watchlist.
-    // Avatar (19995) è nella watchlist → il badge "Da guardare" compare su movie/19995.
-    if (method === "POST" && pathname === "/trakt/oauth/token") {
-      return json(res, 200, { access_token: "mock-trakt-access", refresh_token: "mock-trakt-refresh", expires_in: 7776000 })
-    }
-    if (method === "GET" && pathname === "/trakt/sync/watchlist/movies") {
-      return json(res, 200, [{ ids: { tmdb: 19995 } }])
-    }
-    if (method === "GET" && pathname === "/trakt/sync/watchlist/shows") {
-      return json(res, 200, [])
-    }
-
-    // Simkl (SIMKL_API_URL → mock)
-    if (method === "POST" && pathname === "/simkl/oauth/token") {
-      return json(res, 200, { access_token: "mock-simkl-access", refresh_token: "mock-simkl-refresh", expires_in: 31536000 })
-    }
-    if (method === "GET" && pathname === "/simkl/sync/watchlist/movies") {
-      return json(res, 200, [{ ids: { tmdb: 19995 } }])
-    }
-    if (method === "GET" && pathname === "/simkl/sync/watchlist/shows") {
-      return json(res, 200, [])
-    }
-
     // Fallback esplicito per chiamate non mockate
     return json(res, 501, { error: `Mock server: endpoint non mockato (${method} ${pathname})` })
   } catch (err) {

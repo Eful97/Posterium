@@ -67,10 +67,9 @@ Motion should stay subtle: transform/opacity only, usually 150-300ms. The modern
 - Genre/Rating badges: `textColorForBg()` for adaptive text
 - Badge styles: `shadow`, `pill`, `bar`, `colored`
 - Ranking styles: `default`, `bar`, `colored`
-- Watchlist badge ("Da guardare"): exclusive renderer `renderWatchlistBadge` driven by Trakt/Simkl OAuth watchlists, per-user via `?u={profileId}` (design placeholder: accent→violet gradient pill + bookmark icon)
 - Server-side SVG rendering with Resvg
 - `CHAR_WIDTH = 0.62` for text measurement
-- `RENDER_VERSION` is auto-generated (hash of the render files) by `scripts/write-render-version.mjs` — no manual bump needed
+- `RENDER_VERSION` must be bumped when badge rendering changes
 
 ## Component Architecture
 

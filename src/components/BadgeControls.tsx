@@ -53,11 +53,6 @@ export function BadgeControls() {
       </div>
 
       <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-zinc-400 flex items-center gap-1.5">{t("ui.watchlistBadge")}</span>
-        <Toggle value={ed.watchlistBadge} onChange={(v) => ed.setWatchlistBadge(v)} />
-      </div>
-
-      <div className="flex items-center justify-between px-1">
         <span className="text-xs text-zinc-500">{t("ui.customBadge")}</span>
         {ed.editingValue === "customBadge" ? (
           <input autoFocus value={ed.editText} onChange={(e) => ed.setEditText(e.target.value)}

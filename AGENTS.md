@@ -8,7 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
-App version: `0.15.2` — RENDER_VERSION: auto (hash dei file di resa) — rv: auto
+App version: `0.15.2` — RENDER_VERSION: `98` — rv: `98`
 
 ### Badge Genere/Rating (GenreRatingBadges)
 > **WYSIWYG**: il preview client usa `<img src={previewUrl}>` che carica `/api/poster/{type}/{id}` — lo stesso endpoint usato da Stremio. Non c'è duplicazione: preview = poster finale.
@@ -46,18 +46,6 @@ App version: `0.15.2` — RENDER_VERSION: auto (hash dei file di resa) — rv: a
 | Stabilizzazione testo | `textLength` + `lengthAdjust="spacingAndGlyphs"` sul `<text>` per evitare differenze metriche tra Windows/local e Linux/HF |
 | Overflow protection | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
 | Posizione | Composito a `top: 0, left: round((pw - w) / 2)` (default/bar/pill/colored); nastro Netflix a `left: 0` (Nuvio) o `left: STD_W - w` specchiato (Stremio, `side=right`); logo network segue a destra del nastro (`w + 10`) o a sinistra (`STD_W - w - 10 - logoW`) |
-
-### Badge Watchlist "Da guardare" (Trakt/Simkl)
-| Parametro | Server |
-|---|---|
-| Renderer | `svg-badge.ts:renderWatchlistBadge` (design esclusivo dedicato alle due piattaforme; placeholder attuale = pill con gradiente accent→viola + icona segnalibro) |
-| Trigger | Solo con URL profilo `?u={profileId}`: il profilo deve avere `watchlistBadge: true` nel config E Trakt/Simkl connesso E il titolo presente nella watchlist |
-| Font size base | `23 * pw / 380` (come extra badge) |
-| Cache watchlist | `watchlist.ts` TTL 10 min; la `version` (hash chiavi) entra nella cache-key poster (`:wv{version}`) → il badge appare/sparisce da solo quando cambia la watchlist |
-| Token OAuth | Salvati nel profilo (`profile-store.ts` `traktTokens`/`simklTokens`), cifrati se `PROFILE_ENCRYPTION_KEY` è impostata; refresh automatico se scaduti |
-| Flusso OAuth | `/api/{trakt|simkl}/auth/start` → authorize → `auth/callback` (redirect assoluto da `getOriginFromRequest`) → `/api/{trakt|simkl}/status` / `disconnect` |
-| Traduzione | `badge.watchlist` nelle 5 lingue |
-| Test | `e2e/posterium-visual.spec.ts` "watchlist badge" (funzionale + screenshot `poster-watchlist.png`) + `src/__tests__/integrations.test.ts` |
 
 ### Gradiente fondo poster
 | Parametro | Server (`badges.ts:bottomGradientSVG`) |
@@ -104,13 +92,9 @@ App version: `0.15.2` — RENDER_VERSION: auto (hash dei file di resa) — rv: a
 - `src/lib/context.tsx` — stato, URL builder, localStorage
 - `src/lib/poster-url.ts` — `buildPreviewUrl()`, `buildUrlPattern()` (parametri client → URL server)
 - `src/lib/badges.ts` — server-side SVG (bottomGradientSVG)
-- `src/lib/svg-badge.ts` — server-side SVG raw badges (renderGenreBadge, renderRankingBadge, renderExtraBadge, renderWatchlistBadge) + Resvg rendering
+- `src/lib/svg-badge.ts` — server-side SVG raw badges (renderGenreBadge, renderRankingBadge, renderExtraBadge) + Resvg rendering
 - `src/lib/badge-priority.ts` — logica priorità badge (condivisa)
 - `src/lib/logo-layout.ts` — geometria condivisa logo preview/server
-- `src/lib/trakt.ts` / `src/lib/simkl.ts` — client OAuth + watchlist
-- `src/lib/watchlist.ts` — orchestratore watchlist (cache + version per la cache-key poster)
-- `src/lib/oauth-flow.ts` / `src/lib/oauth-platforms.ts` — factory route OAuth
-- `src/app/api/{trakt|simkl}/...` — route OAuth (start/callback/status/disconnect)
 - `src/app/api/poster/[type]/[id]/route.ts` — composizione poster finale (preview + Stremio usano la stessa route)
 - `e2e/posterium-visual.spec.ts` — test di regressione visiva (screenshot) per poster e interfaccia
 - `e2e/posterium-smoke.spec.ts` — smoke test funzionali
@@ -125,11 +109,11 @@ App version: `0.15.2` — RENDER_VERSION: auto (hash dei file di resa) — rv: a
 | Suite completa | `npx playwright test e2e/` (include smoke test) |
 | Dipendenze esterne | Nessuna: i test usano il mock server locale (`e2e/mock-server.mjs`), avviato da `playwright.config.ts`, che serve TMDB/JustWatch/Wikidata/IMDb con dati deterministici. `TMDB_API_KEY` non serve più. Attenzione: serve una porta dedicata e un `distDir` separato (`.next-e2e`), quindi puoi eseguire i test anche con `npm run dev` attivo. |
 | Snapshot intenzionali | Se la modifica ALTERA INTENZIONALMENTE l'aspetto, aggiorna con `npx playwright test --update-snapshots` e committa i nuovi `.png` |
-| RENDER_VERSION | AUTO-GENERATO da `scripts/write-render-version.mjs`: hash deterministico (CRLF-safe) dei file di resa (badge, blur, logo, font, route poster). NON si modifica a mano. Quando cambia un file di resa l'rv cambia da sola → cache server e URL Stremio si invalidano senza bump manuali. I test visivi confermano la coerenza della modifica. |
+| RENDER_VERSION | Ogni modifica ai parametri di resa (font, padding, gap, colori, gradienti, blur, logo) DEVE incrementare `RENDER_VERSION` in `src/lib/render-version.ts` e aggiornare il valore `rv` in questo file. I test visivi confermano la coerenza della modifica. |
 
 Test attivi:
 - **4 screenshot fissi**: home full-page, home viewport, home mobile, /status — sempre attivi
-- **23 test poster API** (11 funzionali + 12 visual): badge shadow/pill/bar/colored, ranking, extra, gradient height (`gradHeight`; `gradColor/gradOpacity/gradFade/gradDir` rimossi in quanto morti), blur, clean, anime, watchlist — sempre attivi (grazie al mock server)
+- **21 test poster API** (10 funzionali + 11 visual): badge shadow/pill/bar/colored, ranking, extra, gradient height (`gradHeight`; `gradColor/gradOpacity/gradFade/gradDir` rimossi in quanto morti), blur, clean, anime — sempre attivi (grazie al mock server)
 <!-- END: posterium-project-rules -->
 
 ---

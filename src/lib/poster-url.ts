@@ -54,7 +54,6 @@ interface PosterState {
   accentColor?: string | null
   lang: string
   tmdbKey: string
-  profileId?: string | null
 }
 
 export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string; profileId?: string | null }): string {
@@ -109,7 +108,6 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
     params.push(`boy=${ps.backdropOffsetY}`)
   }
   if (ps.lang) params.push(`lang=${ps.lang}`)
-  if (ps.profileId) params.push(`u=${encodeURIComponent(ps.profileId)}`)
   params.push(`gradHeight=${bp.gradientHeight}`)
   params.push(`blur=${bp.blurIntensity}`)
   params.push(`bf=${bp.blurFade}`)
