@@ -228,7 +228,7 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 - **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello. La chiave usa `cf-connecting-ip` → `x-real-ip` → ultimo hop `x-forwarded-for` (header impostati/sovrascritti dai proxy fidati).
 - **Warmup**: `/api/warmup` è **fail-closed in produzione** — senza `WARMUP_TOKEN` (o `POSTERIUM_ADMIN_TOKEN`) risponde `401`. Configura il token se usi una cron di warmup automatico.
 - **Sicurezza**: Il proxy add-on (`/api/proxy`) mitiga l'SSRF (blocco IP privati/loopback, DNS pin e validazione dei redirect); opzionalmente puoi chiuderlo ai soli domini autorizzati con `POSTERIUM_PROXY_ALLOW_DOMAINS`. `/api/health` non espone il percorso assoluto dei dati su disco.
-- **Cache**: I poster generati sono in memoria (max 2000 entry / 150MB). Un restart svuota la cache (i poster si rigenerano al prossimo accesso).
+- **Cache**: I poster generati sono in memoria (max 2000 entry / 150MB). Un restart svuota la cache (i poster si rigenerano al prossimo accesso). La cache-key e le URL Stremio includono `RENDER_VERSION`, **generata automaticamente** (hash dei file di rendering via `scripts/write-render-version.mjs`): quando cambia il codice di resa (badge, blur, logo, font, route poster) i poster si invalidano da soli e le URL Stremio cambiano — nessun bump manuale.
 
 ---
 
@@ -260,6 +260,7 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 | `SHARP_CACHE_ITEMS` | ❌ | Max elementi cache interna Sharp (default: auto) |
 | `WARMUP_TOKEN` | ❌ | Token per endpoint `/api/warmup` (fallback a POSTERIUM_ADMIN_TOKEN) |
 | `POSTER_CDN_URL` / `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | URL CDN per generare link poster col CDN |
+| `NEXT_PUBLIC_TMDB_IMG_URL` | ❌ | Base URL immagini TMDB lato client (default: `https://image.tmdb.org/t/p`). Utile per proxy immagini o test e2e |
 | `WIKIDATA_TIMEOUT` | ❌ | Timeout ms per fetch Wikidata badge premi (default: 4000) |
 
 ---
