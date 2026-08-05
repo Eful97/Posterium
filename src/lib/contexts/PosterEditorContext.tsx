@@ -19,6 +19,13 @@ export interface PosterEditorCtx {
   setGlobalBadges: (v: boolean | ((prev: boolean) => boolean)) => void
   rankingBadges: boolean
   setRankingBadges: (v: boolean | ((prev: boolean) => boolean)) => void
+  /** Componenti del badge genere/rating (default tutti ON). */
+  badgeGenre: boolean
+  setBadgeGenre: (v: boolean | ((prev: boolean) => boolean)) => void
+  badgeYear: boolean
+  setBadgeYear: (v: boolean | ((prev: boolean) => boolean)) => void
+  badgeRating: boolean
+  setBadgeRating: (v: boolean | ((prev: boolean) => boolean)) => void
   badgeStyle: BadgeStyle
   setBadgeStyle: (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => void
   rankingBadgeStyle: RankingBadgeStyle
@@ -49,6 +56,12 @@ export interface PosterEditorCtx {
   setDefaultGlobalBadges: (v: boolean | ((prev: boolean) => boolean)) => void
   defaultRankingBadges: boolean
   setDefaultRankingBadges: (v: boolean | ((prev: boolean) => boolean)) => void
+  defaultBadgeGenre: boolean
+  setDefaultBadgeGenre: (v: boolean | ((prev: boolean) => boolean)) => void
+  defaultBadgeYear: boolean
+  setDefaultBadgeYear: (v: boolean | ((prev: boolean) => boolean)) => void
+  defaultBadgeRating: boolean
+  setDefaultBadgeRating: (v: boolean | ((prev: boolean) => boolean)) => void
   defaultAutoRotateClean: boolean
   setDefaultAutoRotateClean: (v: boolean | ((prev: boolean) => boolean)) => void
   defaultLogoFitEnabled: boolean
@@ -132,11 +145,13 @@ export function PosterEditorProvider({
 
   const {
     globalBadges, rankingBadges, networkLogo, ribbonSide,
+    badgeGenre, badgeYear, badgeRating,
     gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled,
     badgeStyle, rankingBadgeStyle,
     defaultBadgeStyle, defaultRankingBadgeStyle,
     defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness,
     defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges,
+    defaultBadgeGenre, defaultBadgeYear, defaultBadgeRating,
     defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo, defaultRibbonSide,
     loadDefaultsToState, update,
   } = defaults
@@ -151,6 +166,21 @@ export function PosterEditorProvider({
       const next = typeof v === "function" ? v(rankingBadges) : v
       update({ rankingBadges: next })
     }, [rankingBadges, update])
+  const setBadgeGenre = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(badgeGenre) : v
+      update({ badgeGenre: next })
+    }, [badgeGenre, update])
+  const setBadgeYear = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(badgeYear) : v
+      update({ badgeYear: next })
+    }, [badgeYear, update])
+  const setBadgeRating = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(badgeRating) : v
+      update({ badgeRating: next })
+    }, [badgeRating, update])
   const setNetworkLogo = useCallback(
     (v: boolean | ((prev: boolean) => boolean)) => {
       const next = typeof v === "function" ? v(networkLogo) : v
@@ -241,6 +271,21 @@ export function PosterEditorProvider({
       const next = typeof v === "function" ? v(defaultRankingBadges) : v
       update({ defaultRankingBadges: next })
     }, [defaultRankingBadges, update])
+  const setDefaultBadgeGenre = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultBadgeGenre) : v
+      update({ defaultBadgeGenre: next })
+    }, [defaultBadgeGenre, update])
+  const setDefaultBadgeYear = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultBadgeYear) : v
+      update({ defaultBadgeYear: next })
+    }, [defaultBadgeYear, update])
+  const setDefaultBadgeRating = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultBadgeRating) : v
+      update({ defaultBadgeRating: next })
+    }, [defaultBadgeRating, update])
   const setDefaultAutoRotateClean = useCallback(
     (v: boolean | ((prev: boolean) => boolean)) => {
       const next = typeof v === "function" ? v(defaultAutoRotateClean) : v
@@ -294,6 +339,12 @@ export function PosterEditorProvider({
       setGlobalBadges,
       rankingBadges,
       setRankingBadges,
+      badgeGenre,
+      setBadgeGenre,
+      badgeYear,
+      setBadgeYear,
+      badgeRating,
+      setBadgeRating,
       badgeStyle,
       setBadgeStyle,
       rankingBadgeStyle,
@@ -324,6 +375,12 @@ export function PosterEditorProvider({
       setDefaultGlobalBadges,
       defaultRankingBadges,
       setDefaultRankingBadges,
+      defaultBadgeGenre,
+      setDefaultBadgeGenre,
+      defaultBadgeYear,
+      setDefaultBadgeYear,
+      defaultBadgeRating,
+      setDefaultBadgeRating,
       defaultAutoRotateClean,
       setDefaultAutoRotateClean,
       defaultLogoFitEnabled,
@@ -388,6 +445,9 @@ export function PosterEditorProvider({
       // Badges
       globalBadges, setGlobalBadges,
       rankingBadges, setRankingBadges,
+      badgeGenre, setBadgeGenre,
+      badgeYear, setBadgeYear,
+      badgeRating, setBadgeRating,
       badgeStyle, setBadgeStyle,
       rankingBadgeStyle, setRankingBadgeStyle,
       customBadge, setCustomBadge,
@@ -404,6 +464,9 @@ export function PosterEditorProvider({
       defaultGradientHeight, setDefaultGradientHeight,
       defaultGlobalBadges, setDefaultGlobalBadges,
       defaultRankingBadges, setDefaultRankingBadges,
+      defaultBadgeGenre, setDefaultBadgeGenre,
+      defaultBadgeYear, setDefaultBadgeYear,
+      defaultBadgeRating, setDefaultBadgeRating,
       defaultAutoRotateClean, setDefaultAutoRotateClean,
       defaultLogoFitEnabled, setDefaultLogoFitEnabled,
       defaultNetworkLogo, setDefaultNetworkLogo,

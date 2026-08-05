@@ -12,6 +12,10 @@ interface BadgeParams {
   rankingBadges: boolean
   badgeStyle: BadgeStyle
   rankingBadgeStyle: RankingBadgeStyle
+  /** Componenti del badge genere/rating: `false` emette `bg/by/br=0`. */
+  badgeGenre?: boolean
+  badgeYear?: boolean
+  badgeRating?: boolean
   customBadge: string | null
   gradientHeight: number
   blurIntensity: number
@@ -66,6 +70,9 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
     lang: bp.lang,
     globalBadges: bp.globalBadges,
     rankingBadges: bp.rankingBadges,
+    badgeGenre: bp.badgeGenre,
+    badgeYear: bp.badgeYear,
+    badgeRating: bp.badgeRating,
     badgeStyle: bp.badgeStyle,
     rankingBadgeStyle: bp.rankingBadgeStyle,
     gradientHeight: bp.gradientHeight,
@@ -87,6 +94,9 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   if (ps.tmdbKey) params.push(`api_key=${encodeURIComponent(ps.tmdbKey)}`)
   if (!bp.globalBadges) params.push("badges=0")
   if (!bp.rankingBadges) params.push("ranking=0")
+  if (bp.badgeGenre === false) params.push("bg=0")
+  if (bp.badgeYear === false) params.push("by=0")
+  if (bp.badgeRating === false) params.push("br=0")
   if (ps.previewPoster) {
     params.push(`poster=${encodeURIComponent(ps.previewPoster.file_path)}`)
     const genre = ps.metaInfo.genres[0]?.name

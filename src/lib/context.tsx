@@ -243,6 +243,9 @@ export function usePosterium(): PosteriumCtx {
     // Badges
     globalBadges, setGlobalBadges,
     rankingBadges, setRankingBadges,
+    badgeGenre, setBadgeGenre,
+    badgeYear, setBadgeYear,
+    badgeRating, setBadgeRating,
     badgeStyle, setBadgeStyle,
     rankingBadgeStyle, setRankingBadgeStyle,
     customBadge, setCustomBadge,
@@ -316,7 +319,14 @@ export function usePosterium(): PosteriumCtx {
 
 
   // Appearance state (logo, backdrop, editing — owned by PosterEditorProvider via usePosterEditor())
-  const hasBadges = globalBadges && metaInfo.genres.length > 0 && metaInfo.voteAverage > 0
+  // Specchio client di hasGenreBadge (server): il badge è visibile se almeno uno dei
+  // 3 componenti (genere/anno/voto) è abilitato E disponibile.
+  const metaYear = (metaInfo.release_date || metaInfo.first_air_date || "").slice(0, 4)
+  const genreAvailable = metaInfo.genres.length > 0
+  const ratingAvailable = metaInfo.voteAverage > 0
+  const yearAvailable = !!metaYear
+  const hasBadges = globalBadges
+    && ((genreAvailable && badgeGenre) || (ratingAvailable && badgeRating) || (yearAvailable && badgeYear))
   const hasNetflixRank = !!(trendRank || (navigation.selected && trending.mdblistAnimeList.some((a: EnrichedAnimeItem) => a.id === navigation.selected!.id)))
 
   // Auto-resolve IMDb Top 250 membership.
@@ -430,10 +440,11 @@ export function usePosterium(): PosteriumCtx {
   useEffect(() => {
     setUrlPattern(buildUrlPattern({
       globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
+      badgeGenre, badgeYear, badgeRating,
       customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide,
       tmdbKey, lang, profileId,
     }))
-  }, [globalBadges, rankingBadges, networkLogo, ribbonSide, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang, profileId]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, networkLogo, ribbonSide, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang, profileId]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
 
   // Auto-sync profile configuration when profileId is active
   const lastSyncRef = useRef<string>("")
@@ -441,6 +452,9 @@ export function usePosterium(): PosteriumCtx {
     if (!profileId) return
     const config = {
       globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
+      badgeGenre: badgeGenre === false ? false : undefined,
+      badgeYear: badgeYear === false ? false : undefined,
+      badgeRating: badgeRating === false ? false : undefined,
       blurEnabled, blurIntensity, blurFade, blurDarkness,
       gradientHeight, networkLogo, ribbonSide, autoRotateClean, logoFitEnabled: defaultLogoFitEnabled,
       customBadge: customBadge || undefined,
@@ -473,7 +487,7 @@ export function usePosterium(): PosteriumCtx {
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [profileId, profilePassword, globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, tmdbKey, mdblistApiKey])
+  }, [profileId, profilePassword, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, tmdbKey, mdblistApiKey])
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -488,13 +502,13 @@ export function usePosterium(): PosteriumCtx {
         metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
         topEdgeColor, accentColor, lang, tmdbKey,
       },
-      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide }
+      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide }
     )
     setPreviewUrl(url)
   }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, selectedBackdrop,
     logoScale, logoOffsetX, logoOffsetY, backdropScale, backdropOffsetX, backdropOffsetY,
     metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, accentColor, lang, tmdbKey,
-    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide])
+    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide])
 
   useEffect(() => {
     if (!navigation.selected) { setPreviewUrl(""); return }
@@ -624,6 +638,9 @@ export function usePosterium(): PosteriumCtx {
       setRankingBadgeStyle(existing.rankingBadgeStyle ?? defaultRankingBadgeStyle)
       setGlobalBadges(existing.showBadges ?? true)
       setRankingBadges(existing.rankingBadges ?? true)
+      setBadgeGenre(existing.badgeGenre ?? true)
+      setBadgeYear(existing.badgeYear ?? true)
+      setBadgeRating(existing.badgeRating ?? true)
       setGradientHeight(existing.gradientHeight ?? defaultGradientHeight)
       setBlurIntensity(existing.blurIntensity ?? defaultBlurIntensity)
       setBlurFade(existing.blurFade ?? defaultBlurFade)
@@ -745,6 +762,9 @@ export function usePosterium(): PosteriumCtx {
     const config: PosteriumUserConfig = {
       globalBadges,
       rankingBadges,
+      badgeGenre: badgeGenre === false ? false : undefined,
+      badgeYear: badgeYear === false ? false : undefined,
+      badgeRating: badgeRating === false ? false : undefined,
       badgeStyle: badgeStyle as PosteriumUserConfig["badgeStyle"],
       rankingBadgeStyle: rankingBadgeStyle as PosteriumUserConfig["rankingBadgeStyle"],
       blurEnabled,
@@ -777,7 +797,7 @@ export function usePosterium(): PosteriumCtx {
       console.error("[posterium] Failed to save profile:", e)
       import("sonner").then(({ toast }) => toast.error("Errore nel salvare il profilo"))
     }
-  }, [globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, profileId, profilePassword, safeSetItem])
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, profileId, profilePassword, safeSetItem])
 
   const posterActivePath = navigation.previewPoster?.file_path
 
@@ -789,6 +809,7 @@ export function usePosterium(): PosteriumCtx {
     selectedBackdrop, setSelectedBackdrop: setSelectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY,
     setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
+    badgeGenre, badgeYear, badgeRating,
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
     setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, ribbonSide, lang, profileId,

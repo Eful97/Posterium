@@ -118,6 +118,74 @@ describe("buildGenreBadgeSVG", () => {
   })
 })
 
+describe("GenreParts combinations", () => {
+  it("hides genre and rating when only year is enabled", () => {
+    const { svg } = buildGenreTextSvg("Dramma", "8.2", "2024", 60, "#e5e7eb", "shadow", 0, { showGenre: false, showRating: false })
+    expect(svg).toContain("2024")
+    expect(svg).not.toContain("Dramma")
+    expect(svg).not.toContain("Noto Sans Symbols 2")
+    expect(svg).not.toContain("8.2")
+  })
+
+  it("hides genre and year when only rating is enabled", () => {
+    const { svg } = buildGenreTextSvg("Dramma", "8.2", "2024", 60, "#e5e7eb", "shadow", 0, { showGenre: false, showYear: false })
+    expect(svg).toContain("Noto Sans Symbols 2")
+    expect(svg).toContain("8.2")
+    expect(svg).not.toContain("Dramma")
+    expect(svg).not.toContain("2024")
+  })
+
+  it("hides rating but keeps genre and year", () => {
+    const { svg } = buildGenreTextSvg("Dramma", "8.2", "2024", 60, "#e5e7eb", "shadow", 0, { showRating: false })
+    expect(svg).toContain("Dramma")
+    expect(svg).toContain("2024")
+    expect(svg).not.toContain("Noto Sans Symbols 2")
+    expect(svg).not.toContain("8.2")
+  })
+
+  it("hides genre but keeps rating and year", () => {
+    const { svg } = buildGenreTextSvg("Dramma", "8.2", "2024", 60, "#e5e7eb", "shadow", 0, { showGenre: false })
+    expect(svg).toContain("Noto Sans Symbols 2")
+    expect(svg).toContain("8.2")
+    expect(svg).toContain("2024")
+    expect(svg).not.toContain("Dramma")
+  })
+
+  it("hides year and rating but keeps genre", () => {
+    const { svg } = buildGenreTextSvg("Dramma", "8.2", "2024", 60, "#e5e7eb", "shadow", 0, { showYear: false, showRating: false })
+    expect(svg).toContain("Dramma")
+    expect(svg).not.toContain("Noto Sans Symbols 2")
+    expect(svg).not.toContain("2024")
+    expect(svg).not.toContain("8.2")
+  })
+
+  it("centers the only-year badge optically", async () => {
+    const badge = await buildGenreBadgeSVG("Dramma", 8.2, 1000, "2024", "shadow", "#555555", false, { showGenre: false, showRating: false })
+    expect(badge).not.toBeNull()
+    const bounds = await alphaBounds(badge!.png)
+    expect(bounds.minX).toBeGreaterThan(20)
+    expect(bounds.maxX).toBeLessThan(bounds.width - 20)
+    expect(Math.abs((bounds.width - 1 - bounds.maxX) - bounds.minX)).toBeLessThanOrEqual(16)
+  })
+
+  it("centers the only-rating badge optically", async () => {
+    const badge = await buildGenreBadgeSVG("Dramma", 8.2, 1000, "2024", "shadow", "#555555", false, { showGenre: false, showYear: false })
+    expect(badge).not.toBeNull()
+    const bounds = await alphaBounds(badge!.png)
+    expect(bounds.minX).toBeGreaterThan(20)
+    expect(bounds.maxX).toBeLessThan(bounds.width - 20)
+    expect(Math.abs((bounds.width - 1 - bounds.maxX) - bounds.minX)).toBeLessThanOrEqual(16)
+  })
+
+  it("renders a partial badge narrower than the full badge", async () => {
+    const full = await buildGenreBadgeSVG("Dramma", 8.2, 1000, "2024", "shadow", "#555555", false)
+    const partial = await buildGenreBadgeSVG("Dramma", 8.2, 1000, "2024", "shadow", "#555555", false, { showGenre: false })
+    expect(full).not.toBeNull()
+    expect(partial).not.toBeNull()
+    expect(partial!.w).toBeLessThan(full!.w)
+  })
+})
+
 describe("buildRankingBadgeSVG", () => {
   it("renders default ranking badge with rank and label", async () => {
     const badge = await buildRankingBadgeSVG(1, 1000, "Oggi", false, "default", "#555555")

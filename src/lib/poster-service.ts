@@ -51,6 +51,10 @@ export interface GenerationInput {
   voteAverage: number | null
   badgeStyle: BadgeStyle
   rankingBadgeStyle: RankingBadgeStyle
+  /** Quali componenti del badge genere/rating mostrare (default tutti ON). */
+  badgeGenre: boolean
+  badgeYear: boolean
+  badgeRating: boolean
   topLight: boolean
   targetCenter: number
   /** Modalità layout nastro Netflix + logo network: "left" (Nuvio, default) o "right" (Stremio). */
@@ -116,7 +120,8 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     backdropScale, backdropOffsetX, backdropOffsetY,
     blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
     badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
-    rankingBadgeStyle, topLight, targetCenter, ribbonSide,
+    rankingBadgeStyle, badgeGenre, badgeYear, badgeRating,
+    topLight, targetCenter, ribbonSide,
     logoScale, logoOffsetX, logoOffsetY,
     mediaType, finalRank, animeRankResult,
     mapping, tmdbNetworks, productionCompanies, tmdbStudios,
@@ -148,9 +153,17 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   // -----------------------------------------------------------------------
   // 2. Blur + badge colors + logo resize (parallel)
   // -----------------------------------------------------------------------
+  const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
+  const genreAvailable = !!genreName
+  const ratingAvailable = !!(voteAverage && voteAverage > 0)
+  const yearAvailable = !!year
+  // Il badge è visibile se almeno uno dei 3 componenti è abilitato E disponibile.
+  const hasGenreBadge = badgesEnabled
+    && ((genreAvailable && badgeGenre) || (ratingAvailable && badgeRating) || (yearAvailable && badgeYear))
+
   const [blurredPosterBuf, badgeColors, logoResult] = await Promise.all([
     applyBlur({ posterBuf, blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness }),
-    (badgesEnabled && genreName && voteAverage && voteAverage > 0)
+    hasGenreBadge
       ? (accentOverride
           ? Promise.resolve(accentOverride)
           : (async () => {
@@ -159,7 +172,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
                 extractBadgeColor(posterBuf, logoFetch, null, 'top'),
               ])
               return {
-                genreColor: isValidHex(gColor) ? gColor : (GENRE_FALLBACK[genreName] || "#555555"),
+                genreColor: isValidHex(gColor) ? gColor : (genreName ? GENRE_FALLBACK[genreName] : undefined) || "#555555",
                 rankColor: isValidHex(rColor) ? rColor : "#555555",
               }
             })()
@@ -176,7 +189,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
           const layout = computeLogoLayout({
             posterW: STD_W, posterH: STD_H, logoW: lw, logoH: lh,
             logoScale: uScale, logoOffsetX: uOx, logoOffsetY: uOy,
-            hasBadges: !!(badgesEnabled && genreName && voteAverage && voteAverage > 0),
+            hasBadges: hasGenreBadge,
           })
           const resized = await sharp(logoFetch).resize(layout.width, layout.height, { fit: "inside" }).png({ compressionLevel: 1 }).toBuffer()
           const rMeta = await sharp(resized).metadata()
@@ -204,7 +217,6 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   // -----------------------------------------------------------------------
   const accentColorGenre = badgeColors?.genreColor || (GENRE_FALLBACK[genreName || ""] || "#555555")
   const accentColorRank = badgeColors?.rankColor || "#555555"
-  const year = releaseDate?.slice(0, 4) || firstAirDate?.slice(0, 4) || undefined
 
   const badgeInput: BadgeInput = {
     mediaType,
@@ -269,8 +281,8 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   // Rilevato quando il topBadge è un rank derivato da animeRankResult.
   const isAnimeRank = topBadge?.type === "rank" && animeRankResult !== null && topBadge.rank === animeRankResult
 
-  const genreBadgeKey = (badgesEnabled && genreName && voteAverage && voteAverage > 0)
-    ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentColorGenre, topLight)
+  const genreBadgeKey = hasGenreBadge
+    ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentColorGenre, topLight, badgeGenre, badgeYear, badgeRating)
     : null
   const rankBadgeKey = topBadge
     ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
@@ -282,7 +294,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
           || (() => {
               const existing = badgeInflight.get(genreBadgeKey) as Promise<{ png: Buffer; w: number; h: number } | null> | undefined
               if (existing) return existing
-              const p = renderGenreBadge(genreName!, voteAverage!, STD_W, year, badgeStyle, accentColorGenre, topLight)
+              const p = renderGenreBadge(genreName ?? "", voteAverage ?? 0, STD_W, year, badgeStyle, accentColorGenre, topLight, { showGenre: badgeGenre, showYear: badgeYear, showRating: badgeRating })
                 .then((r) => { if (r) cacheSet(genreBadgeKey, r, ["badge"], BADGE_CACHE_TTL); return r })
                 .catch(() => null)
               p.finally(() => { badgeInflight.delete(genreBadgeKey) })

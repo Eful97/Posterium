@@ -20,6 +20,9 @@ const ribbonSideSchema = z.enum(["left", "right"])
 export const configTokenSchema = z.object({
   globalBadges: z.boolean(),
   rankingBadges: z.boolean(),
+  badgeGenre: z.boolean().optional(),
+  badgeYear: z.boolean().optional(),
+  badgeRating: z.boolean().optional(),
   badgeStyle: badgeStyleSchema,
   rankingBadgeStyle: rankingBadgeStyleSchema,
   blurEnabled: z.boolean(),

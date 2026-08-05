@@ -2,6 +2,7 @@ import fs from "fs"
 import path from "path"
 import { textColorForBg } from "./accent-color"
 import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg } from "./badge-svg-shared"
+import type { GenreParts } from "./badge-svg-shared"
 import type { BadgeStyle, RankingBadgeStyle, ExtraBadgeStyle } from "./badge-styles"
 
 const FONT_REGULAR = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "Inter-Regular.ttf")
@@ -143,7 +144,7 @@ export async function buildExtraBadgeSVG(
 
 export async function buildGenreBadgeSVG(
   genreName: string, voteAverage: number, pw: number,
-  year?: string, style?: BadgeStyle, accentColor?: string, topLight?: boolean,
+  year?: string, style?: BadgeStyle, accentColor?: string, topLight?: boolean, parts?: GenreParts,
 ): Promise<{ png: Buffer; w: number; h: number } | null> {
   const s = style || "shadow"
   const voteStr = voteAverage ? voteAverage.toFixed(1) : ""
@@ -151,14 +152,14 @@ export async function buildGenreBadgeSVG(
 
   let finalFs = 24 * pw / 380
   const aestheticMaxW = Math.round(pw * 0.86) // 86% per margine estetico
-  let dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr)
+  let dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr, parts)
   let safePad = genreBadgeSafePad(finalFs)
   // Per shadow, buildGenreTextSvg aggiunge shadowPad*2 al renderW finale
   const extraShadowPad = style === "shadow" ? 8 : 0
   const estimatedRenderW = dims.totalW + safePad * 2 + extraShadowPad * 2
   if (estimatedRenderW > aestheticMaxW) {
     finalFs = Math.max(aestheticMaxW / estimatedRenderW * finalFs, 10)
-    dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr)
+    dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr, parts)
     safePad = genreBadgeSafePad(finalFs)
   }
 
@@ -168,7 +169,7 @@ export async function buildGenreBadgeSVG(
     const maxPillW = genrePillMaxW(pw)
     if (dims.textContentW + _pillPad * 3 + safePad * 2 > maxPillW) {
       finalFs = Math.max(maxPillW / (dims.textContentW + _pillPad * 3 + safePad * 2) * finalFs, 10)
-      dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr)
+      dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr, parts)
     }
   }
   let fs = Math.round(finalFs)
@@ -184,15 +185,15 @@ export async function buildGenreBadgeSVG(
 
   let result: { svg: string; w: number; h: number }
   if (s === "bordo") {
-    result = buildGenreBorderedSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false)
+    result = buildGenreBorderedSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false, 0, parts)
   } else if (s === "vetro") {
-    result = buildGenreGlassSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false)
+    result = buildGenreGlassSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false, 0, parts)
   } else if (isBar) {
-    result = buildGenreBarSvg(genreName, voteStr, yearStr, pw, fs, "rgba(0,0,0,0.80)", !!topLight)
+    result = buildGenreBarSvg(genreName, voteStr, yearStr, pw, fs, "rgba(0,0,0,0.80)", !!topLight, 0, parts)
   } else if (isPill) {
-    result = buildGenrePillSvg(genreName, voteStr, yearStr, fs, bgColor, textColor)
+    result = buildGenrePillSvg(genreName, voteStr, yearStr, fs, bgColor, textColor, 0, parts)
   } else {
-    result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s)
+    result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s, 0, parts)
     // Per shadow, il renderW include shadowPad*2 + safePad*2 aggiuntivi
     // Assicuriamoci che non superi aestheticMaxW
     let attempts = 0
@@ -200,7 +201,7 @@ export async function buildGenreBadgeSVG(
       // Riduciamo fs proporzionalmente al surplus
       const targetFs = Math.max(Math.round(fs * (aestheticMaxW - 16) / result.w), 10)
       if (targetFs >= fs) { fs = 10 } else { fs = targetFs }
-      result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s)
+      result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s, 0, parts)
       attempts++
     }
   }
@@ -210,9 +211,9 @@ export async function buildGenreBadgeSVG(
 
 export async function renderGenreBadge(
   genreName: string, voteAverage: number, pw: number,
-  year?: string, style?: BadgeStyle, accentColor?: string, topLight?: boolean,
+  year?: string, style?: BadgeStyle, accentColor?: string, topLight?: boolean, parts?: GenreParts,
 ): Promise<{ png: Buffer; w: number; h: number }> {
-  const r = await buildGenreBadgeSVG(genreName, voteAverage, pw, year, style, accentColor, topLight)
+  const r = await buildGenreBadgeSVG(genreName, voteAverage, pw, year, style, accentColor, topLight, parts)
   if (r) return r
   throw new Error(`SVG genre badge failed: ${genreName}`)
 }

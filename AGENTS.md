@@ -13,6 +13,8 @@ App version: `0.15.2` — RENDER_VERSION: `98` — rv: `98`
 ### Badge Genere/Rating (GenreRatingBadges)
 > **WYSIWYG**: il preview client usa `<img src={previewUrl}>` che carica `/api/poster/{type}/{id}` — lo stesso endpoint usato da Stremio. Non c'è duplicazione: preview = poster finale.
 
+**Componenti configurabili** (`bg`/`by`/`br`): genere, anno e voto si attivano **indipendentemente**. Default tutti ON → output byte-identico al passato (`Dramma • ★ 8.2 • 2024`). Il badge si mostra se almeno un componente abilitato ha un valore disponibile (`hasGenreBadge = badgesEnabled && ((genre && bg) || (rating > 0 && br) || (year && by))`). Lato SVG i segmenti sono condizionali in `badge-svg-shared.ts:buildGenreTextFlow` — il `dx` di separazione si emette solo se il segmento ha un precedente visibile (per non sfuocare dal centro quando anno o voto sono il primo segmento).
+
 | Parametro | Server (`svg-badge.ts:renderGenreBadge`) |
 |---|---|
 | Font size | `finalFontSize = round(24 * pw / 380)` |
@@ -62,6 +64,9 @@ App version: `0.15.2` — RENDER_VERSION: `98` — rv: `98`
 |---|---|---|
 | `badges` | `globalBadges ? null : "0"` | `qBadges !== "0"` |
 | `ranking` | `rankingBadges ? null : "0"` | `qRanking !== "0"` |
+| `bg` | `badgeGenre === false ? "0" : null` | `qBg !== null ? qBg !== "0"` — nasconde il GENERE nel badge genere/rating |
+| `by` | `badgeYear === false ? "0" : null` | `qBy !== null ? qBy !== "0"` — nasconde l'ANNO nel badge genere/rating |
+| `br` | `badgeRating === false ? "0" : null` | `qBr !== null ? qBr !== "0"` — nasconde il VOTO nel badge genere/rating |
 | `gradHeight` | `gradientHeight` | `qGradHeight` — alimenta l'altezza del gradiente/sfocatura (blurHeight) |
 | `tl` | `topLight ? "1" : "0"` (sempre, anche per genre badges) | `qTopLight` — override se presente |
 

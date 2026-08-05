@@ -90,6 +90,20 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Star className="w-3 h-3" /> {t("ui.genreRatingBadge")}</span>
         <Toggle value={ed.defaultGlobalBadges} onChange={ed.setDefaultGlobalBadges} />
       </div>
+      <div className="pl-4 space-y-1 border-l border-zinc-800/60 ml-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-zinc-400">{t("ui.badgeGenre")}</span>
+          <Toggle value={ed.defaultBadgeGenre} onChange={ed.setDefaultBadgeGenre} />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-zinc-400">{t("ui.badgeYear")}</span>
+          <Toggle value={ed.defaultBadgeYear} onChange={ed.setDefaultBadgeYear} />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-zinc-400">{t("ui.badgeRating")}</span>
+          <Toggle value={ed.defaultBadgeRating} onChange={ed.setDefaultBadgeRating} />
+        </div>
+      </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400 flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {t("ui.trendBadge")}</span>
         <Toggle value={ed.defaultRankingBadges} onChange={ed.setDefaultRankingBadges} />

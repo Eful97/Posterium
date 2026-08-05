@@ -36,6 +36,9 @@ interface PosterSaveDeps {
   setBackdropOffsetY: (v: number) => void
   globalBadges: boolean
   rankingBadges: boolean
+  badgeGenre: boolean
+  badgeYear: boolean
+  badgeRating: boolean
   customBadge: string | null
   badgeStyle: string
   rankingBadgeStyle: string
@@ -77,6 +80,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
     selectedBackdrop, setSelectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY,
     setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
+    badgeGenre, badgeYear, badgeRating,
     defaultBadgeStyle, defaultRankingBadgeStyle,
     blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
@@ -218,6 +222,9 @@ export function usePosterSave(deps: PosterSaveDeps) {
           accentColor: accentColor !== '#ffffff' ? accentColor : undefined,
           showBadges: globalBadges,
           rankingBadges,
+          badgeGenre: badgeGenre === false ? false : undefined,
+          badgeYear: badgeYear === false ? false : undefined,
+          badgeRating: badgeRating === false ? false : undefined,
           tvType: metaInfo.type || null,
           tvStatus: metaInfo.status || null,
           releaseDate: metaInfo.release_date || null,
@@ -253,7 +260,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
       if (!overrides.silent) import("sonner").then(({ toast }) => toast(t("ui.saveError")))
       if (overrides.silent) throw error
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop, networkLogo, ribbonSide]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop, networkLogo, ribbonSide]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
 
   return { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig }
 }

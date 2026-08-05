@@ -17,6 +17,9 @@ export interface ServerDefaults {
   gradientHeight?: number
   globalBadges?: boolean
   rankingBadges?: boolean
+  badgeGenre?: boolean
+  badgeYear?: boolean
+  badgeRating?: boolean
   autoRotateClean?: boolean
   defaultLogoFitEnabled?: boolean
   networkLogo?: boolean

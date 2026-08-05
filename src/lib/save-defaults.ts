@@ -9,6 +9,9 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
   const d = {
     globalBadges: ed.defaultGlobalBadges,
     rankingBadges: ed.defaultRankingBadges,
+    badgeGenre: ed.defaultBadgeGenre,
+    badgeYear: ed.defaultBadgeYear,
+    badgeRating: ed.defaultBadgeRating,
     badgeStyle: ed.defaultBadgeStyle,
     rankingBadgeStyle: ed.defaultRankingBadgeStyle,
     blurEnabled: ed.defaultBlurEnabled,
@@ -35,6 +38,9 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
   if (!mapping?.rankingBadgeStyle) ed.setRankingBadgeStyle(d.rankingBadgeStyle)
   ed.setGlobalBadges(d.globalBadges)
   ed.setRankingBadges(d.rankingBadges)
+  ed.setBadgeGenre(d.badgeGenre)
+  ed.setBadgeYear(d.badgeYear)
+  ed.setBadgeRating(d.badgeRating)
   ed.setNetworkLogo(d.networkLogo)
   ed.setRibbonSide(d.ribbonSide)
   ed.setBlurEnabled(d.blurEnabled)

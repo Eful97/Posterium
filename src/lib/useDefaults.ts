@@ -15,12 +15,20 @@ export interface DefaultsState {
   defaultGradientHeight: number
   defaultGlobalBadges: boolean
   defaultRankingBadges: boolean
+  /** Componenti del badge genere/rating di default (default tutti ON). */
+  defaultBadgeGenre: boolean
+  defaultBadgeYear: boolean
+  defaultBadgeRating: boolean
   defaultAutoRotateClean: boolean
   defaultLogoFitEnabled: boolean
   defaultNetworkLogo: boolean
   defaultRibbonSide: RibbonSide
   globalBadges: boolean
   rankingBadges: boolean
+  /** Componenti del badge genere/rating (default tutti ON). */
+  badgeGenre: boolean
+  badgeYear: boolean
+  badgeRating: boolean
   networkLogo: boolean
   ribbonSide: RibbonSide
   gradientHeight: number
@@ -42,12 +50,18 @@ const DEFAULTS: DefaultsState = {
   defaultGradientHeight: 30,
   defaultGlobalBadges: true,
   defaultRankingBadges: true,
+  defaultBadgeGenre: true,
+  defaultBadgeYear: true,
+  defaultBadgeRating: true,
   defaultAutoRotateClean: false,
   defaultLogoFitEnabled: true,
   defaultNetworkLogo: true,
   defaultRibbonSide: "left",
   globalBadges: true,
   rankingBadges: true,
+  badgeGenre: true,
+  badgeYear: true,
+  badgeRating: true,
   networkLogo: true,
   ribbonSide: "left",
   gradientHeight: 30,
@@ -62,6 +76,9 @@ const DEFAULTS: DefaultsState = {
 interface StoredDefaults {
   globalBadges?: boolean
   rankingBadges?: boolean
+  badgeGenre?: boolean
+  badgeYear?: boolean
+  badgeRating?: boolean
   networkLogo?: boolean
   gradientHeight?: number
   blurIntensity?: number
@@ -79,6 +96,9 @@ interface StoredDefaults {
   defaultGradientHeight?: number
   defaultGlobalBadges?: boolean
   defaultRankingBadges?: boolean
+  defaultBadgeGenre?: boolean
+  defaultBadgeYear?: boolean
+  defaultBadgeRating?: boolean
   defaultAutoRotateClean?: boolean
   defaultLogoFitEnabled?: boolean
   defaultNetworkLogo?: boolean
@@ -115,12 +135,18 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
     defaultGradientHeight: d.defaultGradientHeight ?? d.gradientHeight ?? 30,
     defaultGlobalBadges: d.defaultGlobalBadges ?? d.globalBadges ?? true,
     defaultRankingBadges: d.defaultRankingBadges ?? d.rankingBadges ?? true,
+    defaultBadgeGenre: d.defaultBadgeGenre ?? d.badgeGenre ?? true,
+    defaultBadgeYear: d.defaultBadgeYear ?? d.badgeYear ?? true,
+    defaultBadgeRating: d.defaultBadgeRating ?? d.badgeRating ?? true,
     defaultAutoRotateClean: d.defaultAutoRotateClean ?? d.autoRotateClean ?? false,
     defaultLogoFitEnabled: d.defaultLogoFitEnabled ?? true,
     defaultNetworkLogo: d.defaultNetworkLogo ?? d.networkLogo ?? true,
     defaultRibbonSide: d.defaultRibbonSide ?? d.ribbonSide ?? "left",
     globalBadges: d.globalBadges ?? true,
     rankingBadges: d.rankingBadges ?? true,
+    badgeGenre: d.badgeGenre ?? true,
+    badgeYear: d.badgeYear ?? true,
+    badgeRating: d.badgeRating ?? true,
     networkLogo: d.networkLogo ?? true,
     ribbonSide: d.ribbonSide ?? "left",
     gradientHeight: d.gradientHeight ?? 30,
@@ -150,6 +176,9 @@ function defaultsToPayload(d: DefaultsState): Record<string, unknown> {
     gradientHeight: d.defaultGradientHeight,
     globalBadges: d.defaultGlobalBadges,
     rankingBadges: d.defaultRankingBadges,
+    badgeGenre: d.defaultBadgeGenre,
+    badgeYear: d.defaultBadgeYear,
+    badgeRating: d.defaultBadgeRating,
     autoRotateClean: d.defaultAutoRotateClean,
     defaultLogoFitEnabled: d.defaultLogoFitEnabled,
     networkLogo: d.defaultNetworkLogo,

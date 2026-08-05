@@ -193,4 +193,42 @@ describe("resolvePosterRenderConfig", () => {
     expect(r2.logoOffsetX).toBe(1)
     expect(r2.logoOffsetY).toBe(2)
   })
+
+  it("badgeGenre/badgeYear/badgeRating default to true", () => {
+    const r = resolvePosterRenderConfig(baseInput())
+    expect(r.badgeGenre).toBe(true)
+    expect(r.badgeYear).toBe(true)
+    expect(r.badgeRating).toBe(true)
+  })
+
+  it("query bg/by/br=0 disables the component and wins over mapping/config", () => {
+    const r = resolvePosterRenderConfig(baseInput({
+      searchParams: new URLSearchParams({ bg: "0", by: "0", br: "0" }),
+      mapping: mapping({ badgeGenre: true, badgeYear: true, badgeRating: true }),
+      configOverride: config({ badgeGenre: true, badgeYear: true, badgeRating: true }),
+    }))
+    expect(r.badgeGenre).toBe(false)
+    expect(r.badgeYear).toBe(false)
+    expect(r.badgeRating).toBe(false)
+  })
+
+  it("mapping badgeGenre/badgeYear/badgeRating wins over config token", () => {
+    const r = resolvePosterRenderConfig(baseInput({
+      mapping: mapping({ badgeGenre: false, badgeRating: false }),
+      configOverride: config({ badgeGenre: true, badgeRating: true }),
+    }))
+    expect(r.badgeGenre).toBe(false)
+    expect(r.badgeYear).toBe(true)
+    expect(r.badgeRating).toBe(false)
+  })
+
+  it("config token badgeGenre/badgeYear/badgeRating wins over server defaults", () => {
+    const r = resolvePosterRenderConfig(baseInput({
+      configOverride: config({ badgeYear: false }),
+      sd: { badgeYear: true },
+    }))
+    expect(r.badgeYear).toBe(false)
+    expect(r.badgeGenre).toBe(true)
+    expect(r.badgeRating).toBe(true)
+  })
 })

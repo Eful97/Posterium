@@ -24,8 +24,8 @@ export function BadgeControls() {
 
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-zinc-400">{t("ui.trendBadge")}</span>
+      <div className="control-row flex items-center justify-between px-1">
+        <span className="control-label">{t("ui.trendBadge")}</span>
         <Toggle value={ed.rankingBadges} onChange={(v) => ed.setRankingBadges(v)} />
       </div>
 
@@ -35,31 +35,46 @@ export function BadgeControls() {
           <BadgeStyleSelector value={ed.rankingBadgeStyle} options={["default","colored","pill"]} onChange={ed.setRankingBadgeStyle} t={t} accentColor={p.accentColor} />
         </div>
         {!p.accentColor && (
-          <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{t("ui.noDominantColor") || "No dominant color — using fallback"}</div>
+          <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{t("ui.noDominantColor")}</div>
         )}
         {p.accentColor && (
-          <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">Accent color condiviso con badge genere</div>
+          <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{t("ui.accentSharedBadge")}</div>
         )}
       </div>
 
-      <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-zinc-400">{t("ui.genreRatingBadge")}</span>
+      <div className="control-row flex items-center justify-between px-1">
+        <span className="control-label">{t("ui.genreRatingBadge")}</span>
         <Toggle value={ed.globalBadges} onChange={(v) => ed.setGlobalBadges(v)} />
       </div>
 
-      <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-zinc-400">Logo Network</span>
+      <div className="pl-4 space-y-2.5 border-l border-zinc-800/60 ml-1.5">
+        <div className="control-row flex items-center justify-between px-1">
+          <span className="control-label">{t("ui.badgeGenre")}</span>
+          <Toggle value={ed.badgeGenre} onChange={(v) => ed.setBadgeGenre(v)} />
+        </div>
+        <div className="control-row flex items-center justify-between px-1">
+          <span className="control-label">{t("ui.badgeYear")}</span>
+          <Toggle value={ed.badgeYear} onChange={(v) => ed.setBadgeYear(v)} />
+        </div>
+        <div className="control-row flex items-center justify-between px-1">
+          <span className="control-label">{t("ui.badgeRating")}</span>
+          <Toggle value={ed.badgeRating} onChange={(v) => ed.setBadgeRating(v)} />
+        </div>
+      </div>
+
+      <div className="control-row flex items-center justify-between px-1">
+        <span className="control-label">{t("ui.networkLogo")}</span>
         <Toggle value={ed.networkLogo} onChange={(v) => ed.setNetworkLogo(v)} />
       </div>
 
-      <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-zinc-500">{t("ui.customBadge")}</span>
+      <div className="control-row flex items-center justify-between px-1">
+        <span className="control-label">{t("ui.customBadge")}</span>
         {ed.editingValue === "customBadge" ? (
           <input autoFocus value={ed.editText} onChange={(e) => ed.setEditText(e.target.value)}
                  onFocus={(e) => e.target.select()}
                  onBlur={() => { const v = ed.editText.trim(); ed.setCustomBadge(v || null); ed.setEditingValue(null) }}
                  onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }}
-                 className="w-28 text-right text-xs bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent"
+                 className="editor-input w-28 text-right px-1.5 py-1"
                  placeholder={t("ui.customBadgePlaceholder")} />
         ) : (
           <select value={ed.customBadge ?? "__auto__"} onChange={(e) => {
@@ -67,7 +82,7 @@ export function BadgeControls() {
             if (v === "__custom__") { ed.setEditText(""); ed.setEditingValue("customBadge") }
             else if (v === "__auto__") ed.setCustomBadge(null)
             else ed.setCustomBadge(v)
-          }} className="w-28 text-right text-xs bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent cursor-pointer">
+          }} className="editor-input w-28 text-right px-1.5 py-1 cursor-pointer">
             <option value="__auto__">{t("ui.auto")}</option>
             {(() => {
               if (!selected) return null
@@ -125,7 +140,7 @@ export function BadgeControls() {
             value={p.accentColor ?? ""}
             onChange={(e) => { const v = e.target.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) p.setAccentColor(v) }}
             onBlur={(e) => { if (!/^#[0-9a-fA-F]{6}$/.test(e.target.value)) e.target.value = p.accentColor ?? "" }}
-            className="w-20 text-center text-[11px] bg-black/40 border border-zinc-700 rounded px-1.5 py-1 outline-none focus:border-accent font-mono text-zinc-300"
+            className="editor-input w-20 text-center px-1.5 py-1 font-mono"
             placeholder="#555555"
           />
           {p.accentColor && (

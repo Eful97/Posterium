@@ -46,6 +46,10 @@ export interface PosterRenderConfig {
   blurDarkness: number
   badgesEnabled: boolean
   rankingEnabled: boolean
+  /** Quali componenti del badge genere/rating mostrare (default tutti ON). */
+  badgeGenre: boolean
+  badgeYear: boolean
+  badgeRating: boolean
   logoScale: number | null
   logoOffsetX: number | null
   logoOffsetY: number | null
@@ -96,6 +100,15 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
   const badgesEnabled = hasQuery ? (qBadges !== null ? qBadges !== "0" : (configOverride !== null ? configOverride.globalBadges : showBadges)) : true
   const rankingEnabled = hasQuery ? (qRanking !== null ? qRanking !== "0" : (configOverride !== null ? configOverride.rankingBadges : rankingBadges)) : true
 
+  // Componenti badge genere/rating — precedenza: query `bg/by/br` > mapping salvato
+  // > config token/profilo > server defaults > true (tutti ON di default).
+  const qBg = q.get("bg")
+  const qBy = q.get("by")
+  const qBr = q.get("br")
+  const badgeGenre = qBg !== null ? qBg !== "0" : (mapping?.badgeGenre ?? configOverride?.badgeGenre ?? sd.badgeGenre ?? true)
+  const badgeYear = qBy !== null ? qBy !== "0" : (mapping?.badgeYear ?? configOverride?.badgeYear ?? sd.badgeYear ?? true)
+  const badgeRating = qBr !== null ? qBr !== "0" : (mapping?.badgeRating ?? configOverride?.badgeRating ?? sd.badgeRating ?? true)
+
   // Badge style — confinamento della query string al union type: valori non validi
   // cadono sul default (il renderer in passato li trattava come "shadow" nel ramo else).
   const rawBs = q.get("bs")
@@ -127,6 +140,9 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
     blurDarkness,
     badgesEnabled,
     rankingEnabled,
+    badgeGenre,
+    badgeYear,
+    badgeRating,
     logoScale,
     logoOffsetX,
     logoOffsetY,

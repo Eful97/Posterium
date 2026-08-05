@@ -79,6 +79,9 @@ export interface Mapping {
   releaseDate?: string | null
   firstAirDate?: string | null
   rankingBadges?: boolean | null
+  badgeGenre?: boolean | null
+  badgeYear?: boolean | null
+  badgeRating?: boolean | null
   badgeStyle?: BadgeStyle | null
   rankingBadgeStyle?: RankingBadgeStyle | null
   blurEnabled?: boolean | null
