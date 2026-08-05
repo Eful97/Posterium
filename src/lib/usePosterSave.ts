@@ -4,6 +4,7 @@ import { useCallback } from "react"
 import type { SearchResult, TMDBImage, Mapping } from "./types"
 import { titleOf } from "./utils"
 import { computeTopBadge, type BadgeInput } from "./poster-badge"
+import { defaultGradientHeightForPoster } from "./gradient-defaults"
 import { t } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
 import { http } from "./http"
@@ -49,6 +50,7 @@ interface PosterSaveDeps {
   blurFade: number
   blurDarkness: number
   gradientHeight: number
+  setGradientHeight: (v: number) => void
   rotationPosters: string[]
   autoRotateClean: boolean
   defaultAutoRotateClean: boolean
@@ -82,7 +84,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     badgeGenre, badgeYear, badgeRating,
     defaultBadgeStyle, defaultRankingBadgeStyle,
-    blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
+    blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, setGradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
     setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, ribbonSide, lang,
   } = deps
@@ -90,6 +92,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
   const selectPoster = useCallback(async (image: TMDBImage) => {
     if (!selected) return
     setPreviewPoster(image)
+    setGradientHeight(defaultGradientHeightForPoster(image))
     setPreviewId(`${selected.media_type}:${selected.id}`)
   }, [selected]) // eslint-disable-line react-hooks/exhaustive-deps -- setter refs are stable
 

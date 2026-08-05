@@ -13,6 +13,7 @@ import { getSubGenreLabel } from "@/lib/subgenres"
 import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { isPrefixedKey, badgeKey } from "@/lib/i18n"
 import { getAllBadgeOptions } from "@/lib/badge-priority"
+import { defaultGradientHeightForPoster } from "@/lib/gradient-defaults"
 
 export function BadgeControls() {
   const p = useP()
@@ -162,7 +163,7 @@ export function BadgeControls() {
           </span>
         </button>
         {ed.blurEnabled && <div className="space-y-1 px-1">
-          <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => ed.setGradientHeight(v)} onDoubleClick={() => ed.setGradientHeight(30)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="gradHeight" suffix="%" />
+          <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => ed.setGradientHeight(v)} onDoubleClick={() => ed.setGradientHeight(defaultGradientHeightForPoster(p.previewPoster))} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="gradHeight" suffix="%" />
           <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={t("ui.intensity")} value={ed.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => ed.setBlurIntensity(v)} onDoubleClick={() => ed.setBlurIntensity(5)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="blurIntensity" suffix="px" />
           <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={t("ui.fade")} value={ed.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setBlurFade(v)} onDoubleClick={() => ed.setBlurFade(60)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="blurFade" suffix="%" />
           <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={t("ui.darkness")} value={ed.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setBlurDarkness(v)} onDoubleClick={() => ed.setBlurDarkness(40)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="blurDarkness" suffix="%" />

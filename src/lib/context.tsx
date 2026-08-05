@@ -16,6 +16,7 @@ import { useNavigation } from "./useNavigation"
 import { useMappingsStore } from "./useMappingsStore"
 import { usePosterEditor, PosterEditorProvider } from "./contexts/PosterEditorContext"
 import { usePosterSave } from "./usePosterSave"
+import { defaultGradientHeightForPoster } from "./gradient-defaults"
 import { computeLogoOffsetBounds } from "./logo-layout"
 import { useOutsideDismiss } from "./useOutsideDismiss"
 import type { PosteriumUserConfig } from "./config-token"
@@ -591,16 +592,18 @@ export function usePosterium(): PosteriumCtx {
             const autoLogo = langLogo || itLogo || enLogo || firstLogo
             if (autoLogo) {
               navigation.setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
-              setGradientHeight(30)
+              setGradientHeight(defaultGradientHeightForPoster(clean))
             } else {
               const itPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "it")
               const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")
-              navigation.setPreviewPoster(itPoster || enPoster || langPoster || firstPoster || navigation.previewPoster)
-              setGradientHeight(15)
+              const nextPoster = itPoster || enPoster || langPoster || firstPoster || navigation.previewPoster
+              navigation.setPreviewPoster(nextPoster)
+              setGradientHeight(defaultGradientHeightForPoster(nextPoster))
             }
           } else {
-            navigation.setPreviewPoster(langPoster || firstPoster || navigation.previewPoster)
-            setGradientHeight(15)
+            const nextPoster = langPoster || firstPoster || navigation.previewPoster
+            navigation.setPreviewPoster(nextPoster)
+            setGradientHeight(defaultGradientHeightForPoster(nextPoster))
           }
         }
       }
@@ -709,6 +712,7 @@ export function usePosterium(): PosteriumCtx {
         const clean = data.posters?.find((p: TMDBImage) => p.iso_639_1 === null)
         const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
         const firstPoster = data.posters?.[0]
+        let chosenPoster: TMDBImage | null = null
         if (clean) {
           const autoLogo = selectBestLogo(data.logos || [], lang, details.original_language)
           const reason = logoBestLogoFallbackReason(autoLogo, lang, details.original_language)
@@ -716,6 +720,7 @@ export function usePosterium(): PosteriumCtx {
           else if (reason === "any") console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
           else if (reason === "none") console.warn(`[posterium] No logo available for ${itemType}/${itemId}`)
           if (autoLogo) {
+            chosenPoster = clean
             navigation.setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
             navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
             if (autoLogo.width && autoLogo.height) {
@@ -731,19 +736,23 @@ export function usePosterium(): PosteriumCtx {
             const origPoster = details.original_language ? data.posters?.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
             const fallbackPoster = itPoster || enPoster || origPoster || firstPoster
             if (fallbackPoster) {
+              chosenPoster = fallbackPoster
               navigation.setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
             }
           }
         } else if (langPoster) {
+          chosenPoster = langPoster
           navigation.setPreviewPoster({ file_path: langPoster.file_path, iso_639_1: lang, vote_average: 0, width: 0, height: 0 })
         } else {
           const origPoster = details.original_language ? data.posters?.find((p: TMDBImage) => p.iso_639_1 === details.original_language) : undefined
           const fallbackPoster = origPoster || firstPoster
           if (fallbackPoster) {
+            chosenPoster = fallbackPoster
             navigation.setPreviewPoster({ file_path: fallbackPoster.file_path, iso_639_1: fallbackPoster.iso_639_1, vote_average: 0, width: 0, height: 0 })
           }
         }
         loadDefaultsToState()
+        if (chosenPoster) setGradientHeight(defaultGradientHeightForPoster(chosenPoster))
       }
     } finally {
       setLoadingImages(false)
@@ -811,6 +820,7 @@ export function usePosterium(): PosteriumCtx {
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     badgeGenre, badgeYear, badgeRating,
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
+    setGradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
     setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, ribbonSide, lang, profileId,
   })
