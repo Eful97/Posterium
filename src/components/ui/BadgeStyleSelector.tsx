@@ -48,12 +48,12 @@ export function BadgeStyleSelector<S extends string>({
             key={s}
             type="button"
             onClick={() => !isDisabled && onChange(s)}
-            className={`flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 rounded-lg transition-all duration-150 ${
+            className={`flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 rounded-lg border transition-all duration-150 ${
               isDisabled
-                ? "bg-white/5 text-zinc-600 cursor-not-allowed opacity-50"
+                ? "bg-white/5 text-zinc-600 cursor-not-allowed opacity-50 border-transparent"
                 : isActive
-                  ? "bg-white/20 text-white shadow-sm"
-                  : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200"
+                  ? "bg-accent-orange/15 text-accent-orange border-accent-orange/25"
+                  : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200 border-transparent"
             }`}
           >
             <BadgePreview style={s} accentColor={accentColor} />

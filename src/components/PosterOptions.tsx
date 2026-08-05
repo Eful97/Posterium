@@ -254,8 +254,8 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       {activeClean && hasClean && (
         <div className="space-y-2 mb-2 px-1">
           {isBestSelected && (
-            <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold text-accent-orange bg-accent-orange/10 border border-accent-orange/15 rounded-lg">
-              <Check className="w-3 h-3" />Best fit selezionato
+            <div className="editor-pill">
+              <Check className="w-3 h-3" />{t("ui.bestFitSelected")}
             </div>
           )}
           {ed.rotationPosters.length > 1 && (
@@ -272,48 +272,48 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
           )}
           {hasFitData && (
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-zinc-400 flex items-center gap-1"><ArrowUpDown className="w-3 h-3" />Ordine poster</span>
-              <div className="flex rounded-lg overflow-hidden border border-white/10 bg-white/[0.03]">
+              <span className="control-label flex items-center gap-1"><ArrowUpDown className="w-3 h-3" />{t("ui.posterOrder")}</span>
+              <div className="segmented-control">
                 <button
-                  aria-label="Ordinamento TMDB"
+                  aria-label={t("ui.sortByTmdb")}
                   onClick={() => setSortByFit(false)}
-                  className={`px-2 py-1 text-[11px] font-semibold transition-all ${!sortByFit ? "bg-accent-orange/20 text-accent-orange" : "text-zinc-400 hover:bg-white/10"}`}
+                  className={`segmented-option ${!sortByFit ? "segmented-option-active" : ""}`}
                 >
-                  TMDB
+                  {t("ui.tmdb")}
                 </button>
                 <button
-                  aria-label="Miglior compatibilità logo"
+                  aria-label={t("ui.sortByBestFit")}
                   onClick={() => setSortByFit(true)}
-                  className={`px-2 py-1 text-[11px] font-semibold transition-all ${sortByFit ? "bg-accent-orange/20 text-accent-orange" : "text-zinc-400 hover:bg-white/10"}`}
+                  className={`segmented-option ${sortByFit ? "segmented-option-active" : ""}`}
                 >
-                  Best fit
+                  {t("ui.bestFit")}
                 </button>
               </div>
             </div>
           )}
           {(bestPoster && !isBestSelected && !fitLoading) && (
             <button
-              aria-label="Scegli miglior poster per il logo"
+              aria-label={t("ui.chooseBestPosterAria")}
               onClick={() => selectPoster(bestPoster)}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 bg-accent-orange/15 text-accent-orange hover:bg-accent-orange/25 active:scale-[0.98]"
             >
-              <Sparkles className="w-3 h-3" />Scegli miglior poster
+              <Sparkles className="w-3 h-3" />{t("ui.chooseBestPoster")}
             </button>
           )}
           {fitLoading && (
             <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] text-zinc-500">
-              <Clock className="w-3 h-3 animate-spin" />Analisi...
+              <Clock className="w-3 h-3 animate-spin" />{t("ui.analyzing")}
             </div>
           )}
           {hasFitData && (
             <button
               type="button"
-              aria-label={showFitDebug ? "Nascondi debug" : "Mostra debug best fit"}
+              aria-label={showFitDebug ? t("ui.hideDebug") : t("ui.showDebug")}
               onClick={() => setShowFitDebug((v) => !v)}
               className="w-full flex items-center justify-center gap-1.5 px-2 py-1 text-[10px] font-medium rounded-lg transition-all duration-150 text-zinc-600 hover:text-zinc-400 hover:bg-white/[0.03]"
             >
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-              {showFitDebug ? "Nascondi" : "Debug fit"}
+              {showFitDebug ? t("ui.hide") : t("ui.debugFit")}
             </button>
           )}
         </div>
@@ -333,9 +333,9 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
                   <PosterBtn staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/50 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
                   {showBadge && (
-                    <div className={`absolute left-1.5 top-1.5 z-20 rounded-md border px-1.5 py-0.5 text-[8px] font-semibold backdrop-blur-md pointer-events-none ${isHighScore ? "border-orange-300/30 bg-black/60 text-orange-200" : "border-amber-300/25 bg-black/55 text-amber-200"}`}>
+                    <div className={`fit-badge z-20 ${isHighScore ? "fit-badge-amber" : ""}`}>
                       <Sparkles className="w-2.5 h-2.5 inline mr-0.5" />
-                      {isHighScore ? "Best fit" : "Fit migliore"}
+                      {isHighScore ? t("ui.bestFit") : t("ui.bestFitAlt")}
                     </div>
                   )}
                   <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -348,10 +348,10 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
                       {inRotation ? <Check className="w-3.5 h-3.5" /> : <RotateCcw className="w-3.5 h-3.5" />}
                     </button>
                     <button
-                      aria-label="Escludi poster"
+                      aria-label={t("ui.excludePoster")}
                       onClick={(e) => { e.stopPropagation(); excludePoster(img.file_path) }}
                       className="w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 bg-black/55 border-white/10 text-zinc-300 hover:bg-red-500/90 hover:text-white hover:border-red-400/60"
-                      title="Escludi poster"
+                      title={t("ui.excludePoster")}
                     >
                       <EyeOff className="w-3.5 h-3.5" />
                     </button>
@@ -364,13 +364,13 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
           {displayPosters.length > visibleCleanCount && (
             <button
               type="button"
-              aria-label="Carica altri poster"
+              aria-label={t("ui.loadMorePostersAria")}
               onClick={() => setVisibleCleanCount((prev) => prev + 12)}
-              className="w-full mt-3 py-2 px-3 text-xs font-semibold rounded-xl bg-white/[0.06] border border-white/10 text-zinc-300 hover:bg-white/[0.12] hover:border-white/20 hover:text-white active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+              className="btn-secondary w-full mt-3 py-2 px-3 text-xs"
             >
               <ChevronDown className="w-4 h-4" />
-              Carica altri poster (+{Math.min(12, displayPosters.length - visibleCleanCount)})
-              <span className="text-[10px] text-zinc-500 font-normal">({visibleCleanCount} di {displayPosters.length})</span>
+              {t("ui.loadMorePosters", { count: Math.min(12, displayPosters.length - visibleCleanCount) })}
+              <span className="text-[10px] text-zinc-500 font-normal">{t("ui.xOfY", { current: visibleCleanCount, total: displayPosters.length })}</span>
             </button>
           )}
         </>
@@ -379,13 +379,13 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       {activeClean && showFitDebug && hasFitData && (
         <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3 text-[11px] text-zinc-300 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-zinc-100">Debug Best fit</span>
-            <span className="text-zinc-500">{results.length} candidati</span>
+            <span className="font-semibold text-zinc-100">{t("ui.debugBestFit")}</span>
+            <span className="text-zinc-500">{t("ui.candidates", { count: results.length })}</span>
           </div>
 
           {bestResult && (
             <div className="rounded-lg bg-accent-orange/10 border border-accent-orange/20 px-2 py-1.5 text-accent-orange">
-              Best: <span title={bestResult.posterPath}>{shortPath(bestResult.posterPath)}</span> - score {bestResult.adjustedScore.toFixed(2)}
+              {t("ui.best")} <span title={bestResult.posterPath}>{shortPath(bestResult.posterPath)}</span> - score {bestResult.adjustedScore.toFixed(2)}
             </div>
           )}
 
@@ -402,12 +402,12 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
                 </div>
 
                 <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-zinc-500">
-                  <span>base {result.score.toFixed(2)}</span>
-                  <span>qualita {result.qualityScore.toFixed(2)}</span>
-                  <span>testo {result.textPenalty.toFixed(2)}</span>
-                  <span>logo {result.logoZoneScore.toFixed(2)}</span>
-                  <span>contrasto {result.metrics.contrast.toFixed(2)}</span>
-                  <span>dettaglio {result.metrics.lowDetailScore.toFixed(2)}</span>
+                  <span>{t("ui.scoreBase")} {result.score.toFixed(2)}</span>
+                  <span>{t("ui.scoreQuality")} {result.qualityScore.toFixed(2)}</span>
+                  <span>{t("ui.scoreText")} {result.textPenalty.toFixed(2)}</span>
+                  <span>{t("ui.scoreLogo")} {result.logoZoneScore.toFixed(2)}</span>
+                  <span>{t("ui.scoreContrast")} {result.metrics.contrast.toFixed(2)}</span>
+                  <span>{t("ui.scoreDetail")} {result.metrics.lowDetailScore.toFixed(2)}</span>
                 </div>
 
                 {result.reasons.length > 0 && (
@@ -437,13 +437,13 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
           {activeLangImgs.length > visibleLangCount && (
             <button
               type="button"
-              aria-label="Carica altri poster"
+              aria-label={t("ui.loadMorePostersAria")}
               onClick={() => setVisibleLangCount((prev) => prev + 12)}
-              className="w-full mt-3 py-2 px-3 text-xs font-semibold rounded-xl bg-white/[0.06] border border-white/10 text-zinc-300 hover:bg-white/[0.12] hover:border-white/20 hover:text-white active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+              className="btn-secondary w-full mt-3 py-2 px-3 text-xs"
             >
               <ChevronDown className="w-4 h-4" />
-              Carica altri poster (+{Math.min(12, activeLangImgs.length - visibleLangCount)})
-              <span className="text-[10px] text-zinc-500 font-normal">({visibleLangCount} di {activeLangImgs.length})</span>
+              {t("ui.loadMorePosters", { count: Math.min(12, activeLangImgs.length - visibleLangCount) })}
+              <span className="text-[10px] text-zinc-500 font-normal">{t("ui.xOfY", { current: visibleLangCount, total: activeLangImgs.length })}</span>
             </button>
           )}
         </>
@@ -455,13 +455,13 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       {activeClean && ed.excludedPosters.length > 0 && (
         <div className="mt-2 flex items-center justify-between rounded-lg border border-zinc-800/70 bg-white/5 px-2.5 py-2">
           <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-            <span>{ed.excludedPosters.length} {ed.excludedPosters.length === 1 ? 'poster escluso' : 'poster esclusi'}</span>
-            {excludedSaveState === "saving" && <span className="text-[10px] text-zinc-500 animate-pulse">salvataggio...</span>}
-            {excludedSaveState === "saved" && <span className="text-[10px] text-green-500">salvato</span>}
-            {excludedSaveState === "error" && <span className="text-[10px] text-red-400">errore</span>}
+            <span>{ed.excludedPosters.length} {ed.excludedPosters.length === 1 ? t("ui.excludedCountOne") : t("ui.excludedCountMany")}</span>
+            {excludedSaveState === "saving" && <span className="text-[10px] text-zinc-500 animate-pulse">{t("ui.saveStateSaving")}</span>}
+            {excludedSaveState === "saved" && <span className="text-[10px] text-green-500">{t("ui.saveStateSaved")}</span>}
+            {excludedSaveState === "error" && <span className="text-[10px] text-red-400">{t("ui.saveStateError")}</span>}
           </span>
           <button onClick={() => { ed.setExcludedPosters([]); setExcludedSaveState("saving"); p.autoSaveExcludedPosters([], ed.rotationPosters).then(() => { setExcludedSaveState("saved"); toast.success(t("ui.cancel")) }).catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) }) }} className="text-[11px] text-accent-orange hover:text-orange-300">
-            Ripristina
+            {t("ui.restore")}
           </button>
         </div>
       )}

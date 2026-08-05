@@ -95,7 +95,10 @@ return (
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
           <>
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
-          <img onClick={p.goHome} src="/posterium.png" alt="Posterium" decoding="async" className="header-logo h-16 md:h-20 w-auto mb-6 md:mb-5 cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
+          <img onClick={p.goHome} src="/posterium.png" alt="Posterium" decoding="async" className={`header-logo h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 ${p.view === "edit" && !p.selected ? "mb-1 md:mb-2" : "mb-6 md:mb-5"}`} />
+          {p.view === "edit" && !p.selected && (
+            <p className="header-tagline mb-5 md:mb-6">{t("ui.homeTagline")}</p>
+          )}
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
             <button suppressHydrationWarning aria-label={p.copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="top-action-button top-action-button-primary h-9 w-9 flex items-center justify-center bg-accent-orange text-white border border-accent-orange/50 shadow-lg shadow-accent-orange/25 disabled:opacity-40"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
             <button suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const uParam = p.profileId ? `?u=${p.profileId}` : ""; const url = `${window.location.origin}/manifest.json${uParam}`; await navigator.clipboard.writeText(url) }} disabled={!p.urlPattern && !p.profileId} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-zinc-400 hover:text-zinc-200"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>

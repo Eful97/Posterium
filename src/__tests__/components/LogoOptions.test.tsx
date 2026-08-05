@@ -21,13 +21,13 @@ describe("LogoOptions", () => {
 
   it("renders language group tabs", () => {
     renderWithCtx(<LogoOptions logos={mockLogos} selectedLogo={null} lang="it" selectLogo={() => {}} removeLogo={() => {}} />)
-    expect(screen.getByText(/Tutti/)).toBeInTheDocument()
+    expect(screen.getByText("ui.all")).toBeInTheDocument()
     const italianEls = screen.getAllByText(/Italiano/)
     expect(italianEls.length).toBe(2)
     const englishEls = screen.getAllByText(/English/)
     expect(englishEls.length).toBe(2)
-    const senzaEls = screen.getAllByText(/Senza lingua/)
-    expect(senzaEls.length).toBe(2)
+    const senzaEls = screen.getAllByText("ui.withoutLanguage")
+    expect(senzaEls.length).toBe(1)
   })
 
   it("shows logos within groups", () => {
@@ -41,7 +41,7 @@ describe("LogoOptions", () => {
 
   it("shows selected state when a logo is selected", () => {
     renderWithCtx(<LogoOptions logos={mockLogos} selectedLogo={mockLogos[0]} lang="it" selectLogo={() => {}} removeLogo={() => {}} />)
-    expect(screen.getByText("Logo selezionato")).toBeInTheDocument()
+    expect(screen.getByText("ui.logoSelected")).toBeInTheDocument()
     expect(screen.getByText("ui.removeLogo")).toBeInTheDocument()
   })
 

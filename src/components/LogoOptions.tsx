@@ -43,10 +43,10 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
   })
 
   const logoTabs = [
-    { key: "all", label: "Tutti", count: logos.length },
+    { key: "all", label: t("ui.all"), count: logos.length },
     { key: lang, label: LANG_NAMES[lang] || lang, count: groups[lang]?.length ?? 0 },
     ...(lang !== "en" ? [{ key: "en", label: "English", count: groups["en"]?.length ?? 0 }] : []),
-    { key: "xx", label: "Senza lingua", count: groups["xx"]?.length ?? 0 },
+    { key: "xx", label: t("ui.withoutLanguage"), count: groups["xx"]?.length ?? 0 },
   ].filter((tab) => tab.count > 0 || tab.key === "all")
 
   const visibleLogoGroups = activeLogoGroup === "all"
@@ -73,7 +73,7 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
         ))}
       </div>
       {visibleLogoGroups.length === 0 ? (
-        <p className="py-8 text-center text-xs text-zinc-500">Nessun logo in questa lingua</p>
+        <p className="py-8 text-center text-xs text-zinc-500">{t("ui.noLogoInLanguage")}</p>
       ) : (
         visibleLogoGroups.map(([language, imgs]) => {
           const quotaLeft = visibleLogoCount - renderedLogosCount
@@ -108,24 +108,24 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
       {totalAvailableLogos > visibleLogoCount && (
         <button
           type="button"
-          aria-label="Carica altri loghi"
+          aria-label={t("ui.loadMoreLogosAria")}
           onClick={() => setVisibleLogoCount((prev) => prev + 10)}
-          className="w-full mb-3 py-2 px-3 text-xs font-semibold rounded-xl bg-white/[0.06] border border-white/10 text-zinc-300 hover:bg-white/[0.12] hover:border-white/20 hover:text-white active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+          className="btn-secondary w-full mb-3 py-2 px-3 text-xs"
         >
           <ChevronDown className="w-4 h-4" />
-          Carica altri loghi (+{Math.min(10, totalAvailableLogos - visibleLogoCount)})
-          <span className="text-[10px] text-zinc-500 font-normal">({visibleLogoCount} di {totalAvailableLogos})</span>
+          {t("ui.loadMoreLogos", { count: Math.min(10, totalAvailableLogos - visibleLogoCount) })}
+          <span className="text-[10px] text-zinc-500 font-normal">{t("ui.xOfY", { current: visibleLogoCount, total: totalAvailableLogos })}</span>
         </button>
       )}
 
       {selectedLogo && (
-        <div className="mt-3 rounded-lg border border-accent-orange/20 bg-accent-orange/10 px-2.5 py-2 text-[11px] text-accent-orange flex items-center gap-1.5">
-          <Check className="w-3 h-3" />Logo selezionato
+        <div className="editor-pill mt-3">
+          <Check className="w-3 h-3" />{t("ui.logoSelected")}
         </div>
       )}
       {!selectedLogo && (
-        <button aria-label={logoDisabled ? t("ui.removeLogo") : "Abilita loghi"} disabled={disabled} onClick={() => setLogoDisabled(!logoDisabled)} className={`mt-3 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : logoDisabled ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"}`}>
-          <span className="flex items-center justify-center gap-1.5">{logoDisabled ? "Loghi disabilitati" : "Disabilita loghi"}</span>
+        <button aria-label={logoDisabled ? t("ui.removeLogo") : t("ui.enableLogos")} disabled={disabled} onClick={() => setLogoDisabled(!logoDisabled)} className={`mt-3 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : logoDisabled ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"}`}>
+          <span className="flex items-center justify-center gap-1.5">{logoDisabled ? t("ui.logosDisabled") : t("ui.disableLogos")}</span>
         </button>
       )}
       {selectedLogo && (

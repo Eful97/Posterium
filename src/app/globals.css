@@ -461,6 +461,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .editor-panel {
+  position: relative;
   min-height: 0;
   height: 100%;
   display: flex;
@@ -475,6 +476,19 @@ input[type="range"]::-moz-range-thumb {
     0 18px 40px rgba(0,0,0,0.34),
     inset 0 1px 0 rgba(255,255,255,0.03);
   backdrop-filter: blur(14px);
+}
+
+/* Editor panel — top accent hairline */
+.editor-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(232,93,42,0.90), rgba(232,93,42,0.25), transparent);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .editor-panel-header {
@@ -1087,6 +1101,338 @@ select:focus-visible {
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), rgba(232,93,42,0.15), rgba(255,255,255,0.08), transparent);
   margin: 2rem 0;
   border: none;
+}
+
+/* ═══════════════════════════════════════════════
+   Home editor — premium refinement
+   ═══════════════════════════════════════════════ */
+
+/* Tagline under the header logo (home only) */
+.header-tagline {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(161, 161, 170, 0.55);
+}
+
+/* Kicker pill — hero & welcome panel */
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-accent-orange);
+  background: rgba(232, 93, 42, 0.10);
+  border: 1px solid rgba(232, 93, 42, 0.22);
+}
+
+/* Hero advantage pills */
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgb(212 212 216);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  white-space: nowrap;
+}
+
+.stat-pill svg {
+  color: var(--color-accent-orange);
+  opacity: 0.85;
+}
+
+/* Accent top bar for the welcome panel (clips to panel radius) */
+.welcome-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(232,93,42,0.85), rgba(232,93,42,0.25), transparent);
+}
+
+/* Welcome feature cards */
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 0.5rem;
+  border-radius: 0.875rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, background 0.2s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232,93,42,0.22);
+  background: rgba(232,93,42,0.05);
+}
+
+.feature-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: rgba(232,93,42,0.12);
+  border: 1px solid rgba(232,93,42,0.18);
+  color: var(--color-accent-orange);
+}
+
+.feature-card-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgb(228 228 231);
+}
+
+.feature-card-desc {
+  font-size: 9px;
+  line-height: 1.4;
+  color: rgb(113 113 122);
+}
+
+/* Carousel poster card — hover lift + orange glow */
+.carousel-card {
+  position: relative;
+  isolation: isolate;
+  border-radius: 1rem;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.008)),
+    rgba(24,24,27,0.60);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease;
+}
+
+.carousel-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(232,93,42,0.45);
+  box-shadow:
+    0 0 0 1px rgba(232,93,42,0.18),
+    0 0 26px rgba(232,93,42,0.18),
+    0 20px 46px rgba(0,0,0,0.42);
+}
+
+/* Carousel track — glass wrapper */
+.carousel-track {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.015);
+  backdrop-filter: blur(8px);
+}
+
+/* ============================================================
+   Editor — Rifinitura Premium UI
+   ============================================================ */
+
+/* Preview podium — frosted ring around the live poster */
+.editor-stage {
+  position: relative;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    0 24px 60px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.editor-stage-glow {
+  border-color: rgba(232,93,42,0.25);
+  box-shadow:
+    0 0 0 1px rgba(232,93,42,0.18),
+    0 0 30px rgba(232,93,42,0.14),
+    0 24px 60px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.ui-accent .editor-stage-glow {
+  border-color: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 25%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 18%, transparent),
+    0 0 30px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 14%, transparent),
+    0 24px 60px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* Glass secondary button (Test URL, load-more) */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  color: rgb(212 212 216);
+  font-weight: 600;
+  transition: color 200ms ease, background 200ms ease, border-color 200ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.20);
+  color: #fff;
+}
+.btn-secondary:active {
+  transform: scale(0.97);
+}
+
+/* Glass danger button (Remove) */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(239,68,68,0.50);
+  background: rgba(127,29,29,0.30);
+  color: rgb(248 113 113);
+  font-weight: 600;
+  transition: color 200ms ease, background 200ms ease, border-color 200ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-danger:hover {
+  background: rgba(127,29,29,0.50);
+  border-color: rgba(239,68,68,0.70);
+  color: rgb(254 202 202);
+}
+.btn-danger:active {
+  transform: scale(0.97);
+}
+
+/* Control row — hover highlight for toggle/slider rows */
+.control-row {
+  border-radius: 0.625rem;
+  padding: 0.25rem 0.375rem;
+  margin: 0 -0.375rem;
+  transition: background 150ms ease;
+}
+.control-row:hover {
+  background: rgba(255,255,255,0.035);
+}
+.ui-accent .control-row:hover {
+  background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 4%, transparent);
+}
+
+/* Shared control label typography */
+.control-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(161 161 170);
+}
+
+/* Segmented control (sort: TMDB / Best fit) */
+.segmented-control {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 0.625rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+
+.segmented-option {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgb(161 161 170);
+  transition: color 150ms ease, background 150ms ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.segmented-option:hover {
+  color: rgb(228 228 231);
+  background: rgba(255,255,255,0.05);
+}
+
+.segmented-option-active {
+  color: var(--color-accent-orange);
+  background: rgba(232,93,42,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.ui-accent .segmented-option-active {
+  color: var(--color-accent, var(--color-accent-orange));
+  background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 18%, transparent);
+}
+
+/* Shared editor input/select */
+.editor-input {
+  background: rgba(0,0,0,0.40);
+  border: 1px solid rgb(63 63 70);
+  border-radius: 0.5rem;
+  font-size: 11px;
+  color: rgb(212 212 216);
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.editor-input:focus {
+  border-color: var(--color-accent-orange);
+  box-shadow: 0 0 0 3px rgba(232,93,42,0.22);
+}
+.ui-accent .editor-input:focus {
+  border-color: var(--color-accent, var(--color-accent-orange));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 22%, transparent);
+}
+
+/* Status pill ("Best fit selezionato", "Logo selezionato") */
+.editor-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-accent-orange);
+  background: rgba(232,93,42,0.10);
+  border: 1px solid rgba(232,93,42,0.18);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+.ui-accent .editor-pill {
+  color: var(--color-accent, var(--color-accent-orange));
+  background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 18%, transparent);
+}
+
+/* Corner best-fit badge on poster tiles */
+.fit-badge {
+  position: absolute;
+  top: 0.375rem;
+  left: 0.375rem;
+  padding: 0.15rem 0.375rem;
+  border-radius: 0.375rem;
+  background: rgba(0,0,0,0.60);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: rgb(228 228 231);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.fit-badge-amber {
+  color: #fbbf24;
+  border-color: rgba(251,191,36,0.30);
 }
 
 
