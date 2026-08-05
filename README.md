@@ -44,7 +44,7 @@ pinned: false
 ## ✨ Feature Principali
 
 - 🖼️ **Selezione Poster Clean in 1-Click** — Scegli la tua locandina pulita (senza testo) preferita con un singolo click e fissala per sempre su Stremio. Supporta l'algoritmo *Best Fit* che rileva in automatico il poster perfetto per il logo.
-- 🎨 **Personalizzazione Badge Completa** — 6 stili per badge genere/rating (*Shadow, Pill, Bar, Colored, Bordo, Vetro*) e 5 stili per badge trend (*Default, Bar, Colored, Pill, Nastro Netflix*). Colori accent adattivi al poster e testo libero personalizzato per singolo titolo.
+- 🎨 **Personalizzazione Badge Completa** — 6 stili per badge genere/rating (*Shadow, Pill, Bar, Colored, Bordo, Vetro*) e 5 stili per badge trend (*Default, Bar, Colored, Pill, Nastro Netflix*). Ogni componente del badge genere/rating (genere, anno, voto) si attiva/disattiva in modo indipendente per la combinazione che preferisci. Colori accent adattivi al poster e testo libero personalizzato per singolo titolo. Nelle **Impostazioni** salvi i tuoi default (componenti genere/anno/voto, stili badge, blur, gradiente, posizione badge): si applicano automaticamente a ogni nuovo poster e alle richieste Stremio.
 - 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch Italia, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA/Emmy (da Wikidata), saghe/franchise e registi cult.
 - 🍿 **Nastro Netflix Top 10** — Badge con l'iconico nastro rosso verticale allineato a sinistra e affiancamento automatico del logo della piattaforma. Variante dedicata per le classifiche anime (nastro esteso con etichetta *anime* sotto il numero).
 - 🎭 **Loghi Network Automatici** — Logo ufficiale della piattaforma sovrapposto automaticamente al poster: Netflix, HBO Max, Disney+, Prime Video, Apple TV+, Paramount+, Rai, Crunchyroll, Sky/NOW, Mediaset Infinity, Tubi e Pluto TV.
@@ -54,6 +54,7 @@ pinned: false
 - 🔐 **Profilo Cloud (UUID + Password)** — Salva e carica la tua configurazione su server con password protetta. Il tuo UUID personale si collega automaticamente a Stremio per avere i poster personalizzati ovunque.
 - ⚡ **Generatore Stremio Addon Proxy** — Incolla il link `manifest.json` di qualsiasi add-on Stremio (Cyberflix, Cinemeta, Streaming Catalogs, Torrentio, ecc.) per iniettare automaticamente i poster dinamici di Posterium nei cataloghi esterni! Supporta anche il parametro `?u=` per profili personalizzati.
 - 📡 **Integrazione Stremio Istantanea** — Generazione dinamica tramite manifest Stremio con caching e warmup automatico.
+- 🌍 **Multi-Lingua** — Interfaccia disponibile in 5 lingue: Italiano, English, Français, Deutsch, Español.
 
 ---
 
@@ -271,7 +272,7 @@ Posterium usa [Vitest](https://vitest.dev/) per test unitari e [Playwright](http
 
 ### Test unitari (Vitest)
 
-Oltre 480 test su store, API, componenti React, badge SVG, poster-fit, profili e utilità.
+Quasi 500 test su store, API, componenti React, badge SVG, poster-fit, profili e utilità.
 
 ```bash
 # Esecuzione singola

@@ -38,6 +38,8 @@ yarn-error.log*
 /data/
 
 # opencode
+/opencode.json
+/vibeguard.config.json
 /.opencode/
 /CLAUDE.md
 
