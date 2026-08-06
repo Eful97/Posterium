@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import type { TMDBImage } from "@/lib/types"
 import { LANG_NAMES, groupBy } from "@/lib/utils"
 import { PosterBtn } from "@/components/PosterBtn"
+import { PosterTabs } from "@/components/PosterTabs"
 import { useP } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
@@ -235,20 +236,8 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
 
   return (
     <div>
-      {showTabs && posterTabs.length > 1 && (
-        <div className="flex gap-1 mb-3 overflow-x-auto scrollbar-none">
-          {posterTabs.map((tab) => (
-            <button type="button"
-              aria-label={tab.label}
-              key={tab.key}
-              onClick={() => setActiveGroup(tab.key)}
-              className={`tab-chip h-7 px-2.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 ${activeGroup === tab.key ? "tab-chip-active bg-accent-orange/15 text-accent-orange border-accent-orange/35" : "bg-white/5 text-muted border-white/10 hover:text-zinc-200 hover:bg-white/10"}`}
-            >
-              {tab.label}
-              <span className="ml-1 text-[10px] opacity-60">{tab.count}</span>
-            </button>
-          ))}
-        </div>
+      {showTabs && (
+        <PosterTabs tabs={posterTabs} activeGroup={activeGroup} onSelect={setActiveGroup} />
       )}
 
       {activeClean && hasClean && (
