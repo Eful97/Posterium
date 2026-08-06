@@ -54,12 +54,25 @@ describe("network-svgs", () => {
     expect(getNetworkSvgResult("Sky Italia")?.networkKey).toBe("sky")
   })
 
+  it("does NOT match Sky for substring collisions", () => {
+    expect(getNetworkSvgResult("Skydance")).toBeNull()
+    expect(getNetworkSvgResult("Skydance Media")).toBeNull()
+    expect(getNetworkSvgResult("Skywalker")).toBeNull()
+    expect(getNetworkSvgResult("Skyline")).toBeNull()
+  })
+
+  it("does NOT match any network for unrelated names", () => {
+    expect(getNetworkSvgResult("Sentimental Value")).toBeNull()
+  })
+
   it("matches NOW as Sky (same service)", () => {
     expect(getNetworkSvgResult("NOW")?.networkKey).toBe("sky")
     expect(getNetworkSvgResult("Now TV")?.networkKey).toBe("sky")
+    expect(getNetworkSvgResult("NOW Extra")?.networkKey).toBe("sky")
     // substring collisions must NOT match
     expect(getNetworkSvgResult("Snowfall")).toBeNull()
     expect(getNetworkSvgResult("Nowhere")).toBeNull()
+    expect(getNetworkSvgResult("Don't Look Now")).toBeNull()
   })
 
   it("matches Mediaset networks", () => {

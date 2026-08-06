@@ -69,8 +69,11 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("mediaset")) return "mediaset"
   if (lower.includes("tubi")) return "tubi"
   if (lower.includes("pluto")) return "pluto"
-  // NOW è lo stesso servizio di Sky (streaming Sky) → stesso logo, alias a sky
-  if (lower.includes("sky") || /\bnow\b/.test(lower)) return "sky"
+  // NOW è lo stesso servizio di Sky (streaming Sky) → stesso logo, alias a sky.
+  // Word boundary per evitare falsi positivi tipo "Skydance".
+  // NOW matchato solo quando il nome inizia con "now" (NOW / Now TV), non la parola ovunque
+  // (evita falsi positivi tipo "Don't Look Now").
+  if (/\bsky\b/.test(lower) || lower === "now" || lower.startsWith("now ")) return "sky"
   return null
 }
 

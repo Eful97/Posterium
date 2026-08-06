@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /.next-e2e/
+/.next-e2e-probe/
 /out/
 
 # production
@@ -68,6 +69,10 @@ $null
 # ai tool configs (local copies)
 /.aider-desk/
 /.qwen/
+
+# pi extensions (runtime state + local node_modules)
+/.pi/state/
+/.pi/extensions/node_modules/
 
 # default next.js starter assets (unused)
 public/file.svg
