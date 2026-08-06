@@ -279,6 +279,40 @@ describe("buildExtraBadgeSVG", () => {
   })
 })
 
+describe("Custom badge fonts", () => {
+  it("renders genre badge with a custom font (bebas)", async () => {
+    const badge = await buildGenreBadgeSVG("Azione", 8.2, 1000, "2024", "shadow", "#555555", false, undefined, "bebas")
+    expect(badge).not.toBeNull()
+    expect(badge!.w).toBeGreaterThan(0)
+    const bounds = await alphaBounds(badge!.png)
+    expect(bounds.maxX).toBeGreaterThan(0)
+  })
+
+  it("renders extra badge with a custom font (playfair)", async () => {
+    const badge = await buildExtraBadgeSVG("Vincitore Oscar", 1000, false, "default", "#555555", "playfair")
+    expect(badge).not.toBeNull()
+    expect(badge!.w).toBeGreaterThan(0)
+  })
+
+  it("renders ranking badge with a custom font (montserrat)", async () => {
+    const badge = await buildRankingBadgeSVG(3, 1000, "Oggi", false, "default", "#555555", "left", false, "montserrat")
+    expect(badge).not.toBeNull()
+    expect(badge!.w).toBeGreaterThan(0)
+  })
+
+  it("renders netflix ribbon with a custom font (anton)", async () => {
+    const badge = await buildRankingBadgeSVG(5, 1000, "Oggi", false, "netflix", "#555555", "left", false, "anton")
+    expect(badge).not.toBeNull()
+    expect(badge!.w).toBeGreaterThan(0)
+  })
+
+  it("keeps default inter output byte-identical (no font param)", async () => {
+    const a = await buildGenreBadgeSVG("Azione", 8.2, 1000, "2024", "shadow", "#555555", false)
+    const b = await buildGenreBadgeSVG("Azione", 8.2, 1000, "2024", "shadow", "#555555", false, undefined, "inter")
+    expect(a!.png.equals(b!.png)).toBe(true)
+  })
+})
+
 describe("buildRankingDefaultSvg", () => {
   it("contains text-anchor middle for centering", () => {
     const { svg } = buildRankingDefaultSvg("#1 Oggi", 60, "rgba(255,255,255,0.80)", "rgba(0,0,0,0.80)")

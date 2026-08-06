@@ -84,6 +84,8 @@ export interface Mapping {
   badgeRating?: boolean | null
   badgeStyle?: BadgeStyle | null
   rankingBadgeStyle?: RankingBadgeStyle | null
+  /** Font dei badge (key del catalogo in badge-fonts.ts). */
+  badgeFont?: string | null
   blurEnabled?: boolean | null
   blurIntensity?: number | null
   blurFade?: number | null

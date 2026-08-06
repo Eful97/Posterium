@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import type { BadgeStyle, RankingBadgeStyle } from "./badge-styles"
+import { DEFAULT_BADGE_FONT } from "./badge-fonts"
 
 export type RibbonSide = "left" | "right"
 
 export interface DefaultsState {
   defaultBadgeStyle: BadgeStyle
   defaultRankingBadgeStyle: RankingBadgeStyle
+  defaultBadgeFont: string
   defaultBlurEnabled: boolean
   defaultBlurIntensity: number
   defaultBlurFade: number
@@ -38,11 +40,13 @@ export interface DefaultsState {
   blurEnabled: boolean
   badgeStyle: BadgeStyle
   rankingBadgeStyle: RankingBadgeStyle
+  badgeFont: string
 }
 
 const DEFAULTS: DefaultsState = {
   defaultBadgeStyle: "shadow",
   defaultRankingBadgeStyle: "default",
+  defaultBadgeFont: DEFAULT_BADGE_FONT,
   defaultBlurEnabled: true,
   defaultBlurIntensity: 5,
   defaultBlurFade: 60,
@@ -71,6 +75,7 @@ const DEFAULTS: DefaultsState = {
   blurEnabled: true,
   badgeStyle: "shadow",
   rankingBadgeStyle: "default",
+  badgeFont: DEFAULT_BADGE_FONT,
 }
 
 interface StoredDefaults {
@@ -87,8 +92,10 @@ interface StoredDefaults {
   blurEnabled?: boolean
   badgeStyle?: BadgeStyle
   rankingBadgeStyle?: RankingBadgeStyle
+  badgeFont?: string
   defaultBadgeStyle?: BadgeStyle
   defaultRankingBadgeStyle?: RankingBadgeStyle
+  defaultBadgeFont?: string
   defaultBlurEnabled?: boolean
   defaultBlurIntensity?: number
   defaultBlurFade?: number
@@ -128,6 +135,7 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
   return {
     defaultBadgeStyle: d.defaultBadgeStyle ?? d.badgeStyle ?? "shadow",
     defaultRankingBadgeStyle: d.defaultRankingBadgeStyle ?? d.rankingBadgeStyle ?? "default",
+    defaultBadgeFont: d.defaultBadgeFont ?? d.badgeFont ?? DEFAULT_BADGE_FONT,
     defaultBlurEnabled: d.defaultBlurEnabled ?? d.blurEnabled ?? true,
     defaultBlurIntensity: d.defaultBlurIntensity ?? d.blurIntensity ?? 5,
     defaultBlurFade: d.defaultBlurFade ?? d.blurFade ?? 60,
@@ -156,6 +164,7 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
     blurEnabled: d.blurEnabled ?? true,
     badgeStyle: d.badgeStyle ?? "shadow",
     rankingBadgeStyle: d.rankingBadgeStyle ?? "default",
+    badgeFont: d.badgeFont ?? DEFAULT_BADGE_FONT,
   }
 }
 
@@ -169,6 +178,7 @@ function defaultsToPayload(d: DefaultsState): Record<string, unknown> {
   return {
     badgeStyle: d.defaultBadgeStyle,
     rankingBadgeStyle: d.defaultRankingBadgeStyle,
+    badgeFont: d.defaultBadgeFont,
     blurEnabled: d.defaultBlurEnabled,
     blurIntensity: d.defaultBlurIntensity,
     blurFade: d.defaultBlurFade,

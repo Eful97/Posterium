@@ -11,6 +11,7 @@ import { SliderRow } from "@/components/SliderRow"
 import { Toggle } from "@/components/Toggle"
 import { BadgeStyleSelector, SecretInput, MenuItem } from "@/components/ui"
 import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles, Tv, Flame } from "lucide-react"
+import { BADGE_FONTS } from "@/lib/badge-fonts"
 
 interface Props {
   tmdbKeyInput: string
@@ -140,6 +141,17 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <BadgeStyleSelector value={ed.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill"]} onChange={ed.setDefaultRankingBadgeStyle} t={t} accentColor={p.accentColor} />
       <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5 mt-1"><Palette className="w-3 h-3" /> {t("ui.styleDefault")}</label>
       <BadgeStyleSelector value={ed.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored", "bordo", "vetro"]} onChange={ed.setDefaultBadgeStyle} t={t} />
+      <div className="flex items-center justify-between gap-2 mt-1">
+        <span className="text-xs text-zinc-400 shrink-0"><Palette className="w-3 h-3" /> Font</span>
+        <select
+          value={ed.defaultBadgeFont}
+          onChange={(e) => ed.setDefaultBadgeFont(e.target.value)}
+          className="editor-input flex-1 text-right px-1.5 py-1 cursor-pointer"
+          aria-label="Default badge font"
+        >
+          {BADGE_FONTS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+        </select>
+      </div>
       <hr className="border-zinc-700 my-1" />
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-zinc-400">{t("ui.blurDefault")}</span>

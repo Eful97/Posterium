@@ -10,6 +10,7 @@ import { z } from "zod"
 // Batch B: clamp condiviso da image-utils.ts (semantica standard, senza round)
 import { clamp } from "@/lib/image-utils"
 import { BADGE_STYLES, RANKING_BADGE_STYLES } from "@/lib/badge-styles"
+import { isBadgeFont } from "@/lib/badge-fonts"
 
 // ---- Zod schema (Batch C: sostituisce validazione manuale) ----
 
@@ -25,6 +26,7 @@ export const configTokenSchema = z.object({
   badgeRating: z.boolean().optional(),
   badgeStyle: badgeStyleSchema,
   rankingBadgeStyle: rankingBadgeStyleSchema,
+  badgeFont: z.string().optional().refine((v) => v === undefined || isBadgeFont(v), { message: "unknown badge font" }),
   blurEnabled: z.boolean(),
   blurIntensity: z.number().finite(),
   blurFade: z.number().finite(),

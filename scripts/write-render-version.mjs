@@ -14,6 +14,7 @@ const RENDER_FILES = [
   "src/lib/accent-color.ts",
   "src/lib/badge-priority.ts",
   "src/lib/badge-styles.ts",
+  "src/lib/badge-fonts.ts",
   "src/lib/badge-svg-shared.ts",
   "src/lib/badges.ts",
   "src/lib/blur.ts",
@@ -40,6 +41,11 @@ const RENDER_FILES = [
   "src/assets/fonts/Inter-Bold.ttf",
   "src/assets/fonts/Inter-Regular.ttf",
   "src/assets/fonts/NotoSansSymbols2-Regular.ttf",
+  "src/assets/fonts/Anton-Regular.ttf",
+  "src/assets/fonts/BebasNeue-Regular.ttf",
+  "src/assets/fonts/Montserrat-Black.ttf",
+  "src/assets/fonts/Montserrat-Bold.ttf",
+  "src/assets/fonts/PlayfairDisplay-Bold.ttf",
 ]
 
 const outputPath = path.join(rootDir, "src", "lib", "render-version.ts")

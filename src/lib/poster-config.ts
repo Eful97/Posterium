@@ -16,6 +16,7 @@ import {
   type BadgeStyle,
   type RankingBadgeStyle,
 } from "./badge-styles"
+import { isBadgeFont, DEFAULT_BADGE_FONT } from "./badge-fonts"
 
 export function clamp(v: number, min: number, max: number): number {
   return Math.min(Math.max(v, min), max)
@@ -39,6 +40,8 @@ export interface PosterRenderConfigInput {
 export interface PosterRenderConfig {
   badgeStyle: BadgeStyle
   rankingBadgeStyle: RankingBadgeStyle
+  /** Font dei badge (key del catalogo in badge-fonts.ts). */
+  badgeFont: string
   blurEnabled: boolean
   blurHeight: number
   blurIntensity: number
@@ -117,6 +120,14 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
     || sd.badgeStyle
   const badgeStyle: BadgeStyle = isBadgeStyle(rawBs) ? rawBs : DEFAULT_BADGE_STYLE
 
+  // Font badge — precedenza: query `font` > mapping salvato > config token > server defaults > default.
+  const rawFont =
+    q.get("font")
+    || mapping?.badgeFont
+    || configOverride?.badgeFont
+    || sd.badgeFont
+  const badgeFont = isBadgeFont(rawFont) ? rawFont : DEFAULT_BADGE_FONT
+
   const qScale = q.get("scale")
   const qOx = q.get("ox")
   const qOy = q.get("oy")
@@ -133,6 +144,7 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
   return {
     badgeStyle,
     rankingBadgeStyle,
+    badgeFont,
     blurEnabled,
     blurHeight,
     blurIntensity,

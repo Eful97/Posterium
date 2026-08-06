@@ -30,6 +30,8 @@ export interface PosterEditorCtx {
   setBadgeStyle: (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => void
   rankingBadgeStyle: RankingBadgeStyle
   setRankingBadgeStyle: (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => void
+  badgeFont: string
+  setBadgeFont: (v: string | ((prev: string) => string)) => void
   customBadge: string | null
   setCustomBadge: (v: string | null | ((prev: string | null) => string | null)) => void
   networkLogo: boolean
@@ -42,6 +44,8 @@ export interface PosterEditorCtx {
   setDefaultBadgeStyle: (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => void
   defaultRankingBadgeStyle: RankingBadgeStyle
   setDefaultRankingBadgeStyle: (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => void
+  defaultBadgeFont: string
+  setDefaultBadgeFont: (v: string | ((prev: string) => string)) => void
   defaultBlurEnabled: boolean
   setDefaultBlurEnabled: (v: boolean | ((prev: boolean) => boolean)) => void
   defaultBlurIntensity: number
@@ -147,8 +151,8 @@ export function PosterEditorProvider({
     globalBadges, rankingBadges, networkLogo, ribbonSide,
     badgeGenre, badgeYear, badgeRating,
     gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled,
-    badgeStyle, rankingBadgeStyle,
-    defaultBadgeStyle, defaultRankingBadgeStyle,
+    badgeStyle, rankingBadgeStyle, badgeFont,
+    defaultBadgeStyle, defaultRankingBadgeStyle, defaultBadgeFont,
     defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness,
     defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges,
     defaultBadgeGenre, defaultBadgeYear, defaultBadgeRating,
@@ -236,6 +240,16 @@ export function PosterEditorProvider({
       const next = typeof v === "function" ? v(defaultRankingBadgeStyle) : v
       update({ defaultRankingBadgeStyle: next })
     }, [defaultRankingBadgeStyle, update])
+  const setBadgeFont = useCallback(
+    (v: string | ((prev: string) => string)) => {
+      const next = typeof v === "function" ? v(badgeFont) : v
+      update({ badgeFont: next })
+    }, [badgeFont, update])
+  const setDefaultBadgeFont = useCallback(
+    (v: string | ((prev: string) => string)) => {
+      const next = typeof v === "function" ? v(defaultBadgeFont) : v
+      update({ defaultBadgeFont: next })
+    }, [defaultBadgeFont, update])
   const setDefaultBlurEnabled = useCallback(
     (v: boolean | ((prev: boolean) => boolean)) => {
       const next = typeof v === "function" ? v(defaultBlurEnabled) : v
@@ -349,6 +363,8 @@ export function PosterEditorProvider({
       setBadgeStyle,
       rankingBadgeStyle,
       setRankingBadgeStyle,
+      badgeFont,
+      setBadgeFont,
       customBadge,
       setCustomBadge,
       networkLogo,
@@ -361,6 +377,8 @@ export function PosterEditorProvider({
       setDefaultBadgeStyle,
       defaultRankingBadgeStyle,
       setDefaultRankingBadgeStyle,
+      defaultBadgeFont,
+      setDefaultBadgeFont,
       defaultBlurEnabled,
       setDefaultBlurEnabled,
       defaultBlurIntensity,
@@ -450,6 +468,7 @@ export function PosterEditorProvider({
       badgeRating, setBadgeRating,
       badgeStyle, setBadgeStyle,
       rankingBadgeStyle, setRankingBadgeStyle,
+      badgeFont, setBadgeFont,
       customBadge, setCustomBadge,
       networkLogo, setNetworkLogo,
       ribbonSide, setRibbonSide,
@@ -457,6 +476,7 @@ export function PosterEditorProvider({
       // Defaults
       defaultBadgeStyle, setDefaultBadgeStyle,
       defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
+      defaultBadgeFont, setDefaultBadgeFont,
       defaultBlurEnabled, setDefaultBlurEnabled,
       defaultBlurIntensity, setDefaultBlurIntensity,
       defaultBlurFade, setDefaultBlurFade,

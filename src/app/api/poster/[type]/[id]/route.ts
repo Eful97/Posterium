@@ -474,7 +474,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       finalRank,
     })
     const {
-      badgeStyle, rankingBadgeStyle,
+      badgeStyle, rankingBadgeStyle, badgeFont,
       blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
       badgesEnabled, rankingEnabled,
       badgeGenre, badgeYear, badgeRating,
@@ -590,7 +590,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       backdropScale, backdropOffsetX, backdropOffsetY,
       blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
       badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
-      rankingBadgeStyle, badgeGenre, badgeYear, badgeRating,
+      rankingBadgeStyle, badgeFont, badgeGenre, badgeYear, badgeRating,
       topLight, targetCenter, ribbonSide,
       logoScale, logoOffsetX, logoOffsetY,
       mediaType: mediaType as "movie" | "tv",

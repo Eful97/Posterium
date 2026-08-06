@@ -102,6 +102,13 @@ describe("buildUrlPattern", () => {
     expect(url).toContain("rs=bar")
   })
 
+  it("includes font param only for non-default fonts", () => {
+    const def = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it", badgeFont: "inter" })
+    expect(def).not.toContain("font=")
+    const custom = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it", badgeFont: "bebas" })
+    expect(custom).toContain("font=bebas")
+  })
+
   it("encodes lang param", () => {
     const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it" })
     expect(url).toContain("lang=it")

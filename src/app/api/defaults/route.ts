@@ -7,12 +7,14 @@ import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { createLogger } from "@/lib/logger"
 import { z } from "zod"
 import { BADGE_STYLES, RANKING_BADGE_STYLES } from "@/lib/badge-styles"
+import { BADGE_FONT_KEYS } from "@/lib/badge-fonts"
 
 const log = createLogger("defaults")
 
 const defaultsSchema = z.object({
   badgeStyle: z.enum(BADGE_STYLES).optional(),
   rankingBadgeStyle: z.enum(RANKING_BADGE_STYLES).optional(),
+  badgeFont: z.enum(BADGE_FONT_KEYS as [string, ...string[]]).optional(),
   blurEnabled: z.boolean().optional(),
   blurIntensity: z.number().optional(),
   blurFade: z.number().optional(),

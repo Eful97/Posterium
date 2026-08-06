@@ -14,6 +14,7 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
     badgeRating: ed.defaultBadgeRating,
     badgeStyle: ed.defaultBadgeStyle,
     rankingBadgeStyle: ed.defaultRankingBadgeStyle,
+    badgeFont: ed.defaultBadgeFont,
     blurEnabled: ed.defaultBlurEnabled,
     blurIntensity: ed.defaultBlurIntensity,
     blurFade: ed.defaultBlurFade,
@@ -36,6 +37,7 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
   const mapping = key ? p.mappingsMap.get(key) : undefined
   if (!mapping?.badgeStyle) ed.setBadgeStyle(d.badgeStyle)
   if (!mapping?.rankingBadgeStyle) ed.setRankingBadgeStyle(d.rankingBadgeStyle)
+  if (!mapping?.badgeFont) ed.setBadgeFont(d.badgeFont)
   ed.setGlobalBadges(d.globalBadges)
   ed.setRankingBadges(d.rankingBadges)
   ed.setBadgeGenre(d.badgeGenre)
