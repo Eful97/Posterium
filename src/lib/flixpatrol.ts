@@ -1,4 +1,5 @@
 import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { DATA_DIR } from "@/lib/data-dir"
 import { createLogger } from "@/lib/logger"
@@ -8,7 +9,20 @@ const log = createLogger("flixpatrol")
 const CATALOG_URL = "https://raw.githubusercontent.com/0xConstant1/fp-crawler/main/catalogs/italy.json"
 const TMDB_BASE = "https://api.themoviedb.org/3"
 
-const CACHE_FILE = path.join(DATA_DIR, "flixpatrol_cache.json")
+// Cache su filesystem: se DATA_DIR non è scrivibile (es. runtime serverless
+// read-only di Vercel) usa /tmp — è solo una cache, la perdita a ogni cold
+// start è accettabile. La persistenza vera (mapping/profili) resta a KV.
+const CACHE_FILE = (() => {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true })
+    fs.accessSync(DATA_DIR, fs.constants.W_OK)
+    return path.join(DATA_DIR, "flixpatrol_cache.json")
+  } catch {
+    const fallback = path.join(os.tmpdir(), "posterium-flixpatrol_cache.json")
+    log.warn(`DATA_DIR non scrivibile — cache flixpatrol su ${fallback}`)
+    return fallback
+  }
+})()
 
 const tmdbCache = new Map<string, { data: unknown; timestamp: number }>()
 const TMDB_CACHE_TTL = 5 * 60 * 1000

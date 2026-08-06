@@ -58,15 +58,17 @@ export async function PUT(req: NextRequest) {
   // Warm catalog cache — ricostruisci cataloghi principali in background.
   // Usa un origin interno fisso (127.0.0.1) invece dell'origin derivato dall'
   // header Host della richiesta: quest'ultimo è controllabile dal client
-  // (host header injection → SSRF). Su runtime serverless il self-fetch è un
-  // no-op via catch (timeout) — comportamento accettato.
-  const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
-  for (const catalog of getWarmupCatalogs()) {
-    const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
-    void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : String(error)
-      log.warn(`Catalog warmup failed for ${catalog.id}`, { error: message })
-    })
+  // (host header injection → SSRF). Su Vercel (serverless) il self-fetch non
+  // esiste: lo saltiamo per evitare warning ingannevoli.
+  if (!process.env.VERCEL) {
+    const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
+    for (const catalog of getWarmupCatalogs()) {
+      const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
+      void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error)
+        log.warn(`Catalog warmup failed for ${catalog.id}`, { error: message })
+      })
+    }
   }
   return Response.json({ ok: true })
 }
