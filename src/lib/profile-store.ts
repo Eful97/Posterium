@@ -67,6 +67,11 @@ export interface ProfileData {
 const PROFILES_FILE = path.join(DATA_DIR, "profiles.json")
 const useKv = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN
 
+/** Storage attivo per i profili: "kv" o "file". Utile per errori chiari. */
+export function isKvStorageConfigured(): boolean {
+  return useKv
+}
+
 // ---- Password helpers ----
 
 function hashPassword(password: string): { hash: string; salt: string } {

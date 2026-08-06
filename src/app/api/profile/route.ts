@@ -7,6 +7,7 @@ import {
   deleteProfile,
   generateProfileId,
   verifyProfilePassword,
+  isKvStorageConfigured,
   type ProfileData,
 } from "@/lib/profile-store"
 import { type PosteriumUserConfig } from "@/lib/config-token"
@@ -145,8 +146,21 @@ export async function POST(req: NextRequest) {
     return Response.json({ profileId, url })
   } catch (error) {
     log.error("POST failed", { error: error instanceof Error ? error.message : String(error) })
+    // Storage non disponibile (es. Vercel serverless read-only senza KV):
+    // messaggio chiaro invece del generico 500.
+    if (!isKvStorageConfigured() && isStorageError(error)) {
+      return Response.json(
+        { error: "Storage not configured: set KV_REST_API_URL and KV_REST_API_TOKEN (Vercel/Upstash) to persist profiles" },
+        { status: 500 },
+      )
+    }
     return Response.json({ error: "Failed to create/update profile" }, { status: 500 })
   }
+}
+
+function isStorageError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException | undefined)?.code
+  return code === "ENOENT" || code === "EACCES" || code === "EPERM" || code === "EROFS"
 }
 
 /**
