@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult } from "@/lib/types"
 import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
@@ -38,7 +38,7 @@ const STEP = CARD_W + GAP
 const SCROLL_SPEED = 0.5 // px per frame
 
 export function PosterCarousel() {
-  const p = useP()
+  const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const { t } = useT()
   const containerRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number>(0)
@@ -153,7 +153,7 @@ export function PosterCarousel() {
                   style={{ width: CARD_W, animationDelay: `${(i % totalItems) * 50}ms` }}
                 >
                   <div
-                    onClick={() => p.navigateToPoster(toSearchResult({ id: ex.id, media_type: ex.type, title: ex.title, name: ex.title }))}
+                    onClick={() => navigateToPoster(toSearchResult({ id: ex.id, media_type: ex.type, title: ex.title, name: ex.title }))}
                     className="carousel-card group cursor-pointer h-full flex flex-col"
                   >
                     <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />

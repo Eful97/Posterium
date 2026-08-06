@@ -1,18 +1,19 @@
 "use client"
 
 import { Search, ArrowLeftRight, ArrowUpDown } from "lucide-react"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { SliderRow } from "@/components/SliderRow"
 
 export function TransformControls() {
-  const p = useP()
+  const selectedLogo = usePSelector((v) => v.selectedLogo)
+  const logoBounds = usePSelector((v) => v.logoBounds)
   const { t } = useT()
   const ed = usePosterEditor()
 
   const defaultLogoScale = () => {
-    const l = p.selectedLogo
+    const l = selectedLogo
     if (!l || !l.width || !l.height) { ed.setLogoScale(75); return }
     const lw = l.width
     const lh = l.height
@@ -33,8 +34,8 @@ export function TransformControls() {
       </div>
       <div className="space-y-2">
         <SliderRow icon={<Search className="w-3.5 h-3.5" />} label={t("ui.scale")} value={ed.logoScale} min={10} max={100} boundsMin={10} boundsMax={100} onChange={ed.setLogoScale} onDoubleClick={defaultLogoScale} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="scale" />
-        <SliderRow icon={<ArrowLeftRight className="w-3.5 h-3.5" />} label="X" value={ed.logoOffsetX} min={p.logoBounds.minX} max={p.logoBounds.maxX} boundsMin={p.logoBounds.minX} boundsMax={p.logoBounds.maxX} onChange={ed.setLogoOffsetX} onDoubleClick={() => ed.setLogoOffsetX(0)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="ox" />
-        <SliderRow icon={<ArrowUpDown className="w-3.5 h-3.5" />} label="Y" value={ed.logoOffsetY} min={p.logoBounds.minY} max={p.logoBounds.maxY} boundsMin={p.logoBounds.minY} boundsMax={p.logoBounds.maxY} onChange={ed.setLogoOffsetY} onDoubleClick={() => ed.setLogoOffsetY(0)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="oy" />
+        <SliderRow icon={<ArrowLeftRight className="w-3.5 h-3.5" />} label="X" value={ed.logoOffsetX} min={logoBounds.minX} max={logoBounds.maxX} boundsMin={logoBounds.minX} boundsMax={logoBounds.maxX} onChange={ed.setLogoOffsetX} onDoubleClick={() => ed.setLogoOffsetX(0)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="ox" />
+        <SliderRow icon={<ArrowUpDown className="w-3.5 h-3.5" />} label="Y" value={ed.logoOffsetY} min={logoBounds.minY} max={logoBounds.maxY} boundsMin={logoBounds.minY} boundsMax={logoBounds.maxY} onChange={ed.setLogoOffsetY} onDoubleClick={() => ed.setLogoOffsetY(0)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="oy" />
       </div>
     </>
   )

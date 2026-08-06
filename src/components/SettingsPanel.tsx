@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { toast } from "sonner"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { ApiError, http } from "@/lib/http"
@@ -25,7 +25,11 @@ interface Props {
 }
 
 export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSettingsOpen, exportData, importData, mdblistApiKey, setMdblistApiKey, mobile }: Props) {
-  const p = useP()
+  const accentColor = usePSelector((v) => v.accentColor)
+  const uiAccent = usePSelector((v) => v.uiAccent)
+  const setUiAccent = usePSelector((v) => v.setUiAccent)
+  const selected = usePSelector((v) => v.selected)
+  const mappingsMap = usePSelector((v) => v.mappingsMap)
   const { t } = useT()
   const ed = usePosterEditor()
   const [editVal, setEditVal] = useState<string | null>(null)
@@ -137,7 +141,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       </div>
       <hr className="border-border my-1" />
       <label className="text-xs text-muted font-medium flex items-center gap-1.5"><Circle className="w-3 h-3" /> {t("ui.styleRankingDefault")}</label>
-      <BadgeStyleSelector value={ed.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill"]} onChange={ed.setDefaultRankingBadgeStyle} t={t} accentColor={p.accentColor} />
+      <BadgeStyleSelector value={ed.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill"]} onChange={ed.setDefaultRankingBadgeStyle} t={t} accentColor={accentColor} />
       <label className="text-xs text-muted font-medium flex items-center gap-1.5 mt-1"><Palette className="w-3 h-3" /> {t("ui.styleDefault")}</label>
       <BadgeStyleSelector value={ed.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored", "bordo", "vetro"]} onChange={ed.setDefaultBadgeStyle} t={t} />
       <hr className="border-border my-1" />
@@ -157,7 +161,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Palette className="w-3 h-3" /> Tinta UI dinamica</span>
-        <Toggle value={p.uiAccent} onChange={p.setUiAccent} />
+        <Toggle value={uiAccent} onChange={setUiAccent} />
       </div>
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-muted flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> {t("ui.logoFitEnabled")}</span>
@@ -165,7 +169,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       </div>
       <hr className="border-border my-1" />
 
-      <button type="button" onClick={() => { saveDefaults(p, ed); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {t("ui.saved")}</> : <><Save className="w-3 h-3" /> {t("ui.saveDefaults")}</>}</span></button>
+      <button type="button" onClick={() => { saveDefaults({ selected, mappingsMap }, ed); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {t("ui.saved")}</> : <><Save className="w-3 h-3" /> {t("ui.saveDefaults")}</>}</span></button>
       <hr className="border-border my-1" />
       <MenuItem icon={<Download className="w-3 h-3 text-accent-orange" />} label={t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
       <MenuItem icon={<Upload className="w-3 h-3 text-blue-400" />} label={t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />
