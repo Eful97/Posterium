@@ -256,13 +256,13 @@ export function ProfileModal({ isOpen, onClose }: Props) {
                 </div>
                 <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/60 border border-white/5">
                   <div className="truncate font-mono text-[10px] text-zinc-300">
-                    {typeof window !== "undefined" ? `${window.location.origin}/manifest.json?u=${activeUuid}` : ""}
+                    {typeof window !== "undefined" ? `${window.location.origin}/u/${activeUuid}/manifest.json` : ""}
                   </div>
                   <button
                     type="button"
                     onClick={async () => {
                       if (typeof window !== "undefined") {
-                        await navigator.clipboard.writeText(`${window.location.origin}/manifest.json?u=${activeUuid}`)
+                        await navigator.clipboard.writeText(`${window.location.origin}/u/${activeUuid}/manifest.json`)
                         toast.success(t("ui.copied"))
                       }
                     }}
