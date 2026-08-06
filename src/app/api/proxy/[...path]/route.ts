@@ -260,9 +260,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
     const data = (await readJsonCapped(res)) as Record<string, unknown> & { metas?: StremioItemMeta[]; meta?: StremioItemMeta }
 
     if (data && Array.isArray(data.metas)) {
-      data.metas = rewriteMetasPosters(data.metas as StremioItemMeta[], origin, userUuid)
+      data.metas = rewriteMetasPosters(data.metas as StremioItemMeta[], origin)
     } else if (data && data.meta) {
-      data.meta = rewriteSingleMetaPoster(data.meta as StremioItemMeta, origin, userUuid)
+      data.meta = rewriteSingleMetaPoster(data.meta as StremioItemMeta, origin)
     }
 
     return Response.json(data, { headers: corsHeaders() })

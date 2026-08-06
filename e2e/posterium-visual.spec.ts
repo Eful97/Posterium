@@ -42,7 +42,7 @@ async function renderPoster(page: Page, posterUrl: string) {
 //
 
 test("home — full page", async ({ page }) => {
-  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
+  await page.addInitScript(() => { try { localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
   await expect(page).toHaveScreenshot("home-fullpage.png", {
     fullPage: true,
@@ -51,7 +51,7 @@ test("home — full page", async ({ page }) => {
 })
 
 test("home — hero viewport", async ({ page }) => {
-  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
+  await page.addInitScript(() => { try { localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page).toHaveScreenshot("home-viewport.png", {
@@ -61,7 +61,7 @@ test("home — hero viewport", async ({ page }) => {
 
 test("home — mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
+  await page.addInitScript(() => { try { localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page).toHaveScreenshot("home-mobile.png", {

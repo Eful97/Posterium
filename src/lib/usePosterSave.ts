@@ -64,7 +64,6 @@ interface PosterSaveDeps {
   networkLogo: boolean
   ribbonSide: "left" | "right"
   lang: string
-  profileId?: string | null
 }
 
 export interface SaveConfigOverrides {
@@ -253,7 +252,6 @@ export function usePosterSave(deps: PosterSaveDeps) {
           logoDisabled: logoDisabled || undefined,
           networkLogo: networkLogo !== undefined ? networkLogo : undefined,
           ribbonSide: ribbonSide !== undefined ? ribbonSide : undefined,
-          profileId: deps.profileId || undefined,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)

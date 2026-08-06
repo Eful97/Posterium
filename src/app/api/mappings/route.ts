@@ -7,7 +7,6 @@ import { checkAdminToken, requireAdminToken, isSameOrigin, adminAuthResponse, or
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
-import { getFullProfileData, createOrUpdateProfile } from "@/lib/profile-store"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("mappings")
@@ -56,23 +55,6 @@ export async function POST(req: NextRequest) {
 
   await upsert(newMapping)
 
-  const profileId = typeof body.profileId === "string" && body.profileId.length > 0 ? body.profileId : null
-  if (profileId) {
-    const fullProfile = await getFullProfileData(profileId)
-    if (fullProfile) {
-      const updatedMappings = {
-        ...(fullProfile.mappings || {}),
-        [`${newMapping.mediaType}:${newMapping.tmdbId}`]: newMapping,
-      }
-      await createOrUpdateProfile(
-        fullProfile.config,
-        profileId,
-        undefined,
-        fullProfile.apiKeys,
-        updatedMappings,
-      )
-    }
-  }
   // Invalidazione mirata al mapping salvato, non globale (i default impattano
   // tutto, un singolo mapping solo il suo poster/badge).
   cacheInvalidatePosterDataFor(parsed.data.mediaType, parsed.data.tmdbId)

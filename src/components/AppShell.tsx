@@ -8,8 +8,7 @@ import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
 import { VersionBadge } from "@/components/VersionBadge"
 import { ToastProvider } from "@/components/Toast"
-import { ProfileUnlock } from "@/components/ProfileUnlock"
-import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Download, User } from "lucide-react"
+import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Download } from "lucide-react"
 
 // Code-splitting: viste/modali pesanti caricate on-demand per ridurre il JS iniziale.
 const SettingsPanel = dynamic(() => import("@/components/SettingsPanel").then((m) => m.SettingsPanel), { ssr: false })
@@ -18,13 +17,11 @@ const MyPostersView = dynamic(() => import("@/components/MyPostersView").then((m
 const CataloghiView = dynamic(() => import("@/components/CataloghiView").then((m) => m.CataloghiView), { ssr: false })
 const EditView = dynamic(() => import("@/components/EditView"), { ssr: false, loading: () => <div className="h-64 flex items-center justify-center text-xs text-zinc-500 animate-pulse">…</div> })
 const ProxyModal = dynamic(() => import("@/components/ProxyModal").then((m) => m.ProxyModal), { ssr: false })
-const ProfileModal = dynamic(() => import("@/components/ProfileModal").then((m) => m.ProfileModal), { ssr: false })
 const OnboardingTour = dynamic(() => import("@/components/OnboardingTour").then((m) => m.OnboardingTour), { ssr: false })
 
 export function AppShell() {
   const setLangOpen = usePSelector((v) => v.setLangOpen)
   const setSettingsOpen = usePSelector((v) => v.setSettingsOpen)
-  const profileId = usePSelector((v) => v.profileId)
   const settingsOpen = usePSelector((v) => v.settingsOpen)
   const serviceErrors = usePSelector((v) => v.serviceErrors)
   const previewPoster = usePSelector((v) => v.previewPoster)
@@ -35,8 +32,6 @@ export function AppShell() {
   const urlPattern = usePSelector((v) => v.urlPattern)
   const view = usePSelector((v) => v.view)
   const router = usePSelector((v) => v.router)
-  const profileLocked = usePSelector((v) => v.profileLocked)
-  const profileModalSuppressed = usePSelector((v) => v.profileModalSuppressed)
   const mappings = usePSelector((v) => v.mappings)
   const tmdbKeyInput = usePSelector((v) => v.tmdbKeyInput)
   const setTmdbKeyInput = usePSelector((v) => v.setTmdbKeyInput)
@@ -53,7 +48,6 @@ export function AppShell() {
   const { t, lang, pickLang } = useT()
   const [refreshing, setRefreshing] = useState(false)
   const [proxyOpen, setProxyOpen] = useState(false)
-  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [closingLang, setClosingLang] = useState(false)
   const [closingSettings, setClosingSettings] = useState(false)
   const closingLangRef = useRef<ReturnType<typeof setTimeout>>(null)
@@ -76,18 +70,6 @@ export function AppShell() {
     }
   }, [])
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      // Con un profilo salvato (profileLocked) l'overlay di sblocco prende il
-      // posto del modale di benvenuto. profileModalSuppressed: profilo stale o
-      // rifiutato in questa sessione → niente "crea un profilo".
-      if (!profileId && !profileLocked && !profileModalSuppressed) {
-        setProfileModalOpen(true)
-      }
-    }, 100)
-    return () => clearTimeout(t)
-  }, [profileId, profileLocked, profileModalSuppressed])
-
   // Blocca lo scroll del body quando le impostazioni mobili sono aperte
   useEffect(() => {
     if (!settingsOpen) return
@@ -100,7 +82,6 @@ export function AppShell() {
 return (
     <>
     <ToastProvider>
-    {profileLocked && <ProfileUnlock />}
     <div className="app-shell text-foreground relative overflow-x-hidden">
       <VersionBadge />
       {serviceErrors.tmdb && (
@@ -124,8 +105,7 @@ return (
         {settingsOpen && <div className="hidden md:block fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />}
         <div className="floating-group relative z-50">
           <button type="button" suppressHydrationWarning aria-label={copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { copyUrl() }} disabled={!urlPattern} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-accent-orange hover:bg-white/[0.08] press-scale"><Copy className="w-4 h-4" /></button>
-          <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const base = `${window.location.origin}/manifest.json`; const url = profileId ? `${window.location.origin}/u/${profileId}/manifest.json` : base; await navigator.clipboard.writeText(url) }} disabled={!urlPattern && !profileId} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-zinc-300 hover:bg-white/[0.08] press-scale"><Download className="w-4 h-4" /></button>
-          <button type="button" aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale"><User className="w-4 h-4" /></button>
+          <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { await navigator.clipboard.writeText(`${window.location.origin}/manifest.json`) }} disabled={!urlPattern} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-zinc-300 hover:bg-white/[0.08] press-scale"><Download className="w-4 h-4" /></button>
           <button type="button" aria-label="Addon Proxy" onClick={() => setProxyOpen(true)} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-accent-orange hover:bg-white/[0.08] press-scale"><Sparkles className="w-4 h-4" /></button>
           <div className="h-5 w-px bg-white/10 self-center" />
           <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="h-9 w-9 flex items-center justify-center rounded-lg text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] active:scale-[0.93] transition-all duration-150 press-scale">{mappings.length}</button>
@@ -145,8 +125,7 @@ return (
           )}
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
             <button type="button" suppressHydrationWarning aria-label={copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { copyUrl() }} disabled={!urlPattern} className="top-action-button top-action-button-primary h-9 w-9 flex items-center justify-center bg-accent-orange text-white border border-accent-orange/50 shadow-lg shadow-accent-orange/25 disabled:opacity-40"><Copy className="w-4 h-4" /></button>
-            <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const base = `${window.location.origin}/manifest.json`; const url = profileId ? `${window.location.origin}/u/${profileId}/manifest.json` : base; await navigator.clipboard.writeText(url) }} disabled={!urlPattern && !profileId} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><Download className="w-4 h-4" /></button>
-            <button type="button" aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><User className="w-4 h-4" /></button>
+            <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { await navigator.clipboard.writeText(`${window.location.origin}/manifest.json`) }} disabled={!urlPattern} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><Download className="w-4 h-4" /></button>
             <button type="button" aria-label="Addon Proxy" onClick={() => setProxyOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-accent-orange"><Sparkles className="w-4 h-4" /></button>
             <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="top-action-button h-9 px-2 text-xs font-semibold bg-white/[0.06] border border-white/10 text-zinc-200">{mappings.length}</button>
             <button type="button" aria-label={t("ui.settings")} onClick={() => setSettingsOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-zinc-200 press-scale"><Settings className="w-4 h-4" /></button>
@@ -155,7 +134,6 @@ return (
         </div>
 
         <ProxyModal isOpen={proxyOpen} onClose={() => setProxyOpen(false)} />
-        <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
         <div key={view} className="animate-fade-scale-in">
           {view === "search" ? <SearchView /> : view === "myposters" ? <MyPostersView /> : view === "cataloghi" ? <CataloghiView /> : <EditView />}
         </div>

@@ -60,10 +60,7 @@ interface PosterState {
   tmdbKey: string
 }
 
-export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string; profileId?: string | null }): string {
-  if (bp.profileId) {
-    return `${getPosterPublicBaseUrl()}/api/poster/{type}/{imdb_id}?u=${bp.profileId}`
-  }
+export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string }): string {
   let url = `${getPosterPublicBaseUrl()}/api/poster/{type}/{imdb_id}`
   const params = buildStremioPosterSearchParams({
     apiKey: bp.tmdbKey,
