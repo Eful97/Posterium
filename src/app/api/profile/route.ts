@@ -31,6 +31,8 @@ const log = createLogger("profile")
  */
 export async function POST(req: NextRequest) {
   try {
+    const rl = rateLimit(rateLimitKey(req), "profile")
+    if (!rl.ok) return rateLimitResponse(rl.retAfter)
     if (!isSameOrigin(req)) return originMismatchResponse()
     // Cap sulla dimensione del body per evitare crescita disco illimitata
     const contentLength = Number(req.headers.get("content-length") || "0")

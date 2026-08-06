@@ -102,6 +102,30 @@ function toProfileData(raw: unknown): ProfileData | null {
 
 // ---- KV helpers ----
 
+// Cache in-memory delle letture KV: su istanze pubbliche la route poster fa
+// getFullProfileData per ogni richiesta con ?u= (sui cache miss). Senza cache,
+// ogni lettura = 1 comando KV (budget Upstash free limitato). TTL breve +
+// invalidazione sulla write: l'unico rischio è 10s di stale cross-istanza.
+const KV_READ_TTL_MS = 10_000
+const KV_READ_CACHE_MAX = 500
+const kvReadCache = new Map<string, { data: ProfileData | null; ts: number }>()
+
+function kvReadCacheGet(uuid: string): { data: ProfileData | null; ts: number } | undefined {
+  return kvReadCache.get(uuid)
+}
+
+function kvReadCacheSet(uuid: string, data: ProfileData | null): void {
+  if (kvReadCache.size >= KV_READ_CACHE_MAX) {
+    const oldest = kvReadCache.keys().next().value
+    if (oldest !== undefined) kvReadCache.delete(oldest)
+  }
+  kvReadCache.set(uuid, { data, ts: Date.now() })
+}
+
+function kvReadCacheClear(uuid: string): void {
+  kvReadCache.delete(uuid)
+}
+
 async function kvGetProfileRaw(uuid: string): Promise<unknown> {
   const { kv } = await import("@vercel/kv")
   return kv.hget("profiles", uuid)
@@ -110,11 +134,13 @@ async function kvGetProfileRaw(uuid: string): Promise<unknown> {
 async function kvSetProfile(uuid: string, data: ProfileData): Promise<void> {
   const { kv } = await import("@vercel/kv")
   await kv.hset("profiles", { [uuid]: data })
+  kvReadCacheClear(uuid)
 }
 
 async function kvDeleteProfile(uuid: string): Promise<void> {
   const { kv } = await import("@vercel/kv")
   await kv.hdel("profiles", uuid)
+  kvReadCacheClear(uuid)
 }
 
 // ---- File-based helpers ----
@@ -230,8 +256,12 @@ async function fileDeleteProfile(uuid: string): Promise<void> {
 
 async function getFullProfile(profileId: string): Promise<ProfileData | null> {
   if (useKv) {
+    const cached = kvReadCacheGet(profileId)
+    if (cached && Date.now() - cached.ts < KV_READ_TTL_MS) return cached.data
     const raw = await kvGetProfileRaw(profileId)
-    return toProfileData(raw)
+    const data = toProfileData(raw)
+    kvReadCacheSet(profileId, data)
+    return data
   }
   return fileGetProfile(profileId)
 }

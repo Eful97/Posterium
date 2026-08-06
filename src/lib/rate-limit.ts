@@ -45,6 +45,9 @@ const limits: Record<string, BucketConfig> = {
   // Warmup: operazione pesante (rende molti poster) — burst basso e refill lento
   // per evitare che chiunque (istanza pubblica) possa triggerare carico.
   warmup:   { maxTokens: 5,  refillRate: 1,  refillWindow: 1000 },
+  // Profili: creazione/aggiornamento con scrypt (CPU) su KV. Su istanza
+  // pubblica evita che i bot creino profili a raffica.
+  profile:  { maxTokens: 20, refillRate: 2,  refillWindow: 1000 },
 }
 
 export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter: number } {
