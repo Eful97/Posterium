@@ -18,6 +18,7 @@ pinned: false
 </p>
 
 <p align="center">
+  <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FEful97%2FPosterium"><img src="https://vercel.com/button" alt="Deploy with Vercel" /></a>
   <a href="#-deploy-termux-android-247"><img src="https://img.shields.io/badge/Deploy-Termux-171717?style=for-the-badge&logo=android&logoColor=green" alt="Termux Deploy" /></a>
   <a href="#-docker--locale"><img src="https://img.shields.io/badge/Docker-Supported-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" /></a>
 </p>
@@ -88,6 +89,8 @@ Il repo è già configurato per HF Spaces Docker: frontmatter `sdk: docker` + `a
 ---
 
 ### ▲ Deploy Vercel (Gratis, CDN rapido)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FEful97%2FPosterium)
 
 Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). Per la persistenza è **obbligatorio** collegare uno store KV (Vercel/Upstash): il filesystem serverless è read-only e i salvataggi senza KV andrebbero persi.
 
