@@ -122,7 +122,12 @@ async function loadFromDisk(): Promise<Record<string, Mapping>> {
   } catch (error) {
     if (isNodeError(error) && error.code === "ENOENT") {
       memCache = {}
-      memCacheTime = Date.now()
+      // Sentinella: il file non esiste. Con memCacheTime=0 qualsiasi file
+      // creato successivamente (anche nello stesso millisecondo da un altro
+      // worker) ha mtime > 0 e viene rilevato al prossimo stat. Con Date.now()
+      // una scrittura nello stesso ms non veniva vista (mtime == cacheTime) e
+      // la cache restava stantia (race vista nei test CI).
+      memCacheTime = 0
       return {}
     }
     const message = error instanceof Error ? error.message : String(error)
