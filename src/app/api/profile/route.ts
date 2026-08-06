@@ -189,7 +189,10 @@ export async function GET(req: NextRequest) {
   if (!config) {
     return Response.json({ error: "Profile not found" }, { status: 404 })
   }
-  return Response.json({ profileId: uuid, config })
+  // hasPassword (per lo sblocco al rientro). Le apiKeys NON sono esposte qui:
+  // si caricano solo via POST action:"load" dopo la verifica della password.
+  const full = await getFullProfileData(uuid)
+  return Response.json({ profileId: uuid, config, hasPassword: !!full?.passwordHash })
 }
 
 /**

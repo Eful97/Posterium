@@ -20,9 +20,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
   const mdblistApiKey = usePSelector((v) => v.mdblistApiKey)
   const setProfileId = usePSelector((v) => v.setProfileId)
   const setProfilePassword = usePSelector((v) => v.setProfilePassword)
-  const setTmdbKeyInput = usePSelector((v) => v.setTmdbKeyInput)
-  const setTmdbKey = usePSelector((v) => v.setTmdbKey)
-  const setMdblistApiKey = usePSelector((v) => v.setMdblistApiKey)
+  const loadProfile = usePSelector((v) => v.loadProfile)
   const { t } = useT()
   const ed = usePosterEditor()
   const [tab, setTab] = useState<"save" | "load">("save")
@@ -126,59 +124,13 @@ export function ProfileModal({ isOpen, onClose }: Props) {
     }
     setLoadingProfile(true)
     try {
-      const res = await fetch("/api/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "load",
-          profileId: cleanUuid,
-          password: loadPassword,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || (res.status === 401 ? t("ui.profileWrongPassword") : "Profilo non trovato o errore nel caricamento"))
-        return
-      }
-
-      const loadedId = data.profileId as string
-      if (typeof window !== "undefined") {
-        try { localStorage.setItem("posterium_profile_id", loadedId) } catch {}
-      }
-      setProfileId(loadedId)
-      setProfilePassword(loadPassword)
-
-      // Apply loaded config settings if present
-      if (data.config) {
-        if (typeof data.config.globalBadges === "boolean") ed.setDefaultGlobalBadges(data.config.globalBadges)
-        if (typeof data.config.rankingBadges === "boolean") ed.setDefaultRankingBadges(data.config.rankingBadges)
-        if (data.config.badgeStyle) ed.setDefaultBadgeStyle(data.config.badgeStyle)
-        if (data.config.rankingBadgeStyle) ed.setDefaultRankingBadgeStyle(data.config.rankingBadgeStyle)
-        if (typeof data.config.blurEnabled === "boolean") ed.setBlurEnabled(data.config.blurEnabled)
-        if (typeof data.config.blurIntensity === "number") ed.setBlurIntensity(data.config.blurIntensity)
-        if (typeof data.config.blurFade === "number") ed.setBlurFade(data.config.blurFade)
-        if (typeof data.config.blurDarkness === "number") ed.setBlurDarkness(data.config.blurDarkness)
-        if (typeof data.config.gradientHeight === "number") ed.setGradientHeight(data.config.gradientHeight)
-        if (typeof data.config.networkLogo === "boolean") ed.setNetworkLogo(data.config.networkLogo)
-        if (data.config.ribbonSide === "left" || data.config.ribbonSide === "right") ed.setRibbonSide(data.config.ribbonSide)
-        if (typeof data.config.autoRotateClean === "boolean") ed.setAutoRotateClean(data.config.autoRotateClean)
-        if (typeof data.config.logoFitEnabled === "boolean") ed.setDefaultLogoFitEnabled(data.config.logoFitEnabled)
-        if (typeof data.config.customBadge === "string") ed.setCustomBadge(data.config.customBadge)
-      }
-
-      if (data.apiKeys?.tmdbKey) {
-        setTmdbKeyInput(data.apiKeys.tmdbKey)
-        setTmdbKey(data.apiKeys.tmdbKey)
-      }
-      if (data.apiKeys?.mdblistApiKey) {
-        setMdblistApiKey(data.apiKeys.mdblistApiKey)
-      }
-
-      toast.success("Profilo caricato con successo!")
+      // Usa la logica condivisa (verifica password + applica config/chiavi + attiva profilo).
+      await loadProfile(cleanUuid, loadPassword)
+      toast.success(t("ui.profileLoaded") ?? "Profilo caricato con successo!")
       onClose()
     } catch (e) {
       console.error("[posterium] Failed to load profile:", e)
-      setError("Errore nel caricamento del profilo")
+      setError(e instanceof Error ? e.message : t("ui.loadError"))
     } finally {
       setLoadingProfile(false)
     }

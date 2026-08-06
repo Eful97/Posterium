@@ -8,6 +8,7 @@ import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
 import { VersionBadge } from "@/components/VersionBadge"
 import { ToastProvider } from "@/components/Toast"
+import { ProfileUnlock } from "@/components/ProfileUnlock"
 import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Download, User } from "lucide-react"
 
 // Code-splitting: viste/modali pesanti caricate on-demand per ridurre il JS iniziale.
@@ -34,6 +35,8 @@ export function AppShell() {
   const urlPattern = usePSelector((v) => v.urlPattern)
   const view = usePSelector((v) => v.view)
   const router = usePSelector((v) => v.router)
+  const profileLocked = usePSelector((v) => v.profileLocked)
+  const profileModalSuppressed = usePSelector((v) => v.profileModalSuppressed)
   const mappings = usePSelector((v) => v.mappings)
   const tmdbKeyInput = usePSelector((v) => v.tmdbKeyInput)
   const setTmdbKeyInput = usePSelector((v) => v.setTmdbKeyInput)
@@ -75,12 +78,15 @@ export function AppShell() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      if (!profileId) {
+      // Con un profilo salvato (profileLocked) l'overlay di sblocco prende il
+      // posto del modale di benvenuto. profileModalSuppressed: profilo stale o
+      // rifiutato in questa sessione → niente "crea un profilo".
+      if (!profileId && !profileLocked && !profileModalSuppressed) {
         setProfileModalOpen(true)
       }
     }, 100)
     return () => clearTimeout(t)
-  }, [profileId])
+  }, [profileId, profileLocked, profileModalSuppressed])
 
   // Blocca lo scroll del body quando le impostazioni mobili sono aperte
   useEffect(() => {
@@ -94,6 +100,7 @@ export function AppShell() {
 return (
     <>
     <ToastProvider>
+    {profileLocked && <ProfileUnlock />}
     <div className="app-shell text-foreground relative overflow-x-hidden">
       <VersionBadge />
       {serviceErrors.tmdb && (
