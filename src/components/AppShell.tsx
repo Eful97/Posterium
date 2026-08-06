@@ -1,21 +1,24 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import dynamic from "next/dynamic"
 import { useP } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
 import { VersionBadge } from "@/components/VersionBadge"
-import { SettingsPanel } from "@/components/SettingsPanel"
-import { SearchView } from "@/components/SearchView"
-import { MyPostersView } from "@/components/MyPostersView"
-import { CataloghiView } from "@/components/CataloghiView"
-import EditView from "@/components/EditView"
 import { ToastProvider } from "@/components/Toast"
-import { ProxyModal } from "@/components/ProxyModal"
-import { ProfileModal } from "@/components/ProfileModal"
-import { OnboardingTour } from "@/components/OnboardingTour"
 import { RefreshCw, Settings, Globe, HeartPulse, Sparkles } from "lucide-react"
+
+// Code-splitting: viste/modali pesanti caricate on-demand per ridurre il JS iniziale.
+const SettingsPanel = dynamic(() => import("@/components/SettingsPanel").then((m) => m.SettingsPanel), { ssr: false })
+const SearchView = dynamic(() => import("@/components/SearchView").then((m) => m.SearchView), { ssr: false })
+const MyPostersView = dynamic(() => import("@/components/MyPostersView").then((m) => m.MyPostersView), { ssr: false })
+const CataloghiView = dynamic(() => import("@/components/CataloghiView").then((m) => m.CataloghiView), { ssr: false })
+const EditView = dynamic(() => import("@/components/EditView"), { ssr: false, loading: () => <div className="h-64 flex items-center justify-center text-xs text-zinc-500 animate-pulse">…</div> })
+const ProxyModal = dynamic(() => import("@/components/ProxyModal").then((m) => m.ProxyModal), { ssr: false })
+const ProfileModal = dynamic(() => import("@/components/ProfileModal").then((m) => m.ProfileModal), { ssr: false })
+const OnboardingTour = dynamic(() => import("@/components/OnboardingTour").then((m) => m.OnboardingTour), { ssr: false })
 
 export function AppShell() {
   const p = useP()

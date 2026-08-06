@@ -195,7 +195,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   }
 
   return (
-    <div className="absolute right-0 top-full mt-2 bg-black/60 backdrop-blur-xl border border-zinc-700/50 rounded-xl p-3 shadow-2xl shadow-black/50 z-50 min-w-56 max-h-[80vh] overflow-y-auto flex flex-col gap-2 animate-fade-scale-in" onClick={(e) => e.stopPropagation()}>
+    <div className="absolute right-0 top-full mt-2 bg-black/85 backdrop-blur-xl border border-zinc-700/50 rounded-xl p-3 shadow-2xl shadow-black/50 z-50 min-w-56 max-h-[80vh] overflow-y-auto flex flex-col gap-2 animate-fade-scale-in" onClick={(e) => e.stopPropagation()}>
       {content}
     </div>
   )
