@@ -32,7 +32,7 @@ App version: `0.15.2` — RENDER_VERSION: `0e2434cdfc` — rv: `0e2434cdfc`
 
 La render pipeline poster (`route.ts` → `poster-runtime-cache.ts` → `poster-service.ts`) ha un limiter di concorrenza (slot) anti-OOM e un deadline complessivo:
 
-- **Slot limiter**: `POSTERIUM_MAX_CONCURRENT_RENDERS` (default 4). In eccesso si attende fino a `POSTERIUM_RENDER_SLOT_WAIT_MS` (default 5000), poi 503 con `Retry-After`. `POSTERIUM_RENDER_QUEUE` (default 0) limita la coda: oltre N i waiter ricevono 503 immediato.
+- **Slot limiter**: `POSTERIUM_MAX_CONCURRENT_RENDERS` (default 4). In eccesso si attende fino a `POSTERIUM_RENDER_SLOT_WAIT_MS` (default 15000), poi 503 con `Retry-After`. `POSTERIUM_RENDER_QUEUE` (default 0) limita la coda: oltre N i waiter ricevono 503 immediato.
 - **Deadline render**: `POSTERIUM_RENDER_TIMEOUT_MS` (default 30000) — un render che non finisce in tempo viene abbandonato: il watchdog libera slot + inflight map. I fetch immagini/TMDB ricevono l'`AbortSignal` del deadline.
 - **Negative cache**: un 500/503 sulla stessa cache key non ri-rende per `POSTERIUM_NEGATIVE_CACHE_TTL_MS` (default 5000).
 - I poster non-mappati (composti al volo, dati dinamici) usano TTL ridotto (6h) invece delle 24h del path mappato.

@@ -288,7 +288,7 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 | `SHARP_CACHE_ITEMS` | ❌ | Max elementi cache interna Sharp (default: auto) |
 | `WARMUP_TOKEN` | ❌ | Token per endpoint `/api/warmup` (fallback a POSTERIUM_ADMIN_TOKEN) |
 | `POSTERIUM_MAX_CONCURRENT_RENDERS` | ❌ | Render poster concorrenti (slot anti-OOM, default: 4) |
-| `POSTERIUM_RENDER_SLOT_WAIT_MS` | ❌ | Attesa massima di un posto render prima del 503 (default: 5000; clamp 500–60000) |
+| `POSTERIUM_RENDER_SLOT_WAIT_MS` | ❌ | Attesa massima di un posto render prima del 503 (default: 15000; clamp 500–60000) |
 | `POSTERIUM_RENDER_TIMEOUT_MS` | ❌ | Deadline complessivo del render poster: oltre, watchdog libera slot + inflight (default: 30000; clamp 1000–120000) |
 | `POSTERIUM_RENDER_QUEUE` | ❌ | Coda bounded del limiter: con N>0 i waiter oltre N ricevono 503 immediato (default: 0 = accoda fino a RENDER_SLOT_WAIT_MS) |
 | `POSTERIUM_NEGATIVE_CACHE_TTL_MS` | ❌ | TTL della negative cache errori 500/503 (default: 5000; clamp 1000–60000) |

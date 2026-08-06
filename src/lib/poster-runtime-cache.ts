@@ -232,10 +232,14 @@ const MAX_CONCURRENT_RENDERS = (() => {
 })()
 // Attesa massima di un posto di render prima del 503 (F5). Lettura a module
 // level: un cambio env richiede restart, non hot-reload.
+// Default 15000: le griglie catalogo (Stremio/AIOMetadata) richiedono ~20 poster
+// in parallelo su cache fredda; con 4 slot e 5s molti ricevevano 503 (poster
+// mancanti). I waiter non tengono buffer immagini (i fetch avvengono dentro lo
+// slot), quindi allungare l'attesa è memory-neutral.
 export const RENDER_SLOT_WAIT_MS = (() => {
   const raw = process.env.POSTERIUM_RENDER_SLOT_WAIT_MS
-  const n = raw ? parseInt(raw, 10) : 5000
-  return Number.isFinite(n) && n >= 500 && n <= 60000 ? n : 5000
+  const n = raw ? parseInt(raw, 10) : 15000
+  return Number.isFinite(n) && n >= 500 && n <= 60000 ? n : 15000
 })()
 // Coda bounded (opzionale): con 0 il comportamento è attuale (i waiter oltre i
 // posti attendono fino a RENDER_SLOT_WAIT_MS). Con N>0 i waiter oltre N
