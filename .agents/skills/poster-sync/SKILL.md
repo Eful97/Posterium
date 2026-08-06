@@ -30,8 +30,8 @@ paddings/gaps, accent color extraction, ribbon side, overflow protection formula
 1. **Locate the server counterpart.** Grep the parameter name across `src/lib/*.ts`
    and `src/app/api/poster/[type]/[id]/route.ts`. Every server-side constant has a
    matching client-side usage or query param. The canonical param map lives in
-   `AGENTS.md` (section "Parametri URL (query string)" and the badge geometry tables).
-   When AGENTS.md and code disagree, CODE WINS — update AGENTS.md.
+   `.agents/render-params.md` (URL query params + badge geometry tables).
+   When docs and code disagree, CODE WINS — update `.agents/render-params.md`.
 
 2. **Shared geometry lives in shared modules.** If the change is geometry (logo box,
    badge dims, text flow), the function likely already exists in `src/lib/logo-layout.ts`
@@ -66,22 +66,12 @@ paddings/gaps, accent color extraction, ribbon side, overflow protection formula
    ```
    Review the `.png` diffs before committing them.
 
-## Query params quick reference (client → server)
+## Query params quick reference
 
-| Param | Client sends | Server reads |
-|---|---|---|
-| `badges` | `globalBadges ? null : "0"` | `qBadges !== "0"` |
-| `ranking` | `rankingBadges ? null : "0"` | `qRanking !== "0"` |
-| `bg` / `by` / `br` | `false ? "0" : null` per badgeGenre/badgeYear/badgeRating | `qBg/qBy/qBr !== "0"` (genre/year/rating segment) |
-| `gradHeight` | `gradientHeight` | `qGradHeight` (gradient + blurHeight) |
-| `tl` | `topLight ? "1" : "0"` (always sent) | `qTopLight` (override wins) |
-| `rank` | `badge.rank` | `qRank` |
-| `label` | `badge.rankLabel \|\| badge.label` | `qLabel` |
-| `extra` | `badge.label` / `customBadge` | `queryExtra` |
-| `bs` | `badgeStyle` | `qBs` ("shadow"/"pill"/"bar"/"colored"/"bordo"/"vetro") |
-| `rs` | `rankingBadgeStyle` | `qRs` ("default"/"bar"/"colored"/"pill"/"netflix") |
-| `side` | `ribbonSide === "right" ? "right" : null` | `qSide` |
-| `ac` | `accentColor` (from `extractBadgeColor()`) | `qAc` |
+The canonical client → server query param map lives in
+[`.agents/render-params.md`](../../render-params.md) (section "Parametri URL
+(query string)"). Consult it whenever a param pair changes. Do NOT duplicate the
+table here — update the canonical file instead.
 
 Dead params: `gradColor`, `gradOpacity`, `gradFade`, `gradDir` are not read by the
 server anymore. Do not reintroduce them.

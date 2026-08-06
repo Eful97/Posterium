@@ -68,7 +68,7 @@ When a poster looks wrong but tests pass (or to eyeball a new feature):
 4. For console/network issues: `browser_console_messages` + `browser_network_requests`.
 5. `browser_evaluate` can inspect the URL the preview img resolved to and the exact
    query params the client sent — confirm each one matches the server-side expectations
-   in `AGENTS.md`.
+   in [`.agents/render-params.md`](../../render-params.md).
 
 ## Rules
 
