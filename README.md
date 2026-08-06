@@ -270,6 +270,17 @@ Riavvia: `docker compose up -d`.
 
 Ogni istanza può impostare TMDB/MDBList **dalle Impostazioni del sito** (sezione "Chiavi API istanza"): nessuna env var necessaria, le chiavi persistono (KV su Vercel, file in locale) e sono sempre mascherate.
 
+#### Config Token (personalizzazione per-link)
+
+Per la **massima personalizzazione senza account**: personalizzi il poster nell'editor → premi **"Copia link config"** → ottieni un link tipo `https://host/api/poster/{type}/{imdb_id}?config=<token>`. Il token porta **tutta** la configurazione (stili badge, blur, gradienti, logo, badge custom) firmata HMAC-SHA256.
+
+- **Dove usarlo**: come URL poster personalizzato in Stremio/AIOMetadata, o condiviso ad altri (vedono esattamente il tuo stile)
+- **Cross-device**: la config è dentro il link, nessun salvataggio sul server
+- **Addon-wide**: richiedi i cataloghi con `?config=<token>` e i poster includeranno il token
+- **Requisito**: imposta `CONFIG_HMAC_SECRET` (o `ENCRYPTION_KEY_SECRET`) in produzione — senza, i token non vengono firmati/accettati (fail-closed) e il pulsante mostra l'errore
+
+> I token coprono i **parametri di stile**. Le **immagini** (poster/logo/backdrop) e i loro transform restano legati al mapping salvato sul server.
+
 > **Protezione admin**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env` per proteggere le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`), che richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`. Senza token configurato le route restano aperte (istanza pubblica, es. HF Spaces), **tranne un'operazione fail-closed che lo richiede SEMPRE**: `DELETE /api/mappings` (svuota tutti i mapping). Tutte le mutazioni applicano anche un check CSRF: se la richiesta porta un header `Origin` (i browser lo inviano sempre cross-origin), questo deve combaciare con l'host del server, altrimenti risposta `403`.
 
 #### Note produzione

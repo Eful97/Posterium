@@ -61,6 +61,52 @@ export default function EditView() {
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [activeRightTab, setActiveRightTab] = useState<"logo" | "badge" | "transform">("logo")
   const [activePosterTab, setActivePosterTab] = useState("clean")
+  const [configLinkStatus, setConfigLinkStatus] = useState<"idle" | "copying" | "copied">("idle")
+
+  const copyConfigLink = async () => {
+    setConfigLinkStatus("copying")
+    try {
+      const config = {
+        globalBadges: ed.globalBadges,
+        rankingBadges: ed.rankingBadges,
+        badgeGenre: ed.badgeGenre,
+        badgeYear: ed.badgeYear,
+        badgeRating: ed.badgeRating,
+        badgeStyle: ed.badgeStyle,
+        rankingBadgeStyle: ed.rankingBadgeStyle,
+        blurEnabled: ed.blurEnabled,
+        blurIntensity: ed.blurIntensity,
+        blurFade: ed.blurFade,
+        blurDarkness: ed.blurDarkness,
+        gradientHeight: ed.gradientHeight,
+        networkLogo: ed.networkLogo,
+        autoRotateClean: ed.autoRotateClean,
+        logoFitEnabled: ed.defaultLogoFitEnabled,
+        customBadge: ed.customBadge || undefined,
+        ribbonSide: ed.ribbonSide,
+      }
+      const res = await fetch("/api/config-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error || `HTTP ${res.status}`)
+      }
+      const { token } = await res.json()
+      const url = `${window.location.origin}/api/poster/{type}/{imdb_id}?config=${encodeURIComponent(token)}`
+      await navigator.clipboard.writeText(url)
+      setConfigLinkStatus("copied")
+      setTimeout(() => setConfigLinkStatus("idle"), 2000)
+    } catch (e) {
+      console.error("[posterium] Copy config link failed:", e)
+      import("sonner").then(({ toast }) =>
+        toast.error(e instanceof Error ? e.message : "Errore nel generare il link config"),
+      )
+      setConfigLinkStatus("idle")
+    }
+  }
 
   const { imageError, setImageError, previewLoading, loadProgress, imgSrc } = usePosterPreview()
 
@@ -241,6 +287,7 @@ export default function EditView() {
                       if (!url) return
                       window.open(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`, "_blank")
                     }} className="btn-secondary py-2 px-3 rounded-xl text-[11px]">{t("ui.testUrl")}</button>
+                    <button type="button" aria-label="Copia link config" onClick={copyConfigLink} disabled={configLinkStatus === "copying"} className="btn-secondary py-2 px-3 rounded-xl text-[11px] disabled:opacity-50">{configLinkStatus === "copied" ? "✓ Copiato" : configLinkStatus === "copying" ? "…" : "Copia link config"}</button>
                     {(() => {
                       if (!selected) return null
                       const key = `${selected.media_type}:${selected.id}`

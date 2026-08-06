@@ -48,6 +48,9 @@ const limits: Record<string, BucketConfig> = {
   // Profili: creazione/aggiornamento con scrypt (CPU) su KV. Su istanza
   // pubblica evita che i bot creino profili a raffica.
   profile:  { maxTokens: 20, refillRate: 2,  refillWindow: 1000 },
+  // Config token: generazione di link firmati — burst contenuto per evitare
+  // che l'endpoint venga usato come generatore massivo.
+  config:   { maxTokens: 30, refillRate: 3,  refillWindow: 1000 },
 }
 
 export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter: number } {
