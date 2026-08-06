@@ -43,7 +43,7 @@ const RankCard = React.memo(function RankCard({ item, onClick, isFirst, staggerI
         <div
           className={`poster-slide relative ${isFirst ? "" : "-ml-8 md:-ml-14"} z-10 w-[170px] md:w-72 shrink-0`}
         >
-        <div className="aspect-[2/3] bg-zinc-800 rounded-xl overflow-hidden shadow-lg transition-all duration-200 relative border border-white/10">
+        <div className="aspect-[2/3] bg-surface2 rounded-xl overflow-hidden shadow-lg transition-all duration-200 relative border border-white/10">
           {imgSrc ? (
             // eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL
             <img
@@ -111,7 +111,7 @@ export function RankRow({
 
   return (
     <div>
-      <div className="text-xs font-bold tracking-[0.3em] text-zinc-400 uppercase select-none mb-2">
+      <div className="text-xs font-bold tracking-[0.3em] text-muted uppercase select-none mb-2">
         {label}
       </div>
       <div className="relative group/scroll bg-[#121620] border border-white/10 rounded-2xl p-2 shadow-xl">

@@ -13,6 +13,8 @@
   --color-panel-strong: rgba(21, 21, 26, 0.92);
   --color-border-subtle: rgba(255, 255, 255, 0.08);
   --color-border-strong: rgba(255, 255, 255, 0.14);
+  --color-danger: #f87171;
+  --color-warning: var(--color-warning);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -258,7 +260,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .toggle-track-off {
-  background: #3f3f46;
+  background: var(--color-border);
 }
 
 .toggle-track-off:hover {
@@ -282,7 +284,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .skeleton-shimmer-subtle {
-  background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%);
+  background: linear-gradient(90deg, var(--color-surface2) 25%, var(--color-border) 50%, var(--color-surface2) 75%);
   background-size: 200% 100%;
   animation: shimmer-subtle 2s ease-in-out infinite;
 }
@@ -296,7 +298,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%);
+  background: linear-gradient(90deg, var(--color-surface2) 25%, var(--color-border) 50%, var(--color-surface2) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -444,7 +446,7 @@ input[type="range"]::-moz-range-thumb {
 
 .top-action-button-primary:hover {
   border-color: rgba(232, 93, 42, 0.60);
-  background: linear-gradient(180deg, #e87a4a, #e85d2a);
+  background: linear-gradient(180deg, #e87a4a, var(--color-accent-orange));
 }
 
 .top-action-button-accent {
@@ -1299,7 +1301,7 @@ select:focus-visible {
   border-radius: 0.75rem;
   border: 1px solid rgba(239,68,68,0.50);
   background: rgba(127,29,29,0.30);
-  color: rgb(248 113 113);
+  color: var(--color-danger);
   font-weight: 600;
   transition: color 200ms ease, background 200ms ease, border-color 200ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1352,7 +1354,7 @@ select:focus-visible {
   border-radius: 0.5rem;
   font-size: 11px;
   font-weight: 600;
-  color: rgb(161 161 170);
+  color: var(--color-muted);
   transition: color 150ms ease, background 150ms ease;
   cursor: pointer;
   white-space: nowrap;
@@ -1375,7 +1377,7 @@ select:focus-visible {
 /* Shared editor input/select */
 .editor-input {
   background: rgba(0,0,0,0.40);
-  border: 1px solid rgb(63 63 70);
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   font-size: 11px;
   color: rgb(212 212 216);
@@ -1431,7 +1433,7 @@ select:focus-visible {
 }
 
 .fit-badge-amber {
-  color: #fbbf24;
+  color: var(--color-warning);
   border-color: rgba(251,191,36,0.30);
 }
 

@@ -34,13 +34,13 @@ export default function EditView() {
     <div className={p.selected ? "w-full max-w-lg mb-5 relative z-[100] isolate" : "max-w-lg mx-auto relative z-[100] isolate mb-8"}>
       <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
       {searchFocused && p.recentSearches.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
-          <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
+        <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
+          <p className="text-xs text-muted font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
           {p.recentSearches.map((s) => (
             <button type="button" key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
               <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
               <span className="flex-1 truncate">{s}</span>
-              <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} aria-label={t("ui.remove")} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
+              <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} aria-label={t("ui.remove")} className="text-danger hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
             </button>
           ))}
         </div>
@@ -260,7 +260,7 @@ export default function EditView() {
               </svg>
             </div>
             <h2 className="text-lg font-bold text-zinc-100 mb-2">{t("ui.welcomePanelTitle")}</h2>
-            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">{t("ui.noKey")}</p>
+            <p className="text-sm text-muted mb-6 leading-relaxed">{t("ui.noKey")}</p>
             <button type="button" onClick={() => p.setSettingsOpen(true)} className="btn-primary px-5 py-2.5 text-sm">
               {t("ui.openSettings")}
             </button>
@@ -311,7 +311,7 @@ export default function EditView() {
                   </div>
                   <h1 className="text-xl md:text-2xl tracking-tight font-bold text-zinc-50">{t("ui.heroTitle")}</h1>
                 </div>
-                <p className="text-xs text-zinc-400 mt-2 max-w-md">{t("ui.heroSubtitle")}</p>
+                <p className="text-xs text-muted mt-2 max-w-md">{t("ui.heroSubtitle")}</p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
                   <span className="stat-pill"><Layers className="w-3.5 h-3.5" />{t("ui.heroPillLogos")}</span>
                   <span className="stat-pill"><Sparkles className="w-3.5 h-3.5" />{t("ui.heroPillAi")}</span>
@@ -330,8 +330,8 @@ export default function EditView() {
           </ScrollReveal>
           {p.trending.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 text-zinc-500">
-              <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-accent-orange animate-spin mb-4" />
-              <p className="text-sm text-zinc-400">{t("ui.loading")}</p>
+              <div className="w-12 h-12 rounded-full border-2 border-border border-t-accent-orange animate-spin mb-4" />
+              <p className="text-sm text-muted">{t("ui.loading")}</p>
             </div>
           )}
         </>

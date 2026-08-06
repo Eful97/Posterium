@@ -35,7 +35,7 @@ export function EditorPanel({ title, tabs, activeTab, onTabChange, children, cla
                   aria-selected={activeTab === tab.key}
                   tabIndex={activeTab === tab.key ? 0 : -1}
                   onClick={() => onTabChange?.(tab.key)}
-                  className={`tab-chip h-7 px-2.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 ${activeTab === tab.key ? "tab-chip-active bg-accent-orange/15 text-accent-orange border-accent-orange/35" : "bg-white/5 text-zinc-400 border-white/10 hover:text-zinc-200 hover:bg-white/10"}`}
+                  className={`tab-chip h-7 px-2.5 rounded-lg text-[11px] font-semibold border transition-all shrink-0 ${activeTab === tab.key ? "tab-chip-active bg-accent-orange/15 text-accent-orange border-accent-orange/35" : "bg-white/5 text-muted border-white/10 hover:text-zinc-200 hover:bg-white/10"}`}
                 >
                   {tab.label}
                   {tab.count !== undefined && <span className="ml-1 text-[10px] opacity-60">{tab.count}</span>}
@@ -43,7 +43,7 @@ export function EditorPanel({ title, tabs, activeTab, onTabChange, children, cla
               ))}
             </div>
           ) : (
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider text-center">{title}</h3>
+            <h3 className="text-xs font-semibold text-muted uppercase tracking-wider text-center">{title}</h3>
           )}
         </div>
       )}

@@ -66,7 +66,7 @@ describe("SearchBar", () => {
 
   it("shows error indicator when error prop is set", () => {
     renderWithCtx(<SearchBar tmdbKey="test" value="test" onChange={() => {}} onSearch={() => {}} error="error" />)
-    expect(screen.getByRole("search").querySelector(".text-red-400")).toBeInTheDocument()
+    expect(screen.getByRole("search").querySelector(".text-danger")).toBeInTheDocument()
   })
 
   it("calls onChange callback on input", async () => {

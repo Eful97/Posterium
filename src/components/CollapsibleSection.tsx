@@ -29,7 +29,7 @@ export function CollapsibleSection({
         <ChevronRight className={`w-3 h-3 transition-all duration-200 ${isOpen ? "rotate-90 text-accent" : "text-zinc-500"}`} />
         <span className={`text-xs font-semibold ${isOpen ? "text-accent" : "text-zinc-300"}`}>{label}</span>
         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ml-auto transition-all duration-200 ${
-          isOpen ? "bg-accent/15 text-accent" : "bg-zinc-800 text-zinc-500"
+          isOpen ? "bg-accent/15 text-accent" : "bg-surface2 text-zinc-500"
         }`}>{count}</span>
       </button>
       <div

@@ -101,7 +101,7 @@ export function CataloghiView() {
         <div className="mb-6">
           <button type="button"
             onClick={() => { window.history.pushState({ view: "edit" }, ""); p.setView("edit") }}
-            className="text-xs text-zinc-400 hover:text-white transition-colors mb-3 inline-flex items-center gap-1"
+            className="text-xs text-muted hover:text-white transition-colors mb-3 inline-flex items-center gap-1"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
@@ -109,7 +109,7 @@ export function CataloghiView() {
             {t("ui.homeBtn")}
           </button>
           <h1 className="text-2xl font-bold text-zinc-50">{t("ui.catalogsTitle")}</h1>
-          <p className="text-sm text-zinc-400 mt-1">{t("ui.catalogsSubtitle")}</p>
+          <p className="text-sm text-muted mt-1">{t("ui.catalogsSubtitle")}</p>
         </div>
       </ScrollReveal>
 
@@ -122,7 +122,7 @@ export function CataloghiView() {
             className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 active:scale-95 ${
               platformFilter === f.id
                 ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/30 shadow-sm font-semibold"
-                : "bg-surface/80 text-zinc-400 hover:text-zinc-200 border border-white/5 hover:border-white/10"
+                : "bg-surface/80 text-muted hover:text-zinc-200 border border-white/5 hover:border-white/10"
             }`}
           >
             {f.label}
@@ -250,8 +250,8 @@ export function CataloghiView() {
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" opacity="0.5"/>
             </svg>
           </div>
-          <p className="text-sm text-zinc-400 mb-2">{t("ui.loadingCatalogs") || "Caricamento cataloghi..."}</p>
-          <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-accent-orange animate-spin" />
+          <p className="text-sm text-muted mb-2">{t("ui.loadingCatalogs") || "Caricamento cataloghi..."}</p>
+          <div className="w-8 h-8 rounded-full border-2 border-border border-t-accent-orange animate-spin" />
         </div>
       )}
 
@@ -262,7 +262,7 @@ export function CataloghiView() {
               <h2 className="text-xl font-bold text-zinc-50">{gridTitle}</h2>
               <button type="button"
                 onClick={() => setGridItems(null)}
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-all"
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-surface2 hover:bg-zinc-700 text-muted hover:text-zinc-200 transition-all"
                 aria-label="Chiudi"
               >
                 <X className="w-5 h-5" />
@@ -288,7 +288,7 @@ export function CataloghiView() {
                         }), "cataloghi")
                       }
                     }}
-                    className={`group relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-800 transition-all focus:outline-none focus:ring-2 focus:ring-accent ${
+                    className={`group relative aspect-[2/3] rounded-xl overflow-hidden bg-surface2 transition-all focus:outline-none focus:ring-2 focus:ring-accent ${
                       isSaved
                         ? "ring-2 ring-emerald-500/80 border-emerald-500/80"
                         : "hover:ring-2 hover:ring-accent/50"

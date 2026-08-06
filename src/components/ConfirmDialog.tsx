@@ -60,7 +60,7 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
     return (
       <>
         <div className="fixed inset-0 z-[199]" onClick={() => dismiss(onCancel)} />
-        <div role="dialog" aria-modal="true" aria-label={title} className={`absolute top-full right-0 mt-2 z-[200] bg-zinc-800 border border-zinc-500 rounded-2xl p-4 shadow-2xl shadow-black/80 min-w-56 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto ${closing ? "animate-fade-scale-out" : "animate-fade-scale-in"}`} onClick={(e) => e.stopPropagation()}>
+        <div role="dialog" aria-modal="true" aria-label={title} className={`absolute top-full right-0 mt-2 z-[200] bg-surface2 border border-zinc-500 rounded-2xl p-4 shadow-2xl shadow-black/80 min-w-56 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto ${closing ? "animate-fade-scale-out" : "animate-fade-scale-in"}`} onClick={(e) => e.stopPropagation()}>
         <h3 className="text-sm font-semibold text-zinc-100 mb-2">{title}</h3>
         <p className="text-xs text-zinc-300 mb-4">{message}</p>
         <div className="flex gap-2 justify-end">
@@ -80,7 +80,7 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
       onClick={() => dismiss(onCancel)}
     >
         <div
-          className={`bg-zinc-800 border border-zinc-500 rounded-2xl p-6 shadow-2xl shadow-black/80 max-w-sm w-full mx-4 ${closing ? "animate-fade-scale-out" : "animate-fade-scale-in"}`}
+          className={`bg-surface2 border border-zinc-500 rounded-2xl p-6 shadow-2xl shadow-black/80 max-w-sm w-full mx-4 ${closing ? "animate-fade-scale-out" : "animate-fade-scale-in"}`}
           onClick={(e) => e.stopPropagation()}
         >
           <h3 className="text-lg font-semibold text-zinc-100 mb-2">{title}</h3>

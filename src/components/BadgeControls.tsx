@@ -30,8 +30,8 @@ export function BadgeControls() {
         <Toggle value={ed.rankingBadges} onChange={(v) => ed.setRankingBadges(v)} />
       </div>
 
-      <div className="mt-2 pt-2 border-t border-zinc-800/60">
-        <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{t("ui.styleRankingExtra")}</label>
+      <div className="mt-2 pt-2 border-t border-surface2/60">
+        <label className="text-xs text-muted font-medium block mb-2 px-1">{t("ui.styleRankingExtra")}</label>
         <div className="px-1">
           <BadgeStyleSelector value={ed.rankingBadgeStyle} options={["default","colored","pill"]} onChange={ed.setRankingBadgeStyle} t={t} accentColor={p.accentColor} />
         </div>
@@ -48,7 +48,7 @@ export function BadgeControls() {
         <Toggle value={ed.globalBadges} onChange={(v) => ed.setGlobalBadges(v)} />
       </div>
 
-      <div className="pl-4 space-y-2.5 border-l border-zinc-800/60 ml-1.5">
+      <div className="pl-4 space-y-2.5 border-l border-surface2/60 ml-1.5">
         <div className="control-row flex items-center justify-between px-1">
           <span className="control-label">{t("ui.badgeGenre")}</span>
           <Toggle value={ed.badgeGenre} onChange={(v) => ed.setBadgeGenre(v)} />
@@ -124,8 +124,8 @@ export function BadgeControls() {
         )}
       </div>
 
-      <div className="mt-3 pt-3 border-t border-zinc-800/60">
-        <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{t("ui.styleGenreBadge")}</label>
+      <div className="mt-3 pt-3 border-t border-surface2/60">
+        <label className="text-xs text-muted font-medium block mb-2 px-1">{t("ui.styleGenreBadge")}</label>
         <div className="px-1">
           <BadgeStyleSelector value={ed.badgeStyle} options={["shadow","pill","bar","colored","bordo","vetro"]} onChange={ed.setBadgeStyle} t={t} accentColor={p.accentColor} />
         </div>
@@ -154,10 +154,10 @@ export function BadgeControls() {
         </div>
       </div>
 
-      <div className="mt-3 pt-3 border-t border-zinc-800/60">
+      <div className="mt-3 pt-3 border-t border-surface2/60">
         <button type="button" aria-label={ed.blurEnabled ? t("ui.blurDisabled") : t("ui.blurEnabled")}
                 onClick={() => ed.setBlurEnabled(!ed.blurEnabled)}
-                className={`w-full mb-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-150 ${ed.blurEnabled ? "bg-white/10 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}>
+                className={`w-full mb-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-150 ${ed.blurEnabled ? "bg-white/10 text-white shadow-sm" : "bg-white/5 text-muted hover:bg-white/10"}`}>
           <span className="flex items-center gap-1.5 justify-center">
             {ed.blurEnabled ? <><Check className="w-3 h-3" /> {t("ui.blurEnabled")}</> : <><XCircle className="w-3 h-3" /> {t("ui.blurDisabled")}</>}
           </span>

@@ -13,7 +13,7 @@ export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
           <img src="/posterium.png" alt="Posterium" loading="eager" decoding="async" className="h-auto w-[min(92vw,390px)] mx-auto mb-4 hover:brightness-110 transition-all duration-150" />
           <h2 className="text-2xl font-bold text-zinc-100">{t("ui.welcome")}</h2>
-          <p className="text-sm text-zinc-400 mt-1.5">{t("ui.welcomeSubtitle")}</p>
+          <p className="text-sm text-muted mt-1.5">{t("ui.welcomeSubtitle")}</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {PICKER_LANGS.map((l) => (
@@ -21,7 +21,7 @@ export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
               <span className="text-2xl shrink-0">{LANG_FLAGS[l.code] || <Globe className="w-6 h-6" />}</span>
               <div>
                 <p className="text-sm font-medium text-zinc-200 group-hover:text-accent transition-colors">{l.name}</p>
-                <p className="text-xs text-zinc-400 uppercase tracking-wider">{l.code}</p>
+                <p className="text-xs text-muted uppercase tracking-wider">{l.code}</p>
               </div>
             </button>
           ))}

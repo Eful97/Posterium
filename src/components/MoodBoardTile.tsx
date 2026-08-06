@@ -69,7 +69,7 @@ export function MoodBoardTile({
         <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
         <div className="relative z-[1]">
 
-      <div className="aspect-[2/3] bg-zinc-900/80 overflow-hidden relative">
+      <div className="aspect-[2/3] bg-surface/80 overflow-hidden relative">
         {/* Poster image */}
         {m.posterPath ? (
           // eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL

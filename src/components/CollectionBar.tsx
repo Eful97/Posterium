@@ -112,7 +112,7 @@ export function CollectionBar({
           className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 active:scale-95 ${
             activeId === null
               ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/25 shadow-[0_0_10px_rgba(232,93,42,0.12)]"
-              : "collection-chip-glass text-zinc-400 hover:text-zinc-300"
+              : "collection-chip-glass text-muted hover:text-zinc-300"
           }`}
         >
           Tutti
@@ -128,7 +128,7 @@ export function CollectionBar({
           return (
             <div key={col.id} className="relative shrink-0 flex items-stretch" data-chip>
               {isEditing ? (
-                <div className="flex items-center gap-1 bg-surface rounded-xl border border-zinc-700/50 px-2 py-1">
+                <div className="flex items-center gap-1 bg-surface rounded-xl border border-border/50 px-2 py-1">
                   <input
                     ref={inputRef}
                     value={nameInput}
@@ -140,7 +140,7 @@ export function CollectionBar({
                     className="w-24 bg-transparent text-xs text-white outline-none"
                     maxLength={40}
                   />
-                  <button type="button" onClick={() => handleRename(col.id)} className="p-0.5 text-zinc-400 hover:text-accent-orange transition-colors">
+                  <button type="button" onClick={() => handleRename(col.id)} className="p-0.5 text-muted hover:text-accent-orange transition-colors">
                     <Check className="w-3 h-3" />
                   </button>
                 </div>
@@ -149,7 +149,7 @@ export function CollectionBar({
                   className={`flex items-stretch rounded-xl border transition-all duration-150 overflow-hidden ${
                     isActive
                       ? "bg-accent-orange/15 text-accent-orange border-accent-orange/25 shadow-[0_0_10px_rgba(232,93,42,0.12)]"
-                      : "collection-chip-glass text-zinc-400"
+                      : "collection-chip-glass text-muted"
                   }`}
                 >
                   <button type="button"
@@ -190,7 +190,7 @@ export function CollectionBar({
 
         {/* Create button / input */}
         {creating ? (
-          <div className="flex items-center gap-1 shrink-0 bg-surface rounded-xl border border-zinc-700/50 px-2 py-1">
+          <div className="flex items-center gap-1 shrink-0 bg-surface rounded-xl border border-border/50 px-2 py-1">
             <input
               ref={inputRef}
               value={nameInput}
@@ -230,7 +230,7 @@ export function CollectionBar({
             left: menuPos.left,
             zIndex: 99999,
           }}
-          className="w-36 rounded-xl bg-zinc-900/95 backdrop-blur-xl border border-white/15 shadow-2xl shadow-black/90 p-1 animate-fade-scale-in space-y-0.5"
+          className="w-36 rounded-xl bg-surface/95 backdrop-blur-xl border border-white/15 shadow-2xl shadow-black/90 p-1 animate-fade-scale-in space-y-0.5"
         >
           {collections
             .filter((c) => c.id === menuOpen)
@@ -240,14 +240,14 @@ export function CollectionBar({
                   onClick={() => { closeMenu(); setEditing(col.id); setNameInput(col.name) }}
                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-200 hover:text-white hover:bg-white/10 transition-colors"
                 >
-                  <Pencil className="w-3.5 h-3.5 text-zinc-400" />
+                  <Pencil className="w-3.5 h-3.5 text-muted" />
                   Rinomina
                 </button>
                 <button type="button"
                   onClick={() => { closeMenu(); onDelete(col.id) }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/15 transition-colors"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-danger hover:text-red-300 hover:bg-red-500/15 transition-colors"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  <Trash2 className="w-3.5 h-3.5 text-danger" />
                   Elimina
                 </button>
               </React.Fragment>

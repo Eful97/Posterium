@@ -68,7 +68,7 @@ export function VersionBadge() {
 
   return (
     <div className="fixed top-2 left-3 z-50 flex items-center gap-2">
-      <span className="text-xs text-zinc-400 font-mono bg-black/40 backdrop-blur-sm px-2 py-1 rounded-lg">v{CURRENT_VERSION}</span>
+      <span className="text-xs text-muted font-mono bg-black/40 backdrop-blur-sm px-2 py-1 rounded-lg">v{CURRENT_VERSION}</span>
       <button type="button"
         onClick={handleCheck}
         title={t("ui.checkUpdates")}

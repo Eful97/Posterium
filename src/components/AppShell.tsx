@@ -113,8 +113,8 @@ return (
           )}
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
             <button type="button" suppressHydrationWarning aria-label={p.copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { p.copyUrl() }} disabled={!p.urlPattern} className="top-action-button top-action-button-primary h-9 w-9 flex items-center justify-center bg-accent-orange text-white border border-accent-orange/50 shadow-lg shadow-accent-orange/25 disabled:opacity-40"><Copy className="w-4 h-4" /></button>
-            <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const uParam = p.profileId ? `?u=${p.profileId}` : ""; const url = `${window.location.origin}/manifest.json${uParam}`; await navigator.clipboard.writeText(url) }} disabled={!p.urlPattern && !p.profileId} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-zinc-400 hover:text-zinc-200"><Download className="w-4 h-4" /></button>
-            <button type="button" aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-zinc-400 hover:text-zinc-200"><User className="w-4 h-4" /></button>
+            <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const uParam = p.profileId ? `?u=${p.profileId}` : ""; const url = `${window.location.origin}/manifest.json${uParam}`; await navigator.clipboard.writeText(url) }} disabled={!p.urlPattern && !p.profileId} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><Download className="w-4 h-4" /></button>
+            <button type="button" aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><User className="w-4 h-4" /></button>
             <button type="button" aria-label="Addon Proxy" onClick={() => setProxyOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-accent-orange"><Sparkles className="w-4 h-4" /></button>
             <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (p.view === "myposters") { window.history.back() } else { window.history.replaceState({ view: "myposters" }, ""); p.setView("myposters") } }} className="top-action-button h-9 px-2 text-xs font-semibold bg-white/[0.06] border border-white/10 text-zinc-200">{p.mappings.length}</button>
             <button type="button" aria-label={t("ui.settings")} onClick={() => p.setSettingsOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-zinc-200 press-scale"><Settings className="w-4 h-4" /></button>
@@ -143,7 +143,7 @@ return (
         <div ref={p.langRef} className="relative">
           <button type="button" aria-label={t("ui.chooseLanguage")} onClick={() => p.setLangOpen((o) => !o)} className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-sm press-scale ${p.langOpen ? "dropdown-open" : "hover:bg-white/[0.08]"}`} title={LANG_NAMES[lang]}>{LANG_FLAGS[lang] || <Globe className="w-4 h-4" />}</button>
           {(p.langOpen || closingLang) && (
-            <div className={`absolute right-0 bottom-full mb-3 bg-black/60 backdrop-blur-xl border border-zinc-700/50 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 min-w-40 ${closingLang ? "animate-fade-scale-out" : "animate-fade-scale-in"} dropdown-open`}>
+            <div className={`absolute right-0 bottom-full mb-3 bg-black/60 backdrop-blur-xl border border-border/50 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 min-w-40 ${closingLang ? "animate-fade-scale-out" : "animate-fade-scale-in"} dropdown-open`}>
               {Object.entries(LANG_NAMES).filter(([k]) => k !== "xx").map(([code, name]) => (
                 <button type="button" key={code} onClick={() => { pickLang(code); closeLang() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs transition-all duration-150 text-left hover:bg-zinc-700/50 active:scale-[0.98] ${code === lang ? "bg-accent/10 text-accent font-medium" : "text-zinc-300"}`}>
                   <span>{LANG_FLAGS[code] || <Globe className="w-4 h-4" />}</span>
@@ -158,7 +158,7 @@ return (
       {(p.settingsOpen || closingSettings) && (
         <div role="dialog" aria-modal="true" aria-label={t("ui.settingsTitle")} className={`fixed inset-0 z-[70] bg-background md:hidden overflow-y-auto ${closingSettings ? "animate-fade-out" : "animate-fade-scale-in"}`}>
           <div className="fixed inset-0 z-[-1]" onClick={() => closeSettings()} />
-          <div className="flex items-center gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-b border-zinc-800">
+          <div className="flex items-center gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-b border-surface2">
             <button type="button" autoFocus aria-label={t("ui.back")} onClick={() => closeSettings()} className="text-sm text-zinc-300 hover:text-white active:scale-90 transition-all duration-150 press-scale">{t("ui.back")}</button>
             <h2 className="text-sm font-semibold text-zinc-200">{t("ui.settingsTitle")}</h2>
           </div>

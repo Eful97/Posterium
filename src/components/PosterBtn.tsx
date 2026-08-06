@@ -37,7 +37,7 @@ export const PosterBtn = React.memo(function PosterBtn({ img, active, onSelect, 
         )}
         {!active && <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-white/5 transition-opacity duration-300" />}
       </div>
-      {title && <p className="text-xs text-zinc-400 truncate px-1 py-1 text-left group-hover:text-accent transition-colors">{title}</p>}
+      {title && <p className="text-xs text-muted truncate px-1 py-1 text-left group-hover:text-accent transition-colors">{title}</p>}
     </button>
   )
 })

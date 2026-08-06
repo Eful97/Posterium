@@ -27,7 +27,7 @@ export function SecretInput({
   const [show, setShow] = useState(false)
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
-      <label className="text-xs text-zinc-400 font-medium flex items-center gap-1.5">
+      <label className="text-xs text-muted font-medium flex items-center gap-1.5">
         {Icon && <span className="shrink-0 w-3 h-3 [&>svg]:w-3 [&>svg]:h-3">{Icon}</span>}
         {label}
       </label>
@@ -39,18 +39,18 @@ export function SecretInput({
           onBlur={onBlur}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
-          className={`flex-1 bg-background border rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500 transition-colors duration-150 ${error ? "border-red-500/70 focus:border-red-500" : "border-zinc-700"}`}
+          className={`flex-1 bg-background border rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent placeholder:text-zinc-500 transition-colors duration-150 ${error ? "border-red-500/70 focus:border-red-500" : "border-border"}`}
         />
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
-          className="px-2 bg-zinc-800 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150"
+          className="px-2 bg-surface2 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150"
           aria-label={show ? "Hide password" : "Show password"}
         >
           {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       </div>
-      {error && <p className="text-[10px] text-red-400 font-medium">{error}</p>}
+      {error && <p className="text-[10px] text-danger font-medium">{error}</p>}
     </div>
   )
 }

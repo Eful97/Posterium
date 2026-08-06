@@ -19,7 +19,7 @@ export function PosterSkeleton({ count = 1 }: { count?: number }) {
 
 export function PosterCardSkeleton() {
   return (
-    <div className="bg-zinc-800/50 rounded-xl overflow-hidden border border-zinc-800">
+    <div className="bg-surface2/50 rounded-xl overflow-hidden border border-surface2">
       <div className="aspect-[2/3] relative overflow-hidden">
         <div className="w-full h-full skeleton-shimmer-subtle" />
       </div>

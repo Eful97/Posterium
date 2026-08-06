@@ -160,38 +160,38 @@ export function MyPostersView() {
 
   return (
     <div className="pt-4 animate-fade-scale-in">
-      <h2 className="text-xl font-bold text-center mb-4">{t("ui.myPostersTitle")} <span className="text-xs text-zinc-400 font-normal">({mappings.length})</span></h2>
+      <h2 className="text-xl font-bold text-center mb-4">{t("ui.myPostersTitle")} <span className="text-xs text-muted font-normal">({mappings.length})</span></h2>
       <div className="flex items-center gap-2 mb-4 px-4 max-w-7xl mx-auto md:justify-center md:relative">
         <div role="search" className="search-shell flex items-center h-9 md:h-12 rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
           <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors"><Search size={14} /></span>
-          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 focus:placeholder:text-zinc-400 px-1.5 md:px-2 h-full transition-colors duration-200" />
+          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted focus:placeholder:text-muted px-1.5 md:px-2 h-full transition-colors duration-200" />
           {filter.length > 0 && (
             <button type="button" aria-label={t("ui.filterPlaceholder")} onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full hover:bg-zinc-600 hover:shadow-lg active:scale-90 transition-all duration-200"><X className="w-4 h-4" /></button>
           )}
         </div>
         <div className="flex items-center gap-1 md:gap-2 md:absolute md:right-0 shrink-0">
-          <button type="button" aria-label={selectMode ? t("ui.cancel") : t("ui.select")} onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-zinc-400 hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? <X className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}</span><span className="hidden md:inline">{selectMode ? t("ui.cancel") : t("ui.select")}</span></button>
+          <button type="button" aria-label={selectMode ? t("ui.cancel") : t("ui.select")} onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-muted hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? <X className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}</span><span className="hidden md:inline">{selectMode ? t("ui.cancel") : t("ui.select")}</span></button>
           {mappings.length > 0 && (
             <div className="relative">
-              <button type="button" aria-label={t("ui.deleteAll")} onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center press-scale"><Trash2 className="w-4 h-4" /></button>
+              <button type="button" aria-label={t("ui.deleteAll")} onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-danger hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center press-scale"><Trash2 className="w-4 h-4" /></button>
               <ConfirmDialog open={showDeleteAll} title={t("ui.confirmDeleteAll")} message={t("ui.confirmDeleteAllMsg", { count: mappings.length })} confirmLabel={t("ui.deleteAll")} onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
             </div>
           )}
           <div className="relative" ref={sortRef}>
-            <button type="button" aria-label={sortBy === "updated" ? t("ui.sortRecent") : t("ui.sortAZ")} onClick={() => { setSortOpen((o) => !o); setTypeOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2 press-scale">
+            <button type="button" aria-label={sortBy === "updated" ? t("ui.sortRecent") : t("ui.sortAZ")} onClick={() => { setSortOpen((o) => !o); setTypeOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-muted hover:bg-surface2 transition-all duration-150 shrink-0 px-2 press-scale">
               <span className="shrink-0">{sortBy === "updated" ? <Calendar className="w-3.5 h-3.5" /> : <ArrowUpAZ className="w-3.5 h-3.5" />}</span>
               <span className="hidden md:inline truncate">{sortBy === "updated" ? t("ui.recent") : t("ui.sortAZ")}</span>
               <ChevronDown className="w-3 h-3 shrink-0" />
             </button>
             {(sortOpen || sortClosing) && (
               <div className={`absolute right-0 top-full mt-2 glass-panel rounded-2xl p-1.5 z-50 min-w-44 ${sortClosing ? "animate-fade-scale-out" : "animate-fade-scale-in"}`}>
-                <button type="button" onClick={() => { setSortBy("updated"); closeSortDropdown() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>{t("ui.sortRecent")}</button>
-                <button type="button" onClick={() => { setSortBy("alpha"); closeSortDropdown() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>{t("ui.sortAlpha")}</button>
+                <button type="button" onClick={() => { setSortBy("updated"); closeSortDropdown() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-surface2"}`}>{t("ui.sortRecent")}</button>
+                <button type="button" onClick={() => { setSortBy("alpha"); closeSortDropdown() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-surface2"}`}>{t("ui.sortAlpha")}</button>
               </div>
             )}
           </div>
           <div className="relative" ref={typeRef}>
-            <button type="button" aria-label={typeFilter === "all" ? t("ui.all") : typeFilter === "movie" ? t("ui.filterMovie") : typeFilter === "tv" ? t("ui.filterSeries") : t("ui.filterAnime")} onClick={() => { setTypeOpen((o) => !o); setSortOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-zinc-400 hover:bg-surface2 transition-all duration-150 shrink-0 px-2 press-scale">
+            <button type="button" aria-label={typeFilter === "all" ? t("ui.all") : typeFilter === "movie" ? t("ui.filterMovie") : typeFilter === "tv" ? t("ui.filterSeries") : t("ui.filterAnime")} onClick={() => { setTypeOpen((o) => !o); setSortOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-muted hover:bg-surface2 transition-all duration-150 shrink-0 px-2 press-scale">
               <span className="shrink-0">{typeFilter === "movie" ? <Clapperboard className="w-3.5 h-3.5" /> : typeFilter === "tv" ? <Tv className="w-3.5 h-3.5" /> : typeFilter === "anime" ? <Flag className="w-3.5 h-3.5" /> : <Clipboard className="w-3.5 h-3.5" />}</span>
               <span className="hidden md:inline truncate">{typeFilter === "all" ? t("ui.all") : typeFilter === "movie" ? t("ui.filterMovie") : typeFilter === "tv" ? t("ui.filterSeries") : t("ui.filterAnime")}</span>
               <ChevronDown className="w-3 h-3 shrink-0" />
@@ -199,7 +199,7 @@ export function MyPostersView() {
             {(typeOpen || typeClosing) && (
               <div className={`absolute right-0 top-full mt-2 glass-panel rounded-2xl p-1.5 z-50 min-w-44 ${typeClosing ? "animate-fade-scale-out" : "animate-fade-scale-in"}`}>
                 {(["all", "movie", "tv", "anime"] as const).map((typeKey) => (
-                  <button type="button" key={typeKey} onClick={() => { setTypeFilter(typeKey); closeTypeDropdown() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${typeFilter === typeKey ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-zinc-800"}`}>
+                  <button type="button" key={typeKey} onClick={() => { setTypeFilter(typeKey); closeTypeDropdown() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${typeFilter === typeKey ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-surface2"}`}>
                     {typeKey === "all" ? t("ui.all") : typeKey === "movie" ? <><Clapperboard className="w-3.5 h-3.5" /> {t("ui.filterMovie")}</> : typeKey === "tv" ? <><Tv className="w-3.5 h-3.5" /> {t("ui.filterSeries")}</> : <><Flag className="w-3.5 h-3.5" /> {t("ui.filterAnime")}</>}
                   </button>
                 ))}
@@ -231,8 +231,8 @@ export function MyPostersView() {
         <div className="flex items-center justify-between gap-3 mb-4 mx-auto max-w-7xl w-full px-4 animate-fade-scale-in">
           <span className="text-sm font-semibold text-zinc-200 tabular-nums">{t("ui.selectedCount", { count: selected.size })}</span>
           <div className="flex items-center gap-2">
-            <button type="button" aria-label={t("ui.cancel")} onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-zinc-800 active:scale-95 transition-all duration-150">{t("ui.cancel")}</button>
-            <button type="button" aria-label={t("ui.delete")} disabled={deleting} onClick={deleteSelected} className="flex items-center gap-1.5 text-xs font-semibold text-red-400 bg-red-900/25 border border-red-900/50 px-4 py-1.5 rounded-xl hover:bg-red-900/40 hover:border-red-500 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button type="button" aria-label={t("ui.cancel")} onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-muted hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-surface2 active:scale-95 transition-all duration-150">{t("ui.cancel")}</button>
+            <button type="button" aria-label={t("ui.delete")} disabled={deleting} onClick={deleteSelected} className="flex items-center gap-1.5 text-xs font-semibold text-danger bg-red-900/25 border border-red-900/50 px-4 py-1.5 rounded-xl hover:bg-red-900/40 hover:border-red-500 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
               <Trash2 className="w-3.5 h-3.5" /> {deleting ? t("ui.deleting") : t("ui.delete")}
             </button>
           </div>
@@ -285,7 +285,7 @@ export function MyPostersView() {
                   <line x1="3" y1="18" x2="3.01" y2="18"/>
                 </svg>
               </div>
-              <p className="text-zinc-400 text-sm mb-1">{t("ui.noFilteredResults")}</p>
+              <p className="text-muted text-sm mb-1">{t("ui.noFilteredResults")}</p>
               <p className="text-zinc-500 text-xs">Prova a modificare il filtro o la ricerca.</p>
             </>
           )}

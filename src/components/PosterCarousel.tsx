@@ -110,7 +110,7 @@ export function PosterCarousel() {
         </h2>
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2">
-            <div className="w-20 h-1 rounded-full bg-zinc-800 overflow-hidden">
+            <div className="w-20 h-1 rounded-full bg-surface2 overflow-hidden">
               <div
                 className="h-full rounded-full bg-accent-orange transition-all duration-300"
                 style={{ width: `${(activeIndex / Math.max(totalItems - 1, 1)) * 100}%` }}
@@ -132,7 +132,7 @@ export function PosterCarousel() {
         {showLeft && (
           <button type="button"
             onClick={() => scrollTo(-1)}
-            className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-zinc-900/80 border border-zinc-700/50 backdrop-blur-xl flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-800/80 active:scale-90 transition-all shadow-xl"
+            className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-surface/80 border border-border/50 backdrop-blur-xl flex items-center justify-center text-zinc-300 hover:text-white hover:bg-surface2/80 active:scale-90 transition-all shadow-xl"
             aria-label="Scorri a sinistra"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -158,7 +158,7 @@ export function PosterCarousel() {
                   >
                     <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
                     <div className="relative z-[1] flex flex-col flex-1">
-                    <div className="aspect-[2/3] shrink-0 relative overflow-hidden bg-zinc-800">
+                    <div className="aspect-[2/3] shrink-0 relative overflow-hidden bg-surface2">
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent z-10" />
                       {/* eslint-disable-next-line @next/next/no-img-element -- dynamic poster URL */}
                       <img
@@ -177,7 +177,7 @@ export function PosterCarousel() {
                     </div>
                     <div className="p-3 relative z-10 flex-1">
                       <h3 className="text-xs font-semibold text-zinc-100 group-hover:text-white transition-colors duration-200">{ex.title}</h3>
-                      <p className="text-[10px] text-zinc-400 group-hover:text-zinc-200 mt-1 leading-relaxed transition-colors duration-200">{ex.desc}</p>
+                      <p className="text-[10px] text-muted group-hover:text-zinc-200 mt-1 leading-relaxed transition-colors duration-200">{ex.desc}</p>
                     </div>
                     </div>
                     <PosterDepthSheen sheenStrength={20} />
@@ -198,7 +198,7 @@ export function PosterCarousel() {
         {showRight && (
           <button type="button"
             onClick={() => scrollTo(1)}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-zinc-900/80 border border-zinc-700/50 backdrop-blur-xl flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-800/80 active:scale-90 transition-all shadow-xl"
+            className="absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-surface/80 border border-border/50 backdrop-blur-xl flex items-center justify-center text-zinc-300 hover:text-white hover:bg-surface2/80 active:scale-90 transition-all shadow-xl"
             aria-label="Scorri a destra"
           >
             <ChevronRight className="w-4 h-4" />

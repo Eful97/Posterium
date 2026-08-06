@@ -102,7 +102,7 @@ export function OnboardingTour() {
           </h3>
 
           {/* Description */}
-          <p className="text-sm text-zinc-400 leading-relaxed">
+          <p className="text-sm text-muted leading-relaxed">
             {STEPS[step].description}
           </p>
         </div>
@@ -161,7 +161,7 @@ export function OnboardingTour() {
         {/* Skip */}
         <button type="button"
           onClick={close}
-          className="w-full py-2.5 text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-150 border-t border-white/5"
+          className="w-full py-2.5 text-xs text-zinc-600 hover:text-muted transition-colors duration-150 border-t border-white/5"
         >
           Salta tutorial
         </button>

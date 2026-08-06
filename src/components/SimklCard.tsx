@@ -109,7 +109,7 @@ export function SimklCard({ items, title, totalCount, meta = [], onClick, onItem
             </span>
           )}
           {meta.length > 0 && (
-            <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <div className="flex items-center gap-2 text-xs text-muted">
               {meta.map((m, i) => (
                 <span key={i}>{m}</span>
               ))}

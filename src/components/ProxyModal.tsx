@@ -59,13 +59,13 @@ export function ProxyModal({ isOpen, onClose }: Props) {
           </div>
           <div>
             <h3 id="proxy-modal-title" className="text-base font-bold text-white">Generatore Addon Proxy</h3>
-            <p className="text-xs text-zinc-400">Inietta i poster di Posterium in qualsiasi Add-on Stremio</p>
+            <p className="text-xs text-muted">Inietta i poster di Posterium in qualsiasi Add-on Stremio</p>
           </div>
         </div>
         <button type="button"
           aria-label="Chiudi"
           onClick={onClose}
-          className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+          className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-white/10 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -130,7 +130,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
             </div>
           </div>
         ) : (
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-[11px] text-zinc-400 text-center">
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-[11px] text-muted text-center">
             Inserisci l&apos;URL di un add-on per generare il tuo link proxy personalizzato.
           </div>
         )}

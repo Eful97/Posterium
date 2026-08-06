@@ -151,7 +151,7 @@ export function PosterLightbox({
         </button>
 
         {/* Poster area */}
-        <div className="aspect-[2/3] bg-zinc-900 relative overflow-hidden">
+        <div className="aspect-[2/3] bg-surface relative overflow-hidden">
           {mapping.posterPath ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
@@ -164,7 +164,7 @@ export function PosterLightbox({
               <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
             </>
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+            <div className="w-full h-full flex items-center justify-center bg-surface">
               <ExternalLink className="w-12 h-12 text-zinc-600" />
             </div>
           )}
@@ -216,7 +216,7 @@ export function PosterLightbox({
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all duration-150 active:scale-95 ${
                       checked
                         ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/25"
-                        : "bg-white/5 text-zinc-400 hover:text-zinc-300 border border-white/5 hover:border-white/10"
+                        : "bg-white/5 text-muted hover:text-zinc-300 border border-white/5 hover:border-white/10"
                     }`}
                   >
                     {checked && <Check className="w-2.5 h-2.5" />}

@@ -53,7 +53,7 @@ export function BadgeStyleSelector<S extends string>({
                 ? "bg-white/5 text-zinc-600 cursor-not-allowed opacity-50 border-transparent"
                 : isActive
                   ? "bg-accent-orange/15 text-accent-orange border-accent-orange/25"
-                  : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200 border-transparent"
+                  : "bg-white/5 text-muted hover:bg-white/10 hover:text-zinc-200 border-transparent"
             }`}
           >
             <BadgePreview style={s} accentColor={accentColor} />

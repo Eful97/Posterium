@@ -185,14 +185,14 @@ export function ProfileModal({ isOpen, onClose }: Props) {
           </div>
           <div>
             <h3 id="profile-modal-title" className="text-base font-bold text-white">{t("ui.profileTitle")}</h3>
-            <p className="text-xs text-zinc-400">{!p.profileId ? "Crea o accedi ad un profilo per iniziare" : t("ui.profileSubtitle")}</p>
+            <p className="text-xs text-muted">{!p.profileId ? "Crea o accedi ad un profilo per iniziare" : t("ui.profileSubtitle")}</p>
           </div>
         </div>
         {p.profileId && (
           <button type="button"
             aria-label="Chiudi"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -205,7 +205,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
             type="button"
             onClick={() => setTab("save")}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              tab === "save" ? "bg-accent-orange/20 text-accent-orange border border-accent-orange/30" : "text-zinc-400 hover:text-zinc-200"
+              tab === "save" ? "bg-accent-orange/20 text-accent-orange border border-accent-orange/30" : "text-muted hover:text-zinc-200"
             }`}
           >
             {p.profileId ? "Salva Profilo" : "Nuovo Profilo"}
@@ -214,7 +214,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
             type="button"
             onClick={() => setTab("load")}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              tab === "load" ? "bg-accent-orange/20 text-accent-orange border border-accent-orange/30" : "text-zinc-400 hover:text-zinc-200"
+              tab === "load" ? "bg-accent-orange/20 text-accent-orange border border-accent-orange/30" : "text-muted hover:text-zinc-200"
             }`}
           >
             Accedi a Profilo Esistente
@@ -236,7 +236,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
                   <button
                     type="button"
                     onClick={handleCopyUuid}
-                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/[0.06] border border-white/10 hover:bg-white/[0.12] text-zinc-400 hover:text-zinc-200 transition-all active:scale-90"
+                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/[0.06] border border-white/10 hover:bg-white/[0.12] text-muted hover:text-zinc-200 transition-all active:scale-90"
                     title="Copia UUID"
                   >
                     {uuidCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
