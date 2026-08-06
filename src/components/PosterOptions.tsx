@@ -6,6 +6,7 @@ import type { TMDBImage } from "@/lib/types"
 import { LANG_NAMES, groupBy } from "@/lib/utils"
 import { PosterBtn } from "@/components/PosterBtn"
 import { PosterTabs } from "@/components/PosterTabs"
+import { FitDebugPanel } from "@/components/FitDebugPanel"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
@@ -369,48 +370,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       )}
 
       {activeClean && showFitDebug && hasFitData && (
-        <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3 text-[11px] text-zinc-300 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-zinc-100">{t("ui.debugBestFit")}</span>
-            <span className="text-zinc-500">{t("ui.candidates", { count: results.length })}</span>
-          </div>
-
-          {bestResult && (
-            <div className="rounded-lg bg-accent-orange/10 border border-accent-orange/20 px-2 py-1.5 text-accent-orange">
-              {t("ui.best")} <span title={bestResult.posterPath}>{shortPath(bestResult.posterPath)}</span> - score {bestResult.adjustedScore.toFixed(2)}
-            </div>
-          )}
-
-          <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-            {results.slice(0, 10).map((result, index) => (
-              <div key={result.posterPath} className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-zinc-200" title={result.posterPath}>
-                    #{index + 1} {shortPath(result.posterPath)}
-                  </span>
-                  <span className={`font-semibold ${scoreClass(result.adjustedScore)}`}>
-                    {result.adjustedScore.toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-zinc-500">
-                  <span>{t("ui.scoreBase")} {result.score.toFixed(2)}</span>
-                  <span>{t("ui.scoreQuality")} {result.qualityScore.toFixed(2)}</span>
-                  <span>{t("ui.scoreText")} {result.textPenalty.toFixed(2)}</span>
-                  <span>{t("ui.scoreLogo")} {result.logoZoneScore.toFixed(2)}</span>
-                  <span>{t("ui.scoreContrast")} {result.metrics.contrast.toFixed(2)}</span>
-                  <span>{t("ui.scoreDetail")} {result.metrics.lowDetailScore.toFixed(2)}</span>
-                </div>
-
-                {result.reasons.length > 0 && (
-                  <div className="mt-1 text-muted">
-                    {result.reasons.join(" - ")}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <FitDebugPanel results={results} bestResult={bestResult} shortPath={shortPath} scoreClass={scoreClass} t={t} />
       )}
 
       {activeClean && !hasClean && (

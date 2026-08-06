@@ -7,6 +7,7 @@ import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { Modal } from "@/components/ui/Modal"
+import { ProfileTabs } from "@/components/ProfileTabs"
 
 interface Props {
   isOpen: boolean
@@ -207,26 +208,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       </div>
 
         {/* Tab switcher */}
-        <div className="flex rounded-xl bg-black/40 border border-white/10 p-1">
-          <button
-            type="button"
-            onClick={() => setTab("save")}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              tab === "save" ? "bg-accent-orange/20 text-accent-orange border border-accent-orange/30" : "text-muted hover:text-zinc-200"
-            }`}
-          >
-            {profileId ? "Salva Profilo" : "Nuovo Profilo"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("load")}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              tab === "load" ? "bg-accent-orange/20 text-accent-orange border border-accent-orange/30" : "text-muted hover:text-zinc-200"
-            }`}
-          >
-            Accedi a Profilo Esistente
-          </button>
-        </div>
+        <ProfileTabs tab={tab} onTabChange={setTab} hasProfile={!!profileId} />
 
         {tab === "save" ? (
           <>
