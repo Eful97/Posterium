@@ -69,6 +69,45 @@ Supportati: **Netflix**, **HBO Max**, **Disney+**, **Prime Video**, **Apple TV+*
 
 ## ⚡ Deploy Rapido
 
+### 🤗 Deploy Hugging Face Spaces (Docker)
+
+> ⚠️ **Nota sul piano free (luglio 2026)**: da luglio 2026 creare una Space *compute* (Gradio/Docker) richiede un **piano PRO** (~$9/mese). Le **Static Space** restano gratis ma non sono adatte a Posterium (è un server Next.js). Chi **ha già** una Space Docker creata prima di quella data continua a girarla gratis su **CPU Basic** (2 vCPU / 16GB, costo orario 0).
+
+Il repo è già configurato per HF Spaces Docker: frontmatter `sdk: docker` + `app_port: 8080` nel README e `Dockerfile` pronto.
+
+1. **Crea (o usa) una Space** su [huggingface.co/spaces](https://huggingface.co/spaces) con SDK **Docker**, collegandola al repo `Eful97/Posterium`.
+2. **Env** (Space Settings → Variables):
+   - `TMDB_API_KEY`: chiave API TMDB
+   - `NODE_OPTIONS=--max-old-space-size=1024`: alza il cap memoria (il default Docker è 384MB; HF ha 16GB)
+   - opzionali: `MDBLIST_API_KEY`, `OMDB_API_KEY`, `POSTERIUM_ADMIN_TOKEN`
+3. **Persistenza**: collega uno Storage bucket HF a `/data` (Settings → Storage → Link bucket), altrimenti i dati non persistono tra i rebuild. L'app lo segnala nei log d'avvio.
+4. **Sleep**: sul piano free la Space dorme dopo 48h di inattività e si riavvia automaticamente al primo visitatore.
+
+📌 *URL Manifest Stremio*: `https://<tua-space>.hf.space/manifest.json`
+
+---
+
+### 🦾 Deploy Oracle Cloud Always Free (Gratis, 24/7)
+
+L'unica opzione gratuita con CPU sufficiente per i render poster di Posterium: **4 OCPU ARM (Ampere A1) + 24GB RAM**, gratis per sempre. I tier free di Render/Northflank (0.1–0.2 vCPU) sono troppo deboli.
+
+1. **Crea account** su [Oracle Cloud](https://www.oracle.com/cloud/free/) (richiede carta per verifica, ma il tier Always Free non addebita).
+2. **Crea un'istanza**: shape **VM.Standard.A1.Flex** (ARM), 4 OCPU / 24GB, Ubuntu.
+3. **Apri la porta 8080**: in VCN → Security List aggiungi una regola ingress TCP 8080.
+4. **Installa Docker e avvia**:
+   ```bash
+   ssh ubuntu@<IP-istanza>
+   sudo apt update && sudo apt install -y docker.io
+   git clone https://github.com/Eful97/Posterium && cd Posterium
+   echo TMDB_API_KEY=la_tua_chiave > .env
+   sudo docker compose up -d
+   ```
+5. **Punta la RAM**: aggiungi a `.env` `NODE_OPTIONS=--max-old-space-size=2048` (hai 24GB) e collega un volume per `/data`.
+
+📌 *URL Manifest Stremio*: `http://<IP-istanza>:8080/manifest.json`
+
+---
+
 ### 📱 Deploy Termux (Android 24/7)
 
 Trasforma un vecchio telefono Android in un server Posterium sempre attivo!
