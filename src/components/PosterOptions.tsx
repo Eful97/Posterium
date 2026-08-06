@@ -6,7 +6,7 @@ import type { TMDBImage } from "@/lib/types"
 import { LANG_NAMES, groupBy } from "@/lib/utils"
 import { PosterBtn } from "@/components/PosterBtn"
 import { PosterTabs } from "@/components/PosterTabs"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { usePosterFit } from "@/lib/usePosterFit"
@@ -23,7 +23,10 @@ interface Props {
 }
 
 export function PosterOptions({ posters, posterActivePath, lang, selectPoster, activeGroup: controlledActiveGroup, onActiveGroupChange, showTabs = true }: Props) {
-  const p = useP()
+  const selectedLogo = usePSelector((v) => v.selectedLogo)
+  const selected = usePSelector((v) => v.selected)
+  const mappingsMap = usePSelector((v) => v.mappingsMap)
+  const autoSaveExcludedPosters = usePSelector((v) => v.autoSaveExcludedPosters)
   const { t } = useT()
   const ed = usePosterEditor()
 
@@ -67,7 +70,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
 
   const { bestFitPath, results, loading: fitLoading } = usePosterFit({
     enabled: ed.defaultLogoFitEnabled,
-    selectedLogo: p.selectedLogo,
+    selectedLogo: selectedLogo,
     cleanPosters,
     logoScale: ed.logoScale,
     logoOffsetX: ed.logoOffsetX,
@@ -84,10 +87,10 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   const isBestSelected = bestPoster ? posterActivePath === bestPoster.file_path : false
 
   const isSavedPoster = useMemo(() => {
-    if (!p.selected) return false
-    const mediaType = p.selected.media_type === "tv" ? "tv" : "movie"
-    return p.mappingsMap.has(`${mediaType}:${p.selected.id}`)
-  }, [p.mappingsMap, p.selected])
+    if (!selected) return false
+    const mediaType = selected.media_type === "tv" ? "tv" : "movie"
+    return mappingsMap.has(`${mediaType}:${selected.id}`)
+  }, [mappingsMap, selected])
 
   const topFitRotationPosters = useMemo(() => {
     if (results.length === 0) return []
@@ -101,7 +104,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   const populatedRotationRef = useRef(false)
   useEffect(() => {
     populatedRotationRef.current = false
-  }, [p.selected?.id])
+  }, [selected?.id])
   useEffect(() => {
     if (isSavedPoster) return
     if (topFitRotationPosters.length === 0 || fitLoading) return
@@ -121,14 +124,14 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   useEffect(() => {
     setSortByFit(false)
     autoSelectedFitKeyRef.current = null
-  }, [p.selected?.id])
+  }, [selected?.id])
 
   const autoSelectFitKey = useMemo(() => {
-    if (!ed.defaultLogoFitEnabled || !bestPoster || !p.selectedLogo) return null
+    if (!ed.defaultLogoFitEnabled || !bestPoster || !selectedLogo) return null
     return JSON.stringify([
       bestPoster.file_path,
       cleanPosters.map((poster) => poster.file_path),
-      p.selectedLogo.file_path,
+      selectedLogo.file_path,
       ed.globalBadges,
     ])
   }, [
@@ -136,7 +139,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
     cleanPosters,
     ed.defaultLogoFitEnabled,
     ed.globalBadges,
-    p.selectedLogo,
+    selectedLogo,
   ])
 
   useEffect(() => {
@@ -171,7 +174,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   useEffect(() => {
     setVisibleCleanCount(12)
     setVisibleLangCount(12)
-  }, [p.selected?.id, activeGroup, sortByFit])
+  }, [selected?.id, activeGroup, sortByFit])
 
   const visibleCleanPosters = useMemo(() => {
     return displayPosters.slice(0, visibleCleanCount)
@@ -219,7 +222,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
         posters.find((poster) => poster.file_path !== filePath && !nextExcluded.includes(poster.file_path))
       if (fallback) selectPoster(fallback)
     }
-    p.autoSaveExcludedPosters(nextExcluded, nextRotationPosters, fallback)
+    autoSaveExcludedPosters(nextExcluded, nextRotationPosters, fallback)
       .then(() => { setExcludedSaveState("saved"); toast.success(t("ui.posterExcluded")) })
       .catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) })
   }
@@ -449,7 +452,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
             {excludedSaveState === "saved" && <span className="text-[10px] text-green-500">{t("ui.saveStateSaved")}</span>}
             {excludedSaveState === "error" && <span className="text-[10px] text-danger">{t("ui.saveStateError")}</span>}
           </span>
-          <button type="button" onClick={() => { ed.setExcludedPosters([]); setExcludedSaveState("saving"); p.autoSaveExcludedPosters([], ed.rotationPosters).then(() => { setExcludedSaveState("saved"); toast.success(t("ui.cancel")) }).catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) }) }} className="text-[11px] text-accent-orange hover:text-orange-300">
+          <button type="button" onClick={() => { ed.setExcludedPosters([]); setExcludedSaveState("saving"); autoSaveExcludedPosters([], ed.rotationPosters).then(() => { setExcludedSaveState("saved"); toast.success(t("ui.cancel")) }).catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) }) }} className="text-[11px] text-accent-orange hover:text-orange-300">
             {t("ui.restore")}
           </button>
         </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Check, XCircle, Ruler, Cloud, Minus, Circle } from "lucide-react"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { Toggle } from "@/components/Toggle"
@@ -16,12 +16,17 @@ import { getAllBadgeOptions } from "@/lib/badge-priority"
 import { defaultGradientHeightForPoster } from "@/lib/gradient-defaults"
 
 export function BadgeControls() {
-  const p = useP()
+  const selected = usePSelector((v) => v.selected)
+  const metaInfo = usePSelector((v) => v.metaInfo)
+  const accentColor = usePSelector((v) => v.accentColor)
+  const mdblistAnimeList = usePSelector((v) => v.mdblistAnimeList)
+  const trendRank = usePSelector((v) => v.trendRank)
+  const imdbTop250 = usePSelector((v) => v.imdbTop250)
+  const setAccentColor = usePSelector((v) => v.setAccentColor)
+  const previewPoster = usePSelector((v) => v.previewPoster)
   const { t, lang } = useT()
   const ed = usePosterEditor()
   const [now] = useState(() => Date.now())
-  const selected = p.selected
-  const metaInfo = p.metaInfo
 
   return (
     <div className="space-y-2.5">
@@ -33,12 +38,12 @@ export function BadgeControls() {
       <div className="mt-2 pt-2 border-t border-surface2/60">
         <label className="text-xs text-muted font-medium block mb-2 px-1">{t("ui.styleRankingExtra")}</label>
         <div className="px-1">
-          <BadgeStyleSelector value={ed.rankingBadgeStyle} options={["default","colored","pill"]} onChange={ed.setRankingBadgeStyle} t={t} accentColor={p.accentColor} />
+          <BadgeStyleSelector value={ed.rankingBadgeStyle} options={["default","colored","pill"]} onChange={ed.setRankingBadgeStyle} t={t} accentColor={accentColor} />
         </div>
-        {!p.accentColor && (
+        {!accentColor && (
           <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{t("ui.noDominantColor")}</div>
         )}
-        {p.accentColor && (
+        {accentColor && (
           <div className="text-[10px] text-zinc-500 text-center mt-1.5 px-1">{t("ui.accentSharedBadge")}</div>
         )}
       </div>
@@ -92,7 +97,7 @@ export function BadgeControls() {
               const isNewSeries = selected.media_type === "tv" && metaInfo.first_air_date ? (now - new Date(metaInfo.first_air_date).getTime()) < twoWeeks : false
               const award = metaInfo.awards?.length ? getAwardBadgeLabel(metaInfo.awards, t) : null
               const nomination = !award && metaInfo.nominations?.length ? getNominationBadgeLabel(metaInfo.nominations, t) : null
-              const animeRankData = p.mdblistAnimeList?.find((a) => a.id === selected.id)
+              const animeRankData = mdblistAnimeList?.find((a) => a.id === selected.id)
               const animeRank = animeRankData ? animeRankData.rank : null
               const studio = metaInfo.studios?.length ? metaInfo.studios[0] : null
               const tvType = selected.media_type === "tv" ? metaInfo.type : null
@@ -107,12 +112,12 @@ export function BadgeControls() {
               })
               const subGenre = getSubGenreLabel(metaInfo.keywords || [], lang)
               const options = getAllBadgeOptions({
-                upcomingRelease, isNewMovie, isNewSeries, animeRank, trendRank: p.trendRank,
+                upcomingRelease, isNewMovie, isNewSeries, animeRank, trendRank: trendRank,
                 award, nomination, studio,
                 director: metaInfo.director || null, subGenre, extra,
                 mediaType: selected.media_type === "tv" ? "tv" : "movie",
                 voteAverage: metaInfo.voteAverage, tvType, tvStatus,
-                imdbTop250: !!p.imdbTop250,
+                imdbTop250: !!imdbTop250,
               })
               return options.map((o) => {
                 const display = isPrefixedKey(o) ? t(badgeKey(o)) : o
@@ -127,26 +132,26 @@ export function BadgeControls() {
       <div className="mt-3 pt-3 border-t border-surface2/60">
         <label className="text-xs text-muted font-medium block mb-2 px-1">{t("ui.styleGenreBadge")}</label>
         <div className="px-1">
-          <BadgeStyleSelector value={ed.badgeStyle} options={["shadow","pill","bar","colored","bordo","vetro"]} onChange={ed.setBadgeStyle} t={t} accentColor={p.accentColor} />
+          <BadgeStyleSelector value={ed.badgeStyle} options={["shadow","pill","bar","colored","bordo","vetro"]} onChange={ed.setBadgeStyle} t={t} accentColor={accentColor} />
         </div>
         <div className="flex items-center gap-2 justify-center mt-2 px-1">
           <input
             type="color"
-            value={!p.accentColor ? "#000000" : p.accentColor}
-            onChange={(e) => p.setAccentColor(e.target.value)}
+            value={!accentColor ? "#000000" : accentColor}
+            onChange={(e) => setAccentColor(e.target.value)}
             className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded"
           />
           <input
             type="text"
-            value={p.accentColor ?? ""}
-            onChange={(e) => { const v = e.target.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) p.setAccentColor(v) }}
-            onBlur={(e) => { if (!/^#[0-9a-fA-F]{6}$/.test(e.target.value)) e.target.value = p.accentColor ?? "" }}
+            value={accentColor ?? ""}
+            onChange={(e) => { const v = e.target.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) setAccentColor(v) }}
+            onBlur={(e) => { if (!/^#[0-9a-fA-F]{6}$/.test(e.target.value)) e.target.value = accentColor ?? "" }}
             className="editor-input w-20 text-center px-1.5 py-1 font-mono"
             placeholder="#555555"
           />
-          {p.accentColor && (
+          {accentColor && (
             <button type="button"
-              onClick={() => p.setAccentColor(null)}
+              onClick={() => setAccentColor(null)}
               className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors px-1"
               title="Reset to auto-detect"
             >↺</button>
@@ -163,7 +168,7 @@ export function BadgeControls() {
           </span>
         </button>
         {ed.blurEnabled && <div className="space-y-1 px-1">
-          <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => ed.setGradientHeight(v)} onDoubleClick={() => ed.setGradientHeight(defaultGradientHeightForPoster(p.previewPoster))} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="gradHeight" suffix="%" />
+          <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => ed.setGradientHeight(v)} onDoubleClick={() => ed.setGradientHeight(defaultGradientHeightForPoster(previewPoster))} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="gradHeight" suffix="%" />
           <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={t("ui.intensity")} value={ed.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => ed.setBlurIntensity(v)} onDoubleClick={() => ed.setBlurIntensity(5)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="blurIntensity" suffix="px" />
           <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={t("ui.fade")} value={ed.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setBlurFade(v)} onDoubleClick={() => ed.setBlurFade(60)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="blurFade" suffix="%" />
           <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={t("ui.darkness")} value={ed.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setBlurDarkness(v)} onDoubleClick={() => ed.setBlurDarkness(40)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="blurDarkness" suffix="%" />

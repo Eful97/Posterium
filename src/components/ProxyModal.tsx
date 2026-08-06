@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { toast } from "sonner"
 import { X, Copy, ExternalLink, Sparkles, Check, Link2 } from "lucide-react"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { Modal } from "@/components/ui/Modal"
 
@@ -19,7 +19,7 @@ const POPULAR_PRESETS = [
 ]
 
 export function ProxyModal({ isOpen, onClose }: Props) {
-  const p = useP()
+  const profileId = usePSelector((v) => v.profileId)
   const { t } = useT()
   const [targetUrl, setTargetUrl] = useState("")
   const [copied, setCopied] = useState(false)
@@ -27,7 +27,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
   if (!isOpen) return null
 
   const domain = typeof window !== "undefined" ? window.location.origin : ""
-  const userParam = p.profileId ? `&u=${p.profileId}` : ""
+  const userParam = profileId ? `&u=${profileId}` : ""
   const proxyUrl = targetUrl.trim()
     ? `${domain}/api/proxy/manifest?url=${encodeURIComponent(targetUrl.trim())}${userParam}`
     : ""

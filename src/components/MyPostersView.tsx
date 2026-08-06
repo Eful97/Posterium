@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult } from "@/lib/types"
 import { posterUrl } from "@/lib/utils"
@@ -14,9 +14,11 @@ import { useCollections } from "@/lib/useCollections"
 import type { Mapping } from "@/lib/types"
 
 export function MyPostersView() {
-  const p = useP()
+  const mappings = usePSelector((v) => v.mappings)
+  const goHome = usePSelector((v) => v.goHome)
+  const navigateToPoster = usePSelector((v) => v.navigateToPoster)
+  const removeMapping = usePSelector((v) => v.removeMapping)
   const { t } = useT()
-  const { mappings, goHome, navigateToPoster, removeMapping } = p
   const [filter, setFilter] = useState("")
   const [typeFilter, setTypeFilter] = useState<"all" | "movie" | "tv" | "anime">("all")
   const [selectMode, setSelectMode] = useState(false)

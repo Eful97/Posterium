@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { useSearchCtx } from "@/lib/contexts/SearchContext"
 import { posterUrl, titleOf, yearOf } from "@/lib/utils"
@@ -12,7 +12,9 @@ import { Clock, X, Check, ChevronDown } from "lucide-react"
 export function SearchView() {
   const { t } = useT()
   const s = useSearchCtx()
-  const { tmdbKey, mappingsMap, navigateToPoster } = useP()
+  const tmdbKey = usePSelector((v) => v.tmdbKey)
+  const mappingsMap = usePSelector((v) => v.mappingsMap)
+  const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const [searchFocused, setSearchFocused] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)

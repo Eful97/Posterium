@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { toast } from "sonner"
 import { X, Copy, Check, Lock, Fingerprint, User } from "lucide-react"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { Modal } from "@/components/ui/Modal"
@@ -14,7 +14,14 @@ interface Props {
 }
 
 export function ProfileModal({ isOpen, onClose }: Props) {
-  const p = useP()
+  const profileId = usePSelector((v) => v.profileId)
+  const tmdbKeyInput = usePSelector((v) => v.tmdbKeyInput)
+  const mdblistApiKey = usePSelector((v) => v.mdblistApiKey)
+  const setProfileId = usePSelector((v) => v.setProfileId)
+  const setProfilePassword = usePSelector((v) => v.setProfilePassword)
+  const setTmdbKeyInput = usePSelector((v) => v.setTmdbKeyInput)
+  const setTmdbKey = usePSelector((v) => v.setTmdbKey)
+  const setMdblistApiKey = usePSelector((v) => v.setMdblistApiKey)
   const { t } = useT()
   const ed = usePosterEditor()
   const [tab, setTab] = useState<"save" | "load">("save")
@@ -28,12 +35,12 @@ export function ProfileModal({ isOpen, onClose }: Props) {
   const [generatedUuid, setGeneratedUuid] = useState("")
 
   React.useEffect(() => {
-    if (!p.profileId && !generatedUuid) {
+    if (!profileId && !generatedUuid) {
       try { setGeneratedUuid(crypto.randomUUID()) } catch {}
     }
-  }, [p.profileId, generatedUuid])
+  }, [profileId, generatedUuid])
 
-  const activeUuid = p.profileId || generatedUuid
+  const activeUuid = profileId || generatedUuid
 
   const handleCopyUuid = async () => {
     if (!activeUuid) return
@@ -71,8 +78,8 @@ export function ProfileModal({ isOpen, onClose }: Props) {
         customBadge: ed.customBadge || undefined,
       }
       const apiKeys = {
-        tmdbKey: p.tmdbKeyInput || undefined,
-        mdblistApiKey: p.mdblistApiKey || undefined,
+        tmdbKey: tmdbKeyInput || undefined,
+        mdblistApiKey: mdblistApiKey || undefined,
       }
       const res = await fetch("/api/profile", {
         method: "POST",
@@ -93,8 +100,8 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       if (typeof window !== "undefined") {
         try { localStorage.setItem("posterium_profile_id", newProfileId) } catch {}
       }
-      p.setProfileId(newProfileId)
-      p.setProfilePassword(password)
+      setProfileId(newProfileId)
+      setProfilePassword(password)
       toast.success(t("ui.profileSaved"))
       onClose()
     } catch (e) {
@@ -137,8 +144,8 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       if (typeof window !== "undefined") {
         try { localStorage.setItem("posterium_profile_id", loadedId) } catch {}
       }
-      p.setProfileId(loadedId)
-      p.setProfilePassword(loadPassword)
+      setProfileId(loadedId)
+      setProfilePassword(loadPassword)
 
       // Apply loaded config settings if present
       if (data.config) {
@@ -159,11 +166,11 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       }
 
       if (data.apiKeys?.tmdbKey) {
-        p.setTmdbKeyInput(data.apiKeys.tmdbKey)
-        p.setTmdbKey(data.apiKeys.tmdbKey)
+        setTmdbKeyInput(data.apiKeys.tmdbKey)
+        setTmdbKey(data.apiKeys.tmdbKey)
       }
       if (data.apiKeys?.mdblistApiKey) {
-        p.setMdblistApiKey(data.apiKeys.mdblistApiKey)
+        setMdblistApiKey(data.apiKeys.mdblistApiKey)
       }
 
       toast.success("Profilo caricato con successo!")
@@ -177,7 +184,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} closeOnEscape={!!p.profileId} closeOnBackdrop={!!p.profileId} labelledBy="profile-modal-title">
+    <Modal isOpen={isOpen} onClose={onClose} closeOnEscape={!!profileId} closeOnBackdrop={!!profileId} labelledBy="profile-modal-title">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-accent-orange/15 text-accent-orange border border-accent-orange/20">
@@ -185,10 +192,10 @@ export function ProfileModal({ isOpen, onClose }: Props) {
           </div>
           <div>
             <h3 id="profile-modal-title" className="text-base font-bold text-white">{t("ui.profileTitle")}</h3>
-            <p className="text-xs text-muted">{!p.profileId ? "Crea o accedi ad un profilo per iniziare" : t("ui.profileSubtitle")}</p>
+            <p className="text-xs text-muted">{!profileId ? "Crea o accedi ad un profilo per iniziare" : t("ui.profileSubtitle")}</p>
           </div>
         </div>
-        {p.profileId && (
+        {profileId && (
           <button type="button"
             aria-label="Chiudi"
             onClick={onClose}
@@ -208,7 +215,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
               tab === "save" ? "bg-accent-orange/20 text-accent-orange border border-accent-orange/30" : "text-muted hover:text-zinc-200"
             }`}
           >
-            {p.profileId ? "Salva Profilo" : "Nuovo Profilo"}
+            {profileId ? "Salva Profilo" : "Nuovo Profilo"}
           </button>
           <button
             type="button"
@@ -245,7 +252,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
               </div>
             </div>
 
-            {p.profileId && (
+            {profileId && (
               <div className="space-y-2 p-3 rounded-xl bg-black/40 border border-white/10 text-[11px] text-zinc-300 space-y-2">
                 <div className="font-semibold text-accent-orange">📌 Link per AIOMetadata & Stremio:</div>
                 <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/60 border border-white/5">
@@ -327,7 +334,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
               onClick={onClose}
               className="w-full text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
             >
-              {p.profileId ? "Annulla" : "Continua senza profilo"}
+              {profileId ? "Annulla" : "Continua senza profilo"}
             </button>
           </>
         ) : (

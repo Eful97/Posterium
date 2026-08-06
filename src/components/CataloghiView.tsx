@@ -1,6 +1,6 @@
 "use client"
 
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult } from "@/lib/types"
 import { useState, useEffect, useMemo } from "react"
@@ -30,17 +30,23 @@ const PLATFORM_FILTERS = [
 ] as const
 
 export function CataloghiView() {
-  const p = useP()
+  const trending = usePSelector((v) => v.trending)
+  const mappings = usePSelector((v) => v.mappings)
+  const navigateToPoster = usePSelector((v) => v.navigateToPoster)
+  const STREAMING_PLATFORMS = usePSelector((v) => v.STREAMING_PLATFORMS)
+  const mdblistAnimeList = usePSelector((v) => v.mdblistAnimeList)
+  const router = usePSelector((v) => v.router)
+  const streamingCharts = usePSelector((v) => v.streamingCharts)
   const { t } = useT()
-  const movieTrending = p.trending.filter((r) => r.media_type === "movie").slice(0, 20)
-  const tvTrending = p.trending.filter((r) => r.media_type === "tv").slice(0, 20)
+  const movieTrending = trending.filter((r) => r.media_type === "movie").slice(0, 20)
+  const tvTrending = trending.filter((r) => r.media_type === "tv").slice(0, 20)
   const [gridItems, setGridItems] = useState<GridViewItem[] | null>(null)
   const [gridTitle, setGridTitle] = useState("")
   const [platformFilter, setPlatformFilter] = useState<string>("all")
 
   const savedKeys = useMemo(
-    () => new Set(p.mappings.map((m) => `${m.mediaType}:${m.tmdbId}`)),
-    [p.mappings],
+    () => new Set(mappings.map((m) => `${m.mediaType}:${m.tmdbId}`)),
+    [mappings],
   )
 
   const openGrid = (items: GridViewItem[], title: string) => {
@@ -53,7 +59,7 @@ export function CataloghiView() {
     if (!id) return
     const mediaType = (item.media_type || item.mediaType) as "movie" | "tv" || "movie"
     const title = item.title ?? item.name ?? ""
-    p.navigateToPoster(toSearchResult({
+    navigateToPoster(toSearchResult({
       id,
       media_type: mediaType,
       title,
@@ -86,21 +92,21 @@ export function CataloghiView() {
     }
   }, [gridItems])
 
-  const filteredPlatforms = p.STREAMING_PLATFORMS.filter((sp) => {
+  const filteredPlatforms = STREAMING_PLATFORMS.filter((sp) => {
     if (platformFilter === "all") return true
     if (platformFilter === "justwatch" || platformFilter === "anime") return false
     return sp.slug === platformFilter
   })
 
-  const showJustWatch = (platformFilter === "all" || platformFilter === "justwatch") && p.trending.length > 0
-  const showAnime = (platformFilter === "all" || platformFilter === "anime") && p.mdblistAnimeList.length > 0
+  const showJustWatch = (platformFilter === "all" || platformFilter === "justwatch") && trending.length > 0
+  const showAnime = (platformFilter === "all" || platformFilter === "anime") && mdblistAnimeList.length > 0
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-scale-in">
       <ScrollReveal animation="fade-up-fast">
         <div className="mb-6">
           <button type="button"
-            onClick={() => p.router.push("edit")}
+            onClick={() => router.push("edit")}
             className="text-xs text-muted hover:text-white transition-colors mb-3 inline-flex items-center gap-1"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -177,7 +183,7 @@ export function CataloghiView() {
           <div className="mb-12">
             <h2 className="section-heading text-xl font-bold mb-6">{t("ui.streamingPlatforms")}</h2>
             {filteredPlatforms.map((sp) => {
-              const chart = p.streamingCharts[sp.slug]
+              const chart = streamingCharts[sp.slug]
               if (!chart || (chart.movies.length === 0 && chart.tv.length === 0)) return null
               const movieItems = chart.movies.slice(0, 5)
               const tvItems = chart.tv.slice(0, 5)
@@ -221,18 +227,18 @@ export function CataloghiView() {
       {showAnime && <div className="section-divider" />}
 
       {/* Anime trending */}
-      {showAnime && p.mdblistAnimeList.length >= 5 && (
+      {showAnime && mdblistAnimeList.length >= 5 && (
         <ScrollReveal animation="fade-up" threshold={0.05}>
           <div className="mb-12">
             <h2 className="section-heading text-xl font-bold mb-6">{t("ui.trendingAnime")}</h2>
             <div className="flex flex-wrap gap-3">
               <SimklCard
                 key="anime-1"
-                items={p.mdblistAnimeList.slice(0, 5).map(r => ({ tmdbId: r.id, mediaType: (r.media_type as "movie" | "tv") || "tv", title: r.title || "", posterPath: r.poster_path }))}
+                items={mdblistAnimeList.slice(0, 5).map(r => ({ tmdbId: r.id, mediaType: (r.media_type as "movie" | "tv") || "tv", title: r.title || "", posterPath: r.poster_path }))}
                 title="Anime — Top 20"
-                totalCount={p.mdblistAnimeList.length}
+                totalCount={mdblistAnimeList.length}
                 onClick={() => openGrid(
-                  p.mdblistAnimeList.map(r => ({ tmdbId: r.id, mediaType: (r.media_type as "movie" | "tv") || "tv", title: r.title || "", posterPath: r.poster_path })),
+                  mdblistAnimeList.map(r => ({ tmdbId: r.id, mediaType: (r.media_type as "movie" | "tv") || "tv", title: r.title || "", posterPath: r.poster_path })),
                   "Anime — Top 20"
                 )}
                 onItemClick={navigateToItem}
@@ -243,7 +249,7 @@ export function CataloghiView() {
         </ScrollReveal>
       )}
 
-      {p.trending.length === 0 && (
+      {trending.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-zinc-500 animate-fade-scale-in">
           <div className="empty-state-illustration mb-5">
             <svg className="w-10 h-10 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
@@ -279,7 +285,7 @@ export function CataloghiView() {
                     key={`${item.mediaType}:${item.tmdbId ?? idx}`}
                     onClick={() => {
                       if (item.tmdbId) {
-                        p.navigateToPoster(toSearchResult({
+                        navigateToPoster(toSearchResult({
                           id: item.tmdbId,
                           media_type: item.mediaType,
                           title: item.title,
