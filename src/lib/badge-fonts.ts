@@ -37,21 +37,21 @@ export const BADGE_FONTS: readonly BadgeFont[] = [
     family: "Bebas Neue",
     label: "Bebas Neue",
     files: [{ weight: 400, file: "BebasNeue-Regular.ttf" }],
-    widthFactor: 0.58,
+    widthFactor: 0.78,
   },
   {
     key: "anton",
     family: "Anton",
     label: "Anton",
     files: [{ weight: 400, file: "Anton-Regular.ttf" }],
-    widthFactor: 0.72,
+    widthFactor: 0.9,
   },
   {
     key: "playfair",
     family: "Playfair Display",
     label: "Playfair Display",
     files: [{ weight: 700, file: "PlayfairDisplay-Bold.ttf" }],
-    widthFactor: 1.15,
+    widthFactor: 1.05,
   },
   {
     key: "montserrat",
@@ -61,7 +61,7 @@ export const BADGE_FONTS: readonly BadgeFont[] = [
       { weight: 700, file: "Montserrat-Bold.ttf" },
       { weight: 900, file: "Montserrat-Black.ttf" },
     ],
-    widthFactor: 1.05,
+    widthFactor: 1.2,
   },
 ]
 

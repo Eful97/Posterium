@@ -8,7 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa).
 
-App version: `0.15.2` — RENDER_VERSION: `fdcf391f6e` — rv: `fdcf391f6e`
+App version: `0.15.2` — RENDER_VERSION: `68e95b6c99` — rv: `68e95b6c99`
 
 ### Badge Genere/Rating (GenreRatingBadges)
 > **WYSIWYG**: il preview client usa `<img src={previewUrl}>` che carica `/api/poster/{type}/{id}` — lo stesso endpoint usato da Stremio. Non c'è duplicazione: preview = poster finale.

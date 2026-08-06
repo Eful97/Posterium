@@ -32,10 +32,16 @@ function charWidthFactor(char: string): number {
   return 0.62
 }
 
-export function estimateTextWidth(text: string, fs: number): number {
+/**
+ * Larghezza stimata del testo. `wf` (widthFactor del font) scala la stima
+ * alla larghezza naturale del font selezionato: per i font condensati (wf<1)
+ * il testo stimato è più stretto, per i larghi (wf>1) più largo. Default 1
+ * (Inter) → output byte-identico al passato.
+ */
+export function estimateTextWidth(text: string, fs: number, wf = 1): number {
   let units = 0
   for (const char of text) units += charWidthFactor(char)
-  return Math.round(Math.max(units * fs, fs * 0.35))
+  return Math.round(Math.max(units * fs, fs * 0.35) * wf)
 }
 
 function textFitAttrs(width: number): string {
@@ -72,17 +78,25 @@ type GenreTextFlowArgs = GenreBadgeText & {
   readonly centerX: number
   readonly y: number
   readonly parts?: GenreParts
+  /** widthFactor del font (1 = Inter): scala larghezze e gap alla metrica reale. */
+  readonly wf?: number
 }
 
-export function genreBadgeSvgDims(fs: number, genreName: string, voteStr: string, yearStr: string, parts?: GenreParts) {
+export function genreBadgeSvgDims(fs: number, genreName: string, voteStr: string, yearStr: string, parts?: GenreParts, wf = 1) {
   const opts = normalizeParts(parts)
-  const gap = Math.round(fs / 3)
-  const gapStar = Math.round(fs / 6)
-  const bulletW = Math.round(fs * 0.35)
+  // Font custom: la resa naturale (niente textLength) è più larga dell'estimate
+  // Inter (stella Noto fissa + gap non scalano col font). Usa un fattore di
+  // sicurezza per canvas e centering → nessun clipping. Inter (wf=1) resta
+  // byte-identico al passato.
+  const wfE = wf === 1 ? 1 : 1.25
+  const gap = Math.round(fs / 3 * wfE)
+  const gapStar = Math.round(fs / 6 * wfE)
+  const bulletW = Math.round(fs * 0.35 * wfE)
+  // La stella è sempre Noto Sans Symbols 2 (non il font selezionato): larghezza fissa.
   const starW = Math.round(fs * 0.92)
-  const genreW = (opts.showGenre && genreName) ? estimateTextWidth(genreName, fs) : 0
-  const voteW = (opts.showRating && voteStr) ? estimateTextWidth(voteStr, fs) : 0
-  const yearW = (opts.showYear && yearStr) ? estimateTextWidth(yearStr, fs) : 0
+  const genreW = (opts.showGenre && genreName) ? estimateTextWidth(genreName, fs, wfE) : 0
+  const voteW = (opts.showRating && voteStr) ? estimateTextWidth(voteStr, fs, wfE) : 0
+  const yearW = (opts.showYear && yearStr) ? estimateTextWidth(yearStr, fs, wfE) : 0
   const buf = Math.round(fs * 0.25)
   // Segmenti condizionali separati da gap+bullet+gap. Con tutti ON questo
   // produce: genreW + (gap+bulletW+gap) + (starW+gapStar+voteW) + (gap+bulletW+gap) + yearW.
@@ -98,9 +112,9 @@ export function genreBadgeSvgDims(fs: number, genreName: string, voteStr: string
   return { starW, gap, gapStar, totalW, svgH, genreW, voteW, yearW, bulletW, textContentW }
 }
 
-function buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX, y, parts }: GenreTextFlowArgs) {
+function buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX, y, parts, wf = 1 }: GenreTextFlowArgs) {
   const opts = normalizeParts(parts)
-  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, opts)
+  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, opts, wf)
   const starDy = Math.max(2, Math.round(fs * 0.14))
   const hasGenre = opts.showGenre && !!genreName
   const hasRating = opts.showRating && !!voteStr
@@ -130,19 +144,25 @@ function buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX, y, parts
   const separators = (hasGenre ? 1 : 0) + (hasRating ? 1 : 0) + (hasYear ? 1 : 0) - 1
   const totalDx = separators * dims.gap * 2 + (hasRating ? dims.gapStar : 0)
   const adjustedX = centerX - totalDx / 2
-  let t = `<text x="${adjustedX}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="${GENRE_FONT_WEIGHT}" font-size="${fs}"${textFitAttrs(dims.textContentW)}>`
+  // Font custom: anchor start con x centrato sul canvas di sicurezza (textLength
+  // assente → resa naturale). resvg non centra bene middle+dx con metriche
+  // diverse. Inter (wf=1) mantiene il flusso originale byte-identico.
+  const anchorX = wf === 1 ? adjustedX : centerX - dims.textContentW / 2
+  const anchor = wf === 1 ? "middle" : "start"
+  const textFit = wf === 1 ? textFitAttrs(dims.textContentW) : ""
+  let t = `<text x="${anchorX}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-family="Inter" font-weight="${GENRE_FONT_WEIGHT}" font-size="${fs}"${textFit}>`
   t += tspan.join("")
   t += "</text>"
   return t
 }
 
-export function buildGenreBarSvg(genreName: string, voteStr: string, yearStr: string, pw: number, fs: number, textColor: string, topLight: boolean, textOffsetX = 0, parts?: GenreParts) {
+export function buildGenreBarSvg(genreName: string, voteStr: string, yearStr: string, pw: number, fs: number, textColor: string, topLight: boolean, textOffsetX = 0, parts?: GenreParts, wf = 1) {
   const barPad = Math.round(fs * 0.5)
   const barH = fs + barPad * 2
   const barR = Math.round(fs * 0.7)
   const barShadowOff = Math.max(Math.round(barH * 0.2), 3)
   const barShadowBlur = Math.max(Math.round(barH * 0.5), 8)
-  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: pw / 2 + textOffsetX, y: barH / 2, parts })
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: pw / 2 + textOffsetX, y: barH / 2, parts, wf })
   const pathD = `M 0,${barH} L 0,${barR} A ${barR},${barR} 0 0,1 ${barR},0 L ${pw - barR},0 A ${barR},${barR} 0 0,1 ${pw},${barR} L ${pw},${barH} Z`
   const defs = `<defs><filter id="sh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="-${barShadowOff}" stdDeviation="${barShadowBlur / 2}" flood-color="rgba(0,0,0,0.3)"/></filter></defs>`
   const textEl = `<g fill="${textColor}">${textParts}</g>`
@@ -151,26 +171,26 @@ export function buildGenreBarSvg(genreName: string, voteStr: string, yearStr: st
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${pw}" height="${barH}">${defs}${inner}${borderLine}${textEl}</svg>`, w: pw, h: barH }
 }
 
-export function buildGenrePillSvg(genreName: string, voteStr: string, yearStr: string, fs: number, bgColor: string, textColor: string, textOffsetX = 0, parts?: GenreParts) {
+export function buildGenrePillSvg(genreName: string, voteStr: string, yearStr: string, fs: number, bgColor: string, textColor: string, textOffsetX = 0, parts?: GenreParts, wf = 1) {
   const pillPad = Math.round(fs * 0.35)
   const safePad = genreBadgeSafePad(fs)
   const pillR = Math.round(fs * 0.8)
-  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, parts)
+  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, parts, wf)
   const pillW = dims.textContentW + pillPad * 3 + safePad * 2
   const pillH = fs + pillPad * 2
-  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: pillW / 2 + textOffsetX, y: pillH / 2, parts })
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: pillW / 2 + textOffsetX, y: pillH / 2, parts, wf })
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pillW}" height="${pillH}"><rect width="${pillW}" height="${pillH}" rx="${pillR}" fill="${bgColor}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/><g fill="${textColor}">${textParts}</g></svg>`
   return { svg, w: pillW, h: pillH }
 }
 
-export function buildGenreTextSvg(genreName: string, voteStr: string, yearStr: string, fs: number, textColor: string, style: string, textOffsetX = 0, parts?: GenreParts) {
-  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, parts)
+export function buildGenreTextSvg(genreName: string, voteStr: string, yearStr: string, fs: number, textColor: string, style: string, textOffsetX = 0, parts?: GenreParts, wf = 1) {
+  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, parts, wf)
   const shadowPad = style === "shadow" ? 8 : 0
   const shadowDrop = style === "shadow" ? 5 : 0
   const safePad = genreBadgeSafePad(fs)
   const renderW = dims.totalW + shadowPad * 2 + safePad * 2
   const renderH = dims.svgH + shadowDrop
-  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: shadowDrop + dims.svgH / 2, parts })
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: shadowDrop + dims.svgH / 2, parts, wf })
   let defs = ""
   let filterAttr = ""
   if (style === "shadow") {
@@ -181,8 +201,8 @@ export function buildGenreTextSvg(genreName: string, voteStr: string, yearStr: s
   return { svg, w: renderW, h: renderH }
 }
 
-export function buildGenreBorderedSvg(genreName: string, voteStr: string, yearStr: string, fs: number, textColor: string, topLight: boolean, textOffsetX = 0, parts?: GenreParts) {
-  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, parts)
+export function buildGenreBorderedSvg(genreName: string, voteStr: string, yearStr: string, fs: number, textColor: string, topLight: boolean, textOffsetX = 0, parts?: GenreParts, wf = 1) {
+  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, parts, wf)
   const safePad = genreBadgeSafePad(fs)
   const borderPad = Math.max(Math.round(fs * 0.4), 6)
   const borderW = 2
@@ -192,13 +212,13 @@ export function buildGenreBorderedSvg(genreName: string, voteStr: string, yearSt
   const r = Math.round(fs * 0.55)
   const borderColor = topLight ? "rgba(0,0,0,0.50)" : "rgba(255,255,255,0.60)"
   const bgFill = topLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)"
-  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: rectH / 2, parts })
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: rectH / 2, parts, wf })
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}"><rect x="${borderW / 2}" y="${borderW / 2}" width="${renderW - borderW}" height="${rectH - borderW}" rx="${r}" fill="${bgFill}" stroke="${borderColor}" stroke-width="${borderW}"/><g fill="${textColor}">${textParts}</g></svg>`
   return { svg, w: renderW, h: renderH }
 }
 
-export function buildGenreGlassSvg(genreName: string, voteStr: string, yearStr: string, fs: number, textColor: string, topLight: boolean, textOffsetX = 0, parts?: GenreParts) {
-  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, parts)
+export function buildGenreGlassSvg(genreName: string, voteStr: string, yearStr: string, fs: number, textColor: string, topLight: boolean, textOffsetX = 0, parts?: GenreParts, wf = 1) {
+  const dims = genreBadgeSvgDims(fs, genreName, voteStr, yearStr, parts, wf)
   const safePad = genreBadgeSafePad(fs)
   const glassPad = Math.max(Math.round(fs * 0.45), 8)
   const renderW = dims.textContentW + glassPad * 2 + safePad * 2
@@ -210,7 +230,7 @@ export function buildGenreGlassSvg(genreName: string, voteStr: string, yearStr: 
     ? `<stop offset="0%" stop-color="rgba(255,255,255,0.92)"/><stop offset="12%" stop-color="rgba(255,255,255,0.55)"/><stop offset="50%" stop-color="rgba(255,255,255,0.32)"/><stop offset="100%" stop-color="rgba(0,0,0,0.08)"/>`
     : `<stop offset="0%" stop-color="rgba(255,255,255,0.45)"/><stop offset="10%" stop-color="rgba(255,255,255,0.14)"/><stop offset="50%" stop-color="rgba(255,255,255,0.07)"/><stop offset="100%" stop-color="rgba(0,0,0,0.35)"/>`
   const borderColor = topLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.22)"
-  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: rectH / 2, parts })
+  const textParts = buildGenreTextFlow({ genreName, voteStr, yearStr, fs, centerX: renderW / 2 + textOffsetX, y: rectH / 2, parts, wf })
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient></defs><rect width="${renderW}" height="${rectH}" rx="${r}" fill="url(#gg)" stroke="${borderColor}" stroke-width="1.5"/><g fill="${textColor}">${textParts}</g></svg>`
   return { svg, w: renderW, h: renderH }
 }

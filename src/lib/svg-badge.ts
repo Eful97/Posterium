@@ -8,6 +8,13 @@ import { getBadgeFont, DEFAULT_BADGE_FONT } from "./badge-fonts"
 
 const FONT_SYMBOLS = path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", "NotoSansSymbols2-Regular.ttf")
 
+// Font-size proporzionale alla larghezza del font: i condensati (Bebas/Anton)
+// vengono ingranditi e restano condensati, i larghi (Playfair) ridotti — così
+// il cambio font si vede davvero nella dimensione del numero.
+function naturalFontSize(baseFs: number, fontKey: string): number {
+  return baseFs / getBadgeFont(fontKey).widthFactor
+}
+
 function badgeFontFilePath(fontKey: string, file: string): string {
   return path.join(/* turbopackIgnore: true */ process.cwd(), "src", "assets", "fonts", file)
 }
@@ -63,7 +70,12 @@ function wrapSvg(svg: string, fontKey: string = DEFAULT_BADGE_FONT): string {
   const style = fontStyle(fontKey)
   // Sostituisce la family hardcoded "Inter" con quella selezionata
   // (no-op per il font di default → output byte-identico al passato).
-  const out = fontKey === DEFAULT_BADGE_FONT ? svg : svg.replaceAll(`font-family="Inter"`, `font-family="${font.family}"`)
+  let out = fontKey === DEFAULT_BADGE_FONT ? svg : svg.replaceAll(`font-family="Inter"`, `font-family="${font.family}"`)
+  // Font custom: rimuove il lock di larghezza (textLength) — resa naturale con
+  // canvas/centering a fattore di sicurezza (genre) o metriche naturali (rank/extra).
+  if (fontKey !== DEFAULT_BADGE_FONT) {
+    out = out.replace(/\s*textLength="\d+"\s*lengthAdjust="spacingAndGlyphs"/g, "")
+  }
   if (out.includes("</defs>")) {
     return out.replace("</defs>", `${style}</defs>`)
   }
@@ -102,7 +114,7 @@ export async function buildExtraBadgeSVG(
 ): Promise<{ png: Buffer; w: number; h: number } | null> {
   const s = badgeStyle || "default"
   const maxBadgeW = pw - 20
-  let finalFs = 23 * pw / 380 / getBadgeFont(fontKey).widthFactor
+  let finalFs = naturalFontSize(23 * pw / 380, fontKey)
   const projectedW = estimateTextWidth(label, finalFs) + Math.round(finalFs * 2) + Math.round(finalFs * 0.6) * 2
   if (projectedW > maxBadgeW) {
     finalFs = Math.max(maxBadgeW / projectedW * finalFs, 10)
@@ -143,17 +155,18 @@ export async function buildGenreBadgeSVG(
   const s = style || "shadow"
   const voteStr = voteAverage ? voteAverage.toFixed(1) : ""
   const yearStr = year || ""
+  const wf = getBadgeFont(fontKey).widthFactor
 
-  let finalFs = 24 * pw / 380 / getBadgeFont(fontKey).widthFactor
+  let finalFs = naturalFontSize(24 * pw / 380, fontKey)
   const aestheticMaxW = Math.round(pw * 0.86) // 86% per margine estetico
-  let dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr, parts)
+  let dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr, parts, wf)
   let safePad = genreBadgeSafePad(finalFs)
   // Per shadow, buildGenreTextSvg aggiunge shadowPad*2 al renderW finale
   const extraShadowPad = style === "shadow" ? 8 : 0
   const estimatedRenderW = dims.totalW + safePad * 2 + extraShadowPad * 2
   if (estimatedRenderW > aestheticMaxW) {
     finalFs = Math.max(aestheticMaxW / estimatedRenderW * finalFs, 10)
-    dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr, parts)
+    dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr, parts, wf)
     safePad = genreBadgeSafePad(finalFs)
   }
 
@@ -163,7 +176,7 @@ export async function buildGenreBadgeSVG(
     const maxPillW = genrePillMaxW(pw)
     if (dims.textContentW + _pillPad * 3 + safePad * 2 > maxPillW) {
       finalFs = Math.max(maxPillW / (dims.textContentW + _pillPad * 3 + safePad * 2) * finalFs, 10)
-      dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr, parts)
+      dims = genreBadgeSvgDims(finalFs, genreName, voteStr, yearStr, parts, wf)
     }
   }
   let fs = Math.round(finalFs)
@@ -179,15 +192,15 @@ export async function buildGenreBadgeSVG(
 
   let result: { svg: string; w: number; h: number }
   if (s === "bordo") {
-    result = buildGenreBorderedSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false, 0, parts)
+    result = buildGenreBorderedSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false, 0, parts, wf)
   } else if (s === "vetro") {
-    result = buildGenreGlassSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false, 0, parts)
+    result = buildGenreGlassSvg(genreName, voteStr, yearStr, fs, textColor, topLight ?? false, 0, parts, wf)
   } else if (isBar) {
-    result = buildGenreBarSvg(genreName, voteStr, yearStr, pw, fs, "rgba(0,0,0,0.80)", !!topLight, 0, parts)
+    result = buildGenreBarSvg(genreName, voteStr, yearStr, pw, fs, "rgba(0,0,0,0.80)", !!topLight, 0, parts, wf)
   } else if (isPill) {
-    result = buildGenrePillSvg(genreName, voteStr, yearStr, fs, bgColor, textColor, 0, parts)
+    result = buildGenrePillSvg(genreName, voteStr, yearStr, fs, bgColor, textColor, 0, parts, wf)
   } else {
-    result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s, 0, parts)
+    result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s, 0, parts, wf)
     // Per shadow, il renderW include shadowPad*2 + safePad*2 aggiuntivi
     // Assicuriamoci che non superi aestheticMaxW
     let attempts = 0
@@ -195,7 +208,7 @@ export async function buildGenreBadgeSVG(
       // Riduciamo fs proporzionalmente al surplus
       const targetFs = Math.max(Math.round(fs * (aestheticMaxW - 16) / result.w), 10)
       if (targetFs >= fs) { fs = 10 } else { fs = targetFs }
-      result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s, 0, parts)
+      result = buildGenreTextSvg(genreName, voteStr, yearStr, fs, textColor, s, 0, parts, wf)
       attempts++
     }
   }
@@ -216,7 +229,7 @@ export async function renderGenreBadge(
 // --- Ranking badge ---
 
 export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boolean, side: "left" | "right" = "left", isAnime?: boolean, fontKey: string = DEFAULT_BADGE_FONT) {
-  const fs = Math.round(Math.max(23 * pw / 380, 14) / getBadgeFont(fontKey).widthFactor)
+  const fs = Math.round(Math.max(naturalFontSize(23 * pw / 380, fontKey), 14))
   const w = Math.round(fs * 2.6)
   // Anime: nastro allungato verso il basso (h × 1.55) per dare spazio alla scritta "anime".
   const h = Math.round(w * (isAnime ? 1.55 : 1.35))
@@ -301,7 +314,7 @@ export async function buildRankingBadgeSVG(
   const periodText = label || "Oggi"
   const fullText = `#${rank} ${periodText}`
   const maxBadgeW = pw - 20
-  let finalFs = 23 * pw / 380 / getBadgeFont(fontKey).widthFactor
+  let finalFs = naturalFontSize(23 * pw / 380, fontKey)
   const projectedW = estimateTextWidth(fullText, finalFs) + Math.round(finalFs * 2) + Math.round(finalFs * 0.6) * 2
   if (projectedW > maxBadgeW) {
     finalFs = Math.max(maxBadgeW / projectedW * finalFs, 10)
