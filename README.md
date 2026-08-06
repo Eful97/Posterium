@@ -18,7 +18,6 @@ pinned: false
 </p>
 
 <p align="center">
-  <a href="#-deploy-koyeb-gratis-247"><img src="https://img.shields.io/badge/Deploy-Koyeb-000000?style=for-the-badge&logo=koyeb&logoColor=white" alt="Koyeb Deploy" /></a>
   <a href="#-deploy-termux-android-247"><img src="https://img.shields.io/badge/Deploy-Termux-171717?style=for-the-badge&logo=android&logoColor=green" alt="Termux Deploy" /></a>
   <a href="#-docker--locale"><img src="https://img.shields.io/badge/Docker-Supported-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" /></a>
 </p>
@@ -70,21 +69,6 @@ Supportati: **Netflix**, **HBO Max**, **Disney+**, **Prime Video**, **Apple TV+*
 
 ## ⚡ Deploy Rapido
 
-### ☁️ Deploy Koyeb (Gratis, 24/7, No Carta di Credito)
-
-1. **Registrazione**: Vai su [Koyeb.com](https://koyeb.com) (nessuna carta richiesta).
-2. **Crea App**: Clicca **Create App** ➔ Seleziona **GitHub** ➔ Scegli il repository `Eful97/Posterium`.
-3. **Variabili d'Ambiente** (Environment Variables):
-   - `TMDB_API_KEY`: La tua chiave API TMDB
-   - `MDBLIST_API_KEY`: *(opzionale)* Chiave MDBList
-   - `OMDB_API_KEY`: *(opzionale)* Chiave OMDb
-   - `KV_REST_API_URL` & `KV_REST_API_TOKEN`: *(opzionale)* Database Redis [Upstash](https://upstash.com) per mantenere i salvataggi tra i redeploy.
-4. **Deploy**: Mantieni il builder su **Dockerfile** e clicca **Deploy**. In 2-3 minuti l'app è pronta!
-
-📌 *URL Manifest Stremio*: `https://tuo-app.koyeb.app/manifest.json`
-
----
-
 ### 📱 Deploy Termux (Android 24/7)
 
 Trasforma un vecchio telefono Android in un server Posterium sempre attivo!
@@ -131,8 +115,7 @@ docker run -p 8080:8080 -v posterium-data:/data -e TMDB_API_KEY=la_tua_chiave_tm
 
 > Il container gira come utente non-root (`nextjs`, uid 1000) e scrive i dati persistenti in `/data` (volume named `posterium-data`). Con Docker Compose il `docker-compose.yml` applica già l'hardening (`cap_drop: ALL`, `no-new-privileges`).
 
-> **Cap memoria JS**: il default è `384MB` (tarato per Koyeb tier 512MB). Se la piattaforma ha più RAM (es. HF Spaces 16GB), alzalo per non limitare i render burst:
-> - **Koyeb**: nessuna modifica (usa il default 384MB).
+> **Cap memoria JS**: il default è `384MB` (tarato per piattaforme a bassa RAM). Se la piattaforma ha più RAM (es. HF Spaces 16GB), alzalo per non limitare i render burst:
 > - **HF Spaces**: imposta nelle Space Settings la variabile `NODE_OPTIONS=--max-old-space-size=1024` (le env di piattaforma sovrascrivono l'`ENV` del Dockerfile).
 > - **Build manuale**: `docker build --build-arg NODE_MAX_OLD_SPACE=1024 -t posterium .`
 
