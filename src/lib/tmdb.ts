@@ -1,7 +1,10 @@
 // Risolta a request time (non a import-time): i test e i deploy manipolano
 // process.env.TMDB_API_KEY dopo il load del modulo, e la chiave può cambiare.
+// Precedenza: chiave d'istanza salvata nelle impostazioni → env var.
+import { getServerDefaults } from "@/lib/server-defaults"
+
 function getTmdbApiKey(): string | undefined {
-  return process.env.TMDB_API_KEY
+  return getServerDefaults().tmdbApiKey || process.env.TMDB_API_KEY
 }
 
 // Base URL sovrascrivibili via env: usate dai test E2E per puntare al mock
