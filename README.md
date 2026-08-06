@@ -254,7 +254,7 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 - **Persistenza**: I dati (mapping, profili, default) sono in un volume Docker `posterium-data`.
 - **CDN**: Se hai una CDN (Cloudflare, Bunny), imposta `POSTER_CDN_URL` per generare URL poster col CDN. I poster **salvati** (mapping con versione) vengono serviti con header `immutable` (cache edge 1 anno); quelli composti al volo senza mapping (rank JustWatch, premi, IMDb Top 250) usano `stale-while-revalidate` per non congelare i badge dinamici alla CDN.
 - **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello. La chiave usa `cf-connecting-ip` → `x-real-ip` → ultimo hop `x-forwarded-for` (header impostati/sovrascritti dai proxy fidati).
-- **Warmup**: `/api/warmup` è **fail-closed in produzione** — senza `WARMUP_TOKEN` (o `POSTERIUM_ADMIN_TOKEN`) risponde `401`. Configura il token se usi una cron di warmup automatico.
+- **Warmup**: `/api/warmup` segue il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`): **fail-open** su istanza pubblica senza token (es. HF Spaces), **fail-closed** quando un token è configurato. In più è rate-limited (bucket `warmup`) e protetto da CSRF (`isSameOrigin`), così chiunque non possa triggerare carico in loop.
 - **Sicurezza**: Il proxy add-on (`/api/proxy`) mitiga l'SSRF (blocco IP privati/loopback, DNS pin e validazione dei redirect); opzionalmente puoi chiuderlo ai soli domini autorizzati con `POSTERIUM_PROXY_ALLOW_DOMAINS`. `/api/health` non espone il percorso assoluto dei dati su disco.
 - **Cache**: I poster generati sono in memoria (max 2000 entry / 150MB). Un restart svuota la cache (i poster si rigenerano al prossimo accesso). La cache-key e le URL Stremio includono `RENDER_VERSION`, **generata automaticamente** (hash dei file di rendering via `scripts/write-render-version.mjs`): quando cambia il codice di resa (badge, blur, logo, font, route poster) i poster si invalidano da soli e le URL Stremio cambiano — nessun bump manuale.
 
@@ -286,7 +286,7 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 | `SHARP_CONCURRENCY` | ❌ | Thread Sharp per resize immagini (default: 2) |
 | `SHARP_CACHE_MEMORY_MB` | ❌ | Cache Sharp in MB (default: 64) |
 | `SHARP_CACHE_ITEMS` | ❌ | Max elementi cache interna Sharp (default: auto) |
-| `WARMUP_TOKEN` | ❌ | Token per endpoint `/api/warmup` (fallback a POSTERIUM_ADMIN_TOKEN) |
+| `WARMUP_TOKEN` | ❌ | (Deprecato) Token per `/api/warmup` — ora usa il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`); fail-open su istanza pubblica |
 | `POSTERIUM_MAX_CONCURRENT_RENDERS` | ❌ | Render poster concorrenti (slot anti-OOM, default: 4) |
 | `POSTERIUM_RENDER_SLOT_WAIT_MS` | ❌ | Attesa massima di un posto render prima del 503 (default: 15000; clamp 500–60000) |
 | `POSTERIUM_RENDER_TIMEOUT_MS` | ❌ | Deadline complessivo del render poster: oltre, watchdog libera slot + inflight (default: 30000; clamp 1000–120000) |

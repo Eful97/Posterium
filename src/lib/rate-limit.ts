@@ -42,6 +42,9 @@ const limits: Record<string, BucketConfig> = {
   search:  { maxTokens: 30,  refillRate: 3,  refillWindow: 1000 },
   mappings: { maxTokens: 120, refillRate: 10, refillWindow: 1000 },
   catalog:  { maxTokens: 60,  refillRate: 5,  refillWindow: 1000 },
+  // Warmup: operazione pesante (rende molti poster) — burst basso e refill lento
+  // per evitare che chiunque (istanza pubblica) possa triggerare carico.
+  warmup:   { maxTokens: 5,  refillRate: 1,  refillWindow: 1000 },
 }
 
 export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter: number } {

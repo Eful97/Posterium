@@ -1,4 +1,3 @@
-import crypto from "node:crypto"
 import { NextRequest } from "next/server"
 import { getJWRankings } from "@/lib/justwatch"
 import { buildPosterPublicUrl, getOriginFromRequest } from "@/lib/poster-public-url"
@@ -6,16 +5,11 @@ import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"
 import { getAll } from "@/lib/store"
 import { getTrending, resolveRequestApiKey } from "@/lib/tmdb"
+import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
+import { checkAdminToken, adminAuthResponse, isSameOrigin, originMismatchResponse } from "@/lib/auth"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("warmup")
-
-const WARMUP_TOKEN = process.env.POSTERIUM_ADMIN_TOKEN || process.env.ADMIN_TOKEN || process.env.WARMUP_TOKEN
-
-function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))
-}
 
 type PosterRouteType = "movie" | "series"
 type WarmupStatus = "ok" | "fail"
@@ -93,17 +87,12 @@ function buildPosterUrl(input: BuildPosterUrlInput): URL {
 }
 
 export async function POST(req: NextRequest) {
-  if (!WARMUP_TOKEN) {
-    // Fail-closed in produzione: senza token configurato l'endpoint è bloccato.
-    if (process.env.NODE_ENV === "production") {
-      return new Response("Unauthorized", { status: 401 })
-    }
-  } else {
-    const auth = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim()
-    if (!constantTimeEqual(auth, WARMUP_TOKEN)) {
-      return new Response("Unauthorized", { status: 401 })
-    }
-  }
+  // Auth coerente con le altre route admin: fail-open su istanza pubblica senza
+  // ADMIN_TOKEN (HF Spaces), fail-closed quando un token è configurato.
+  const rl = rateLimit(rateLimitKey(req), "warmup")
+  if (!rl.ok) return rateLimitResponse(rl.retAfter)
+  if (!checkAdminToken(req)) return adminAuthResponse()
+  if (!isSameOrigin(req)) return originMismatchResponse()
 
   const apiKey = resolveRequestApiKey(req)
   const lang = req.nextUrl.searchParams.get("lang") || "it"
