@@ -32,12 +32,12 @@ export default function EditView() {
 
   const searchBar = (
     <div className={p.selected ? "w-full max-w-lg mb-5 relative z-[100] isolate" : "max-w-lg mx-auto relative z-[100] isolate mb-8"}>
-      <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); window.history.pushState({ view: "search" }, ""); p.setView("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
+      <SearchBar tmdbKey={p.tmdbKey} value={p.query} onChange={p.setQuery} onSearch={(q) => { p.setQuery(q); p.router.push("search"); p.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
       {searchFocused && p.recentSearches.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
           <p className="text-xs text-muted font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
           {p.recentSearches.map((s) => (
-            <button type="button" key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
+            <button type="button" key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.router.push("search"); p.doSearch(s); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
               <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
               <span className="flex-1 truncate">{s}</span>
               <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} aria-label={t("ui.remove")} className="text-danger hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
@@ -97,7 +97,7 @@ export default function EditView() {
         <div className="flex flex-col items-center">
           <div className="w-full max-w-[1360px] mx-auto mb-3 flex items-center justify-between">
             <button type="button"
-              onClick={() => { window.history.back() }}
+              onClick={() => { p.router.back() }}
               className="text-xs text-zinc-300 hover:text-white transition-all inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 active:scale-95 shadow-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -319,7 +319,7 @@ export default function EditView() {
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
-                <button type="button" onClick={() => { window.history.pushState({ view: "cataloghi" }, ""); p.setView("cataloghi") }} className="btn-primary px-5 py-2.5 whitespace-nowrap">
+                <button type="button" onClick={() => p.router.push("cataloghi")} className="btn-primary px-5 py-2.5 whitespace-nowrap">
                   {t("ui.heroCatalogsCta")}
                 </button>
               </div>

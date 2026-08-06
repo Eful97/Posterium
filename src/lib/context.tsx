@@ -50,6 +50,8 @@ export interface PosteriumCtx {
   setSelected: React.Dispatch<React.SetStateAction<SearchResult | null>>
   view: ViewType
   setView: React.Dispatch<React.SetStateAction<ViewType>>
+  /** Navigazione centralizzata (push/replace/back). */
+  router: { push: (v: ViewType) => void; replace: (v: ViewType) => void; back: () => void }
   posters: TMDBImage[]
   loadingImages: boolean
   previewPoster: TMDBImage | null
@@ -881,6 +883,7 @@ export function usePosterium(): PosteriumCtx {
   return useMemo(() => ({
     selected: navigation.selected, setSelected: navigation.setSelected,
     view: navigation.view, setView: navigation.setView as React.Dispatch<React.SetStateAction<ViewType>>,
+    router: navigation.router,
     posters: navigation.posters, loadingImages,
     previewPoster: navigation.previewPoster, setPreviewPoster: navigation.setPreviewPoster,
     selectedLogo: navigation.selectedLogo, setSelectedLogo: navigation.setSelectedLogo,

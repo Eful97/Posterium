@@ -100,7 +100,7 @@ export function CataloghiView() {
       <ScrollReveal animation="fade-up-fast">
         <div className="mb-6">
           <button type="button"
-            onClick={() => { window.history.pushState({ view: "edit" }, ""); p.setView("edit") }}
+            onClick={() => p.router.push("edit")}
             className="text-xs text-muted hover:text-white transition-colors mb-3 inline-flex items-center gap-1"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

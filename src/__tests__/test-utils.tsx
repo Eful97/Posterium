@@ -14,6 +14,7 @@ export const MOCK_CTX: PosteriumCtx = {
   setSelected: stubFn,
   view: "search",
   setView: stubFn,
+  router: { push: stubFn, replace: stubFn, back: stubFn },
   posters: [],
   loadingImages: false,
   previewPoster: null,

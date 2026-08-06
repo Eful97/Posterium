@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { SearchResult, TMDBImage } from "./types"
+import { pushView, replaceView, goBack, type View } from "./router"
 
 export function useNavigation() {
-  const [view, setViewState] = useState<"edit" | "search" | "myposters" | "cataloghi">("edit")
+  const [view, setViewState] = useState<View>("edit")
   const [selected, setSelected] = useState<SearchResult | null>(null)
   const [previewPoster, setPreviewPoster] = useState<TMDBImage | null>(null)
   const [selectedLogo, setSelectedLogo] = useState<TMDBImage | null>(null)
@@ -13,11 +14,18 @@ export function useNavigation() {
   const [logos, setLogos] = useState<TMDBImage[]>([])
   const fetchIdRef = useRef(0)
 
-  const [sourceView, setSourceView] = useState<"edit" | "search" | "myposters" | "cataloghi" | null>(null)
+  const [sourceView, setSourceView] = useState<View | null>(null)
 
-  const setView = useCallback((v: "edit" | "search" | "myposters" | "cataloghi") => {
+  const setView = useCallback((v: View) => {
     setViewState(v)
   }, [])
+
+  // Router centralizzato: gestisce history + stato view insieme.
+  const router = useMemo(() => ({
+    push: (v: View) => { pushView(v); setViewState(v) },
+    replace: (v: View) => { replaceView(v); setViewState(v) },
+    back: () => { goBack() },
+  }), [])
 
   const resetState = useCallback(() => {
     ++fetchIdRef.current
@@ -36,10 +44,10 @@ export function useNavigation() {
   }, [])
 
   const navigateToPoster = useCallback((item: SearchResult, _source?: string) => {
-    const src = (_source as "edit" | "search" | "myposters" | "cataloghi") || view || "edit"
+    const src = (_source as View) || view || "edit"
     setSourceView(src)
-    window.history.replaceState({ view: src }, "", window.location.href)
-    window.history.pushState({ view: "edit", source: src }, "", window.location.href)
+    replaceView(src)
+    pushView("edit", { source: src })
   }, [view])
 
   const goHome = useCallback(() => {
@@ -94,6 +102,7 @@ export function useNavigation() {
 
   return {
     view, setView,
+    router,
     sourceView, setSourceView,
     selected, setSelected,
     previewPoster, setPreviewPoster,
