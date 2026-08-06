@@ -70,10 +70,6 @@ $null
 /.aider-desk/
 /.qwen/
 
-# pi extensions (runtime state + local node_modules)
-/.pi/state/
-/.pi/extensions/node_modules/
-
 # default next.js starter assets (unused)
 public/file.svg
 public/globe.svg
