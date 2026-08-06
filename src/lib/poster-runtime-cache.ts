@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server"
-import { cacheGetStale, cacheSet } from "@/lib/cache"
+import { cacheGet, cacheGetStale, cacheSet } from "@/lib/cache"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("poster-cache")
@@ -8,7 +8,9 @@ export const POSTER_REFRESH_PARAM = "__poster_refresh"
 
 const POSTER_CACHE_CONTROL = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
 const POSTER_IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, s-maxage=31536000, immutable"
+const POSTER_DYNAMIC_CACHE_CONTROL = "public, max-age=21600, s-maxage=21600, stale-while-revalidate=86400"
 const POSTER_CDN_CACHE_CONTROL = POSTER_CACHE_CONTROL
+const POSTER_DYNAMIC_CDN_CACHE_CONTROL = POSTER_DYNAMIC_CACHE_CONTROL
 const PREVIEW_CACHE_CONTROL = "no-cache, no-store, must-revalidate, max-age=0"
 
 export interface PosterCachePayload {
@@ -65,7 +67,7 @@ const CORS_HEADERS = {
   "Access-Control-Expose-Headers": "ETag, Cache-Control",
 }
 
-export function posterHeaders(etag: string, immutable: boolean, isPreview: boolean = false): PosterHeaders {
+export function posterHeaders(etag: string, immutable: boolean, isPreview: boolean = false, dynamic: boolean = false): PosterHeaders {
   if (isPreview) {
     return {
       ...CORS_HEADERS,
@@ -76,28 +78,34 @@ export function posterHeaders(etag: string, immutable: boolean, isPreview: boole
       "ETag": etag,
     }
   }
+  const cacheControl = immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : dynamic ? POSTER_DYNAMIC_CACHE_CONTROL : POSTER_CACHE_CONTROL
+  const cdnCacheControl = immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : dynamic ? POSTER_DYNAMIC_CDN_CACHE_CONTROL : POSTER_CDN_CACHE_CONTROL
+  const surrogate = immutable ? "max-age=31536000" : dynamic ? "max-age=21600, stale-while-revalidate=86400" : "max-age=86400, stale-while-revalidate=604800"
   return {
     ...CORS_HEADERS,
     "Content-Type": "image/jpeg",
-    "Cache-Control": immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : POSTER_CACHE_CONTROL,
-    "CDN-Cache-Control": immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : POSTER_CDN_CACHE_CONTROL,
-    "Surrogate-Control": immutable ? "max-age=31536000" : "max-age=86400, stale-while-revalidate=604800",
+    "Cache-Control": cacheControl,
+    "CDN-Cache-Control": cdnCacheControl,
+    "Surrogate-Control": surrogate,
     "ETag": etag,
   }
 }
 
-export function posterNotModifiedHeaders(etag: string, immutable: boolean): PosterHeaders {
+export function posterNotModifiedHeaders(etag: string, immutable: boolean, dynamic: boolean = false): PosterHeaders {
+  const cacheControl = immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : dynamic ? POSTER_DYNAMIC_CACHE_CONTROL : POSTER_CACHE_CONTROL
+  const cdnCacheControl = immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : dynamic ? POSTER_DYNAMIC_CDN_CACHE_CONTROL : POSTER_CDN_CACHE_CONTROL
+  const surrogate = immutable ? "max-age=31536000" : dynamic ? "max-age=21600, stale-while-revalidate=86400" : "max-age=86400, stale-while-revalidate=604800"
   return {
     ...CORS_HEADERS,
-    "Cache-Control": immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : POSTER_CACHE_CONTROL,
-    "CDN-Cache-Control": immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : POSTER_CDN_CACHE_CONTROL,
-    "Surrogate-Control": immutable ? "max-age=31536000" : "max-age=86400, stale-while-revalidate=604800",
+    "Cache-Control": cacheControl,
+    "CDN-Cache-Control": cdnCacheControl,
+    "Surrogate-Control": surrogate,
     "ETag": etag,
   }
 }
 
-export function posterResponse(payload: PosterCachePayload, immutable: boolean, isPreview: boolean = false): Response {
-  return new Response(new Uint8Array(payload.buffer), { headers: posterHeaders(payload.etag, immutable, isPreview) })
+export function posterResponse(payload: PosterCachePayload, immutable: boolean, isPreview: boolean = false, dynamic: boolean = false): Response {
+  return new Response(new Uint8Array(payload.buffer), { headers: posterHeaders(payload.etag, immutable, isPreview, dynamic) })
 }
 
 export function readCachedPoster(cacheKey: string): { readonly payload: PosterCachePayload | null; readonly stale: boolean } {
@@ -114,6 +122,43 @@ export function writeCachedPoster(cacheKey: string, payload: PosterCachePayload,
   const tags = mappingTag ? ["poster", mappingTag] : ["poster"]
   cacheSet(cacheKey, payload.buffer, tags)
   cacheSet(`${cacheKey}:headers`, { etag: payload.etag }, tags)
+}
+
+// ---------------------------------------------------------------------------
+// Negative cache (F3): un errore 500/503 recente evita di ri-rendere la stessa
+// cache key per il TTL, altrimenti ogni retry ricolpisce upstream e slot con la
+// pipeline completa. TTL breve: si svuota da sola, senza invalidation esplicita.
+// ---------------------------------------------------------------------------
+
+export type PosterErrorStatus = 500 | 503
+
+export interface PosterErrorRecord {
+  readonly status: PosterErrorStatus
+}
+
+const NEGATIVE_TTL_MS = (() => {
+  const raw = process.env.POSTERIUM_NEGATIVE_CACHE_TTL_MS
+  const n = raw ? parseInt(raw, 10) : 5000
+  return Number.isFinite(n) && n >= 1000 && n <= 60000 ? n : 5000
+})()
+
+let negativeWrites = 0
+let negativeHits = 0
+
+export function writePosterError(cacheKey: string, status: PosterErrorStatus): void {
+  negativeWrites++
+  cacheSet(`${cacheKey}:err`, { status } satisfies PosterErrorRecord, ["poster-error"], NEGATIVE_TTL_MS)
+}
+
+export function readPosterError(cacheKey: string): PosterErrorRecord | null {
+  const rec = cacheGet<PosterErrorRecord>(`${cacheKey}:err`)
+  if (rec) negativeHits++
+  return rec
+}
+
+/** Contatori della negative cache per /status. */
+export function posterErrorStats(): { readonly writes: number; readonly hits: number } {
+  return { writes: negativeWrites, hits: negativeHits }
 }
 
 export function getPendingPoster(cacheKey: string): Promise<PosterCachePayload | null> | null {
@@ -185,7 +230,21 @@ const MAX_CONCURRENT_RENDERS = (() => {
   const n = raw ? parseInt(raw, 10) : 4
   return Number.isFinite(n) && n > 0 && n <= 32 ? n : 4
 })()
-const RENDER_SLOT_WAIT_MS = 5000
+// Attesa massima di un posto di render prima del 503 (F5). Lettura a module
+// level: un cambio env richiede restart, non hot-reload.
+export const RENDER_SLOT_WAIT_MS = (() => {
+  const raw = process.env.POSTERIUM_RENDER_SLOT_WAIT_MS
+  const n = raw ? parseInt(raw, 10) : 5000
+  return Number.isFinite(n) && n >= 500 && n <= 60000 ? n : 5000
+})()
+// Coda bounded (opzionale): con 0 il comportamento è attuale (i waiter oltre i
+// posti attendono fino a RENDER_SLOT_WAIT_MS). Con N>0 i waiter oltre N
+// ricevono 503 immediato invece di accodarsi: backpressure senza code infinite.
+const RENDER_QUEUE_LIMIT = (() => {
+  const raw = process.env.POSTERIUM_RENDER_QUEUE
+  const n = raw ? parseInt(raw, 10) : 0
+  return Number.isFinite(n) && n >= 0 && n <= 128 ? n : 0
+})()
 
 let activeRenders = 0
 const renderWaiters: Array<() => void> = []
@@ -201,6 +260,9 @@ export async function acquirePosterRenderSlot(): Promise<(() => void) | null> {
   if (activeRenders < MAX_CONCURRENT_RENDERS) {
     activeRenders++
     return releaseRenderSlot
+  }
+  if (RENDER_QUEUE_LIMIT > 0 && renderWaiters.length >= RENDER_QUEUE_LIMIT) {
+    return null
   }
   return new Promise<(() => void) | null>((resolve) => {
     let settled = false

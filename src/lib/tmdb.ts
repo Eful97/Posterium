@@ -28,7 +28,7 @@ export function resolveRequestApiKey(req: { headers: Headers | { get: (name: str
 
 const inflight = new Map<string, Promise<unknown>>()
 
-async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
+async function tmdbFetch(path: string, apiKey?: string, signal?: AbortSignal): Promise<unknown> {
   // In modalità mock (TMDB_BASE_URL impostato) non serve una chiave reale:
   // il mock server ignora il parametro api_key. In produzione il comportamento
   // è invariato (chiave obbligatoria).
@@ -58,8 +58,11 @@ async function tmdbFetch(path: string, apiKey?: string): Promise<unknown> {
   const fetchUrl = new URL(neutralUrl.toString())
   fetchUrl.searchParams.set("api_key", key)
 
+  // Nota: l'inflight coalescing è condiviso tra richieste concorrenti sulla
+  // stessa URL — il signal vale solo per la PRIMA richiesta (quella che esegue
+  // il fetch). È corretto: il deadline del render è il bound, non il signal.
   const promise = (async () => {
-    const res = await fetch(fetchUrl.toString(), { signal: AbortSignal.timeout(30000) })
+    const res = await fetch(fetchUrl.toString(), { signal: signal ?? AbortSignal.timeout(30000) })
     if (!res.ok) throw new Error(`TMDB fetch failed: ${res.status}`)
     const data = await res.json()
     // Evict LRU (first key = least-recently-used) when at capacity
@@ -129,8 +132,8 @@ export async function getPopularTV(page = 1, language = "it-IT", apiKey?: string
   return data as TMDBSearchResponse
 }
 
-export async function getImages(mediaType: "movie" | "tv", id: number, languages = "en,null", apiKey?: string): Promise<TMDBImagesResponse> {
-  const data = await tmdbFetch(`/${mediaType}/${id}/images?include_image_language=${encodeURIComponent(languages)}`, apiKey)
+export async function getImages(mediaType: "movie" | "tv", id: number, languages = "en,null", apiKey?: string, signal?: AbortSignal): Promise<TMDBImagesResponse> {
+  const data = await tmdbFetch(`/${mediaType}/${id}/images?include_image_language=${encodeURIComponent(languages)}`, apiKey, signal)
   return data as TMDBImagesResponse
 }
 
@@ -146,8 +149,8 @@ export interface TMDBExternalIds {
   imdb_id: string | null
 }
 
-export async function getExternalIds(mediaType: "movie" | "tv", id: number, apiKey?: string): Promise<TMDBExternalIds> {
-  const data = await tmdbFetch(`/${mediaType}/${id}/external_ids`, apiKey)
+export async function getExternalIds(mediaType: "movie" | "tv", id: number, apiKey?: string, signal?: AbortSignal): Promise<TMDBExternalIds> {
+  const data = await tmdbFetch(`/${mediaType}/${id}/external_ids`, apiKey, signal)
   return data as TMDBExternalIds
 }
 
@@ -157,9 +160,9 @@ export interface TMDBKeywordsResponse {
   results?: { id: number; name: string }[]
 }
 
-export async function getKeywords(mediaType: "movie" | "tv", id: number, apiKey?: string): Promise<string[]> {
+export async function getKeywords(mediaType: "movie" | "tv", id: number, apiKey?: string, signal?: AbortSignal): Promise<string[]> {
   try {
-    const data = (await tmdbFetch(`/${mediaType}/${id}/keywords`, apiKey)) as TMDBKeywordsResponse
+    const data = (await tmdbFetch(`/${mediaType}/${id}/keywords`, apiKey, signal)) as TMDBKeywordsResponse
     const list = data.keywords || data.results || []
     return list.map((k) => k.name)
   } catch {
@@ -188,8 +191,8 @@ export interface TMDBDetails {
   
 }
 
-export async function getDetails(mediaType: "movie" | "tv", id: number, language = "it-IT", apiKey?: string): Promise<TMDBDetails> {
-  const data = await tmdbFetch(`/${mediaType}/${id}?language=${language}`, apiKey)
+export async function getDetails(mediaType: "movie" | "tv", id: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBDetails> {
+  const data = await tmdbFetch(`/${mediaType}/${id}?language=${language}`, apiKey, signal)
   return data as TMDBDetails
 }
 

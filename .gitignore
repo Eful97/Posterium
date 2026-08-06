@@ -17,6 +17,7 @@
 /.next/
 /.next-e2e/
 /.next-e2e-probe/
+/.next-load/
 /out/
 
 # production

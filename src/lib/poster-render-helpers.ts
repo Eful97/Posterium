@@ -23,8 +23,8 @@ export function hashKey(key: string): string {
   return crypto.createHash("md5").update(key).digest("hex").slice(0, 16)
 }
 
-export async function fetchImg(url: string): Promise<Buffer> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
+export async function fetchImg(url: string, signal?: AbortSignal): Promise<Buffer> {
+  const res = await fetch(url, { signal: signal ?? AbortSignal.timeout(15000) })
   if (!res.ok) throw new Error(`fetch failed: ${res.status}`)
   const cl = res.headers.get("content-length")
   if (cl && Number(cl) > MAX_IMG_SIZE) throw new Error("image too large")

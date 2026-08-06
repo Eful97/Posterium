@@ -10,7 +10,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa). Il preview client deve sempre corrispondere al poster Stremio finale.
 
-App version: `0.15.2` — RENDER_VERSION: `a832999e42` — rv: `a832999e42`
+App version: `0.15.2` — RENDER_VERSION: `0e2434cdfc` — rv: `0e2434cdfc`
 
 > Quando questo file (o `.agents/*.md`) e il codice discordano, vince il codice (CODE WINS) — aggiorna la documentazione.
 
@@ -24,8 +24,19 @@ App version: `0.15.2` — RENDER_VERSION: `a832999e42` — rv: `a832999e42`
 | `npx playwright test e2e/` | Suite Playwright completa (visual + smoke) |
 | `npx playwright test --update-snapshots` | Aggiorna snapshot (solo modifiche intenzionali) |
 | `node scripts/write-render-version.mjs` | Rigenera RENDER_VERSION (mai editare `render-version.ts` a mano) |
+| `node scripts/load-smoke.mjs` | Load smoke della render pipeline: burst di titoli freddi, misura % 503, poster/sec e heap (assert: heap < 250MB) |
 
 `predev`/`prebuild`/`pretest` rigenerano automaticamente app + render version.
+
+## Render Pipeline Hardening
+
+La render pipeline poster (`route.ts` → `poster-runtime-cache.ts` → `poster-service.ts`) ha un limiter di concorrenza (slot) anti-OOM e un deadline complessivo:
+
+- **Slot limiter**: `POSTERIUM_MAX_CONCURRENT_RENDERS` (default 4). In eccesso si attende fino a `POSTERIUM_RENDER_SLOT_WAIT_MS` (default 5000), poi 503 con `Retry-After`. `POSTERIUM_RENDER_QUEUE` (default 0) limita la coda: oltre N i waiter ricevono 503 immediato.
+- **Deadline render**: `POSTERIUM_RENDER_TIMEOUT_MS` (default 30000) — un render che non finisce in tempo viene abbandonato: il watchdog libera slot + inflight map. I fetch immagini/TMDB ricevono l'`AbortSignal` del deadline.
+- **Negative cache**: un 500/503 sulla stessa cache key non ri-rende per `POSTERIUM_NEGATIVE_CACHE_TTL_MS` (default 5000).
+- I poster non-mappati (composti al volo, dati dinamici) usano TTL ridotto (6h) invece delle 24h del path mappato.
+- Tutti questi valori si leggono a module level: un cambio env richiede restart, non hot-reload.
 
 ## Language
 

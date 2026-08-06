@@ -287,6 +287,12 @@ Ogni utente usa il proprio `?u=uuid` nei link Stremio per poster personalizzati,
 | `SHARP_CACHE_MEMORY_MB` | ❌ | Cache Sharp in MB (default: 64) |
 | `SHARP_CACHE_ITEMS` | ❌ | Max elementi cache interna Sharp (default: auto) |
 | `WARMUP_TOKEN` | ❌ | Token per endpoint `/api/warmup` (fallback a POSTERIUM_ADMIN_TOKEN) |
+| `POSTERIUM_MAX_CONCURRENT_RENDERS` | ❌ | Render poster concorrenti (slot anti-OOM, default: 4) |
+| `POSTERIUM_RENDER_SLOT_WAIT_MS` | ❌ | Attesa massima di un posto render prima del 503 (default: 5000; clamp 500–60000) |
+| `POSTERIUM_RENDER_TIMEOUT_MS` | ❌ | Deadline complessivo del render poster: oltre, watchdog libera slot + inflight (default: 30000; clamp 1000–120000) |
+| `POSTERIUM_RENDER_QUEUE` | ❌ | Coda bounded del limiter: con N>0 i waiter oltre N ricevono 503 immediato (default: 0 = accoda fino a RENDER_SLOT_WAIT_MS) |
+| `POSTERIUM_NEGATIVE_CACHE_TTL_MS` | ❌ | TTL della negative cache errori 500/503 (default: 5000; clamp 1000–60000) |
+| `POSTERIUM_RATELIMIT_POSTER_MAX` | ❌ | Token burst del bucket rate-limit poster (default: 200; clamp 10–10000) |
 | `POSTER_CDN_URL` / `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | URL CDN per generare link poster col CDN |
 | `NEXT_PUBLIC_TMDB_IMG_URL` | ❌ | Base URL immagini TMDB lato client (default: `https://image.tmdb.org/t/p`). Utile per proxy immagini o test e2e |
 | `WIKIDATA_TIMEOUT` | ❌ | Timeout ms per fetch Wikidata badge premi (default: 4000) |

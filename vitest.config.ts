@@ -7,6 +7,7 @@ export default defineConfig({
     setupFiles: ["./src/__tests__/setup.ts"],
     exclude: [
       "node_modules/**",
+      ".kilo/**",
       ".next/**",
       "e2e/**",
       "test-results/**",

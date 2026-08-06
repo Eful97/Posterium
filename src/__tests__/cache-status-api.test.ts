@@ -30,6 +30,7 @@ describe("GET /api/cache/status", () => {
       totalBytes: expect.any(Number),
       maxBytes: expect.any(Number),
       maxEntries: expect.any(Number),
+      posterErrors: { writes: 0, hits: 0 },
     })
   })
 
@@ -57,6 +58,7 @@ describe("GET /api/cache/status", () => {
       totalBytes: 0,
       maxBytes: expect.any(Number),
       maxEntries: expect.any(Number),
+      posterErrors: { writes: 0, hits: 0 },
     })
   })
 })

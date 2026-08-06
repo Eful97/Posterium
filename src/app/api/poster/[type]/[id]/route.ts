@@ -16,9 +16,11 @@ import { fetchMDBList, type MDBListEntry } from "@/lib/mdblist"
 import { fetchAggregatedRating } from "@/lib/ratings"
 import { isImdbTop250 } from "@/lib/imdb-top250"
 import { getEffectiveRotationState, tryRotatePoster } from "@/lib/poster-rotation"
+import { getTMDBSessionCache, setTMDBSessionCache } from "@/lib/tmdb-session-cache"
 import { mappingVersionParam } from "@/lib/stremio-poster-url"
 import { RENDER_VERSION } from "@/lib/render-version"
 import {
+  RENDER_SLOT_WAIT_MS,
   acquirePosterRenderSlot,
   beginPosterRender,
   getPendingPoster,
@@ -29,8 +31,12 @@ import {
   posterNotModifiedHeaders,
   posterResponse,
   readCachedPoster,
+  readPosterError,
   schedulePosterRefresh,
   writeCachedPoster,
+  writePosterError,
+  type PosterCachePayload,
+  type PosterErrorStatus,
 } from "@/lib/poster-runtime-cache"
 import {
   STD_H,
@@ -53,10 +59,32 @@ import { selectBestLogo, logoBestLogoFallbackReason } from "@/lib/logo-selection
 
 const log = createLogger("poster")
 
+// Deadline complessivo del render (F2): limite sull'intera pipeline
+// (fetch immagini + TMDB + composizione sharp). Oltre il tempo massimo il
+// watchdog abbandona il render e libera slot + inflight map. Lettura a module
+// level: un cambio env richiede restart, non hot-reload.
+const RENDER_TIMEOUT_MS = (() => {
+  const raw = process.env.POSTERIUM_RENDER_TIMEOUT_MS
+  const n = raw ? parseInt(raw, 10) : 30000
+  return Number.isFinite(n) && n >= 1000 && n <= 120000 ? n : 30000
+})()
+
 type RouteParams = { type: string; id: string }
 
 function corsHeaders(): Record<string, string> {
   return { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" }
+}
+
+// Risposta di errore coerente per 500/503 con Retry-After esplicito sul 503
+// (F5/F8): la CDN/Stremio fa backoff invece di rimbalzare subito sull'endpoint.
+function posterErrorResponse(status: PosterErrorStatus): Response {
+  if (status === 503) {
+    return new Response("Server busy: too many concurrent renders", {
+      status: 503,
+      headers: { ...corsHeaders(), "Retry-After": String(Math.max(1, Math.round(RENDER_SLOT_WAIT_MS / 1000))) },
+    })
+  }
+  return new Response("Poster generation failed", { status: 500, headers: corsHeaders() })
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
@@ -139,34 +167,83 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   })
   const refreshRequest = isPosterRefreshRequest(req.nextUrl.searchParams)
   const isPreview = req.nextUrl.searchParams.has("preview")
+  // Poster non-mappato (composto al volo con dati dinamici): TTL ridotto (6h)
+  // invece delle 24h del path mappato, così rank/IMDb Top 250 non restano
+  // stantii per un giorno intero. Il flag non cambia per tutta la richiesta.
+  const dynamicPoster = !mapping
 
   // 3. Memory cache check
   const cachedPoster = readCachedPoster(cacheKey)
   if (cachedPoster.payload) {
     if (!isPreview && req.headers.get("If-None-Match") === cachedPoster.payload.etag) {
       log.debug("Poster cache: 304", { mediaType, tmdbId, ms: Date.now() - startTime })
-      return new Response(null, { status: 304, headers: posterNotModifiedHeaders(cachedPoster.payload.etag, immutablePoster) })
+      return new Response(null, { status: 304, headers: posterNotModifiedHeaders(cachedPoster.payload.etag, immutablePoster, dynamicPoster) })
     }
     if (!cachedPoster.stale) {
       log.debug("Poster cache: fresh hit", { mediaType, tmdbId, ms: Date.now() - startTime })
-      return posterResponse(cachedPoster.payload, immutablePoster, isPreview)
+      return posterResponse(cachedPoster.payload, immutablePoster, isPreview, dynamicPoster)
     }
     if (!refreshRequest) {
       schedulePosterRefresh(req, isPreview)
       log.debug("Poster cache: stale hit (refresh scheduled)", { mediaType, tmdbId, ms: Date.now() - startTime })
-      return posterResponse(cachedPoster.payload, immutablePoster, isPreview)
+      return posterResponse(cachedPoster.payload, immutablePoster, isPreview, dynamicPoster)
     }
   }
 
   const pendingPoster = getPendingPoster(cacheKey)
   if (pendingPoster) {
-    const payload = await pendingPoster
+    // F8: il waiter coalesced attende al massimo RENDER_SLOT_WAIT_MS, poi 503
+    // con Retry-After invece di tenere la connessione fino all'INFLIGHT_TIMEOUT
+    // (60s) del render lento.
+    const payload = await Promise.race([
+      pendingPoster,
+      new Promise<PosterCachePayload | null>((resolve) => setTimeout(() => resolve(null), RENDER_SLOT_WAIT_MS)),
+    ])
     if (payload) {
       log.debug("Poster cache: coalesced with in-flight render", { mediaType, tmdbId, ms: Date.now() - startTime })
-      return posterResponse(payload, immutablePoster)
+      return posterResponse(payload, immutablePoster, false, dynamicPoster)
+    }
+    // Coalesce scaduto: o il render è fallito (negative cache) o è ancora in
+    // corso — mai duplicare il render, rispondere 503 con backoff esplicito.
+    const negError = readPosterError(cacheKey)
+    if (negError) {
+      log.debug("Poster negative cache hit", { mediaType, tmdbId, status: negError.status, ms: Date.now() - startTime })
+      return posterErrorResponse(negError.status)
+    }
+    log.debug("Coalesce timeout: render ancora in corso", { mediaType, tmdbId, ms: Date.now() - startTime })
+    return posterErrorResponse(503)
+  }
+
+  // Negative cache (F3): un 500/503 recente sulla stessa cache key non
+  // ri-rende la pipeline per il TTL — risponde subito lo stesso status.
+  const negativeError = readPosterError(cacheKey)
+  if (negativeError) {
+    log.debug("Poster negative cache hit", { mediaType, tmdbId, status: negativeError.status, ms: Date.now() - startTime })
+    return posterErrorResponse(negativeError.status)
+  }
+
+  const completePosterRender = beginPosterRender(cacheKey)
+
+  // Deadline complessivo del render (F2): se la pipeline non finisce entro
+  // RENDER_TIMEOUT_MS (es. sharp appeso o upstream degradato), il watchdog
+  // abbandona il render e libera sia la inflight map sia lo slot, così gli
+  // altri render non restano in starvation. completePosterRender è idempotente
+  // e releaseSlotOnce è guarded: il watchdog può scattare prima del finally.
+  const renderAbort = new AbortController()
+  let releaseRender: (() => void) | null = null
+  let slotReleased = false
+  const releaseSlotOnce = (): void => {
+    if (releaseRender && !slotReleased) {
+      slotReleased = true
+      releaseRender()
     }
   }
-  const completePosterRender = beginPosterRender(cacheKey)
+  const renderDeadline = setTimeout(() => {
+    renderAbort.abort()
+    completePosterRender(null)
+    releaseSlotOnce()
+  }, RENDER_TIMEOUT_MS)
+  if (typeof renderDeadline.unref === "function") renderDeadline.unref()
 
   // 4. Resolve poster/logo/backdrop paths
   let posterPath: string | null = null
@@ -232,22 +309,31 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     rankingBadges = mapping.rankingBadges ?? true
     etag = `"m${etagBase}:${mapping.updatedAt}"`
     if (req.headers.get("If-None-Match") === etag) {
+      clearTimeout(renderDeadline)
       completePosterRender(null)
-      return new Response(null, { status: 304, headers: posterNotModifiedHeaders(etag, immutablePoster) })
+      return new Response(null, { status: 304, headers: posterNotModifiedHeaders(etag, immutablePoster, dynamicPoster) })
     }
   } else {
     const preferredLanguage = req.nextUrl.searchParams.get("lang") || "it"
     const apiKey = resolveRequestApiKey(req)
     try {
-      const details = await getDetails(mediaType, tmdbId, preferredLanguage, apiKey)
+      // F6: session cache editor — i tick di preview sullo stesso titolo
+      // non-mappato riusano details/images/externalIds senza rifare la rete.
+      const sessionData = getTMDBSessionCache(mediaType, tmdbId)
+      const details = sessionData?.details ?? (await getDetails(mediaType, tmdbId, preferredLanguage, apiKey, renderAbort.signal))
       const origLang = details.original_language
       const imageLangs = origLang && origLang !== preferredLanguage && origLang !== "en"
         ? `${preferredLanguage},en,null,${origLang}`
         : `${preferredLanguage},en,null`
-      const [images, extIds] = await Promise.all([
-        getImages(mediaType, tmdbId, imageLangs, apiKey),
-        getExternalIds(mediaType, tmdbId, apiKey).catch(() => ({ imdb_id: null })),
-      ])
+      const [images, extIds] = sessionData?.images
+        ? [sessionData.images, sessionData.externalIds ?? { imdb_id: null }]
+        : await Promise.all([
+            getImages(mediaType, tmdbId, imageLangs, apiKey, renderAbort.signal),
+            getExternalIds(mediaType, tmdbId, apiKey, renderAbort.signal).catch(() => ({ imdb_id: null })),
+          ])
+      if (!sessionData) {
+        setTMDBSessionCache(mediaType, tmdbId, { details, images, externalIds: extIds })
+      }
       imdbId = extIds.imdb_id
       const aggregated = imdbId ? await fetchAggregatedRating(imdbId).catch(() => null) : null
       genreName = details.genres[0]?.name || null
@@ -335,11 +421,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   }
 
   if (!posterPath) {
+    clearTimeout(renderDeadline)
     completePosterRender(null)
     return new Response("Poster not found", { status: 404, headers: corsHeaders() })
   }
 
-  let releaseRender: (() => void) | null = null
   try {
     // Semaforo anti-OOM: limita i render costosi concorrenti (sharp composite,
     // blur, badge SVG→PNG). Se tutti i posti sono occupati per più del timeout,
@@ -347,7 +433,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     releaseRender = await acquirePosterRenderSlot()
     if (!releaseRender) {
       completePosterRender(null)
-      return new Response("Server busy: too many concurrent renders", { status: 503, headers: corsHeaders() })
+      writePosterError(cacheKey, 503)
+      return posterErrorResponse(503)
     }
 
     const qRankingEarly = req.nextUrl.searchParams.get("ranking")
@@ -366,9 +453,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       Promise.all([
         posterPathBuffer
           ? Promise.resolve(posterPathBuffer)
-          : fetchImg(imgSrc(posterPath)).catch(() => null),
-        logoPath ? fetchImg(imgSrc(logoPath)).catch(() => null) : Promise.resolve(null),
-        backdropPath ? fetchImg(imgSrc(backdropPath)).catch(() => null) : Promise.resolve(null),
+          : fetchImg(imgSrc(posterPath), renderAbort.signal).catch(() => null),
+        logoPath ? fetchImg(imgSrc(logoPath), renderAbort.signal).catch(() => null) : Promise.resolve(null),
+        backdropPath ? fetchImg(imgSrc(backdropPath), renderAbort.signal).catch(() => null) : Promise.resolve(null),
         rankingEnabledEarly
           ? getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
             .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
@@ -401,12 +488,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           new Promise<typeof emptyWikidata>((r) => setTimeout(() => r(emptyWikidata), WIKIDATA_TIMEOUT)),
         ]),
         rankingEnabledEarly
-          ? getKeywords(mediaType, tmdbId, resolveRequestApiKey(req)).catch(() => [])
+          ? getKeywords(mediaType, tmdbId, resolveRequestApiKey(req), renderAbort.signal).catch(() => [])
           : Promise.resolve([]),
         (async () => {
           if (!rankingEnabledEarly) return false
           if (!imdbId) {
-            const extIds = await getExternalIds(mediaType, tmdbId, resolveRequestApiKey(req)).catch(() => null)
+            // F6: externalIds già in session cache (ramo non-mappato) → niente rete.
+            const extIds = getTMDBSessionCache(mediaType, tmdbId)?.externalIds
+              ?? (await getExternalIds(mediaType, tmdbId, resolveRequestApiKey(req), renderAbort.signal).catch(() => null))
             if (extIds?.imdb_id) imdbId = extIds.imdb_id
           }
           if (!imdbId) return false
@@ -445,7 +534,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         ? (async () => {
             const apiKey = resolveRequestApiKey(req)
             const preferredLang = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
-            const details = await getDetails(mediaType, tmdbId, preferredLang, apiKey).catch(() => null)
+            // F6: anche il refetch dei dettagli TV riusa la session cache.
+            const details = getTMDBSessionCache(mediaType, tmdbId)?.details
+              ?? (await getDetails(mediaType, tmdbId, preferredLang, apiKey, renderAbort.signal).catch(() => null))
             if (!details) return
             if (!releaseDate) releaseDate = details.release_date || null
             if (!firstAirDate) firstAirDate = details.first_air_date || null
@@ -614,12 +705,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     writeCachedPoster(cacheKey, payload, mappingTag)
     completePosterRender(payload)
     log.info("Poster rendered", { mediaType, tmdbId, ms: Date.now() - startTime, bytes: composited.byteLength, cached: !!mappingTag })
-    return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster, isPreview) })
+    return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster, isPreview, dynamicPoster) })
   } catch (e) {
     completePosterRender(null)
+    // F3: negative cache — lo stesso errore non ri-rende la pipeline per il TTL.
+    writePosterError(cacheKey, 500)
     log.error("Poster generation failed", { error: e instanceof Error ? e.message : String(e) })
-    return new Response("Poster generation failed", { status: 500, headers: corsHeaders() })
+    return posterErrorResponse(500)
   } finally {
-    releaseRender?.()
+    clearTimeout(renderDeadline)
+    releaseSlotOnce()
   }
 }

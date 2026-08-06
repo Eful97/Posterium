@@ -27,10 +27,18 @@ interface BucketConfig {
   refillWindow: number
 }
 
+// F7: il bucket poster era 100 burst/10s — un catalog load con molti poster
+// freddi poteva andare in 429. Sovrascrivibile via env a module level.
+const POSTER_MAX_TOKENS = (() => {
+  const raw = process.env.POSTERIUM_RATELIMIT_POSTER_MAX
+  const n = raw ? parseInt(raw, 10) : 200
+  return Number.isFinite(n) && n >= 10 && n <= 10000 ? n : 200
+})()
+
 const limits: Record<string, BucketConfig> = {
   default: { maxTokens: 120, refillRate: 10, refillWindow: 1000 },
   tmdb:    { maxTokens: 60,  refillRate: 5,  refillWindow: 1000 },
-  poster:  { maxTokens: 100, refillRate: 10, refillWindow: 1000 },
+  poster:  { maxTokens: POSTER_MAX_TOKENS, refillRate: 20, refillWindow: 1000 },
   search:  { maxTokens: 30,  refillRate: 3,  refillWindow: 1000 },
   mappings: { maxTokens: 120, refillRate: 10, refillWindow: 1000 },
   catalog:  { maxTokens: 60,  refillRate: 5,  refillWindow: 1000 },

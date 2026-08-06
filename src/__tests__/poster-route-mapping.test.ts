@@ -6,6 +6,7 @@ import { getById } from "@/lib/store"
 import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { getDetails, getImages, getExternalIds } from "@/lib/tmdb"
 import { cacheClear } from "@/lib/cache"
+import { __resetTMDBSessionCache } from "@/lib/tmdb-session-cache"
 import type { Mapping } from "@/lib/types"
 
 vi.mock("@/lib/rate-limit", () => ({
@@ -89,6 +90,7 @@ describe("GET /api/poster/[type]/[id] with saved mappings", () => {
 
   afterEach(() => {
     cacheClear()
+    __resetTMDBSessionCache()
   })
 
   it("uses the saved poster path instead of overriding it with automatic best fit", async () => {
@@ -231,6 +233,62 @@ describe("GET /api/poster/[type]/[id] with saved mappings", () => {
     expect(requestedUrls.some((url) => url.includes("/it-poster.jpg"))).toBe(true)
     expect(requestedUrls.some((url) => url.includes("/clean.jpg"))).toBe(false)
   })
+
+  it("memoizes TMDB fetches for the same unmapped title across preview ticks (F6)", async () => {
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+    mockedGetById.mockResolvedValue(null)
+    mockedGetDetails.mockResolvedValue({
+      id: 42,
+      title: "Session Cache",
+      genres: [{ id: 18, name: "Drama" }],
+      vote_average: 7.0,
+      vote_count: 100,
+      original_language: "it",
+      release_date: "2025-01-15",
+      production_companies: [],
+    })
+    mockedGetImages.mockResolvedValue({
+      id: 42,
+      posters: [
+        { file_path: "/it-poster.jpg", iso_639_1: "it", vote_average: 7.0, vote_count: 50, width: 500, height: 750, aspect_ratio: 0.667 },
+      ],
+      logos: [],
+      backdrops: [],
+    })
+    mockedGetExternalIds.mockResolvedValue({ imdb_id: null })
+
+    // NB: mockImplementation e non mockResolvedValue — la Response va creata
+    // fresca a ogni chiamata, altrimenti il body one-shot viene consumato dal
+    // primo fetchImg e il secondo tick va in "Poster image not available".
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      new Response(new Uint8Array(posterBuf), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(posterBuf.length) },
+      }),
+    )
+
+    // Azzera la history dei mock: gli altri test del describe la inquinano.
+    mockedGetDetails.mockClear()
+    mockedGetImages.mockClear()
+    mockedGetExternalIds.mockClear()
+
+    const req1 = new NextRequest("http://localhost:3000/api/poster/movie/42?preview=1")
+    const res1 = await GET(req1, { params: Promise.resolve({ type: "movie", id: "42" }) })
+    expect(res1.status).toBe(200)
+    const detailsAfterFirst = mockedGetDetails.mock.calls.length
+    const imagesAfterFirst = mockedGetImages.mock.calls.length
+    const extAfterFirst = mockedGetExternalIds.mock.calls.length
+    expect(detailsAfterFirst).toBeGreaterThan(0)
+
+    // Secondo tick di preview con parametri diversi → cache key diversa, ma la
+    // session cache per type:id evita di rifare i fetch TMDB.
+    const req2 = new NextRequest("http://localhost:3000/api/poster/movie/42?preview=1&blur=0")
+    const res2 = await GET(req2, { params: Promise.resolve({ type: "movie", id: "42" }) })
+    expect(res2.status).toBe(200)
+    expect(mockedGetDetails.mock.calls.length).toBe(detailsAfterFirst)
+    expect(mockedGetImages.mock.calls.length).toBe(imagesAfterFirst)
+    expect(mockedGetExternalIds.mock.calls.length).toBe(extAfterFirst)
+  })
 })
 
 describe("GET /api/poster/[type]/[id] error and edge cases", () => {
@@ -240,6 +298,7 @@ describe("GET /api/poster/[type]/[id] error and edge cases", () => {
 
   afterEach(() => {
     cacheClear()
+    __resetTMDBSessionCache()
   })
 
   it("returns 400 for invalid numeric ID", async () => {
