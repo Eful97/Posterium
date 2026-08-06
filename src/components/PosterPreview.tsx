@@ -2,7 +2,7 @@
 
 import { useRef } from "react"
 import { ImageOff, RefreshCw } from "lucide-react"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { useToast } from "@/components/Toast"
 
@@ -21,17 +21,20 @@ export function PosterPreview({
   setImageError,
   imgSrc
 }: PosterPreviewProps) {
-  const p = useP()
+  const selected = usePSelector((v) => v.selected)
+  const selectedLogo = usePSelector((v) => v.selectedLogo)
+  const previewPoster = usePSelector((v) => v.previewPoster)
+  const previewUrl = usePSelector((v) => v.previewUrl)
   const { t } = useT()
   const toast = useToast()
   const toastRef = useRef(toast)
   toastRef.current = toast
 
   return (
-    <div role="img" aria-label={`Preview of ${p.selected?.title || p.selected?.name || ""} poster with ${p.selectedLogo ? "logo" : "no logo"}`}
-         className={`preview-frame w-full rounded-[1.35rem] overflow-hidden relative ${p.previewPoster ? "preview-frame-active" : ""}`}>
+    <div role="img" aria-label={`Preview of ${selected?.title || selected?.name || ""} poster with ${selectedLogo ? "logo" : "no logo"}`}
+         className={`preview-frame w-full rounded-[1.35rem] overflow-hidden relative ${previewPoster ? "preview-frame-active" : ""}`}>
       <div className="relative aspect-[2/3] select-none pointer-events-none bg-zinc-950/70 overflow-hidden rounded-[1.2rem]">
-        {p.previewUrl ? (
+        {previewUrl ? (
           <>
             <div className="loading-bar-overlay" style={{ opacity: previewLoading ? 1 : 0, pointerEvents: "none" }} />
             <div className="loading-bar-container" style={{ opacity: previewLoading ? 1 : 0, transition: "opacity 0.3s ease" }}>
@@ -42,12 +45,12 @@ export function PosterPreview({
               /* eslint-disable-next-line @next/next/no-img-element -- server-rendered poster */
               <img
                 src={imgSrc}
-                alt={p.selected?.title || p.selected?.name || ""}
+                alt={selected?.title || selected?.name || ""}
                 className="absolute inset-0 w-full h-full object-cover"
               />
             )}
           </>
-        ) : p.selected ? (
+        ) : selected ? (
           <div className="absolute inset-0 bg-surface2/50 animate-pulse rounded-2xl" />
         ) : null}
         {imageError && (

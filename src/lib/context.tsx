@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react"
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from "react"
 import type { SearchResult, TMDBImage, Mapping } from "./types"
 import { posterUrl, titleOf, yearOf, STREAMING_PLATFORMS, getDomain } from "./utils"
 import { matchTMDBStudios } from "./awards"
@@ -153,6 +153,36 @@ const Ctx = createContext<PosteriumCtx | null>(null)
 export const AppCtx = createContext<PosteriumCtx | null>(null)
 export const EditCtx = createContext<PosteriumCtx | null>(null)
 
+// Store scoped al provider per la subscription ottimizzata (usePSelector):
+// ogni PosteriumProvider ha il proprio store, così i test restano isolati e i
+// selettori ri-renderizzano SOLO quando lo slice selezionato cambia (Object.is).
+interface SelectorStore {
+  value: PosteriumCtx | null
+  listeners: Set<() => void>
+}
+const SelectorStoreCtx = createContext<SelectorStore | null>(null)
+
+/**
+ * Consuma solo lo slice richiesto del contesto Posterium. Il componente
+ * ri-renderizza SOLO quando il valore selezionato cambia (Object.is), non a
+ * ogni aggiornamento di qualsiasi slice. Il selettore DEVE restituire un
+ * riferimento stabile (primitiva o campo di stato esistente), mai un oggetto
+ * nuovo creato inline, altrimenti il confronto fallisce.
+ */
+export function usePSelector<T>(selector: (v: PosteriumCtx) => T): T {
+  const store = useContext(SelectorStoreCtx)
+  if (!store) throw new Error("usePSelector must be inside PosteriumProvider")
+  const get = (): T | undefined => (store.value ? selector(store.value) : undefined)
+  return useSyncExternalStore(
+    (cb) => {
+      store.listeners.add(cb)
+      return () => { store.listeners.delete(cb) }
+    },
+    get,
+    get,
+  ) as T
+}
+
 export function useAppCtx(): PosteriumCtx {
   const v = useContext(AppCtx)
   if (!v) throw new Error("useAppCtx must be inside PosteriumProvider")
@@ -172,18 +202,28 @@ export function useP() {
 }
 
 export function PosteriumProvider({ value, children }: { value: PosteriumCtx; children: React.ReactNode }) {
+  const storeRef = useRef<SelectorStore | null>(null)
+  if (!storeRef.current) storeRef.current = { value: null, listeners: new Set() }
+  const store = storeRef.current
+  // Aggiorna lo store durante il render per coerenza del getSnapshot
+  store.value = value
+  useEffect(() => {
+    store.listeners.forEach((l) => l())
+  }, [value, store])
   return (
-    <AppCtx.Provider value={value}>
-      <EditCtx.Provider value={value}>
-        <TranslationProvider value={value}>
-          <SettingsProvider value={value}>
-            <SearchProvider value={value}>
-              <Ctx.Provider value={value}>{children}</Ctx.Provider>
-            </SearchProvider>
-          </SettingsProvider>
-        </TranslationProvider>
-      </EditCtx.Provider>
-    </AppCtx.Provider>
+    <SelectorStoreCtx.Provider value={store}>
+      <AppCtx.Provider value={value}>
+        <EditCtx.Provider value={value}>
+          <TranslationProvider value={value}>
+            <SettingsProvider value={value}>
+              <SearchProvider value={value}>
+                <Ctx.Provider value={value}>{children}</Ctx.Provider>
+              </SearchProvider>
+            </SettingsProvider>
+          </TranslationProvider>
+        </EditCtx.Provider>
+      </AppCtx.Provider>
+    </SelectorStoreCtx.Provider>
   )
 }
 
