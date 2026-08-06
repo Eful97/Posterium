@@ -1330,7 +1330,7 @@ select:focus-visible {
 .control-label {
   font-size: 12px;
   font-weight: 500;
-  color: rgb(161 161 170);
+  color: rgb(180 180 185);
 }
 
 /* Segmented control (sort: TMDB / Best fit) */
@@ -1446,6 +1446,13 @@ select:focus-visible {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Anello di focus visibile solo per navigazione da tastiera */
+:focus-visible {
+  outline: 2px solid var(--color-accent, var(--color-accent-orange, #e85d2a));
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 

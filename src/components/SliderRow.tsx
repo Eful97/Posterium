@@ -19,6 +19,13 @@ export function SliderRow({ icon, label, value, min, max, boundsMin, boundsMax, 
       ) : (
         <span onClick={() => { setEditText(String(value)); setEditingValue(editingKey) }} className="text-[12px] text-zinc-300 w-14 text-right cursor-pointer hover:text-accent transition-colors tabular-nums font-semibold">{value}{suffix ?? (editingKey === "scale" ? "%" : "px")}</span>
       )}
+      <button
+        type="button"
+        aria-label={`Reset ${label}`}
+        title={`Reset ${label}`}
+        onClick={onDoubleClick}
+        className="w-4 h-4 shrink-0 flex items-center justify-center text-[10px] text-zinc-600 hover:text-accent transition-colors"
+      >↺</button>
     </div>
   )
 }

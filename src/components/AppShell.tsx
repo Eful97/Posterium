@@ -57,6 +57,15 @@ export function AppShell() {
     return () => clearTimeout(t)
   }, [p.profileId])
 
+  // Blocca lo scroll del body quando le impostazioni mobili sono aperte
+  useEffect(() => {
+    if (!p.settingsOpen) return
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768
+    if (!isMobile) return
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = "" }
+  }, [p.settingsOpen])
+
 return (
     <>
     <ToastProvider>
@@ -147,10 +156,10 @@ return (
       </div>
 
       {(p.settingsOpen || closingSettings) && (
-        <div className={`fixed inset-0 z-[70] bg-background md:hidden overflow-y-auto ${closingSettings ? "animate-fade-out" : "animate-fade-scale-in"}`}>
+        <div role="dialog" aria-modal="true" aria-label={t("ui.settingsTitle")} className={`fixed inset-0 z-[70] bg-background md:hidden overflow-y-auto ${closingSettings ? "animate-fade-out" : "animate-fade-scale-in"}`}>
           <div className="fixed inset-0 z-[-1]" onClick={() => closeSettings()} />
           <div className="flex items-center gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-b border-zinc-800">
-            <button type="button" aria-label={t("ui.back")} onClick={() => closeSettings()} className="text-sm text-zinc-300 hover:text-white active:scale-90 transition-all duration-150 press-scale">{t("ui.back")}</button>
+            <button type="button" autoFocus aria-label={t("ui.back")} onClick={() => closeSettings()} className="text-sm text-zinc-300 hover:text-white active:scale-90 transition-all duration-150 press-scale">{t("ui.back")}</button>
             <h2 className="text-sm font-semibold text-zinc-200">{t("ui.settingsTitle")}</h2>
           </div>
           <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">

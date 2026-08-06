@@ -6,6 +6,7 @@ import { X, Copy, Check, Lock, Fingerprint, User } from "lucide-react"
 import { useP } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
+import { Modal } from "@/components/ui/Modal"
 
 interface Props {
   isOpen: boolean
@@ -31,17 +32,6 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       try { setGeneratedUuid(crypto.randomUUID()) } catch {}
     }
   }, [p.profileId, generatedUuid])
-
-  React.useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && p.profileId) onClose()
-    }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isOpen, onClose, p.profileId])
-
-  if (!isOpen) return null
 
   const activeUuid = p.profileId || generatedUuid
 
@@ -187,31 +177,27 @@ export function ProfileModal({ isOpen, onClose }: Props) {
   }
 
   return (
-    <div
-      onClick={(e) => { if (e.target === e.currentTarget && p.profileId) onClose() }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
-    >
-      <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl space-y-5 select-text">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-accent-orange/15 text-accent-orange border border-accent-orange/20">
-              <Fingerprint className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white">{t("ui.profileTitle")}</h3>
-              <p className="text-xs text-zinc-400">{!p.profileId ? "Crea o accedi ad un profilo per iniziare" : t("ui.profileSubtitle")}</p>
-            </div>
+    <Modal isOpen={isOpen} onClose={onClose} closeOnEscape={!!p.profileId} closeOnBackdrop={!!p.profileId} labelledBy="profile-modal-title">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-xl bg-accent-orange/15 text-accent-orange border border-accent-orange/20">
+            <Fingerprint className="w-5 h-5" />
           </div>
-          {p.profileId && (
-            <button type="button"
-              aria-label="Chiudi"
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
+          <div>
+            <h3 id="profile-modal-title" className="text-base font-bold text-white">{t("ui.profileTitle")}</h3>
+            <p className="text-xs text-zinc-400">{!p.profileId ? "Crea o accedi ad un profilo per iniziare" : t("ui.profileSubtitle")}</p>
+          </div>
         </div>
+        {p.profileId && (
+          <button type="button"
+            aria-label="Chiudi"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
 
         {/* Tab switcher */}
         <div className="flex rounded-xl bg-black/40 border border-white/10 p-1">
@@ -405,7 +391,6 @@ export function ProfileModal({ isOpen, onClose }: Props) {
             </button>
           </>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }

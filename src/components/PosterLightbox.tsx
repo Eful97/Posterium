@@ -5,6 +5,8 @@ import { X, Star, ExternalLink, Maximize2, Check } from "lucide-react"
 import type { Mapping } from "@/lib/types"
 import type { PosterCollection } from "@/lib/useCollections"
 
+const FOCUSABLE = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+
 interface PosterLightboxProps {
   lightbox: { mapping: Mapping; rect: DOMRect } | null
   onClose: () => void
@@ -63,14 +65,34 @@ export function PosterLightbox({
     }, 150)
   }, [onClose])
 
-  // Keyboard handler
+  // Keyboard handler: Escape chiude, Tab resta intrappolato nel dialog
   useEffect(() => {
     if (!mapping) return
+    const panel = cardRef.current
+    document.body.style.overflow = "hidden"
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") handleClose()
+      if (e.key === "Escape") {
+        handleClose()
+        return
+      }
+      if (e.key !== "Tab" || !panel) return
+      const focusables = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE))
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener("keydown", handler)
-    return () => document.removeEventListener("keydown", handler)
+    return () => {
+      document.removeEventListener("keydown", handler)
+      document.body.style.overflow = ""
+    }
   }, [mapping, handleClose])
 
   // Cleanup del timer di chiusura su unmount: evita setState su componente smontato

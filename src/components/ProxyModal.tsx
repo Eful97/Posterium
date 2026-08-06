@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import { X, Copy, ExternalLink, Sparkles, Check, Link2 } from "lucide-react"
 import { useP } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
+import { Modal } from "@/components/ui/Modal"
 
 interface Props {
   isOpen: boolean
@@ -50,26 +51,25 @@ export function ProxyModal({ isOpen, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-900/95 p-6 shadow-2xl space-y-5 select-text">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-accent-orange/15 text-accent-orange border border-accent-orange/20">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white">Generatore Addon Proxy</h3>
-              <p className="text-xs text-zinc-400">Inietta i poster di Posterium in qualsiasi Add-on Stremio</p>
-            </div>
+    <Modal isOpen={isOpen} onClose={onClose} labelledBy="proxy-modal-title">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-xl bg-accent-orange/15 text-accent-orange border border-accent-orange/20">
+            <Sparkles className="w-5 h-5" />
           </div>
-          <button type="button"
-            aria-label="Chiudi"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div>
+            <h3 id="proxy-modal-title" className="text-base font-bold text-white">Generatore Addon Proxy</h3>
+            <p className="text-xs text-zinc-400">Inietta i poster di Posterium in qualsiasi Add-on Stremio</p>
+          </div>
         </div>
+        <button type="button"
+          aria-label="Chiudi"
+          onClick={onClose}
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
         <div className="space-y-3">
           <label className="block text-xs font-semibold text-zinc-300">
@@ -134,7 +134,6 @@ export function ProxyModal({ isOpen, onClose }: Props) {
             Inserisci l&apos;URL di un add-on per generare il tuo link proxy personalizzato.
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }
