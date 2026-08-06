@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test"
+import path from "path"
 
 const isCi = process.env.CI === "true"
 // Porta locale dedicata ai test: 3100, così `npm run dev` sulla porta 3000
@@ -45,6 +46,9 @@ export default defineConfig({
         // DistDir separato: `next dev` può girare anche con un altro dev server
         // attivo su .next (lock "already running" di Next 16).
         NEXT_DIST_DIR: ".next-e2e",
+        // Data dir isolata: i test visivi non devono essere inquinati dallo
+        // stato locale (defaults, mapping salvati) in ./data.
+        POSTERIUM_DATA_DIR: path.join(__dirname, ".next-e2e", "data"),
         TMDB_BASE_URL: `${mockUrl}/3`,
         TMDB_IMG_URL: `${mockUrl}/t/p`,
         NEXT_PUBLIC_TMDB_IMG_URL: `${mockUrl}/t/p`,

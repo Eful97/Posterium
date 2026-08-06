@@ -343,13 +343,17 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   const isRightRibbon = ribbonSide === "right"
   if (safeRankBadgeResult) {
     const isBar = rankingBadgeStyle === "bar"
-    const isNetflix = rankingBadgeStyle === "netflix"
+    // Il nastro Netflix è ancorato a sinistra SOLO quando il badge è davvero un
+    // ranking "netflix" (type rank). Un badge personalizzato/extra va SEMPRE
+    // centrato, anche se lo stile selezionato è "netflix": altrimenti esce
+    // decentrato a sinistra.
+    const isNetflixRibbon = rankingBadgeStyle === "netflix" && topBadge?.type === "rank"
     let left: number
     if (isBar) {
       left = 0 // bar full-width: resta ancorata a sinistra
-    } else if (isNetflix && isRightRibbon) {
+    } else if (isNetflixRibbon && isRightRibbon) {
       left = Math.round(STD_W - safeRankBadgeResult.w) // nastro Netflix a destra (Stremio)
-    } else if (isNetflix) {
+    } else if (isNetflixRibbon) {
       left = 0 // nastro Netflix a sinistra (Nuvio, default)
     } else {
       left = Math.round((STD_W - safeRankBadgeResult.w) / 2)
@@ -361,7 +365,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     })
   }
   if (networkLogoResult) {
-    const isNetflixRank = safeRankBadgeResult && rankingBadgeStyle === "netflix"
+    const isNetflixRank = safeRankBadgeResult && rankingBadgeStyle === "netflix" && topBadge?.type === "rank"
     let left: number
     if (isRightRibbon) {
       // Stremio: logo network ancorato a destra, a sinistra del nastro quando presente
