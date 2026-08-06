@@ -130,7 +130,7 @@ export function PosterCarousel() {
         onMouseLeave={() => setIsHovering(false)}
       >
         {showLeft && (
-          <button
+          <button type="button"
             onClick={() => scrollTo(-1)}
             className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-zinc-900/80 border border-zinc-700/50 backdrop-blur-xl flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-800/80 active:scale-90 transition-all shadow-xl"
             aria-label="Scorri a sinistra"
@@ -196,7 +196,7 @@ export function PosterCarousel() {
         </div>
 
         {showRight && (
-          <button
+          <button type="button"
             onClick={() => scrollTo(1)}
             className="absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-zinc-900/80 border border-zinc-700/50 backdrop-blur-xl flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-800/80 active:scale-90 transition-all shadow-xl"
             aria-label="Scorri a destra"

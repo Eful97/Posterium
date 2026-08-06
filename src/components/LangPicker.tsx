@@ -17,7 +17,7 @@ export function LangPicker({ onPick }: { onPick: (code: string) => void }) {
         </div>
         <div className="grid grid-cols-2 gap-2">
           {PICKER_LANGS.map((l) => (
-            <button key={l.code} onClick={() => onPick(l.code)} className="surface-card flex items-center gap-2 px-4 py-3.5 rounded-2xl hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 text-left group">
+            <button type="button" key={l.code} onClick={() => onPick(l.code)} className="surface-card flex items-center gap-2 px-4 py-3.5 rounded-2xl hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 text-left group">
               <span className="text-2xl shrink-0">{LANG_FLAGS[l.code] || <Globe className="w-6 h-6" />}</span>
               <div>
                 <p className="text-sm font-medium text-zinc-200 group-hover:text-accent transition-colors">{l.name}</p>

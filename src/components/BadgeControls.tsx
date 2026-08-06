@@ -145,7 +145,7 @@ export function BadgeControls() {
             placeholder="#555555"
           />
           {p.accentColor && (
-            <button
+            <button type="button"
               onClick={() => p.setAccentColor(null)}
               className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors px-1"
               title="Reset to auto-detect"
@@ -155,7 +155,7 @@ export function BadgeControls() {
       </div>
 
       <div className="mt-3 pt-3 border-t border-zinc-800/60">
-        <button aria-label={ed.blurEnabled ? t("ui.blurDisabled") : t("ui.blurEnabled")}
+        <button type="button" aria-label={ed.blurEnabled ? t("ui.blurDisabled") : t("ui.blurEnabled")}
                 onClick={() => ed.setBlurEnabled(!ed.blurEnabled)}
                 className={`w-full mb-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-150 ${ed.blurEnabled ? "bg-white/10 text-white shadow-sm" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}>
           <span className="flex items-center gap-1.5 justify-center">

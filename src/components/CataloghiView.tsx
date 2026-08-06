@@ -99,7 +99,7 @@ export function CataloghiView() {
     <div className="max-w-6xl mx-auto animate-fade-scale-in">
       <ScrollReveal animation="fade-up-fast">
         <div className="mb-6">
-          <button
+          <button type="button"
             onClick={() => { window.history.pushState({ view: "edit" }, ""); p.setView("edit") }}
             className="text-xs text-zinc-400 hover:text-white transition-colors mb-3 inline-flex items-center gap-1"
           >
@@ -116,7 +116,7 @@ export function CataloghiView() {
       {/* Platform Filter Chips */}
       <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-8">
         {PLATFORM_FILTERS.map((f) => (
-          <button
+          <button type="button"
             key={f.id}
             onClick={() => setPlatformFilter(f.id)}
             className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 active:scale-95 ${
@@ -260,7 +260,7 @@ export function CataloghiView() {
           <div className="max-w-7xl mx-auto px-4 py-6 min-h-screen" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-zinc-50">{gridTitle}</h2>
-              <button
+              <button type="button"
                 onClick={() => setGridItems(null)}
                 className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-all"
                 aria-label="Chiudi"
@@ -275,7 +275,7 @@ export function CataloghiView() {
                 const isSaved = item.tmdbId ? savedKeys.has(itemKey) : false
 
                 return (
-                  <button
+                  <button type="button"
                     key={`${item.mediaType}:${item.tmdbId ?? idx}`}
                     onClick={() => {
                       if (item.tmdbId) {

@@ -81,7 +81,7 @@ export function OnboardingTour() {
         }`}
       >
         {/* Close button */}
-        <button
+        <button type="button"
           onClick={close}
           aria-label="Chiudi"
           className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-zinc-500 hover:bg-white/10 hover:text-zinc-300 transition-all duration-200 active:scale-90 z-10"
@@ -112,7 +112,7 @@ export function OnboardingTour() {
           {/* Dots */}
           <div className="flex items-center justify-center gap-2 mb-5">
             {STEPS.map((_, i) => (
-              <button
+              <button type="button"
                 key={i}
                 onClick={() => setStep(i)}
                 className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
@@ -128,7 +128,7 @@ export function OnboardingTour() {
           {/* Navigation buttons */}
           <div className="flex items-center gap-3">
             {step > 0 ? (
-              <button
+              <button type="button"
                 onClick={() => setStep((s) => s - 1)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium text-zinc-300 hover:bg-white/5 hover:text-white transition-all duration-150 active:scale-95"
               >
@@ -140,14 +140,14 @@ export function OnboardingTour() {
             )}
 
             {isLast ? (
-              <button
+              <button type="button"
                 onClick={close}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold bg-accent-orange text-white hover:brightness-110 transition-all duration-150 active:scale-95 shadow-lg shadow-accent-orange/20"
               >
                 Inizia!
               </button>
             ) : (
-              <button
+              <button type="button"
                 onClick={() => setStep((s) => s + 1)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium text-white bg-white/10 hover:bg-white/20 transition-all duration-150 active:scale-95"
               >
@@ -159,7 +159,7 @@ export function OnboardingTour() {
         </div>
 
         {/* Skip */}
-        <button
+        <button type="button"
           onClick={close}
           className="w-full py-2.5 text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-150 border-t border-white/5"
         >

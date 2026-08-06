@@ -107,7 +107,7 @@ export function CollectionBar({
     <>
       <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1 -mb-1" ref={scrollRef}>
         {/* "Tutti" chip */}
-        <button
+        <button type="button"
           onClick={() => onSelect(null)}
           className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 active:scale-95 ${
             activeId === null
@@ -140,7 +140,7 @@ export function CollectionBar({
                     className="w-24 bg-transparent text-xs text-white outline-none"
                     maxLength={40}
                   />
-                  <button onClick={() => handleRename(col.id)} className="p-0.5 text-zinc-400 hover:text-accent-orange transition-colors">
+                  <button type="button" onClick={() => handleRename(col.id)} className="p-0.5 text-zinc-400 hover:text-accent-orange transition-colors">
                     <Check className="w-3 h-3" />
                   </button>
                 </div>
@@ -152,7 +152,7 @@ export function CollectionBar({
                       : "collection-chip-glass text-zinc-400"
                   }`}
                 >
-                  <button
+                  <button type="button"
                     onClick={() => onSelect(isActive ? null : col.id)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium active:scale-95 transition-transform"
                   >
@@ -161,7 +161,7 @@ export function CollectionBar({
                   </button>
 
                   <div className="w-px bg-zinc-700/30 my-1" />
-                  <button
+                  <button type="button"
                     onClick={(e) => {
                       if (menuOpen === col.id) {
                         closeMenu()
@@ -203,15 +203,15 @@ export function CollectionBar({
               className="w-28 bg-transparent text-xs text-white outline-none placeholder:text-zinc-500"
               maxLength={40}
             />
-            <button onClick={handleCreate} className="p-0.5 text-accent-orange hover:text-accent-orange/80 transition-colors">
+            <button type="button" onClick={handleCreate} className="p-0.5 text-accent-orange hover:text-accent-orange/80 transition-colors">
               <Check className="w-3 h-3" />
             </button>
-            <button onClick={() => { setCreating(false); setNameInput("") }} className="p-0.5 text-zinc-500 hover:text-zinc-300 transition-colors">
+            <button type="button" onClick={() => { setCreating(false); setNameInput("") }} className="p-0.5 text-zinc-500 hover:text-zinc-300 transition-colors">
               <X className="w-3 h-3" />
             </button>
           </div>
         ) : (
-          <button
+          <button type="button"
             onClick={() => setCreating(true)}
             className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] transition-all duration-150 active:scale-95"
           >
@@ -236,14 +236,14 @@ export function CollectionBar({
             .filter((c) => c.id === menuOpen)
             .map((col) => (
               <React.Fragment key={col.id}>
-                <button
+                <button type="button"
                   onClick={() => { closeMenu(); setEditing(col.id); setNameInput(col.name) }}
                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-200 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5 text-zinc-400" />
                   Rinomina
                 </button>
-                <button
+                <button type="button"
                   onClick={() => { closeMenu(); onDelete(col.id) }}
                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/15 transition-colors"
                 >

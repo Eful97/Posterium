@@ -119,7 +119,7 @@ export function PosterLightbox({
         }}
       >
         {/* Close button */}
-        <button
+        <button type="button"
           autoFocus
           onClick={handleClose}
           aria-label={t("ui.cancel")}
@@ -182,7 +182,7 @@ export function PosterLightbox({
               {collections.map((col) => {
                 const checked = isInCol(col.id)
                 return (
-                  <button
+                  <button type="button"
                     key={col.id}
                     onClick={() => {
                       if (checked) {

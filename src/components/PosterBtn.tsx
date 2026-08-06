@@ -17,7 +17,7 @@ interface PosterBtnProps {
 export const PosterBtn = React.memo(function PosterBtn({ img, active, onSelect, title, staggerIndex }: PosterBtnProps) {
   const { t } = useT()
   return (
-    <button
+    <button type="button"
       onClick={() => onSelect(img)}
       className={`poster-tile group relative w-full rounded-xl overflow-hidden transition-all duration-200 ease-out ${active ? "poster-tile-active scale-[1.02]" : ""}`}
       title={title || ""}

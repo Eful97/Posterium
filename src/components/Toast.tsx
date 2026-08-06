@@ -105,7 +105,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
              toast.type === "warning" ? <AlertTriangle className="w-4 h-4 shrink-0 opacity-90" /> :
              <CheckCircle2 className="w-4 h-4 shrink-0 opacity-90" />}
             <p className="text-xs font-medium flex-1 leading-relaxed">{toast.message}</p>
-            <button onClick={() => dismissToast(toast.id)} className="shrink-0 opacity-40 hover:opacity-80 transition-opacity press-scale ml-1">
+            <button type="button" onClick={() => dismissToast(toast.id)} className="shrink-0 opacity-40 hover:opacity-80 transition-opacity press-scale ml-1">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>

@@ -42,7 +42,7 @@ export function SearchView() {
           <div className="absolute top-full left-0 right-0 mt-2 glass-panel rounded-2xl p-2 z-50 animate-fade-scale-in">
             <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
             {s.recentSearches.map((term) => (
-              <button key={term} onMouseDown={(e) => e.preventDefault()} onClick={() => { s.setQuery(term); s.doSearch(term); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
+              <button type="button" key={term} onMouseDown={(e) => e.preventDefault()} onClick={() => { s.setQuery(term); s.doSearch(term); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
                 <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
                 <span className="flex-1 truncate">{term}</span>
                 <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); s.removeRecentSearch(term) }} aria-label={t("ui.remove")} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
@@ -67,7 +67,7 @@ export function SearchView() {
           {s.results.map((r, idx) => {
             const mapping = mappingsMap.get(`${r.media_type}:${r.id}`)
             return (
-              <button key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="surface-card group relative rounded-2xl overflow-hidden transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in hover:-translate-y-0.5" style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
+              <button type="button" key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="surface-card group relative rounded-2xl overflow-hidden transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in hover:-translate-y-0.5" style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
                 {r.poster_path && <div className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none" style={{ backgroundImage: `url(${posterUrl(r.poster_path, "w92")})`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(24px) saturate(1.4)", transform: "scale(1.3)" }} />}
                 <div className="aspect-[2/3] bg-zinc-900/80 overflow-hidden flex items-center justify-center relative z-[1]">
                   {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
@@ -85,7 +85,7 @@ export function SearchView() {
           </div>
           {s.searchPage < s.totalPages && (
             <div className="flex justify-center mt-6">
-              <button aria-label={t("ui.showMore")} disabled={loadingMore || s.searching} onClick={handleLoadMore} className="px-6 py-3 rounded-xl text-sm font-medium bg-zinc-800 border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+              <button type="button" aria-label={t("ui.showMore")} disabled={loadingMore || s.searching} onClick={handleLoadMore} className="px-6 py-3 rounded-xl text-sm font-medium bg-zinc-800 border border-zinc-700 hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
                 {loadingMore ? t("ui.loading") : <><ChevronDown className="w-4 h-4" /> {t("ui.showMore")}</>}
               </button>
             </div>
@@ -115,7 +115,7 @@ export function SearchView() {
           </div>
           <p className="text-red-400 text-sm font-medium mb-1">{t("ui.searchError")}</p>
           <p className="text-zinc-500 text-xs mb-4 max-w-xs mx-auto leading-relaxed">{s.error}</p>
-          <button onClick={() => { s.setError(null); s.doSearch(s.query) }} className="px-5 py-2 rounded-xl text-xs font-semibold bg-red-900/30 border border-red-800/40 text-red-300 hover:bg-red-900/50 hover:text-red-200 active:scale-95 transition-all duration-200 press-scale">{t("ui.retry")}</button>
+          <button type="button" onClick={() => { s.setError(null); s.doSearch(s.query) }} className="px-5 py-2 rounded-xl text-xs font-semibold bg-red-900/30 border border-red-800/40 text-red-300 hover:bg-red-900/50 hover:text-red-200 active:scale-95 transition-all duration-200 press-scale">{t("ui.retry")}</button>
         </div>
       )}
       {s.results.length === 0 && !s.searching && !showRecent && !s.error && s.query.length >= 2 && tmdbKey && (

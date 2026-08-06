@@ -33,7 +33,7 @@ const RankCard = React.memo(function RankCard({ item, onClick, isFirst, staggerI
   const imgSrc = item.poster_path || item.posterPath
   const label = item.title || item.name || ""
   return (
-    <button
+    <button type="button"
       onClick={onClick}
       aria-label={label}
       className="group rank-btn relative text-left flex-shrink-0 animate-stagger-in snap-start"

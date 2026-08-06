@@ -25,7 +25,7 @@ export function TransformControls() {
     <>
       <div className="control-row flex items-center justify-between mb-2 px-1">
         <h4 className="control-label">{t("ui.transform")}</h4>
-        <button aria-label={t("ui.reset")}
+        <button type="button" aria-label={t("ui.reset")}
                 onClick={() => { defaultLogoScale(); ed.setLogoOffsetX(0); ed.setLogoOffsetY(0) }}
                 className="text-xs text-zinc-400 hover:text-accent transition-colors px-2 py-0.5 rounded-md border border-zinc-700/50 hover:border-accent/30">
           {t("ui.reset")}

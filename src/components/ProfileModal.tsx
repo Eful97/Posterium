@@ -203,7 +203,7 @@ export function ProfileModal({ isOpen, onClose }: Props) {
             </div>
           </div>
           {p.profileId && (
-            <button
+            <button type="button"
               aria-label="Chiudi"
               onClick={onClose}
               className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"

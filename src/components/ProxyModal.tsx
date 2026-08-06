@@ -62,7 +62,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
               <p className="text-xs text-zinc-400">Inietta i poster di Posterium in qualsiasi Add-on Stremio</p>
             </div>
           </div>
-          <button
+          <button type="button"
             aria-label="Chiudi"
             onClick={onClose}
             className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"

@@ -37,7 +37,7 @@ export default function EditView() {
         <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
           <p className="text-xs text-zinc-400 font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
           {p.recentSearches.map((s) => (
-            <button key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
+            <button type="button" key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { p.setQuery(s); p.setView("search"); p.doSearch(s); window.history.pushState({ view: "search" }, ""); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
               <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
               <span className="flex-1 truncate">{s}</span>
               <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); p.removeRecentSearch(s) }} aria-label={t("ui.remove")} className="text-red-400 hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
@@ -96,7 +96,7 @@ export default function EditView() {
       {p.selected && (
         <div className="flex flex-col items-center">
           <div className="w-full max-w-[1360px] mx-auto mb-3 flex items-center justify-between">
-            <button
+            <button type="button"
               onClick={() => { window.history.back() }}
               className="text-xs text-zinc-300 hover:text-white transition-all inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 active:scale-95 shadow-sm"
             >
@@ -170,8 +170,8 @@ export default function EditView() {
 
                 {p.previewPoster && p.selected && (
                   <div className="mt-4 w-full max-w-[360px] grid grid-cols-3 gap-2">
-                    <button aria-label={t("ui.savePoster")} onClick={p.saveConfig} className="btn-primary py-2 px-3 rounded-xl active:scale-[0.97]">{t("ui.savePoster")}</button>
-                    <button aria-label={t("ui.testUrl")} onClick={() => {
+                    <button type="button" aria-label={t("ui.savePoster")} onClick={p.saveConfig} className="btn-primary py-2 px-3 rounded-xl active:scale-[0.97]">{t("ui.savePoster")}</button>
+                    <button type="button" aria-label={t("ui.testUrl")} onClick={() => {
                       if (!p.selected || !p.previewPoster) return
                       const url = buildPreviewUrl({
                         selected: p.selected,
@@ -215,7 +215,7 @@ export default function EditView() {
                       const hasMapping = p.mappingsMap.get(key)
                       if (!hasMapping) return null
                       return (
-                        <button aria-label={t("ui.remove")} onClick={() => { p.removeMapping(hasMapping).catch((e) => console.error("[posterium] Remove mapping failed:", e)); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="btn-danger py-2 px-3 rounded-xl text-[11px]">{t("ui.remove")}</button>
+                        <button type="button" aria-label={t("ui.remove")} onClick={() => { p.removeMapping(hasMapping).catch((e) => console.error("[posterium] Remove mapping failed:", e)); p.setSelected(null); p.setPreviewPoster(null); p.setSelectedLogo(null); p.setPreviewId(null) }} className="btn-danger py-2 px-3 rounded-xl text-[11px]">{t("ui.remove")}</button>
                       )
                     })()}
                   </div>
@@ -261,7 +261,7 @@ export default function EditView() {
             </div>
             <h2 className="text-lg font-bold text-zinc-100 mb-2">{t("ui.welcomePanelTitle")}</h2>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">{t("ui.noKey")}</p>
-            <button onClick={() => p.setSettingsOpen(true)} className="btn-primary px-5 py-2.5 text-sm">
+            <button type="button" onClick={() => p.setSettingsOpen(true)} className="btn-primary px-5 py-2.5 text-sm">
               {t("ui.openSettings")}
             </button>
             <div className="grid grid-cols-3 gap-3 mt-8 w-full">
@@ -319,7 +319,7 @@ export default function EditView() {
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
-                <button onClick={() => { window.history.pushState({ view: "cataloghi" }, ""); p.setView("cataloghi") }} className="btn-primary px-5 py-2.5 whitespace-nowrap">
+                <button type="button" onClick={() => { window.history.pushState({ view: "cataloghi" }, ""); p.setView("cataloghi") }} className="btn-primary px-5 py-2.5 whitespace-nowrap">
                   {t("ui.heroCatalogsCta")}
                 </button>
               </div>

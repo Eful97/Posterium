@@ -238,7 +238,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
       {showTabs && posterTabs.length > 1 && (
         <div className="flex gap-1 mb-3 overflow-x-auto scrollbar-none">
           {posterTabs.map((tab) => (
-            <button
+            <button type="button"
               aria-label={tab.label}
               key={tab.key}
               onClick={() => setActiveGroup(tab.key)}
@@ -261,7 +261,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
           {ed.rotationPosters.length > 1 && (
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3" />{t("ui.autoRotate")}</span>
-              <button
+              <button type="button"
                 aria-label={ed.autoRotateClean ? t("ui.removeFromRotation") : t("ui.autoRotate")}
                 onClick={toggleAutoRotateClean}
                 className={`px-2 py-1 text-[11px] font-semibold rounded-lg border transition-all ${ed.autoRotateClean ? "bg-accent-orange/20 text-accent-orange border-accent-orange/25 animate-pulse-ring" : "bg-white/5 text-zinc-400 border-white/10"}`}
@@ -274,14 +274,14 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
             <div className="flex items-center justify-between">
               <span className="control-label flex items-center gap-1"><ArrowUpDown className="w-3 h-3" />{t("ui.posterOrder")}</span>
               <div className="segmented-control">
-                <button
+                <button type="button"
                   aria-label={t("ui.sortByTmdb")}
                   onClick={() => setSortByFit(false)}
                   className={`segmented-option ${!sortByFit ? "segmented-option-active" : ""}`}
                 >
                   {t("ui.tmdb")}
                 </button>
-                <button
+                <button type="button"
                   aria-label={t("ui.sortByBestFit")}
                   onClick={() => setSortByFit(true)}
                   className={`segmented-option ${sortByFit ? "segmented-option-active" : ""}`}
@@ -292,7 +292,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
             </div>
           )}
           {(bestPoster && !isBestSelected && !fitLoading) && (
-            <button
+            <button type="button"
               aria-label={t("ui.chooseBestPosterAria")}
               onClick={() => selectPoster(bestPoster)}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-150 bg-accent-orange/15 text-accent-orange hover:bg-accent-orange/25 active:scale-[0.98]"
@@ -339,7 +339,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
                     </div>
                   )}
                   <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <button
+                    <button type="button"
                       aria-label={inRotation ? t("ui.removeFromRotation") : t("ui.addToRotation")}
                       onClick={(e) => { e.stopPropagation(); toggleRotation(img.file_path) }}
                       className={`w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 ${inRotation ? "bg-accent-orange text-white border-accent-orange shadow-sm shadow-accent-orange/40" : "bg-black/55 border-white/10 text-zinc-200 hover:bg-accent-orange/90 hover:text-white hover:border-accent-orange/60"}`}
@@ -347,7 +347,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
                     >
                       {inRotation ? <Check className="w-3.5 h-3.5" /> : <RotateCcw className="w-3.5 h-3.5" />}
                     </button>
-                    <button
+                    <button type="button"
                       aria-label={t("ui.excludePoster")}
                       onClick={(e) => { e.stopPropagation(); excludePoster(img.file_path) }}
                       className="w-6 h-6 rounded-lg flex items-center justify-center backdrop-blur-md border transition-all duration-150 bg-black/55 border-white/10 text-zinc-300 hover:bg-red-500/90 hover:text-white hover:border-red-400/60"
@@ -460,7 +460,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
             {excludedSaveState === "saved" && <span className="text-[10px] text-green-500">{t("ui.saveStateSaved")}</span>}
             {excludedSaveState === "error" && <span className="text-[10px] text-red-400">{t("ui.saveStateError")}</span>}
           </span>
-          <button onClick={() => { ed.setExcludedPosters([]); setExcludedSaveState("saving"); p.autoSaveExcludedPosters([], ed.rotationPosters).then(() => { setExcludedSaveState("saved"); toast.success(t("ui.cancel")) }).catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) }) }} className="text-[11px] text-accent-orange hover:text-orange-300">
+          <button type="button" onClick={() => { ed.setExcludedPosters([]); setExcludedSaveState("saving"); p.autoSaveExcludedPosters([], ed.rotationPosters).then(() => { setExcludedSaveState("saved"); toast.success(t("ui.cancel")) }).catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) }) }} className="text-[11px] text-accent-orange hover:text-orange-300">
             {t("ui.restore")}
           </button>
         </div>

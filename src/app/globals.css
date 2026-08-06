@@ -1435,4 +1435,17 @@ select:focus-visible {
   border-color: rgba(251,191,36,0.30);
 }
 
+/* Rispetta la preferenza utente per il moto ridotto: disattiva animazioni,
+   transizioni e scroll-behavior smooth. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 

@@ -29,7 +29,7 @@ export function EditorPanel({ title, tabs, activeTab, onTabChange, children, cla
           {tabs ? (
             <div className="flex gap-1 overflow-x-auto scrollbar-none" role="tablist" onKeyDown={handleKeyDown}>
               {tabs.map((tab) => (
-                <button
+                <button type="button"
                   key={tab.key}
                   role="tab"
                   aria-selected={activeTab === tab.key}

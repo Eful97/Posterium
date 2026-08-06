@@ -61,7 +61,7 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
     <div>
       <div className="flex gap-1 mb-3 overflow-x-auto scrollbar-none">
         {logoTabs.map((tab) => (
-          <button
+          <button type="button"
             aria-label={tab.label}
             key={tab.key}
             onClick={() => setActiveLogoGroup(tab.key)}
@@ -92,7 +92,7 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
                 {best.map((img) => {
                   const isActive = selectedLogo?.file_path === img.file_path
                   return (
-                    <button key={img.file_path} disabled={disabled} onClick={() => selectLogo(img)} className={`poster-tile group relative p-2 rounded-xl transition-all duration-200 ease-out flex items-center justify-center h-20 ${disabled ? "opacity-40 cursor-not-allowed" : ""} ${isActive ? "poster-tile-active bg-accent-orange/10" : ""}`} title={isActive ? t("ui.logoSelected") : undefined}>
+                    <button type="button" key={img.file_path} disabled={disabled} onClick={() => selectLogo(img)} className={`poster-tile group relative p-2 rounded-xl transition-all duration-200 ease-out flex items-center justify-center h-20 ${disabled ? "opacity-40 cursor-not-allowed" : ""} ${isActive ? "poster-tile-active bg-accent-orange/10" : ""}`} title={isActive ? t("ui.logoSelected") : undefined}>
                       {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
                       <img src={posterUrl(img.file_path, "w154")} alt="" loading="lazy" decoding="async" className="max-h-14 max-w-full object-contain transition-transform duration-200 group-hover:scale-110" />
                       {isActive && <div className="absolute top-1 right-1 rounded-md bg-accent-orange text-white p-0.5 shadow-sm shadow-accent-orange/40"><Check className="w-3 h-3" /></div>}
@@ -124,12 +124,12 @@ export const LogoOptions = React.memo(function LogoOptions({ logos, selectedLogo
         </div>
       )}
       {!selectedLogo && (
-        <button aria-label={logoDisabled ? t("ui.removeLogo") : t("ui.enableLogos")} disabled={disabled} onClick={() => setLogoDisabled(!logoDisabled)} className={`mt-3 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : logoDisabled ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"}`}>
+        <button type="button" aria-label={logoDisabled ? t("ui.removeLogo") : t("ui.enableLogos")} disabled={disabled} onClick={() => setLogoDisabled(!logoDisabled)} className={`mt-3 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : logoDisabled ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"}`}>
           <span className="flex items-center justify-center gap-1.5">{logoDisabled ? t("ui.logosDisabled") : t("ui.disableLogos")}</span>
         </button>
       )}
       {selectedLogo && (
-        <button aria-label={t("ui.removeLogo")} disabled={disabled} onClick={removeLogo} className={`mt-2 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-red-300 hover:border-red-500/30"}`}>
+        <button type="button" aria-label={t("ui.removeLogo")} disabled={disabled} onClick={removeLogo} className={`mt-2 w-full h-9 rounded-lg border text-[11px] font-semibold transition-all ${disabled ? "bg-zinc-800/30 text-zinc-600 cursor-not-allowed border-zinc-800" : "border-zinc-800 bg-white/[0.03] text-zinc-400 hover:text-red-300 hover:border-red-500/30"}`}>
           <span className="flex items-center justify-center gap-1.5"><Trash2 className="w-3 h-3" />{t("ui.removeLogo")}</span>
         </button>
       )}
