@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server"
 import { getJWRankings } from "@/lib/justwatch"
+
+// Vercel: il warmup itera decine di poster in batch → richiede il massimo
+// consentito. Su Hobby (10s) non completa comunque; su Pro vale 60s.
+export const maxDuration = 60
 import { buildPosterPublicUrl, getOriginFromRequest } from "@/lib/poster-public-url"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"

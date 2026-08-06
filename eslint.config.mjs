@@ -25,6 +25,8 @@ const eslintConfig = defineConfig([
     // Artefatti di build E2E (distDir .next-e2e di playwright.config.ts):
     // senza questo ignore, `npm run lint` fallisce in locale dopo i test E2E.
     ".next-e2e/**",
+    // DistDir di load-smoke.mjs (POSTERIUM_DATA_DIR/NEXT_DIST_DIR dedicati).
+    ".next-load/**",
   ]),
 ]);
 

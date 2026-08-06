@@ -87,6 +87,24 @@ Il repo è già configurato per HF Spaces Docker: frontmatter `sdk: docker` + `a
 
 ---
 
+### ▲ Deploy Vercel (Gratis, CDN rapido)
+
+Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). Per la persistenza è **obbligatorio** collegare uno store KV (Vercel/Upstash): il filesystem serverless è read-only e i salvataggi senza KV andrebbero persi.
+
+1. **Importa il repo** su [vercel.com](https://vercel.com) (framework: Next.js, build default `npm run build`).
+2. **Variabili d'ambiente** (Project Settings → Environment Variables):
+   - `TMDB_API_KEY`: chiave API TMDB
+   - `KV_REST_API_URL` + `KV_REST_API_TOKEN`: store **KV** (Upstash) — **richiesti** per salvare poster e profili
+   - opzionali: `MDBLIST_API_KEY`, `OMDB_API_KEY`, `POSTERIUM_ADMIN_TOKEN`
+3. **Limiti da conoscere**:
+   - Durata funzione: **Hobby 10s** (Pro 60s). I render poster (1–3.5s) e i cataloghi freddi (~10s) rientrano in genere; su Hobby un burst pesante può andare in timeout.
+   - Il **warmup** (`POST /api/warmup`) **non completa su Hobby** (supera i 10s). Non è critico: le griglie poster si riscaldano con i nuovi default di attesa slot.
+   - La cache poster in-memory si svuota al cold start (Vercel tiene le funzioni calde; il primo hit freddo fa il render pieno).
+
+📌 *URL Manifest Stremio*: `https://<tuo-app>.vercel.app/manifest.json` (o `/u/<uuid>/manifest.json` per il tuo profilo).
+
+---
+
 ### 🦾 Deploy Oracle Cloud Always Free (Gratis, 24/7)
 
 L'unica opzione gratuita con CPU sufficiente per i render poster di Posterium: **4 OCPU ARM (Ampere A1) + 24GB RAM**, gratis per sempre. I tier free di Render/Northflank (0.1–0.2 vCPU) sono troppo deboli.

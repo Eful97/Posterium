@@ -57,6 +57,11 @@ import { createLogger } from "@/lib/logger"
 import { resolvePosterRenderConfig } from "@/lib/poster-config"
 import { selectBestLogo, logoBestLogoFallbackReason } from "@/lib/logo-selection"
 
+// Vercel: limite massimo di esecuzione della funzione. Il render poster ha un
+// deadline interno di 30s (POSTERIUM_RENDER_TIMEOUT_MS) → 40s copre il caso
+// peggiore. Su Hobby Vercel impone comunque 10s; su Pro vale questo valore.
+export const maxDuration = 40
+
 const log = createLogger("poster")
 
 // Deadline complessivo del render (F2): limite sull'intera pipeline
