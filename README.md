@@ -64,7 +64,7 @@ Posterium riconosce automaticamente rete/produttore dal catalogo (TMDB, Wikidata
 
 Supportati: **Netflix**, **HBO Max**, **Disney+**, **Prime Video**, **Apple TV+**, **Paramount+**, **Rai**, **Crunchyroll**, **Sky** (include **NOW**, stesso servizio di streaming), **Mediaset Infinity**, **Tubi**, **Pluto TV**.
 
-> I loghi provengono da [Wikimedia Commons](https://commons.wikimedia.org/) e sono serviti da `public/networks/`. Il matching è case-insensitive e specifico: ad esempio *NOW* viene riconosciuto solo come parola intera (evitando falsi positivi tipo *Snowfall*), mentre *Sky* copre anche *Sky Atlantic* e *Sky Italia*.
+> I loghi provengono da [Wikimedia Commons](https://commons.wikimedia.org/) e sono serviti da `public/networks/`. Il matching è case-insensitive e specifico per evitare falsi positivi: *NOW* viene riconosciuto solo quando il nome inizia con *now* (es. *NOW*, *Now TV*), così da non confonderlo con parole come *Snowfall* o *Don't Look Now*; *Sky* copre anche *Sky Atlantic* e *Sky Italia* ma non *Skydance* o *Skywalker*.
 
 ---
 
