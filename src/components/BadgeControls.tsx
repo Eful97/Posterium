@@ -14,7 +14,6 @@ import { getUpcomingReleaseLabel } from "@/lib/release-badge"
 import { isPrefixedKey, badgeKey } from "@/lib/i18n"
 import { getAllBadgeOptions } from "@/lib/badge-priority"
 import { defaultGradientHeightForPoster } from "@/lib/gradient-defaults"
-import { BADGE_FONTS } from "@/lib/badge-fonts"
 
 export function BadgeControls() {
   const p = useP()
@@ -129,17 +128,6 @@ export function BadgeControls() {
         <label className="text-xs text-zinc-400 font-medium block mb-2 px-1">{t("ui.styleGenreBadge")}</label>
         <div className="px-1">
           <BadgeStyleSelector value={ed.badgeStyle} options={["shadow","pill","bar","colored","bordo","vetro"]} onChange={ed.setBadgeStyle} t={t} accentColor={p.accentColor} />
-        </div>
-        <div className="px-1 mt-2 flex items-center justify-between gap-2">
-          <span className="text-xs text-zinc-400 shrink-0">Font</span>
-          <select
-            value={ed.badgeFont}
-            onChange={(e) => ed.setBadgeFont(e.target.value)}
-            className="editor-input flex-1 text-right px-1.5 py-1 cursor-pointer"
-            aria-label="Badge font"
-          >
-            {BADGE_FONTS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
-          </select>
         </div>
         <div className="flex items-center gap-2 justify-center mt-2 px-1">
           <input

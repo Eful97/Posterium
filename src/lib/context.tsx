@@ -249,14 +249,12 @@ export function usePosterium(): PosteriumCtx {
     badgeRating, setBadgeRating,
     badgeStyle, setBadgeStyle,
     rankingBadgeStyle, setRankingBadgeStyle,
-    badgeFont, setBadgeFont,
     customBadge, setCustomBadge,
     networkLogo, setNetworkLogo,
     ribbonSide,
     // Defaults
     defaultBadgeStyle,
     defaultRankingBadgeStyle,
-    defaultBadgeFont,
     defaultBlurEnabled,
     defaultBlurIntensity,
     defaultBlurFade,
@@ -505,13 +503,13 @@ export function usePosterium(): PosteriumCtx {
         metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
         topEdgeColor, accentColor, lang, tmdbKey,
       },
-      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeFont, badgeGenre, badgeYear, badgeRating, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide }
+      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide }
     )
     setPreviewUrl(url)
   }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, selectedBackdrop,
     logoScale, logoOffsetX, logoOffsetY, backdropScale, backdropOffsetX, backdropOffsetY,
     metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, accentColor, lang, tmdbKey,
-    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeFont, badgeGenre, badgeYear, badgeRating, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide])
+    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide])
 
   useEffect(() => {
     if (!navigation.selected) { setPreviewUrl(""); return }
@@ -641,7 +639,6 @@ export function usePosterium(): PosteriumCtx {
     if (existing) {
       setBadgeStyle(existing.badgeStyle ?? defaultBadgeStyle)
       setRankingBadgeStyle(existing.rankingBadgeStyle ?? defaultRankingBadgeStyle)
-      setBadgeFont(existing.badgeFont ?? defaultBadgeFont)
       setGlobalBadges(existing.showBadges ?? true)
       setRankingBadges(existing.rankingBadges ?? true)
       setBadgeGenre(existing.badgeGenre ?? true)
@@ -820,9 +817,9 @@ export function usePosterium(): PosteriumCtx {
     mappingsMap, loadMappings, logoScale, logoOffsetX, logoOffsetY,
     selectedBackdrop, setSelectedBackdrop: setSelectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY,
     setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
-    globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle, badgeFont,
+    globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
     badgeGenre, badgeYear, badgeRating,
-    defaultBadgeStyle, defaultRankingBadgeStyle, defaultBadgeFont, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
+    defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     setGradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
     setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, ribbonSide, lang, profileId,

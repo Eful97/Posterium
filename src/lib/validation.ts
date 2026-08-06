@@ -1,8 +1,5 @@
 import { z } from "zod"
 import { BADGE_STYLES, RANKING_BADGE_STYLES } from "./badge-styles"
-import { BADGE_FONT_KEYS } from "./badge-fonts"
-
-const badgeFontEnum = z.enum(BADGE_FONT_KEYS as [string, ...string[]])
 
 export const mappingSchema = z.object({
   tmdbId: z.number().int().positive(),
@@ -46,7 +43,6 @@ export const mappingSchema = z.object({
   gradientHeight: z.number().nullable().optional(),
   badgeStyle: z.enum(BADGE_STYLES).nullable().optional(),
   rankingBadgeStyle: z.enum(RANKING_BADGE_STYLES).nullable().optional(),
-  badgeFont: badgeFontEnum.nullable().optional(),
   cleanPosters: z.array(z.string()).nullable().optional(),
   cleanPosterIndex: z.number().int().min(0).nullable().optional(),
   cleanPosterUpdatedAt: z.string().nullable().optional(),
@@ -57,7 +53,6 @@ export const mappingSchema = z.object({
   ribbonSide: z.enum(["left", "right"]).nullable().optional(),
   defaultBadgeStyle: z.enum(BADGE_STYLES).nullable().optional(),
   defaultRankingBadgeStyle: z.enum(RANKING_BADGE_STYLES).nullable().optional(),
-  defaultBadgeFont: badgeFontEnum.nullable().optional(),
 })
 
 export type MappingInput = z.infer<typeof mappingSchema>

@@ -51,8 +51,6 @@ export interface GenerationInput {
   voteAverage: number | null
   badgeStyle: BadgeStyle
   rankingBadgeStyle: RankingBadgeStyle
-  /** Font dei badge (key del catalogo in badge-fonts.ts). */
-  badgeFont: string
   /** Quali componenti del badge genere/rating mostrare (default tutti ON). */
   badgeGenre: boolean
   badgeYear: boolean
@@ -122,7 +120,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     backdropScale, backdropOffsetX, backdropOffsetY,
     blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
     badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
-    rankingBadgeStyle, badgeFont, badgeGenre, badgeYear, badgeRating,
+    rankingBadgeStyle, badgeGenre, badgeYear, badgeRating,
     topLight, targetCenter, ribbonSide,
     logoScale, logoOffsetX, logoOffsetY,
     mediaType, finalRank, animeRankResult,
@@ -284,10 +282,10 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   const isAnimeRank = topBadge?.type === "rank" && animeRankResult !== null && topBadge.rank === animeRankResult
 
   const genreBadgeKey = hasGenreBadge
-    ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, badgeFont, accentColorGenre, topLight, badgeGenre, badgeYear, badgeRating)
+    ? badgeCacheKey("genre", genreName, voteAverage, STD_W, year, badgeStyle, accentColorGenre, topLight, badgeGenre, badgeYear, badgeRating)
     : null
   const rankBadgeKey = topBadge
-    ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, badgeFont, accentColorRank, ribbonSide, isAnimeRank)
+    ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
     : null
 
   const [genreBadgeResult, rankBadgeResult] = await Promise.all([
@@ -296,7 +294,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
           || (() => {
               const existing = badgeInflight.get(genreBadgeKey) as Promise<{ png: Buffer; w: number; h: number } | null> | undefined
               if (existing) return existing
-              const p = renderGenreBadge(genreName ?? "", voteAverage ?? 0, STD_W, year, badgeStyle, accentColorGenre, topLight, { showGenre: badgeGenre, showYear: badgeYear, showRating: badgeRating }, badgeFont)
+              const p = renderGenreBadge(genreName ?? "", voteAverage ?? 0, STD_W, year, badgeStyle, accentColorGenre, topLight, { showGenre: badgeGenre, showYear: badgeYear, showRating: badgeRating })
                 .then((r) => { if (r) cacheSet(genreBadgeKey, r, ["badge"], BADGE_CACHE_TTL); return r })
                 .catch(() => null)
               p.finally(() => { badgeInflight.delete(genreBadgeKey) })
@@ -311,11 +309,11 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
               if (existing) return existing
               let p: Promise<{ png: Buffer; w: number; h: number; isRank?: boolean } | null>
               if (topBadge!.type === "extra") {
-                p = renderExtraBadge(topBadge!.label, STD_W, topLight, rankingBadgeStyle, accentColorRank, badgeFont)
+                p = renderExtraBadge(topBadge!.label, STD_W, topLight, rankingBadgeStyle, accentColorRank)
                   .then((r) => { const v = { ...r, isRank: false }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                   .catch(() => null)
               } else {
-                p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank, badgeFont)
+                p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
                   .then((r) => { const v = { ...r, isRank: true }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
                   .catch(() => null)
               }

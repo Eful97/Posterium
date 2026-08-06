@@ -12,8 +12,6 @@ interface BadgeParams {
   rankingBadges: boolean
   badgeStyle: BadgeStyle
   rankingBadgeStyle: RankingBadgeStyle
-  /** Font dei badge (key del catalogo in badge-fonts.ts). */
-  badgeFont?: string
   /** Componenti del badge genere/rating: `false` emette `bg/by/br=0`. */
   badgeGenre?: boolean
   badgeYear?: boolean
@@ -77,7 +75,6 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
     badgeRating: bp.badgeRating,
     badgeStyle: bp.badgeStyle,
     rankingBadgeStyle: bp.rankingBadgeStyle,
-    badgeFont: bp.badgeFont,
     gradientHeight: bp.gradientHeight,
     blurIntensity: bp.blurIntensity,
     blurFade: bp.blurFade,
@@ -127,7 +124,6 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   params.push(`bd=${bp.blurDarkness}`)
   params.push(`bs=${bp.badgeStyle}`)
   params.push(`rs=${bp.rankingBadgeStyle}`)
-  if (bp.badgeFont && bp.badgeFont !== "inter") params.push(`font=${bp.badgeFont}`)
   if (!bp.blurEnabled) params.push("be=0")
   if (bp.networkLogo === false) params.push("netLogo=0")
   if (bp.ribbonSide === "right") params.push("side=right")

@@ -10,7 +10,6 @@ const log = createLogger("server-defaults")
 export interface ServerDefaults {
   badgeStyle?: BadgeStyle
   rankingBadgeStyle?: RankingBadgeStyle
-  badgeFont?: string
   blurEnabled?: boolean
   blurIntensity?: number
   blurFade?: number

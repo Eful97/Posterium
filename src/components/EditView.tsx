@@ -196,7 +196,6 @@ export default function EditView() {
                         rankingBadges: ed.rankingBadges,
                         badgeStyle: ed.badgeStyle,
                         rankingBadgeStyle: ed.rankingBadgeStyle,
-                        badgeFont: ed.badgeFont,
                         customBadge: ed.customBadge,
                         gradientHeight: ed.gradientHeight,
                         blurIntensity: ed.blurIntensity,
