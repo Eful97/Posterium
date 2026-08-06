@@ -110,18 +110,16 @@ export function OnboardingTour() {
         {/* Dots + Navigation */}
         <div className="px-6 pb-5">
           {/* Dots */}
-          <div className="flex items-center justify-center gap-2 mb-5">
+          <div className="flex items-center justify-center gap-1 mb-5">
             {STEPS.map((_, i) => (
               <button type="button"
                 key={i}
                 onClick={() => setStep(i)}
-                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                  i === step
-                    ? "w-6 bg-accent-orange"
-                    : "w-1.5 bg-zinc-600 hover:bg-zinc-500"
-                }`}
                 aria-label={`Slide ${i + 1}`}
-              />
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+              >
+                <span className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${i === step ? "w-6 bg-accent-orange" : "w-1.5 bg-zinc-600 hover:bg-zinc-500"}`} />
+              </button>
             ))}
           </div>
 

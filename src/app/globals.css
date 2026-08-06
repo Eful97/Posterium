@@ -856,6 +856,8 @@ input[type="range"]::-moz-range-thumb {
 
 .btn-primary {
   @apply inline-flex items-center justify-center rounded-xl bg-accent-orange text-white font-semibold text-sm shadow-lg shadow-accent-orange/15 hover:bg-accent-orange/90 active:scale-95 transition-all duration-200 disabled:opacity-40 disabled:shadow-none disabled:active:scale-100;
+  /* Arancione scurito (85%) per raggiungere AA 4.5:1 col testo bianco */
+  background-color: color-mix(in srgb, var(--color-accent-orange) 85%, black);
   box-shadow: 0 12px 30px rgba(232, 93, 42, 0.16), inset 0 1px 0 rgba(255,255,255,0.18);
 }
 
