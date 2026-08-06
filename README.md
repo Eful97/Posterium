@@ -131,6 +131,11 @@ docker run -p 8080:8080 -v posterium-data:/data -e TMDB_API_KEY=la_tua_chiave_tm
 
 > Il container gira come utente non-root (`nextjs`, uid 1000) e scrive i dati persistenti in `/data` (volume named `posterium-data`). Con Docker Compose il `docker-compose.yml` applica già l'hardening (`cap_drop: ALL`, `no-new-privileges`).
 
+> **Cap memoria JS**: il default è `384MB` (tarato per Koyeb tier 512MB). Se la piattaforma ha più RAM (es. HF Spaces 16GB), alzalo per non limitare i render burst:
+> - **Koyeb**: nessuna modifica (usa il default 384MB).
+> - **HF Spaces**: imposta nelle Space Settings la variabile `NODE_OPTIONS=--max-old-space-size=1024` (le env di piattaforma sovrascrivono l'`ENV` del Dockerfile).
+> - **Build manuale**: `docker build --build-arg NODE_MAX_OLD_SPACE=1024 -t posterium .`
+
 ---
 
 ### 🖥️ Deploy VPS (Docker Compose, Multi-Utente)

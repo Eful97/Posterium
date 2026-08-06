@@ -27,7 +27,10 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=8080
 ENV HOSTNAME=0.0.0.0
-ENV NODE_OPTIONS="--max-old-space-size=384"
+# Cap memoria JS configurabile per piattaforma: default 384MB (Koyeb tier 512MB).
+# Chi ha più RAM (es. HF Spaces 16GB) può alzarlo via build-arg o env di piattaforma.
+ARG NODE_MAX_OLD_SPACE=384
+ENV NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE}"
 ENV SHARP_CONCURRENCY=2
 ENV SHARP_CACHE_MEMORY_MB=64
 ENV POSTERIUM_DATA_DIR=/data
