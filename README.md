@@ -92,17 +92,48 @@ Il repo è già configurato per HF Spaces Docker: frontmatter `sdk: docker` + `a
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FEful97%2FPosterium)
 
-Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). Per la persistenza è **obbligatorio** collegare uno store KV (Vercel/Upstash): il filesystem serverless è read-only e i salvataggi senza KV andrebbero persi.
+Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza richiede uno store KV (Vercel/Upstash)**: il filesystem serverless è read-only, quindi senza KV i salvataggi (profili/mapping) falliscono con `ENOENT`.
 
-1. **Importa il repo** su [vercel.com](https://vercel.com) (framework: Next.js, build default `npm run build`).
-2. **Variabili d'ambiente** (Project Settings → Environment Variables):
-   - `TMDB_API_KEY`: chiave API TMDB
-   - `KV_REST_API_URL` + `KV_REST_API_TOKEN`: store **KV** (Upstash) — **richiesti** per salvare poster e profili
-   - opzionali: `MDBLIST_API_KEY`, `OMDB_API_KEY`, `POSTERIUM_ADMIN_TOKEN`
-3. **Limiti da conoscere**:
-   - Durata funzione: **Hobby 10s** (Pro 60s). I render poster (1–3.5s) e i cataloghi freddi (~10s) rientrano in genere; su Hobby un burst pesante può andare in timeout.
-   - Il **warmup** (`POST /api/warmup`) **non completa su Hobby** (supera i 10s). Non è critico: le griglie poster si riscaldano con i nuovi default di attesa slot.
-   - La cache poster in-memory si svuota al cold start (Vercel tiene le funzioni calde; il primo hit freddo fa il render pieno).
+#### 1. Crea il progetto
+- Clicca il pulsante **Deploy** qui sopra (oppure Vercel → Add New → Project → importa `Eful97/Posterium`).
+- Framework **Next.js**, build default (`npm run build`), il pulsante precompila tutto.
+- Vercel genera un dominio tipo `https://<progetto>.vercel.app`.
+
+#### 2. Crea lo store KV (OBBLIGATORIO per salvare)
+1. Vercel → progetto → **Storage** → **Create Database** → **KV** (Upstash).
+2. Vercel aggiunge automaticamente `KV_REST_API_URL` e `KV_REST_API_TOKEN` alle env del progetto.
+3. **Redeploy** (o attendi il prossimo auto-deploy) per applicarle.
+
+*Alternativa manuale*: crea un database Redis su [upstash.com](https://upstash.com) → copia `KV_REST_API_URL` (es. `https://xxx.upstash.io`) e `KV_REST_API_TOKEN` → Vercel → Settings → Environment Variables → aggiungile → Redeploy.
+
+#### 3. Imposta le altre variabili d'ambiente
+| Variabile | Necessità |
+|---|---|
+| `TMDB_API_KEY` | 🔴 **Obbligatoria** — senza, i poster sono 404 |
+| `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 **Obbligatorie** — senza, salvare profili/mapping = 500 |
+| `CONFIG_HMAC_SECRET` | 🟠 Consigliata — sblocca i config token (senza sono fail-closed) |
+| `PROFILE_ENCRYPTION_KEY` | 🟠 Consigliata — cifra le apiKeys dei profili a riposo |
+| `MDBLIST_API_KEY` | Opzionale — cataloghi anime |
+| `POSTERIUM_ADMIN_TOKEN` | Opzionale — proteggi le route admin |
+
+#### 4. Dove vengono salvati i dati
+| Dato | Dove |
+|---|---|
+| Profili (config, password, apiKeys) | **KV Upstash** (persistente, nel cloud del progetto) |
+| Mapping poster | **KV Upstash** (persistente) |
+| Cache poster in-memory | effimera per-istanza (ok, è una cache) |
+| Cache flixpatrol | `/tmp` (effimero — fallback automatico su fs read-only) |
+
+#### 5. Limiti da conoscere
+- **Durata funzione**: Hobby **10s** (Pro 60s). I render poster (1–3.5s) e i cataloghi freddi (~10s) rientrano in genere; su Hobby un burst pesante può andare in timeout.
+- Il **warmup** (`POST /api/warmup`) **non completa su Hobby** (supera i 10s). Non è critico: le griglie poster si riscaldano con i nuovi default di attesa slot.
+- La cache poster in-memory si svuota al cold start (Vercel tiene le funzioni calde; il primo hit freddo fa il render pieno).
+
+#### 6. Troubleshooting
+- **Poster 404 con `TMDB API key is missing`** → manca `TMDB_API_KEY`.
+- **"Failed to create/update profile" / `ENOENT /var/task/data`** → manca lo store KV (punto 2).
+- **"Storage not configured: set KV_REST_API_URL and KV_REST_API_TOKEN"** → stesso problema, messaggio esplicito.
+- **Più progetti**: se hai più deploy (es. `posterium` e `posterium-two`), ogni progetto ha le proprie env — verifica in quale stai guardando i log.
 
 📌 *URL Manifest Stremio*: `https://<tuo-app>.vercel.app/manifest.json` (o `/u/<uuid>/manifest.json` per il tuo profilo).
 
