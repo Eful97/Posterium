@@ -16,8 +16,10 @@ const QUERY = `query GetStreamingChartInfo($country: Country!, $language: Langua
   }
 }`
 
-interface JWRankEntry {
+export interface JWRankEntry {
   tmdbId: number
+  /** IMDb id restituito da JustWatch stesso — evita la chiamata extra a TMDB. */
+  imdbId: string | null
   rank: number
 }
 
@@ -51,11 +53,12 @@ export async function getJWRankings(objectType: "MOVIE" | "SHOW", country = "IT"
   const json = await res.json()
   const edges = json?.data?.streamingCharts?.edges || []
   const result = edges
-    .map((e: { node?: { content?: { externalIds?: { tmdbId?: number | string } } }; streamingChartInfo?: { rank?: number } }) => {
+    .map((e: { node?: { content?: { externalIds?: { tmdbId?: number | string; imdbId?: string | null } } }; streamingChartInfo?: { rank?: number } }) => {
       const tmdbId = Number(e?.node?.content?.externalIds?.tmdbId)
+      const imdbId = e?.node?.content?.externalIds?.imdbId || null
       const rank = e?.streamingChartInfo?.rank
       if (!tmdbId || !rank) return null
-      return { tmdbId, rank }
+      return { tmdbId, imdbId, rank }
     })
     .filter(Boolean) as JWRankEntry[]
 

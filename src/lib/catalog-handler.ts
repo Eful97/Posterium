@@ -10,7 +10,7 @@ import { getDetails, getExternalIds, resolveRequestApiKey, type TMDBDetails } fr
 import { fetchMDBList } from "@/lib/mdblist"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
-import { getJWRankings } from "@/lib/justwatch"
+import { getJWRankings, type JWRankEntry } from "@/lib/justwatch"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("catalog")
@@ -23,11 +23,12 @@ interface StremioMeta {
   releaseInfo?: string
 }
 
-/** Riutilizza getJWRankings (cache condivisa 30 min + mock server nei test). */
-async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<number[]> {
+/** Riutilizza getJWRankings (cache condivisa 30 min + mock server nei test).
+ *  Ritorna le righe complete: JustWatch fornisce già l'imdbId, così il
+ *  catalogo non deve rifare una chiamata extra a TMDB per ogni titolo. */
+async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<JWRankEntry[]> {
   try {
-    const rows = await getJWRankings(type, "IT", 20)
-    return rows.map((r) => r.tmdbId)
+    return await getJWRankings(type, "IT", 20)
   } catch {
     return []
   }
@@ -86,18 +87,27 @@ function imdbIdCacheSet(key: string, value: string | null) {
 /** TMDB /tv/{id} non include imdb_id — serve chiamata extra a external_ids.
  *  Anche i film devono esporre id IMDb (tt...) nei cataloghi: AIOMetadata e
  *  gli altri addon risolvono i metadati solo da id tt/provider:id, non da id
- *  numerici TMDB (altrimenti "no metadata"). */
-async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number): Promise<string | null> {
+ *  numerici TMDB (altrimenti "no metadata").
+ *  `apiKey` è la chiave della richiesta (header/query): senza, la chiamata
+ *  external_ids cade quando la chiave non è impostata come chiave d'istanza. */
+async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number, apiKey?: string): Promise<string | null> {
   const cacheKey = `${mediaType}:${tmdbId}`
   const cached = imdbIdCache.get(cacheKey)
   if (cached !== undefined) return cached
   try {
-    const result = await getExternalIds(mediaType, tmdbId).then(r => r.imdb_id ?? null)
+    const result = await getExternalIds(mediaType, tmdbId, apiKey).then(r => r.imdb_id ?? null)
     imdbIdCacheSet(cacheKey, result)
     return result
   } catch {
     return null
   }
+}
+
+/** Ultima risorsa per l'id del catalogo: se manca l'imdbId, esporre un id
+ *  provider (`tmdb:<id>`) che AIOMetadata sa risolvere — mai un numero nudo
+ *  (che darebbe "no metadata" al click). */
+function catalogMetaId(imdbId: string | null | undefined, tmdbId: number): string {
+  return imdbId || `tmdb:${tmdbId}`
 }
 
 /**
@@ -127,23 +137,23 @@ export async function posteriumCatalog(
     let metas: StremioMeta[] = []
 
     if (catalogId.startsWith("posterium-jw")) {
-      const ids = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW")
+      const rows = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW")
       const apiKey = resolveRequestApiKey(req)
       if (!apiKey) return catalogResponse({ metas: [] })
-      const results = await Promise.all(ids.slice(0, 20).map(async (id) => {
+      const results = await Promise.all(rows.slice(0, 20).map(async (row) => {
         try {
-          const d = await getDetails(stType === "movie" ? "movie" : "tv", id, "it-IT", apiKey)
+          const d = await getDetails(stType === "movie" ? "movie" : "tv", row.tmdbId, "it-IT", apiKey)
           if (!d?.id) return null
-          return { d, tmdbId: id }
+          return { d, tmdbId: row.tmdbId, imdbId: row.imdbId }
         } catch {
           return null
         }
       }))
-      const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number } => r !== null)
+      const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdbId: string | null } => r !== null)
       metas = await Promise.all(validResults.map(async (r) => {
-        const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId)
+        const imdbId = r.imdbId || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
         return {
-          id: imdbId || r.tmdbId.toString(),
+          id: catalogMetaId(imdbId, r.tmdbId),
           type: stType,
           name: r.d.title || r.d.name || "",
           poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam),
@@ -167,9 +177,9 @@ export async function posteriumCatalog(
         }))
         const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdb: string } => r !== null)
         metas = await Promise.all(validResults.map(async (r) => {
-          const imdbId = r.imdb || await resolveImdbId("tv", r.tmdbId)
+          const imdbId = r.imdb || await resolveImdbId("tv", r.tmdbId, resolveRequestApiKey(req))
           return {
-            id: imdbId || r.tmdbId.toString(),
+            id: catalogMetaId(imdbId, r.tmdbId),
             type: "series",
             name: r.d.name || "",
             poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam),
@@ -191,9 +201,9 @@ export async function posteriumCatalog(
             item.tmdbId ? [{ ...item, tmdbId: item.tmdbId }] : []
           ))
           metas = await Promise.all(itemsWithTmdb.map(async (item) => {
-            const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", item.tmdbId)
+            const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", item.tmdbId, apiKey)
             return {
-              id: imdbId || item.tmdbId.toString(),
+              id: catalogMetaId(imdbId, item.tmdbId),
               type: stType,
               name: item.title,
               poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam),

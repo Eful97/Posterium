@@ -22,7 +22,7 @@ vi.mock("@/lib/server-defaults", () => ({
 const mockedGetTop10 = vi.mocked(getTop10)
 const mockedGetById = vi.mocked(getById)
 
-function justWatchResponse(tmdbId: number): Response {
+function justWatchResponse(tmdbId: number, imdbId?: string): Response {
   return Response.json({
     data: {
       streamingCharts: {
@@ -31,7 +31,7 @@ function justWatchResponse(tmdbId: number): Response {
             streamingChartInfo: { rank: 1 },
             node: {
               content: {
-                externalIds: { tmdbId },
+                externalIds: { tmdbId, imdbId: imdbId ?? null },
               },
             },
           },
@@ -67,7 +67,7 @@ describe("GET /catalog/[type]/[id]", () => {
   it("builds Posterium series poster URLs for JustWatch series catalogs", async () => {
     process.env.TMDB_API_KEY = "tmdb-key"
     vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(justWatchResponse(94997))
+      .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
       .mockResolvedValueOnce(tmdbShowResponse(94997))
 
     const req = new NextRequest("http://localhost:3000/catalog/series/posterium-jw-series.json")
@@ -76,6 +76,7 @@ describe("GET /catalog/[type]/[id]", () => {
 
     expect(res.status).toBe(200)
     expect(body.metas[0]).toMatchObject({
+      id: "tt11198330",
       type: "series",
       name: "House of the Dragon",
       poster: expect.stringContaining("/api/poster/series/94997"),
@@ -96,7 +97,7 @@ describe("GET /catalog/[type]/[id]", () => {
       updatedAt: "2026-07-16T10:15:30.000Z",
     })
     vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(justWatchResponse(94997))
+      .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
       .mockResolvedValueOnce(tmdbShowResponse(94997))
 
     const req = new NextRequest("http://localhost:3000/catalog/series/posterium-jw-series.json")
@@ -111,7 +112,7 @@ describe("GET /catalog/[type]/[id]", () => {
   it("normalizes tv catalog routes to Posterium series poster URLs", async () => {
     process.env.TMDB_API_KEY = "tmdb-key"
     vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(justWatchResponse(94997))
+      .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
       .mockResolvedValueOnce(tmdbShowResponse(94997))
 
     const req = new NextRequest("http://localhost:3000/catalog/tv/posterium-jw-series.json")
@@ -164,7 +165,7 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(body.metas[0].poster).toContain(`rv=${POSTER_URL_VERSION}`)
   })
 
-  it("returns IMDb ids for JustWatch movie catalogs (AIOMetadata compat)", async () => {
+  it("falls back to TMDB external_ids when JustWatch lacks an IMDb id", async () => {
     delete process.env.TMDB_API_KEY
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(justWatchResponse(687163))
@@ -182,6 +183,47 @@ describe("GET /catalog/[type]/[id]", () => {
       type: "movie",
       name: "House of the Dragon",
       poster: expect.stringContaining("/api/poster/movie/687163"),
+    })
+  })
+
+  it("uses the IMDb id already returned by JustWatch (no extra TMDB call)", async () => {
+    delete process.env.TMDB_API_KEY
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(justWatchResponse(8282, "tt0848228"))
+      .mockResolvedValueOnce(tmdbShowResponse(8282))
+
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json")
+    const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "posterium-jw-movies.json" }) })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.metas).toHaveLength(1)
+    expect(body.metas[0]).toMatchObject({
+      id: "tt0848228",
+      type: "movie",
+      name: "House of the Dragon",
+      poster: expect.stringContaining("/api/poster/movie/8282"),
+    })
+  })
+
+  it("exposes a tmdb:<id> provider id when no IMDb id is resolvable (AIOMetadata compat)", async () => {
+    delete process.env.TMDB_API_KEY
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(justWatchResponse(67890))
+      .mockResolvedValueOnce(tmdbShowResponse(67890))
+      .mockResolvedValueOnce(Response.json({ id: 67890, imdb_id: null }))
+
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json")
+    const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "posterium-jw-movies.json" }) })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.metas).toHaveLength(1)
+    expect(body.metas[0]).toMatchObject({
+      id: "tmdb:67890",
+      type: "movie",
+      name: "House of the Dragon",
+      poster: expect.stringContaining("/api/poster/movie/67890"),
     })
   })
 })
