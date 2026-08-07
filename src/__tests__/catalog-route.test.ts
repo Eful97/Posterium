@@ -15,6 +15,10 @@ vi.mock("@/lib/store", () => ({
   getById: vi.fn(),
 }))
 
+vi.mock("@/lib/server-defaults", () => ({
+  getServerDefaults: vi.fn(() => ({ tmdbApiKey: "settings-key" })),
+}))
+
 const mockedGetTop10 = vi.mocked(getTop10)
 const mockedGetById = vi.mocked(getById)
 
@@ -124,7 +128,10 @@ describe("GET /catalog/[type]/[id]", () => {
   })
 
   it("builds Posterium poster URLs for platform catalogs even when source posterPath is missing", async () => {
-    process.env.TMDB_API_KEY = "tmdb-key"
+    delete process.env.TMDB_API_KEY
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      Response.json({ id: 1715492, imdb_id: "tt1715492" }),
+    )
     mockedGetTop10.mockResolvedValueOnce({
       platform: "netflix",
       platformName: "Netflix",
@@ -147,11 +154,34 @@ describe("GET /catalog/[type]/[id]", () => {
     const body = await res.json()
 
     expect(res.status).toBe(200)
+    expect(mockedGetTop10).toHaveBeenCalledWith("netflix", "italy", "settings-key")
     expect(body.metas[0]).toMatchObject({
+      id: "tt1715492",
       type: "movie",
       name: "Costa Concordia: incubo in mare",
       poster: expect.stringContaining("/api/poster/movie/1715492"),
     })
     expect(body.metas[0].poster).toContain(`rv=${POSTER_URL_VERSION}`)
+  })
+
+  it("returns IMDb ids for JustWatch movie catalogs (AIOMetadata compat)", async () => {
+    delete process.env.TMDB_API_KEY
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(justWatchResponse(687163))
+      .mockResolvedValueOnce(tmdbShowResponse(687163))
+      .mockResolvedValueOnce(Response.json({ id: 687163, imdb_id: "tt12042730" }))
+
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json")
+    const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "posterium-jw-movies.json" }) })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.metas).toHaveLength(1)
+    expect(body.metas[0]).toMatchObject({
+      id: "tt12042730",
+      type: "movie",
+      name: "House of the Dragon",
+      poster: expect.stringContaining("/api/poster/movie/687163"),
+    })
   })
 })

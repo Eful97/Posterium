@@ -73,24 +73,27 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
 }
 
 /** Cache locale per la risoluzione IMDb ID — evita chiamate duplicate a TMDB */
-const imdbIdCache = new Map<number, string | null>()
+const imdbIdCache = new Map<string, string | null>()
 const IMDB_ID_CACHE_MAX = 2000
-function imdbIdCacheSet(tmdbId: number, value: string | null) {
+function imdbIdCacheSet(key: string, value: string | null) {
   if (imdbIdCache.size >= IMDB_ID_CACHE_MAX) {
     const oldest = imdbIdCache.keys().next().value
     if (oldest !== undefined) imdbIdCache.delete(oldest)
   }
-  imdbIdCache.set(tmdbId, value)
+  imdbIdCache.set(key, value)
 }
 
-/** TMDB /tv/{id} non include imdb_id — serve chiamata extra a external_ids */
+/** TMDB /tv/{id} non include imdb_id — serve chiamata extra a external_ids.
+ *  Anche i film devono esporre id IMDb (tt...) nei cataloghi: AIOMetadata e
+ *  gli altri addon risolvono i metadati solo da id tt/provider:id, non da id
+ *  numerici TMDB (altrimenti "no metadata"). */
 async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number): Promise<string | null> {
-  if (mediaType === "movie") return null
-  const cached = imdbIdCache.get(tmdbId)
+  const cacheKey = `${mediaType}:${tmdbId}`
+  const cached = imdbIdCache.get(cacheKey)
   if (cached !== undefined) return cached
   try {
-    const result = await getExternalIds("tv", tmdbId).then(r => r.imdb_id ?? null)
-    imdbIdCacheSet(tmdbId, result)
+    const result = await getExternalIds(mediaType, tmdbId).then(r => r.imdb_id ?? null)
+    imdbIdCacheSet(cacheKey, result)
     return result
   } catch {
     return null
@@ -138,7 +141,7 @@ export async function posteriumCatalog(
       }))
       const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number } => r !== null)
       metas = await Promise.all(validResults.map(async (r) => {
-        const imdbId = stType === "series" ? await resolveImdbId("tv", r.tmdbId) : null
+        const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId)
         return {
           id: imdbId || r.tmdbId.toString(),
           type: stType,
@@ -180,7 +183,7 @@ export async function posteriumCatalog(
         if (catalogId.includes(k)) { slug = v; break }
       }
       if (slug) {
-        const apiKey = process.env.TMDB_API_KEY
+        const apiKey = resolveRequestApiKey(req)
         const data = apiKey ? await getTop10(slug, "italy", apiKey).catch(() => null) : null
         if (data) {
           const items = stType === "movie" ? data.movies : data.tv
@@ -188,7 +191,7 @@ export async function posteriumCatalog(
             item.tmdbId ? [{ ...item, tmdbId: item.tmdbId }] : []
           ))
           metas = await Promise.all(itemsWithTmdb.map(async (item) => {
-            const imdbId = stType === "series" ? await resolveImdbId("tv", item.tmdbId) : null
+            const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", item.tmdbId)
             return {
               id: imdbId || item.tmdbId.toString(),
               type: stType,
