@@ -10,7 +10,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa). Il preview client deve sempre corrispondere al poster Stremio finale.
 
-App version: `0.15.2` — RENDER_VERSION: `0e2434cdfc` — rv: `0e2434cdfc`
+App version: `0.15.2` — RENDER_VERSION: `ec3cc232d4` — rv: `ec3cc232d4`
 
 > Quando questo file (o `.agents/*.md`) e il codice discordano, vince il codice (CODE WINS) — aggiorna la documentazione.
 
@@ -46,5 +46,6 @@ Reply in the same language used by the user. Repository files, code, comments an
 
 - [Render Parameters & Geometry](.agents/render-params.md) — geometria badge/genere/ranking, gradiente, bordo, logo, parametri URL, file coinvolti
 - [Visual Regression Testing](.agents/visual-testing.md) — comandi Playwright, mock server, policy snapshot, regola RENDER_VERSION, test attivi
+- [Catalogs](.agents/catalog.md) — architettura cataloghi Stremio, id metadati risolvibili (tt.../tmdb:), cache e warmup
 - [Poster Sync](.agents/skills/poster-sync/SKILL.md) — workflow completo di sincronizzazione client/server
 - [Poster Visual](.agents/skills/poster-visual/SKILL.md) — workflow di regressione visiva e screenshot

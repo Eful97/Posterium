@@ -70,6 +70,7 @@ $null
 # ai tool configs (local copies)
 /.aider-desk/
 /.qwen/
+/.serena/
 
 # default next.js starter assets (unused)
 public/file.svg

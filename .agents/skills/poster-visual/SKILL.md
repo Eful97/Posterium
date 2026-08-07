@@ -18,28 +18,19 @@ route Stremio hits. Visual tests are the gate that proves client/server coherenc
 
 - Built-in Playwright MCP tools (`kilo-playwright_browser_*`): navigate, snapshot,
   screenshot, click/fill, evaluate — for live inspection of the running app.
-- The repo Playwright suite (`npx playwright test e2e/`) — deterministic, mock-based.
+- The repo Playwright suite — deterministic, mock-based; commands in
+  [`.agents/visual-testing.md`](../../visual-testing.md).
 
 ## The test suite
 
-```
-npx playwright test e2e/posterium-visual.spec.ts   # visual only
-npx playwright test e2e/                           # visual + smoke
-npx playwright test --update-snapshots             # regenerate .png baselines
-```
-
-- Runs against `e2e/mock-server.mjs`, auto-started by `playwright.config.ts` on a
-  dedicated port with a separate `.next-e2e` distDir. Safe to run while `npm run dev`
-  is active.
-- No external dependencies, deterministic data for TMDB/JustWatch/Wikidata/IMDb.
+Commands, test inventory and snapshot policy are the canonical reference in
+[`.agents/visual-testing.md`](../../visual-testing.md) — do not duplicate them here.
 
 ## Workflow
 
-1. **Baseline check** — after ANY render-affecting change, run:
-   ```
-   npx playwright test e2e/posterium-visual.spec.ts
-   ```
-   Failure means the client and server diverged, OR the look intentionally changed.
+1. **Baseline check** — after ANY render-affecting change, run the visual suite
+   (command in `.agents/visual-testing.md`). Failure means the client and server
+   diverged, OR the look intentionally changed.
 
 2. **Diagnose the diff.** For pixel-diff failures, locate the failing spec, read the
    diff image paths from the test output, and compare expected vs actual. Determine
@@ -49,13 +40,10 @@ npx playwright test --update-snapshots             # regenerate .png baselines
 3. **Fix, don't suppress.** If it's a real divergence, fix the code (see the
    `poster-sync` skill). Never edit baselines to hide a bug.
 
-4. **Intentional change only** → update baselines:
-   ```
-   npx playwright test e2e/posterium-visual.spec.ts --update-snapshots
-   ```
-   Inspect the new `.png` files before committing them, and remember RENDER_VERSION
-   must be regenerated (`node scripts/write-render-version.mjs`) and `rv` updated in
-   AGENTS.md.
+4. **Intentional change only** → update baselines (`--update-snapshots`, command in
+   `.agents/visual-testing.md`). Inspect the new `.png` files before committing them,
+   and remember RENDER_VERSION must be regenerated and `rv` updated in AGENTS.md
+   (steps 3-4 of the `poster-sync` skill).
 
 ## Live inspection (Playwright MCP)
 
@@ -72,6 +60,5 @@ When a poster looks wrong but tests pass (or to eyeball a new feature):
 
 ## Rules
 
-- Visual suite failure = blocking. Fix or intentionally re-baseline; never ignore.
-- Never commit regenerated snapshots without reviewing them.
-- Keep snapshots in git; they are the regression contract.
+The rules (failure = blocking, review snapshots before committing, snapshots in git
+as the regression contract) live in `.agents/visual-testing.md` — follow those.
