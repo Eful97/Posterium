@@ -7,9 +7,10 @@ const originalEnv = { ...process.env }
 // Regressione per il bug HF: senza ADMIN_TOKEN configurato, in produzione il
 // salvataggio poster (POST /api/mappings) era bloccato (fail-closed introdotto
 // in 415aad3) → 401 su HF Spaces dove il token non è mai impostato.
-// Il comportamento corretto (da S1): senza token le route restano aperte SOLO
-// con POSTERIUM_PUBLIC_INSTANCE=1 (istanza pubblica esplicita); altrimenti
-// fail-closed. Token configurato → fail-closed (header assente/errato → rifiutato).
+// Il comportamento (da S1 + fix dev): senza token le route restano aperte in
+// modalità pubblica — esplicita (POSTERIUM_PUBLIC_INSTANCE=1) o dev locale
+// (NODE_ENV=development); in produzione senza flag restano fail-closed. Con
+// token configurato → fail-closed (header assente/errato → rifiutato).
 // Nota: setup.ts imposta POSTERIUM_PUBLIC_INSTANCE=1 come default per i test.
 describe("checkAdminToken", () => {
   beforeEach(() => {
@@ -40,8 +41,9 @@ describe("checkAdminToken", () => {
     expect(checkAdminToken(req)).toBe(false)
   })
 
-  it("allows requests in dev when the public-instance flag is set", () => {
-    Object.assign(process.env, { NODE_ENV: "development", POSTERIUM_PUBLIC_INSTANCE: "1" })
+  it("allows requests in dev without a token (NODE_ENV=development è implicitamente pubblico)", () => {
+    Object.assign(process.env, { NODE_ENV: "development" })
+    delete process.env.POSTERIUM_PUBLIC_INSTANCE
     const req = new NextRequest("http://localhost:3000/api/mappings", { method: "POST" })
     expect(checkAdminToken(req)).toBe(true)
   })

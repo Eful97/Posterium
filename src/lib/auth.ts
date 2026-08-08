@@ -7,19 +7,22 @@ function resolveAdminToken(): string | undefined {
   return process.env.POSTERIUM_ADMIN_TOKEN || process.env.ADMIN_TOKEN || undefined
 }
 
-/** Istanza pubblica esplicita: unico modo per tenere le route admin aperte
- *  senza ADMIN_TOKEN (es. HF Spaces multi-utente). */
+/** Istanza in modalità pubblica: le route admin restano aperte senza
+ *  ADMIN_TOKEN. O esplicita via POSTERIUM_PUBLIC_INSTANCE=1 (HF Spaces
+ *  multi-utente), o ambiente di sviluppo locale (NODE_ENV=development,
+ *  `next dev`), dove l'operatore è comunque l'admin. In produzione
+ *  (build/Vercel) senza flag e senza token resta fail-closed. */
 function isPublicInstance(): boolean {
-  return process.env.POSTERIUM_PUBLIC_INSTANCE === "1"
+  return process.env.POSTERIUM_PUBLIC_INSTANCE === "1" || process.env.NODE_ENV === "development"
 }
 
 if (!resolveAdminToken() && !isPublicInstance()) {
-  log.warn("⚠️  Nessun ADMIN_TOKEN configurato e POSTERIUM_PUBLIC_INSTANCE non è 1 — route admin CHIUSE (fail-closed).")
+  log.warn("⚠️  Nessun ADMIN_TOKEN configurato e modalità pubblica non attiva — route admin CHIUSE (fail-closed).")
   log.warn("   - Istanza pubblica (HF Spaces multi-utente): imposta POSTERIUM_PUBLIC_INSTANCE=1")
   log.warn("   - Istanza privata: imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) (x-admin-token / Bearer)")
 } else if (!resolveAdminToken()) {
-  log.warn("⚠️  POSTERIUM_PUBLIC_INSTANCE=1 senza ADMIN_TOKEN — route admin APERTE (istanza pubblica esplicita).")
-  log.warn("   Imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) per proteggerle, o rimuovi il flag.")
+  log.warn("⚠️  Modalità pubblica senza ADMIN_TOKEN — route admin APERTE (istanza pubblica esplicita o dev locale).")
+  log.warn("   Imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) per proteggerle.")
 }
 
 function constantTimeEqual(a: string, b: string): boolean {
@@ -29,11 +32,12 @@ function constantTimeEqual(a: string, b: string): boolean {
 
 export function checkAdminToken(request: Request): boolean {
   const token = resolveAdminToken()
-  // Nessun token configurato → la modalità pubblica (route aperte, HF Spaces
-  // multi-utente) deve essere ESPLICITA via POSTERIUM_PUBLIC_INSTANCE=1: il
-  // client non invia mai il token admin, quindi la modalità pubblica è l'unico
-  // modo per far funzionare il salvataggio su HF Spaces. Un'istanza privata che
-  // ha dimenticato il token NON resta esposta → fail-closed.
+  // Nessun token configurato → le route restano aperte solo in modalità
+  // pubblica: esplicita (POSTERIUM_PUBLIC_INSTANCE=1, HF Spaces multi-utente)
+  // o dev locale (NODE_ENV=development, dove l'operatore è l'admin). Il client
+  // non invia mai il token admin, quindi la modalità pubblica è l'unico modo
+  // per far funzionare l'editor. Un'istanza di produzione privata che ha
+  // dimenticato il token NON resta esposta → fail-closed.
   if (!token) return isPublicInstance()
 
   const headers = request.headers
