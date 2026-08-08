@@ -15,17 +15,37 @@
 - Light mode toggle in settings panel
 - Context splitting: useBadgeContext, usePosterContext, useAppContext
 - docs/BADGES.md documentation for badge extension
-- CHANGELOG.md
+- **Config token per-link** (`?config=<token>`): configurazione completa del poster firmata HMAC-SHA256, condividibile cross-device
+- **Classifiche FlixPatrol Top 10** con supporto multi-paese
+- **Chiavi API d'istanza** configurabili dalle Impostazioni (persistono senza env var)
+- **Pagina `/status`** con stato TMDB, streaming (JustWatch/FlixPatrol) e storage
+- **Hardening render pipeline**: slot limiter anti-OOM, deadline complessivo con watchdog, negative cache, TTL dinamico per poster non-mappati
+- **RENDER_VERSION auto-generata**: invalidazione cache e URL Stremio automatiche al cambio dei file di rendering
 
 ### Changed
 - Improved tab chip contrast (zinc-400 → zinc-300)
 - Badge cache key normalization (voteAverage rounded to 1 decimal)
 - Tab chips use role="tablist" + aria-selected for accessibility
 - useSearch shows toast on search failure
+- Badge genere/rating componibile: componenti (genere/anno/voto) attivabili singolarmente, con persistenza dei default nelle Impostazioni
+- Route admin: aperte in dev (`NODE_ENV=development`) senza token, fail-closed in produzione senza flag esplicito
+- Warmup `/api/warmup`: fail-open solo su istanza pubblica esplicita, con rate limit e check CSRF
+- Rate limit: tabella chiavi capped a 50k con eviction FIFO
+- Rating IMDb: esclusivamente da MDBList (rimosso il fallback OMDb)
+- Loghi network: aggiunti Sky/NOW, Mediaset Infinity, Tubi e Pluto TV
+- Persistenza su Vercel: KV obbligatorio per i salvataggi (filesystem read-only)
+
+### Removed
+- Sistema profili UUID (multi-utente via profili, ri-autenticazione al rientro)
+- Fallback OMDb per i rating
 
 ### Fixed
 - Image loading failures show toast notification
 - TMDB fetch failures tracked in serviceErrors state
+- Id metadati cataloghi risolvibili (`tt...`/`tmdb:`) nei Top 20 JustWatch
+- Race mtime sui mapping scritti da un altro worker
+- Slot wait default 15s — poster mancanti nelle griglie catalogo
+- Snapshot `/status` riallineati dopo rimozione della sezione System
 
 ## [0.15.0] - 2026-07-19
 

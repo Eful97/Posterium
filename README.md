@@ -45,7 +45,7 @@ pinned: false
 
 - 🖼️ **Selezione Poster Clean in 1-Click** — Scegli la tua locandina pulita (senza testo) preferita con un singolo click e fissala per sempre su Stremio. Supporta l'algoritmo *Best Fit* che rileva in automatico il poster perfetto per il logo.
 - 🎨 **Personalizzazione Badge Completa** — 6 stili per badge genere/rating (*Shadow, Pill, Bar, Colored, Bordo, Vetro*) e 5 stili per badge trend (*Default, Bar, Colored, Pill, Nastro Netflix*). Ogni componente del badge genere/rating (genere, anno, voto) si attiva/disattiva in modo indipendente per la combinazione che preferisci. Colori accent adattivi al poster e testo libero personalizzato per singolo titolo. Nelle **Impostazioni** salvi i tuoi default (componenti genere/anno/voto, stili badge, blur, gradiente, posizione badge): si applicano automaticamente a ogni nuovo poster e alle richieste Stremio.
-- 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch Italia, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA/Emmy (da Wikidata), saghe/franchise e registi cult.
+- 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch Italia, FlixPatrol Top 10, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA/Emmy (da Wikidata), saghe/franchise e registi cult.
 - 🍿 **Nastro Netflix Top 10** — Badge con l'iconico nastro rosso verticale allineato a sinistra e affiancamento automatico del logo della piattaforma. Variante dedicata per le classifiche anime (nastro esteso con etichetta *anime* sotto il numero).
 - 🎭 **Loghi Network Automatici** — Logo ufficiale della piattaforma sovrapposto automaticamente al poster: Netflix, HBO Max, Disney+, Prime Video, Apple TV+, Paramount+, Rai, Crunchyroll, Sky/NOW, Mediaset Infinity, Tubi e Pluto TV.
 - ⭐ **Rating Accurato** — Voto medio bilanciato ed imparziale IMDb + TMDB.
@@ -79,7 +79,7 @@ Il repo è già configurato per HF Spaces Docker: frontmatter `sdk: docker` + `a
 2. **Env** (Space Settings → Variables):
    - `TMDB_API_KEY`: chiave API TMDB
    - `NODE_OPTIONS=--max-old-space-size=1024`: alza il cap memoria (il default Docker è 384MB; HF ha 16GB)
-   - opzionali: `MDBLIST_API_KEY`, `OMDB_API_KEY`, `POSTERIUM_ADMIN_TOKEN`
+   - opzionali: `MDBLIST_API_KEY`, `POSTERIUM_ADMIN_TOKEN`
 3. **Persistenza**: collega uno Storage bucket HF a `/data` (Settings → Storage → Link bucket), altrimenti i dati non persistono tra i rebuild. L'app lo segnala nei log d'avvio.
 4. **Sleep**: sul piano free la Space dorme dopo 48h di inattività e si riavvia automaticamente al primo visitatore.
 
@@ -302,7 +302,6 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 |---|:---:|---|
 | `TMDB_API_KEY` | ✅ | Chiave API TMDB (v3) |
 | `MDBLIST_API_KEY` | ❌ | Per classifiche anime e voto IMDb aggregato |
-| `OMDB_API_KEY` | ❌ | Fallback per voto IMDb quando MDBList non è fornito |
 | `KV_REST_API_URL` | ❌ | URL Upstash Redis per persistenza cloud (alternativa a file JSON) |
 | `KV_REST_API_TOKEN` | ❌ | Token Upstash Redis |
 | `POSTERIUM_ADMIN_TOKEN` | ❌ | Protegge route admin (`/api/mappings`, `/api/cache/clear`, `/api/defaults`) |
