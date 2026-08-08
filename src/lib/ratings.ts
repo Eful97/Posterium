@@ -1,5 +1,7 @@
+import crypto from "node:crypto"
 import { cacheGet, cacheSet } from "./cache"
 import { createLogger } from "@/lib/logger"
+import { getServerDefaults } from "@/lib/server-defaults"
 
 const log = createLogger("ratings")
 
@@ -26,11 +28,15 @@ export async function fetchAggregatedRating(
 ): Promise<AggregatedRatings | null> {
   if (!imdbId) return null
 
-  const cacheKey = `mdb:ratings:${imdbId}`
+  // Precedenza: chiave esplicita → chiave d'istanza (impostazioni) → env var.
+  const key = apiKey || getServerDefaults().mdblistApiKey || process.env.MDBLIST_API_KEY
+  // La key MDBList cambia il voto aggregato → parte del cache key (hash, mai
+  // plaintext). Altrimenti due contesti con key diverse collidono (D4).
+  const keyHash = key ? crypto.createHash("sha1").update(key).digest("hex").slice(0, 8) : "nomk"
+  const cacheKey = `mdb:ratings:${imdbId}:${keyHash}`
   const cached = cacheGet<AggregatedRatings>(cacheKey)
   if (cached) return cached
 
-  const key = apiKey || process.env.MDBLIST_API_KEY
   const qs = key ? `?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(imdbId)}` : `?i=${encodeURIComponent(imdbId)}`
 
   try {

@@ -3,7 +3,12 @@
 // Precedenza: chiave d'istanza salvata nelle impostazioni → env var.
 import { getServerDefaults } from "@/lib/server-defaults"
 
-function getTmdbApiKey(): string | undefined {
+/**
+ * Risolve la chiave TMDB: chiave d'istanza salvata nelle impostazioni → env var.
+ * Export per i moduli che devono parlare con TMDB (health, imdb-resolver)
+ * senza costruirsi URL propri con la chiave interpolata.
+ */
+export function getTmdbApiKey(): string | undefined {
   return getServerDefaults().tmdbApiKey || process.env.TMDB_API_KEY
 }
 
@@ -35,6 +40,14 @@ async function tmdbFetch(path: string, apiKey?: string, signal?: AbortSignal): P
   // In modalità mock (TMDB_BASE_URL impostato) non serve una chiave reale:
   // il mock server ignora il parametro api_key. In produzione il comportamento
   // è invariato (chiave obbligatoria).
+  //
+  // S9: la chiave va in query nell'URL outbound perché la v3 di TMDB la
+  // richiede così (api_key è un parametro query, non un header). Non è
+  // spostabile in un header senza rompere l'auth. Mitigazioni già attive:
+  //   - la cacheKey è l'URL SENZA chiave → mai in Map key (memoria sicura);
+  //   - gli errori non includono l'URL → mai in log/app insights;
+  //   - la risoluzione della chiave vive solo qui (e in checkTmdbEndpoint),
+  //     mai interpellata/sparsa nei chiamanti.
   const key = apiKey || getTmdbApiKey() || (process.env.TMDB_BASE_URL ? "mock-key" : undefined)
   if (!key) throw new Error("TMDB API key is missing")
 
@@ -77,6 +90,26 @@ async function tmdbFetch(path: string, apiKey?: string, signal?: AbortSignal): P
 
   inflight.set(cacheKey, promise)
   return promise
+}
+
+/**
+ * Health check verso un path TMDB: restituisce ok/status/time SENZA esporre la
+ * chiave nella risposta né nei messaggi d'errore. Usata da /api/health, che non
+ * deve conoscere la chiave reale né interpolarla in URL propri (S9). La chiave
+ * in query nell'URL outbound è imposta dalla v3 TMDB (vedi commento tmdbFetch).
+ */
+export async function checkTmdbEndpoint(path: string, apiKey?: string): Promise<{ ok: boolean; status: number; time: number }> {
+  const key = apiKey || getTmdbApiKey()
+  if (!key) return { ok: false, status: 401, time: 0 }
+  const start = performance.now()
+  try {
+    const url = new URL(`${TMDB_BASE}${path}`)
+    url.searchParams.set("api_key", key)
+    const res = await fetch(url.toString(), { signal: AbortSignal.timeout(8000) })
+    return { ok: res.ok, status: res.status, time: Math.round(performance.now() - start) }
+  } catch {
+    return { ok: false, status: 0, time: Math.round(performance.now() - start) }
+  }
 }
 
 export interface TMDBImage {

@@ -6,12 +6,14 @@ import { cacheGet, cacheSet } from "@/lib/cache"
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
-  const cacheKey = `popular:${req.nextUrl.searchParams.toString()}`
+  const page = parseInt(req.nextUrl.searchParams.get("page") || "1", 10)
+  const language = req.nextUrl.searchParams.get("language") || "it-IT"
+  // api_key esclusa dal cache key: i dati popular non dipendono dalla chiave.
+  // Inserirla qui metterebbe il segreto in una Map key e frammenterebbe la cache.
+  const cacheKey = `popular:${page}:${language}`
   const cached = cacheGet<{ results: (TMDBMediaResult & { media_type: "movie" | "tv" })[]; page: number; totalPages: number }>(cacheKey)
   if (cached) return Response.json(cached)
   try {
-    const page = parseInt(req.nextUrl.searchParams.get("page") || "1", 10)
-    const language = req.nextUrl.searchParams.get("language") || "it-IT"
     const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
     const [movies, tv] = await Promise.all([getPopularMovies(page, language, apiKey), getPopularTV(page, language, apiKey)])
     const movieResults = (movies.results || [])

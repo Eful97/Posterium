@@ -3,6 +3,8 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { selectAcceptedPosterPath } from "@/lib/poster-fit-adjust"
 import { rankBestFitPosters, selectAutoFitCandidates } from "@/lib/poster-auto-fit"
 import { createLogger } from "@/lib/logger"
+import { readJsonBody, BodyTooLargeError } from "@/lib/read-body"
+import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 
 const log = createLogger("poster-fit-api")
 
@@ -61,6 +63,13 @@ const POSTER_SIZES = new Set(["w342", "w500"])
 export async function POST(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "search")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
+  // S10: endpoint CPU/network-heavy (fetch di fino a 9 immagini + analisi
+  // sharp). Protetto come le altre route admin: senza auth un attaccante lo
+  // userebbe come amplificatore di richieste verso image.tmdb.org e consumo
+  // CPU. Su istanza pubblica (POSTERIUM_PUBLIC_INSTANCE=1) resta aperto per
+  // l'editor; con ADMIN_TOKEN configurato richiede il token.
+  if (!checkAdminToken(req)) return adminAuthResponse()
+  if (!isSameOrigin(req)) return originMismatchResponse()
 
   const contentLength = Number(req.headers.get("content-length") || "0")
   if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
@@ -69,8 +78,9 @@ export async function POST(req: NextRequest) {
 
   let body: PosterFitBody
   try {
-    body = await req.json()
-  } catch {
+    body = (await readJsonBody(req, MAX_BODY_BYTES)) as PosterFitBody
+  } catch (e) {
+    if (e instanceof BodyTooLargeError) return Response.json({ error: "Request body too large" }, { status: 413 })
     return Response.json({ error: "Invalid JSON body" }, { status: 400 })
   }
 

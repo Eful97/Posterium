@@ -83,26 +83,33 @@ export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter:
 }
 
 export function rateLimitKey(request: Request): string {
-  // Preferenza: header impostati/sovrascritti da proxy trusted (Cloudflare,
-  // HF edge, Nginx) e quindi non falsificabili dal client.
-  // 1) cf-connecting-ip — scritto da Cloudflare, ignora il valore client.
-  // 2) x-real-ip — scritto da Nginx/HF, ignora il valore client.
-  // 3) ultimo hop di x-forwarded-for — con un proxy trusted che APPENDE il
-  //    proprio valore, l'ultimo elemento è l'IP reale del client; MA se il
-  //    deploy esegue senza reverse proxy l'header è interamente spoofabile
-  //    dal client → usare l'ultimo valore resta la scelta migliore senza proxy,
-  //    ma i deploy diretti dovrebbero mettere un reverse proxy in testa.
-  const cfIp = request.headers.get("cf-connecting-ip")
-  if (cfIp) return cfIp.trim()
-  const realIp = request.headers.get("x-real-ip")
-  if (realIp) return realIp.trim()
-  const forwarded = request.headers.get("x-forwarded-for")
-  if (forwarded) {
-    const parts = forwarded.split(",")
-    const last = parts[parts.length - 1]?.trim()
-    if (last) return last
+  // S3: gli header IP (cf-connecting-ip / x-real-ip / x-forwarded-for) sono
+  // considerati fidati SOLO se il deploy dichiara esplicitamente di stare
+  // dietro un proxy/edge che li sovrascrive (Cloudflare, HF edge, Nginx).
+  // Senza POSTERIUM_TRUST_PROXY=1 un client può spoofarli e bypassare il rate
+  // limit rotando l'IP → fallback a un bucket condiviso per tutta l'istanza
+  // (fail-safe: niente bypass, limite aggregato). Il flag si legge per chiamata
+  // per restare testabile.
+  if (process.env.POSTERIUM_TRUST_PROXY === "1") {
+    // Preferenza: header impostati/sovrascritti da proxy trusted e quindi non
+    // falsificabili dal client.
+    // 1) cf-connecting-ip — scritto da Cloudflare, ignora il valore client.
+    // 2) x-real-ip — scritto da Nginx/HF, ignora il valore client.
+    // 3) ultimo hop di x-forwarded-for — con un proxy trusted che APPENDE il
+    //    proprio valore, l'ultimo elemento è l'IP reale del client.
+    const cfIp = request.headers.get("cf-connecting-ip")
+    if (cfIp) return cfIp.trim()
+    const realIp = request.headers.get("x-real-ip")
+    if (realIp) return realIp.trim()
+    const forwarded = request.headers.get("x-forwarded-for")
+    if (forwarded) {
+      const parts = forwarded.split(",")
+      const last = parts[parts.length - 1]?.trim()
+      if (last) return last
+    }
+    return "local"
   }
-  return "local"
+  return "shared"
 }
 
 export function rateLimitResponse(retryAfter: number): Response {

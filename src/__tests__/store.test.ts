@@ -68,4 +68,30 @@ describe("file mapping store", () => {
     const titles = all.map((m) => m.title).sort()
     expect(titles).toEqual(["Movie A", "Movie B"])
   })
+
+  it("importMappings stamps a fresh updatedAt on each imported mapping", async () => {
+    tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "posterium-import-"))
+    process.env.POSTERIUM_DATA_DIR = tempDir
+    vi.resetModules()
+    const store = await import("@/lib/store")
+
+    const stale: Mapping = {
+      tmdbId: 7,
+      mediaType: "movie",
+      title: "Stale Import",
+      posterPath: "/stale.jpg",
+      logoPath: null,
+      originalPosterPath: null,
+      language: "it",
+      updatedAt: "2020-01-01T00:00:00.000Z",
+    }
+
+    await store.importMappings([stale])
+
+    const all = await store.getAll()
+    expect(all).toHaveLength(1)
+    expect(all[0].updatedAt).not.toBe("2020-01-01T00:00:00.000Z")
+    // updatedAt deve essere una data ISO valida recente (timbrata all'import)
+    expect(new Date(all[0].updatedAt).getTime()).toBeGreaterThan(Date.now() - 60_000)
+  })
 })

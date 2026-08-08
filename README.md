@@ -113,6 +113,7 @@ Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza ric
 | `CONFIG_HMAC_SECRET` | 🟠 Consigliata — sblocca i config token (senza sono fail-closed) |
 | `MDBLIST_API_KEY` | Opzionale — cataloghi anime |
 | `POSTERIUM_ADMIN_TOKEN` | Opzionale — proteggi le route admin |
+| `POSTERIUM_PUBLIC_INSTANCE` | Opzionale — `=1` abilita le route admin aperte senza token (istanza pubblica, es. HF Spaces) |
 
 #### 4. Dove vengono salvati i dati
 | Dato | Dove |
@@ -281,15 +282,15 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 
 > I token coprono i **parametri di stile**. Le **immagini** (poster/logo/backdrop) e i loro transform restano legati al mapping salvato sul server.
 
-> **Protezione admin**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env` per proteggere le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`), che richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`. Senza token configurato le route restano aperte (istanza pubblica, es. HF Spaces), **tranne un'operazione fail-closed che lo richiede SEMPRE**: `DELETE /api/mappings` (svuota tutti i mapping). Tutte le mutazioni applicano anche un check CSRF: se la richiesta porta un header `Origin` (i browser lo inviano sempre cross-origin), questo deve combaciare con l'host del server, altrimenti risposta `403`.
+> **Protezione admin**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env` per proteggere le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`), che richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`. **Senza token configurato le route restano aperte SOLO se imposti `POSTERIUM_PUBLIC_INSTANCE=1`** (istanza pubblica esplicita, es. HF Spaces multi-utente); altrimenti sono chiuse (fail-closed) — un'istanza privata che dimentica il token non resta esposta. **Un'operazione fail-closed la richiede SEMPRE**: `DELETE /api/mappings` (svuota tutti i mapping). Tutte le mutazioni applicano anche un check CSRF: se la richiesta porta un header `Origin` (i browser lo inviano sempre cross-origin), questo deve combaciare con l'host del server, altrimenti risposta `403`.
 
 #### Note produzione
 
 - **Memoria**: Posterium usa ~200MB base + cache. Il `docker-compose.yml` limita a 512MB.
 - **Persistenza**: I dati (mapping, default) sono in un volume Docker `posterium-data`.
 - **CDN**: Se hai una CDN (Cloudflare, Bunny), imposta `POSTER_CDN_URL` per generare URL poster col CDN. I poster **salvati** (mapping con versione) vengono serviti con header `immutable` (cache edge 1 anno); quelli composti al volo senza mapping (rank JustWatch, premi, IMDb Top 250) usano `stale-while-revalidate` per non congelare i badge dinamici alla CDN.
-- **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello. La chiave usa `cf-connecting-ip` → `x-real-ip` → ultimo hop `x-forwarded-for` (header impostati/sovrascritti dai proxy fidati).
-- **Warmup**: `/api/warmup` segue il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`): **fail-open** su istanza pubblica senza token (es. HF Spaces), **fail-closed** quando un token è configurato. In più è rate-limited (bucket `warmup`) e protetto da CSRF (`isSameOrigin`), così chiunque non possa triggerare carico in loop.
+- **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello. Il rate limit è **per-IP solo dietro proxy fidato**: imposta `POSTERIUM_TRUST_PROXY=1` quando sei dietro Cloudflare/HF edge/Nginx (la chiave usa `cf-connecting-ip` → `x-real-ip` → ultimo hop `x-forwarded-for`, header che il proxy sovrascrive). Senza il flag gli header IP sono ignorati (spoofabili da un client) e tutte le richieste condividono un bucket aggregato — niente bypass, ma limite di istanza.
+- **Warmup**: `/api/warmup` segue il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`): **fail-open** solo su istanza pubblica esplicita (`POSTERIUM_PUBLIC_INSTANCE=1`) senza token (es. HF Spaces), **fail-closed** altrimenti. In più è rate-limited (bucket `warmup`) e protetto da CSRF (`isSameOrigin`), così chiunque non possa triggerare carico in loop. Il self-fetch dei poster usa un origin interno fisso (`127.0.0.1`), mai l'host derivato dagli header di richiesta (anti-SSRF).
 - **Sicurezza**: Il proxy add-on (`/api/proxy`) mitiga l'SSRF (blocco IP privati/loopback, DNS pin e validazione dei redirect); opzionalmente puoi chiuderlo ai soli domini autorizzati con `POSTERIUM_PROXY_ALLOW_DOMAINS`. `/api/health` non espone il percorso assoluto dei dati su disco.
 - **Cache**: I poster generati sono in memoria (max 2000 entry / 150MB). Un restart svuota la cache (i poster si rigenerano al prossimo accesso). La cache-key e le URL Stremio includono `RENDER_VERSION`, **generata automaticamente** (hash dei file di rendering via `scripts/write-render-version.mjs`): quando cambia il codice di resa (badge, blur, logo, font, route poster) i poster si invalidano da soli e le URL Stremio cambiano — nessun bump manuale.
 
@@ -308,6 +309,7 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 | `ADMIN_TOKEN` | ❌ | Alias per POSTERIUM_ADMIN_TOKEN (legacy) |
 | `POSTERIUM_PROXY_ALLOW_DOMAINS` | ❌ | Allowlist opzionale (virgole) dei domini ammessi dal proxy add-on `/api/proxy`. Non impostata → aperto (proxare addon arbitrari è la funzione del proxy) |
 | `POSTERIUM_ALLOWED_HOSTS` | ❌ | Allowlist opzionale (virgole) di hostname pubblici per cui fidarsi di `X-Forwarded-Host` (reverse proxy dietro IP/URL non standard) |
+| `POSTERIUM_TRUST_PROXY` | ❌ | `=1` abilita il rate limit per-IP fidandosi di `cf-connecting-ip`/`x-real-ip`/`x-forwarded-for`. Impostalo SOLO dietro un proxy/edge che sovrascrive questi header (Cloudflare, HF edge, Nginx). Senza il flag gli header IP sono ignorati (spoofabili) e si usa un bucket condiviso per tutta l'istanza (fail-safe) |
 | `ENCRYPTION_KEY_SECRET` | ❌ | Chiave per firma HMAC-SHA256 dei token di configurazione (rende i token URL immutabili) |
 | `CONFIG_HMAC_SECRET` | ❌ | Chiave alternativa per firma HMAC (fallback a ENCRYPTION_KEY_SECRET) |
 | `POSTERIUM_DATA_DIR` | ❌ | Percorso dati persistenti (default: `./data/`) |
@@ -320,7 +322,7 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 | `SHARP_CONCURRENCY` | ❌ | Thread Sharp per resize immagini (default: 2) |
 | `SHARP_CACHE_MEMORY_MB` | ❌ | Cache Sharp in MB (default: 64) |
 | `SHARP_CACHE_ITEMS` | ❌ | Max elementi cache interna Sharp (default: auto) |
-| `WARMUP_TOKEN` | ❌ | (Deprecato) Token per `/api/warmup` — ora usa il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`); fail-open su istanza pubblica |
+| `WARMUP_TOKEN` | ❌ | (Deprecato) Token per `/api/warmup` — ora usa il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`); fail-open solo con `POSTERIUM_PUBLIC_INSTANCE=1` |
 | `POSTERIUM_MAX_CONCURRENT_RENDERS` | ❌ | Render poster concorrenti (slot anti-OOM, default: 4) |
 | `POSTERIUM_RENDER_SLOT_WAIT_MS` | ❌ | Attesa massima di un posto render prima del 503 (default: 15000; clamp 500–60000) |
 | `POSTERIUM_RENDER_TIMEOUT_MS` | ❌ | Deadline complessivo del render poster: oltre, watchdog libera slot + inflight (default: 30000; clamp 1000–120000) |

@@ -69,9 +69,20 @@ export async function GET(req: NextRequest) {
   const cached = cacheGet<{ movies: TrendingItem[]; tv: TrendingItem[] }>(cacheKey)
   if (cached) return jsonGzip(cached, 200, undefined, acceptEncoding)
   try {
+    // D6: traccia gli errori upstream — una risposta degradata NON va cachata,
+    // altrimenti un outage (JW/TMDB) si congela nel cache fino al refresh.
+    let degraded = false
     const [movieRanks, tvRanks] = await Promise.all([
-      getJWRankings("MOVIE", country).catch(() => [] as { tmdbId: number; rank: number }[]),
-      getJWRankings("SHOW", country).catch(() => [] as { tmdbId: number; rank: number }[]),
+      getJWRankings("MOVIE", country).catch((e) => {
+        degraded = true
+        log.warn("JW movie rankings failed", { error: e instanceof Error ? e.message : String(e), country })
+        return [] as { tmdbId: number; rank: number }[]
+      }),
+      getJWRankings("SHOW", country).catch((e) => {
+        degraded = true
+        log.warn("JW show rankings failed", { error: e instanceof Error ? e.message : String(e), country })
+        return [] as { tmdbId: number; rank: number }[]
+      }),
     ])
     const movieResults: TrendingItem[] = []
     const tvResults: TrendingItem[] = []
@@ -109,6 +120,12 @@ export async function GET(req: NextRequest) {
     movieResults.sort((a, b) => a.rank - b.rank)
     tvResults.sort((a, b) => a.rank - b.rank)
     const body = { movies: movieResults, tv: tvResults }
+    // Se c'erano rank ma non è stato arricchito nulla → probabile outage TMDB.
+    const emptyEnrichment = movieResults.length === 0 && tvResults.length === 0 && (movieRanks.length > 0 || tvRanks.length > 0)
+    if (degraded || emptyEnrichment) {
+      log.warn("Trending degraded — response not cached", { country, movies: movieResults.length, tv: tvResults.length })
+      return jsonGzip(body, 200, { "Cache-Control": "no-store" }, acceptEncoding)
+    }
     cacheSet(cacheKey, body, ["tmdb", "trending", country])
     return jsonGzip(body, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" }, acceptEncoding)
   } catch (err) {

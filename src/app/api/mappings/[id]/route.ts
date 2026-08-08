@@ -4,6 +4,7 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheInvalidatePosterDataFor } from "@/lib/cache"
 import { mappingUpdateSchema } from "@/lib/validation"
 import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
+import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/read-body"
 
 type RouteParams = { id: string }
 
@@ -29,10 +30,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
   if (!tmdbId || !type || (type !== "movie" && type !== "tv")) {
     return Response.json({ error: "Invalid id format" }, { status: 400 })
   }
-  const [body, existing] = await Promise.all([
-    req.json(),
-    getById(type as "movie" | "tv", tmdbId),
-  ])
+  const existingPromise = getById(type as "movie" | "tv", tmdbId)
+  let body: unknown
+  try {
+    body = await readJsonBody(req, DEFAULT_MAX_BODY_BYTES)
+  } catch (e) {
+    if (e instanceof BodyTooLargeError) return Response.json({ error: "Request body too large" }, { status: 413 })
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 })
+  }
+  const existing = await existingPromise
   const parsed = mappingUpdateSchema.safeParse(body)
   if (!parsed.success) {
     return Response.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })

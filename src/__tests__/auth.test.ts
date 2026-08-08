@@ -7,8 +7,10 @@ const originalEnv = { ...process.env }
 // Regressione per il bug HF: senza ADMIN_TOKEN configurato, in produzione il
 // salvataggio poster (POST /api/mappings) era bloccato (fail-closed introdotto
 // in 415aad3) → 401 su HF Spaces dove il token non è mai impostato.
-// Il comportamento corretto: istanza pubblica senza token → route aperte;
-// token configurato → fail-closed (header assente/errato → rifiutato).
+// Il comportamento corretto (da S1): senza token le route restano aperte SOLO
+// con POSTERIUM_PUBLIC_INSTANCE=1 (istanza pubblica esplicita); altrimenti
+// fail-closed. Token configurato → fail-closed (header assente/errato → rifiutato).
+// Nota: setup.ts imposta POSTERIUM_PUBLIC_INSTANCE=1 come default per i test.
 describe("checkAdminToken", () => {
   beforeEach(() => {
     delete process.env.POSTERIUM_ADMIN_TOKEN
@@ -19,14 +21,27 @@ describe("checkAdminToken", () => {
     process.env = { ...originalEnv }
   })
 
-  it("allows requests in production when no admin token is configured (public instance, HF Spaces)", () => {
-    Object.assign(process.env, { NODE_ENV: "production" })
+  it("allows requests in production with POSTERIUM_PUBLIC_INSTANCE=1 (public instance, HF Spaces)", () => {
+    Object.assign(process.env, { NODE_ENV: "production", POSTERIUM_PUBLIC_INSTANCE: "1" })
     const req = new NextRequest("http://localhost:3000/api/mappings", { method: "POST" })
     expect(checkAdminToken(req)).toBe(true)
   })
 
-  it("allows requests in dev when no admin token is configured", () => {
-    Object.assign(process.env, { NODE_ENV: "development" })
+  it("rejects without ADMIN_TOKEN and without the public-instance flag (fail-closed)", () => {
+    Object.assign(process.env, { NODE_ENV: "production" })
+    delete process.env.POSTERIUM_PUBLIC_INSTANCE
+    const req = new NextRequest("http://localhost:3000/api/mappings", { method: "POST" })
+    expect(checkAdminToken(req)).toBe(false)
+  })
+
+  it("rejects a non-1 value for POSTERIUM_PUBLIC_INSTANCE", () => {
+    Object.assign(process.env, { NODE_ENV: "production", POSTERIUM_PUBLIC_INSTANCE: "true" })
+    const req = new NextRequest("http://localhost:3000/api/mappings", { method: "POST" })
+    expect(checkAdminToken(req)).toBe(false)
+  })
+
+  it("allows requests in dev when the public-instance flag is set", () => {
+    Object.assign(process.env, { NODE_ENV: "development", POSTERIUM_PUBLIC_INSTANCE: "1" })
     const req = new NextRequest("http://localhost:3000/api/mappings", { method: "POST" })
     expect(checkAdminToken(req)).toBe(true)
   })
@@ -82,7 +97,8 @@ describe("checkAdminToken", () => {
     expect(res.status).toBe(401)
   })
 
-  it("allows GET /api/mappings on a public instance (no token)", async () => {
+  it("allows GET /api/mappings on a public instance (flag set, no token)", async () => {
+    process.env.POSTERIUM_PUBLIC_INSTANCE = "1"
     const req = new NextRequest("http://localhost:3000/api/mappings", { method: "GET" })
     const { GET } = await import("@/app/api/mappings/route")
     const res = await GET(req)

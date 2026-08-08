@@ -66,7 +66,9 @@ export function useMappingsStore() {
         })
         if (!res.ok) {
           const errBody = await res.json().catch(() => null)
-          const msg = errBody?.error || errBody?.details ? Object.values(errBody.details).flat().join("; ") : t("ui.importError")
+          const hasDetails = errBody && typeof errBody.details === "object" && errBody.details !== null
+          const detailsMsg = hasDetails ? Object.values(errBody.details).flat().join("; ") : ""
+          const msg = errBody?.error || detailsMsg || t("ui.importError")
           import("sonner").then(({ toast }) => toast(msg))
           return
         }

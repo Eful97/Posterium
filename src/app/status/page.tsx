@@ -31,11 +31,6 @@ interface HealthData {
     mappingsCount: number
     dataFileExists: boolean | null
   }
-  system: {
-    node: string
-    platform: string
-    env: string
-  }
 }
 
 interface CacheTagEntry {
@@ -138,9 +133,6 @@ export default function StatusPage() {
             <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
               <h2 className="text-base font-semibold mb-3">{t("ui.statusSystem")}</h2>
               <div className="space-y-1">
-                <StatusRow label={t("ui.statusNode")} ok extra={<>{data.system.node}</>} />
-                <StatusRow label={t("ui.statusPlatform")} ok extra={<>{data.system.platform}</>} />
-                <StatusRow label={t("ui.statusEnvironment")} ok extra={<>{data.system.env}</>} />
                 <StatusRow label={t("ui.statusOverall")} ok={data.status === "healthy"} extra={data.status === "healthy" ? t("ui.statusHealthy") : t("ui.statusDegraded")} />
               </div>
             </div>

@@ -78,4 +78,16 @@ describe("PosterPreview", () => {
     fireEvent.click(screen.getByText("ui.retry"))
     expect(setImageError).toHaveBeenCalledWith(false)
   })
+
+  it("calls onRetry on retry click when provided (re-fetch del preview)", () => {
+    const setImageError = vi.fn()
+    const onRetry = vi.fn()
+    renderWithCtx(
+      <PosterPreview {...BASE_PROPS} imageError setImageError={setImageError} onRetry={onRetry} />,
+      { selected: SELECTED_MOVIE, previewUrl: "https://example.com/preview", t },
+    )
+    fireEvent.click(screen.getByText("ui.retry"))
+    expect(setImageError).toHaveBeenCalledWith(false)
+    expect(onRetry).toHaveBeenCalledTimes(1)
+  })
 })

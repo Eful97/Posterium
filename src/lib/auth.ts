@@ -7,9 +7,19 @@ function resolveAdminToken(): string | undefined {
   return process.env.POSTERIUM_ADMIN_TOKEN || process.env.ADMIN_TOKEN || undefined
 }
 
-if (!resolveAdminToken()) {
-  log.warn("⚠️  Nessun ADMIN_TOKEN configurato — route admin aperte (istanza pubblica, es. HF Spaces).")
-  log.warn("   Imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) per proteggere le route admin (x-admin-token / Bearer).")
+/** Istanza pubblica esplicita: unico modo per tenere le route admin aperte
+ *  senza ADMIN_TOKEN (es. HF Spaces multi-utente). */
+function isPublicInstance(): boolean {
+  return process.env.POSTERIUM_PUBLIC_INSTANCE === "1"
+}
+
+if (!resolveAdminToken() && !isPublicInstance()) {
+  log.warn("⚠️  Nessun ADMIN_TOKEN configurato e POSTERIUM_PUBLIC_INSTANCE non è 1 — route admin CHIUSE (fail-closed).")
+  log.warn("   - Istanza pubblica (HF Spaces multi-utente): imposta POSTERIUM_PUBLIC_INSTANCE=1")
+  log.warn("   - Istanza privata: imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) (x-admin-token / Bearer)")
+} else if (!resolveAdminToken()) {
+  log.warn("⚠️  POSTERIUM_PUBLIC_INSTANCE=1 senza ADMIN_TOKEN — route admin APERTE (istanza pubblica esplicita).")
+  log.warn("   Imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) per proteggerle, o rimuovi il flag.")
 }
 
 function constantTimeEqual(a: string, b: string): boolean {
@@ -19,12 +29,12 @@ function constantTimeEqual(a: string, b: string): boolean {
 
 export function checkAdminToken(request: Request): boolean {
   const token = resolveAdminToken()
-  // Nessun token configurato → istanza pubblica (HF Spaces, multi-utente via
-  // profili UUID): le route restano aperte. Il client non invia mai il token
-  // admin, quindi bloccare senza token rompe il salvataggio in produzione
-  // (POST /api/mappings → 401). Se un token È configurato, la protezione è
-  // fail-closed: token assente o errato → rifiutato (constant-time).
-  if (!token) return true
+  // Nessun token configurato → la modalità pubblica (route aperte, HF Spaces
+  // multi-utente) deve essere ESPLICITA via POSTERIUM_PUBLIC_INSTANCE=1: il
+  // client non invia mai il token admin, quindi la modalità pubblica è l'unico
+  // modo per far funzionare il salvataggio su HF Spaces. Un'istanza privata che
+  // ha dimenticato il token NON resta esposta → fail-closed.
+  if (!token) return isPublicInstance()
 
   const headers = request.headers
   const bearer = headers.get("authorization")?.replace(/^Bearer\s+/i, "")

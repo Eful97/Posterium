@@ -128,8 +128,11 @@ export async function posteriumCatalog(
   if (catalogId.length > 80) return catalogResponse({ metas: [] })
   const stType = normalizeCatalogType(mediaType)
   const mdblistKeyParam = req.nextUrl.searchParams.get("mdblist_key") || undefined
+  // Chiave TMDB della richiesta: parte del cache key così un catalogo vuoto
+  // servito a una richiesta senza chiave non avvelena quelle keyed (D3).
+  const apiKey = resolveRequestApiKey(req)
 
-  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKeyParam ? `:mk${hashFragment(mdblistKeyParam)}` : ""}`
+  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKeyParam ? `:mk${hashFragment(mdblistKeyParam)}` : ""}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
 
@@ -138,7 +141,6 @@ export async function posteriumCatalog(
 
     if (catalogId.startsWith("posterium-jw")) {
       const rows = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW")
-      const apiKey = resolveRequestApiKey(req)
       if (!apiKey) return catalogResponse({ metas: [] })
       const results = await Promise.all(rows.slice(0, 20).map(async (row) => {
         try {
@@ -168,7 +170,7 @@ export async function posteriumCatalog(
           const tmdbId = Number(item.tmdb)
           if (!tmdbId) return null
           try {
-            const d = await getDetails("tv", tmdbId, "it-IT", resolveRequestApiKey(req))
+            const d = await getDetails("tv", tmdbId, "it-IT", apiKey)
             if (!d?.id) return null
             return { d, tmdbId, imdb: item.imdb }
           } catch {
@@ -177,7 +179,7 @@ export async function posteriumCatalog(
         }))
         const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdb: string } => r !== null)
         metas = await Promise.all(validResults.map(async (r) => {
-          const imdbId = r.imdb || await resolveImdbId("tv", r.tmdbId, resolveRequestApiKey(req))
+          const imdbId = r.imdb || await resolveImdbId("tv", r.tmdbId, apiKey)
           return {
             id: catalogMetaId(imdbId, r.tmdbId),
             type: "series",
@@ -193,7 +195,6 @@ export async function posteriumCatalog(
         if (catalogId.includes(k)) { slug = v; break }
       }
       if (slug) {
-        const apiKey = resolveRequestApiKey(req)
         const data = apiKey ? await getTop10(slug, "italy", apiKey).catch(() => null) : null
         if (data) {
           const items = stType === "movie" ? data.movies : data.tv

@@ -154,12 +154,15 @@ export function MoodBoardTile({
 
         {/* Delete button (always visible on hover) */}
         {!selectMode && (
-          <span
+          <button
+            type="button"
+            aria-label={t("ui.delete")}
             onClick={(e) => { e.stopPropagation(); onRemove(e) }}
+            onKeyDown={(e) => e.stopPropagation()}
             className="absolute top-2 left-2 w-6 h-6 rounded-lg bg-red-900/70 flex items-center justify-center text-xs text-red-300 hover:bg-red-800 hover:text-red-200 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg shadow-black/30"
           >
             <Trash2 className="w-3.5 h-3.5" />
-          </span>
+          </button>
         )}
 
         {/* Select mode checkbox */}

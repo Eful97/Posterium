@@ -432,6 +432,7 @@ export function usePosterium(): PosteriumCtx {
     const saved = safeGetItem("preferred_lang")
     if (saved) {
       setLang(saved)
+      setI18nLang(saved)
     } else {
       setShowLangPicker(true)
     }

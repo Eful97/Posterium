@@ -4,7 +4,7 @@ import { getJWRankings } from "@/lib/justwatch"
 // Vercel: il warmup itera decine di poster in batch → richiede il massimo
 // consentito. Su Hobby (10s) non completa comunque; su Pro vale 60s.
 export const maxDuration = 60
-import { buildPosterPublicUrl, getOriginFromRequest } from "@/lib/poster-public-url"
+import { buildPosterPublicUrl } from "@/lib/poster-public-url"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterSearchParams } from "@/lib/stremio-poster-params"
 import { getAll } from "@/lib/store"
@@ -69,8 +69,13 @@ function addTarget(targets: WarmupTarget[], target: WarmupTarget): void {
 }
 
 function buildPosterUrl(input: BuildPosterUrlInput): URL {
+  // Self-fetch con origin interno fisso (127.0.0.1), come le route
+  // defaults/mappings: l'origin derivato dagli header di richiesta
+  // (X-Forwarded-Host / Host) è controllabile dal client → host header
+  // injection / SSRF. Un CDN configurato via env (preferCdn) resta il primo
+  // target quando presente: è configurazione fidata.
   const url = buildPosterPublicUrl(`/api/poster/${input.target.type}/${input.target.id}`, {
-    origin: getOriginFromRequest(input.req),
+    origin: `http://127.0.0.1:${process.env.PORT || "3000"}`,
     preferCdn: input.req.nextUrl.searchParams.get("edge") !== "0",
   })
   const defaults = getServerDefaults()

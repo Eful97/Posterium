@@ -20,8 +20,11 @@ export async function GET(req: NextRequest) {
   if (!imdbId) return Response.json({ match: null })
 
   const cacheKey = `mdblist:${imdbId}`
-  const cached = cacheGet<{ key: string; rank: number } | null>(cacheKey)
-  if (cached !== undefined) return Response.json({ match: cached })
+  const cached = cacheGet<{ key: string; rank: number } | { noMatch: true }>(cacheKey)
+  if (cached !== null) {
+    if ("noMatch" in cached) return Response.json({ match: null })
+    return Response.json({ match: cached })
+  }
 
   const apiKey = req.nextUrl.searchParams.get('api_key') || process.env.MDBLIST_API_KEY
   if (!apiKey) return Response.json({ match: null })
@@ -73,6 +76,6 @@ let parsedItems: MdblistRawItem[] = []
     return Response.json({ match: null })
   }
   // No-match: TTL breve — l'item può comparire in classifica a breve.
-  cacheSet(cacheKey, null, ["mdblist"], 60_000)
+  cacheSet(cacheKey, { noMatch: true }, ["mdblist"], 60_000)
   return Response.json({ match: null })
 }

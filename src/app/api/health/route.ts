@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { DATA_DIR } from "@/lib/data-dir"
 import { getAll, getStorageMode } from "@/lib/store"
+import { checkTmdbEndpoint, getTmdbApiKey } from "@/lib/tmdb"
 
 async function fileExists(file: string): Promise<boolean> {
   try {
@@ -34,29 +35,23 @@ async function canWriteDir(dir: string): Promise<boolean> {
   }
 }
 
-async function checkEndpoint(url: string): Promise<{ ok: boolean; status: number; time: number }> {
-  const start = performance.now()
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
-    return { ok: res.ok, status: res.status, time: Math.round(performance.now() - start) }
-  } catch {
-    return { ok: false, status: 0, time: Math.round(performance.now() - start) }
-  }
-}
-
 export async function GET(request: Request) {
   const rl = rateLimit(rateLimitKey(request), "default")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
-  const { searchParams } = new URL(request.url)
-  const apiKey = searchParams.get("api_key") || process.env.TMDB_API_KEY || ""
+  // S9: la chiave arriva via header x-api-key (o da istanza/env), MAI dalla
+  // query string della richiesta: un health-check come
+  // `GET /api/health?api_key=<REAL>` registrerebbe la chiave nei log di
+  // accesso di proxy/CDN/host. Nell'URL OUTBOUND verso api.themoviedb.org la
+  // chiave resta in query perché la v3 TMDB la richiede così (vedi tmdb.ts).
+  const apiKey = request.headers.get("x-api-key") || getTmdbApiKey() || ""
 
   const [tmdbTrending, tmdbSearch, tmdbPopular, externalIds] = apiKey
     ? await Promise.all([
-        checkEndpoint(`https://api.themoviedb.org/3/trending/all/week?api_key=${apiKey}`),
-        checkEndpoint(`https://api.themoviedb.org/3/search/multi?query=test&api_key=${apiKey}`),
-        checkEndpoint(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`),
-        checkEndpoint(`https://api.themoviedb.org/3/movie/550/external_ids?api_key=${apiKey}`),
+        checkTmdbEndpoint("/trending/all/week", apiKey),
+        checkTmdbEndpoint("/search/multi?query=test", apiKey),
+        checkTmdbEndpoint("/movie/popular", apiKey),
+        checkTmdbEndpoint("/movie/550/external_ids", apiKey),
       ])
     : [
         { ok: false, status: 401, time: 0 },
@@ -66,10 +61,10 @@ export async function GET(request: Request) {
       ]
 
   const justwatch = apiKey
-    ? await checkEndpoint(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&watch_region=IT`)
+    ? await checkTmdbEndpoint("/movie/popular?watch_region=IT", apiKey)
     : { ok: false, status: 401, time: 0 }
   const flixpatrol = apiKey
-    ? await checkEndpoint(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}`)
+    ? await checkTmdbEndpoint("/tv/popular", apiKey)
     : { ok: false, status: 401, time: 0 }
 
   const mappingsFile = path.join(DATA_DIR, "mappings.json")
@@ -107,8 +102,10 @@ export async function GET(request: Request) {
     status: tmdbTrending.ok && tmdbSearch.ok ? "healthy" : "degraded",
     timestamp: new Date().toISOString(),
     tmdb: { apiKey: !!apiKey, trending: tmdbTrending, search: tmdbSearch, popular: tmdbPopular, externalIds },
+    // Nessun dettaglio di runtime (versioni, platform, NODE_ENV): rivelerli
+    // aiuterebbe a bersagliare CVE note. L'endpoint dice solo se l'istanza
+    // risponde e se le dipendenze esterne sono raggiungibili.
     streaming: { justwatch, flixpatrol },
-    system: { node: process.version, platform: process.platform, env: process.env.NODE_ENV },
     storage,
   }
 

@@ -4,6 +4,10 @@ import * as matchers from "@testing-library/jest-dom/matchers"
 
 expect.extend(matchers)
 
+// I test simulano un'istanza pubblica (route admin aperte senza ADMIN_TOKEN):
+// la modalità deve essere esplicita via POSTERIUM_PUBLIC_INSTANCE=1 (vedi auth.ts).
+process.env.POSTERIUM_PUBLIC_INSTANCE = "1"
+
 afterEach(() => {
   cleanup()
 })
@@ -19,6 +23,11 @@ const itDict: Record<string, string> = {
   "badge.returning": "Ritorna",
   "badge.upcomingRelease": "In uscita {date}",
   "ui.deleteFailed": "Errore nella cancellazione di {count} poster",
+  "ui.loadingCatalogs": "Caricamento cataloghi...",
+  "ui.confirmDelete": "Eliminare questo poster?",
+  "ui.confirmDeleteMsg": "Vuoi eliminare {title}? Non può essere annullata.",
+  "ui.confirmDeleteSelected": "Eliminare {count} poster selezionati?",
+  "ui.confirmDeleteSelectedMsg": "Questa azione rimuoverà {count} poster selezionati. Non può essere annullata.",
   "badge.bingeWorthy": "Absolute Cinema",
   "badge.absoluteCinema": "Absolute Cinema",
   "badge.trending": "Di tendenza",

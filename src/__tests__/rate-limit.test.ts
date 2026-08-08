@@ -1,8 +1,11 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { NextRequest } from "next/server"
 import { rateLimitKey } from "@/lib/rate-limit"
 
-describe("rateLimitKey (M1 — preferenza header IP trusted)", () => {
+describe("rateLimitKey con POSTERIUM_TRUST_PROXY=1 (deploy dietro proxy fidato)", () => {
+  beforeEach(() => { process.env.POSTERIUM_TRUST_PROXY = "1" })
+  afterEach(() => { delete process.env.POSTERIUM_TRUST_PROXY })
+
   it("prefers cf-connecting-ip over x-real-ip and x-forwarded-for", () => {
     const req = new NextRequest("http://localhost:3000/", {
       headers: {
@@ -34,5 +37,29 @@ describe("rateLimitKey (M1 — preferenza header IP trusted)", () => {
     })
     expect(rateLimitKey(req)).toBe("10.10.10.10")
     expect(rateLimitKey(new NextRequest("http://localhost:3000/"))).toBe("local")
+  })
+})
+
+describe("rateLimitKey senza flag (default fail-safe — S3)", () => {
+  afterEach(() => { delete process.env.POSTERIUM_TRUST_PROXY })
+
+  it("ignora gli header IP spoofati dal client → bucket condiviso 'shared'", () => {
+    const req = new NextRequest("http://localhost:3000/", {
+      headers: {
+        "cf-connecting-ip": "1.2.3.4",
+        "x-real-ip": "5.6.7.8",
+        "x-forwarded-for": "9.9.9.9, 10.10.10.10",
+      },
+    })
+    expect(rateLimitKey(req)).toBe("shared")
+    expect(rateLimitKey(new NextRequest("http://localhost:3000/"))).toBe("shared")
+  })
+
+  it("il flag con valore non '1' non abilita la fiducia negli header", () => {
+    process.env.POSTERIUM_TRUST_PROXY = "true"
+    const req = new NextRequest("http://localhost:3000/", {
+      headers: { "x-real-ip": "5.6.7.8" },
+    })
+    expect(rateLimitKey(req)).toBe("shared")
   })
 })

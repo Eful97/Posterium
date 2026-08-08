@@ -53,7 +53,10 @@ function ttlForTags(tags: string[]): number {
 }
 
 function isExpired(entry: CacheEntry<unknown>): boolean {
-  const refreshHour = isScheduledRefresh(entry.tags)
+  // Un `ttl` esplicito vince sempre sul refresh schedulato: chi cacchetta con
+  // un TTL corto (es. catalogo vuoto a 60s) non deve restare congelato fino
+  // all'ora di refresh giornaliera.
+  const refreshHour = entry.ttl === undefined ? isScheduledRefresh(entry.tags) : null
   if (refreshHour !== null) {
     // Use UTC so the refresh time is the same regardless of server timezone
     const now = Date.now()

@@ -1,5 +1,6 @@
 import { cacheGet, cacheSet } from "./cache"
 import { createLogger } from "@/lib/logger"
+import { getTmdbApiKey } from "@/lib/tmdb"
 
 const log = createLogger("imdb-resolver")
 
@@ -15,7 +16,10 @@ export async function resolveImdbToTmdb(imdbId: string, mediaType: "movie" | "tv
   const cached = cacheGet<number>(cacheKey)
   if (cached !== null) return cached === -1 ? null : cached
 
-  const apiKey = process.env.TMDB_API_KEY
+  // S9: la chiave è risolta in modo centralizzato (chiave d'istanza → env),
+  // come negli altri moduli TMDB. La chiave resta in query nell'URL outbound
+  // perché la v3 TMDB la richiede così; nessun log cattura l'URL completo.
+  const apiKey = getTmdbApiKey()
   if (!apiKey) return null
 
   try {

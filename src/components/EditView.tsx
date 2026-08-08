@@ -108,7 +108,7 @@ export default function EditView() {
     }
   }
 
-  const { imageError, setImageError, previewLoading, loadProgress, imgSrc } = usePosterPreview()
+  const { imageError, setImageError, previewLoading, loadProgress, imgSrc, retry } = usePosterPreview()
 
   const searchBar = (
     <div className={selected ? "w-full max-w-lg mb-5 relative z-[100] isolate" : "max-w-lg mx-auto relative z-[100] isolate mb-8"}>
@@ -234,6 +234,7 @@ export default function EditView() {
                       imageError={imageError}
                       setImageError={setImageError}
                       imgSrc={imgSrc}
+                      onRetry={retry}
                     />
                   </div>
                   <PosterDepthSheen sheenStrength={20} />

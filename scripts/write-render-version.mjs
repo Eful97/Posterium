@@ -18,6 +18,7 @@ const RENDER_FILES = [
   "src/lib/badges.ts",
   "src/lib/blur.ts",
   "src/lib/config-token.ts",
+  "src/lib/image-utils.ts",
   "src/lib/logo-layout.ts",
   "src/lib/logo-selection.ts",
   "src/lib/luminance.ts",

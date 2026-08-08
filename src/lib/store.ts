@@ -54,8 +54,12 @@ async function kvRemoveAll() {
 async function kvImportMappings(mappings: Mapping[]) {
   const { kv } = await import("@vercel/kv")
   const entries: Record<string, Mapping> = {}
+  const now = new Date().toISOString()
   for (const m of mappings) {
-    entries[`${m.mediaType}:${m.tmdbId}`] = m
+    // Timbra updatedAt come fa upsert(): i cache key dei poster includono
+    // mapping.updatedAt (mapVersion), quindi senza timbro l'import resterebbe
+    // invisibile alla cache e i poster continuerebbero ad essere serviti stantii.
+    entries[`${m.mediaType}:${m.tmdbId}`] = { ...m, updatedAt: now }
   }
   await kv.hset("mappings", entries)
 }
@@ -230,9 +234,11 @@ export async function importMappings(mappings: Mapping[]) {
   }
   return enqueueWrite(async () => {
     const data = await readFromMem()
+    const now = new Date().toISOString()
     for (const m of mappings) {
       const key = `${m.mediaType}:${m.tmdbId}`
-      data[key] = m
+      // Stesso motivo del ramo KV: updatedAt è parte del cache key dei poster.
+      data[key] = { ...m, updatedAt: now }
     }
     await persist(data)
   })

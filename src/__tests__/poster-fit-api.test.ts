@@ -201,3 +201,35 @@ describe("POST /api/poster-fit", () => {
     expect(json.ranked[0].posterPath).toBe("/dark.jpg")
   })
 })
+
+describe("POST /api/poster-fit — auth (S10)", () => {
+  afterEach(() => {
+    delete process.env.POSTERIUM_ADMIN_TOKEN
+    delete process.env.ADMIN_TOKEN
+    vi.restoreAllMocks()
+  })
+
+  it("returns 401 without a valid admin token when one is configured", async () => {
+    process.env.POSTERIUM_ADMIN_TOKEN = "secret"
+    const req = mockNextRequest({ posterPaths: ["/test.jpg"], logoPath: "/logo.png" })
+    const res = await POST(req)
+    expect(res.status).toBe(401)
+  })
+
+  it("accepts the request with a valid x-admin-token", async () => {
+    process.env.POSTERIUM_ADMIN_TOKEN = "secret"
+    const posterBuf = await makePosterBuffer(20, 20, 30)
+    const logoBuf = await makeLogoBuffer(255, 255, 255)
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/logo")) return new Response(new Uint8Array(logoBuf))
+      return new Response(new Uint8Array(posterBuf))
+    }))
+    const req = new NextRequest("http://localhost:3000/api/poster-fit", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-admin-token": "secret" },
+      body: JSON.stringify({ posterPaths: ["/test.jpg"], logoPath: "/logo.png" }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+  })
+})

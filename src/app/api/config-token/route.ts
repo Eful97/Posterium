@@ -3,6 +3,7 @@ import { configTokenSchema, encodeConfig, type PosteriumUserConfig } from "@/lib
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { isSameOrigin, originMismatchResponse } from "@/lib/auth"
 import { createLogger } from "@/lib/logger"
+import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/read-body"
 
 const log = createLogger("config-token")
 
@@ -21,8 +22,9 @@ export async function POST(req: NextRequest) {
 
   let body: unknown
   try {
-    body = await req.json()
-  } catch {
+    body = await readJsonBody(req, DEFAULT_MAX_BODY_BYTES)
+  } catch (e) {
+    if (e instanceof BodyTooLargeError) return Response.json({ error: "Request body too large" }, { status: 413 })
     return Response.json({ error: "Invalid JSON body" }, { status: 400 })
   }
 

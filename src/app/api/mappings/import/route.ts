@@ -3,8 +3,14 @@ import { importMappings } from "@/lib/store"
 import { mappingSchema } from "@/lib/validation"
 import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
+import { readJsonBody, BodyTooLargeError, InvalidJsonBodyError } from "@/lib/read-body"
+import { cacheInvalidatePosterData } from "@/lib/cache"
 
-const MAX_BODY_BYTES = 100_000
+// Il body cap deve stare sopra al massimo payload legittimo: MAX_MAPPINGS
+// mapping completi (decine di campi ciascuno) possono pesare centinaia di KB,
+// quindi 100KB li rifiuterebbe a priori. 1MB lascia spazio a 1000 mapping pieni
+// mantenendo un limite di memoria rigoroso per body anomali.
+const MAX_BODY_BYTES = 1_000_000
 const MAX_MAPPINGS = 1000
 
 export async function POST(req: NextRequest) {
@@ -14,14 +20,22 @@ export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return originMismatchResponse()
 
   // Cap sulla dimensione del body: l'import è un'operazione in blocco e un
-  // body enorme può saturare memoria + disco.
+  // body enorme può saturare memoria + disco. Il check content-length è un
+  // fast-path; readJsonBody applica il cap reale anche in chunked encoding.
   const contentLength = Number(req.headers.get("content-length") || "0")
   if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
     return Response.json({ error: "Request body too large" }, { status: 413 })
   }
 
-  const body = await req.json()
-  let raw = Array.isArray(body) ? body : body.mappings
+  let body: unknown
+  try {
+    body = await readJsonBody(req, MAX_BODY_BYTES)
+  } catch (e) {
+    if (e instanceof BodyTooLargeError) return Response.json({ error: "Request body too large" }, { status: 413 })
+    if (e instanceof InvalidJsonBodyError) return Response.json({ error: "Invalid JSON body" }, { status: 400 })
+    throw e
+  }
+  let raw = Array.isArray(body) ? body : (body as { mappings?: unknown } | null)?.mappings
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     raw = Object.values(raw)
   }
@@ -45,5 +59,11 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "No valid mappings found", details: errors }, { status: 400 })
   }
   await importMappings(valid)
+  // L'import è un'operazione bulk che può toccare migliaia di mapping: invalida
+  // tutta la cache poster/badge/catalog/stremio (come DELETE wipe-all). I cache
+  // key dei poster includono updatedAt, quindi con la nuova timbratura i vecchi
+  // entry non vengono più serviti comunque — questa invalidazione li libera
+  // subito invece di lasciarli scadere col TTL.
+  cacheInvalidatePosterData()
   return Response.json({ ok: true, count: valid.length, errors: Object.keys(errors).length > 0 ? errors : undefined })
 }

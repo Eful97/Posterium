@@ -7,6 +7,7 @@ import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { createLogger } from "@/lib/logger"
 import { z } from "zod"
 import { BADGE_STYLES, RANKING_BADGE_STYLES } from "@/lib/badge-styles"
+import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/read-body"
 
 const log = createLogger("defaults")
 
@@ -27,7 +28,8 @@ const defaultsSchema = z.object({
   defaultLogoFitEnabled: z.boolean().optional(),
   networkLogo: z.boolean().optional(),
   ribbonSide: z.enum(["left", "right"]).optional(),
-  // Chiavi d'istanza — in GET mai per intero (solo •••• + ultimi 4).
+  // Chiavi d'istanza — in GET mai per intero né parzialmente (solo ••••,
+  // S7: il suffix permetterebbe di verificare/confrontare il segreto).
   tmdbApiKey: z.string().max(200).optional(),
   mdblistApiKey: z.string().max(200).optional(),
 })
@@ -48,9 +50,10 @@ export async function PUT(req: NextRequest) {
   if (!isSameOrigin(req)) return originMismatchResponse()
   let body: unknown
   try {
-    body = await req.json()
-  } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 })
+    body = await readJsonBody(req, DEFAULT_MAX_BODY_BYTES)
+  } catch (e) {
+    if (e instanceof BodyTooLargeError) return Response.json({ error: "Request body too large" }, { status: 413 })
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 })
   }
   const parsed = defaultsSchema.safeParse(body)
   if (!parsed.success) {

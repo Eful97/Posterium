@@ -125,11 +125,16 @@ export async function setServerDefaults(d: ServerDefaults): Promise<void> {
   await writeQueue
 }
 
-/** Mascara un segreto: mai mostrato per intero (•••• + ultimi 4). */
+/**
+ * Mascara un segreto: mai mostrato per intero né parzialmente.
+ * Rivelare gli ultimi 4 caratteri permetterebbe a chi osserva la GET di
+ * verificare una chiave (es. brute-force incrementale) o di distinguere tra
+ * istanze. Il placeholder fisso "••••" basta per il round-trip PUT:
+ * isMaskedValue() riconosce il prefisso e lascia la chiave invariata.
+ */
 export function maskKey(value: string | undefined): string {
   if (!value) return ""
-  if (value.length <= 4) return "••••"
-  return `••••${value.slice(-4)}`
+  return "••••"
 }
 
 /** True se il valore inviato dal client è il placeholder mascherato (non va salvato). */

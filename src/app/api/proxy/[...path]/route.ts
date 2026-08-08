@@ -15,36 +15,54 @@ class ProxyBodyTooLargeError extends Error {}
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "*",
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-cache, max-age=0, must-revalidate",
   }
 }
 
-/** Blocca richieste a IP privati / localhost per prevenire SSRF */
-function isPrivateHost(hostname: string): boolean {
-  return (
-    hostname === "localhost" ||
-    /^127\./.test(hostname) ||               // tutto loopback 127.0.0.0/8
-    hostname === "0.0.0.0" ||
-    hostname === "::1" ||
-    hostname === "[::]" ||
-    hostname === "::" ||
-    hostname === "[::1]" ||
-    hostname.endsWith(".local") ||
-    hostname.endsWith(".internal") ||
-    hostname.startsWith("10.") ||             // RFC 1918 10.0.0.0/8
-    hostname.startsWith("192.168.") ||        // RFC 1918 192.168.0.0/16
-    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||  // RFC 1918 172.16.0.0/12
-    /^169\.254\./.test(hostname) ||           // link-local
-    // IPv6 link-local / ULA / unspecified / loopback letterali
-    hostname.startsWith("fc") || hostname.startsWith("fd") ||  // fc00::/7 ULA
-    hostname.startsWith("fe8") || hostname.startsWith("fe9") || hostname.startsWith("fea") || hostname.startsWith("feb") || // fe80::/10 link-local
-    hostname.startsWith("[fc") || hostname.startsWith("[fd") ||
-    hostname.startsWith("[fe8") || hostname.startsWith("[fe9") || hostname.startsWith("[fea") || hostname.startsWith("[feb") ||
-    hostname.startsWith("[::1") ||
-    hostname.startsWith("::ffff:")            // IPv4-mapped IPv6 (:::ffff:a.b.c.d)
-  )
+/** Un hostname è un letterale IPv4 (es. 10.0.0.1) e non un nome DNS. */
+export function isIpv4Literal(hostname: string): boolean {
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)
+}
+
+/** Blocca richieste a IP privati / localhost per prevenire SSRF.
+ *
+ * Importante: i check sui prefissi IP (RFC 1918, fc00::/7, fe80::/10, …) si
+ * applicano SOLO ai letterali IP. Un nome DNS come "fcbarcelona.com" non deve
+ * essere bloccato solo perché inizia con "fc": per i nomi DNS la protezione
+ * arriva dal resolve (resolveAndCheckBlocked/isPrivateIp sugli indirizzi
+ * risolti), non da un match di prefisso sul testo.
+ */
+export function isPrivateHost(hostname: string): boolean {
+  const h = hostname.toLowerCase()
+  if (h === "localhost") return true
+  if (h.endsWith(".local") || h.endsWith(".internal")) return true
+
+  // Letterale IPv6 — rimuovi le parentesi per un match uniforme.
+  if (h.includes(":")) {
+    const bare = h.replace(/^\[|\]$/g, "")
+    return (
+      bare === "::1" || bare === "::" ||           // loopback / unspecified
+      bare.startsWith("::ffff:") ||                // IPv4-mapped IPv6
+      bare.startsWith("fc") || bare.startsWith("fd") ||  // fc00::/7 ULA
+      /^fe[89ab]/.test(bare)                       // fe80::/10 link-local
+    )
+  }
+
+  // Letterale IPv4 — i check RFC 1918 / link-local valgono solo qui.
+  if (isIpv4Literal(h)) {
+    return (
+      /^127\./.test(h) ||                          // loopback 127.0.0.0/8
+      h === "0.0.0.0" ||
+      h.startsWith("10.") ||                       // RFC 1918 10.0.0.0/8
+      h.startsWith("192.168.") ||                  // RFC 1918 192.168.0.0/16
+      /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||      // RFC 1918 172.16.0.0/12
+      /^169\.254\./.test(h)                        // link-local
+    )
+  }
+
+  // Nome DNS: mai bloccato dal testo, sarà valutato sugli IP risolti.
+  return false
 }
 
 /** Verifica se un indirizzo IP risolto (IPv4 o IPv6) è privato/non routabile. */
@@ -180,7 +198,7 @@ async function safeFetch(url: string, options: RequestInit & { signal: AbortSign
       log.warn("Blocked SSRF redirect", { from: currentUrl, to: targetUrl })
       return new Response(JSON.stringify({ error: "Redirect to blocked target" }), {
         status: 400,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" },
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       })
     }
     currentUrl = targetUrl
@@ -188,7 +206,7 @@ async function safeFetch(url: string, options: RequestInit & { signal: AbortSign
   }
   return new Response(JSON.stringify({ error: "Too many redirects" }), {
     status: 400,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" },
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
   })
 }
 
@@ -248,6 +266,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
   }
 
   // 2. Resource Proxy (catalog, meta, etc.)
+  // Il proxy è pensato per addon Stremio: accetta solo i path standard degli
+  // addon, non qualunque percorso del target. Questo evita che l'istanza sia
+  // usata come proxy HTTP generico / open relay per URL arbitrari.
+  const RESOURCE_PREFIXES = new Set(["catalog", "meta", "stream", "subtitles", "search"])
+  if (!RESOURCE_PREFIXES.has(firstPath)) {
+    log.warn("Blocked non-addon proxy path", { path: firstPath })
+    return Response.json({ error: "Invalid proxy resource path" }, { status: 400, headers: corsHeaders() })
+  }
   try {
     const subPath = path.join("/")
     const targetBase = targetUrl.replace(/\/manifest\.json$/, "").replace(/\/$/, "")

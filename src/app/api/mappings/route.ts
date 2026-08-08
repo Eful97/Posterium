@@ -8,6 +8,7 @@ import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { createLogger } from "@/lib/logger"
+import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/read-body"
 
 const log = createLogger("mappings")
 
@@ -25,7 +26,13 @@ export async function POST(req: NextRequest) {
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
   if (!isSameOrigin(req)) return originMismatchResponse()
-  const body = await req.json()
+  let body: unknown
+  try {
+    body = await readJsonBody(req, DEFAULT_MAX_BODY_BYTES)
+  } catch (e) {
+    if (e instanceof BodyTooLargeError) return Response.json({ error: "Request body too large" }, { status: 413 })
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 })
+  }
   const parsed = mappingSchema.safeParse(body)
   if (!parsed.success) {
     return Response.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })

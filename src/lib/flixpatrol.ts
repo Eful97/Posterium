@@ -6,30 +6,65 @@ import { createLogger } from "@/lib/logger"
 
 const log = createLogger("flixpatrol")
 
-const CATALOG_URL = "https://raw.githubusercontent.com/0xConstant1/fp-crawler/main/catalogs/italy.json"
+const CATALOG_BASE = "https://raw.githubusercontent.com/0xConstant1/fp-crawler/main/catalogs"
 const TMDB_BASE = "https://api.themoviedb.org/3"
+
+// Slug paese supportati dal repo fp-crawler. Liste chiuse: un paese non in
+// questa lista viene rifiutato (fail-closed) invece di fare fetch di un file
+// arbitrario (path traversal / URL injection) o di ripiegare silenziosamente
+// sull'Italia.
+const SUPPORTED_COUNTRIES = new Set([
+  "albania", "algeria", "antigua-and-barbuda", "argentina", "armenia", "australia", "austria",
+  "azerbaijan", "bahamas", "bahrain", "bangladesh", "belarus", "belgium", "belize", "bolivia",
+  "bosnia-and-herzegovina", "botswana", "brazil", "bulgaria", "cambodia", "canada", "chile",
+  "colombia", "costa-rica", "croatia", "cyprus", "czech-republic", "denmark", "dominica",
+  "dominican-republic", "ecuador", "egypt", "estonia", "finland", "france", "gambia", "germany",
+  "ghana", "greece", "guatemala", "honduras", "hong-kong", "hungary", "iceland", "india",
+  "indonesia", "iraq", "ireland", "israel", "italy", "jamaica", "japan", "jordan", "kazakhstan",
+  "kenya", "kuwait", "laos", "latvia", "lebanon", "libya", "lithuania", "luxembourg", "malaysia",
+  "malta", "mauritania", "mauritius", "mexico", "moldova", "mongolia", "montenegro", "morocco",
+  "mozambique", "namibia", "netherlands", "new-zealand", "nicaragua", "niger", "nigeria",
+  "north-macedonia", "norway", "oman", "pakistan", "panama", "paraguay", "peru", "philippines",
+  "poland", "portugal", "qatar", "romania", "salvador", "saudi-arabia", "serbia", "singapore",
+  "slovakia", "slovenia", "south-africa", "south-korea", "spain", "sri-lanka", "sweden",
+  "switzerland", "taiwan", "tajikistan", "thailand", "trinidad-and-tobago", "tunisia", "turkey",
+  "uganda", "ukraine", "united-arab-emirates", "united-kingdom", "united-states", "uruguay",
+  "venezuela", "vietnam", "yemen", "zimbabwe",
+])
+
+const catalogUrl = (country: string) => `${CATALOG_BASE}/${country}.json`
 
 // Cache su filesystem: se DATA_DIR non è scrivibile (es. runtime serverless
 // read-only di Vercel) usa /tmp — è solo una cache, la perdita a ogni cold
 // start è accettabile. La persistenza vera (mapping/profili) resta a KV.
-const CACHE_FILE = (() => {
+const cacheFile = (() => {
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true })
     fs.accessSync(DATA_DIR, fs.constants.W_OK)
-    return path.join(DATA_DIR, "flixpatrol_cache.json")
+    return (country: string) => path.join(DATA_DIR, `flixpatrol_cache_${country}.json`)
   } catch {
-    const fallback = path.join(os.tmpdir(), "posterium-flixpatrol_cache.json")
-    log.warn(`DATA_DIR non scrivibile — cache flixpatrol su ${fallback}`)
-    return fallback
+    const fallbackDir = os.tmpdir()
+    log.warn(`DATA_DIR non scrivibile — cache flixpatrol su ${fallbackDir}`)
+    return (country: string) => path.join(fallbackDir, `posterium-flixpatrol_cache_${country}.json`)
   }
 })()
 
 const tmdbCache = new Map<string, { data: unknown; timestamp: number }>()
 const TMDB_CACHE_TTL = 5 * 60 * 1000
+const TMDB_CACHE_MAX = 500
 
-// Cache in memoria del catalogo: evita readFileSync (I/O disco) ad ogni richiesta.
-// Il file su disco resta come fallback persistente tra i processi.
-let memCache: CacheData = { timestamp: 0, catalog: null }
+/** Cache key neutra: l'URL senza api_key. La chiave non deve contenere il
+ *  segreto (S9, stesso principio di tmdb.ts) e la cache è condivisa tra chiavi
+ *  diverse: i dati TMDB sono pubblici, la chiave solo un gate di accesso. */
+function tmdbCacheKey(url: string): string {
+  const u = new URL(url)
+  u.searchParams.delete("api_key")
+  return u.toString()
+}
+
+// Cache in memoria del catalogo per paese: evita readFileSync (I/O disco) ad
+// ogni richiesta. Il file su disco resta come fallback persistente tra i processi.
+const memCache = new Map<string, CacheData>()
 
 const SLUG_TO_PLATFORM: Record<string, string> = {
   netflix: "Netflix",
@@ -79,10 +114,11 @@ export interface FlixPatrolTop10 {
   tv: FlixPatrolEnrichedItem[]
 }
 
-function loadCache(): CacheData {
+function loadCache(country: string): CacheData {
   try {
-    if (fs.existsSync(CACHE_FILE)) {
-      const raw = JSON.parse(fs.readFileSync(CACHE_FILE, "utf-8"))
+    const file = cacheFile(country)
+    if (fs.existsSync(file)) {
+      const raw = JSON.parse(fs.readFileSync(file, "utf-8"))
       if (raw && typeof raw === "object" && "catalog" in raw) {
         return raw as CacheData
       }
@@ -91,30 +127,38 @@ function loadCache(): CacheData {
   return { timestamp: 0, catalog: null }
 }
 
-function saveCache(data: CacheData) {
-  const dir = path.dirname(CACHE_FILE)
+function saveCache(country: string, data: CacheData) {
+  const file = cacheFile(country)
+  const dir = path.dirname(file)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   // Write atomica: tmp + rename. Se il processo muore a metà scrittura, il file
   // principale resta intatto e loadCache() continua a funzionare sullo stato valido.
-  const tmp = `${CACHE_FILE}.tmp`
+  const tmp = `${file}.tmp`
   fs.writeFileSync(tmp, JSON.stringify(data))
-  fs.renameSync(tmp, CACHE_FILE)
+  fs.renameSync(tmp, file)
 }
 
-async function fetchCatalog(): Promise<CatalogData> {
-  const res = await fetch(CATALOG_URL, { signal: AbortSignal.timeout(15000) })
+async function fetchCatalog(country: string): Promise<CatalogData> {
+  const res = await fetch(catalogUrl(country), { signal: AbortSignal.timeout(15000) })
   if (!res.ok) throw new Error(`Catalog fetch failed: ${res.status}`)
   return res.json()
 }
 
 async function tmdbCachedFetch(url: string): Promise<unknown | null> {
-  const cached = tmdbCache.get(url)
-  if (cached && Date.now() - cached.timestamp < TMDB_CACHE_TTL) return cached.data
+  const cacheKey = tmdbCacheKey(url)
+  const cached = tmdbCache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < TMDB_CACHE_TTL) {
+    // Promote a MRU (prima chiave = least-recently-used all'eviction).
+    tmdbCache.delete(cacheKey)
+    tmdbCache.set(cacheKey, cached)
+    return cached.data
+  }
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
     if (!res.ok) return null
     const data = await res.json()
-    tmdbCache.set(url, { data, timestamp: Date.now() })
+    if (tmdbCache.size >= TMDB_CACHE_MAX) tmdbCache.delete(tmdbCache.keys().next().value!)
+    tmdbCache.set(cacheKey, { data, timestamp: Date.now() })
     return data
   } catch {
     return null
@@ -138,28 +182,34 @@ async function fetchPosterPath(tmdbId: number, mediaType: string, apiKey: string
 export async function getTop10(platformSlug: string, country = "italy", apiKey?: string): Promise<FlixPatrolTop10> {
   const platformName = SLUG_TO_PLATFORM[platformSlug]
   if (!platformName) throw new Error(`Unknown platform: ${platformSlug}`)
+  // Fail-closed: un paese fuori dalla lista non viene mai cercato su disco,
+  // in cache o su rete — evitiamo sia URL arbitrari (path traversal) sia il
+  // vecchio comportamento che restituiva sempre dati italiani.
+  if (!SUPPORTED_COUNTRIES.has(country)) {
+    throw new Error(`Unsupported country: ${country}`)
+  }
 
   const now = Date.now()
   const FOUR_HOURS = 4 * 60 * 60 * 1000
-  let cache = memCache
+  let cached = memCache.get(country)
   // Memoria stantia → prova il file su disco (fallback persistente) prima di rifare fetch.
-  if (!cache.catalog || now - cache.timestamp > FOUR_HOURS) {
-    const disk = loadCache()
+  if (!cached?.catalog || (cached && now - cached.timestamp > FOUR_HOURS)) {
+    const disk = loadCache(country)
     if (disk.catalog && now - disk.timestamp <= FOUR_HOURS) {
-      cache = disk
-      memCache = cache
+      cached = disk
+      memCache.set(country, cached)
     }
   }
-  let catalog = cache.catalog
+  let catalog = cached?.catalog
 
-  if (!catalog || now - cache.timestamp > FOUR_HOURS) {
+  if (!catalog || (cached && now - cached.timestamp > FOUR_HOURS)) {
     try {
-      catalog = await fetchCatalog()
-      cache = { catalog, timestamp: now }
-      memCache = cache
-      saveCache(cache)
+      catalog = await fetchCatalog(country)
+      cached = { catalog, timestamp: now }
+      memCache.set(country, cached)
+      saveCache(country, cached)
     } catch (e) {
-      log.error("Failed to fetch fresh catalog", { error: e instanceof Error ? e.message : String(e) })
+      log.error("Failed to fetch fresh catalog", { error: e instanceof Error ? e.message : String(e), country })
       if (!catalog) throw e
     }
   }
@@ -204,10 +254,15 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
   return { platform: platformSlug, platformName, country, movies, tv }
 }
 
-export function getRawCatalog(): CatalogData | null {
-  return loadCache().catalog
+export function getRawCatalog(country = "italy"): CatalogData | null {
+  if (!SUPPORTED_COUNTRIES.has(country)) return null
+  return loadCache(country).catalog
 }
 
 export function getSupportedPlatforms(): { slug: string; name: string }[] {
   return Object.entries(SLUG_TO_PLATFORM).map(([slug, name]) => ({ slug, name }))
+}
+
+export function getSupportedCountries(): string[] {
+  return [...SUPPORTED_COUNTRIES].sort()
 }

@@ -10,7 +10,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Quando modifichi un parametro di resa visiva in un file, aggiorna il corrispettivo lato server (o viceversa). Il preview client deve sempre corrispondere al poster Stremio finale.
 
-App version: `0.15.2` — RENDER_VERSION: `ec3cc232d4` — rv: `ec3cc232d4`
+App version: `0.15.2` — RENDER_VERSION: `f89cfd92e3` — rv: `f89cfd92e3`
 
 > Quando questo file (o `.agents/*.md`) e il codice discordano, vince il codice (CODE WINS) — aggiorna la documentazione.
 

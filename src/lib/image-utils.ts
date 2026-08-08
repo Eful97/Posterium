@@ -64,14 +64,24 @@ const statsCache = new Map<string, CachedStats>()
 const STATS_CACHE_MAX = 200
 
 function bufferHash(buf: Buffer): number {
-  // Fast hash: use first 64 bytes + length as a cheap signature.
-  // Not cryptographic — just enough to detect different buffers.
-  let h = buf.length
-  const sample = Math.min(64, buf.length)
-  for (let i = 0; i < sample; i += 4) {
-    h = (h * 31 + (buf[i] ?? 0)) | 0
+  // Strided FNV-1a over the whole buffer. The old hash sampled only the first
+  // 64 bytes, which for JPEG/PNG are just the file header (SOI + JFIF + quant
+  // tables) — nearly identical across images, so the hash collapsed to a
+  // function of length and different posters could collide in statsCache.
+  // Striding uniformly covers the entire image while keeping cost bounded to
+  // ~SAMPLES reads even for multi-MB posters.
+  const SAMPLES = 4096
+  const step = Math.max(1, Math.floor(buf.length / SAMPLES))
+  let h = 0x811c9dc5 // FNV-1a offset basis
+  for (let i = 0; i < buf.length; i += step) {
+    h ^= buf[i] ?? 0
+    h = Math.imul(h, 0x01000193) // FNV-1a prime
   }
-  return h
+  // Mix length in so buffers of different size never alias even if the
+  // sampled bytes line up. Not cryptographic — just invalidation.
+  h ^= buf.length
+  h = Math.imul(h, 0x01000193)
+  return h >>> 0
 }
 
 /**
@@ -82,9 +92,9 @@ function bufferHash(buf: Buffer): number {
  * (RGB, stride 3) → raw pixel buffer → two JS passes over the pixels (first:
  * mean + per-channel means, second: stdDev). Not Sharp's native `.stats()`.
  *
- * Results are cached per (buffer-hash, region). The hash is cheap (first 64
- * bytes + length) — good enough to invalidate when the underlying image buffer
- * changes, not cryptographic.
+ * Results are cached per (buffer-hash, region). The hash is a strided FNV-1a
+ * over the whole buffer — good enough to invalidate when the underlying image
+ * buffer changes, not cryptographic.
  *
  * @param posterBuf - Raw poster image buffer (any format Sharp can read)
  * @param left - X offset within the STD_W × STD_H canvas

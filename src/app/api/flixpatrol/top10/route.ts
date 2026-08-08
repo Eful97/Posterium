@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { getTop10, getSupportedPlatforms } from "@/lib/flixpatrol"
+import { getTop10, getSupportedPlatforms, getSupportedCountries } from "@/lib/flixpatrol"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { createLogger } from "@/lib/logger"
 
@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
   const valid = getSupportedPlatforms().find((p) => p.slug === platform)
   if (!valid) {
     return Response.json({ error: `Unknown platform: ${platform}` }, { status: 400 })
+  }
+  if (!getSupportedCountries().includes(country)) {
+    return Response.json({ error: `Unknown country: ${country}` }, { status: 400 })
   }
   try {
     const data = await getTop10(platform, country, apiKey)

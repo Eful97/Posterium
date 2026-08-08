@@ -24,6 +24,9 @@ export function MyPostersView() {
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showDeleteAll, setShowDeleteAll] = useState(false)
+  // Conferma prima della cancellazione (F9): singolo tile e multi-select.
+  const [confirmRemove, setConfirmRemove] = useState<Mapping | null>(null)
+  const [showDeleteSelected, setShowDeleteSelected] = useState(false)
   const [sortBy, setSortBy] = useState<"updated" | "alpha">("updated")
   const [typeOpen, setTypeOpen] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
@@ -234,9 +237,20 @@ export function MyPostersView() {
           <span className="text-sm font-semibold text-zinc-200 tabular-nums">{t("ui.selectedCount", { count: selected.size })}</span>
           <div className="flex items-center gap-2">
             <button type="button" aria-label={t("ui.cancel")} onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-muted hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-surface2 active:scale-95 transition-all duration-150">{t("ui.cancel")}</button>
-            <button type="button" aria-label={t("ui.delete")} disabled={deleting} onClick={deleteSelected} className="flex items-center gap-1.5 text-xs font-semibold text-danger bg-red-900/25 border border-red-900/50 px-4 py-1.5 rounded-xl hover:bg-red-900/40 hover:border-red-500 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
-              <Trash2 className="w-3.5 h-3.5" /> {deleting ? t("ui.deleting") : t("ui.delete")}
-            </button>
+            <div className="relative">
+              <button type="button" aria-label={t("ui.delete")} disabled={deleting} onClick={() => setShowDeleteSelected(true)} className="flex items-center gap-1.5 text-xs font-semibold text-danger bg-red-900/25 border border-red-900/50 px-4 py-1.5 rounded-xl hover:bg-red-900/40 hover:border-red-500 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                <Trash2 className="w-3.5 h-3.5" /> {deleting ? t("ui.deleting") : t("ui.delete")}
+              </button>
+              <ConfirmDialog
+                open={showDeleteSelected}
+                title={t("ui.confirmDeleteSelected", { count: selected.size })}
+                message={t("ui.confirmDeleteSelectedMsg", { count: selected.size })}
+                confirmLabel={t("ui.delete")}
+                onConfirm={() => { setShowDeleteSelected(false); void deleteSelected() }}
+                onCancel={() => setShowDeleteSelected(false)}
+                inline
+              />
+            </div>
           </div>
         </div>
       )}
@@ -309,7 +323,7 @@ export function MyPostersView() {
               const rect = tileEl?.getBoundingClientRect()
               if (rect) setLightbox({ mapping: m, rect })
             }}
-            onRemove={(e) => { e.stopPropagation(); removeMapping(m) }}
+            onRemove={(e) => { e.stopPropagation(); setConfirmRemove(m) }}
             collectionCount={collections.filter((c) => c.posterIds.includes(`${m.mediaType}:${m.tmdbId}`)).length}
             t={t}
           />
@@ -323,6 +337,18 @@ export function MyPostersView() {
         collections={collections}
         onAddToCollection={addToCollection}
         onRemoveFromCollection={removeFromCollection}
+      />
+      <ConfirmDialog
+        open={confirmRemove !== null}
+        title={t("ui.confirmDelete")}
+        message={confirmRemove ? t("ui.confirmDeleteMsg", { title: confirmRemove.title }) : ""}
+        confirmLabel={t("ui.delete")}
+        onConfirm={() => {
+          const target = confirmRemove
+          setConfirmRemove(null)
+          if (target) void removeMapping(target)
+        }}
+        onCancel={() => setConfirmRemove(null)}
       />
     </div>
   )

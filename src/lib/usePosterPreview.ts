@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useP } from "@/lib/context"
 import { useToast } from "@/components/Toast"
 
@@ -12,6 +12,9 @@ export function usePosterPreview() {
   const [previewLoading, setPreviewLoading] = useState(false)
   const [loadProgress, setLoadProgress] = useState(0)
   const [imgSrc, setImgSrc] = useState("")
+  // Bump per far ripartire la fetch: il Retry del preview non può dipendere
+  // solo da previewUrl (invariato dopo un errore), serve un nonce.
+  const [retryNonce, setRetryNonce] = useState(0)
   
   const xhrRef = useRef<XMLHttpRequest | null>(null)
   const loadDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -86,7 +89,12 @@ export function usePosterPreview() {
         loadDelayRef.current = null
       }
     }
-  }, [p.previewUrl])
+  }, [p.previewUrl, retryNonce])
+
+  // Rifà la fetch della preview corrente (usato dal pulsante Retry dopo un errore).
+  const retry = useCallback(() => {
+    setRetryNonce((n) => n + 1)
+  }, [])
 
   // Revoca l'object URL residuo SOLO allo smontaggio. La cleanup dell'effetto
   // sopra non può revocare: durante il caricamento della nuova preview l'immagine
@@ -106,5 +114,6 @@ export function usePosterPreview() {
     previewLoading,
     loadProgress,
     imgSrc,
+    retry,
   }
 }
