@@ -163,7 +163,7 @@ export async function posteriumCatalog(
         }
       }))
     } else if (catalogId.startsWith("posterium-anime")) {
-      const key = mdblistKeyParam || process.env.MDBLIST_API_KEY
+      const key = mdblistKeyParam || getServerDefaults().mdblistApiKey
       if (key) {
         const items = await fetchMDBList("mdblistAnime", key)
         const results = await Promise.all(items.map(async (item) => {

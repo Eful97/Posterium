@@ -77,9 +77,9 @@ Il repo è già configurato per HF Spaces Docker: frontmatter `sdk: docker` + `a
 
 1. **Crea (o usa) una Space** su [huggingface.co/spaces](https://huggingface.co/spaces) con SDK **Docker**, collegandola al repo `Eful97/Posterium`.
 2. **Env** (Space Settings → Variables):
-   - `TMDB_API_KEY`: chiave API TMDB
    - `NODE_OPTIONS=--max-old-space-size=1024`: alza il cap memoria (il default Docker è 384MB; HF ha 16GB)
-   - opzionali: `MDBLIST_API_KEY`, `POSTERIUM_ADMIN_TOKEN`
+   - opzionale: `POSTERIUM_ADMIN_TOKEN`
+   - ⚠️ **Le chiavi TMDB/MDBList non vanno nelle env**: si configurano dal browser in **Impostazioni → Chiavi API istanza** (persistono nello storage `/data`). L'editor funziona con la chiave personale del browser; Stremio e i cataloghi usano quella d'istanza.
 3. **Persistenza**: collega uno Storage bucket HF a `/data` (Settings → Storage → Link bucket), altrimenti i dati non persistono tra i rebuild. L'app lo segnala nei log d'avvio.
 4. **Sleep**: sul piano free la Space dorme dopo 48h di inattività e si riavvia automaticamente al primo visitatore.
 
@@ -108,12 +108,12 @@ Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza ric
 #### 3. Imposta le altre variabili d'ambiente
 | Variabile | Necessità |
 |---|---|
-| `TMDB_API_KEY` | 🔴 **Obbligatoria** — senza, i poster sono 404 e i cataloghi vuoti |
 | `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 **Obbligatorie su Vercel** — senza, salvare mapping = 500 (filesystem read-only) |
 | `CONFIG_HMAC_SECRET` | 🟠 Consigliata — sblocca i config token (senza sono fail-closed) |
-| `MDBLIST_API_KEY` | Opzionale — cataloghi anime |
 | `POSTERIUM_ADMIN_TOKEN` | Opzionale — proteggi le route admin |
 | `POSTERIUM_PUBLIC_INSTANCE` | Opzionale — `=1` abilita le route admin aperte senza token (istanza pubblica, es. HF Spaces) |
+
+> 🔑 **Chiavi API TMDB/MDBList**: NON sono più variabili d'ambiente. Si configurano dal browser in **Impostazioni → Chiavi API istanza** (persistono su KV su Vercel, mascherate). L'editor funziona anche con la chiave personale del browser; Stremio e i cataloghi usano quella d'istanza. Senza chiave d'istanza: poster 404 e cataloghi vuoti.
 
 #### 4. Dove vengono salvati i dati
 | Dato | Dove |
@@ -128,9 +128,9 @@ Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza ric
 - La cache poster in-memory si svuota al cold start (Vercel tiene le funzioni calde; il primo hit freddo fa il render pieno).
 
 #### 6. Troubleshooting
-- **Poster 404 con `TMDB API key is missing`** → manca `TMDB_API_KEY`.
-- **Cataloghi vuoti (0 titoli) su Vercel** → il catalogo richiede `TMDB_API_KEY` lato server (o la chiave d'istanza nelle Impostazioni). L'editor funziona con la chiave del browser, ma Stremio e i cataloghi usano quella del server.
-- **Più progetti**: se hai più deploy (es. `posterium` e `posterium-two`), ogni progetto ha le proprie env — verifica in quale stai guardando i log.
+- **Poster 404 con `TMDB API key is missing`** → manca la chiave d'istanza TMDB: impostala in **Impostazioni → Chiavi API istanza** (non più in env).
+- **Cataloghi vuoti (0 titoli) su Vercel** → il catalogo richiede la chiave d'istanza TMDB (persistita su KV). L'editor funziona con la chiave personale del browser, ma Stremio e i cataloghi usano quella d'istanza del server.
+- **Più progetti**: se hai più deploy (es. `posterium` e `posterium-two`), ogni progetto ha la propria chiave d'istanza — verifica in quale Impostazioni la stai configurando.
 
 📌 *URL Manifest Stremio*: `https://<tuo-app>.vercel.app/manifest.json`.
 
@@ -148,10 +148,10 @@ L'unica opzione gratuita con CPU sufficiente per i render poster di Posterium: *
    ssh ubuntu@<IP-istanza>
    sudo apt update && sudo apt install -y docker.io
    git clone https://github.com/Eful97/Posterium && cd Posterium
-   echo TMDB_API_KEY=la_tua_chiave > .env
    sudo docker compose up -d
    ```
 5. **Punta la RAM**: aggiungi a `.env` `NODE_OPTIONS=--max-old-space-size=2048` (hai 24GB) e collega un volume per `/data`.
+6. **Chiavi API**: inseriscile dal browser in **Impostazioni → Chiavi API istanza** (persistono in `/data/defaults.json`). Niente più env var.
 
 📌 *URL Manifest Stremio*: `http://<IP-istanza>:8080/manifest.json`
 
@@ -174,15 +174,12 @@ Trasforma un vecchio telefono Android in un server Posterium sempre attivo!
    cd Posterium
    npm install --ignore-scripts
    ```
-3. **Configura le chiavi API**:
-   ```bash
-   echo "TMDB_API_KEY=la_tua_chiave_tmdb" > .env.local
-   ```
-4. **Build e Avvio**:
+3. **Build e Avvio**:
    ```bash
    npm run build
    npm start
    ```
+4. **Configura le chiavi API**: dopo l'avvio apri `http://localhost:3000` e inseriscile in **Impostazioni → Chiavi API istanza** (persistono in `data/defaults.json`).
 📌 *URL Manifest Stremio*: `http://<IP-del-telefono>:3000/manifest.json`
 
 ---
@@ -193,13 +190,14 @@ Trasforma un vecchio telefono Android in un server Posterium sempre attivo!
 # Avvio in locale
 git clone https://github.com/Eful97/Posterium && cd Posterium
 npm install
-echo TMDB_API_KEY=la_tua_chiave_tmdb > .env.local
 npm run dev
 
 # Avvio con Docker
 docker build -t posterium .
-docker run -p 8080:8080 -v posterium-data:/data -e TMDB_API_KEY=la_tua_chiave_tmdb posterium
+docker run -p 8080:8080 -v posterium-data:/data posterium
 ```
+
+> **Chiavi API**: dopo il primo avvio, impostale dal browser in **Impostazioni → Chiavi API istanza**. Non servono env var — persistono in `data/defaults.json` (locale) o `/data/defaults.json` (Docker).
 
 > Il container gira come utente non-root (`nextjs`, uid 1000) e scrive i dati persistenti in `/data` (volume named `posterium-data`). Con Docker Compose il `docker-compose.yml` applica già l'hardening (`cap_drop: ALL`, `no-new-privileges`).
 
@@ -217,7 +215,6 @@ Per chi vuole hostare Posterium su un **VPS** e condividerlo con famiglia/amici.
 
 - VPS con Docker e `docker compose` (1 CPU, 512MB RAM minimo — 1GB consigliato)
 - Un dominio (opzionale, ma consigliato per HTTPS)
-- `TMDB_API_KEY` (obbligatoria)
 
 #### Setup rapido
 
@@ -225,15 +222,18 @@ Per chi vuole hostare Posterium su un **VPS** e condividerlo con famiglia/amici.
 # 1. Clona
 git clone https://github.com/Eful97/Posterium && cd Posterium
 
-# 2. Crea .env
+# 2. Crea .env (solo admin/token; le chiavi API si mettono dalle Impostazioni)
 cat > .env << 'EOF'
-TMDB_API_KEY=la_tua_chiave
 POSTERIUM_ADMIN_TOKEN=un_token_segreto_casuale
 EOF
 
 # 3. Avvia
 docker compose up -d
 ```
+
+> Le chiavi TMDB/MDBList non si passano più nel `.env`: dopo il primo avvio aprila
+> dal browser e inseriscile in **Impostazioni → Chiavi API istanza**. Persistono in
+> `/data/defaults.json` (o KV su Vercel) e restano mascherate.
 
 L'app è su `http://IP_VPS:8080`. Manifest Stremio: `http://IP_VPS:8080/manifest.json`.
 
@@ -269,7 +269,7 @@ Riavvia: `docker compose up -d`.
 
 #### Multi-Utente (chiavi d'istanza)
 
-Ogni istanza può impostare TMDB/MDBList **dalle Impostazioni del sito** (sezione "Chiavi API istanza"): nessuna env var necessaria, le chiavi persistono (KV su Vercel, file in locale) e sono sempre mascherate.
+Ogni istanza imposta TMDB/MDBList **dalle Impostazioni del sito** (sezione "Chiavi API istanza"): **unica** fonte lato server (le env var non sono più lette), le chiavi persistono (KV su Vercel, file in locale) e sono sempre mascherate. Gli utenti del browser possono usare la propria chiave personale; chi non la imposta usa quella d'istanza (fallback server per Stremio e cataloghi).
 
 #### Config Token (personalizzazione per-link)
 
@@ -300,8 +300,6 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 
 | Variabile | Obbligatoria | Descrizione |
 |---|:---:|---|
-| `TMDB_API_KEY` | ✅ | Chiave API TMDB (v3) |
-| `MDBLIST_API_KEY` | ❌ | Per classifiche anime e voto IMDb aggregato |
 | `KV_REST_API_URL` | ❌ | URL Upstash Redis per persistenza cloud (alternativa a file JSON) |
 | `KV_REST_API_TOKEN` | ❌ | Token Upstash Redis |
 | `POSTERIUM_ADMIN_TOKEN` | ❌ | Protegge route admin (`/api/mappings`, `/api/cache/clear`, `/api/defaults`) |

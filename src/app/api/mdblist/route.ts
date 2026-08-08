@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { MDBLISTS, MDBListEntry } from "@/lib/mdblist"
+import { getServerDefaults } from "@/lib/server-defaults"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("mdblist")
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ match: cached })
   }
 
-  const apiKey = req.nextUrl.searchParams.get('api_key') || process.env.MDBLIST_API_KEY
+  const apiKey = req.nextUrl.searchParams.get('api_key') || getServerDefaults().mdblistApiKey
   if (!apiKey) return Response.json({ match: null })
 
   try {

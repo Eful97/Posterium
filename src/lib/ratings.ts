@@ -28,8 +28,8 @@ export async function fetchAggregatedRating(
 ): Promise<AggregatedRatings | null> {
   if (!imdbId) return null
 
-  // Precedenza: chiave esplicita → chiave d'istanza (impostazioni) → env var.
-  const key = apiKey || getServerDefaults().mdblistApiKey || process.env.MDBLIST_API_KEY
+  // Precedenza: chiave esplicita → chiave d'istanza (impostazioni).
+  const key = apiKey || getServerDefaults().mdblistApiKey
   // La key MDBList cambia il voto aggregato → parte del cache key (hash, mai
   // plaintext). Altrimenti due contesti con key diverse collidono (D4).
   const keyHash = key ? crypto.createHash("sha1").update(key).digest("hex").slice(0, 8) : "nomk"

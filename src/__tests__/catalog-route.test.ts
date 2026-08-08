@@ -61,11 +61,9 @@ describe("GET /catalog/[type]/[id]", () => {
     mockedGetById.mockReset()
     __resetJWRankingsCache()
     cacheClear()
-    delete process.env.TMDB_API_KEY
   })
 
   it("builds Posterium series poster URLs for JustWatch series catalogs", async () => {
-    process.env.TMDB_API_KEY = "tmdb-key"
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
       .mockResolvedValueOnce(tmdbShowResponse(94997))
@@ -85,7 +83,6 @@ describe("GET /catalog/[type]/[id]", () => {
   })
 
   it("adds mapping version to catalog poster URLs for saved titles", async () => {
-    process.env.TMDB_API_KEY = "tmdb-key"
     mockedGetById.mockResolvedValueOnce({
       tmdbId: 94997,
       mediaType: "tv",
@@ -110,7 +107,6 @@ describe("GET /catalog/[type]/[id]", () => {
   })
 
   it("normalizes tv catalog routes to Posterium series poster URLs", async () => {
-    process.env.TMDB_API_KEY = "tmdb-key"
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
       .mockResolvedValueOnce(tmdbShowResponse(94997))
@@ -129,7 +125,6 @@ describe("GET /catalog/[type]/[id]", () => {
   })
 
   it("builds Posterium poster URLs for platform catalogs even when source posterPath is missing", async () => {
-    delete process.env.TMDB_API_KEY
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       Response.json({ id: 1715492, imdb_id: "tt1715492" }),
     )
@@ -166,7 +161,6 @@ describe("GET /catalog/[type]/[id]", () => {
   })
 
   it("falls back to TMDB external_ids when JustWatch lacks an IMDb id", async () => {
-    delete process.env.TMDB_API_KEY
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(justWatchResponse(687163))
       .mockResolvedValueOnce(tmdbShowResponse(687163))
@@ -187,7 +181,6 @@ describe("GET /catalog/[type]/[id]", () => {
   })
 
   it("uses the IMDb id already returned by JustWatch (no extra TMDB call)", async () => {
-    delete process.env.TMDB_API_KEY
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(justWatchResponse(8282, "tt0848228"))
       .mockResolvedValueOnce(tmdbShowResponse(8282))
@@ -207,7 +200,6 @@ describe("GET /catalog/[type]/[id]", () => {
   })
 
   it("exposes a tmdb:<id> provider id when no IMDb id is resolvable (AIOMetadata compat)", async () => {
-    delete process.env.TMDB_API_KEY
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(justWatchResponse(67890))
       .mockResolvedValueOnce(tmdbShowResponse(67890))

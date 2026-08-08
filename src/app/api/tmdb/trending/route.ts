@@ -2,13 +2,18 @@ import { NextRequest } from "next/server"
 import { getJWRankings } from "@/lib/justwatch"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { getServerDefaults } from "@/lib/server-defaults"
 import { createLogger } from "@/lib/logger"
 import { jsonGzip } from "@/lib/json-response"
 
 const log = createLogger("trending")
 
 const TMDB_BASE = "https://api.themoviedb.org/3"
-const TMDB_KEY = process.env.TMDB_API_KEY || ""
+
+/** Chiave d'istanza TMDB (risolta a request time: può cambiare via Impostazioni). */
+function tmdbInstanceKey(): string {
+  return getServerDefaults().tmdbApiKey || ""
+}
 
 /** Codici paese supportati da JustWatch (set chiuso — evita cache-miss illimitati). */
 const JW_COUNTRIES = new Set([
@@ -20,7 +25,7 @@ const JW_COUNTRIES = new Set([
 
 async function tmdbFetch(path: string, apiKey?: string) {
   const url = new URL(`${TMDB_BASE}${path}`)
-  url.searchParams.set("api_key", apiKey || TMDB_KEY)
+  url.searchParams.set("api_key", apiKey || tmdbInstanceKey())
   url.searchParams.set("language", "it-IT")
   const res = await fetch(url.toString(), { signal: AbortSignal.timeout(30000) })
   if (!res.ok) return null
@@ -28,7 +33,7 @@ async function tmdbFetch(path: string, apiKey?: string) {
 }
 
 async function tmdbFetchImages(mediaType: string, id: number, apiKey?: string) {
-  const res = await fetch(`${TMDB_BASE}/${mediaType}/${id}/images?api_key=${apiKey || TMDB_KEY}&include_image_language=it,en,null`)
+  const res = await fetch(`${TMDB_BASE}/${mediaType}/${id}/images?api_key=${apiKey || tmdbInstanceKey()}&include_image_language=it,en,null`)
   if (!res.ok) return null
   return res.json()
 }

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
+import { getServerDefaults } from "@/lib/server-defaults"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("mdblist-anime")
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
 const cached = cacheGet<MdblistItem[]>(cacheKey)
   if (cached) return Response.json(cached)
 
-  const mdblistKey = req.nextUrl.searchParams.get("mdblist_key") || process.env.MDBLIST_API_KEY
+  const mdblistKey = req.nextUrl.searchParams.get("mdblist_key") || getServerDefaults().mdblistApiKey
   const tmdbKey = req.nextUrl.searchParams.get("api_key")
   if (!mdblistKey || !tmdbKey) return Response.json([])
 

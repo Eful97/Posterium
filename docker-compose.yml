@@ -11,12 +11,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # ── Obbligatorie ──
-      - TMDB_API_KEY=${TMDB_API_KEY:?TMDB_API_KEY is required — set in .env or shell}
-
-      # ── Opzionali — API ──
-      - MDBLIST_API_KEY=${MDBLIST_API_KEY:-}
-
+      # ── Chiavi API ──
+      # Le chiavi TMDB/MDBList NON si passano più via env: si configurano dalle
+      # Impostazioni del sito (sezione "Chiavi API istanza"), persistono in
+      # /data/defaults.json e restano mascherate. L'istanza parte senza chiave:
+      # apri la web UI e inseriscile lì. Niente env var = niente chiavi nel process.
       # ── Opzionali — Admin & Sicurezza ──
       - POSTERIUM_ADMIN_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}
       - WARMUP_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}

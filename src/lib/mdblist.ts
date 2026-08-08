@@ -19,14 +19,14 @@ import { getServerDefaults } from "@/lib/server-defaults"
 export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MDBListEntry[]> {
   const list = MDBLISTS.find(l => l.key === listKey)
   if (!list) return []
-  // Precedenza: chiave esplicita → chiave d'istanza (impostazioni) → env var.
-  const key = apiKey || getServerDefaults().mdblistApiKey || process.env.MDBLIST_API_KEY
+  // Precedenza: chiave esplicita → chiave d'istanza (impostazioni).
+  const key = apiKey || getServerDefaults().mdblistApiKey
   try {
     const slug = list.url.split('/').pop()
     // MDBLIST_API_URL esplicito (test E2E: punta al mock server locale) vince
-    // sempre sulla key, così i test restano deterministici anche se lo sviluppatore
-    // ha una MDBLIST_API_KEY in .env.local. In produzione MDBLIST_API_URL è assente
-    // e si usa l'endpoint reale (con key se disponibile).
+    // sempre sulla key, così i test restano deterministici senza chiamate reali.
+    // In produzione MDBLIST_API_URL è assente e si usa l'endpoint reale
+    // (con key se disponibile).
     const explicitUrl = process.env.MDBLIST_API_URL
     const baseUrl = explicitUrl
       ? `${explicitUrl}/lists/snoak/${slug}`

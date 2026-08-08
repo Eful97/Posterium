@@ -1,15 +1,15 @@
-// Risolta a request time (non a import-time): i test e i deploy manipolano
-// process.env.TMDB_API_KEY dopo il load del modulo, e la chiave può cambiare.
-// Precedenza: chiave d'istanza salvata nelle impostazioni → env var.
+// Risolta a request time (non a import-time): la chiave d'istanza può cambiare
+// via Impostazioni, e getServerDefaults la legge da disco/KV al primo accesso.
+// L'env var non è più una fonte: il server usa solo la chiave d'istanza.
 import { getServerDefaults } from "@/lib/server-defaults"
 
 /**
- * Risolve la chiave TMDB: chiave d'istanza salvata nelle impostazioni → env var.
+ * Risolve la chiave TMDB d'istanza (impostata dalle Impostazioni).
  * Export per i moduli che devono parlare con TMDB (health, imdb-resolver)
  * senza costruirsi URL propri con la chiave interpolata.
  */
 export function getTmdbApiKey(): string | undefined {
-  return getServerDefaults().tmdbApiKey || process.env.TMDB_API_KEY
+  return getServerDefaults().tmdbApiKey
 }
 
 // Base URL sovrascrivibili via env: usate dai test E2E per puntare al mock
@@ -22,8 +22,8 @@ const CACHE_TTL = 5 * 60 * 1000
 const CACHE_MAX = 500
 
 /**
- * Risolve la chiave API TMDB/MDBList dalla richiesta.
- * Priorità: header x-api-key > query param api_key > env var.
+ * Risolve la chiave API TMDB dalla richiesta.
+ * Priorità: header x-api-key > query param api_key > chiave d'istanza.
  * L'header evita che la chiave appaia nei log del proxy/CDN.
  */
 export function resolveRequestApiKey(req: { headers: Headers | { get: (name: string) => string | null }; nextUrl?: { searchParams: URLSearchParams } }): string | undefined {
