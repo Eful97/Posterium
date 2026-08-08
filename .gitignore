@@ -72,6 +72,9 @@ $null
 /.qwen/
 /.serena/
 
+# graphify knowledge graph (regenerable output)
+/graphify-out/
+
 # default next.js starter assets (unused)
 public/file.svg
 public/globe.svg
