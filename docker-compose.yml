@@ -21,6 +21,9 @@ services:
       - WARMUP_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}
       # Firma dei config token URL (CONFIG_HMAC_SECRET). Senza, i token non sono firmati.
       - CONFIG_HMAC_SECRET=${CONFIG_HMAC_SECRET:-}
+      # Cifratura AES-256-GCM delle apiKeys dei profili cloud (openssl rand -hex 32).
+      # Senza, le chiavi dei profili restano in chiaro a riposo (warning in prod).
+      - PROFILE_ENCRYPTION_KEY=${PROFILE_ENCRYPTION_KEY:-}
 
       # ── Opzionali — Persistenza distribuita ──
       - KV_REST_API_URL=${KV_REST_API_URL:-}

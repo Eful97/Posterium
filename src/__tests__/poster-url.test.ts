@@ -57,6 +57,11 @@ describe("buildUrlPattern", () => {
     expect(url).toContain("https://cdn.posterium.example/api/poster/{type}/{imdb_id}")
   })
 
+  it("returns clean AIOMetadata URL pattern when profileId is set", () => {
+    const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "key", lang: "it", profileId: "550e8400-e29b-41d4-a716-446655440000" })
+    expect(url).toContain("/api/poster/{type}/{imdb_id}?u=550e8400-e29b-41d4-a716-446655440000")
+  })
+
   it("includes api_key param", () => {
     const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "abc123", lang: "it" })
     expect(url).toContain("api_key=abc123")

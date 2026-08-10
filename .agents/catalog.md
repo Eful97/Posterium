@@ -93,7 +93,7 @@ d'istanza, ogni chiamata TMDB che non riceve la chiave della richiesta fallisce.
 ## File coinvolti
 
 - `src/lib/catalog-definitions.ts` — elenco cataloghi + warmup
-- `src/lib/catalog-handler.ts` — `posteriumCatalog()` (logica unica)
+- `src/lib/catalog-handler.ts` — `posteriumCatalog(req, mediaType, rawId, userParam, configParam)` (logica unica). `userParam` (param `u=`/`user`) è il profilo UUID: entra nel cache key come `:u<uuid>` e nei poster URL come `user` (`&u=`). `configParam` è il config token (`config=`).
 - `src/lib/justwatch.ts` — `getJWRankings` (GraphQL + cache)
 - `src/lib/flixpatrol.ts` — `getTop10` per le piattaforme
 - `src/lib/mdblist.ts` — `fetchMDBList`

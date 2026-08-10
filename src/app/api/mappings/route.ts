@@ -7,6 +7,7 @@ import { checkAdminToken, requireAdminToken, isSameOrigin, adminAuthResponse, or
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
+import { getFullProfileData, createOrUpdateProfile } from "@/lib/profile-store"
 import { createLogger } from "@/lib/logger"
 import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/read-body"
 
@@ -61,6 +62,28 @@ export async function POST(req: NextRequest) {
   }
 
   await upsert(newMapping)
+
+  // Il mapping si salva anche nel profilo, se la richiesta lo indica (un utente
+  // con profilo attivo). profileId sta nel body raw: mappingSchema scarta i campi
+  // sconosciuti ma non li rifiuta.
+  const rawBody = body as Record<string, unknown>
+  const profileId = typeof rawBody.profileId === "string" && rawBody.profileId.length > 0 ? rawBody.profileId : null
+  if (profileId) {
+    const fullProfile = await getFullProfileData(profileId)
+    if (fullProfile) {
+      const updatedMappings = {
+        ...(fullProfile.mappings || {}),
+        [`${newMapping.mediaType}:${newMapping.tmdbId}`]: newMapping,
+      }
+      await createOrUpdateProfile(
+        fullProfile.config,
+        profileId,
+        undefined,
+        fullProfile.apiKeys,
+        updatedMappings,
+      )
+    }
+  }
 
   // Invalidazione mirata al mapping salvato, non globale (i default impattano
   // tutto, un singolo mapping solo il suo poster/badge).

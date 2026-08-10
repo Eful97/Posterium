@@ -12,24 +12,28 @@ export interface StremioItemMeta {
   [key: string]: unknown
 }
 
-export function rewriteMetasPosters(metas: StremioItemMeta[], domain: string): StremioItemMeta[] {
+/** Costruisce la poster URL riscritta, aggiungendo `&u=<uuid>` se c'è un profilo. */
+function posterUrlFor(domain: string, mediaType: "movie" | "series", id: string, user?: string | null): string {
+  const userSuffix = user ? `&u=${encodeURIComponent(user)}` : ""
+  return `${domain}/api/poster/${mediaType}/${id}?rv=${RENDER_VERSION}${userSuffix}`
+}
+
+export function rewriteMetasPosters(metas: StremioItemMeta[], domain: string, user?: string | null): StremioItemMeta[] {
   return metas.map((item) => {
     if (!item || !item.id) return item
     const mediaType = (item.type === "series" || item.type === "tv" || item.type === "show") ? "series" : "movie"
-    const posterUrl = `${domain}/api/poster/${mediaType}/${item.id}?rv=${RENDER_VERSION}`
     return {
       ...item,
-      poster: posterUrl,
+      poster: posterUrlFor(domain, mediaType, item.id, user),
     }
   })
 }
 
-export function rewriteSingleMetaPoster(meta: StremioItemMeta, domain: string): StremioItemMeta {
+export function rewriteSingleMetaPoster(meta: StremioItemMeta, domain: string, user?: string | null): StremioItemMeta {
   if (!meta || !meta.id) return meta
   const mediaType = (meta.type === "series" || meta.type === "tv" || meta.type === "show") ? "series" : "movie"
-  const posterUrl = `${domain}/api/poster/${mediaType}/${meta.id}?rv=${RENDER_VERSION}`
   return {
     ...meta,
-    poster: posterUrl,
+    poster: posterUrlFor(domain, mediaType, meta.id, user),
   }
 }

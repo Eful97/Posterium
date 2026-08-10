@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from "react"
 import type { SearchResult, TMDBImage, Mapping } from "./types"
-import { posterUrl, titleOf, yearOf, STREAMING_PLATFORMS } from "./utils"
+import { posterUrl, titleOf, yearOf, STREAMING_PLATFORMS, getDomain } from "./utils"
 import { matchTMDBStudios } from "./awards"
 import { setLang as setI18nLang, t } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
@@ -19,6 +19,7 @@ import { usePosterSave } from "./usePosterSave"
 import { defaultGradientHeightForPoster } from "./gradient-defaults"
 import { computeLogoOffsetBounds } from "./logo-layout"
 import { useOutsideDismiss } from "./useOutsideDismiss"
+import type { PosteriumUserConfig } from "./config-token"
 import { SearchProvider } from "./contexts/SearchContext"
 import { SettingsProvider } from "./contexts/SettingsContext"
 import { TranslationProvider } from "./contexts/TranslationContext"
@@ -131,6 +132,21 @@ export interface PosteriumCtx {
   importData: () => void
   copyUrl: () => Promise<void>
   copied: boolean
+  saveAndCopyProfileUrl: () => Promise<void>
+  profileCopied: boolean
+  profileId: string | null
+  setProfileId: React.Dispatch<React.SetStateAction<string | null>>
+  profilePassword: string
+  setProfilePassword: (v: string) => void
+  /** Profilo salvato: richiede la password al rientro (stile AIOMetadata). */
+  profileLocked: boolean
+  profileLoadError: string
+  profileLoading: boolean
+  unlockProfile: (password: string) => Promise<void>
+  dismissProfileLock: () => void
+  loadProfile: (uuid: string, password: string) => Promise<void>
+  /** Vero se il modale di first-visit è stato soppresso nella sessione. */
+  profileModalSuppressed: boolean
   accentColor: string | null
   setAccentColor: (v: string | null) => void
   topEdgeColor: string | null
@@ -288,14 +304,19 @@ export function usePosterium(): PosteriumCtx {
     networkLogo, setNetworkLogo,
     ribbonSide,
     // Defaults
-    defaultBadgeStyle,
-    defaultRankingBadgeStyle,
+    defaultBadgeStyle, setDefaultBadgeStyle,
+    defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
+    setDefaultGlobalBadges,
+    setDefaultRankingBadges,
+    setRibbonSide,
+    setDefaultLogoFitEnabled,
     defaultBlurEnabled,
     defaultBlurIntensity,
     defaultBlurFade,
     defaultBlurDarkness,
     defaultGradientHeight,
     defaultAutoRotateClean,
+    defaultLogoFitEnabled,
     defaultNetworkLogo,
     loadDefaultsToState,
     // Blur
@@ -325,6 +346,23 @@ export function usePosterium(): PosteriumCtx {
 
   const [urlPattern, setUrlPattern] = useState("")
   const [copied, setCopied] = useState(false)
+  const [profileId, setProfileId] = useState<string | null>(null)
+  // Ri-autenticazione al rientro (stile AIOMetadata): se esiste un profilo
+  // salvato, all'avvio si chiede la password prima di usarlo/auto-sincronizzarlo.
+  const [profileLocked, setProfileLocked] = useState(false)
+  const [profileLoadError, setProfileLoadError] = useState<string>("")
+  const [profileLoading, setProfileLoading] = useState(false)
+  const savedProfileIdRef = useRef<string | null>(null)
+  // Sopprime il ProfileModal di first-visit per la sessione quando un profilo
+  // salvato risulta stale (o l'utente sceglie "continua senza profilo"):
+  // non ha senso il "crea un profilo" se ne aveva già uno.
+  const [profileModalSuppressed, setProfileModalSuppressed] = useState(false)
+  const [profileCopied, setProfileCopied] = useState(false)
+  const [profilePassword, setProfilePassword] = useState<string>("")
+  const setProfilePasswordPersist = useCallback((v: string) => {
+    setProfilePassword(v)
+    safeSetItem("posterium_profile_password", v)
+  }, [safeSetItem])
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
   const [metaInfo, setMetaInfo] = useState<MetaInfo>({ genres: [], voteAverage: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -405,9 +443,38 @@ export function usePosterium(): PosteriumCtx {
     setMdblistApiKey(mdblistKey)
     const savedTheme = safeGetItem("posterium_theme")
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme)
-    // Nota: il vecchio associazione profilo UUID (posterium_profile_id) è stato
-    // rimosso con il sistema profili. Se esiste in localStorage, puliscilo.
-    try { localStorage.removeItem("posterium_profile_id"); localStorage.removeItem("posterium_profile_password") } catch {}
+    const savedProfileId = safeGetItem("posterium_profile_id")
+    if (savedProfileId) {
+      // Profilo salvato → richiedi la password al rientro. Non attivare il
+      // profilo né usare la password memorizzata: l'utente deve confermare.
+      savedProfileIdRef.current = savedProfileId
+      setProfileLocked(true)
+      // Verifica in background: profilo inesistente (stale) o senza password →
+      // niente da confermare → sblocca subito e rimuove l'id non più valido.
+      void (async () => {
+        try {
+          const res = await fetch(`/api/profile?u=${encodeURIComponent(savedProfileId)}`, { signal: AbortSignal.timeout(8000) })
+          if (!res.ok) {
+            try { localStorage.removeItem("posterium_profile_id") } catch {}
+            savedProfileIdRef.current = null
+            setProfileLocked(false)
+            setProfileModalSuppressed(true)
+            return
+          }
+          const data = await res.json()
+          if (data && data.hasPassword !== true) {
+            try { localStorage.removeItem("posterium_profile_id") } catch {}
+            savedProfileIdRef.current = null
+            setProfileLocked(false)
+            setProfileModalSuppressed(true)
+          }
+        } catch {
+          // Errore di rete → resta locked (safe: si chiede comunque la password).
+        }
+      })()
+    }
+    // Non caricare più la password salvata: la conferma è richiesta ogni volta.
+    try { localStorage.removeItem("posterium_profile_password") } catch {}
   }, [safeGetItem])
 
   const setTmdbKey = useCallback((val: string) => {
@@ -420,6 +487,74 @@ export function usePosterium(): PosteriumCtx {
     setMdblistApiKey(val)
     safeSetItem("mdblist_key", val)
   }, [safeSetItem])
+
+  // Carica un profilo verificando la password (stile AIOMetadata): applica
+  // config + apiKeys all'editor e attiva il profilo. Usata sia dal modale
+  // profilo sia dallo sblocco automatico al rientro.
+  const loadProfile = useCallback(async (uuid: string, password: string): Promise<void> => {
+    const res = await fetch("/api/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "load", profileId: uuid, password }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      const err = data.error || (res.status === 401 ? "Password errata" : "Profilo non trovato")
+      throw new Error(err)
+    }
+    const loadedId = data.profileId as string
+    safeSetItem("posterium_profile_id", loadedId)
+    setProfileId(loadedId)
+    setProfilePassword(password)
+    safeSetItem("posterium_profile_password", password)
+    savedProfileIdRef.current = null
+
+    if (data.config) {
+      const c = data.config
+      if (typeof c.globalBadges === "boolean") setDefaultGlobalBadges(c.globalBadges)
+      if (typeof c.rankingBadges === "boolean") setDefaultRankingBadges(c.rankingBadges)
+      if (c.badgeStyle) setDefaultBadgeStyle(c.badgeStyle)
+      if (c.rankingBadgeStyle) setDefaultRankingBadgeStyle(c.rankingBadgeStyle)
+      if (typeof c.blurEnabled === "boolean") setBlurEnabled(c.blurEnabled)
+      if (typeof c.blurIntensity === "number") setBlurIntensity(c.blurIntensity)
+      if (typeof c.blurFade === "number") setBlurFade(c.blurFade)
+      if (typeof c.blurDarkness === "number") setBlurDarkness(c.blurDarkness)
+      if (typeof c.gradientHeight === "number") setGradientHeight(c.gradientHeight)
+      if (typeof c.networkLogo === "boolean") setNetworkLogo(c.networkLogo)
+      if (c.ribbonSide === "left" || c.ribbonSide === "right") setRibbonSide(c.ribbonSide)
+      if (typeof c.autoRotateClean === "boolean") setAutoRotateClean(c.autoRotateClean)
+      if (typeof c.logoFitEnabled === "boolean") setDefaultLogoFitEnabled(c.logoFitEnabled)
+      if (typeof c.customBadge === "string") setCustomBadge(c.customBadge)
+    }
+    if (data.apiKeys?.tmdbKey) {
+      setTmdbKeyInput(data.apiKeys.tmdbKey)
+      setTmdbKey(data.apiKeys.tmdbKey)
+    }
+    if (data.apiKeys?.mdblistApiKey) setMdblistApiKey(data.apiKeys.mdblistApiKey)
+  }, [safeSetItem, setTmdbKey, setDefaultGlobalBadges, setDefaultRankingBadges, setDefaultBadgeStyle, setDefaultRankingBadgeStyle, setBlurEnabled, setBlurIntensity, setBlurFade, setBlurDarkness, setGradientHeight, setNetworkLogo, setRibbonSide, setAutoRotateClean, setDefaultLogoFitEnabled, setCustomBadge])
+
+  const unlockProfile = useCallback(async (password: string) => {
+    if (!savedProfileIdRef.current) return
+    setProfileLoading(true)
+    setProfileLoadError("")
+    try {
+      await loadProfile(savedProfileIdRef.current, password)
+      setProfileLocked(false)
+    } catch (error) {
+      setProfileLoadError(error instanceof Error ? error.message : "Errore")
+    } finally {
+      setProfileLoading(false)
+    }
+  }, [loadProfile])
+
+  const dismissProfileLock = useCallback(() => {
+    // Continua senza profilo: rimuove l'associazione salvata così non ri-chiede,
+    // e sopprime il modale di first-visit per la sessione.
+    try { localStorage.removeItem("posterium_profile_id") } catch {}
+    savedProfileIdRef.current = null
+    setProfileLocked(false)
+    setProfileModalSuppressed(true)
+  }, [])
 
   useEffect(() => {
     document.documentElement.classList.toggle("light-mode", theme === "light")
@@ -470,9 +605,52 @@ export function usePosterium(): PosteriumCtx {
       globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
       badgeGenre, badgeYear, badgeRating,
       customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide,
-      tmdbKey, lang,
+      tmdbKey, lang, profileId,
     }))
-  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, networkLogo, ribbonSide, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, networkLogo, ribbonSide, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang, profileId]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+
+  // Auto-sync profile configuration when profileId is active
+  const lastSyncRef = useRef<string>("")
+  useEffect(() => {
+    if (!profileId) return
+    const config = {
+      globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
+      badgeGenre: badgeGenre === false ? false : undefined,
+      badgeYear: badgeYear === false ? false : undefined,
+      badgeRating: badgeRating === false ? false : undefined,
+      blurEnabled, blurIntensity, blurFade, blurDarkness,
+      gradientHeight, networkLogo, ribbonSide, autoRotateClean, logoFitEnabled: defaultLogoFitEnabled,
+      customBadge: customBadge || undefined,
+    }
+    // `profilePassword` è nella chiave di dedup: è una dependency dell'effetto ma non
+    // parte di `config`, quindi senza include un cambio password durante il debounce
+    // veniva perso (l'effetto ripartiva con payload identico e non riprogrammava il POST).
+    const payloadStr = JSON.stringify({ config, profileId, password: profilePassword || undefined, tmdbKey, mdblistApiKey })
+    // Imposta il ref PRIMA dello schedule: così il debounce dedup correttamente anche
+    // se l'effetto riparte con lo stesso payload prima che il timer scatti.
+    if (lastSyncRef.current === payloadStr) return
+    lastSyncRef.current = payloadStr
+
+    const timer = setTimeout(() => {
+      fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          config,
+          profileId,
+          password: profilePassword || undefined,
+          apiKeys: { tmdbKey: tmdbKey || undefined, mdblistApiKey: mdblistApiKey || undefined },
+        }),
+      }).catch((e) => {
+        console.error("[profile] Auto-sync failed:", e)
+        // Se il POST fallisce (rete giù, serverless cold start), resetta il ref così
+        // un successivo cambio di config riprova invece di considerare "già sincronizzato".
+        lastSyncRef.current = ""
+      })
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [profileId, profilePassword, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, tmdbKey, mdblistApiKey])
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -751,6 +929,47 @@ export function usePosterium(): PosteriumCtx {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const saveAndCopyProfileUrl = useCallback(async () => {
+    const config: PosteriumUserConfig = {
+      globalBadges,
+      rankingBadges,
+      badgeGenre: badgeGenre === false ? false : undefined,
+      badgeYear: badgeYear === false ? false : undefined,
+      badgeRating: badgeRating === false ? false : undefined,
+      badgeStyle: badgeStyle as PosteriumUserConfig["badgeStyle"],
+      rankingBadgeStyle: rankingBadgeStyle as PosteriumUserConfig["rankingBadgeStyle"],
+      blurEnabled,
+      blurIntensity,
+      blurFade,
+      blurDarkness,
+      gradientHeight,
+      networkLogo,
+      ribbonSide,
+      autoRotateClean,
+      logoFitEnabled: defaultLogoFitEnabled,
+      customBadge: customBadge || undefined,
+    }
+    try {
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config, profileId: profileId || undefined, password: profilePassword || undefined }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const newProfileId = data.profileId as string
+      setProfileId(newProfileId)
+      safeSetItem("posterium_profile_id", newProfileId)
+      const url = `${getDomain()}/api/poster/:type/:id?u=${newProfileId}`
+      await navigator.clipboard.writeText(url)
+      setProfileCopied(true)
+      setTimeout(() => setProfileCopied(false), 2000)
+    } catch (e) {
+      console.error("[posterium] Failed to save profile:", e)
+      import("sonner").then(({ toast }) => toast.error("Errore nel salvare il profilo"))
+    }
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, profileId, profilePassword, safeSetItem])
+
   const posterActivePath = navigation.previewPoster?.file_path
 
   const { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig: savePosterConfig } = usePosterSave({
@@ -765,7 +984,7 @@ export function usePosterium(): PosteriumCtx {
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     setGradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
-    setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, ribbonSide, lang,
+    setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, ribbonSide, lang, profileId,
   })
 
   const saveConfig = useCallback(async () => {
@@ -817,7 +1036,9 @@ export function usePosterium(): PosteriumCtx {
     showKey, setShowKey, setTmdbKey,
     mdblistApiKey, setMdblistApiKey: setMdblistApiKeyFn,
     exportData, importData, removeRecentSearch: search.removeRecentSearch,
-    copyUrl, copied,
+    copyUrl, copied, saveAndCopyProfileUrl, profileCopied, profileId, setProfileId,
+    profilePassword, setProfilePassword: setProfilePasswordPersist,
+    profileLocked, profileLoadError, profileLoading, unlockProfile, dismissProfileLock, loadProfile, profileModalSuppressed,
     accentColor, setAccentColor,
     topEdgeColor,
     autoSaveExcludedPosters,
@@ -835,7 +1056,9 @@ export function usePosterium(): PosteriumCtx {
     selectPoster, selectLogo, saveConfig, removeLogo,
     mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
-    tmdbKeyInput, showKey, copied, mdblistApiKey,
+    tmdbKeyInput, showKey, copied, profileCopied, profileId, mdblistApiKey, profilePassword,
+    profileLocked, profileLoadError, profileLoading,
+    loadProfile, unlockProfile, dismissProfileLock, profileModalSuppressed,
     accentColor, setAccentColor,
     topEdgeColor, autoSaveExcludedPosters,
     trending.trending, trending.streamingCharts, trending.mdblistAnimeList,

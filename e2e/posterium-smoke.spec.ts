@@ -30,11 +30,12 @@ test("can open an editor from search", async ({ page }) => {
   // per sbloccare il flusso di ricerca.
   await page.addInitScript(() => {
     localStorage.setItem("tmdb_key", "mock-tmdb-key-0000000000")
-    // Dismiss dei modali first-visit (OnboardingTour z-[300], LangPicker
-    // z-[100]): senza i flag i full-screen overlay intercettano il click sui
-    // risultati di ricerca in un contesto fresco.
+    // Dismiss dei tre modali first-visit (OnboardingTour z-[300], LangPicker
+    // z-[100], ProfileModal z-50): senza i flag i full-screen overlay
+    // intercettano il click sui risultati di ricerca in un contesto fresco.
     localStorage.setItem("posterium_onboarding_done", "true")
     localStorage.setItem("preferred_lang", "it")
+    localStorage.setItem("posterium_profile_id", "e2e-smoke-profile")
   })
 
   await page.goto("/")

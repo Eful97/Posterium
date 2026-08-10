@@ -59,7 +59,7 @@ function normalizeCatalogType(type: string): StremioCatalogType {
   return type === "movie" ? "movie" : "series"
 }
 
-async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number, configParam?: string | null): Promise<string> {
+async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number, configParam?: string | null, userParam?: string | null): Promise<string> {
   const defaults = getServerDefaults()
   const mapping = await getById(type === "series" ? "tv" : "movie", id)
   return buildStremioPosterUrl({
@@ -70,6 +70,7 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
     mapping,
     lang: "it",
     config: configParam || undefined,
+    user: userParam || undefined,
   }).toString()
 }
 
@@ -119,6 +120,7 @@ export async function posteriumCatalog(
   req: NextRequest,
   mediaType: string,
   rawId: string,
+  userParam: string | null,
   configParam: string | null,
 ): Promise<Response> {
   const rl = rateLimit(rateLimitKey(req), "catalog")
@@ -132,7 +134,7 @@ export async function posteriumCatalog(
   // servito a una richiesta senza chiave non avvelena quelle keyed (D3).
   const apiKey = resolveRequestApiKey(req)
 
-  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKeyParam ? `:mk${hashFragment(mdblistKeyParam)}` : ""}`
+  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKeyParam ? `:mk${hashFragment(mdblistKeyParam)}` : ""}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
 
@@ -158,7 +160,7 @@ export async function posteriumCatalog(
           id: catalogMetaId(imdbId, r.tmdbId),
           type: stType,
           name: r.d.title || r.d.name || "",
-          poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam),
+          poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam),
           releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
         }
       }))
@@ -184,7 +186,7 @@ export async function posteriumCatalog(
             id: catalogMetaId(imdbId, r.tmdbId),
             type: "series",
             name: r.d.name || "",
-            poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam),
+            poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam, userParam),
             releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
           }
         }))
@@ -207,7 +209,7 @@ export async function posteriumCatalog(
               id: catalogMetaId(imdbId, item.tmdbId),
               type: stType,
               name: item.title,
-              poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam),
+              poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam),
               releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
             }
           }))

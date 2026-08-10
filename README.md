@@ -51,7 +51,8 @@ pinned: false
 - ⭐ **Rating Accurato** — Voto medio bilanciato ed imparziale IMDb + TMDB.
 - 🌀 **Sfocatura Sfondo Nativa (Sharp C++)** — Effetto blur sul fondo ultra-rapido generato in soli ~10-20ms.
 - 🔄 **Rotazione Poster 24h** — Cambia automaticamente locandina pulita ogni giorno tra i poster selezionati.
-- ⚡ **Generatore Stremio Addon Proxy** — Incolla il link `manifest.json` di qualsiasi add-on Stremio (Cyberflix, Cinemeta, Streaming Catalogs, Torrentio, ecc.) per iniettare automaticamente i poster dinamici di Posterium nei cataloghi esterni!
+- 🔐 **Profilo Cloud (UUID + Password)** — Salva e carica la tua configurazione su server con password protetta. Il tuo UUID personale si collega automaticamente a Stremio per avere i poster personalizzati ovunque.
+- ⚡ **Generatore Stremio Addon Proxy** — Incolla il link `manifest.json` di qualsiasi add-on Stremio (Cyberflix, Cinemeta, Streaming Catalogs, Torrentio, ecc.) per iniettare automaticamente i poster dinamici di Posterium nei cataloghi esterni! Supporta anche il parametro `?u=` per profili personalizzati.
 - 📡 **Integrazione Stremio Istantanea** — Generazione dinamica tramite manifest Stremio con caching e warmup automatico.
 - 🌍 **Multi-Lingua** — Interfaccia disponibile in 5 lingue: Italiano, English, Français, Deutsch, Español.
 
@@ -108,8 +109,9 @@ Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza ric
 #### 3. Imposta le altre variabili d'ambiente
 | Variabile | Necessità |
 |---|---|
-| `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 **Obbligatorie su Vercel** — senza, salvare mapping = 500 (filesystem read-only) |
+| `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 **Obbligatorie su Vercel** — senza, salvare mapping/profili = 500 (filesystem read-only) |
 | `CONFIG_HMAC_SECRET` | 🟠 Consigliata — sblocca i config token (senza sono fail-closed) |
+| `PROFILE_ENCRYPTION_KEY` | 🟠 Consigliata — cifra le apiKeys dei profili a riposo (genera con `openssl rand -hex 32`) |
 | `POSTERIUM_ADMIN_TOKEN` | Opzionale — proteggi le route admin |
 | `POSTERIUM_PUBLIC_INSTANCE` | Opzionale — `=1` abilita le route admin aperte senza token (istanza pubblica, es. HF Spaces) |
 
@@ -118,6 +120,7 @@ Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza ric
 #### 4. Dove vengono salvati i dati
 | Dato | Dove |
 |---|---|
+| Profili (config, password, apiKeys) | **KV Upstash** (persistente, nel cloud del progetto) |
 | Mapping poster | **KV Upstash** (persistente) |
 | Cache poster in-memory | effimera per-istanza (ok, è una cache) |
 | Cache flixpatrol | `/tmp` (effimero — fallback automatico su fs read-only) |
@@ -130,9 +133,11 @@ Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza ric
 #### 6. Troubleshooting
 - **Poster 404 con `TMDB API key is missing`** → manca la chiave d'istanza TMDB: impostala in **Impostazioni → Chiavi API istanza** (non più in env).
 - **Cataloghi vuoti (0 titoli) su Vercel** → il catalogo richiede la chiave d'istanza TMDB (persistita su KV). L'editor funziona con la chiave personale del browser, ma Stremio e i cataloghi usano quella d'istanza del server.
+- **"Failed to create/update profile" / `ENOENT /var/task/data`** → manca lo store KV (punto 2).
+- **"Storage not configured: set KV_REST_API_URL and KV_REST_API_TOKEN"** → stesso problema, messaggio esplicito.
 - **Più progetti**: se hai più deploy (es. `posterium` e `posterium-two`), ogni progetto ha la propria chiave d'istanza — verifica in quale Impostazioni la stai configurando.
 
-📌 *URL Manifest Stremio*: `https://<tuo-app>.vercel.app/manifest.json`.
+📌 *URL Manifest Stremio*: `https://<tuo-app>.vercel.app/manifest.json` (o `/u/<uuid>/manifest.json` per il tuo profilo).
 
 ---
 
@@ -267,9 +272,33 @@ volumes:
 
 Riavvia: `docker compose up -d`.
 
-#### Multi-Utente (chiavi d'istanza)
+#### Multi-Utente (Profili)
 
-Ogni istanza imposta TMDB/MDBList **dalle Impostazioni del sito** (sezione "Chiavi API istanza"): **unica** fonte lato server (le env var non sono più lette), le chiavi persistono (KV su Vercel, file in locale) e sono sempre mascherate. Gli utenti del browser possono usare la propria chiave personale; chi non la imposta usa quella d'istanza (fallback server per Stremio e cataloghi).
+Chi condivide lo stesso server può creare un profilo personale via `POST /api/profile` (o dal pulsante **User** nella toolbar). Ogni profilo porta **config, chiavi API TMDB/MDBList proprie e mapping per-titolo**: su un'istanza pubblica ognuno usa la propria chiave, così i rate limit della chiave d'istanza condivisa non si esauriscono appena più utenti usano Posterium. La password protegge il profilo; le apiKeys vengono cifrate a riposo con AES-256-GCM (`PROFILE_ENCRYPTION_KEY`).
+
+```json
+{
+  "config": {
+    "globalBadges": true,
+    "rankingBadges": true,
+    "badgeStyle": "colored",
+    "rankingBadgeStyle": "netflix",
+    "blurEnabled": true,
+    "blurIntensity": 5,
+    "blurFade": 60,
+    "blurDarkness": 40,
+    "gradientHeight": 30,
+    "networkLogo": true,
+    "autoRotateClean": true,
+    "logoFitEnabled": false
+  },
+  "password": "scelta_dall_utente"
+}
+```
+
+Risposta: `{ "profileId": "uuid-generato", "url": "..." }`.
+
+Ogni utente usa il proprio `?u=uuid` nei link Stremio (manifest `/u/<uuid>/manifest.json`) per poster personalizzati, senza interferire con gli altri. Le chiavi API del profilo vincono su quelle d'istanza (fallback impostate dalle **Impostazioni del sito**, sezione "Chiavi API istanza" — mascherate, persistono su KV/file).
 
 #### Config Token (personalizzazione per-link)
 
@@ -282,12 +311,12 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 
 > I token coprono i **parametri di stile**. Le **immagini** (poster/logo/backdrop) e i loro transform restano legati al mapping salvato sul server.
 
-> **Protezione admin**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env` per proteggere le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`), che richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`. **Senza token configurato le route restano aperte solo in modalità pubblica**: esplicita (`POSTERIUM_PUBLIC_INSTANCE=1`, istanza pubblica es. HF Spaces multi-utente) o dev locale (`NODE_ENV=development`, `next dev` — l'operatore è l'admin). In produzione senza flag restano chiuse (fail-closed) — un'istanza privata che dimentica il token non resta esposta. **Un'operazione fail-closed la richiede SEMPRE**: `DELETE /api/mappings` (svuota tutti i mapping). Tutte le mutazioni applicano anche un check CSRF: se la richiesta porta un header `Origin` (i browser lo inviano sempre cross-origin), questo deve combaciare con l'host del server, altrimenti risposta `403`.
+> **Protezione admin**: imposta `POSTERIUM_ADMIN_TOKEN` in `.env` per proteggere le route di amministrazione (`/api/mappings`, `/api/cache/clear`, `/api/defaults`), che richiedono header `Authorization: Bearer <token>` o `x-admin-token: <token>`. **Senza token configurato le route restano aperte solo in modalità pubblica**: esplicita (`POSTERIUM_PUBLIC_INSTANCE=1`, istanza pubblica es. HF Spaces multi-utente) o dev locale (`NODE_ENV=development`, `next dev` — l'operatore è l'admin). In produzione senza flag restano chiuse (fail-closed) — un'istanza privata che dimentica il token non resta esposta. **Due operazioni fail-closed la richiedono SEMPRE**: `DELETE /api/mappings` (svuota tutti i mapping) e `DELETE /api/profile` (elimina un profilo). Tutte le mutazioni applicano anche un check CSRF: se la richiesta porta un header `Origin` (i browser lo inviano sempre cross-origin), questo deve combaciare con l'host del server, altrimenti risposta `403`.
 
 #### Note produzione
 
 - **Memoria**: Posterium usa ~200MB base + cache. Il `docker-compose.yml` limita a 512MB.
-- **Persistenza**: I dati (mapping, default) sono in un volume Docker `posterium-data`.
+- **Persistenza**: I dati (mapping, profili, default) sono in un volume Docker `posterium-data`.
 - **CDN**: Se hai una CDN (Cloudflare, Bunny), imposta `POSTER_CDN_URL` per generare URL poster col CDN. I poster **salvati** (mapping con versione) vengono serviti con header `immutable` (cache edge 1 anno); quelli composti al volo senza mapping (rank JustWatch, premi, IMDb Top 250) usano `stale-while-revalidate` per non congelare i badge dinamici alla CDN.
 - **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello. Il rate limit è **per-IP solo dietro proxy fidato**: imposta `POSTERIUM_TRUST_PROXY=1` quando sei dietro Cloudflare/HF edge/Nginx (la chiave usa `cf-connecting-ip` → `x-real-ip` → ultimo hop `x-forwarded-for`, header che il proxy sovrascrive). Senza il flag gli header IP sono ignorati (spoofabili da un client) e tutte le richieste condividono un bucket aggregato — niente bypass, ma limite di istanza.
 - **Warmup**: `/api/warmup` segue il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`): **fail-open** solo su istanza pubblica esplicita (`POSTERIUM_PUBLIC_INSTANCE=1`) senza token (es. HF Spaces), **fail-closed** altrimenti. In più è rate-limited (bucket `warmup`) e protetto da CSRF (`isSameOrigin`), così chiunque non possa triggerare carico in loop. Il self-fetch dei poster usa un origin interno fisso (`127.0.0.1`), mai l'host derivato dagli header di richiesta (anti-SSRF).
@@ -309,6 +338,7 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 | `POSTERIUM_TRUST_PROXY` | ❌ | `=1` abilita il rate limit per-IP fidandosi di `cf-connecting-ip`/`x-real-ip`/`x-forwarded-for`. Impostalo SOLO dietro un proxy/edge che sovrascrive questi header (Cloudflare, HF edge, Nginx). Senza il flag gli header IP sono ignorati (spoofabili) e si usa un bucket condiviso per tutta l'istanza (fail-safe) |
 | `ENCRYPTION_KEY_SECRET` | ❌ | Chiave per firma HMAC-SHA256 dei token di configurazione (rende i token URL immutabili) |
 | `CONFIG_HMAC_SECRET` | ❌ | Chiave alternativa per firma HMAC (fallback a ENCRYPTION_KEY_SECRET) |
+| `PROFILE_ENCRYPTION_KEY` | ❌ | Chiave AES-256-GCM (hex, es. `openssl rand -hex 32`) per cifrare le apiKeys salvate nei profili cloud (`/api/profile`). Assente → avviso in produzione e chiavi in chiaro a riposo |
 | `POSTERIUM_DATA_DIR` | ❌ | Percorso dati persistenti (default: `./data/`) |
 | `POSTERIUM_CACHE_MAX` | ❌ | Max entry cache in-memory (default: 2000) |
 | `POSTERIUM_CACHE_MAX_MB` | ❌ | Max MB cache in-memory (default: 150) |
