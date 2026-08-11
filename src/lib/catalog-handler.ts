@@ -6,6 +6,7 @@ import { getTop10 } from "@/lib/flixpatrol"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
+import { getFullProfileData } from "@/lib/profile-store"
 import { getDetails, getExternalIds, resolveRequestApiKey, type TMDBDetails } from "@/lib/tmdb"
 import { fetchMDBList } from "@/lib/mdblist"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
@@ -132,9 +133,20 @@ export async function posteriumCatalog(
   const mdblistKeyParam = req.nextUrl.searchParams.get("mdblist_key") || undefined
   // Chiave TMDB della richiesta: parte del cache key così un catalogo vuoto
   // servito a una richiesta senza chiave non avvelena quelle keyed (D3).
-  const apiKey = resolveRequestApiKey(req)
+  let apiKey = resolveRequestApiKey(req)
+  // Chiave MDBList della richiesta (anime): può arrivare dal profilo.
+  let mdblistKey = mdblistKeyParam
+  // Profilo utente (?u=): config + apiKeys (tmdbKey/mdblistApiKey) risiedono
+  // lato server. Come nel poster route, la chiave del profilo vince su quella
+  // della richiesta (header/query), così i cataloghi keyed con profilo non
+  // restano vuoti per mancanza di chiave esplicita nella URL.
+  if (userParam) {
+    const fullProfile = await getFullProfileData(userParam).catch(() => null)
+    if (fullProfile?.apiKeys?.tmdbKey) apiKey = fullProfile.apiKeys.tmdbKey
+    if (!mdblistKey && fullProfile?.apiKeys?.mdblistApiKey) mdblistKey = fullProfile.apiKeys.mdblistApiKey
+  }
 
-  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKeyParam ? `:mk${hashFragment(mdblistKeyParam)}` : ""}`
+  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
 
@@ -165,7 +177,7 @@ export async function posteriumCatalog(
         }
       }))
     } else if (catalogId.startsWith("posterium-anime")) {
-      const key = mdblistKeyParam
+      const key = mdblistKey
       if (key) {
         const items = await fetchMDBList("mdblistAnime", key)
         const results = await Promise.all(items.map(async (item) => {
