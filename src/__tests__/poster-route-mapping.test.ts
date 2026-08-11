@@ -5,6 +5,8 @@ import { GET } from "@/app/api/poster/[type]/[id]/route"
 import { getById } from "@/lib/store"
 import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { getDetails, getImages, getExternalIds } from "@/lib/tmdb"
+import { fetchMDBList } from "@/lib/mdblist"
+import { getFullProfileData } from "@/lib/profile-store"
 import { cacheClear } from "@/lib/cache"
 import { __resetTMDBSessionCache } from "@/lib/tmdb-session-cache"
 import type { Mapping } from "@/lib/types"
@@ -76,6 +78,8 @@ const mockedSelectBestLogoFitPosterPath = vi.mocked(selectBestLogoFitPosterPath)
 const mockedGetDetails = vi.mocked(getDetails)
 const mockedGetImages = vi.mocked(getImages)
 const mockedGetExternalIds = vi.mocked(getExternalIds)
+const mockedFetchMDBList = vi.mocked(fetchMDBList)
+const mockedGetFullProfileData = vi.mocked(getFullProfileData)
 
 async function imageBuffer(color: string, width: number, height: number): Promise<Buffer> {
   return sharp({
@@ -532,5 +536,51 @@ describe("GET /api/poster/[type]/[id] error and edge cases", () => {
     const req = new NextRequest("http://localhost:3000/api/poster/movie/10")
     const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "10" }) })
     expect(res.status).toBe(200)
+  })
+
+  it("uses the profile MDBList key for the anime rank lookup (tv)", async () => {
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+
+    mockedGetById.mockResolvedValue(null)
+    mockedGetDetails.mockResolvedValue({
+      id: 42,
+      title: "Test Anime",
+      genres: [{ id: 16, name: "Animation" }],
+      vote_average: 8.0,
+      vote_count: 100,
+      original_language: "ja",
+      first_air_date: "2020-01-01",
+      type: "scripted",
+      production_companies: [],
+    })
+    mockedGetImages.mockResolvedValue({
+      id: 42,
+      posters: [
+        { file_path: "/anime-clean.jpg", iso_639_1: null, vote_average: 8.0, vote_count: 100, width: 500, height: 750, aspect_ratio: 0.667 },
+      ],
+      logos: [],
+      backdrops: [],
+    })
+    mockedGetExternalIds.mockResolvedValue({ imdb_id: "tt0000042" })
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array(posterBuf), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(posterBuf.length) },
+      }),
+    )
+
+    // Profilo con chiave MDBList: il rank anime deve usarla invece del fetch
+    // keyless che risponde 503 "Invalid API key".
+    mockedGetFullProfileData.mockResolvedValue({
+      config: { globalBadges: true, rankingBadges: true, blurEnabled: true, blurIntensity: 5, blurFade: 60, blurDarkness: 40, gradientHeight: 30, networkLogo: true, autoRotateClean: true, logoFitEnabled: false },
+      apiKeys: { tmdbKey: "profile-tmdb", mdblistApiKey: "profile-mdblist" },
+    } as never)
+
+    const req = new NextRequest("http://localhost:3000/api/poster/tv/42?u=550e8400-e29b-41d4-a716-446655440000")
+    const res = await GET(req, { params: Promise.resolve({ type: "tv", id: "42" }) })
+
+    expect(res.status).toBe(200)
+    expect(mockedFetchMDBList).toHaveBeenCalledWith("mdblistAnime", "profile-mdblist")
   })
 })

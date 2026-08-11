@@ -9,8 +9,9 @@ export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
-  // Suffisso :enriched: la route poster usa "mdblist:anime:top10:raw" con shape
-  // diversa (entry grezze con campo tmdb) — con la stessa chiave le due route si
+  // Suffisso :enriched: il rank anime della route poster usa la cache interna
+  // keyed di fetchMDBList ("mdblist:list:mdblistAnime:*") con shape diversa
+  // (entry grezze con campo tmdb) — con la stessa chiave le due route si
   // sovrascrivevano a vicenda dati incompatibili.
   const cacheKey = "mdblist:anime:top10:enriched"
   interface MdblistItem {

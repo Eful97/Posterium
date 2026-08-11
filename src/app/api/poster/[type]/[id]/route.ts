@@ -5,7 +5,6 @@ import { getImages, getDetails, getExternalIds, getKeywords, resolveRequestApiKe
 import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheGet, cacheSet } from "@/lib/cache"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { warmFonts } from "@/lib/svg-badge"
 import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
@@ -123,14 +122,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   // UUID-based profile override (stile RPDB / ElfHosted / AIOMetadata): il
   // profilo (config + chiavi + mapping per-titolo) vince sul config token.
   const profileId = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user") || null
-  // Chiave TMDB del profilo (ogni utente la propria): se impostata, vince su
-  // header/query nelle chiamate TMDB (priorità profilo → richiesta).
+  // Chiavi del profilo (ogni utente le proprie): se impostate, vincono su
+  // header/query nelle chiamate TMDB/MDBList (priorità profilo → richiesta).
   let profileTmdbKey: string | null = null
+  let profileMdbListKey: string | null = null
   if (profileId) {
     const fullProfile = await getFullProfileData(profileId)
     if (fullProfile) {
       configOverride = fullProfile.config
       profileTmdbKey = fullProfile.apiKeys?.tmdbKey || null
+      profileMdbListKey = fullProfile.apiKeys?.mdblistApiKey || null
       const userMapping = fullProfile.mappings?.[`${mediaType}:${tmdbId}`]
       if (userMapping) {
         mapping = userMapping
@@ -498,22 +499,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
             .catch(() => null)
           : Promise.resolve(null),
+        // Rank anime (media_type=tv): la lista MDBList trending anime senza
+        // chiave risponde 503 "Invalid API key" → rank sempre null. Si usa la
+        // chiave del profilo (?u=) o quella esplicita della richiesta
+        // (mdblist_key). La cache è quella interna di fetchMDBList (keyed per
+        // chiave, TTL 30min), quindi niente cache manuale non-keyed.
         (rankingEnabledEarly && mediaType === "tv")
-          ? (() => {
-              try {
-                const cached = cacheGet("mdblist:anime:top10:raw")
-                if (cached && Array.isArray(cached)) {
-                  const idx = cached.findIndex((e) => Number((e as MDBListEntry).tmdb) === tmdbId || (e as EnrichedAnimeItem).id === tmdbId)
-                  return Promise.resolve(idx >= 0 ? idx + 1 : null)
-                }
-                return fetchMDBList("mdblistAnime").then((entries) => {
-                  if (!Array.isArray(entries)) return null
-                  cacheSet("mdblist:anime:top10:raw", entries, ["mdblist"])
-                  const idx = entries.findIndex((e) => Number(e.tmdb) === tmdbId)
-                  return idx >= 0 ? idx + 1 : null
-                }).catch(() => null)
-              } catch { return Promise.resolve(null) }
-            })()
+          ? fetchMDBList("mdblistAnime", req.nextUrl.searchParams.get("mdblist_key") || profileMdbListKey || undefined)
+              .then((entries) => {
+                if (!Array.isArray(entries)) return null
+                const idx = entries.findIndex((e) => {
+                  const entry = e as MDBListEntry
+                  const animeId = Number(entry.tmdb) || Number((entry as unknown as EnrichedAnimeItem).id)
+                  return animeId === tmdbId
+                })
+                return idx >= 0 ? idx + 1 : null
+              })
+              .catch(() => null)
           : Promise.resolve(null),
       ]),
       // Block B: badge data (independent of Block A — runs concurrently)

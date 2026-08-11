@@ -12,6 +12,7 @@ export interface BuildStremioPosterUrlInput {
   readonly defaults: ServerDefaults
   readonly mapping?: Mapping | null
   readonly apiKey?: string
+  readonly mdblistKey?: string
   readonly lang?: string | null
   readonly config?: string | null
   readonly user?: string | null
@@ -31,6 +32,7 @@ export function buildStremioPosterUrl(input: BuildStremioPosterUrlInput): URL {
   const params = buildStremioPosterSearchParams({
     config: input.config,
     apiKey: input.apiKey,
+    mdblistKey: input.mdblistKey,
     user: input.user,
     lang: input.lang || "it",
     globalBadges: input.defaults.globalBadges,

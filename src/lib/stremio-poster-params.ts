@@ -3,6 +3,7 @@ import type { BadgeStyle, RankingBadgeStyle } from "@/lib/badge-styles"
 
 export interface StremioPosterParamsInput {
   readonly apiKey?: string
+  readonly mdblistKey?: string
   readonly lang?: string | null
   readonly globalBadges?: boolean
   readonly rankingBadges?: boolean
@@ -46,6 +47,9 @@ export function buildStremioPosterSearchParams(input: StremioPosterParamsInput):
   if (input.config) params.set("config", input.config)
   if (input.user) params.set("u", input.user)
   if (input.apiKey) params.set("api_key", input.apiKey)
+  // Chiave MDBList esplicita della richiesta catalogo (rank anime nei poster).
+  // La chiave del profilo NON va nell'URL: viene risolta server-side da ?u=.
+  if (input.mdblistKey) params.set("mdblist_key", input.mdblistKey)
   if (!globalBadges) params.set("badges", "0")
   if (!rankingBadges) params.set("ranking", "0")
   if (input.badgeGenre === false) params.set("bg", "0")
