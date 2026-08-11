@@ -13,6 +13,7 @@ export interface BuildStremioPosterUrlInput {
   readonly mapping?: Mapping | null
   readonly apiKey?: string
   readonly mdblistKey?: string
+  readonly animerank?: number
   readonly lang?: string | null
   readonly config?: string | null
   readonly user?: string | null
@@ -33,6 +34,7 @@ export function buildStremioPosterUrl(input: BuildStremioPosterUrlInput): URL {
     config: input.config,
     apiKey: input.apiKey,
     mdblistKey: input.mdblistKey,
+    animerank: input.animerank,
     user: input.user,
     lang: input.lang || "it",
     globalBadges: input.defaults.globalBadges,

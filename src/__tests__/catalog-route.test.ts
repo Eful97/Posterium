@@ -241,6 +241,9 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(res.status).toBe(200)
     expect(body.metas).toHaveLength(1)
     expect(body.metas[0]).toMatchObject({ id: "tt1068680", type: "series", name: "Cowboy Bebop" })
+    // Il catalogo conosce la posizione in lista: la incorpora nell'URL poster
+    // come animerank, così il rank appare su Stremio senza dipendere da chiavi.
+    expect(body.metas[0].poster).toContain("animerank=1")
   })
 
   it("exposes a tmdb:<id> provider id when no IMDb id is resolvable (AIOMetadata compat)", async () => {

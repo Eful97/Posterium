@@ -60,7 +60,7 @@ function normalizeCatalogType(type: string): StremioCatalogType {
   return type === "movie" ? "movie" : "series"
 }
 
-async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number, configParam?: string | null, userParam?: string | null, mdblistKeyParam?: string | null): Promise<string> {
+async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number, configParam?: string | null, userParam?: string | null, mdblistKeyParam?: string | null, animeRankParam?: number | null): Promise<string> {
   const defaults = getServerDefaults()
   const mapping = await getById(type === "series" ? "tv" : "movie", id)
   return buildStremioPosterUrl({
@@ -73,6 +73,7 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
     config: configParam || undefined,
     user: userParam || undefined,
     mdblistKey: mdblistKeyParam || undefined,
+    animerank: animeRankParam ?? undefined,
   }).toString()
 }
 
@@ -181,25 +182,25 @@ export async function posteriumCatalog(
       const key = mdblistKey
       if (key) {
         const items = await fetchMDBList("mdblistAnime", key)
-        const results = await Promise.all(items.map(async (item) => {
+        const results = await Promise.all(items.map(async (item, idx) => {
           const tmdbId = Number(item.tmdb)
           if (!tmdbId) return null
           try {
             const d = await getDetails("tv", tmdbId, "it-IT", apiKey)
             if (!d?.id) return null
-            return { d, tmdbId, imdb: item.imdb }
+            return { d, tmdbId, imdb: item.imdb, rank: idx + 1 }
           } catch {
             return null
           }
         }))
-        const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdb: string } => r !== null)
+        const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdb: string; rank: number } => r !== null)
         metas = await Promise.all(validResults.map(async (r) => {
           const imdbId = r.imdb || await resolveImdbId("tv", r.tmdbId, apiKey)
           return {
             id: catalogMetaId(imdbId, r.tmdbId),
             type: "series",
             name: r.d.name || "",
-            poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam, userParam, mdblistKeyParam),
+            poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
             releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
           }
         }))

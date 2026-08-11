@@ -4,6 +4,7 @@ import type { BadgeStyle, RankingBadgeStyle } from "@/lib/badge-styles"
 export interface StremioPosterParamsInput {
   readonly apiKey?: string
   readonly mdblistKey?: string
+  readonly animerank?: number
   readonly lang?: string | null
   readonly globalBadges?: boolean
   readonly rankingBadges?: boolean
@@ -50,6 +51,9 @@ export function buildStremioPosterSearchParams(input: StremioPosterParamsInput):
   // Chiave MDBList esplicita della richiesta catalogo (rank anime nei poster).
   // La chiave del profilo NON va nell'URL: viene risolta server-side da ?u=.
   if (input.mdblistKey) params.set("mdblist_key", input.mdblistKey)
+  // Rank anime noto al catalogo (posizione in lista): rende il badge Anime
+  // deterministico su Stremio, indipendentemente dalle chiavi lato server.
+  if (input.animerank) params.set("animerank", String(input.animerank))
   if (!globalBadges) params.set("badges", "0")
   if (!rankingBadges) params.set("ranking", "0")
   if (input.badgeGenre === false) params.set("bg", "0")
