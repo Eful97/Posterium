@@ -1,7 +1,14 @@
 import type { NextRequest } from "next/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { PUT } from "@/app/api/defaults/route"
+import { GET, PUT } from "@/app/api/defaults/route"
 import { cacheClear, cacheGet, cacheSet } from "@/lib/cache"
+
+// I PUT di questo file scrivono i defaults via file; isoliamo lo store in una
+// dir temporanea (test-results/, gitignored) così i config di test non toccano
+// il reale data/defaults.json dell'istanza.
+vi.mock("@/lib/data-dir", () => ({
+  DATA_DIR: `${process.cwd()}/test-results/data-defaults-test`,
+}))
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -61,5 +68,17 @@ describe("PUT /api/defaults", () => {
     expect(cacheGet("poster:movie:1")).toBeNull()
     expect(cacheGet("catalog:movie:top")).toBeNull()
     expect(cacheGet("tmdb:search:avatar")).toBe("search")
+  })
+
+  it("merge: un payload parziale preserva i default già salvati", async () => {
+    delete process.env.ADMIN_TOKEN
+    await PUT(mockPutRequest({ badgeStyle: "bar", gradientHeight: 40 }) as unknown as NextRequest)
+
+    const res = await PUT(mockPutRequest({ gradientHeight: 55 }) as unknown as NextRequest)
+    expect(res.status).toBe(200)
+
+    const body = (await (await GET()).json()) as Record<string, unknown>
+    expect(body.badgeStyle).toBe("bar")
+    expect(body.gradientHeight).toBe(55)
   })
 })

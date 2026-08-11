@@ -52,7 +52,13 @@ export async function PUT(req: NextRequest) {
     return Response.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
   }
   try {
-    setServerDefaults(parsed.data as ServerDefaults)
+    const current = getServerDefaults()
+    // Merge invece di replace: un payload parziale NON deve azzerare i default
+    // già salvati (altrimenti salvare un solo campo cancellerebbe gli altri).
+    const next: Record<string, unknown> = { ...current, ...parsed.data }
+    // Await: la 200 arriva solo a persistenza completata (altrimenti una GET
+    // successiva può leggere ancora i vecchi default).
+    await setServerDefaults(next as ServerDefaults)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return Response.json({ error: `Failed to save: ${message}` }, { status: 500 })

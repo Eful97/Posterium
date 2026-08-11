@@ -39,6 +39,7 @@ const SCROLL_SPEED = 0.5 // px per frame
 
 export function PosterCarousel() {
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
+  const tmdbKey = usePSelector((v) => v.tmdbKey)
   const { t } = useT()
   const containerRef = useRef<HTMLDivElement>(null)
   // D4: il transform della pista è scritto DIRETTAMENTE sul DOM via ref.
@@ -153,7 +154,10 @@ export function PosterCarousel() {
             className="flex gap-4 will-change-transform"
           >
             {[...EXAMPLES, ...EXAMPLES].map((ex, i) => {
-              const posterUrl = `/api/poster/${ex.type}/${ex.id}${ex.params}`
+              // La chiave personale va in query: senza, i titoli non mappati
+              // fallirebbero l'auto-fetch TMDB (solo chiavi personali, niente
+              // chiave d'istanza). ex.params inizia con "?".
+              const posterUrl = `/api/poster/${ex.type}/${ex.id}${ex.params}${tmdbKey ? `&api_key=${encodeURIComponent(tmdbKey)}` : ""}`
               return (
                 <div
                   key={i}

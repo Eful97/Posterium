@@ -47,6 +47,8 @@
 - Race mtime sui mapping scritti da un altro worker
 - Slot wait default 15s — poster mancanti nelle griglie catalogo
 - Snapshot `/status` riallineati dopo rimozione della sezione System
+- Carousel demo: passata la chiave personale come `api_key` (fix poster 404 locali `TMDB API key is missing`)
+- `PUT /api/defaults`: merge parziale invece di replace + scrittura attesa prima della 200 (salvare un campo non cancella più gli altri default)
 
 ## [0.15.0] - 2026-07-19
 

@@ -142,4 +142,21 @@ describe("SettingsPanel", () => {
     )
     expect(screen.getByText("ui.styleDefault")).toBeInTheDocument()
   })
+
+  it("does not render a separate instance API key section", () => {
+    renderWithCtx(
+      <SettingsPanel
+        tmdbKeyInput=""
+        setTmdbKeyInput={() => {}}
+        setTmdbKey={() => {}}
+        setSettingsOpen={() => {}}
+        exportData={() => {}}
+        importData={() => {}}
+        mdblistApiKey=""
+        setMdblistApiKey={() => {}}
+      />
+    )
+    expect(screen.queryByText("Chiavi API istanza")).toBeNull()
+    expect(screen.queryByText(/Salva chiavi istanza/)).toBeNull()
+  })
 })
