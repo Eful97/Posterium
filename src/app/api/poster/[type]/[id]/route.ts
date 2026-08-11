@@ -478,6 +478,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const qRankingEarly = req.nextUrl.searchParams.get("ranking")
     const hasQueryEarly = !!queryPoster || !!mapping
     const rankingEnabledEarly = hasQueryEarly ? (qRankingEarly !== null ? qRankingEarly !== "0" : rankingBadges) : true
+    // Rank anime inviato dal client nella preview WYSIWYG (override del fetch).
+    const qAnimeRankParam = req.nextUrl.searchParams.get("animerank")
+    const qAnimeRank = qAnimeRankParam ? Number(qAnimeRankParam) : NaN
 
     // 5. Fetch all data in parallel: images + rankings + wikidata + keywords + imdbTop250
     //    All dependencies are available before this point — no Block B depends on Block A
@@ -504,18 +507,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         // chiave del profilo (?u=) o quella esplicita della richiesta
         // (mdblist_key). La cache è quella interna di fetchMDBList (keyed per
         // chiave, TTL 30min), quindi niente cache manuale non-keyed.
+        // Il parametro `animerank` (inviato dal client nella preview WYSIWYG)
+        // vince sul fetch: il client conosce già il rank dal suo mdblistAnimeList.
         (rankingEnabledEarly && mediaType === "tv")
-          ? fetchMDBList("mdblistAnime", req.nextUrl.searchParams.get("mdblist_key") || profileMdbListKey || undefined)
-              .then((entries) => {
-                if (!Array.isArray(entries)) return null
-                const idx = entries.findIndex((e) => {
-                  const entry = e as MDBListEntry
-                  const animeId = Number(entry.tmdb) || Number((entry as unknown as EnrichedAnimeItem).id)
-                  return animeId === tmdbId
-                })
-                return idx >= 0 ? idx + 1 : null
-              })
-              .catch(() => null)
+          ? (Number.isFinite(qAnimeRank) && qAnimeRank > 0
+              ? Promise.resolve(qAnimeRank)
+              : fetchMDBList("mdblistAnime", req.nextUrl.searchParams.get("mdblist_key") || profileMdbListKey || undefined)
+                  .then((entries) => {
+                    if (!Array.isArray(entries)) return null
+                    const idx = entries.findIndex((e) => {
+                      const entry = e as MDBListEntry
+                      const animeId = Number(entry.tmdb) || Number((entry as unknown as EnrichedAnimeItem).id)
+                      return animeId === tmdbId
+                    })
+                    return idx >= 0 ? idx + 1 : null
+                  })
+                  .catch(() => null))
           : Promise.resolve(null),
       ]),
       // Block B: badge data (independent of Block A — runs concurrently)

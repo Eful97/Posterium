@@ -583,4 +583,47 @@ describe("GET /api/poster/[type]/[id] error and edge cases", () => {
     expect(res.status).toBe(200)
     expect(mockedFetchMDBList).toHaveBeenCalledWith("mdblistAnime", "profile-mdblist")
   })
+
+  it("uses the animerank query param as anime rank override (preview WYSIWYG)", async () => {
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+
+    mockedGetById.mockResolvedValue(null)
+    mockedGetDetails.mockResolvedValue({
+      id: 42,
+      title: "Test Anime",
+      genres: [{ id: 16, name: "Animation" }],
+      vote_average: 8.0,
+      vote_count: 100,
+      original_language: "ja",
+      first_air_date: "2020-01-01",
+      type: "scripted",
+      production_companies: [],
+    })
+    mockedGetImages.mockResolvedValue({
+      id: 42,
+      posters: [
+        { file_path: "/anime-clean.jpg", iso_639_1: null, vote_average: 8.0, vote_count: 100, width: 500, height: 750, aspect_ratio: 0.667 },
+      ],
+      logos: [],
+      backdrops: [],
+    })
+    mockedGetExternalIds.mockResolvedValue({ imdb_id: "tt0000042" })
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array(posterBuf), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(posterBuf.length) },
+      }),
+    )
+
+    mockedFetchMDBList.mockClear()
+    const req = new NextRequest("http://localhost:3000/api/poster/tv/42?animerank=5&debug=1")
+    const res = await GET(req, { params: Promise.resolve({ type: "tv", id: "42" }) })
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.rankings.anime).toBe(5)
+    // L'override evita il fetch MDBList (la preview non porta chiavi)
+    expect(mockedFetchMDBList).not.toHaveBeenCalled()
+  })
 })
