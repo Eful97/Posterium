@@ -197,7 +197,11 @@ export async function posteriumCatalog(
         if (catalogId.includes(k)) { slug = v; break }
       }
       if (slug) {
-        const data = apiKey ? await getTop10(slug, "italy", apiKey).catch(() => null) : null
+        // C6: enrich:false — il catalogo non usa né posterPath né il titolo
+        // TMDB it-IT (il poster lo costruisce posteriumPosterUrl): evitiamo i
+        // ~2 fetch TMDB per titolo dell'enrichment, tenendo solo external_ids
+        // per l'imdbId. Il nome resta quello del catalogo flixpatrol.
+        const data = apiKey ? await getTop10(slug, "italy", apiKey, { enrich: false }).catch(() => null) : null
         if (data) {
           const items = stType === "movie" ? data.movies : data.tv
           const itemsWithTmdb = items.slice(0, 10).flatMap((item) => (

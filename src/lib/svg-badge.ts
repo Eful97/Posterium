@@ -86,8 +86,23 @@ function wrapSvg(svg: string): string {
   return svg.replace(/<svg /, `<svg >${fontStyle()}`)
 }
 
+// D2: il dynamic import di resvg (init WASM) veniva rieseguito a OGNI badge —
+// un poster con ~5 badge pagava 5 init. Hoist del promise a module level: il
+// primo renderSVG carica l'engine, gli altri riusano il modulo già risolto.
+// In caso di errore il promise viene resettato → il prossimo badge riprova.
+let resvgModule: Promise<typeof import("@resvg/resvg-js")> | null = null
+function loadResvg(): Promise<typeof import("@resvg/resvg-js")> {
+  if (!resvgModule) {
+    resvgModule = import("@resvg/resvg-js").catch((e) => {
+      resvgModule = null
+      throw e
+    })
+  }
+  return resvgModule
+}
+
 export async function renderSVG(svgStr: string, w: number): Promise<Buffer> {
-  const { Resvg } = await import("@resvg/resvg-js")
+  const { Resvg } = await loadResvg()
   const resvg = new Resvg(svgStr, {
     fitTo: { mode: "width", value: w },
     font: {

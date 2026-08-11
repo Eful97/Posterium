@@ -30,25 +30,27 @@ export async function GET(req: NextRequest) {
   if (!apiKey) return Response.json({ match: null })
 
   try {
-    for (const list of MDBLISTS) {
+    // A3: i 3 list fetch partono in parallelo (prima seriali → fino a 30s).
+    // allSettled: un errore su una lista non blocca le altre; solo se TUTTE
+    // falliscono non si cacha il no-match (ritenta al prossimo accesso).
+    const settled = await Promise.allSettled(MDBLISTS.map(async (list) => {
       const url = MDBLISTS_URL[list.key]
       const fullUrl = `${url}/items?apikey=${encodeURIComponent(apiKey)}&limit=20`
       const res = await fetch(fullUrl, {
         headers: { 'Accept': 'application/json' },
         signal: AbortSignal.timeout(10000)
       })
-      if (!res.ok) continue
+      if (!res.ok) return []
       const body = await res.json()
       const payload = body?.data || body
       interface MdblistRawItem {
-  imdb_id?: string
-  imdb?: string
-  ids?: { imdb?: string }
-  title?: string
-  year?: number
-}
-
-let parsedItems: MdblistRawItem[] = []
+        imdb_id?: string
+        imdb?: string
+        ids?: { imdb?: string }
+        title?: string
+        year?: number
+      }
+      let parsedItems: MdblistRawItem[] = []
       if (Array.isArray(payload)) {
         parsedItems = payload
       } else if (payload?.items) {
@@ -58,20 +60,29 @@ let parsedItems: MdblistRawItem[] = []
       } else if (payload?.movies) {
         parsedItems = payload.movies
       }
-      const items: MDBListEntry[] = parsedItems.slice(0, 20).map((item: MdblistRawItem) => ({
+      return parsedItems.slice(0, 20).map((item: MdblistRawItem): MDBListEntry => ({
         imdb: item.imdb_id || item.imdb || item.ids?.imdb || '',
         title: item.title || '',
         year: item.year || 0,
       }))
-      const idx = items.findIndex(e => e.imdb === imdbId)
+    }))
+    if (settled.every((s) => s.status === "rejected")) {
+      // Errore di rete: NON cachare il fallimento, ritenta al prossimo accesso.
+      log.error("All list fetches failed")
+      return Response.json({ match: null })
+    }
+    for (let li = 0; li < MDBLISTS.length; li++) {
+      const s = settled[li]
+      if (s.status !== "fulfilled") continue
+      const idx = s.value.findIndex(e => e.imdb === imdbId)
       if (idx >= 0 && idx < 20) {
-        const match = { key: list.key, rank: idx + 1 }
+        const match = { key: MDBLISTS[li].key, rank: idx + 1 }
         cacheSet(cacheKey, match, ["mdblist"])
         return Response.json({ match })
       }
     }
   } catch (e) {
-    // Errore di rete: NON cachare il fallimento, ritenta al prossimo accesso.
+    // Fallback di sicurezza: NON cachare il fallimento.
     log.error("Fetch failed", { error: e instanceof Error ? e.message : String(e) })
     return Response.json({ match: null })
   }

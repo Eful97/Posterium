@@ -107,12 +107,6 @@ export interface PosterEditorCtx {
   backdropOffsetY: number
   setBackdropOffsetY: (v: number | ((prev: number) => number)) => void
 
-  // ---- Editing UI ----
-  editingValue: string | null
-  setEditingValue: (v: string | null | ((prev: string | null) => string | null)) => void
-  editText: string
-  setEditText: (v: string | ((prev: string) => string)) => void
-
   // ---- Rotation / esclusioni ----
   rotationPosters: string[]
   setRotationPosters: (v: string[] | ((prev: string[]) => string[])) => void
@@ -320,10 +314,6 @@ export function PosterEditorProvider({
   const [backdropOffsetX, setBackdropOffsetX] = useState(0)
   const [backdropOffsetY, setBackdropOffsetY] = useState(0)
 
-  // ---- Editing UI ----
-  const [editingValue, setEditingValue] = useState<string | null>(null)
-  const [editText, setEditText] = useState("")
-
   // ---- Rotation / esclusioni ----
   const [rotationPosters, setRotationPosters] = useState<string[]>([])
   const [autoRotateClean, setAutoRotateClean] = useState(false)
@@ -427,12 +417,6 @@ export function PosterEditorProvider({
       backdropOffsetY,
       setBackdropOffsetY,
 
-      // Editing UI
-      editingValue,
-      setEditingValue,
-      editText,
-      setEditText,
-
       // Rotation
       rotationPosters,
       setRotationPosters,
@@ -494,10 +478,6 @@ export function PosterEditorProvider({
       backdropScale, setBackdropScale,
       backdropOffsetX, setBackdropOffsetX,
       backdropOffsetY, setBackdropOffsetY,
-
-      // Editing UI
-      editingValue, setEditingValue,
-      editText, setEditText,
 
       // Rotation
       rotationPosters, setRotationPosters,

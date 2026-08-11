@@ -165,6 +165,24 @@ async function tmdbCachedFetch(url: string): Promise<unknown | null> {
   }
 }
 
+// C4: cap di concorrenza per l'enrichment dei cataloghi. ~40 voci × fino a 2
+// fetch TMDB a voce = ~80 richieste in parallelo su cold cache → satura il
+// rate limit TMDB. Con mapLimit il burst resta sotto controllo.
+const ENRICH_CONCURRENCY = 6
+
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let next = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++
+      results[i] = await fn(items[i])
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
 async function fetchPosterPath(tmdbId: number, mediaType: string, apiKey: string): Promise<string | null> {
   const url = `${TMDB_BASE}/${mediaType}/${tmdbId}/images?api_key=${apiKey}&include_image_language=it,en,null`
   try {
@@ -179,7 +197,7 @@ async function fetchPosterPath(tmdbId: number, mediaType: string, apiKey: string
   }
 }
 
-export async function getTop10(platformSlug: string, country = "italy", apiKey?: string): Promise<FlixPatrolTop10> {
+export async function getTop10(platformSlug: string, country = "italy", apiKey?: string, options?: { enrich?: boolean }): Promise<FlixPatrolTop10> {
   const platformName = SLUG_TO_PLATFORM[platformSlug]
   if (!platformName) throw new Error(`Unknown platform: ${platformSlug}`)
   // Fail-closed: un paese fuori dalla lista non viene mai cercato su disco,
@@ -188,6 +206,10 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
   if (!SUPPORTED_COUNTRIES.has(country)) {
     throw new Error(`Unsupported country: ${country}`)
   }
+  // C6: enrich:false → nessuna chiamata TMDB per titolo (il catalogo Stremio
+  // costruisce il poster via posteriumPosterUrl e non usa né posterPath né il
+  // titolo italiano: restituire la voce grezza taglia ~2 fetch TMDB × titolo).
+  const enrich = options?.enrich ?? true
 
   const now = Date.now()
   const FOUR_HOURS = 4 * 60 * 60 * 1000
@@ -223,7 +245,7 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
     let posterPath: string | null = null
     let releaseDate: string | null = entry.tmdb?.release_date ?? null
 
-    if (tmdbId && apiKey) {
+    if (tmdbId && apiKey && enrich) {
       const detailsUrl = `${TMDB_BASE}/${type}/${tmdbId}?api_key=${apiKey}&language=it-IT`
       const [fetchedPoster, details] = await Promise.all([
         fetchPosterPath(tmdbId, type, apiKey),
@@ -247,8 +269,8 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
   }
 
   const [movies, tv] = await Promise.all([
-    Promise.all((movieChart?.entries ?? []).map((e) => toItem(e, "movie"))),
-    Promise.all((tvChart?.entries ?? []).map((e) => toItem(e, "tv"))),
+    mapLimit(movieChart?.entries ?? [], ENRICH_CONCURRENCY, (e) => toItem(e, "movie")),
+    mapLimit(tvChart?.entries ?? [], ENRICH_CONCURRENCY, (e) => toItem(e, "tv")),
   ])
 
   return { platform: platformSlug, platformName, country, movies, tv }

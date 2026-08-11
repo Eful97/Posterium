@@ -19,6 +19,11 @@ const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 let memCache: Set<string> | null = null
 let memCacheAt = 0
 
+// A4: inflight dedup — con più poster concorrenti (fetch del chart da 10s) il
+// primo livello di cache rischia N fetch uguali nello stesso istante. Tutti i
+// caller concorrenti condividono un'unica promise; al settle si resetta.
+let inflightTop250: Promise<Set<string>> | null = null
+
 function isMemFresh(): boolean {
   return memCache !== null && (Date.now() - memCacheAt) < CACHE_TTL_MS
 }
@@ -66,20 +71,27 @@ async function getTop250Ids(): Promise<Set<string>> {
     return memCache
   }
 
-  // 3. Dynamic fetch with curated static fallback
-  const fetched = await fetchTop250Ids()
-  if (fetched.length >= 100) {
-    const set = new Set(fetched)
-    cacheSet(CACHE_KEY, fetched, ["imdb"], CACHE_TTL_MS)
-    memCache = set
-    memCacheAt = Date.now()
-    return set
-  }
+  // 3. Inflight dedup: una sola fetch condivisa da tutti i caller concorrenti
+  if (inflightTop250) return inflightTop250
 
-  // Use curated static Top 250 dataset
-  memCache = IMDB_TOP_250_IDS
-  memCacheAt = Date.now()
-  return IMDB_TOP_250_IDS
+  // 4. Dynamic fetch with curated static fallback
+  inflightTop250 = (async () => {
+    const fetched = await fetchTop250Ids()
+    if (fetched.length >= 100) {
+      const set = new Set(fetched)
+      cacheSet(CACHE_KEY, fetched, ["imdb"], CACHE_TTL_MS)
+      memCache = set
+      memCacheAt = Date.now()
+      return set
+    }
+
+    // Use curated static Top 250 dataset
+    memCache = IMDB_TOP_250_IDS
+    memCacheAt = Date.now()
+    return IMDB_TOP_250_IDS
+  })().finally(() => { inflightTop250 = null })
+
+  return inflightTop250
 }
 
 /**

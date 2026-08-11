@@ -265,6 +265,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let etag: string
   let genreName: string | null = null
   let voteAverage: number | null = null
+  // A1: promise del voto aggregato MDBList lanciata nel ramo non-mappato ma
+  // attesa SOLO dopo il blocco dati parallelo → la RTT (≤8s) si sovrappone
+  // ai fetch immagini/wikidata/justwatch invece di precederli in serie.
+  let aggregatedRating: ReturnType<typeof fetchAggregatedRating> | null = null
   let showBadges = true
   let rankingBadges = true
   let releaseDate: string | null = null
@@ -344,9 +348,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         setTMDBSessionCache(mediaType, tmdbId, { details, images, externalIds: extIds })
       }
       imdbId = extIds.imdb_id
-      const aggregated = imdbId ? await fetchAggregatedRating(imdbId).catch(() => null) : null
+      // A1: fetch deferito — il voto aggregato parte subito ma non blocca.
+      aggregatedRating = imdbId
+        ? fetchAggregatedRating(imdbId, undefined, renderAbort.signal).catch(() => null)
+        : Promise.resolve(null)
       genreName = details.genres[0]?.name || null
-      voteAverage = aggregated?.average ?? details.vote_average ?? 0
+      voteAverage = details.vote_average ?? 0
       releaseDate = details.release_date || null
       firstAirDate = details.first_air_date || null
       tmdbNetworks = (details.networks || []).map((n: TMDBCompany) => n.name)
@@ -354,6 +361,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       tmdbStudios = matchTMDBStudios([...tmdbNetworks, ...productionCompanies])
       tvType = details.type || null
       tvStatus = details.status || null
+      // C1: acquisisci lo slot PRIMA del lavoro CPU pesante del ramo non-mappato
+      // (logo-fit: fetch + decode dei poster candidati). Prima questi avvenivano
+      // fuori dal semaforo → un burst di logo-fit su cache fredda (griglie
+      // catalogo) spingeva la memoria senza bound. Lo stesso slot viene riusato
+      // dal render sharp sotto; il finally lo rilascia comunque.
+      if (!releaseRender) {
+        releaseRender = await acquirePosterRenderSlot()
+        if (!releaseRender) {
+          clearTimeout(renderDeadline)
+          completePosterRender(null)
+          writePosterError(cacheKey, 503)
+          return posterErrorResponse(503)
+        }
+      }
       const clean = images.posters.find((p: TMDBImage) => p.iso_639_1 === null)
       if (clean) {
         if (queryLogo) {
@@ -431,6 +452,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   if (!posterPath) {
     clearTimeout(renderDeadline)
+    // C1: il ramo non-mappato può già detenere lo slot (logo-fit) — questo
+    // return è fuori dal try/finally, quindi il rilascio va fatto qui.
+    releaseSlotOnce()
     completePosterRender(null)
     return new Response("Poster not found", { status: 404, headers: corsHeaders() })
   }
@@ -439,11 +463,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     // Semaforo anti-OOM: limita i render costosi concorrenti (sharp composite,
     // blur, badge SVG→PNG). Se tutti i posti sono occupati per più del timeout,
     // risponde 503 invece di accodarsi e far crescere l'heap senza bound.
-    releaseRender = await acquirePosterRenderSlot()
+    // C1: se il ramo non-mappato ha già acquisito lo slot (logo-fit), lo si
+    // riusa — mai doppia acquisizione (releaseRender già valorizzato).
     if (!releaseRender) {
-      completePosterRender(null)
-      writePosterError(cacheKey, 503)
-      return posterErrorResponse(503)
+      releaseRender = await acquirePosterRenderSlot()
+      if (!releaseRender) {
+        completePosterRender(null)
+        writePosterError(cacheKey, 503)
+        return posterErrorResponse(503)
+      }
     }
 
     const qRankingEarly = req.nextUrl.searchParams.get("ranking")
@@ -512,6 +540,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         })(),
       ]),
     ])
+
+    // A1: upgrade del voto aggregato ora che la promise (lanciata nel ramo
+    // non-mappato) è quasi certamente già risolta — zero RTT aggiuntiva.
+    if (aggregatedRating) {
+      const aggregated = await aggregatedRating
+      if (aggregated?.average) voteAverage = aggregated.average
+    }
 
     if (!originalBuf) {
       completePosterRender(null)

@@ -1,13 +1,12 @@
 import { NextRequest } from "next/server"
 import { getJWRankings } from "@/lib/justwatch"
+import { getDetails, getImages } from "@/lib/tmdb"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { createLogger } from "@/lib/logger"
 import { jsonGzip } from "@/lib/json-response"
 
 const log = createLogger("trending")
-
-const TMDB_BASE = "https://api.themoviedb.org/3"
 
 /** Codici paese supportati da JustWatch (set chiuso — evita cache-miss illimitati). */
 const JW_COUNTRIES = new Set([
@@ -16,21 +15,6 @@ const JW_COUNTRIES = new Set([
   "IN", "IT", "JP", "KR", "LT", "LV", "MX", "MY", "NL", "NO", "NZ", "PE", "PH", "PL",
   "PT", "RO", "RS", "RU", "SE", "SG", "SI", "SK", "TH", "TR", "UA", "US", "VE", "ZA",
 ])
-
-async function tmdbFetch(path: string, apiKey?: string) {
-  const url = new URL(`${TMDB_BASE}${path}`)
-  url.searchParams.set("api_key", apiKey || "")
-  url.searchParams.set("language", "it-IT")
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(30000) })
-  if (!res.ok) return null
-  return res.json()
-}
-
-async function tmdbFetchImages(mediaType: string, id: number, apiKey?: string) {
-  const res = await fetch(`${TMDB_BASE}/${mediaType}/${id}/images?api_key=${apiKey || ""}&include_image_language=it,en,null`)
-  if (!res.ok) return null
-  return res.json()
-}
 
 /** Esegue `fn` su ogni item con al massimo `limit` chiamate concorrenti. */
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -85,23 +69,30 @@ export async function GET(req: NextRequest) {
     ])
     const movieResults: TrendingItem[] = []
     const tvResults: TrendingItem[] = []
-    const enrichItem = async (tmdbId: number, mediaType: string) => {
-      const [details, images] = await Promise.all([
-        tmdbFetch(`/${mediaType}/${tmdbId}`, apiKey),
-        tmdbFetchImages(mediaType, tmdbId, apiKey),
-      ])
-      if (!details) return null
-      const poster = details.poster_path
-        ? details.poster_path
-        : images?.posters?.[0]?.file_path || null
-      return {
-        id: tmdbId,
-        media_type: mediaType as "movie" | "tv",
-        title: details.title,
-        name: details.name,
-        poster_path: poster,
-        release_date: details.release_date,
-        first_air_date: details.first_air_date,
+    // C3: getDetails/getImages del client condiviso (cache LRU 5min + inflight
+    // coalescing) al posto dei fetch TMDB propri della route. Bonus: i dettagli
+    // riscaldano la stessa cache che leggono i render poster (/movie/{id}?language=it-IT).
+    const enrichItem = async (tmdbId: number, mediaType: "movie" | "tv") => {
+      try {
+        const [details, images] = await Promise.all([
+          getDetails(mediaType, tmdbId, "it-IT", apiKey),
+          getImages(mediaType, tmdbId, "it,en,null", apiKey),
+        ])
+        const poster = details.poster_path
+          ? details.poster_path
+          : images?.posters?.[0]?.file_path || null
+        return {
+          id: tmdbId,
+          media_type: mediaType,
+          title: details.title,
+          name: details.name,
+          poster_path: poster,
+          release_date: details.release_date,
+          first_air_date: details.first_air_date,
+        }
+      } catch {
+        // Singolo item fallito → salta (un outage parziale non blocca il batch).
+        return null
       }
     }
     // Concurrency limiter: ogni enrichItem fa 2 fetch TMDB; senza cap l'esplosione

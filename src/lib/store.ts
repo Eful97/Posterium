@@ -22,33 +22,53 @@ if (!useKv && debugStore) {
 
 // ---- Vercel KV helpers ----
 
-async function kvGetAll(): Promise<Mapping[]> {
-  const { kv } = await import("@vercel/kv")
-  const raw = await kv.hgetall<Record<string, Mapping>>("mappings")
-  if (!raw) return []
-  return Object.values(raw)
-}
+// C5: cache di lettura per la modalità KV. Il poster hot path chiama getById a
+// ogni render: senza cache, in modalità KV è un round-trip di rete verso Vercel
+// KV per richiesta. TTL breve + inflight dedup: più render concorrenti condividono
+// UN solo hgetall per finestra (500ms) — coerente col file mode (staleness
+// bounded, multi-istanza). Le scritture aggiornano la cache in-place.
+const KV_READ_TTL_MS = process.env.NODE_ENV === "test" ? 0 : 500
+let kvCache: Record<string, Mapping> | null = null
+let kvCacheAt = 0
+let kvCacheInflight: Promise<Record<string, Mapping>> | null = null
 
-async function kvGetById(type: "movie" | "tv", id: number): Promise<Mapping | null> {
-  const { kv } = await import("@vercel/kv")
-  const key = `${type}:${id}`
-  return kv.hget<Mapping>("mappings", key)
+async function kvReadAllCached(): Promise<Record<string, Mapping>> {
+  const now = Date.now()
+  if (kvCache && now - kvCacheAt < KV_READ_TTL_MS) return kvCache
+  if (kvCacheInflight) return kvCacheInflight
+  kvCacheInflight = (async () => {
+    const { kv } = await import("@vercel/kv")
+    const raw = await kv.hgetall<Record<string, Mapping>>("mappings")
+    const map = raw ?? {}
+    kvCache = map
+    kvCacheAt = Date.now()
+    return map
+  })().finally(() => { kvCacheInflight = null })
+  return kvCacheInflight
 }
 
 async function kvUpsert(mapping: Mapping) {
   const { kv } = await import("@vercel/kv")
   const key = `${mapping.mediaType}:${mapping.tmdbId}`
-  await kv.hset("mappings", { [key]: { ...mapping, updatedAt: new Date().toISOString() } })
+  const next = { ...mapping, updatedAt: new Date().toISOString() }
+  await kv.hset("mappings", { [key]: next })
+  // Dopo un upsert l'utente apre subito il poster (getById): un refetch completo
+  // della mappa annullerebbe il beneficio della cache. Update in-place.
+  if (kvCache) kvCache[key] = next
 }
 
 async function kvRemove(type: "movie" | "tv", id: number) {
   const { kv } = await import("@vercel/kv")
-  await kv.hdel("mappings", `${type}:${id}`)
+  const key = `${type}:${id}`
+  await kv.hdel("mappings", key)
+  if (kvCache) delete kvCache[key]
 }
 
 async function kvRemoveAll() {
   const { kv } = await import("@vercel/kv")
   await kv.del("mappings")
+  kvCache = {}
+  kvCacheAt = Date.now()
 }
 
 async function kvImportMappings(mappings: Mapping[]) {
@@ -62,6 +82,7 @@ async function kvImportMappings(mappings: Mapping[]) {
     entries[`${m.mediaType}:${m.tmdbId}`] = { ...m, updatedAt: now }
   }
   await kv.hset("mappings", entries)
+  if (kvCache) Object.assign(kvCache, entries)
 }
 
 // ---- File-based helpers (HF / local) ----
@@ -180,12 +201,12 @@ async function persist(data: Record<string, Mapping>) {
 // ---- Exported API ----
 
 export async function getAll(): Promise<Mapping[]> {
-  if (useKv) return kvGetAll()
+  if (useKv) return Object.values(await kvReadAllCached())
   return Object.values(await readFromMem())
 }
 
 export async function getById(type: "movie" | "tv", id: number): Promise<Mapping | null> {
-  if (useKv) return kvGetById(type, id)
+  if (useKv) return (await kvReadAllCached())[`${type}:${id}`] ?? null
   const key = `${type}:${id}`
   const data = await readFromMem()
   return data[key] ?? null

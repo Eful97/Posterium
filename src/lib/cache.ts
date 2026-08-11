@@ -53,13 +53,16 @@ function ttlForTags(tags: string[]): number {
 }
 
 function isExpired(entry: CacheEntry<unknown>): boolean {
+  // D3: Date.now() hoisted — prima veniva chiamato due volte per ogni
+  // isExpired (refresh branch + fallback TTL). isExpired gira su ogni
+  // cacheGet e nel cleanup: un solo clock read per controllo.
+  const now = Date.now()
   // Un `ttl` esplicito vince sempre sul refresh schedulato: chi cacchetta con
   // un TTL corto (es. catalogo vuoto a 60s) non deve restare congelato fino
   // all'ora di refresh giornaliera.
   const refreshHour = entry.ttl === undefined ? isScheduledRefresh(entry.tags) : null
   if (refreshHour !== null) {
     // Use UTC so the refresh time is the same regardless of server timezone
-    const now = Date.now()
     const nowDate = new Date(now)
     const todayRefresh = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), nowDate.getUTCDate(), refreshHour, 0, 0, 0)
 
@@ -71,7 +74,7 @@ function isExpired(entry: CacheEntry<unknown>): boolean {
     }
   }
   const ttl = entry.ttl || ttlForTags(entry.tags)
-  return Date.now() - entry.timestamp > ttl
+  return now - entry.timestamp > ttl
 }
 
 let cleanupTimer: ReturnType<typeof setInterval> | null = null
@@ -98,17 +101,30 @@ function startCleanup() {
 
 /**
  * Stima la dimensione in bytes di un valore per il memory tracking.
- * Per Buffer usa byteLength, per gli oggetti usa JSON.stringify.
+ *
+ * Ricorsiva: somma `byteLength` dei Buffer figli. Prima si usava
+ * JSON.stringify — per oggetti con Buffer annidati (es. badge `{png, w, h}`)
+ * la stima era 2-6× il peso reale → makeSpace evictava poster/badge troppo
+ * presto e la cache restava sotto-utilizzata rispetto al byte-limit reale.
  */
 function estimateBytes(data: unknown): number {
   if (Buffer.isBuffer(data)) return data.byteLength
   if (typeof data === "string") return Buffer.byteLength(data)
-  try {
-    return Buffer.byteLength(JSON.stringify(data))
-  } catch {
-    // Circular references or non-serializable — fallback a 1KB
-    return 1024
+  if (data === null || data === undefined) return 0
+  if (typeof data === "number" || typeof data === "boolean") return 8
+  if (Array.isArray(data)) {
+    let total = 0
+    for (const item of data) total += estimateBytes(item)
+    return total
   }
+  if (typeof data === "object") {
+    let total = 0
+    for (const [key, value] of Object.entries(data)) {
+      total += Buffer.byteLength(key) + estimateBytes(value)
+    }
+    return total
+  }
+  return 0
 }
 
 function makeSpace(count: number, incomingBytes: number = 0): void {

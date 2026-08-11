@@ -23,7 +23,8 @@ function avg(values: number[]): number {
 
 export async function fetchAggregatedRating(
   imdbId: string,
-  apiKey?: string
+  apiKey?: string,
+  signal?: AbortSignal
 ): Promise<AggregatedRatings | null> {
   if (!imdbId) return null
 
@@ -41,7 +42,7 @@ export async function fetchAggregatedRating(
   try {
     const res = await fetch(
       `${MDBLIST}/${qs}`,
-      { signal: AbortSignal.timeout(8000) }
+      { signal: signal ?? AbortSignal.timeout(8000) }
     )
     if (res.ok) {
       const raw = await res.json()

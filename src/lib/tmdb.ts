@@ -211,7 +211,8 @@ export interface TMDBDetails {
   networks?: { id: number; name: string; logo_path: string | null; origin_country: string }[]
   production_companies?: { id: number; name: string; logo_path: string | null; origin_country: string }[]
   original_language?: string
-  
+  poster_path?: string | null
+
 }
 
 export async function getDetails(mediaType: "movie" | "tv", id: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBDetails> {

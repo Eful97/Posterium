@@ -27,6 +27,11 @@ export function BadgeControls() {
   const { t, lang } = useT()
   const ed = usePosterEditor()
   const [now] = useState(() => Date.now())
+  // B1: editingValue/editText LOCALI — prima nel context condiviso, quindi ogni
+  // tasto nell'editor inline ri-renderizzava TUTTI i consumer di usePosterEditor()
+  // (BadgeControls + TransformControls). Ogni componente gestisce il proprio edit.
+  const [editingValue, setEditingValue] = useState<string | null>(null)
+  const [editText, setEditText] = useState("")
 
   return (
     <div className="space-y-2.5">
@@ -75,17 +80,17 @@ export function BadgeControls() {
 
       <div className="control-row flex items-center justify-between px-1">
         <span className="control-label">{t("ui.customBadge")}</span>
-        {ed.editingValue === "customBadge" ? (
-          <input autoFocus value={ed.editText} onChange={(e) => ed.setEditText(e.target.value)}
+        {editingValue === "customBadge" ? (
+          <input autoFocus value={editText} onChange={(e) => setEditText(e.target.value)}
                  onFocus={(e) => e.target.select()}
-                 onBlur={() => { const v = ed.editText.trim(); ed.setCustomBadge(v || null); ed.setEditingValue(null) }}
+                 onBlur={() => { const v = editText.trim(); ed.setCustomBadge(v || null); setEditingValue(null) }}
                  onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }}
                  className="editor-input w-28 text-right px-1.5 py-1"
                  placeholder={t("ui.customBadgePlaceholder")} />
         ) : (
           <select value={ed.customBadge ?? "__auto__"} onChange={(e) => {
             const v = e.target.value
-            if (v === "__custom__") { ed.setEditText(""); ed.setEditingValue("customBadge") }
+            if (v === "__custom__") { setEditText(""); setEditingValue("customBadge") }
             else if (v === "__auto__") ed.setCustomBadge(null)
             else ed.setCustomBadge(v)
           }} className="editor-input w-28 text-right px-1.5 py-1 cursor-pointer">
@@ -168,10 +173,10 @@ export function BadgeControls() {
           </span>
         </button>
         {ed.blurEnabled && <div className="space-y-1 px-1">
-          <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => ed.setGradientHeight(v)} onDoubleClick={() => ed.setGradientHeight(defaultGradientHeightForPoster(previewPoster))} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="gradHeight" suffix="%" />
-          <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={t("ui.intensity")} value={ed.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => ed.setBlurIntensity(v)} onDoubleClick={() => ed.setBlurIntensity(5)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="blurIntensity" suffix="px" />
-          <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={t("ui.fade")} value={ed.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setBlurFade(v)} onDoubleClick={() => ed.setBlurFade(60)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="blurFade" suffix="%" />
-          <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={t("ui.darkness")} value={ed.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setBlurDarkness(v)} onDoubleClick={() => ed.setBlurDarkness(40)} editingValue={ed.editingValue} editText={ed.editText} setEditingValue={ed.setEditingValue} setEditText={ed.setEditText} editingKey="blurDarkness" suffix="%" />
+          <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.gradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => ed.setGradientHeight(v)} onDoubleClick={() => ed.setGradientHeight(defaultGradientHeightForPoster(previewPoster))} editingValue={editingValue} editText={editText} setEditingValue={setEditingValue} setEditText={setEditText} editingKey="gradHeight" suffix="%" />
+          <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={t("ui.intensity")} value={ed.blurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => ed.setBlurIntensity(v)} onDoubleClick={() => ed.setBlurIntensity(5)} editingValue={editingValue} editText={editText} setEditingValue={setEditingValue} setEditText={setEditText} editingKey="blurIntensity" suffix="px" />
+          <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={t("ui.fade")} value={ed.blurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setBlurFade(v)} onDoubleClick={() => ed.setBlurFade(60)} editingValue={editingValue} editText={editText} setEditingValue={setEditingValue} setEditText={setEditText} editingKey="blurFade" suffix="%" />
+          <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={t("ui.darkness")} value={ed.blurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setBlurDarkness(v)} onDoubleClick={() => ed.setBlurDarkness(40)} editingValue={editingValue} editText={editText} setEditingValue={setEditingValue} setEditText={setEditText} editingKey="blurDarkness" suffix="%" />
         </div>}
       </div>
     </div>

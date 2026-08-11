@@ -43,6 +43,15 @@ export function useSearch(tmdbKey: string, lang: string) {
   // l'ultima richiesta può aggiornare lo stato. Previene il "search race".
   const revRef = useRef(0)
 
+  // B4: oltre a scartare la risposta stale (revRef), abbandoniamo davvero il
+  // fetch precedente quando parte una nuova ricerca — zero banda/CPU sprecata.
+  const abortRef = useRef<AbortController | null>(null)
+
+  // Abort in corso allo smontaggio (evita setState dopo unmount).
+  useEffect(() => {
+    return () => abortRef.current?.abort()
+  }, [])
+
   // Persistenza recent searches: side-effect fuori dagli updater (purezza) —
   // gli updater React possono girare più volte (StrictMode) e non devono avere
   // effetti collaterali.
@@ -54,13 +63,17 @@ export function useSearch(tmdbKey: string, lang: string) {
     const searchQuery = q ?? query
     if (searchQuery.length < 2 || !tmdbKey) return
     const rev = ++revRef.current
+    // B4: abbandona il fetch precedente in flight.
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     setSearching(true)
     setError(null)
     if (page === 1) setSearchPage(1)
     try {
       const data = await http<{ results: SearchResult[]; total_results: number; total_pages: number }>(
         `/api/tmdb/search?q=${encodeURIComponent(searchQuery)}&language=${lang}&api_key=${tmdbKey}&page=${page}`,
-        { timeout: 15000 }
+        { timeout: 15000, signal: controller.signal }
       )
       // Risposta stale (una ricerca più recente è partita): scarta
       if (rev !== revRef.current) return

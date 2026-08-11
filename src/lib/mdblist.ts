@@ -1,3 +1,6 @@
+import crypto from "node:crypto"
+import { cacheGet, cacheSet } from "./cache"
+
 export interface MDBListEntry {
   imdb: string
   title: string
@@ -14,11 +17,22 @@ export const MDBLISTS = [
 // Override nei test E2E: punta al mock server locale (vedi playwright.config.ts).
 const MDBLIST_API_URL = process.env.MDBLIST_API_URL || "https://mdblist.com/api"
 
+// A2: TTL cache liste. Solo risultati NON vuoti vengono cachati: un errore di
+// rete (catch → []) non deve congelare la lista per 30min, si ritenta al
+// prossimo accesso.
+const CACHE_TTL_MS = 30 * 60 * 1000
+
 export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MDBListEntry[]> {
   const list = MDBLISTS.find(l => l.key === listKey)
   if (!list) return []
   // Solo la chiave esplicita della richiesta: non esiste più chiave d'istanza.
   const key = apiKey
+  // La key cambia il payload → parte del cache key (hash, mai plaintext),
+  // come in ratings.ts: due contesti con key diverse non collidono.
+  const keyHash = key ? crypto.createHash("sha1").update(key).digest("hex").slice(0, 8) : "none"
+  const cacheKey = `mdblist:list:${listKey}:${keyHash}`
+  const cached = cacheGet<MDBListEntry[]>(cacheKey)
+  if (cached) return cached
   try {
     const slug = list.url.split('/').pop()
     // MDBLIST_API_URL esplicito (test E2E: punta al mock server locale) vince
@@ -36,12 +50,14 @@ export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MD
     const data = await res.json()
     const payload = key && !explicitUrl ? (data?.data || data) : data
     const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
-    return rawItems.slice(0, 20).map((item: { imdb_id?: string; imdb?: string; title?: string; year?: number; tmdb_id?: number | string; tmdb?: number | string; ids?: { tmdb?: number | string }; id?: number | string }) => ({
+    const items = rawItems.slice(0, 20).map((item: { imdb_id?: string; imdb?: string; title?: string; year?: number; tmdb_id?: number | string; tmdb?: number | string; ids?: { tmdb?: number | string }; id?: number | string }) => ({
       imdb: item.imdb_id || item.imdb || '',
       title: item.title || '',
       year: item.year || 0,
       tmdb: item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id || undefined,
     }))
+    if (items.length > 0) cacheSet(cacheKey, items, ["mdblist"], CACHE_TTL_MS)
+    return items
   } catch {
     return []
   }

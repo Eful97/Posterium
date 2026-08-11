@@ -41,9 +41,13 @@ export function PosterCarousel() {
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const { t } = useT()
   const containerRef = useRef<HTMLDivElement>(null)
+  // D4: il transform della pista è scritto DIRETTAMENTE sul DOM via ref.
+  // Prima setOffset() a ogni frame (60fps) ri-renderizzava le 40 card del
+  // carousel via React; ora solo activeIndex/showLeft/showRight restano state
+  // (aggiornati ogni 12 frame) e il movimento è puro CSS senza re-render.
+  const trackRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number>(0)
   const posRef = useRef(0)
-  const [offset, setOffset] = useState(0)
   const [isHovering, setIsHovering] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const hoveringRef = useRef(false)
@@ -53,6 +57,10 @@ export function PosterCarousel() {
 
   const totalItems = EXAMPLES.length
   const totalW = totalItems * STEP
+
+  const applyTransform = useCallback((x: number) => {
+    if (trackRef.current) trackRef.current.style.transform = `translateX(${x}px)`
+  }, [])
 
   useEffect(() => {
     hoveringRef.current = isHovering
@@ -66,7 +74,7 @@ export function PosterCarousel() {
         if (posRef.current >= totalW) {
           posRef.current = 0
         }
-        setOffset(-posRef.current)
+        applyTransform(-posRef.current)
         frameCount++
         if (frameCount % 12 === 0) {
           const idx = Math.floor(posRef.current / STEP) % totalItems
@@ -80,7 +88,7 @@ export function PosterCarousel() {
     tickRef.current = tick
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [totalW, totalItems])
+  }, [totalW, totalItems, applyTransform])
 
   const scrollTo = useCallback((dir: number) => {
     const target = Math.max(0, Math.min(totalW, posRef.current + dir * STEP))
@@ -91,7 +99,7 @@ export function PosterCarousel() {
       const t = Math.min((time - startTime) / duration, 1)
       const ease = 1 - Math.pow(1 - t, 3)
       posRef.current = start + (target - start) * ease
-      setOffset(-posRef.current)
+      applyTransform(-posRef.current)
       if (t < 1) {
         rafRef.current = requestAnimationFrame(animate)
       } else {
@@ -100,7 +108,7 @@ export function PosterCarousel() {
     }
     cancelAnimationFrame(rafRef.current)
     rafRef.current = requestAnimationFrame(animate)
-  }, [totalW])
+  }, [totalW, applyTransform])
 
   return (
     <div className="mt-14 max-w-5xl mx-auto px-8">
@@ -141,8 +149,8 @@ export function PosterCarousel() {
 
         <div ref={containerRef} className="carousel-track overflow-hidden px-4">
           <div
+            ref={trackRef}
             className="flex gap-4 will-change-transform"
-            style={{ transform: `translateX(${offset}px)` }}
           >
             {[...EXAMPLES, ...EXAMPLES].map((ex, i) => {
               const posterUrl = `/api/poster/${ex.type}/${ex.id}${ex.params}`

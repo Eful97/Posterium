@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { useSearchCtx } from "@/lib/contexts/SearchContext"
@@ -12,16 +12,26 @@ import { Clock, X, Check, ChevronDown } from "lucide-react"
 export function SearchView() {
   const { t } = useT()
   const s = useSearchCtx()
+  const { setQuery } = s
   const tmdbKey = usePSelector((v) => v.tmdbKey)
   const mappingsMap = usePSelector((v) => v.mappingsMap)
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const [searchFocused, setSearchFocused] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // B3: setQuery debounced (trailing 250ms) — digitare non ri-renderizza la griglia
+  // risultati a ogni tasto (prima onChange={s.setQuery} committava al context per
+  // keystroke). La ricerca vera parte solo su submit/Enter via doSearch.
+  const queryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const handleQueryChange = useCallback((q: string) => {
+    if (queryDebounceRef.current) clearTimeout(queryDebounceRef.current)
+    queryDebounceRef.current = setTimeout(() => setQuery(q), 250)
+  }, [setQuery])
 
   useEffect(() => {
     return () => {
       if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
+      if (queryDebounceRef.current) clearTimeout(queryDebounceRef.current)
     }
   }, [])
 
@@ -39,7 +49,7 @@ export function SearchView() {
   return (
     <div>
       <div className="max-w-lg mx-auto relative z-[100] isolate mb-8">
-        <SearchBar tmdbKey={tmdbKey} value={s.query} onChange={s.setQuery} onSearch={(q) => { s.setQuery(q); s.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} error={s.error} />
+        <SearchBar tmdbKey={tmdbKey} value={s.query} onChange={handleQueryChange} onSearch={(q) => { s.setQuery(q); s.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} error={s.error} />
         {showRecent && (
           <div className="absolute top-full left-0 right-0 mt-2 glass-panel rounded-2xl p-2 z-50 animate-fade-scale-in">
             <p className="text-xs text-muted font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>

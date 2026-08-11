@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react"
-import { useP } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { useToast } from "@/components/Toast"
 
 export function usePosterPreview() {
-  const p = useP()
+  // B2: selettore slice — prima useP() ri-renderizzava il hook (e chi lo usa)
+  // a OGNI aggiornamento del context Posterium, non solo al cambio previewUrl.
+  const previewUrl = usePSelector((v) => v.previewUrl)
   const toast = useToast()
   const toastRef = useRef(toast)
   toastRef.current = toast
@@ -19,12 +21,16 @@ export function usePosterPreview() {
   const xhrRef = useRef<XMLHttpRequest | null>(null)
   const loadDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevObjUrlRef = useRef("")
+  // D6: throttle del progress — gli eventi onprogress di XHR arrivano a decine
+  // al secondo; setLoadProgress a ogni evento ri-renderizza la preview senza
+  // beneficio visivo. Aggiorna solo a step ≥5% (il 100% arriva in onload).
+  const lastProgressRef = useRef(-1)
 
   useEffect(() => {
     setImageError(false)
     setLoadProgress(0)
-    
-    if (!p.previewUrl) {
+    lastProgressRef.current = 0
+    if (!previewUrl) {
       if (prevObjUrlRef.current) {
         URL.revokeObjectURL(prevObjUrlRef.current)
         prevObjUrlRef.current = ""
@@ -38,7 +44,7 @@ export function usePosterPreview() {
     loadDelayRef.current = setTimeout(() => setPreviewLoading(true), 200)
     
     // Keep old img visible while new one loads — no flicker
-    const url = p.previewUrl
+    const url = previewUrl
     const xhr = new XMLHttpRequest()
     xhrRef.current = xhr
     xhr.open("GET", url, true)
@@ -46,7 +52,11 @@ export function usePosterPreview() {
     
     xhr.onprogress = (e) => {
       if (e.lengthComputable) {
-        setLoadProgress(Math.round((e.loaded / e.total) * 100))
+        const pct = Math.round((e.loaded / e.total) * 100)
+        if (lastProgressRef.current < 0 || pct - lastProgressRef.current >= 5 || pct >= 100) {
+          lastProgressRef.current = pct
+          setLoadProgress(pct)
+        }
       }
     }
     
@@ -89,7 +99,7 @@ export function usePosterPreview() {
         loadDelayRef.current = null
       }
     }
-  }, [p.previewUrl, retryNonce])
+  }, [previewUrl, retryNonce])
 
   // Rifà la fetch della preview corrente (usato dal pulsante Retry dopo un errore).
   const retry = useCallback(() => {
