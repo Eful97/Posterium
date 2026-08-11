@@ -1,7 +1,6 @@
 import crypto from "node:crypto"
 import { cacheGet, cacheSet } from "./cache"
 import { createLogger } from "@/lib/logger"
-import { getServerDefaults } from "@/lib/server-defaults"
 
 const log = createLogger("ratings")
 
@@ -28,8 +27,8 @@ export async function fetchAggregatedRating(
 ): Promise<AggregatedRatings | null> {
   if (!imdbId) return null
 
-  // Precedenza: chiave esplicita → chiave d'istanza (impostazioni).
-  const key = apiKey || getServerDefaults().mdblistApiKey
+  // Solo la chiave esplicita della richiesta: non esiste più chiave d'istanza.
+  const key = apiKey
   // La key MDBList cambia il voto aggregato → parte del cache key (hash, mai
   // plaintext). Altrimenti due contesti con key diverse collidono (D4).
   const keyHash = key ? crypto.createHash("sha1").update(key).digest("hex").slice(0, 8) : "nomk"

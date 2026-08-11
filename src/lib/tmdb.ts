@@ -1,17 +1,3 @@
-// Risolta a request time (non a import-time): la chiave d'istanza può cambiare
-// via Impostazioni, e getServerDefaults la legge da disco/KV al primo accesso.
-// L'env var non è più una fonte: il server usa solo la chiave d'istanza.
-import { getServerDefaults } from "@/lib/server-defaults"
-
-/**
- * Risolve la chiave TMDB d'istanza (impostata dalle Impostazioni).
- * Export per i moduli che devono parlare con TMDB (health, imdb-resolver)
- * senza costruirsi URL propri con la chiave interpolata.
- */
-export function getTmdbApiKey(): string | undefined {
-  return getServerDefaults().tmdbApiKey
-}
-
 // Base URL sovrascrivibili via env: usate dai test E2E per puntare al mock
 // server locale (e2e/mock-server.mjs) senza chiave TMDB reale.
 const TMDB_BASE = process.env.TMDB_BASE_URL || "https://api.themoviedb.org/3"
@@ -23,15 +9,16 @@ const CACHE_MAX = 500
 
 /**
  * Risolve la chiave API TMDB dalla richiesta.
- * Priorità: header x-api-key > query param api_key > chiave d'istanza.
+ * Priorità: header x-api-key > query param api_key.
  * L'header evita che la chiave appaia nei log del proxy/CDN.
+ * Non esiste più chiave d'istanza: ogni chiamata TMDB porta la propria chiave.
  */
 export function resolveRequestApiKey(req: { headers: Headers | { get: (name: string) => string | null }; nextUrl?: { searchParams: URLSearchParams } }): string | undefined {
   const headerKey = req.headers.get("x-api-key")
   if (headerKey) return headerKey
   const queryKey = req.nextUrl?.searchParams.get("api_key")
   if (queryKey) return queryKey
-  return getTmdbApiKey() || undefined
+  return undefined
 }
 
 const inflight = new Map<string, Promise<unknown>>()
@@ -48,7 +35,7 @@ async function tmdbFetch(path: string, apiKey?: string, signal?: AbortSignal): P
   //   - gli errori non includono l'URL → mai in log/app insights;
   //   - la risoluzione della chiave vive solo qui (e in checkTmdbEndpoint),
   //     mai interpellata/sparsa nei chiamanti.
-  const key = apiKey || getTmdbApiKey() || (process.env.TMDB_BASE_URL ? "mock-key" : undefined)
+  const key = apiKey || (process.env.TMDB_BASE_URL ? "mock-key" : undefined)
   if (!key) throw new Error("TMDB API key is missing")
 
   // Cache key is the URL WITHOUT the api_key so that:
@@ -99,7 +86,7 @@ async function tmdbFetch(path: string, apiKey?: string, signal?: AbortSignal): P
  * in query nell'URL outbound è imposta dalla v3 TMDB (vedi commento tmdbFetch).
  */
 export async function checkTmdbEndpoint(path: string, apiKey?: string): Promise<{ ok: boolean; status: number; time: number }> {
-  const key = apiKey || getTmdbApiKey()
+  const key = apiKey
   if (!key) return { ok: false, status: 401, time: 0 }
   const start = performance.now()
   try {

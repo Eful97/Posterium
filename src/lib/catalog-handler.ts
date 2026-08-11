@@ -90,7 +90,7 @@ function imdbIdCacheSet(key: string, value: string | null) {
  *  gli altri addon risolvono i metadati solo da id tt/provider:id, non da id
  *  numerici TMDB (altrimenti "no metadata").
  *  `apiKey` è la chiave della richiesta (header/query): senza, la chiamata
- *  external_ids cade quando la chiave non è impostata come chiave d'istanza. */
+ *  external_ids cade (non esiste più una chiave d'istanza di fallback). */
 async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number, apiKey?: string): Promise<string | null> {
   const cacheKey = `${mediaType}:${tmdbId}`
   const cached = imdbIdCache.get(cacheKey)
@@ -165,7 +165,7 @@ export async function posteriumCatalog(
         }
       }))
     } else if (catalogId.startsWith("posterium-anime")) {
-      const key = mdblistKeyParam || getServerDefaults().mdblistApiKey
+      const key = mdblistKeyParam
       if (key) {
         const items = await fetchMDBList("mdblistAnime", key)
         const results = await Promise.all(items.map(async (item) => {

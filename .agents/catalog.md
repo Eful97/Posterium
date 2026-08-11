@@ -61,14 +61,13 @@ manca, `resolveImdbId("tv", tmdbId)` → fallback `tmdb:<id>`.
 
 `resolveRequestApiKey(req)` in `lib/tmdb.ts` — priorità:
 1. header `x-api-key`;
-2. query `api_key`;
-3. chiave d'istanza (`getServerDefaults().tmdbApiKey`). **Nessuna env var**
-   (`TMDB_API_KEY`/`MDBLIST_API_KEY` non sono più lette: il server usa solo la
-   chiave d'istanza, impostata dalle Impostazioni).
+2. query `api_key`.
 
-Nota: se la chiave arriva solo via header/query e NON è impostata come chiave
-d'istanza, ogni chiamata TMDB che non riceve la chiave della richiesta fallisce.
-`resolveImdbId` DEVE ricevere la chiave della richiesta (è così oggi).
+**Nessuna chiave d'istanza e nessuna env var** (`TMDB_API_KEY`/`MDBLIST_API_KEY`
+non sono lette). L'unica fonte di chiavi è la richiesta (header/query) o il
+profilo utente (`?u=`): senza chiave esplicita la chiamata TMDB/MDBList
+fallisce (poster 404, cataloghi vuoti). `resolveImdbId` DEVE ricevere la chiave
+della richiesta (è così oggi).
 
 ## Caching & risposte
 

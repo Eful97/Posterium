@@ -2,7 +2,6 @@ import crypto from "node:crypto"
 import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
-import { getServerDefaults } from "@/lib/server-defaults"
 import { createLogger } from "@/lib/logger"
 import { jsonGzip } from "@/lib/json-response"
 
@@ -10,16 +9,11 @@ const log = createLogger("trending-tv-week")
 
 const TMDB_BASE = "https://api.themoviedb.org/3"
 
-/** Chiave d'istanza TMDB (risolta a request time: può cambiare via Impostazioni). */
-function tmdbInstanceKey(): string {
-  return getServerDefaults().tmdbApiKey || ""
-}
-
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
-  const apiKey = req.nextUrl.searchParams.get("api_key") || tmdbInstanceKey()
+  const apiKey = req.nextUrl.searchParams.get("api_key") || ""
   const origLang = req.nextUrl.searchParams.get("with_original_language")
   // Hash della chiave API nel cache key — mai il frammento grezzo (i log/status
   // della cache non devono esporre porzioni di credential).

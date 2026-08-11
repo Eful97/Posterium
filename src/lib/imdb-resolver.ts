@@ -1,10 +1,9 @@
 import { cacheGet, cacheSet } from "./cache"
 import { createLogger } from "@/lib/logger"
-import { getTmdbApiKey } from "@/lib/tmdb"
 
 const log = createLogger("imdb-resolver")
 
-export async function resolveImdbToTmdb(imdbId: string, mediaType: "movie" | "tv"): Promise<number | null> {
+export async function resolveImdbToTmdb(imdbId: string, mediaType: "movie" | "tv", apiKey?: string): Promise<number | null> {
   // Regex stretta: formato IMDb valido (tt + cifre). Protegge anche l'URL
   // da payload arbitrari (la stringa entra nel path del find).
   const cleanId = imdbId.trim()
@@ -16,10 +15,9 @@ export async function resolveImdbToTmdb(imdbId: string, mediaType: "movie" | "tv
   const cached = cacheGet<number>(cacheKey)
   if (cached !== null) return cached === -1 ? null : cached
 
-  // S9: la chiave è risolta in modo centralizzato (chiave d'istanza → env),
-  // come negli altri moduli TMDB. La chiave resta in query nell'URL outbound
-  // perché la v3 TMDB la richiede così; nessun log cattura l'URL completo.
-  const apiKey = getTmdbApiKey()
+  // S9: la chiave arriva esplicita (richiesta/profilo), mai da una chiave
+  // d'istanza. Resta in query nell'URL outbound perché la v3 TMDB la richiede
+  // così; nessun log cattura l'URL completo.
   if (!apiKey) return null
 
   try {

@@ -24,10 +24,6 @@ export interface ServerDefaults {
   defaultLogoFitEnabled?: boolean
   networkLogo?: boolean
   ribbonSide?: "left" | "right"
-  /** Chiave TMDB d'istanza (impostabile dalle impostazioni, mascherata in GET). */
-  tmdbApiKey?: string
-  /** Chiave MDBList d'istanza (impostabile dalle impostazioni, mascherata in GET). */
-  mdblistApiKey?: string
 }
 
 const FILE = path.join(DATA_DIR, "defaults.json")
@@ -82,8 +78,8 @@ export function getServerDefaults(): ServerDefaults {
   if (cached) return cached
   // In modalità file: lettura sync una tantum al cold start (i chiamanti sono
   // sync). In modalità KV: la lettura è async, la cache si riempie con
-  // warmDefaults() — i primi millisecondi restituiscono {} e le chiavi cadono
-  // sulle env (fallback accettabile, Vercel tiene le istanze calde).
+  // warmDefaults() — i primi millisecondi restituiscono {} (i chiamanti hanno
+  // i propri default di fallback; Vercel tiene le istanze calde).
   if (!useKv) {
     try {
       if (existsSync(FILE)) {
@@ -123,21 +119,4 @@ export async function setServerDefaults(d: ServerDefaults): Promise<void> {
     }
   })()
   await writeQueue
-}
-
-/**
- * Mascara un segreto: mai mostrato per intero né parzialmente.
- * Rivelare gli ultimi 4 caratteri permetterebbe a chi osserva la GET di
- * verificare una chiave (es. brute-force incrementale) o di distinguere tra
- * istanze. Il placeholder fisso "••••" basta per il round-trip PUT:
- * isMaskedValue() riconosce il prefisso e lascia la chiave invariata.
- */
-export function maskKey(value: string | undefined): string {
-  if (!value) return ""
-  return "••••"
-}
-
-/** True se il valore inviato dal client è il placeholder mascherato (non va salvato). */
-export function isMaskedValue(value: string | undefined): boolean {
-  return typeof value === "string" && value.startsWith("••••")
 }

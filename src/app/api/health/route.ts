@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { DATA_DIR } from "@/lib/data-dir"
 import { getAll, getStorageMode } from "@/lib/store"
-import { checkTmdbEndpoint, getTmdbApiKey } from "@/lib/tmdb"
+import { checkTmdbEndpoint } from "@/lib/tmdb"
 
 async function fileExists(file: string): Promise<boolean> {
   try {
@@ -39,12 +39,12 @@ export async function GET(request: Request) {
   const rl = rateLimit(rateLimitKey(request), "default")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
-  // S9: la chiave arriva via header x-api-key (o da istanza/env), MAI dalla
-  // query string della richiesta: un health-check come
+  // S9: la chiave arriva via header x-api-key (solo richiesta: non esiste più
+  // chiave d'istanza), MAI dalla query string: un health-check come
   // `GET /api/health?api_key=<REAL>` registrerebbe la chiave nei log di
   // accesso di proxy/CDN/host. Nell'URL OUTBOUND verso api.themoviedb.org la
   // chiave resta in query perché la v3 TMDB la richiede così (vedi tmdb.ts).
-  const apiKey = request.headers.get("x-api-key") || getTmdbApiKey() || ""
+  const apiKey = request.headers.get("x-api-key") || ""
 
   const [tmdbTrending, tmdbSearch, tmdbPopular, externalIds] = apiKey
     ? await Promise.all([

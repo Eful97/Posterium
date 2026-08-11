@@ -103,7 +103,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let tmdbId = Number(id)
   if (isNaN(tmdbId) || tmdbId <= 0) {
     if (typeof id === "string" && id.startsWith("tt")) {
-      const resolved = await resolveImdbToTmdb(id, mediaType)
+      const resolved = await resolveImdbToTmdb(id, mediaType, resolveRequestApiKey(req))
       if (resolved) tmdbId = resolved
     }
   }
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   // profilo (config + chiavi + mapping per-titolo) vince sul config token.
   const profileId = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user") || null
   // Chiave TMDB del profilo (ogni utente la propria): se impostata, vince su
-  // header/query/istanza nelle chiamate TMDB (priorità profilo → richiesta → istanza).
+  // header/query nelle chiamate TMDB (priorità profilo → richiesta).
   let profileTmdbKey: string | null = null
   if (profileId) {
     const fullProfile = await getFullProfileData(profileId)

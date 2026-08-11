@@ -12,10 +12,11 @@ services:
       - "8080:8080"
     environment:
       # ── Chiavi API ──
-      # Le chiavi TMDB/MDBList NON si passano più via env: si configurano dalle
-      # Impostazioni del sito (sezione "Chiavi API istanza"), persistono in
-      # /data/defaults.json e restano mascherate. L'istanza parte senza chiave:
-      # apri la web UI e inseriscile lì. Niente env var = niente chiavi nel process.
+      # Le chiavi TMDB/MDBList NON si passano via env e NON esiste più una
+      # sezione "Chiavi API istanza": ogni richiesta porta la propria chiave
+      # (header `x-api-key` / query `api_key` o `mdblist_key`) o quella del
+      # profilo utente (`?u=`). Niente env var = niente chiavi nel process;
+      # senza chiave esplicita le chiamate TMDB/MDBList falliscono.
       # ── Opzionali — Admin & Sicurezza ──
       - POSTERIUM_ADMIN_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}
       - WARMUP_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}

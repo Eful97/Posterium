@@ -80,7 +80,7 @@ Il repo è già configurato per HF Spaces Docker: frontmatter `sdk: docker` + `a
 2. **Env** (Space Settings → Variables):
    - `NODE_OPTIONS=--max-old-space-size=1024`: alza il cap memoria (il default Docker è 384MB; HF ha 16GB)
    - opzionale: `POSTERIUM_ADMIN_TOKEN`
-   - ⚠️ **Le chiavi TMDB/MDBList non vanno nelle env**: si configurano dal browser in **Impostazioni → Chiavi API istanza** (persistono nello storage `/data`). L'editor funziona con la chiave personale del browser; Stremio e i cataloghi usano quella d'istanza.
+   - ⚠️ **Le chiavi TMDB/MDBList non vanno nelle env**: ogni richiesta porta la propria chiave (header `x-api-key` / query `api_key`/`mdblist_key`) o quella del profilo utente (`?u=`). Le chiavi personali si impostano dalle **Impostazioni** del browser e si salvano col profilo.
 3. **Persistenza**: collega uno Storage bucket HF a `/data` (Settings → Storage → Link bucket), altrimenti i dati non persistono tra i rebuild. L'app lo segnala nei log d'avvio.
 4. **Sleep**: sul piano free la Space dorme dopo 48h di inattività e si riavvia automaticamente al primo visitatore.
 
@@ -115,7 +115,7 @@ Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza ric
 | `POSTERIUM_ADMIN_TOKEN` | Opzionale — proteggi le route admin |
 | `POSTERIUM_PUBLIC_INSTANCE` | Opzionale — `=1` abilita le route admin aperte senza token (istanza pubblica, es. HF Spaces) |
 
-> 🔑 **Chiavi API TMDB/MDBList**: NON sono più variabili d'ambiente. Si configurano dal browser in **Impostazioni → Chiavi API istanza** (persistono su KV su Vercel, mascherate). L'editor funziona anche con la chiave personale del browser; Stremio e i cataloghi usano quella d'istanza. Senza chiave d'istanza: poster 404 e cataloghi vuoti.
+> 🔑 **Chiavi API TMDB/MDBList**: NON sono più variabili d'ambiente e non esiste più una chiave d'istanza condivisa. Le chiavi personali si impostano dal browser in **Impostazioni** e si salvano col profilo (config + apiKeys cifrate). Ogni richiesta porta la propria chiave (header `x-api-key` / query `api_key`/`mdblist_key`) o quella del profilo (`?u=`). Senza chiave esplicita: poster 404 e cataloghi vuoti.
 
 #### 4. Dove vengono salvati i dati
 | Dato | Dove |
@@ -131,11 +131,10 @@ Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza ric
 - La cache poster in-memory si svuota al cold start (Vercel tiene le funzioni calde; il primo hit freddo fa il render pieno).
 
 #### 6. Troubleshooting
-- **Poster 404 con `TMDB API key is missing`** → manca la chiave d'istanza TMDB: impostala in **Impostazioni → Chiavi API istanza** (non più in env).
-- **Cataloghi vuoti (0 titoli) su Vercel** → il catalogo richiede la chiave d'istanza TMDB (persistita su KV). L'editor funziona con la chiave personale del browser, ma Stremio e i cataloghi usano quella d'istanza del server.
+- **Poster 404 con `TMDB API key is missing`** → la richiesta non porta una chiave TMDB: passa `?api_key=` (o header `x-api-key`), o usa un link col tuo profilo `?u=` che ha la chiave salvata.
+- **Cataloghi vuoti (0 titoli) su Vercel** → il catalogo richiede una chiave TMDB nella richiesta. L'editor usa la chiave personale del browser (salvata col profilo); le richieste Stremio devono portare `api_key` o il profilo `?u=/u/<uuid>/`.
 - **"Failed to create/update profile" / `ENOENT /var/task/data`** → manca lo store KV (punto 2).
 - **"Storage not configured: set KV_REST_API_URL and KV_REST_API_TOKEN"** → stesso problema, messaggio esplicito.
-- **Più progetti**: se hai più deploy (es. `posterium` e `posterium-two`), ogni progetto ha la propria chiave d'istanza — verifica in quale Impostazioni la stai configurando.
 
 📌 *URL Manifest Stremio*: `https://<tuo-app>.vercel.app/manifest.json` (o `/u/<uuid>/manifest.json` per il tuo profilo).
 
@@ -156,7 +155,7 @@ L'unica opzione gratuita con CPU sufficiente per i render poster di Posterium: *
    sudo docker compose up -d
    ```
 5. **Punta la RAM**: aggiungi a `.env` `NODE_OPTIONS=--max-old-space-size=2048` (hai 24GB) e collega un volume per `/data`.
-6. **Chiavi API**: inseriscile dal browser in **Impostazioni → Chiavi API istanza** (persistono in `/data/defaults.json`). Niente più env var.
+6. **Chiavi API**: solo chiavi personali, dal browser in **Impostazioni**, salvate col profilo (niente più sezione "Chiavi API istanza" né env var).
 
 📌 *URL Manifest Stremio*: `http://<IP-istanza>:8080/manifest.json`
 
@@ -184,7 +183,7 @@ Trasforma un vecchio telefono Android in un server Posterium sempre attivo!
    npm run build
    npm start
    ```
-4. **Configura le chiavi API**: dopo l'avvio apri `http://localhost:3000` e inseriscile in **Impostazioni → Chiavi API istanza** (persistono in `data/defaults.json`).
+4. **Configura le chiavi API**: apri `http://localhost:3000`, inseriscile nelle **Impostazioni** (barre TMDB + MDBList personali) e salvale col profilo. Non c'è più una sezione "Chiavi API istanza".
 📌 *URL Manifest Stremio*: `http://<IP-del-telefono>:3000/manifest.json`
 
 ---
@@ -202,7 +201,7 @@ docker build -t posterium .
 docker run -p 8080:8080 -v posterium-data:/data posterium
 ```
 
-> **Chiavi API**: dopo il primo avvio, impostale dal browser in **Impostazioni → Chiavi API istanza**. Non servono env var — persistono in `data/defaults.json` (locale) o `/data/defaults.json` (Docker).
+> **Chiavi API**: si impostano dal browser nelle **Impostazioni** (solo chiavi personali TMDB + MDBList) e si salvano col profilo. Non servono env var e non esiste più una chiave d'istanza: ogni richiesta porta la propria chiave o quella del profilo.
 
 > Il container gira come utente non-root (`nextjs`, uid 1000) e scrive i dati persistenti in `/data` (volume named `posterium-data`). Con Docker Compose il `docker-compose.yml` applica già l'hardening (`cap_drop: ALL`, `no-new-privileges`).
 
@@ -236,9 +235,9 @@ EOF
 docker compose up -d
 ```
 
-> Le chiavi TMDB/MDBList non si passano più nel `.env`: dopo il primo avvio aprila
-> dal browser e inseriscile in **Impostazioni → Chiavi API istanza**. Persistono in
-> `/data/defaults.json` (o KV su Vercel) e restano mascherate.
+> Le chiavi TMDB/MDBList non si passano più nel `.env` e non c'è più una chiave
+> d'istanza condivisa: si impostano dal browser nelle **Impostazioni** (solo chiavi
+> personali) e si salvano col profilo. Ogni richiesta porta la propria chiave.
 
 L'app è su `http://IP_VPS:8080`. Manifest Stremio: `http://IP_VPS:8080/manifest.json`.
 
@@ -274,7 +273,7 @@ Riavvia: `docker compose up -d`.
 
 #### Multi-Utente (Profili)
 
-Chi condivide lo stesso server può creare un profilo personale via `POST /api/profile` (o dal pulsante **User** nella toolbar). Ogni profilo porta **config, chiavi API TMDB/MDBList proprie e mapping per-titolo**: su un'istanza pubblica ognuno usa la propria chiave, così i rate limit della chiave d'istanza condivisa non si esauriscono appena più utenti usano Posterium. La password protegge il profilo; le apiKeys vengono cifrate a riposo con AES-256-GCM (`PROFILE_ENCRYPTION_KEY`).
+Chi condivide lo stesso server può creare un profilo personale via `POST /api/profile` (o dal pulsante **User** nella toolbar). Ogni profilo porta **config, chiavi API TMDB/MDBList proprie e mapping per-titolo**: le chiavi salvate nel profilo sono l'unica fonte per le richieste via profilo (`?u=`), e ogni utente usa la propria, così i rate limit personali non collidono. La password protegge il profilo; le apiKeys vengono cifrate a riposo con AES-256-GCM (`PROFILE_ENCRYPTION_KEY`).
 
 ```json
 {
@@ -298,7 +297,7 @@ Chi condivide lo stesso server può creare un profilo personale via `POST /api/p
 
 Risposta: `{ "profileId": "uuid-generato", "url": "..." }`.
 
-Ogni utente usa il proprio `?u=uuid` nei link Stremio (manifest `/u/<uuid>/manifest.json`) per poster personalizzati, senza interferire con gli altri. Le chiavi API del profilo vincono su quelle d'istanza (fallback impostate dalle **Impostazioni del sito**, sezione "Chiavi API istanza" — mascherate, persistono su KV/file).
+Ogni utente usa il proprio `?u=uuid` nei link Stremio (manifest `/u/<uuid>/manifest.json`) per poster personalizzati, senza interferire con gli altri. Le chiavi API del profilo vincono su quelle della richiesta (`x-api-key`/`api_key`); senza chiave né profilo le chiamate TMDB/MDBList falliscono.
 
 #### Config Token (personalizzazione per-link)
 

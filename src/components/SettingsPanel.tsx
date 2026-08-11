@@ -10,7 +10,7 @@ import { saveDefaults } from "@/lib/save-defaults"
 import { SliderRow } from "@/components/SliderRow"
 import { Toggle } from "@/components/Toggle"
 import { BadgeStyleSelector, SecretInput, MenuItem } from "@/components/ui"
-import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles, Tv, Flame, Server } from "lucide-react"
+import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles, Tv, Flame } from "lucide-react"
 
 interface Props {
   tmdbKeyInput: string
@@ -40,38 +40,6 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   const [tmdbKeyError, setTmdbKeyError] = useState<string | undefined>(undefined)
   const [mdblistKeyError, setMdblistKeyError] = useState<string | undefined>(undefined)
   const [cacheCount, setCacheCount] = useState<number | null>(null)
-  // Chiavi API d'istanza: caricate mascherate (•••• + ultimi 4) dalle impostazioni.
-  const [instanceTmdbKey, setInstanceTmdbKey] = useState("")
-  const [instanceMdblistKey, setInstanceMdblistKey] = useState("")
-  const [instanceKeysStatus, setInstanceKeysStatus] = useState<"idle" | "saving" | "saved">("idle")
-
-  useEffect(() => {
-    fetch("/api/defaults").then(r => r.ok ? r.json() : null).then(data => {
-      if (!data) return
-      if (typeof data.tmdbApiKey === "string") setInstanceTmdbKey(data.tmdbApiKey)
-      if (typeof data.mdblistApiKey === "string") setInstanceMdblistKey(data.mdblistApiKey)
-    }).catch(() => null)
-  }, [])
-
-  const saveInstanceKeys = async () => {
-    setInstanceKeysStatus("saving")
-    try {
-      await http<{ ok: boolean }>("/api/defaults", {
-        method: "PUT",
-        body: JSON.stringify({ tmdbApiKey: instanceTmdbKey, mdblistApiKey: instanceMdblistKey }),
-        headers: { "Content-Type": "application/json" },
-        retries: 0,
-      })
-      setInstanceKeysStatus("saved")
-      setTimeout(() => setInstanceKeysStatus("idle"), 1500)
-    } catch (error) {
-      const message = error instanceof ApiError && error.status === 401
-        ? t("ui.clearCacheUnauthorized")
-        : "Errore salvataggio chiavi"
-      toast.error(message)
-      setInstanceKeysStatus("idle")
-    }
-  }
 
   useEffect(() => {
     fetch("/api/cache/status").then(r => r.ok ? r.json() : null).then(data => {
@@ -123,19 +91,6 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <SecretInput label={t("ui.tmdbKey")} icon={<Key />} value={tmdbKeyInput} onChange={setTmdbKeyInput} onBlur={() => { setTmdbKey(tmdbKeyInput); if (tmdbKeyInput.length < 20) { setTmdbKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setTmdbKeyError(undefined) } }} onKeyDown={(e) => { if (e.key === "Enter") { setTmdbKey(tmdbKeyInput); setSettingsOpen(false) } }} placeholder={t("ui.tmdbKeyPlaceholder")} error={tmdbKeyError} />
       <SecretInput label={t("ui.mdblistKey")} icon={<Clipboard />} value={mdblistApiKey} onChange={(v) => { setMdblistApiKey(v); try { localStorage.setItem("mdblist_key", v) } catch {} }} onBlur={() => { if (mdblistApiKey.length > 0 && mdblistApiKey.length < 20) { setMdblistKeyError("La chiave deve essere lunga almeno 20 caratteri"); } else { setMdblistKeyError(undefined) } }} placeholder={t("ui.mdblistKeyPlaceholder")} error={mdblistKeyError} />
 
-      <hr className="border-surface2/60 my-1" />
-      <div className="text-xs text-zinc-300 font-medium flex items-center gap-1.5"><Server className="w-3 h-3" /> Chiavi API istanza</div>
-      <p className="text-[10px] text-muted -mt-1">Usate da chi non imposta la propria chiave (fallback). Mai mostrate per intero.</p>
-      <SecretInput label="TMDB API Key (istanza)" icon={<Key />} value={instanceTmdbKey} onChange={setInstanceTmdbKey} placeholder="•••••••• (lascia invariato per non cambiarla)" />
-      <SecretInput label="MDBList API Key (istanza)" icon={<Clipboard />} value={instanceMdblistKey} onChange={setInstanceMdblistKey} placeholder="•••••••• (lascia invariato per non cambiarla)" />
-      <button
-        type="button"
-        onClick={saveInstanceKeys}
-        disabled={instanceKeysStatus === "saving"}
-        className="w-full text-center text-xs font-semibold py-1.5 rounded-lg bg-white/[0.08] border border-white/10 text-zinc-200 hover:bg-white/[0.14] disabled:opacity-50 transition-all"
-      >
-        {instanceKeysStatus === "saved" ? <><Check className="w-3 h-3 inline mr-1" /> Salvato</> : <><Save className="w-3 h-3 inline mr-1" /> Salva chiavi istanza</>}
-      </button>
       <hr className="border-surface2/60 my-1" />
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Star className="w-3 h-3" /> {t("ui.genreRatingBadge")}</span>

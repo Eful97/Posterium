@@ -14,13 +14,11 @@ export const MDBLISTS = [
 // Override nei test E2E: punta al mock server locale (vedi playwright.config.ts).
 const MDBLIST_API_URL = process.env.MDBLIST_API_URL || "https://mdblist.com/api"
 
-import { getServerDefaults } from "@/lib/server-defaults"
-
 export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MDBListEntry[]> {
   const list = MDBLISTS.find(l => l.key === listKey)
   if (!list) return []
-  // Precedenza: chiave esplicita → chiave d'istanza (impostazioni).
-  const key = apiKey || getServerDefaults().mdblistApiKey
+  // Solo la chiave esplicita della richiesta: non esiste più chiave d'istanza.
+  const key = apiKey
   try {
     const slug = list.url.split('/').pop()
     // MDBLIST_API_URL esplicito (test E2E: punta al mock server locale) vince

@@ -16,7 +16,7 @@ vi.mock("@/lib/store", () => ({
 }))
 
 vi.mock("@/lib/server-defaults", () => ({
-  getServerDefaults: vi.fn(() => ({ tmdbApiKey: "settings-key" })),
+  getServerDefaults: vi.fn(() => ({})),
 }))
 
 const mockedGetTop10 = vi.mocked(getTop10)
@@ -68,7 +68,7 @@ describe("GET /catalog/[type]/[id]", () => {
       .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
       .mockResolvedValueOnce(tmdbShowResponse(94997))
 
-    const req = new NextRequest("http://localhost:3000/catalog/series/posterium-jw-series.json")
+    const req = new NextRequest("http://localhost:3000/catalog/series/posterium-jw-series.json?api_key=settings-key")
     const res = await GET(req, { params: Promise.resolve({ type: "series", id: "posterium-jw-series.json" }) })
     const body = await res.json()
 
@@ -97,7 +97,7 @@ describe("GET /catalog/[type]/[id]", () => {
       .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
       .mockResolvedValueOnce(tmdbShowResponse(94997))
 
-    const req = new NextRequest("http://localhost:3000/catalog/series/posterium-jw-series.json")
+    const req = new NextRequest("http://localhost:3000/catalog/series/posterium-jw-series.json?api_key=settings-key")
     const res = await GET(req, { params: Promise.resolve({ type: "series", id: "posterium-jw-series.json" }) })
     const body = await res.json()
     const posterUrl = new URL(body.metas[0].poster)
@@ -111,7 +111,7 @@ describe("GET /catalog/[type]/[id]", () => {
       .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
       .mockResolvedValueOnce(tmdbShowResponse(94997))
 
-    const req = new NextRequest("http://localhost:3000/catalog/tv/posterium-jw-series.json")
+    const req = new NextRequest("http://localhost:3000/catalog/tv/posterium-jw-series.json?api_key=settings-key")
     const res = await GET(req, { params: Promise.resolve({ type: "tv", id: "posterium-jw-series.json" }) })
     const body = await res.json()
 
@@ -145,7 +145,7 @@ describe("GET /catalog/[type]/[id]", () => {
       tv: [],
     })
 
-    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-netflix-movies.json")
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-netflix-movies.json?api_key=settings-key")
     const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "posterium-netflix-movies.json" }) })
     const body = await res.json()
 
@@ -166,7 +166,7 @@ describe("GET /catalog/[type]/[id]", () => {
       .mockResolvedValueOnce(tmdbShowResponse(687163))
       .mockResolvedValueOnce(Response.json({ id: 687163, imdb_id: "tt12042730" }))
 
-    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json")
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json?api_key=settings-key")
     const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "posterium-jw-movies.json" }) })
     const body = await res.json()
 
@@ -185,7 +185,7 @@ describe("GET /catalog/[type]/[id]", () => {
       .mockResolvedValueOnce(justWatchResponse(8282, "tt0848228"))
       .mockResolvedValueOnce(tmdbShowResponse(8282))
 
-    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json")
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json?api_key=settings-key")
     const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "posterium-jw-movies.json" }) })
     const body = await res.json()
 
@@ -205,7 +205,7 @@ describe("GET /catalog/[type]/[id]", () => {
       .mockResolvedValueOnce(tmdbShowResponse(67890))
       .mockResolvedValueOnce(Response.json({ id: 67890, imdb_id: null }))
 
-    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json")
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json?api_key=settings-key")
     const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "posterium-jw-movies.json" }) })
     const body = await res.json()
 

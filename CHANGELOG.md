@@ -38,6 +38,7 @@
 ### Removed
 - Sistema profili UUID (multi-utente via profili, ri-autenticazione al rientro)
 - Fallback OMDb per i rating
+- **Chiavi API d'istanza** (sezione Impostazioni + fallback server in `getServerDefaults`): le chiavi TMDB/MDBList sono ora solo personali — dalla richiesta (`x-api-key`/`api_key`/`mdblist_key`) o dal profilo (`?u=`). Niente più chiave condivisa di fallback: senza chiave esplicita le chiamate falliscono.
 
 ### Fixed
 - Image loading failures show toast notification

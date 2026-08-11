@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { getServerDefaults, setServerDefaults, maskKey, isMaskedValue, type ServerDefaults } from "@/lib/server-defaults"
+import { getServerDefaults, setServerDefaults, type ServerDefaults } from "@/lib/server-defaults"
 import { cacheInvalidatePosterData } from "@/lib/cache"
 import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
@@ -28,19 +28,11 @@ const defaultsSchema = z.object({
   defaultLogoFitEnabled: z.boolean().optional(),
   networkLogo: z.boolean().optional(),
   ribbonSide: z.enum(["left", "right"]).optional(),
-  // Chiavi d'istanza — in GET mai per intero né parzialmente (solo ••••,
-  // S7: il suffix permetterebbe di verificare/confrontare il segreto).
-  tmdbApiKey: z.string().max(200).optional(),
-  mdblistApiKey: z.string().max(200).optional(),
 })
 
 export async function GET() {
   const d = getServerDefaults()
-  return Response.json({
-    ...d,
-    tmdbApiKey: maskKey(d.tmdbApiKey),
-    mdblistApiKey: maskKey(d.mdblistApiKey),
-  })
+  return Response.json(d)
 }
 
 export async function PUT(req: NextRequest) {
@@ -60,20 +52,7 @@ export async function PUT(req: NextRequest) {
     return Response.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
   }
   try {
-    // Preserva i segreti d'istanza se il client ha rimandato il placeholder
-    // mascherato (••••): non sovrascrivere. Inviare "" cancella la chiave;
-    // un valore reale la salva.
-    const current = getServerDefaults()
-    const next: Record<string, unknown> = { ...parsed.data }
-    if (isMaskedValue(parsed.data.tmdbApiKey)) {
-      delete next.tmdbApiKey
-      if (current.tmdbApiKey) next.tmdbApiKey = current.tmdbApiKey
-    }
-    if (isMaskedValue(parsed.data.mdblistApiKey)) {
-      delete next.mdblistApiKey
-      if (current.mdblistApiKey) next.mdblistApiKey = current.mdblistApiKey
-    }
-    setServerDefaults(next as ServerDefaults)
+    setServerDefaults(parsed.data as ServerDefaults)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return Response.json({ error: `Failed to save: ${message}` }, { status: 500 })
