@@ -17,7 +17,6 @@
 - docs/BADGES.md documentation for badge extension
 - **Config token per-link** (`?config=<token>`): configurazione completa del poster firmata HMAC-SHA256, condividibile cross-device
 - **Classifiche FlixPatrol Top 10** con supporto multi-paese
-- **Chiavi API d'istanza** configurabili dalle Impostazioni (persistono senza env var)
 - **Pagina `/status`** con stato TMDB, streaming (JustWatch/FlixPatrol) e storage
 - **Hardening render pipeline**: slot limiter anti-OOM, deadline complessivo con watchdog, negative cache, TTL dinamico per poster non-mappati
 - **RENDER_VERSION auto-generata**: invalidazione cache e URL Stremio automatiche al cambio dei file di rendering
@@ -36,7 +35,6 @@
 - Persistenza su Vercel: KV obbligatorio per i salvataggi (filesystem read-only)
 
 ### Removed
-- Sistema profili UUID (multi-utente via profili, ri-autenticazione al rientro)
 - Fallback OMDb per i rating
 - **Chiavi API d'istanza** (sezione Impostazioni + fallback server in `getServerDefaults`): le chiavi TMDB/MDBList sono ora solo personali — dalla richiesta (`x-api-key`/`api_key`/`mdblist_key`) o dal profilo (`?u=`). Niente più chiave condivisa di fallback: senza chiave esplicita le chiamate falliscono.
 
@@ -49,6 +47,30 @@
 - Snapshot `/status` riallineati dopo rimozione della sezione System
 - Carousel demo: passata la chiave personale come `api_key` (fix poster 404 locali `TMDB API key is missing`)
 - `PUT /api/defaults`: merge parziale invece di replace + scrittura attesa prima della 200 (salvare un campo non cancella più gli altri default)
+
+## [0.15.2] - 2026-07-21
+
+### Changed
+- Redesign del nastro Netflix top rank
+- Preview cache-busting
+- Selectors delle global settings aggiornati
+
+## [0.15.1] - 2026-07-21
+
+### Added
+- Algoritmo colore accent generativo + color picker nell'editor
+- Esempi poster clean in home con parametro `logoFit`
+
+### Changed
+- Rating: media IMDb + TMDB via MDBList
+- Health check migrato a `/api/health` (da `/api/live`)
+- Header CORS su manifest e cataloghi
+
+### Fixed
+- Cache mismatch del badge ranking anime (cache key da proprietà TMDB)
+- Selezione best-fit poster nella route Stremio senza mapping
+- Auto-scroll del carousel dopo i click sulle frecce
+- Warning ESLint e timeout auto-fit aumentato
 
 ## [0.15.0] - 2026-07-19
 

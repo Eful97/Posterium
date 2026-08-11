@@ -65,8 +65,8 @@ Motion should stay subtle: transform/opacity only, usually 150-300ms. The modern
 ## Badge System
 
 - Genre/Rating badges: `textColorForBg()` for adaptive text
-- Badge styles: `shadow`, `pill`, `bar`, `colored`
-- Ranking styles: `default`, `bar`, `colored`
+- Badge styles: `shadow`, `pill`, `bar`, `colored`, `bordo`, `vetro`
+- Ranking styles: `default`, `bar`, `colored`, `pill`, `netflix`
 - Server-side SVG rendering with Resvg
 - `CHAR_WIDTH = 0.62` for text measurement
 - `RENDER_VERSION` must be bumped when badge rendering changes
@@ -94,6 +94,14 @@ AppShell
 - `useMappingsStore` — mappings CRUD, localStorage
 - `useDefaults` — server-side default settings
 - `usePosterSave` — poster save/preview logic
+- `useAppState` — settings/lang/preview UI state
+- `useBadgeState` — badge style, ranking style e default
+- `usePosterState` — logo/backdrop state del poster
+- `usePosterFit` — best-fit poster selection
+- `usePosterPreview` — preview reload (slice) + toast
+- `useRootColors` — estrazione accent/top-edge color dal poster
+- `useCollections` — poster collections (localStorage)
+- `useOutsideDismiss` — chiusura dropdown al click esterno
 
 ## i18n
 

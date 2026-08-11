@@ -27,16 +27,21 @@ The priority chain is defined in `src/lib/badge-priority.ts:computeBadge()`.
 
 ## Priority order (top to bottom)
 
-- Nuovo film / nuova serie (< 2 weeks)
-- Anime rank (MDBList)
-- Trend rank (JustWatch)
-- Award winner (Wikidata P166)
-- Franchise (Wikidata P179)
+`computeBadge()` restituisce la prima condizione vera; `getAllBadgeOptions()` elenca tutte le opzioni selezionabili nell'editor.
+
+- In uscita (`upcomingRelease`)
+- Rank anime (MDBList)
+- Rank trend (JustWatch)
+- Nuovo film / nuova serie (< 2 settimane)
+- Vincitore premio (Wikidata P166)
+- IMDb Top 250 — *Absolute Cinema*
 - Nomination (Wikidata P1411)
-- Network/Studio (TMDB)
-- Director (Wikidata P57)
-- Miniseries / Returning
-- Binge-worthy / Top rated (≥ 8.5)
+- Sub-genere
+- Regista (Wikidata P57)
+- Studio/Network (TMDB o Wikidata)
+- Badge extra personalizzato (`extra`)
+
+> `Miniserie` e `Ritorna` (serie in corso) sono opzioni selezionabili ma non entrano nella catena di priorità. La franchise (Wikidata P179) è stata rimossa.
 
 ## Testing
 

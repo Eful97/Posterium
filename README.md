@@ -45,7 +45,7 @@ pinned: false
 
 - 🖼️ **Selezione Poster Clean in 1-Click** — Scegli la tua locandina pulita (senza testo) preferita con un singolo click e fissala per sempre su Stremio. Supporta l'algoritmo *Best Fit* che rileva in automatico il poster perfetto per il logo.
 - 🎨 **Personalizzazione Badge Completa** — 6 stili per badge genere/rating (*Shadow, Pill, Bar, Colored, Bordo, Vetro*) e 5 stili per badge trend (*Default, Bar, Colored, Pill, Nastro Netflix*). Ogni componente del badge genere/rating (genere, anno, voto) si attiva/disattiva in modo indipendente per la combinazione che preferisci. Colori accent adattivi al poster e testo libero personalizzato per singolo titolo. Nelle **Impostazioni** salvi i tuoi default (componenti genere/anno/voto, stili badge, blur, gradiente, posizione badge): si applicano automaticamente a ogni nuovo poster e alle richieste Stremio.
-- 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch Italia, FlixPatrol Top 10, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA/Emmy (da Wikidata), saghe/franchise e registi cult.
+- 🏆 **Badge Automatici Intelligenti** — Classifiche JustWatch Italia, FlixPatrol Top 10, MDBList Trend, IMDb Top 250 (*Absolute Cinema*), premi Oscar/Cannes/BAFTA/Emmy (da Wikidata) e registi cult.
 - 🍿 **Nastro Netflix Top 10** — Badge con l'iconico nastro rosso verticale allineato a sinistra e affiancamento automatico del logo della piattaforma. Variante dedicata per le classifiche anime (nastro esteso con etichetta *anime* sotto il numero).
 - 🎭 **Loghi Network Automatici** — Logo ufficiale della piattaforma sovrapposto automaticamente al poster: Netflix, HBO Max, Disney+, Prime Video, Apple TV+, Paramount+, Rai, Crunchyroll, Sky/NOW, Mediaset Infinity, Tubi e Pluto TV.
 - ⭐ **Rating Accurato** — Voto medio bilanciato ed imparziale IMDb + TMDB.
@@ -132,7 +132,7 @@ Gira bene sul runtime Node di Vercel (sharp/resvg inclusi). **La persistenza ric
 
 #### 6. Troubleshooting
 - **Poster 404 con `TMDB API key is missing`** → la richiesta non porta una chiave TMDB: passa `?api_key=` (o header `x-api-key`), o usa un link col tuo profilo `?u=` che ha la chiave salvata.
-- **Cataloghi vuoti (0 titoli) su Vercel** → il catalogo richiede una chiave TMDB nella richiesta. L'editor usa la chiave personale del browser (salvata col profilo); le richieste Stremio devono portare `api_key` o il profilo `?u=/u/<uuid>/`.
+- **Cataloghi vuoti (0 titoli) su Vercel** → il catalogo richiede una chiave TMDB nella richiesta. L'editor usa la chiave personale del browser (salvata col profilo); le richieste Stremio devono portare `api_key` o il profilo `?u=<uuid>`.
 - **"Failed to create/update profile" / `ENOENT /var/task/data`** → manca lo store KV (punto 2).
 - **"Storage not configured: set KV_REST_API_URL and KV_REST_API_TOKEN"** → stesso problema, messaggio esplicito.
 
