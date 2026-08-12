@@ -73,6 +73,10 @@ const RENDER_TIMEOUT_MS = (() => {
   return Number.isFinite(n) && n >= 1000 && n <= 120000 ? n : 30000
 })()
 
+// Tetto massimo per l'attesa del voto medio TMDB+IMDb (MDBList) prima del
+// render: se il fetch è lento, il poster usa il voto TMDB senza bloccarsi.
+const RATING_WAIT_MS = 2000
+
 type RouteParams = { type: string; id: string }
 
 function corsHeaders(): Record<string, string> {
@@ -268,9 +272,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let etag: string
   let genreName: string | null = null
   let voteAverage: number | null = null
-  // A1: promise del voto aggregato MDBList lanciata nel ramo non-mappato ma
-  // attesa SOLO dopo il blocco dati parallelo → la RTT (≤8s) si sovrappone
-  // ai fetch immagini/wikidata/justwatch invece di precederli in serie.
+  // A1: promise del voto medio TMDB+IMDb (MDBList) lanciata nel ramo
+  // non-mappato ma attesa SOLO dopo il blocco dati parallelo, con un tetto
+  // breve (RATING_WAIT_MS): se MDBList è lenta, il poster usa il voto TMDB
+  // senza aspettare il timeout di fetch (8s).
   let aggregatedRating: ReturnType<typeof fetchAggregatedRating> | null = null
   let showBadges = true
   let rankingBadges = true
@@ -351,9 +356,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         setTMDBSessionCache(mediaType, tmdbId, { details, images, externalIds: extIds })
       }
       imdbId = extIds.imdb_id
-      // A1: fetch deferito — il voto aggregato parte subito ma non blocca.
+      // A1: fetch deferito — la media TMDB+IMDb parte subito ma non blocca.
       aggregatedRating = imdbId
-        ? fetchAggregatedRating(imdbId, undefined, renderAbort.signal).catch(() => null)
+        ? fetchAggregatedRating(imdbId, profileMdbListKey || req.nextUrl.searchParams.get("mdblist_key") || undefined, renderAbort.signal).catch(() => null)
         : Promise.resolve(null)
       genreName = details.genres[0]?.name || null
       voteAverage = details.vote_average ?? 0
@@ -553,10 +558,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       ]),
     ])
 
-    // A1: upgrade del voto aggregato ora che la promise (lanciata nel ramo
-    // non-mappato) è quasi certamente già risolta — zero RTT aggiuntiva.
+    // A1: upgrade del voto con la media TMDB+IMDb, ma con tetto breve: oltre
+    // RATING_WAIT_MS si usa il voto TMDB già impostato (niente blocco lungo).
     if (aggregatedRating) {
-      const aggregated = await aggregatedRating
+      const aggregated = await Promise.race([
+        aggregatedRating,
+        new Promise<Awaited<ReturnType<typeof fetchAggregatedRating>>>((resolve) => setTimeout(() => resolve(null), RATING_WAIT_MS)),
+      ])
       if (aggregated?.average) voteAverage = aggregated.average
     }
 

@@ -238,6 +238,96 @@ describe("GET /api/poster/[type]/[id] with saved mappings", () => {
     expect(requestedUrls.some((url) => url.includes("/clean.jpg"))).toBe(false)
   })
 
+  it("applies the TMDB+IMDb average rating when the aggregated rating resolves", async () => {
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+    const { fetchAggregatedRating } = await import("@/lib/ratings")
+    const mockedAggregatedRating = vi.mocked(fetchAggregatedRating)
+    mockedAggregatedRating.mockResolvedValue({
+      sources: { imdb: 8.0, tmdb: 7.5 },
+      average: 7.75,
+      count: 2,
+    })
+
+    mockedGetById.mockResolvedValue(null)
+    mockedGetDetails.mockResolvedValue({
+      id: 42,
+      title: "Average Rating",
+      genres: [{ id: 18, name: "Drama" }],
+      vote_average: 7.5,
+      vote_count: 100,
+      original_language: "en",
+      release_date: "2024-01-15",
+      production_companies: [],
+    })
+    mockedGetImages.mockResolvedValue({
+      id: 42,
+      posters: [
+        { file_path: "/first-clean.jpg", iso_639_1: null, vote_average: 8.0, vote_count: 100, width: 500, height: 750, aspect_ratio: 0.667 },
+      ],
+      logos: [],
+      backdrops: [],
+    })
+    mockedGetExternalIds.mockResolvedValue({ imdb_id: "tt1234567" })
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input)
+      const body = url.includes("/first-clean.jpg") ? posterBuf : posterBuf
+      return new Response(new Uint8Array(body), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(body.length) },
+      })
+    })
+
+    const req = new NextRequest("http://localhost:3000/api/poster/movie/42")
+    const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "42" }) })
+
+    expect(res.status).toBe(200)
+    expect(mockedAggregatedRating).toHaveBeenCalledWith("tt1234567", undefined, expect.any(AbortSignal))
+  })
+
+  it("falls back to TMDB vote when the aggregated rating is not resolved in time", async () => {
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+    const { fetchAggregatedRating } = await import("@/lib/ratings")
+    const mockedAggregatedRating = vi.mocked(fetchAggregatedRating)
+    // Promise che non risolve mai: la race con RATING_WAIT_MS (2s) scade.
+    mockedAggregatedRating.mockReturnValue(new Promise(() => {}))
+
+    mockedGetById.mockResolvedValue(null)
+    mockedGetDetails.mockResolvedValue({
+      id: 42,
+      title: "Slow Rating",
+      genres: [{ id: 18, name: "Drama" }],
+      vote_average: 7.5,
+      vote_count: 100,
+      original_language: "en",
+      release_date: "2024-01-15",
+      production_companies: [],
+    })
+    mockedGetImages.mockResolvedValue({
+      id: 42,
+      posters: [
+        { file_path: "/first-clean.jpg", iso_639_1: null, vote_average: 8.0, vote_count: 100, width: 500, height: 750, aspect_ratio: 0.667 },
+      ],
+      logos: [],
+      backdrops: [],
+    })
+    mockedGetExternalIds.mockResolvedValue({ imdb_id: "tt1234567" })
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input)
+      const body = url.includes("/first-clean.jpg") ? posterBuf : posterBuf
+      return new Response(new Uint8Array(body), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(body.length) },
+      })
+    })
+
+    const req = new NextRequest("http://localhost:3000/api/poster/movie/42")
+    const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "42" }) })
+
+    expect(res.status).toBe(200)
+  })
+
   it("memoizes TMDB fetches for the same unmapped title across preview ticks (F6)", async () => {
     const posterBuf = await imageBuffer("#101010", 500, 750)
     mockedGetById.mockResolvedValue(null)

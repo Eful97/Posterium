@@ -5,6 +5,10 @@ import { fetchAggregatedRating } from "@/lib/ratings"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 
+// Tetto massimo per l'attesa del voto medio TMDB+IMDb (MDBList): se il fetch
+// è lento si usa il voto TMDB, coerente con la route poster (stesso valore).
+const RATING_WAIT_MS = 2000
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
@@ -18,9 +22,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
     return Response.json({ genres: [], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null })
   }
-  // mdblist_key cambia il voto aggregato (fetchAggregatedRating) → parte del cache key.
+  // mdblist_key cambia il voto medio (fetchAggregatedRating) → parte del cache key.
   const mdblistHash = mdblistKey ? crypto.createHash("sha1").update(mdblistKey).digest("hex").slice(0, 8) : ""
-  const cacheKey = `details:v9:${type}:${tmdbId}:${language}:${mdblistHash || "nomk"}`
+  const cacheKey = `details:v11:${type}:${tmdbId}:${language}:${mdblistHash || "nomk"}`
   interface Genre { id: number; name: string }
 interface Episode { id: number; name: string; air_date: string | null; episode_number: number; season_number: number }
 
@@ -32,7 +36,10 @@ const cached = cacheGet<{ title?: string; name?: string; genres: Genre[]; voteAv
       getExternalIds(mediaType, tmdbId, apiKey).catch(() => ({ imdb_id: null })),
     ])
     const rating = extIds.imdb_id
-      ? (await fetchAggregatedRating(extIds.imdb_id, mdblistKey).catch(() => null))?.average ?? data.vote_average ?? 0
+      ? (await Promise.race([
+          fetchAggregatedRating(extIds.imdb_id, mdblistKey).catch(() => null),
+          new Promise<Awaited<ReturnType<typeof fetchAggregatedRating>>>((resolve) => setTimeout(() => resolve(null), RATING_WAIT_MS)),
+        ]))?.average ?? data.vote_average ?? 0
       : data.vote_average ?? 0
     const body = { title: data.title, name: data.name, genres: data.genres, voteAverage: rating, voteCount: data.vote_count, type: data.type, status: data.status, release_date: data.release_date, first_air_date: data.first_air_date, last_air_date: data.last_air_date, next_episode_to_air: data.next_episode_to_air, number_of_seasons: data.number_of_seasons, number_of_episodes: data.number_of_episodes, networks: data.networks, production_companies: data.production_companies, imdb_id: extIds.imdb_id, original_language: data.original_language }
     cacheSet(cacheKey, body, ["tmdb", "details"])

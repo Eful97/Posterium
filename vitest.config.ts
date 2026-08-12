@@ -8,6 +8,7 @@ export default defineConfig({
     exclude: [
       "node_modules/**",
       ".kilo/**",
+      ".claude/**",
       ".next/**",
       "e2e/**",
       "test-results/**",
