@@ -17,15 +17,70 @@ interface GridViewItem {
   posterPath: string | null
 }
 
-/** Alterna due liste (film/serie) in una sola riga: la card mostra 5+5. */
-function interleave<T>(a: readonly T[], b: readonly T[]): T[] {
-  const out: T[] = []
-  const max = Math.max(a.length, b.length)
-  for (let i = 0; i < max; i++) {
-    if (a[i] !== undefined) out.push(a[i])
-    if (b[i] !== undefined) out.push(b[i])
-  }
-  return out
+/** Coppia di contenitori Film | Serie affiancati sulla stessa riga (2 colonne su desktop). */
+function CatalogPair({
+  movies,
+  tv,
+  totalMovies,
+  totalTv,
+  movieTitle,
+  tvTitle,
+  movieGridTitle,
+  tvGridTitle,
+  openGrid,
+  onItemClick,
+  savedKeys,
+}: {
+  movies: SimklCardItem[]
+  tv: SimklCardItem[]
+  totalMovies: number
+  totalTv: number
+  movieTitle: string
+  tvTitle: string
+  movieGridTitle: string
+  tvGridTitle: string
+  openGrid: (items: GridViewItem[], title: string) => void
+  onItemClick: (item: SimklCardItem) => void
+  savedKeys: Set<string>
+}) {
+  const hasMovies = movies.length > 0
+  const hasTv = tv.length > 0
+  if (!hasMovies && !hasTv) return null
+
+  const toGrid = (list: SimklCardItem[]): GridViewItem[] =>
+    list.map((it) => ({
+      tmdbId: it.tmdbId ?? it.id ?? null,
+      mediaType: (it.media_type || it.mediaType || "movie") as "movie" | "tv",
+      title: it.title ?? it.name ?? "",
+      posterPath: it.poster_path ?? it.posterPath ?? null,
+    }))
+
+  return (
+    <div className={`grid gap-3 ${hasMovies && hasTv ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}>
+      {hasMovies && (
+        <SimklCard
+          className="simkl-list-card--fill"
+          items={movies}
+          title={movieTitle}
+          totalCount={totalMovies}
+          onClick={() => openGrid(toGrid(movies), movieGridTitle)}
+          onItemClick={onItemClick}
+          savedKeys={savedKeys}
+        />
+      )}
+      {hasTv && (
+        <SimklCard
+          className="simkl-list-card--fill"
+          items={tv}
+          title={tvTitle}
+          totalCount={totalTv}
+          onClick={() => openGrid(toGrid(tv), tvGridTitle)}
+          onItemClick={onItemClick}
+          savedKeys={savedKeys}
+        />
+      )}
+    </div>
+  )
 }
 
 const PLATFORM_FILTERS = [
@@ -51,6 +106,8 @@ export function CataloghiView() {
   const { t } = useT()
   const movieTrending = trending.filter((r) => r.media_type === "movie").slice(0, 20)
   const tvTrending = trending.filter((r) => r.media_type === "tv").slice(0, 20)
+  const animeMovies = mdblistAnimeList.filter((r) => r.media_type === "movie")
+  const animeTv = mdblistAnimeList.filter((r) => r.media_type !== "movie")
   const [gridItems, setGridItems] = useState<GridViewItem[] | null>(null)
   const [gridTitle, setGridTitle] = useState("")
   const [platformFilter, setPlatformFilter] = useState<string>("all")
@@ -147,30 +204,24 @@ export function CataloghiView() {
         ))}
       </div>
 
-      {/* JustWatch Top 20 — Simkl-style, film e serie nella stessa riga */}
+      {/* JustWatch Top 20 — due contenitori separati (Film | Serie) sulla stessa riga */}
       {showJustWatch && (
         <ScrollReveal animation="fade-up" threshold={0.05}>
           <div className="mb-12">
             <h2 className="section-heading text-xl font-bold mb-6">{t("ui.justwatchTop20")}</h2>
-            <div className="flex flex-wrap gap-3">
-              {(movieTrending.length + tvTrending.length) >= 5 && (
-                <SimklCard
-                  key="jw-mixed-1"
-                  items={interleave(movieTrending.slice(0, 10), tvTrending.slice(0, 10))}
-                  title="Film & Serie — Top 20"
-                  totalCount={movieTrending.length + tvTrending.length}
-                  onClick={() => openGrid(
-                    interleave(
-                      movieTrending.map(r => ({ tmdbId: r.id, mediaType: r.media_type, title: r.title || r.name || "", posterPath: r.poster_path })),
-                      tvTrending.map(r => ({ tmdbId: r.id, mediaType: r.media_type, title: r.title || r.name || "", posterPath: r.poster_path })),
-                    ),
-                    "JustWatch — Film & Serie"
-                  )}
-                  onItemClick={navigateToItem}
-                  savedKeys={savedKeys}
-                />
-              )}
-            </div>
+            <CatalogPair
+              movies={movieTrending.slice(0, 10)}
+              tv={tvTrending.slice(0, 10)}
+              totalMovies={movieTrending.length}
+              totalTv={tvTrending.length}
+              movieTitle={`${t("ui.movie")} — Top 20`}
+              tvTitle={`${t("ui.tvSeries")} — Top 20`}
+              movieGridTitle="JustWatch — Film"
+              tvGridTitle="JustWatch — Serie"
+              openGrid={openGrid}
+              onItemClick={navigateToItem}
+              savedKeys={savedKeys}
+            />
           </div>
         </ScrollReveal>
       )}
@@ -185,33 +236,25 @@ export function CataloghiView() {
             {filteredPlatforms.map((sp) => {
               const chart = streamingCharts[sp.slug]
               if (!chart || (chart.movies.length === 0 && chart.tv.length === 0)) return null
-              // Film e serie nella stessa riga: card unica alternata (5+5 visibili).
-              const mixedItems = interleave(
-                chart.movies.slice(0, 10),
-                chart.tv.slice(0, 10),
-              )
-              const mixedGridItems: GridViewItem[] = interleave(
-                chart.movies.map(m => ({ tmdbId: m.tmdbId, mediaType: m.mediaType as "movie" | "tv", title: m.title, posterPath: m.posterPath })),
-                chart.tv.map(m => ({ tmdbId: m.tmdbId, mediaType: m.mediaType as "movie" | "tv", title: m.title, posterPath: m.posterPath })),
-              )
               return (
                 <div key={sp.slug} className="mb-6 last:mb-0">
                   <h3 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-2">
                     {sp.icon && <span className="text-base">{sp.icon}</span>}
                     {sp.name}
                   </h3>
-                  <div className="flex flex-wrap gap-3">
-                    {mixedItems.length > 0 && (
-                      <SimklCard
-                        items={mixedItems}
-                        title="Film & Serie — Top 10"
-                        totalCount={chart.movies.length + chart.tv.length}
-                        onClick={() => openGrid(mixedGridItems, `${sp.name} — Film & Serie`)}
-                        onItemClick={navigateToItem}
-                        savedKeys={savedKeys}
-                      />
-                    )}
-                  </div>
+                  <CatalogPair
+                    movies={chart.movies.slice(0, 10)}
+                    tv={chart.tv.slice(0, 10)}
+                    totalMovies={chart.movies.length}
+                    totalTv={chart.tv.length}
+                    movieTitle={`${t("ui.movie")} — Top 10`}
+                    tvTitle={`${t("ui.tvSeries")} — Top 10`}
+                    movieGridTitle={`${sp.name} — Film`}
+                    tvGridTitle={`${sp.name} — Serie`}
+                    openGrid={openGrid}
+                    onItemClick={navigateToItem}
+                    savedKeys={savedKeys}
+                  />
                 </div>
               )
             })}
@@ -221,25 +264,24 @@ export function CataloghiView() {
 
       {showAnime && <div className="section-divider" />}
 
-      {/* Anime trending */}
+      {/* Anime trending — Film e Serie in due contenitori separati */}
       {showAnime && mdblistAnimeList.length >= 5 && (
         <ScrollReveal animation="fade-up" threshold={0.05}>
           <div className="mb-12">
             <h2 className="section-heading text-xl font-bold mb-6">{t("ui.trendingAnime")}</h2>
-            <div className="flex flex-wrap gap-3">
-              <SimklCard
-                key="anime-1"
-                items={mdblistAnimeList.slice(0, 10).map(r => ({ tmdbId: r.id, mediaType: (r.media_type as "movie" | "tv") || "tv", title: r.title || "", posterPath: r.poster_path }))}
-                title="Anime — Top 20"
-                totalCount={mdblistAnimeList.length}
-                onClick={() => openGrid(
-                  mdblistAnimeList.map(r => ({ tmdbId: r.id, mediaType: (r.media_type as "movie" | "tv") || "tv", title: r.title || "", posterPath: r.poster_path })),
-                  "Anime — Top 20"
-                )}
-                onItemClick={navigateToItem}
-                savedKeys={savedKeys}
-              />
-            </div>
+            <CatalogPair
+              movies={animeMovies.slice(0, 10)}
+              tv={animeTv.slice(0, 10)}
+              totalMovies={animeMovies.length}
+              totalTv={animeTv.length}
+              movieTitle={`${t("ui.movie")} — Top 20`}
+              tvTitle={`${t("ui.tvSeries")} — Top 20`}
+              movieGridTitle="Anime — Film"
+              tvGridTitle="Anime — Serie"
+              openGrid={openGrid}
+              onItemClick={navigateToItem}
+              savedKeys={savedKeys}
+            />
           </div>
         </ScrollReveal>
       )}

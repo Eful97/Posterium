@@ -931,6 +931,13 @@ select:focus-visible {
     0 0 24px var(--pg-glow, transparent);
 }
 
+/* Card flessibile: riempie la colonna del layout a due (Film | Serie sulla stessa riga).
+   Con meno spazio i poster scorrono orizzontalmente dentro la card (overflow-x già attivo). */
+.simkl-list-card--fill {
+  width: 100%;
+  max-width: 980px;
+}
+
 /* Card singola (1 poster) — più stretta */
 .simkl-list-card--single {
   width: 180px;

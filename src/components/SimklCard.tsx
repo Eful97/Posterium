@@ -25,11 +25,12 @@ interface SimklCardProps {
   onClick?: () => void
   onItemClick?: (item: SimklCardItem) => void
   savedKeys?: Set<string>
+  className?: string
 }
 
-export function SimklCard({ items, title, totalCount, meta = [], onClick, onItemClick, savedKeys }: SimklCardProps) {
+export function SimklCard({ items, title, totalCount, meta = [], onClick, onItemClick, savedKeys, className }: SimklCardProps) {
   const displayItems = items.slice(0, 10)
-  const isSingle = displayItems.length <= 2
+  const isSingle = displayItems.length <= 2 && !className?.includes("simkl-list-card--fill")
   const count = totalCount ?? items.length
 
   const imgSrc = (item: SimklCardItem) => {
@@ -44,7 +45,7 @@ export function SimklCard({ items, title, totalCount, meta = [], onClick, onItem
 
   return (
     <div
-      className={`simkl-list-card relative${isSingle ? " simkl-list-card--single" : ""}`}
+      className={`simkl-list-card relative${isSingle ? " simkl-list-card--single" : ""}${className ? ` ${className}` : ""}`}
       role="button"
       tabIndex={0}
       onClick={onClick}
