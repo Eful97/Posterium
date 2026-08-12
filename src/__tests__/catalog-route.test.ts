@@ -89,6 +89,23 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(body.metas[0].poster).toContain(`rv=${POSTER_URL_VERSION}`)
   })
 
+  it("embeds the explicit mdblist_key in poster URLs of non-anime series catalogs", async () => {
+    // Un titolo anime può comparire nei cataloghi jw/platform: senza mdblist_key
+    // nell'URL poster il rank anime non sarebbe risolvibile su Stremio (il fetch
+    // MDBList keyless fallisce 503). Come nel catalogo anime, la chiave esplicita
+    // della richiesta va nell'URL poster.
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
+      .mockResolvedValueOnce(tmdbShowResponse(94997))
+
+    const req = new NextRequest("http://localhost:3000/catalog/series/posterium-jw-series.json?api_key=settings-key&mdblist_key=mdblist-key")
+    const res = await GET(req, { params: Promise.resolve({ type: "series", id: "posterium-jw-series.json" }) })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.metas[0].poster).toContain("mdblist_key=mdblist-key")
+  })
+
   it("adds mapping version to catalog poster URLs for saved titles", async () => {
     mockedGetById.mockResolvedValueOnce({
       tmdbId: 94997,

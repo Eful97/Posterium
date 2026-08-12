@@ -174,7 +174,10 @@ export async function posteriumCatalog(
           id: catalogMetaId(imdbId, r.tmdbId),
           type: stType,
           name: r.d.title || r.d.name || "",
-          poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam),
+          // La chiave MDBList esplicita (query) va nell'URL poster: un titolo
+          // anime dentro un catalogo non-anime deve poter risolvere il proprio
+          // rank su Stremio (precedenza animerank > fetch live > mapping).
+          poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam),
           releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
         }
       }))
@@ -227,7 +230,7 @@ export async function posteriumCatalog(
               id: catalogMetaId(imdbId, item.tmdbId),
               type: stType,
               name: item.title,
-              poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam),
+              poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam, mdblistKeyParam),
               releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
             }
           }))
