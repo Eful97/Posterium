@@ -318,7 +318,7 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 - **Persistenza**: I dati (mapping, profili, default) sono in un volume Docker `posterium-data`.
 - **CDN**: Se hai una CDN (Cloudflare, Bunny), imposta `POSTER_CDN_URL` per generare URL poster col CDN. I poster **salvati** (mapping con versione) vengono serviti con header `immutable` (cache edge 1 anno); quelli composti al volo senza mapping (rank JustWatch, premi, IMDb Top 250) usano `stale-while-revalidate` per non congelare i badge dinamici alla CDN.
 - **Rate limiting**: 120 req/min per IP su route generiche, 100/min su poster. Limiti in-memory — resistono a uso normale ma non a un attacco DDoS. Metti la CDN davanti per quello. Il rate limit è **per-IP solo dietro proxy fidato**: imposta `POSTERIUM_TRUST_PROXY=1` quando sei dietro Cloudflare/HF edge/Nginx (la chiave usa `cf-connecting-ip` → `x-real-ip` → ultimo hop `x-forwarded-for`, header che il proxy sovrascrive). Senza il flag gli header IP sono ignorati (spoofabili da un client) e tutte le richieste condividono un bucket aggregato — niente bypass, ma limite di istanza.
-- **Warmup**: `/api/warmup` segue il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`): **fail-open** solo su istanza pubblica esplicita (`POSTERIUM_PUBLIC_INSTANCE=1`) senza token (es. HF Spaces), **fail-closed** altrimenti. In più è rate-limited (bucket `warmup`) e protetto da CSRF (`isSameOrigin`), così chiunque non possa triggerare carico in loop. Il self-fetch dei poster usa un origin interno fisso (`127.0.0.1`), mai l'host derivato dagli header di richiesta (anti-SSRF).
+- **Warmup**: `/api/warmup` segue il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`): **fail-open** solo su istanza pubblica esplicita (`POSTERIUM_PUBLIC_INSTANCE=1`) senza token (es. HF Spaces), **fail-closed** altrimenti. In più è rate-limited (bucket `warmup`) e protetto da CSRF (`isSameOrigin`), così chiunque non possa triggerare carico in loop. Il self-fetch dei poster usa un origin interno fisso (`127.0.0.1`), mai l'host derivato dagli header di richiesta (anti-SSRF). **Self-warmup post-deploy**: l'entrypoint Docker/HF lancia `/api/warmup` automaticamente in background dopo il boot (poll su `/api/health` fino a ~60s, fallimenti non fatali) — la cache poster è in-memory e ogni restart parte a freddo. Disattivabile con `POSTERIUM_SELF_WARMUP=0`.
 - **Sicurezza**: Il proxy add-on (`/api/proxy`) mitiga l'SSRF (blocco IP privati/loopback, DNS pin e validazione dei redirect); opzionalmente puoi chiuderlo ai soli domini autorizzati con `POSTERIUM_PROXY_ALLOW_DOMAINS`. `/api/health` non espone il percorso assoluto dei dati su disco.
 - **Cache**: I poster generati sono in memoria (max 2000 entry / 150MB). Un restart svuota la cache (i poster si rigenerano al prossimo accesso). La cache-key e le URL Stremio includono `RENDER_VERSION`, **generata automaticamente** (hash dei file di rendering via `scripts/write-render-version.mjs`): quando cambia il codice di resa (badge, blur, logo, font, route poster) i poster si invalidano da soli e le URL Stremio cambiano — nessun bump manuale.
 
@@ -339,25 +339,27 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 | `CONFIG_HMAC_SECRET` | ❌ | Chiave alternativa per firma HMAC (fallback a ENCRYPTION_KEY_SECRET) |
 | `PROFILE_ENCRYPTION_KEY` | ❌ | Chiave AES-256-GCM (hex, es. `openssl rand -hex 32`) per cifrare le apiKeys salvate nei profili cloud (`/api/profile`). Assente → avviso in produzione e chiavi in chiaro a riposo |
 | `POSTERIUM_DATA_DIR` | ❌ | Percorso dati persistenti (default: `./data/`) |
+| `POSTERIUM_SELF_WARMUP` | ❌ | `=0` disabilita il self-warmup post-deploy dell'entrypoint (poll `/api/health` + `/api/warmup`; default: `1` = attivo) |
 | `POSTERIUM_CACHE_MAX` | ❌ | Max entry cache in-memory (default: 2000) |
 | `POSTERIUM_CACHE_MAX_MB` | ❌ | Max MB cache in-memory (default: 150) |
 | `POSTERIUM_CACHE_REFRESH_HOUR` | ❌ | Ora UTC refresh programmato poster/catalog (default: 3) |
 | `POSTERIUM_LOG_LEVEL` | ❌ | Livello log: `debug`, `info`, `warn`, `error` (default: `info`) |
 | `POSTERIUM_LOG_FORMAT` | ❌ | Formato log JSON se impostato a `json` |
 | `POSTERIUM_DEBUG` | ❌ | Log di debug: `1` abilita info aggiuntive (es. path dati) |
-| `SHARP_CONCURRENCY` | ❌ | Thread Sharp per resize immagini (default: 2) |
-| `SHARP_CACHE_MEMORY_MB` | ❌ | Cache Sharp in MB (default: 64) |
-| `SHARP_CACHE_ITEMS` | ❌ | Max elementi cache interna Sharp (default: auto) |
-| `WARMUP_TOKEN` | ❌ | (Deprecato) Token per `/api/warmup` — ora usa il token admin (`POSTERIUM_ADMIN_TOKEN`/`ADMIN_TOKEN`); fail-open solo con `POSTERIUM_PUBLIC_INSTANCE=1` |
+| `SHARP_CONCURRENCY` | ❌ | Thread Sharp per resize immagini (default: threadpool di sharp; non impostata/0 = non tocca la config sharp) |
+| `SHARP_CACHE_MEMORY_MB` | ❌ | Cache Sharp in MB (default: 50 di sharp se non impostata) |
+| `SHARP_CACHE_ITEMS` | ❌ | Max elementi cache interna Sharp (default: 100 di sharp se non impostata) |
 | `POSTERIUM_MAX_CONCURRENT_RENDERS` | ❌ | Render poster concorrenti (slot anti-OOM, default: 4) |
 | `POSTERIUM_RENDER_SLOT_WAIT_MS` | ❌ | Attesa massima di un posto render prima del 503 (default: 15000; clamp 500–60000) |
 | `POSTERIUM_RENDER_TIMEOUT_MS` | ❌ | Deadline complessivo del render poster: oltre, watchdog libera slot + inflight (default: 30000; clamp 1000–120000) |
 | `POSTERIUM_RENDER_QUEUE` | ❌ | Coda bounded del limiter: con N>0 i waiter oltre N ricevono 503 immediato (default: 0 = accoda fino a RENDER_SLOT_WAIT_MS) |
+| `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | ❌ | Tetto del best-fit logo per poster non-mappati (default: 1200; clamp 300–10000) |
+| `POSTERIUM_RATING_WAIT_MS` | ❌ | Attesa massima per l'upgrade del voto medio TMDB+IMDb prima del render (default: 1500; clamp 300–10000) |
 | `POSTERIUM_NEGATIVE_CACHE_TTL_MS` | ❌ | TTL della negative cache errori 500/503 (default: 5000; clamp 1000–60000) |
 | `POSTERIUM_RATELIMIT_POSTER_MAX` | ❌ | Token burst del bucket rate-limit poster (default: 200; clamp 10–10000) |
 | `POSTER_CDN_URL` / `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | URL CDN per generare link poster col CDN |
 | `NEXT_PUBLIC_TMDB_IMG_URL` | ❌ | Base URL immagini TMDB lato client (default: `https://image.tmdb.org/t/p`). Utile per proxy immagini o test e2e |
-| `WIKIDATA_TIMEOUT` | ❌ | Timeout ms per fetch Wikidata badge premi (default: 4000) |
+| `WIKIDATA_TIMEOUT` | ❌ | Timeout ms per fetch Wikidata badge premi (default: 2500) |
 
 ---
 	
@@ -367,7 +369,7 @@ Posterium usa [Vitest](https://vitest.dev/) per test unitari e [Playwright](http
 
 ### Test unitari (Vitest)
 
-Quasi 500 test su store, API, componenti React, badge SVG, poster-fit e utilità.
+Oltre 550 test su store, API, componenti React, badge SVG, poster-fit e utilità.
 
 ```bash
 # Esecuzione singola
