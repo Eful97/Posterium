@@ -454,6 +454,45 @@ describe("GET /api/poster/[type]/[id] error and edge cases", () => {
     expect(res.status).toBe(200)
   })
 
+  it("resolves IMDB ID (tt...) using the profile TMDB key when no explicit api_key is present", async () => {
+    const { resolveImdbToTmdb } = await import("@/lib/imdb-resolver")
+    const mockedResolve = vi.mocked(resolveImdbToTmdb)
+    mockedResolve.mockResolvedValue(42)
+    mockedGetFullProfileData.mockResolvedValue({
+      config: { globalBadges: true, rankingBadges: true, badgeStyle: "shadow", rankingBadgeStyle: "default", blurEnabled: true, blurIntensity: 5, blurFade: 60, blurDarkness: 40, gradientHeight: 30, networkLogo: true, autoRotateClean: false, logoFitEnabled: true },
+      apiKeys: { tmdbKey: "profile-tmdb-key", mdblistApiKey: "profile-mdblist-key" },
+      mappings: {},
+      createdAt: "2026-07-16T10:15:30.000Z",
+      updatedAt: "2026-07-16T10:15:30.000Z",
+    })
+
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+
+    mockedGetById.mockResolvedValue({
+      tmdbId: 42,
+      mediaType: "movie",
+      title: "From IMDB via profile",
+      posterPath: "/poster.jpg",
+      logoPath: null,
+      originalPosterPath: null,
+      language: "it",
+      updatedAt: "2026-07-16T10:15:30.000Z",
+    })
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array(posterBuf), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(posterBuf.length) },
+      }),
+    )
+
+    // Poster URL pattern (AIOMetadata): {imdb_id} + ?u=<profilo>, nessuna api_key
+    const req = new NextRequest("http://localhost:3000/api/poster/movie/tt1234567?u=550e8400-e29b-41d4-a716-446655440000")
+    const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "tt1234567" }) })
+    expect(res.status).toBe(200)
+    expect(mockedResolve).toHaveBeenCalledWith("tt1234567", "movie", "profile-tmdb-key")
+  })
+
   it("normalizes series/tv media type", async () => {
     const posterBuf = await imageBuffer("#101010", 500, 750)
 

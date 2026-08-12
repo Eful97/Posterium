@@ -85,3 +85,6 @@ public/window.svg
 # skill lockfile (auto-generated)
 skills-lock.json
 .env
+
+# kilo project config (contains API keys via env refs, machine-specific)
+/.kilo/kilo.json

@@ -99,10 +99,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { type, id } = await params
   const mediaType = (["series", "tv", "show", "tvshow"].includes(type?.toLowerCase() || "")) ? "tv" : "movie"
+
+  // Decode optional stateless config token (stile AIOMetadata / RPDB)
+  const configToken = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c")
+  let configOverride = configToken ? decodeConfig(configToken) : null
+
+  // UUID-based profile override (stile RPDB / ElfHosted / AIOMetadata): il
+  // profilo (config + chiavi + mapping per-titolo) vince sul config token.
+  // Caricato PRIMA del resolve IMDb→TMDB: il pattern poster `{imdb_id}`
+  // (AIOMetadata) arriva come tt..., e senza la chiave del profilo il resolve
+  // fallisce (nessuna chiave d'istanza di fallback).
+  const profileId = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user") || null
+  let profileData: Awaited<ReturnType<typeof getFullProfileData>> = null
+  if (profileId) {
+    profileData = await getFullProfileData(profileId)
+  }
+  const profileTmdbKey = profileData?.apiKeys?.tmdbKey || null
+  const profileMdbListKey = profileData?.apiKeys?.mdblistApiKey || null
+
   let tmdbId = Number(id)
   if (isNaN(tmdbId) || tmdbId <= 0) {
     if (typeof id === "string" && id.startsWith("tt")) {
-      const resolved = await resolveImdbToTmdb(id, mediaType, resolveRequestApiKey(req))
+      const resolved = await resolveImdbToTmdb(id, mediaType, profileTmdbKey || resolveRequestApiKey(req))
       if (resolved) tmdbId = resolved
     }
   }
@@ -115,27 +133,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let mapping = await getById(mediaType, tmdbId)
   const sd = getServerDefaults()
 
-  // Decode optional stateless config token (stile AIOMetadata / RPDB)
-  const configToken = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c")
-  let configOverride = configToken ? decodeConfig(configToken) : null
-
-  // UUID-based profile override (stile RPDB / ElfHosted / AIOMetadata): il
-  // profilo (config + chiavi + mapping per-titolo) vince sul config token.
-  const profileId = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user") || null
-  // Chiavi del profilo (ogni utente le proprie): se impostate, vincono su
-  // header/query nelle chiamate TMDB/MDBList (priorità profilo → richiesta).
-  let profileTmdbKey: string | null = null
-  let profileMdbListKey: string | null = null
-  if (profileId) {
-    const fullProfile = await getFullProfileData(profileId)
-    if (fullProfile) {
-      configOverride = fullProfile.config
-      profileTmdbKey = fullProfile.apiKeys?.tmdbKey || null
-      profileMdbListKey = fullProfile.apiKeys?.mdblistApiKey || null
-      const userMapping = fullProfile.mappings?.[`${mediaType}:${tmdbId}`]
-      if (userMapping) {
-        mapping = userMapping
-      }
+  if (profileData) {
+    configOverride = profileData.config
+    const userMapping = profileData.mappings?.[`${mediaType}:${tmdbId}`]
+    if (userMapping) {
+      mapping = userMapping
     }
   }
 
