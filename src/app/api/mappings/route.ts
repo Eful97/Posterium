@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
     badgeExtra: parsed.data.badgeExtra ?? undefined,
     badgeRank: parsed.data.badgeRank ?? undefined,
     badgeLabel: parsed.data.badgeLabel ?? undefined,
+    animeRank: parsed.data.animeRank ?? undefined,
     customBadge: parsed.data.customBadge ?? undefined,
     releaseDate: parsed.data.releaseDate ?? undefined,
     firstAirDate: parsed.data.firstAirDate ?? undefined,

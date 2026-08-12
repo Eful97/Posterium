@@ -64,6 +64,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     accentColor: parsed.data.accentColor ?? existing.accentColor,
     badgeRank: parsed.data.badgeRank ?? existing.badgeRank,
     badgeLabel: parsed.data.badgeLabel ?? existing.badgeLabel,
+    animeRank: hasField("animeRank") ? (parsed.data.animeRank ?? null) : existing.animeRank,
     releaseDate: parsed.data.releaseDate ?? existing.releaseDate,
     firstAirDate: parsed.data.firstAirDate ?? existing.firstAirDate,
     logoDisabled: parsed.data.logoDisabled ?? existing.logoDisabled,

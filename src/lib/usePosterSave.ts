@@ -237,6 +237,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
           badgeExtra,
           badgeRank,
           badgeLabel,
+          animeRank: animeRankData?.rank ?? null,
           customBadge,
           badgeStyle: badgeStyle !== defaultBadgeStyle ? badgeStyle : undefined,
           rankingBadgeStyle: rankingBadgeStyle !== defaultRankingBadgeStyle ? rankingBadgeStyle : undefined,

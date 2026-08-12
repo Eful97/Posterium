@@ -75,6 +75,7 @@ export interface Mapping {
   badgeExtra?: string | null
   badgeRank?: number | null
   badgeLabel?: string | null
+  animeRank?: number | null
   customBadge?: string | null
   releaseDate?: string | null
   firstAirDate?: string | null

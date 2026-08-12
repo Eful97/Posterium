@@ -626,4 +626,41 @@ describe("GET /api/poster/[type]/[id] error and edge cases", () => {
     // L'override evita il fetch MDBList (la preview non porta chiavi)
     expect(mockedFetchMDBList).not.toHaveBeenCalled()
   })
+
+  it("falls back to the saved mapping animeRank when no key/animerank is available", async () => {
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+
+    mockedGetById.mockResolvedValue({
+      tmdbId: 42,
+      mediaType: "tv",
+      title: "Saved Anime",
+      posterPath: "/saved-anime.jpg",
+      logoPath: null,
+      originalPosterPath: null,
+      language: "it",
+      showBadges: true,
+      rankingBadges: true,
+      badgeRank: 3,
+      badgeLabel: "Anime",
+      animeRank: 3,
+      updatedAt: "2026-07-16T10:15:30.000Z",
+    } as never)
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array(posterBuf), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(posterBuf.length) },
+      }),
+    )
+
+    // Senza profilo né animerank (poster salvato su Stremio): il fetch MDBList
+    // keyless fallisce (503 in produzione) e si usa il rank salvato nel mapping.
+    const req = new NextRequest("http://localhost:3000/api/poster/tv/42?debug=1")
+    const res = await GET(req, { params: Promise.resolve({ type: "tv", id: "42" }) })
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.rankings.anime).toBe(3)
+    expect(body.badge.computed.badge).toMatchObject({ type: "rank", label: "Anime", rank: 3 })
+  })
 })

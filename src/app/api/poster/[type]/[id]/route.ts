@@ -507,8 +507,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         // chiave del profilo (?u=) o quella esplicita della richiesta
         // (mdblist_key). La cache è quella interna di fetchMDBList (keyed per
         // chiave, TTL 30min), quindi niente cache manuale non-keyed.
-        // Il parametro `animerank` (inviato dal client nella preview WYSIWYG)
-        // vince sul fetch: il client conosce già il rank dal suo mdblistAnimeList.
+        // Precedenza: `animerank` (preview/catalogo) > fetch live > mapping.animeRank
+        // (badge salvato: funziona anche senza chiavi, come nel WYSIWYG).
         (rankingEnabledEarly && mediaType === "tv")
           ? (Number.isFinite(qAnimeRank) && qAnimeRank > 0
               ? Promise.resolve(qAnimeRank)
@@ -522,7 +522,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                     })
                     return idx >= 0 ? idx + 1 : null
                   })
-                  .catch(() => null))
+                  .then((liveRank) => liveRank ?? mapping?.animeRank ?? null)
+                  .catch(() => mapping?.animeRank ?? null))
           : Promise.resolve(null),
       ]),
       // Block B: badge data (independent of Block A — runs concurrently)

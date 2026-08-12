@@ -29,6 +29,9 @@ export const mappingSchema = z.object({
   badgeExtra: z.string().nullable().optional(),
   badgeRank: z.number().int().min(0).nullable().optional(),
   badgeLabel: z.string().nullable().optional(),
+  // Rank anime salvato al momento del salvataggio: permette al poster salvato
+  // di mostrare il badge Anime anche senza chiave MDBList/profilo lato server.
+  animeRank: z.number().int().min(1).nullable().optional(),
   customBadge: z.string().nullable().optional(),
   releaseDate: z.string().nullable().optional(),
   firstAirDate: z.string().nullable().optional(),
