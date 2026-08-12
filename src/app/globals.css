@@ -904,11 +904,12 @@ select:focus-visible {
 }
 
 /* ═══════════════════════════════════════════════
-   Simkl-style List Card — 5 poster sovrapposti, hover slide
+   Simkl-style List Card — fino a 10 poster sovrapposti, hover slide
    ═══════════════════════════════════════════════ */
 .simkl-list-card {
   display: block;
-  width: 400px;
+  width: 720px;
+  max-width: calc(100vw - 24px);
   background:
     linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)),
     rgba(20, 22, 28, 0.82);
@@ -952,14 +953,19 @@ select:focus-visible {
   transform: none !important;
 }
 
-/* Contenitore dei poster */
+/* Contenitore dei poster — su schermi stretti (card ridotta da max-width)
+   la striscia scorre orizzontalmente dentro la card, niente overflow pagina. */
 .posters {
   position: relative;
   height: 185px;
   display: flex;
   align-items: flex-end;
   padding: 12px 14px 0;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
+.posters::-webkit-scrollbar { display: none; }
 
 /* Ogni poster */
 .posters > *,
@@ -1004,27 +1010,23 @@ select:focus-visible {
 .posters > *:nth-child(3) { margin-left: -51px; z-index: 3; }
 .posters > *:nth-child(4) { margin-left: -51px; z-index: 2; }
 .posters > *:nth-child(5) { margin-left: -51px; z-index: 1; }
+.posters > *:nth-child(6) { margin-left: -51px; z-index: 0; }
+.posters > *:nth-child(7) { margin-left: -51px; z-index: -1; }
+.posters > *:nth-child(8) { margin-left: -51px; z-index: -2; }
+.posters > *:nth-child(9) { margin-left: -51px; z-index: -3; }
+.posters > *:nth-child(10) { margin-left: -51px; z-index: -4; }
 
-/* Hover stile RankRow: i poster a sinistra di quello selezionato slittano via.
-   Quello sotto il mouse resta fermo — si sposta il left sibling. */
-.posters:has(> *:nth-child(2):hover) > *:nth-child(1) {
-  translate: -40px 0;
-}
-.posters:has(> *:nth-child(3):hover) > *:nth-child(1),
-.posters:has(> *:nth-child(3):hover) > *:nth-child(2) {
-  translate: -40px 0;
-}
-.posters:has(> *:nth-child(4):hover) > *:nth-child(1),
-.posters:has(> *:nth-child(4):hover) > *:nth-child(2),
-.posters:has(> *:nth-child(4):hover) > *:nth-child(3) {
-  translate: -40px 0;
-}
-.posters:has(> *:nth-child(5):hover) > *:nth-child(1),
-.posters:has(> *:nth-child(5):hover) > *:nth-child(2),
-.posters:has(> *:nth-child(5):hover) > *:nth-child(3),
-.posters:has(> *:nth-child(5):hover) > *:nth-child(4) {
-  translate: -40px 0;
-}
+/* Hover stile RankRow: il poster sotto il mouse resta fermo, slittano via
+   SOLO i fratelli a sinistra (-40px) — quelli a destra non si muovono. */
+.posters:has(> *:nth-child(2):hover) > *:nth-child(1) { translate: -40px 0; }
+.posters:has(> *:nth-child(3):hover) > *:nth-child(-n+2) { translate: -40px 0; }
+.posters:has(> *:nth-child(4):hover) > *:nth-child(-n+3) { translate: -40px 0; }
+.posters:has(> *:nth-child(5):hover) > *:nth-child(-n+4) { translate: -40px 0; }
+.posters:has(> *:nth-child(6):hover) > *:nth-child(-n+5) { translate: -40px 0; }
+.posters:has(> *:nth-child(7):hover) > *:nth-child(-n+6) { translate: -40px 0; }
+.posters:has(> *:nth-child(8):hover) > *:nth-child(-n+7) { translate: -40px 0; }
+.posters:has(> *:nth-child(9):hover) > *:nth-child(-n+8) { translate: -40px 0; }
+.posters:has(> *:nth-child(10):hover) > *:nth-child(-n+9) { translate: -40px 0; }
 
 /* Info sotto */
 .info {

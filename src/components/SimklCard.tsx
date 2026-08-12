@@ -28,7 +28,7 @@ interface SimklCardProps {
 }
 
 export function SimklCard({ items, title, totalCount, meta = [], onClick, onItemClick, savedKeys }: SimklCardProps) {
-  const displayItems = items.slice(0, 5)
+  const displayItems = items.slice(0, 10)
   const isSingle = displayItems.length <= 2
   const count = totalCount ?? items.length
 
