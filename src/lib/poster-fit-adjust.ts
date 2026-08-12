@@ -1,7 +1,7 @@
 import sharp from "sharp"
 import type { PosterFitResult } from "@/lib/poster-fit-score"
 // Batch B: import shared utilities from image-utils.ts (single source of truth)
-import { STD_W, STD_H, clamp, luma } from "@/lib/image-utils"
+import { STD_W, STD_H, clamp, luma, type RgbData, sliceRgb } from "@/lib/image-utils"
 
 export interface PosterBufferEntry {
   readonly posterPath: string
@@ -46,23 +46,8 @@ function posterQualityScore(voteAverage: number, width: number, height: number):
   return tmdbVote * 0.50 + aspectRatioScore * 0.30 + resolutionScore * 0.20
 }
 
-async function computeTextPenalty(posterBuffer: Buffer): Promise<number> {
-  const cropY = Math.round(STD_H * 0.55)
-  const cropH = Math.round(STD_H * 0.33)
-  const cropX = Math.round(STD_W * 0.10)
-  const cropW = Math.round(STD_W * 0.80)
-
-  if (cropW <= 0 || cropH <= 0) return 0
-
-  const { data, info } = await sharp(posterBuffer)
-    .resize(STD_W, STD_H, { fit: "fill" })
-    .extract({ left: cropX, top: cropY, width: cropW, height: cropH })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true })
-
-  const w = info.width
-  const h = info.height
+function computeTextPenaltyRgb(rgb: RgbData): number {
+  const { data, width: w, height: h } = rgb
   const totalPixels = w * h
   if (totalPixels === 0) return 0
 
@@ -162,6 +147,52 @@ async function computeTextPenalty(posterBuffer: Buffer): Promise<number> {
   return clamp((textPenalty - 0.35) / 0.65, 0, 1)
 }
 
+/** Fallback decode-and-slice, usato solo quando il poster raw non è disponibile
+ *  (es. path di timeout del best-fit). */
+async function computeTextPenalty(posterBuffer: Buffer): Promise<number> {
+  const cropY = Math.round(STD_H * 0.55)
+  const cropH = Math.round(STD_H * 0.33)
+  const cropX = Math.round(STD_W * 0.10)
+  const cropW = Math.round(STD_W * 0.80)
+
+  if (cropW <= 0 || cropH <= 0) return 0
+
+  const { data, info } = await sharp(posterBuffer)
+    .resize(STD_W, STD_H, { fit: "fill" })
+    .extract({ left: cropX, top: cropY, width: cropW, height: cropH })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  return computeTextPenaltyRgb({ data, width: info.width, height: info.height })
+}
+
+/** Text penalty sulla zona logo, calcolata dal poster raw già decodificato
+ *  (decode-once): nessun ri-decode sharp. La regione è il box logo ± pad:
+ *  il testo che collide con il logo è quello che conta, non una striscia
+ *  globale fissa. Senza `zone` (path timeout senza context) ripiega sulla
+ *  striscia titolo storica. */
+const TEXT_PENALTY_PAD = 24
+
+function computeTextPenaltyFromRaw(raw: RgbData, zone?: { left: number; top: number; width: number; height: number }): number {
+  if (zone) {
+    const region = sliceRgb(
+      raw,
+      zone.left - TEXT_PENALTY_PAD,
+      zone.top - TEXT_PENALTY_PAD,
+      zone.width + TEXT_PENALTY_PAD * 2,
+      zone.height + TEXT_PENALTY_PAD * 2,
+    )
+    return region ? computeTextPenaltyRgb(region) : 0
+  }
+  const cropX = Math.round(STD_W * 0.10)
+  const cropY = Math.round(STD_H * 0.55)
+  const cropW = Math.round(STD_W * 0.80)
+  const cropH = Math.round(STD_H * 0.33)
+  const region = sliceRgb(raw, cropX, cropY, cropW, cropH)
+  return region ? computeTextPenaltyRgb(region) : 0
+}
+
 function toRankedFitResult(
   result: PosterFitResult,
   adjustedScore: number,
@@ -218,7 +249,9 @@ export async function adjustFitResults(input: FitAdjustmentInput): Promise<Ranke
         const adjustedScore = result.score + logoZoneScore * 0.08 - colorConflictPenalty
         return toRankedFitResult(result, adjustedScore, 0, logoZoneScore, colorConflictPenalty, 0)
       }
-      const textPenalty = await computeTextPenalty(posterEntry.posterBuffer).catch(() => 0)
+      const textPenalty = result.posterRaw
+        ? computeTextPenaltyFromRaw(result.posterRaw, result.logoZone)
+        : await computeTextPenalty(posterEntry.posterBuffer).catch(() => 0)
       const tmdbQualityBonus = clamp((posterEntry.voteAverage - 4) / 6, 0, 1) * 0.04
       const qualityScore = posterQualityScore(posterEntry.voteAverage, posterEntry.width, posterEntry.height)
       const adjustedScore =

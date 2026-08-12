@@ -2,7 +2,7 @@ import sharp from "sharp"
 import { computeLogoLayout } from "@/lib/logo-layout"
 import { createLogger } from "@/lib/logger"
 // Batch B: import shared utilities from image-utils.ts (single source of truth)
-import { STD_W, STD_H, clamp, luma } from "@/lib/image-utils"
+import { STD_W, STD_H, clamp, luma, type RgbData, decodePosterRaw, sliceRgb } from "@/lib/image-utils"
 
 const log = createLogger("poster-fit-score")
 
@@ -22,9 +22,12 @@ const log = createLogger("poster-fit-score")
  * - **cleanliness** = `1 - clamp(stdDev/80, 0, 1)` — low variance in the logo
  *   safety area means a clean background. Penalized by skin-tone overlap and
  *   abrupt gradients.
- * - **contrast** = `clamp(|logoLuma - bgLuma| * 1.8, 0, 1)` × chromaMultiplier —
- *   luminance difference between logo and background, scaled by a chroma
- *   factor that reduces contrast when logo/bg colors are similar.
+ * - **contrast** = `clamp(inkContrast * 1.8, 0, 1)` — mean per-pixel weighted
+ *   perceptual distance (0.30/0.59/0.11) between logo ink (alpha map) and the
+ *   poster beneath it, so both luminance and hue differences count and a
+ *   bicolor logo isn't diluted to its average color. Falls back to
+ *   `clamp(|logoLuma - bgLuma| * 1.8, 0, 1)` if the logo is almost fully
+ *   transparent.
  * - **lowDetail** = `1 - clamp(edgeAvg/60, 0, 1)` — low edge density in the
  *   safety area. Reduced further if the logo covers a high-detail hotspot.
  * - **badgeReadability** = `1 - clamp(stdDev/90, 0, 1)` in the badge zone
@@ -50,6 +53,23 @@ export interface PosterFitInput {
   logoOffsetY: number
   hasBadges: boolean
   offsetYVariants?: number[]
+  /** Valori derivati dal logo, pre-calcolati una volta per run da
+   *  `rankPostersByFit`. Quando assenti (path test) vengono calcolati
+   *  internamente. */
+  context?: LogoFitContext
+}
+
+export interface LogoFitContext {
+  logoW: number
+  logoH: number
+  logoLuma: number
+  baseLayout: { left: number; top: number; width: number; height: number }
+  /** Logo ridimensionato a "inside" nel box di layout, con canale alpha:
+   *  mappa 1:1 la composizione reale (poster-service.ts), allineato a
+   *  (maskLeft, maskTop). */
+  logoMask: { data: Buffer; width: number; height: number }
+  maskLeft: number
+  maskTop: number
 }
 
 export interface PosterFitMetrics {
@@ -64,27 +84,13 @@ export interface PosterFitResult {
   score: number
   metrics: PosterFitMetrics
   reasons: string[]
-}
-
-interface RgbData {
-  data: Buffer
-  width: number
-  height: number
-}
-
-async function extractRgb(buffer: Buffer, left: number, top: number, width: number, height: number): Promise<RgbData | null> {
-  const l = Math.max(0, Math.round(left))
-  const t = Math.max(0, Math.round(top))
-  const w = Math.min(STD_W - l, Math.round(width))
-  const h = Math.min(STD_H - t, Math.round(height))
-  if (w <= 0 || h <= 0) return null
-  const data = await sharp(buffer)
-    .resize(STD_W, STD_H, { fit: "fill" })
-    .extract({ left: l, top: t, width: w, height: h })
-    .removeAlpha()
-    .raw()
-    .toBuffer()
-  return { data, width: w, height: h }
+  /** Poster già decodificato (raw RGB a STD_W×STD_H) durante lo scoring:
+   *  `adjustFitResults` lo riusa per la text penalty senza ri-decodificare. */
+  posterRaw?: RgbData
+  /** Posizione del box logo (STD_W×STD_H) calcolata durante lo scoring:
+   *  `adjustFitResults` ci limita la text penalty alla zona dove il logo
+   *  atterrerà davvero, invece della striscia fissa globale. */
+  logoZone?: { left: number; top: number; width: number; height: number }
 }
 
 function analyzeLuma(rgb: RgbData): { mean: number; stdDev: number; edgeAvg: number; meanR: number; meanG: number; meanB: number } {
@@ -210,36 +216,6 @@ function analyzeLumaWithGrid(rgb: RgbData, gridStride = 4): LumaAnalysisGrid {
   return { mean, stdDev, edgeAvg, meanR, meanG, meanB, grid }
 }
 
-async function logoAvgColor(logoBuffer: Buffer): Promise<{ r: number; g: number; b: number }> {
-  const { data, info } = await sharp(logoBuffer)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true })
-
-  let rSum = 0, gSum = 0, bSum = 0, count = 0
-  for (let y = 0; y < info.height; y++) {
-    for (let x = 0; x < info.width; x++) {
-      const idx = (y * info.width + x) * 4
-      if (data[idx + 3] > 32) {
-        rSum += data[idx]
-        gSum += data[idx + 1]
-        bSum += data[idx + 2]
-        count++
-      }
-    }
-  }
-  return count > 0
-    ? { r: rSum / count, g: gSum / count, b: bSum / count }
-    : { r: 128, g: 128, b: 128 }
-}
-
-function colorDistance(a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }): number {
-  const dr = a.r - b.r
-  const dg = a.g - b.g
-  const db = a.b - b.b
-  return Math.sqrt(dr * dr + dg * dg + db * db) / 441.67
-}
-
 async function logoAvgLuma(logoBuffer: Buffer): Promise<number> {
   const { data, info } = await sharp(logoBuffer)
     .ensureAlpha()
@@ -260,18 +236,93 @@ async function logoAvgLuma(logoBuffer: Buffer): Promise<number> {
   return count > 0 ? sum / count / 255 : 0.5
 }
 
-export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterFitResult> {
-  const { posterBuffer, logoBuffer, posterPath, logoScale, logoOffsetX, logoOffsetY, hasBadges, offsetYVariants } = input
+function computeInkContrast(
+  posterRaw: RgbData,
+  mask: { data: Buffer; width: number; height: number },
+  maskLeft: number,
+  maskTop: number,
+): { inkContrast: number | null; poorFraction: number } {
+  const mW = mask.width
+  const mH = mask.height
+  let sum = 0
+  let count = 0
+  let poor = 0
+  for (let my = 0; my < mH; my++) {
+    const py = maskTop + my
+    if (py < 0 || py >= posterRaw.height) continue
+    const rowBase = py * posterRaw.width
+    for (let mx = 0; mx < mW; mx++) {
+      const px = maskLeft + mx
+      if (px < 0 || px >= posterRaw.width) continue
+      const mi = (my * mW + mx) * 4
+      const alpha = mask.data[mi + 3]
+      if (alpha <= 32) continue
+      const pi = (rowBase + px) * 3
+      // Distanza percettiva pesata (0.30/0.59/0.11): cattura sia luminanza che
+      // tonalità, a differenza della vecchia media "luma logo vs luma sfondo".
+      // Scalata dall'alpha: i bordi antialiased contano meno.
+      const dr = mask.data[mi] - posterRaw.data[pi]
+      const dg = mask.data[mi + 1] - posterRaw.data[pi + 1]
+      const db = mask.data[mi + 2] - posterRaw.data[pi + 2]
+      const local = (alpha / 255) * Math.sqrt(0.30 * dr * dr + 0.59 * dg * dg + 0.11 * db * db) / 255
+      sum += local
+      count++
+      if (local < 0.15) poor++
+    }
+  }
+  return { inkContrast: count > 0 ? sum / count : null, poorFraction: count > 0 ? poor / count : 0 }
+}
 
-  const resizedPoster = await sharp(posterBuffer)
-    .resize(STD_W, STD_H, { fit: "fill" })
-    .png()
-    .toBuffer()
+/** Contrasto per una data posizione della mask (usata dalle varianti offset-Y:
+ *  ricalcola il contrasto dove il logo atterrerebbe davvero invece di riusare
+ *  quello della posizione base). */
+function contrastForInk(
+  posterRaw: RgbData,
+  mask: { data: Buffer; width: number; height: number },
+  maskLeft: number,
+  maskTop: number,
+  logoLuma: number,
+  bgLumaAvg: number,
+): number {
+  const { inkContrast, poorFraction } = computeInkContrast(posterRaw, mask, maskLeft, maskTop)
+  if (inkContrast !== null) {
+    const c = clamp(inkContrast * 1.8, 0, 1)
+    return poorFraction > 0.35 ? c * (1 - (poorFraction - 0.35) / 0.65) : c
+  }
+  return clamp(Math.abs(logoLuma - bgLumaAvg) * 1.8, 0, 1)
+}
 
+/** Rilevamento tonalità pelle basato su hue (spazio HSV): cattura la pelle a
+ *  qualsiasi luminanza, incluse le carnagioni scure che la vecchia regola
+ *  `lum > 90` escludeva. Banda rosso-arancio/giallo + rossi violacei. */
+function isSkinTone(r: number, g: number, b: number): boolean {
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const v = max / 255
+  if (v < 0.15) return false
+  const diff = max - min
+  if (diff === 0) return false
+  const s = diff / max
+  if (s < 0.12) return false
+  let h: number
+  if (max === r) h = ((g - b) / diff) * 60
+  else if (max === g) h = ((b - r) / diff) * 60 + 120
+  else h = ((r - g) / diff) * 60 + 240
+  if (h < 0) h += 360
+  return h < 55 || h > 335
+}
+
+async function buildLogoFitContext(
+  logoBuffer: Buffer,
+  logoScale: number,
+  logoOffsetX: number,
+  logoOffsetY: number,
+  hasBadges: boolean,
+): Promise<LogoFitContext> {
   const logoMeta = await sharp(logoBuffer).metadata()
   const logoW = logoMeta.width ?? 100
   const logoH = logoMeta.height ?? 100
-
+  const logoLuma = await logoAvgLuma(logoBuffer)
   const baseLayout = computeLogoLayout({
     posterW: STD_W,
     posterH: STD_H,
@@ -282,6 +333,36 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
     logoOffsetY,
     hasBadges,
   })
+  // Mask dell'inchiostro alla stessa risoluzione/posizione della composizione
+  // reale (poster-service.ts usa fit:"inside" + centratura nel box).
+  const boxW = baseLayout.width
+  const boxH = baseLayout.height
+  const { data: maskData, info: maskInfo } = await sharp(logoBuffer)
+    .resize(Math.max(1, boxW), Math.max(1, boxH), { fit: "inside" })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  const maskLeft = Math.round(baseLayout.left + (boxW - maskInfo.width) / 2)
+  const maskTop = Math.round(baseLayout.top + (boxH - maskInfo.height) / 2)
+  return {
+    logoW,
+    logoH,
+    logoLuma,
+    baseLayout,
+    logoMask: { data: maskData, width: maskInfo.width, height: maskInfo.height },
+    maskLeft,
+    maskTop,
+  }
+}
+
+export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterFitResult> {
+  const { posterBuffer, logoBuffer, posterPath, logoScale, logoOffsetX, logoOffsetY, hasBadges, offsetYVariants, context } = input
+  const ctx = context ?? await buildLogoFitContext(logoBuffer, logoScale, logoOffsetX, logoOffsetY, hasBadges)
+  const { logoW, logoH, logoLuma, baseLayout, logoMask, maskLeft, maskTop } = ctx
+
+  // Decode-once: raw RGB a STD_W×STD_H riusato da tutte le analisi (safety,
+  // pelle, badge, varianti) via slice in JS — niente ri-decode sharp per regione.
+  const posterRaw = await decodePosterRaw(posterBuffer)
 
   const padding = 24
   const analysisBox = {
@@ -291,7 +372,7 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
     height: baseLayout.height + padding * 2,
   }
 
-  const safetyArea = await extractRgb(resizedPoster, analysisBox.left, analysisBox.top, analysisBox.width, analysisBox.height)
+  const safetyArea = sliceRgb(posterRaw, analysisBox.left, analysisBox.top, analysisBox.width, analysisBox.height)
 
   let cleanliness = 0.5
   let contrast = 0.5
@@ -329,20 +410,25 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
       }
     }
 
-    const logoLumaAvg = await logoAvgLuma(logoBuffer)
     const bgLumaAvg = analysis.mean / 255
-    const rawContrast = Math.abs(logoLumaAvg - bgLumaAvg)
-    contrast = clamp(rawContrast * 1.8, 0, 1)
 
-    const logoColor = await logoAvgColor(logoBuffer)
-    const bgColor = { r: analysis.meanR, g: analysis.meanG, b: analysis.meanB }
-    const chromaDistance = colorDistance(logoColor, bgColor)
-    const chromaMultiplier = chromaDistance < 0.28
-      ? 0.65 + chromaDistance / 0.28 * 0.35
-      : 1
-    contrast = contrast * chromaMultiplier
-
-    if (chromaDistance < 0.20) reasons.push("Colore logo simile allo sfondo")
+    // Contrasto per-pixel dove c'è davvero l'inchiostro del logo (alpha map):
+    // per i wordmark con molto trasparente la media "logo intero vs sfondo"
+    // diluisce il contrasto, e un logo bicolore a luma medio avrebbe contrasto
+    // quasi nullo anche se ogni parte è leggibile. Fallback sulla media solo
+    // se il logo è quasi trasparente.
+    const { inkContrast, poorFraction } = computeInkContrast(posterRaw, logoMask, maskLeft, maskTop)
+    if (inkContrast !== null) {
+      contrast = clamp(inkContrast * 1.8, 0, 1)
+      // Worst-case: parte dell'inchiostro su zone di sfondo simili.
+      if (poorFraction > 0.35) {
+        contrast *= 1 - (poorFraction - 0.35) / 0.65
+        reasons.push("Parte del logo su sfondo simile")
+        if (poorFraction > 0.7) reasons.push("Colore logo simile allo sfondo")
+      }
+    } else {
+      contrast = clamp(Math.abs(logoLuma - bgLumaAvg) * 1.8, 0, 1)
+    }
 
     if (contrast > 0.55) reasons.push("Buon contrasto logo/sfondo")
     else if (contrast < 0.25) reasons.push("Scarso contrasto logo/sfondo")
@@ -376,7 +462,7 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
     const skinZoneTop = Math.round(STD_H * 0.65)
     const skinZoneH = STD_H - skinZoneTop
     if (skinZoneH > 0) {
-      const skinData = await extractRgb(resizedPoster, 0, skinZoneTop, STD_W, skinZoneH)
+      const skinData = sliceRgb(posterRaw, 0, skinZoneTop, STD_W, skinZoneH)
       if (skinData) {
         let skinPixelCount = 0
         let skinZonePixels = 0
@@ -385,8 +471,7 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
           const r = skinData.data[i]
           const g = skinData.data[i + 1]
           const b = skinData.data[i + 2]
-          const lum = luma(r, g, b)
-          if (r > g && g > b && r > 150 && lum > 90 && lum < 210) {
+          if (isSkinTone(r, g, b)) {
             skinPixelCount++
           }
         }
@@ -412,7 +497,7 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
     const badgeTop = Math.round(STD_H * 0.82)
     const badgeHeight = Math.round(STD_H * 0.16)
     if (badgeHeight > 0) {
-      const badgeArea = await extractRgb(resizedPoster, 0, badgeTop, STD_W, badgeHeight)
+      const badgeArea = sliceRgb(posterRaw, 0, badgeTop, STD_W, badgeHeight)
       if (badgeArea) {
         const badgeAnalysis = analyzeLuma(badgeArea)
         badgeReadability = 1 - clamp(badgeAnalysis.stdDev / 90, 0, 1)
@@ -452,12 +537,19 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
         width: variantLayout.width + padding * 2,
         height: variantLayout.height + padding * 2,
       }
-      const variantSafety = await extractRgb(resizedPoster, variantBox.left, variantBox.top, variantBox.width, variantBox.height)
+      const variantSafety = sliceRgb(posterRaw, variantBox.left, variantBox.top, variantBox.width, variantBox.height)
       if (variantSafety) {
         const vAnalysis = analyzeLumaWithGrid(variantSafety, 4)
         const vCleanliness = 1 - clamp(vAnalysis.stdDev / 80, 0, 1)
         const vLowDetail = 1 - clamp(vAnalysis.edgeAvg / 60, 0, 1)
-        const vScore = (vCleanliness * 0.35 + contrast * 0.30 + vLowDetail * 0.25) * contrastMultiplier
+        // Contrasto ricalcolato nella posizione della variante: la mask si
+        // sposta con la layout, e un +20px può portare il logo su uno sfondo
+        // molto diverso.
+        const vMaskLeft = maskLeft + (variantLayout.left - baseLayout.left)
+        const vMaskTop = maskTop + (variantLayout.top - baseLayout.top)
+        const vContrast = contrastForInk(posterRaw, logoMask, vMaskLeft, vMaskTop, logoLuma, vAnalysis.mean / 255)
+        const vContrastMultiplier = Math.min(1, vContrast * 2.5 + 0.25)
+        const vScore = (vCleanliness * 0.35 + vContrast * 0.30 + vLowDetail * 0.25) * vContrastMultiplier
         worstCaseScore = Math.min(worstCaseScore, vScore)
       }
     }
@@ -469,6 +561,8 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
     score,
     metrics: { cleanliness, contrast, detailPenalty: 1 - lowDetailScore, badgeReadability },
     reasons,
+    posterRaw,
+    logoZone: { left: baseLayout.left, top: baseLayout.top, width: baseLayout.width, height: baseLayout.height },
   }
 }
 
@@ -481,6 +575,8 @@ export async function rankPostersByFit(
   hasBadges: boolean,
   offsetYVariants?: number[],
 ): Promise<PosterFitResult[]> {
+  const context = await buildLogoFitContext(logoBuffer, logoScale, logoOffsetX, logoOffsetY, hasBadges)
+
   const results = await Promise.all(
     posters.map((p) =>
       scorePosterLogoFit({
@@ -492,6 +588,7 @@ export async function rankPostersByFit(
         logoOffsetY,
         hasBadges,
         offsetYVariants,
+        context,
       }).catch((err: Error) => {
         log.warn(`Score failed for ${p.posterPath}`, { error: err.message })
         return null

@@ -189,3 +189,47 @@ export async function computeRegionStats(
 export function clearRegionStatsCache(): void {
   statsCache.clear()
 }
+
+// ---- Raw RGB decode-once helpers (Batch B: poster-fit) ----
+
+/** Tight RGB pixel buffer (3 bytes/pixel, no alpha), as produced by
+ *  `decodePosterRaw` / sharp `.raw()`. */
+export interface RgbData {
+  data: Buffer
+  width: number
+  height: number
+}
+
+/**
+ * Slice a tight RGB region out of a full raw RGB buffer (as produced by
+ * `decodePosterRaw`). Avoids re-decoding the poster for every analysis region —
+ * decode once, slice in JS. Clamping/rounding semantics match
+ * `computeRegionStats`.
+ */
+export function sliceRgb(raw: RgbData, left: number, top: number, width: number, height: number): RgbData | null {
+  const l = Math.max(0, Math.round(left))
+  const t = Math.max(0, Math.round(top))
+  const w = Math.min(raw.width - l, Math.round(width))
+  const h = Math.min(raw.height - t, Math.round(height))
+  if (w <= 0 || h <= 0) return null
+  const data = Buffer.alloc(w * h * 3)
+  for (let y = 0; y < h; y++) {
+    const srcStart = ((t + y) * raw.width + l) * 3
+    raw.data.copy(data, y * w * 3, srcStart, srcStart + w * 3)
+  }
+  return { data, width: w, height: h }
+}
+
+/**
+ * Decode a poster buffer once to raw RGB at STD_W × STD_H (fit: fill),
+ * tightly packed (3 bytes/pixel). All region analyses then slice this buffer
+ * instead of running sharp per region.
+ */
+export async function decodePosterRaw(buffer: Buffer): Promise<RgbData> {
+  const { data, info } = await sharp(buffer)
+    .resize(STD_W, STD_H, { fit: "fill" })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  return { data, width: info.width, height: info.height }
+}

@@ -160,6 +160,51 @@ describe("scorePosterLogoFit", () => {
     expect(result).toHaveProperty("reasons")
     expect(Array.isArray(result.reasons)).toBe(true)
   })
+  it("high contrast: bicolor logo (half white / half black) on mid-gray poster", async () => {
+    // Con la vecchia media "colore logo vs colore sfondo", un logo bicolore
+    // su grigio medio aveva colore medio ≈ grigio ≈ sfondo → contrasto quasi
+    // nullo, anche se ogni metà è leggibile. La distanza per-pixel deve dare
+    // contrasto alto (~0.9).
+    const poster = await makeSolidPoster(128, 128, 128)
+    const logo = await (async () => {
+      const data = Buffer.alloc(200 * 80 * 4)
+      for (let y = 0; y < 80; y++) {
+        for (let x = 0; x < 200; x++) {
+          const idx = (y * 200 + x) * 4
+          const isWhite = y < 40
+          data[idx] = isWhite ? 255 : 0
+          data[idx + 1] = isWhite ? 255 : 0
+          data[idx + 2] = isWhite ? 255 : 0
+          data[idx + 3] = 255
+        }
+      }
+      return sharp(data, { raw: { width: 200, height: 80, channels: 4 } }).png().toBuffer()
+    })()
+    const result = await scorePosterLogoFit({
+      posterBuffer: poster,
+      logoBuffer: logo,
+      logoScale: 75,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+    expect(result.metrics.contrast).toBeGreaterThan(0.6)
+  })
+
+  it("penalizes dark skin tone in the logo zone (hue-based, catches lum<90)", async () => {
+    // Carnagione scura (90,50,40), luma ≈ 61: la vecchia regola `lum > 90`
+    // non la rilevava. La skin detection hue-based deve abbassare la
+    // cleanliness rispetto a un poster neutro con luma simile.
+    const skinPoster = await makeSolidPoster(90, 50, 40)
+    const neutralPoster = await makeSolidPoster(60, 60, 70)
+    const logo = await makeLogo(200, 80, 255, 255, 255)
+    const [skinResult, neutralResult] = await Promise.all([
+      scorePosterLogoFit({ posterBuffer: skinPoster, logoBuffer: logo, logoScale: 75, logoOffsetX: 0, logoOffsetY: 0, hasBadges: true }),
+      scorePosterLogoFit({ posterBuffer: neutralPoster, logoBuffer: logo, logoScale: 75, logoOffsetX: 0, logoOffsetY: 0, hasBadges: true }),
+    ])
+    expect(skinResult.metrics.cleanliness).toBeLessThan(neutralResult.metrics.cleanliness)
+  })
+
   it("penalizes yellow logo on yellow poster vs yellow logo on dark poster", async () => {
     const yellowLogo = await makeLogo(200, 80, 255, 210, 0)
     const yellowPoster = await makeSolidPoster(240, 200, 20)

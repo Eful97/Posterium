@@ -218,9 +218,11 @@ describe("selectBestLogoFitPosterPath", () => {
     expect(fetchCount).toBe(0)
   })
 
-  it("prefers poster without bottom text when base scores are similar", async () => {
+  it("prefers poster without text in the logo zone when base scores are similar", async () => {
+    // Il blocco di testo a y=580 cade dentro la logo zone (logo scale 50 su
+    // poster 500x750: zona ≈ 575–675): testo dietro il logo = penalità.
     const cleanPoster = await solidPoster("#1a1a2e")
-    const textPoster = await posterWithTextBlock("#1a1a2e", "#e0e0e0", 460)
+    const textPoster = await posterWithTextBlock("#1a1a2e", "#e0e0e0", 580)
     const logo = await solidLogo("#ffffff")
     const images = new Map([
       ["/clean.jpg", cleanPoster],
@@ -242,6 +244,35 @@ describe("selectBestLogoFitPosterPath", () => {
     })
 
     expect(selected?.posterPath).toBe("/clean.jpg")
+  })
+
+  it("does not penalize text above the logo zone (quality wins instead)", async () => {
+    // Testo a y=430: dentro la vecchia striscia globale (55–88%) ma SOPRA la
+    // logo zone (≈575–675). La text penalty mirata non deve penalizzarlo, quindi
+    // il poster con voto migliore vince nonostante abbia testo in basso.
+    const cleanPoster = await solidPoster("#1a1a2e")
+    const textPoster = await posterWithTextBlock("#1a1a2e", "#e0e0e0", 430)
+    const logo = await solidLogo("#ffffff")
+    const images = new Map([
+      ["/clean.jpg", cleanPoster],
+      ["/text.jpg", textPoster],
+      ["/logo.png", logo],
+    ])
+
+    const selected = await selectBestLogoFitPosterPath({
+      posters: [
+        { file_path: "/clean.jpg", iso_639_1: null, vote_average: 5, width: 500, height: 750 },
+        { file_path: "/text.jpg", iso_639_1: null, vote_average: 9, width: 500, height: 750 },
+      ],
+      logoPath: "/logo.png",
+      fetchImage: makeImages(images),
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+
+    expect(selected?.posterPath).toBe("/text.jpg")
   })
 
   it("does not penalize poster with light texture below threshold", async () => {
@@ -357,7 +388,7 @@ describe("selectBestLogoFitPosterPath", () => {
     expect(selected?.posterPath).toBe("/p7.jpg")
   })
 
-  it("only analyzes the first 8 valid TMDB clean posters", async () => {
+  it("only analyzes the first 16 valid TMDB clean posters", async () => {
     const poster = await solidPoster("#050505")
     const logo = await solidLogo("#ffffff")
     const images = new Map([
@@ -388,7 +419,7 @@ describe("selectBestLogoFitPosterPath", () => {
     })
 
     expect(selected?.posterPath).toBeDefined()
-    expect(fetchCount).toBeLessThanOrEqual(9)
+    expect(fetchCount).toBeLessThanOrEqual(17)
   })
 
   it("avoids duplicates in candidate pool", async () => {

@@ -34,7 +34,9 @@ interface SelectBestLogoFitPosterInput {
   readonly hasBadges: boolean
 }
 
-const TMDB_CANDIDATE_COUNT = 8
+// Più candidati del passato (8): col decode-once dello scoring il budget di
+// tempo basta per 16 poster — più candidati = miglior best-of.
+const TMDB_CANDIDATE_COUNT = 16
 // Tetto del best-fit: lo scoring è una metrica, non il prodotto — oltre questo
 // tempo si usa il fallback (primo clean). Ridotto a 1200ms per stringere il
 // caso peggiore del render non-mappato; sovrascrivibile via env.

@@ -10,7 +10,7 @@ const log = createLogger("poster-fit-api")
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
 const FETCH_TIMEOUT_MS = 5_000
-const MAX_CANDIDATES = 8
+const MAX_CANDIDATES = 16
 
 interface PosterFitBody {
   posterPaths: string[]
@@ -63,7 +63,7 @@ const POSTER_SIZES = new Set(["w342", "w500"])
 export async function POST(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "search")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
-  // S10: endpoint CPU/network-heavy (fetch di fino a 9 immagini + analisi
+  // S10: endpoint CPU/network-heavy (fetch di fino a 17 immagini + analisi
   // sharp). Protetto come le altre route admin: senza auth un attaccante lo
   // userebbe come amplificatore di richieste verso image.tmdb.org e consumo
   // CPU. Su istanza pubblica (POSTERIUM_PUBLIC_INSTANCE=1) resta aperto per
