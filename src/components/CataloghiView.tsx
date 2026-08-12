@@ -210,8 +210,8 @@ export function CataloghiView() {
           <div className="mb-12">
             <h2 className="section-heading text-xl font-bold mb-6">{t("ui.justwatchTop20")}</h2>
             <CatalogPair
-              movies={movieTrending.slice(0, 10)}
-              tv={tvTrending.slice(0, 10)}
+              movies={movieTrending}
+              tv={tvTrending}
               totalMovies={movieTrending.length}
               totalTv={tvTrending.length}
               movieTitle={`${t("ui.movie")} — Top 20`}
@@ -243,8 +243,8 @@ export function CataloghiView() {
                     {sp.name}
                   </h3>
                   <CatalogPair
-                    movies={chart.movies.slice(0, 10)}
-                    tv={chart.tv.slice(0, 10)}
+                    movies={chart.movies}
+                    tv={chart.tv}
                     totalMovies={chart.movies.length}
                     totalTv={chart.tv.length}
                     movieTitle={`${t("ui.movie")} — Top 10`}
@@ -270,8 +270,8 @@ export function CataloghiView() {
           <div className="mb-12">
             <h2 className="section-heading text-xl font-bold mb-6">{t("ui.trendingAnime")}</h2>
             <CatalogPair
-              movies={animeMovies.slice(0, 10)}
-              tv={animeTv.slice(0, 10)}
+              movies={animeMovies}
+              tv={animeTv}
               totalMovies={animeMovies.length}
               totalTv={animeTv.length}
               movieTitle={`${t("ui.movie")} — Top 20`}
