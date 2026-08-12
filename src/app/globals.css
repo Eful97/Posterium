@@ -908,7 +908,7 @@ select:focus-visible {
    ═══════════════════════════════════════════════ */
 .simkl-list-card {
   display: block;
-  width: 720px;
+  width: 980px;
   max-width: calc(100vw - 24px);
   background:
     linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)),
@@ -960,7 +960,9 @@ select:focus-visible {
   height: 185px;
   display: flex;
   align-items: flex-end;
-  padding: 12px 14px 0;
+  /* padding-left 40px: spazio per lo slide (-35px) dei fratelli a sinistra,
+     così il primo poster non esce dal bordo della card durante l'hover. */
+  padding: 12px 14px 0 40px;
   overflow-x: auto;
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -1004,29 +1006,33 @@ select:focus-visible {
   backface-visibility: hidden;
 }
 
-/* Posizione di partenza (sovrapposti con margin-left — tutti visibili) */
-.posters > *:nth-child(1) { margin-left: 0; z-index: 5; }
-.posters > *:nth-child(2) { margin-left: -51px; z-index: 4; }
-.posters > *:nth-child(3) { margin-left: -51px; z-index: 3; }
-.posters > *:nth-child(4) { margin-left: -51px; z-index: 2; }
-.posters > *:nth-child(5) { margin-left: -51px; z-index: 1; }
-.posters > *:nth-child(6) { margin-left: -51px; z-index: 0; }
-.posters > *:nth-child(7) { margin-left: -51px; z-index: -1; }
-.posters > *:nth-child(8) { margin-left: -51px; z-index: -2; }
-.posters > *:nth-child(9) { margin-left: -51px; z-index: -3; }
-.posters > *:nth-child(10) { margin-left: -51px; z-index: -4; }
+/* Posizione di partenza (sovrapposti con margin-left — tutti ben visibili:
+   overlap -25px → 90px esposti per poster. z-index 10→1 POSITIVI: con valori
+   negativi i poster 7-10 finivano sotto il piano del contenitore e il mouse
+   non li raggiungeva (hit-test sul container) → hover morto oltre il 5°. */
+.posters > *:nth-child(1) { margin-left: 0; z-index: 10; }
+.posters > *:nth-child(2) { margin-left: -25px; z-index: 9; }
+.posters > *:nth-child(3) { margin-left: -25px; z-index: 8; }
+.posters > *:nth-child(4) { margin-left: -25px; z-index: 7; }
+.posters > *:nth-child(5) { margin-left: -25px; z-index: 6; }
+.posters > *:nth-child(6) { margin-left: -25px; z-index: 5; }
+.posters > *:nth-child(7) { margin-left: -25px; z-index: 4; }
+.posters > *:nth-child(8) { margin-left: -25px; z-index: 3; }
+.posters > *:nth-child(9) { margin-left: -25px; z-index: 2; }
+.posters > *:nth-child(10) { margin-left: -25px; z-index: 1; }
 
 /* Hover stile RankRow: il poster sotto il mouse resta fermo, slittano via
-   SOLO i fratelli a sinistra (-40px) — quelli a destra non si muovono. */
-.posters:has(> *:nth-child(2):hover) > *:nth-child(1) { translate: -40px 0; }
-.posters:has(> *:nth-child(3):hover) > *:nth-child(-n+2) { translate: -40px 0; }
-.posters:has(> *:nth-child(4):hover) > *:nth-child(-n+3) { translate: -40px 0; }
-.posters:has(> *:nth-child(5):hover) > *:nth-child(-n+4) { translate: -40px 0; }
-.posters:has(> *:nth-child(6):hover) > *:nth-child(-n+5) { translate: -40px 0; }
-.posters:has(> *:nth-child(7):hover) > *:nth-child(-n+6) { translate: -40px 0; }
-.posters:has(> *:nth-child(8):hover) > *:nth-child(-n+7) { translate: -40px 0; }
-.posters:has(> *:nth-child(9):hover) > *:nth-child(-n+8) { translate: -40px 0; }
-.posters:has(> *:nth-child(10):hover) > *:nth-child(-n+9) { translate: -40px 0; }
+   SOLO i fratelli a sinistra (-35px) — quelli a destra non si muovono.
+   Vale per TUTTI i 10 poster. */
+.posters:has(> *:nth-child(2):hover) > *:nth-child(1) { translate: -35px 0; }
+.posters:has(> *:nth-child(3):hover) > *:nth-child(-n+2) { translate: -35px 0; }
+.posters:has(> *:nth-child(4):hover) > *:nth-child(-n+3) { translate: -35px 0; }
+.posters:has(> *:nth-child(5):hover) > *:nth-child(-n+4) { translate: -35px 0; }
+.posters:has(> *:nth-child(6):hover) > *:nth-child(-n+5) { translate: -35px 0; }
+.posters:has(> *:nth-child(7):hover) > *:nth-child(-n+6) { translate: -35px 0; }
+.posters:has(> *:nth-child(8):hover) > *:nth-child(-n+7) { translate: -35px 0; }
+.posters:has(> *:nth-child(9):hover) > *:nth-child(-n+8) { translate: -35px 0; }
+.posters:has(> *:nth-child(10):hover) > *:nth-child(-n+9) { translate: -35px 0; }
 
 /* Info sotto */
 .info {
