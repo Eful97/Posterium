@@ -18,6 +18,9 @@ export interface PosterCandidate {
 export interface PosterFitSelection {
   readonly posterPath: string | null
   readonly posterBuffer?: Buffer
+  /** Logo già scaricato durante il best-fit: la route lo riusa nel render
+   *  invece di rifare il fetch. Assente su cache hit o timeout del logo. */
+  readonly logoBuffer?: Buffer
 }
 
 interface SelectBestLogoFitPosterInput {
@@ -32,7 +35,14 @@ interface SelectBestLogoFitPosterInput {
 }
 
 const TMDB_CANDIDATE_COUNT = 8
-const AUTO_FIT_TIMEOUT_MS = 2000
+// Tetto del best-fit: lo scoring è una metrica, non il prodotto — oltre questo
+// tempo si usa il fallback (primo clean). Ridotto a 1200ms per stringere il
+// caso peggiore del render non-mappato; sovrascrivibile via env.
+const AUTO_FIT_TIMEOUT_MS = (() => {
+  const raw = process.env.POSTERIUM_AUTO_FIT_TIMEOUT_MS
+  const n = raw ? parseInt(raw, 10) : 1200
+  return Number.isFinite(n) && n >= 300 && n <= 10000 ? n : 1200
+})()
 const CACHE_TTL = 24 * 60 * 60 * 1000
 const CACHE_MAX_ENTRIES = 500
 
@@ -171,7 +181,10 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
   )
 
   const usablePosters = posterBuffersRaw.filter((entry): entry is PosterBufferEntry => entry !== null)
-  if (usablePosters.length === 0) return fallbackResult
+  if (usablePosters.length === 0) {
+    // Il logo è già stato scaricato: riusarlo evita un re-fetch nella route.
+    return { ...fallbackResult, logoBuffer }
+  }
 
   const logoScale = input.logoScale ?? await defaultLogoScale(logoBuffer)
 
@@ -190,6 +203,7 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
   const result: PosterFitSelection = {
     posterPath: selectedPosterPath,
     posterBuffer: selectedPoster?.posterBuffer,
+    logoBuffer,
   }
   if (selectedPosterPath) cacheSet(key, selectedPosterPath)
   return result

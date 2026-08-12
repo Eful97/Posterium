@@ -50,4 +50,39 @@ else
 fi
 
 echo "[entrypoint] ============================================"
+
+# ---------------------------------------------------------------------------
+# Self-warmup post-deploy (P4): la cache dei poster è in-memory, quindi ogni
+# restart parte a freddo. Dopo il boot riscalda in background i poster più visti
+# (trending + JustWatch + mappings) così le griglie Stremio non soffrono il primo
+# burst a freddo. Disattivabile con POSTERIUM_SELF_WARMUP=0.
+# Auth: se un ADMIN_TOKEN è configurato la route warmup lo richiede; altrimenti
+# nessun header (istanza pubblica / dev: la route è fail-open). Il fallimento
+# del warmup non deve mai bloccare il boot.
+# ---------------------------------------------------------------------------
+if [ "${POSTERIUM_SELF_WARMUP:-1}" = "1" ]; then
+  (
+    HEALTH_URL="http://127.0.0.1:${PORT:-8080}/api/health"
+    WARMUP_URL="http://127.0.0.1:${PORT:-8080}/api/warmup?lang=it"
+    # Attende il server (poll su /api/health, max ~60s) prima di lanciare il
+    # warmup: un boot lento non deve far partire i fetch contro un server spento.
+    UP=0
+    for _ in $(seq 1 60); do
+      if curl -fsS -m 3 "$HEALTH_URL" >/dev/null 2>&1; then UP=1; break; fi
+      sleep 1
+    done
+    if [ "$UP" = "1" ]; then
+      TOKEN="${POSTERIUM_ADMIN_TOKEN:-$ADMIN_TOKEN}"
+      if [ -n "$TOKEN" ]; then
+        curl -sS -m 300 -X POST -H "x-admin-token: $TOKEN" "$WARMUP_URL" >/dev/null 2>&1 || true
+      else
+        curl -sS -m 300 -X POST "$WARMUP_URL" >/dev/null 2>&1 || true
+      fi
+      echo "[entrypoint] Self-warmup completed"
+    else
+      echo "[entrypoint] Server not up in time — self-warmup skipped"
+    fi
+  ) &
+fi
+
 exec env POSTERIUM_DATA_DIR="$DATA_DIR" node server.js

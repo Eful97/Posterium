@@ -42,7 +42,9 @@ export async function fetchAggregatedRating(
   try {
     const res = await fetch(
       `${MDBLIST}/${qs}`,
-      { signal: signal ?? AbortSignal.timeout(8000) }
+      // Un signal esterno (es. ratingAbort della route poster) non deve bypassare
+      // il timeout interno di 8s: il fetch si auto-termina comunque (D4).
+      { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000) }
     )
     if (res.ok) {
       const raw = await res.json()

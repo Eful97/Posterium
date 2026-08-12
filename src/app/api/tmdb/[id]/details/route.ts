@@ -6,8 +6,13 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 
 // Tetto massimo per l'attesa del voto medio TMDB+IMDb (MDBList): se il fetch
-// è lento si usa il voto TMDB, coerente con la route poster (stesso valore).
-const RATING_WAIT_MS = 2000
+// è lento si usa il voto TMDB, coerente con la route poster (stesso knob
+// POSTERIUM_RATING_WAIT_MS, stesso default).
+const RATING_WAIT_MS = (() => {
+  const raw = process.env.POSTERIUM_RATING_WAIT_MS
+  const n = raw ? parseInt(raw, 10) : 1500
+  return Number.isFinite(n) && n >= 300 && n <= 10000 ? n : 1500
+})()
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")

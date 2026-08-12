@@ -11,10 +11,16 @@ export interface BlurParams {
 }
 
 /**
- * Apply a bottom blur with vertical fade and darken using Sharp composite.
+ * Build the bottom-blur RGBA overlay (with vertical fade + darken).
  *
  * Replaces the original pixel-by-pixel JS loop over the full image with
  * a small RGBA overlay composited via Sharp's native libvips pipeline.
+ *
+ * ## Contract
+ *
+ * This returns the RAW overlay buffer, not a composited base image: the caller
+ * (poster-service) lo aggiunge come primo layer del composite finale, così il
+ * blur non genera un PNG intermedio che il modulate successivo deve ri-decodare.
  *
  * ## Algorithm
  *
@@ -23,8 +29,6 @@ export interface BlurParams {
  * 2. Build an RGBA overlay buffer (gh × STD_W):
  *      RGB = blurred_pixel × shade          (darken per row)
  *      A   = fade × 255                     (opacity per row)
- * 3. Composite raw overlay over original via Sharp's native
- *    `.composite()` (libvips C++, no PNG encode/decode).
  *
  * ## Math equivalence
  *
@@ -38,7 +42,14 @@ export interface BlurParams {
  * Before: 2× PNG encode + 2× PNG decode + 4.5M JS ops  → ~200 ms
  * After:  1 raw() read (~500 KB)        + 560K JS ops  → ~8-15 ms
  */
-export async function applyBlur(params: BlurParams): Promise<Buffer | null> {
+export interface BlurOverlay {
+  /** Raw RGBA pixels (STD_W × height), da passare a `composite()` con raw. */
+  readonly overlay: Buffer
+  readonly top: number
+  readonly height: number
+}
+
+export async function applyBlur(params: BlurParams): Promise<BlurOverlay | null> {
   const { posterBuf, blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness } = params
   if (!blurEnabled) return null
 
@@ -75,10 +86,5 @@ export async function applyBlur(params: BlurParams): Promise<Buffer | null> {
     }
   }
 
-  // Step 3: composite raw overlay over original poster via Sharp (libvips C++)
-  //   Pass raw buffer directly — skip PNG encode/decode roundtrip
-  return await sharp(posterBuf)
-    .composite([{ input: overlay, raw: { width: STD_W, height: gh, channels: 4 }, top: gradTop, left: 0 }])
-    .png({ compressionLevel: 1 })
-    .toBuffer()
+  return { overlay, top: gradTop, height: gh }
 }

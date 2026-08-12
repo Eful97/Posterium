@@ -75,7 +75,14 @@ const RENDER_TIMEOUT_MS = (() => {
 
 // Tetto massimo per l'attesa del voto medio TMDB+IMDb (MDBList) prima del
 // render: se il fetch è lento, il poster usa il voto TMDB senza bloccarsi.
-const RATING_WAIT_MS = 2000
+// Sovrascrivibile via env (POSTERIUM_RATING_WAIT_MS); default ridotto a 1500ms
+// per stringere il caso peggiore senza rinunciare all'upgrade del voto. Valore
+// condiviso con la route tmdb-details (stesso knob).
+const RATING_WAIT_MS = (() => {
+  const raw = process.env.POSTERIUM_RATING_WAIT_MS
+  const n = raw ? parseInt(raw, 10) : 1500
+  return Number.isFinite(n) && n >= 300 && n <= 10000 ? n : 1500
+})()
 
 type RouteParams = { type: string; id: string }
 
@@ -264,6 +271,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   // 4. Resolve poster/logo/backdrop paths
   let posterPath: string | null = null
   let posterPathBuffer: Buffer | null = null
+  // Buffer del logo già scaricato dal best-fit (w500): riusato nel Block A per
+  // evitare il re-fetch. Assente su cache hit del best-fit o timeout del logo →
+  // Block A fa il fetch normale.
+  let logoPathBuffer: Buffer | null = null
   let logoPath: string | null = null
   let backdropPath: string | null = null
   let backdropScale = 100
@@ -276,7 +287,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   // non-mappato ma attesa SOLO dopo il blocco dati parallelo, con un tetto
   // breve (RATING_WAIT_MS): se MDBList è lenta, il poster usa il voto TMDB
   // senza aspettare il timeout di fetch (8s).
+  // AbortController dedicato: passare renderAbort.signal a fetchAggregatedRating
+  // bypasserebbe il timeout interno di 8s (ratings.ts usa signal ?? timeout), e
+  // renderAbort non viene mai abortito a render riuscito → il controller va
+  // abortito subito dopo la race per non lasciare il fetch orfano in background.
   let aggregatedRating: ReturnType<typeof fetchAggregatedRating> | null = null
+  let ratingAbort: AbortController | null = null
   let showBadges = true
   let rankingBadges = true
   let releaseDate: string | null = null
@@ -340,25 +356,43 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     try {
       // F6: session cache editor — i tick di preview sullo stesso titolo
       // non-mappato riusano details/images/externalIds senza rifare la rete.
+      // P1: il primo fetch delle immagini parte in PARALLELO con details e
+      // externalIds (non aspetta original_language) usando solo le lingue
+      // preferite. original_language servirebbe solo per ritentare quando
+      // mancano poster E logo nelle lingue base (tipico: titolo in lingua
+      // piccola): aggiungerla sempre a ogni richiesta costerebbe un payload più
+      // grande e la stessa RTT, quindi il retry è condizionato e paga l'extra
+      // RTT solo nei casi in cui aggiunge davvero qualcosa.
       const sessionData = getTMDBSessionCache(mediaType, tmdbId)
-      const details = sessionData?.details ?? (await getDetails(mediaType, tmdbId, preferredLanguage, apiKey, renderAbort.signal))
-      const origLang = details.original_language
-      const imageLangs = origLang && origLang !== preferredLanguage && origLang !== "en"
-        ? `${preferredLanguage},en,null,${origLang}`
-        : `${preferredLanguage},en,null`
-      const [images, extIds] = sessionData?.images
-        ? [sessionData.images, sessionData.externalIds ?? { imdb_id: null }]
-        : await Promise.all([
-            getImages(mediaType, tmdbId, imageLangs, apiKey, renderAbort.signal),
-            getExternalIds(mediaType, tmdbId, apiKey, renderAbort.signal).catch(() => ({ imdb_id: null })),
-          ])
-      if (!sessionData) {
-        setTMDBSessionCache(mediaType, tmdbId, { details, images, externalIds: extIds })
+      let details: Awaited<ReturnType<typeof getDetails>>
+      let images: Awaited<ReturnType<typeof getImages>>
+      let extIds: { imdb_id: string | null }
+      if (sessionData?.details && sessionData.images) {
+        details = sessionData.details
+        images = sessionData.images
+        extIds = sessionData.externalIds ?? { imdb_id: null }
+      } else {
+        const baseLangs = `${preferredLanguage},en,null`
+        const [det, ext, imgs] = await Promise.all([
+          getDetails(mediaType, tmdbId, preferredLanguage, apiKey, renderAbort.signal),
+          getExternalIds(mediaType, tmdbId, apiKey, renderAbort.signal).catch(() => ({ imdb_id: null })),
+          getImages(mediaType, tmdbId, baseLangs, apiKey, renderAbort.signal),
+        ])
+        details = det
+        extIds = ext
+        const origLang = det.original_language
+        const needsOrigLang = origLang && origLang !== preferredLanguage && origLang !== "en"
+          && (imgs.posters.length === 0 || imgs.logos.length === 0)
+        images = needsOrigLang
+          ? await getImages(mediaType, tmdbId, `${baseLangs},${origLang}`, apiKey, renderAbort.signal).catch(() => imgs)
+          : imgs
+        setTMDBSessionCache(mediaType, tmdbId, { details: det, images, externalIds: ext })
       }
       imdbId = extIds.imdb_id
       // A1: fetch deferito — la media TMDB+IMDb parte subito ma non blocca.
+      ratingAbort = imdbId ? new AbortController() : null
       aggregatedRating = imdbId
-        ? fetchAggregatedRating(imdbId, profileMdbListKey || req.nextUrl.searchParams.get("mdblist_key") || undefined, renderAbort.signal).catch(() => null)
+        ? fetchAggregatedRating(imdbId, profileMdbListKey || req.nextUrl.searchParams.get("mdblist_key") || undefined, ratingAbort!.signal).catch(() => null)
         : Promise.resolve(null)
       genreName = details.genres[0]?.name || null
       voteAverage = details.vote_average ?? 0
@@ -428,6 +462,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             }
             posterPath = bestFit?.posterPath ?? clean.file_path
             if (bestFit?.posterBuffer) posterPathBuffer = bestFit.posterBuffer
+            if (bestFit?.logoBuffer) logoPathBuffer = bestFit.logoBuffer
           } catch (e) {
             log.error("Best-fit: fallback to first clean", { mediaType, tmdbId, error: e instanceof Error ? e.message : String(e) })
             posterPath = clean.file_path
@@ -492,7 +527,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     // 5. Fetch all data in parallel: images + rankings + wikidata + keywords + imdbTop250
     //    All dependencies are available before this point — no Block B depends on Block A
     const emptyWikidata = { awards: [], nominations: [], studios: [], director: null }
-    const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 4000
+    const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 2500
     const [
       [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult],
       [wikidataResult, tmdbKeywords, imdbTop250],
@@ -502,7 +537,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         posterPathBuffer
           ? Promise.resolve(posterPathBuffer)
           : fetchImg(imgSrc(posterPath), renderAbort.signal).catch(() => null),
-        logoPath ? fetchImg(imgSrc(logoPath), renderAbort.signal).catch(() => null) : Promise.resolve(null),
+        logoPathBuffer
+          ? Promise.resolve(logoPathBuffer)
+          : logoPath ? fetchImg(imgSrc(logoPath), renderAbort.signal).catch(() => null) : Promise.resolve(null),
         backdropPath ? fetchImg(imgSrc(backdropPath), renderAbort.signal).catch(() => null) : Promise.resolve(null),
         rankingEnabledEarly
           ? getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
@@ -560,12 +597,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
     // A1: upgrade del voto con la media TMDB+IMDb, ma con tetto breve: oltre
     // RATING_WAIT_MS si usa il voto TMDB già impostato (niente blocco lungo).
+    // Dopo la race, se il fetch è ancora in corso viene abortito (no-op se ha
+    // già vinto): il risultato è scartato, non ha senso tenerlo in background.
     if (aggregatedRating) {
       const aggregated = await Promise.race([
         aggregatedRating,
         new Promise<Awaited<ReturnType<typeof fetchAggregatedRating>>>((resolve) => setTimeout(() => resolve(null), RATING_WAIT_MS)),
       ])
       if (aggregated?.average) voteAverage = aggregated.average
+      ratingAbort?.abort()
     }
 
     if (!originalBuf) {

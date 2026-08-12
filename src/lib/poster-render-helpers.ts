@@ -24,7 +24,11 @@ export function hashKey(key: string): string {
 }
 
 export async function fetchImg(url: string, signal?: AbortSignal): Promise<Buffer> {
-  const res = await fetch(url, { signal: signal ?? AbortSignal.timeout(15000) })
+  // Se il chiamante passa un signal esterno, unirlo al timeout interno invece
+  // di sostituirlo: un signal mai abortito (es. renderAbort a render riuscito)
+  // lascerebbe il fetch senza tetto in background. Il limite resta 15s.
+  const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000)
+  const res = await fetch(url, { signal: combined })
   if (!res.ok) throw new Error(`fetch failed: ${res.status}`)
   const cl = res.headers.get("content-length")
   if (cl && Number(cl) > MAX_IMG_SIZE) throw new Error("image too large")

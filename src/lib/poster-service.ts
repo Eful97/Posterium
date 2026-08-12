@@ -161,7 +161,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   const hasGenreBadge = badgesEnabled
     && ((genreAvailable && badgeGenre) || (ratingAvailable && badgeRating) || (yearAvailable && badgeYear))
 
-  const [blurredPosterBuf, badgeColors, logoResult] = await Promise.all([
+  const [blurOverlay, badgeColors, logoResult] = await Promise.all([
     applyBlur({ posterBuf, blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness }),
     hasGenreBadge
       ? (accentOverride
@@ -201,13 +201,8 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   ])
 
   // -----------------------------------------------------------------------
-  // 3. Base image: blurred or original + modulate + vignette
+  // 3. Vignette + logo (il blur resta un overlay grezzo, composto nel passo 7)
   // -----------------------------------------------------------------------
-  const rawBaseBuf = blurredPosterBuf || posterBuf
-  const renderBaseBuf = await sharp(rawBaseBuf)
-    .modulate({ brightness: 1.01, saturation: 1.06 })
-    .toBuffer()
-
   const vigBuf = await getVignette()
   composites.push({ input: vigBuf, top: 0, left: 0 })
   if (logoResult) composites.push(logoResult)
@@ -388,8 +383,18 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   const safeComposites = (await Promise.all(composites.map((layer) => fitCompositeToCanvas(layer, STD_W, STD_H))))
     .filter((layer): layer is PosterComposite => layer !== null)
 
-  return await sharp(renderBaseBuf)
-    .composite(safeComposites)
+  // Il blur è un overlay RGBA grezzo (nessun PNG intermedio): entra come primo
+  // layer, sotto backdrop/vignetta/badge — stesso ordine del vecchio blur "cotto"
+  // nella base. Il modulate sulla base (posterBuf) vive nella stessa pipeline del
+  // composite finale → 1 decode + 1 encode totali invece del roundtrip PNG
+  // blur→modulate (che ri-decodava il PNG del blur a ogni render).
+  const layers: Array<PosterComposite | { input: Buffer; raw: { width: number; height: number; channels: 4 }; top: number; left: number }> = blurOverlay
+    ? [{ input: blurOverlay.overlay, raw: { width: STD_W, height: blurOverlay.height, channels: 4 }, top: blurOverlay.top, left: 0 }, ...safeComposites]
+    : safeComposites
+
+  return await sharp(posterBuf)
+    .modulate({ brightness: 1.01, saturation: 1.06 })
+    .composite(layers)
     .jpeg({ quality: 70 })
     .toBuffer()
 }

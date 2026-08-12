@@ -22,6 +22,12 @@
 - **RENDER_VERSION auto-generata**: invalidazione cache e URL Stremio automatiche al cambio dei file di rendering
 
 ### Changed
+- **Ottimizzazione render non-mappato (P1)**: `getImages` ora parte in parallelo con `getDetails`/`getExternalIds`; `original_language` entra solo in un retry condizionato (titoli senza poster/logo nelle lingue base) invece che in ogni richiesta
+- **Riuso del logo dal best-fit**: il logo scaricato durante il logo-fit non viene più re-fetchato nel Block A (fallback su cache hit / timeout del logo)
+- **Cap worst-case ridotti**: auto-fit 2s→1.2s, Wikidata 4s→2.5s, attesa rating 2s→1.5s; `RATING_WAIT_MS` ora env-overridable (`POSTERIUM_RATING_WAIT_MS`, condiviso con la route tmdb-details)
+- **Blur come overlay del composite finale**: eliminato il roundtrip PNG `blur → modulate` (1 decode + 1 encode totali invece di 2 roundtrip)
+- **Warmup post-deploy automatico**: entrypoint lancia `/api/warmup` in background dopo il boot (poll su `/api/health`); disattivabile con `POSTERIUM_SELF_WARMUP=0`
+- **`AbortSignal.any`** in `fetchImg`/MDBList: il timeout interno non è più bypassato quando arriva un signal esterno
 - Improved tab chip contrast (zinc-400 → zinc-300)
 - Badge cache key normalization (voteAverage rounded to 1 decimal)
 - Tab chips use role="tablist" + aria-selected for accessibility
@@ -39,6 +45,7 @@
 - **Chiavi API d'istanza** (sezione Impostazioni + fallback server in `getServerDefaults`): le chiavi TMDB/MDBList sono ora solo personali — dalla richiesta (`x-api-key`/`api_key`/`mdblist_key`) o dal profilo (`?u=`). Niente più chiave condivisa di fallback: senza chiave esplicita le chiamate falliscono.
 
 ### Fixed
+- Orphan fetch MDBList dopo la race del rating: `AbortController` dedicato abortito subito dopo la race (prima un signal mai abortito lasciava il fetch in background)
 - Image loading failures show toast notification
 - TMDB fetch failures tracked in serviceErrors state
 - Id metadati cataloghi risolvibili (`tt...`/`tmdb:`) nei Top 20 JustWatch
