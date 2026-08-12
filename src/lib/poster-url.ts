@@ -60,7 +60,7 @@ interface PosterState {
   tmdbKey: string
 }
 
-export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string; profileId?: string | null }): string {
+export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string; profileId?: string | null; mdblistApiKey?: string }): string {
   // Con un profilo attivo l'URL è corto: la config e le chiavi sono sul server
   // (per-utente) e vengono applicate leggendo `?u=`. Nessun parametro esposto.
   if (bp.profileId) {
@@ -69,6 +69,10 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
   let url = `${getPosterPublicBaseUrl()}/api/poster/{type}/{imdb_id}`
   const params = buildStremioPosterSearchParams({
     apiKey: bp.tmdbKey,
+    // Senza profilo la chiave MDBList non è risolvibile server-side: va
+    // esposta nell'URL come `mdblist_key`, così il rank anime dei poster
+    // generati dal pattern funziona anche fuori dal profilo (come api_key).
+    mdblistKey: bp.mdblistApiKey,
     lang: bp.lang,
     globalBadges: bp.globalBadges,
     rankingBadges: bp.rankingBadges,

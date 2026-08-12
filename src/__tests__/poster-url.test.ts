@@ -67,6 +67,16 @@ describe("buildUrlPattern", () => {
     expect(url).toContain("api_key=abc123")
   })
 
+  it("includes mdblist_key param when configured (no profile)", () => {
+    const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it", mdblistApiKey: "mdblist-key" })
+    expect(url).toContain("mdblist_key=mdblist-key")
+  })
+
+  it("omits mdblist_key when no key is configured", () => {
+    const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it" })
+    expect(url).not.toContain("mdblist_key")
+  })
+
   it("includes badges=0 when globalBadges is false", () => {
     const url = buildUrlPattern({ ...baseBadgeParams, globalBadges: false, tmdbKey: "k", lang: "it" })
     expect(url).toContain("badges=0")
