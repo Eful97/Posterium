@@ -7,7 +7,7 @@ test("home loads and exposes main actions", async ({ page }) => {
   const logoFallback = page.getByText("Posterium")
   await expect(logo.or(logoFallback).first()).toBeVisible()
 
-  await expect(page.getByPlaceholder(/cerca un film|cerca una serie|search/i)).toBeVisible()
+  await expect(page.getByPlaceholder(/cerca un film|cerca una serie|search/i)).toBeVisible({ timeout: 30_000 })
   await expect(page.getByRole("button", { name: /AIOMetadata URL/i })).toBeVisible()
   await expect(page.getByRole("button", { name: /Installa catalogo/i })).toBeVisible()
   await expect(page.getByRole("button", { name: /I miei poster/i })).toBeVisible()
@@ -18,10 +18,17 @@ test("home works on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto("/")
 
-  await expect(page.getByPlaceholder(/cerca/i)).toBeVisible()
+  // Il logo vive in AppShell (SSR): verificarlo PRIMA della search bar dà al
+  // chunk dinamico di EditView (dynamic import, ssr:false) il tempo di montare
+  // senza bruciare il budget dell'assert. Stesso pattern di "home loads...".
   const logo = page.getByAltText("Posterium")
   const logoFallback = page.getByText("Posterium")
   await expect(logo.or(logoFallback).first()).toBeVisible()
+
+  // Budget generoso: su runner GitHub Windows condivisi (Node 20, next dev a
+  // freddo) il mount di EditView può superare i 10s default in casi sporadici.
+  // Non è una regressione dei componenti home — verificato localmente 28/28.
+  await expect(page.getByPlaceholder(/cerca/i)).toBeVisible({ timeout: 30_000 })
 })
 
 test("can open an editor from search", async ({ page }) => {
