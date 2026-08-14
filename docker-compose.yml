@@ -35,6 +35,14 @@ services:
       - POSTERIUM_CACHE_MAX_MB=${POSTERIUM_CACHE_MAX_MB:-150}
       - POSTERIUM_CACHE_REFRESH_HOUR=${POSTERIUM_CACHE_REFRESH_HOUR:-3}
 
+      # ── Opzionali — Render pipeline (tuning performance) ──
+      # Default tarati per il limite 512MB sotto. Su istanze con più RAM alza
+      # POSTERIUM_MAX_CONCURRENT_RENDERS (es. 8) e la cache per più poster/s
+      # sulle griglie fredde — vedi README "Tuning performance".
+      - POSTERIUM_MAX_CONCURRENT_RENDERS=${POSTERIUM_MAX_CONCURRENT_RENDERS:-4}
+      - POSTERIUM_RENDER_SLOT_WAIT_MS=${POSTERIUM_RENDER_SLOT_WAIT_MS:-15000}
+      - POSTERIUM_RENDER_TIMEOUT_MS=${POSTERIUM_RENDER_TIMEOUT_MS:-30000}
+
       # ── Opzionali — Sharp (ottimizzazione CPU/RAM) ──
       - SHARP_CONCURRENCY=${SHARP_CONCURRENCY:-2}
       - SHARP_CACHE_MEMORY_MB=${SHARP_CACHE_MEMORY_MB:-64}

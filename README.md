@@ -363,6 +363,29 @@ Per la **massima personalizzazione senza account**: personalizzi il poster nell'
 | `WIKIDATA_TIMEOUT` | ❌ | Timeout ms per fetch Wikidata badge premi (default: 2500) |
 
 ---
+
+### 🚀 Tuning performance (istanze con RAM alta)
+
+I default del render pipeline (**4 slot concorrenti**, cache 150MB) sono tarati per
+istanze a bassa RAM (Docker: heap 384MB). Il collo di bottiglia dei render freddi su
+macchine con più memoria sono gli **slot di concorrenza**, non la CPU: su una griglia
+catalogo fredda ogni poster compete per uno slot (`POSTERIUM_MAX_CONCURRENT_RENDERS`).
+
+| Piattaforma (RAM) | `POSTERIUM_MAX_CONCURRENT_RENDERS` | `POSTERIUM_CACHE_MAX_MB` | `NODE_OPTIONS` |
+|---|---|---|---|
+| Docker compose (512MB) — default | 4 | 150 | (default 384MB) |
+| VPS 1–2GB | 6 | 200 | `--max-old-space-size=768` |
+| HF Spaces (16GB) | 8–12 | 300 | `--max-old-space-size=1024` |
+| Oracle Cloud A1 (24GB) | 12–16 | 400 | `--max-old-space-size=2048` |
+
+> ⚠️ **Regola empirica**: ~4 slot per ogni 384MB di heap. Ogni render freddo tiene
+> decine di MB in memoria (buffer immagini + composizioni sharp): oltre il rapporto
+> rischi OOM invece di velocità. Se le griglie ricevono molti 503 con slot alti,
+> alza anche `POSTERIUM_RENDER_SLOT_WAIT_MS` (default 15000).
+
+Le variabili si leggono a module level: un cambio richiede **restart**, non hot reload.
+
+---
 	
 ## 🧪 Test
 

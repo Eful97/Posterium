@@ -34,11 +34,11 @@ function log(msg) {
   console.log(`[load-smoke] ${msg}`)
 }
 
-async function waitFor(url, timeoutMs, label) {
+async function waitFor(url, timeoutMs, label, headers = {}) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     try {
-      const res = await fetch(url)
+      const res = await fetch(url, { headers })
       if (res.ok) return
     } catch {
       // non ancora pronto
@@ -47,6 +47,11 @@ async function waitFor(url, timeoutMs, label) {
   }
   throw new Error(`Timeout attendendo ${label} (${url})`)
 }
+
+// /api/health risponde 503 senza chiave (S9): in modalità mock va bene una
+// chiave finta (il mock la ignora); per un'istanza già in esecuzione
+// (POSTERIUM_BASE_URL) impostare LOAD_HEALTH_KEY con una chiave valida.
+const healthKey = process.env.LOAD_HEALTH_KEY || "mock-key"
 
 const children = []
 function spawnNode(args, env = {}) {
@@ -94,10 +99,10 @@ async function run() {
         MDBLIST_API_URL: `${mockUrl}/mdblist/api`,
       },
     )
-    await waitFor(`${appUrl}/api/health`, 120000, "app")
+    await waitFor(`${appUrl}/api/health`, 120000, "app", { "x-api-key": healthKey })
   } else {
     log(`Uso app già in esecuzione: ${appUrl}`)
-    await waitFor(`${appUrl}/api/health`, 10000, "app")
+    await waitFor(`${appUrl}/api/health`, 10000, "app", { "x-api-key": healthKey })
   }
 
   // Warmup: compila le route (dev) e riempie la cache TMDB prima del burst.

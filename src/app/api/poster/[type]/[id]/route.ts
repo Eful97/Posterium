@@ -809,6 +809,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       wikidataResult, tmdbKeywords, locale, t,
       qLabel, queryExtra, qNetLogo, sd,
       accentOverride, imdbTop250,
+      posterSrc: posterPath,
+      logoSrc: logoPath,
+      backdropSrc: backdropPath,
     }
     const composited = await generatePosterBuffer(genInput)
 

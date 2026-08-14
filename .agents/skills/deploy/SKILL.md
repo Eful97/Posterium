@@ -32,6 +32,15 @@ operator/agent checklist.
 - `POSTERIUM_DATA_DIR=/data`, non-root `nextjs` uid 1000, standalone server via
   `entrypoint.sh` (`node server.js`).
 
+## Performance tuning (high-RAM instances)
+
+Defaults (4 render slots, 150MB cache) target the 512MB compose limit. On
+platforms with more RAM the bottleneck for cold poster grids is slot
+concurrency, not CPU — raise `POSTERIUM_MAX_CONCURRENT_RENDERS` (rule of thumb:
+~4 slots per 384MB of heap) and `POSTERIUM_CACHE_MAX_MB`. Suggested: HF Spaces
+16GB → 8-12 slots / 300MB, Oracle A1 24GB → 12-16 slots / 400MB. Full table in
+README "Tuning performance". Env vars are read at module level → restart needed.
+
 ## Entrypoint self-warmup (NEW)
 
 `entrypoint.sh` runs `/api/warmup` in the background after boot:
