@@ -14,6 +14,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const { id } = await params
   const [type, tmdbIdStr] = id.split(":")
   const tmdbId = Number(tmdbIdStr)
+  // Stessa validazione di PUT/DELETE (finding 17): evita chiavi arbitrarie
+  // (es. "garbage:NaN") verso lo store.
+  if (!tmdbId || !type || (type !== "movie" && type !== "tv")) {
+    return Response.json({ error: "Invalid id format" }, { status: 400 })
+  }
   const mapping = await getById(type as "movie" | "tv", tmdbId)
   if (!mapping) return Response.json({ error: "not found" }, { status: 404 })
   return Response.json(mapping)

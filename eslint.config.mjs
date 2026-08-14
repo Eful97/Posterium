@@ -31,6 +31,10 @@ const eslintConfig = defineConfig([
     // il proprio .next generato, che altrimenti verrebbe lintato (868 errori
     // dai tipi generati da Next).
     ".claude/**",
+    // Tooling locale .pi (estensioni agenti): non e' codice dell'app e non
+    // rispetta le regole eslint dell'app (require(), export anonimi). Come
+    // .claude/**, fuori dal lint -- altrimenti npm run verify fallisce.
+    ".pi/**",
   ]),
 ]);
 

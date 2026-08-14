@@ -107,7 +107,9 @@ export function isSameOrigin(request: Request): boolean {
     hostnameOf(request.headers.get("x-forwarded-host")) ||
     hostnameOf(request.headers.get("host")) ||
     hostnameOf(new URL(request.url).hostname)
-  if (!host) return true
+  // Fail-closed (finding 10): host irrisolvibile → rifiuta. Prima il fail-open
+  // lasciava passare le richieste con Origin quando l'host non era derivabile.
+  if (!host) return false
   return originHost === host
 }
 

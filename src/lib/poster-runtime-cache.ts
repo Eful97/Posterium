@@ -130,7 +130,7 @@ export function writeCachedPoster(cacheKey: string, payload: PosterCachePayload,
 // pipeline completa. TTL breve: si svuota da sola, senza invalidation esplicita.
 // ---------------------------------------------------------------------------
 
-export type PosterErrorStatus = 500 | 503
+export type PosterErrorStatus = 500 | 503 | 404
 
 export interface PosterErrorRecord {
   readonly status: PosterErrorStatus

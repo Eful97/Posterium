@@ -2,6 +2,9 @@ import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { createLogger } from "@/lib/logger"
+import { fetchMDBList } from "@/lib/mdblist"
+import { getDetails } from "@/lib/tmdb"
+import { resolveImdbToTmdb } from "@/lib/imdb-resolver"
 
 const log = createLogger("mdblist-anime")
 
@@ -14,83 +17,60 @@ export async function GET(req: NextRequest) {
   // (entry grezze con campo tmdb) — con la stessa chiave le due route si
   // sovrascrivevano a vicenda dati incompatibili.
   const cacheKey = "mdblist:anime:top10:enriched"
-  interface MdblistItem {
-  imdb_id?: string
-  imdb?: string
-  ids?: { imdb?: string; tmdb?: number | string }
-  tmdb_id?: number | string
-  tmdb?: number | string
-  id?: number | string
-  title?: string
-}
 
-const cached = cacheGet<MdblistItem[]>(cacheKey)
+  interface EnrichedAnimeItem {
+    id: number
+    title: string
+    poster_path: string
+    rank: number
+    media_type: string
+  }
+
+  const cached = cacheGet<EnrichedAnimeItem[]>(cacheKey)
   if (cached) return Response.json(cached)
 
   const mdblistKey = req.nextUrl.searchParams.get("mdblist_key") || ""
-  const tmdbKey = req.nextUrl.searchParams.get("api_key")
+  const tmdbKey = req.nextUrl.searchParams.get("api_key") || undefined
   if (!mdblistKey || !tmdbKey) return Response.json([])
 
   try {
-    const url = `https://api.mdblist.com/lists/snoak/trending-anime-shows/items?apikey=${mdblistKey}&limit=20&offset=0`
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/json', 'User-Agent': 'Posterium/1.0' },
-      signal: AbortSignal.timeout(10000)
-    })
-    if (!res.ok) return Response.json([])
-    const body = await res.json()
-    const payload = body?.data || body
-    const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
-    const items = rawItems.slice(0, 20)
+    // Finding 7: fetchMDBList usa MDBLIST_API_URL (override mock E2E), la cache
+    // con hash della key e il timeout condiviso — niente fetch hardcodato.
+    const entries = await fetchMDBList("mdblistAnime", mdblistKey)
 
-    const results = await Promise.all(items.map(async (item: MdblistItem, idx: number) => {
-      // IDs can be in different fields
-      const imdbId = item.imdb_id || item.imdb || item.ids?.imdb || ''
-      const tmdbId = item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id
-
-      // Try TMDB ID first
-      if (tmdbId && (typeof tmdbId === 'number' || (typeof tmdbId === 'string' && /^\d+$/.test(tmdbId)))) {
-        try {
-          const tmdbRes = await fetch(
-            `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${tmdbKey}`,
-            { signal: AbortSignal.timeout(5000) }
-          )
-          if (tmdbRes.ok) {
-            const found = await tmdbRes.json()
-            return {
-              id: found.id,
-              title: found.name || found.title || item.title || '',
-              poster_path: found.poster_path || '',
-              rank: idx + 1,
-              media_type: 'tv',
-            }
-          }
-        } catch (e) { log.error("TMDB lookup failed", { error: e instanceof Error ? e.message : String(e) }) }
-      }
-
-      // Fallback: find by IMDB ID
-      if (!imdbId) return null
-      try {
-        const tmdbRes = await fetch(
-          `https://api.themoviedb.org/3/find/${imdbId}?external_source=imdb_id&api_key=${tmdbKey}`,
-          { signal: AbortSignal.timeout(5000) }
-        )
-        if (!tmdbRes.ok) return null
-        const tmdbData = await tmdbRes.json()
-        const found = tmdbData?.tv_results?.[0] || tmdbData?.movie_results?.[0]
-        if (!found) return null
-        return {
-          id: found.id,
-          title: found.name || found.title || item.title || '',
-          poster_path: found.poster_path || '',
-          rank: idx + 1,
-          media_type: found.media_type || 'tv',
+    const results = await Promise.all(
+      entries.slice(0, 20).map(async (entry, idx): Promise<EnrichedAnimeItem | null> => {
+        // Try TMDB ID first (fetchMDBList espone già il campo tmdb)
+        let tmdbId = entry.tmdb
+        // Fallback: find by IMDB ID — resolveImdbToTmdb usa TMDB_BASE_URL
+        // (override mock E2E) e la cache condivisa (finding 14).
+        if (!tmdbId && entry.imdb) {
+          tmdbId = (await resolveImdbToTmdb(entry.imdb, "tv", tmdbKey)) ?? undefined
         }
-      } catch { return null }
-    }))
+        if (!tmdbId) return null
+        try {
+          // getDetails usa la lib @/lib/tmdb: TMDB_BASE_URL, cache 5min, inflight
+          // coalescing e rate limit condivisi (finding 7).
+          const found = await getDetails("tv", tmdbId, "it-IT", tmdbKey)
+          return {
+            id: tmdbId,
+            title: found.name || found.title || entry.title || "",
+            poster_path: found.poster_path || "",
+            rank: idx + 1,
+            media_type: "tv",
+          }
+        } catch (e) {
+          log.error("TMDB lookup failed", { error: e instanceof Error ? e.message : String(e) })
+          return null
+        }
+      }),
+    )
 
-    const filtered = results.filter(Boolean)
+    const filtered = results.filter((r): r is EnrichedAnimeItem => r !== null)
     if (filtered.length > 0) cacheSet(cacheKey, filtered, ["mdblist"])
     return Response.json(filtered)
-  } catch (e) { log.error("Fetch failed", { error: e instanceof Error ? e.message : String(e) }); return Response.json([]) }
+  } catch (e) {
+    log.error("Fetch failed", { error: e instanceof Error ? e.message : String(e) })
+    return Response.json([])
+  }
 }

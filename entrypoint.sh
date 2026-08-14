@@ -72,9 +72,12 @@ if [ "${POSTERIUM_SELF_WARMUP:-1}" = "1" ]; then
       sleep 1
     done
     if [ "$UP" = "1" ]; then
-      TOKEN="${POSTERIUM_ADMIN_TOKEN:-$ADMIN_TOKEN}"
-      if [ -n "$TOKEN" ]; then
-        curl -sS -m 300 -X POST -H "x-admin-token: $TOKEN" "$WARMUP_URL" >/dev/null 2>&1 || true
+      WARMUP_TOKEN="${POSTERIUM_WARMUP_TOKEN:-}"
+      ADMIN_TOKEN_VAL="${POSTERIUM_ADMIN_TOKEN:-$ADMIN_TOKEN}"
+      if [ -n "$WARMUP_TOKEN" ]; then
+        curl -sS -m 300 -X POST -H "x-warmup-token: $WARMUP_TOKEN" "$WARMUP_URL" >/dev/null 2>&1 || true
+      elif [ -n "$ADMIN_TOKEN_VAL" ]; then
+        curl -sS -m 300 -X POST -H "x-admin-token: $ADMIN_TOKEN_VAL" "$WARMUP_URL" >/dev/null 2>&1 || true
       else
         curl -sS -m 300 -X POST "$WARMUP_URL" >/dev/null 2>&1 || true
       fi

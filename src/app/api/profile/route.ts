@@ -6,11 +6,12 @@ import {
   getFullProfileData,
   deleteProfile,
   generateProfileId,
+  isValidProfileId,
   verifyProfilePassword,
   isKvStorageConfigured,
   type ProfileData,
 } from "@/lib/profile-store"
-import { type PosteriumUserConfig } from "@/lib/config-token"
+import { type PosteriumUserConfig, configTokenSchema } from "@/lib/config-token"
 import { requireAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { createLogger } from "@/lib/logger"
@@ -89,18 +90,21 @@ export async function POST(req: NextRequest) {
     const rlCreate = rateLimit(rateLimitKey(req), "default")
     if (!rlCreate.ok) return rateLimitResponse(rlCreate.retAfter)
 
-    const requiredBools: (keyof PosteriumUserConfig)[] = [
-      "globalBadges", "rankingBadges", "blurEnabled",
-      "networkLogo", "autoRotateClean", "logoFitEnabled",
-    ]
-    for (const key of requiredBools) {
-      if (typeof config[key] !== "boolean") {
-        return Response.json({ error: `Invalid config: '${key}' must be a boolean` }, { status: 400 })
-      }
+    // Validazione completa con lo stesso schema Zod di /api/config-token
+    // (finding 15): enum badgeStyle/rankingBadgeStyle/ribbonSide, booleani
+    // opzionali e customBadge con max vengono controllati alla scrittura,
+    // non solo al render (dove i fallback già mitigavano).
+    const parsedConfig = configTokenSchema.safeParse(config)
+    if (!parsedConfig.success) {
+      return Response.json(
+        { error: "Invalid config", details: parsedConfig.error.flatten().fieldErrors },
+        { status: 400 },
+      )
     }
+    const validConfig = parsedConfig.data
 
-    // Validazione + clamp dei campi numerici: impedisce Infinity/valori estremi
-    // di arrivare al rendering (sharp.blur, gradienti) o di scrivere dati non finiti.
+    // Range check sui numeri: rifiuta subito i valori fuori scala invece di
+    // persistere config incoerenti (il render clampa comunque come fallback).
     const requiredNums: { key: keyof PosteriumUserConfig; min: number; max: number }[] = [
       { key: "blurIntensity", min: 0, max: 100 },
       { key: "blurFade", min: 0, max: 100 },
@@ -108,7 +112,7 @@ export async function POST(req: NextRequest) {
       { key: "gradientHeight", min: 5, max: 100 },
     ]
     for (const { key, min, max } of requiredNums) {
-      const v = config[key]
+      const v = validConfig[key]
       if (typeof v !== "number" || !Number.isFinite(v)) {
         return Response.json({ error: `Invalid config: '${key}' must be a finite number` }, { status: 400 })
       }
@@ -121,11 +125,32 @@ export async function POST(req: NextRequest) {
       ? raw.profileId
       : undefined
 
+    // Finding 2: il profileId deve essere un UUID valido (stessa regex del
+    // store). Senza questa guardia chiavi arbitrarie (es. "__proto__") finivano
+    // verboatim nello storage profili.
+    if (existingProfileId && !isValidProfileId(existingProfileId)) {
+      return Response.json({ error: "Invalid profileId" }, { status: 400 })
+    }
+
     const password = typeof raw.password === "string" && raw.password.length > 0
       ? raw.password
       : undefined
 
+    // Finding 19: limite sulla lunghezza della password (scrypt è proporzionale
+    // alla lunghezza dell'input nel pre-hash) — oltre il body cap sarebbe comunque
+    // un abuso CPU inutile.
+    if (password && password.length > 128) {
+      return Response.json({ error: "Password too long (max 128 characters)" }, { status: 400 })
+    }
+
     const existing = existingProfileId ? await getFullProfileData(existingProfileId) : null
+
+    // CRITICO (finding 1): un profilo legacy senza password ha l'UUID esposto
+    // nelle URL dei poster — chiunque lo conosca NON deve poterlo aggiornare
+    // (sovrascriverebbe config/apiKeys e imposterebbe la propria password).
+    if (existing && !existing.passwordHash && !requireAdminToken(req)) {
+      return adminAuthResponse()
+    }
 
     // Se il profilo esiste già e ha password, verificane la validità
     if (existing?.passwordHash && existing?.salt) {
@@ -146,7 +171,7 @@ export async function POST(req: NextRequest) {
     const apiKeys = raw.apiKeys && typeof raw.apiKeys === "object" ? (raw.apiKeys as ProfileData["apiKeys"]) : undefined
     const mappings = raw.mappings && typeof raw.mappings === "object" ? (raw.mappings as ProfileData["mappings"]) : undefined
 
-    const profileId = await createOrUpdateProfile(config, existingProfileId, password, apiKeys, mappings)
+    const profileId = await createOrUpdateProfile(validConfig, existingProfileId, password, apiKeys, mappings)
     const url = `${getDomain()}/api/poster/{type}/{imdb_id}?u=${profileId}`
 
     return Response.json({ profileId, url })

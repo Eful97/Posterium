@@ -85,6 +85,7 @@ export function BadgeControls() {
                  onFocus={(e) => e.target.select()}
                  onBlur={() => { const v = editText.trim(); ed.setCustomBadge(v || null); setEditingValue(null) }}
                  onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }}
+                 maxLength={40}
                  className="editor-input w-28 text-right px-1.5 py-1"
                  placeholder={t("ui.customBadgePlaceholder")} />
         ) : (

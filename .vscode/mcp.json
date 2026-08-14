@@ -1,0 +1,52 @@
+{
+  "servers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "tmdb": {
+      "command": "npx",
+      "args": ["-y", "tmdb-mcp"],
+      "env": {
+        "TMDB_API_TOKEN": "${input:tmdb_api_token}",
+        "TMDB_LANGUAGE": "it-IT"
+      }
+    },
+    "upstash-redis": {
+      "command": "npx",
+      "args": ["-y", "@upstash/redis-mcp", "--disable-telemetry"],
+      "env": {
+        "UPSTASH_REDIS_REST_URL": "${input:upstash_redis_url}",
+        "UPSTASH_REDIS_REST_TOKEN": "${input:upstash_redis_token}"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    }
+  },
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "tmdb_api_token",
+      "description": "TMDB v4 API Read Access Token (themoviedb.org → Settings → API)",
+      "password": true
+    },
+    {
+      "type": "promptString",
+      "id": "upstash_redis_url",
+      "description": "Upstash Redis REST URL (o KV_REST_API_URL di Vercel KV)",
+      "password": true
+    },
+    {
+      "type": "promptString",
+      "id": "upstash_redis_token",
+      "description": "Upstash Redis REST Token (o KV_REST_API_TOKEN di Vercel KV)",
+      "password": true
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import crypto from "node:crypto"
 import { getJWRankings } from "@/lib/justwatch"
 
 // Vercel: il warmup itera decine di poster in batch → richiede il massimo
@@ -95,12 +96,34 @@ function buildPosterUrl(input: BuildPosterUrlInput): URL {
   return url
 }
 
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))
+}
+
 export async function POST(req: NextRequest) {
   // Auth coerente con le altre route admin: fail-open su istanza pubblica senza
   // ADMIN_TOKEN (HF Spaces), fail-closed quando un token è configurato.
+  // Finding 16: POSTERIUM_WARMUP_TOKEN opzionale — se configurato, il warmup
+  // richiede quel token (header x-warmup-token) O l'admin token. Così un'istanza
+  // condivisa può proteggere l'endpoint-amplificatore senza rompere il
+  // self-warmup dell'entrypoint (che lo invia se configurato).
+  const warmupToken = process.env.POSTERIUM_WARMUP_TOKEN
+  // Se POSTERIUM_WARMUP_TOKEN e' configurato, il warmup richiede quel token
+  // (header x-warmup-token) O l'admin token. Se NON e' configurato, la guardia
+  // resta checkAdminToken come prima (fail-open solo su istanza pubblica,
+  // fail-closed sulle istanze private con ADMIN_TOKEN). NB: un primo ||
+  // qui avrebbe aperto l'endpoint su ogni istanza senza warmup token -- il
+  // checkAdminToken va consultato SEMPRE.
+  const warmupHeaderOk = !warmupToken
+    ? undefined
+    : (() => {
+        const header = req.headers.get("x-warmup-token")
+        return !!header && constantTimeEqual(header, warmupToken)
+      })()
+  if (warmupHeaderOk !== true && !checkAdminToken(req)) return adminAuthResponse()
   const rl = rateLimit(rateLimitKey(req), "warmup")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
-  if (!checkAdminToken(req)) return adminAuthResponse()
   if (!isSameOrigin(req)) return originMismatchResponse()
 
   const apiKey = resolveRequestApiKey(req)

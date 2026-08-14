@@ -1,4 +1,5 @@
 import { cacheGet, cacheSet } from "./cache"
+import { TMDB_BASE_URL } from "@/lib/tmdb"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("imdb-resolver")
@@ -21,7 +22,9 @@ export async function resolveImdbToTmdb(imdbId: string, mediaType: "movie" | "tv
   if (!apiKey) return null
 
   try {
-    const url = `https://api.themoviedb.org/3/find/${encodeURIComponent(cleanId)}?api_key=${encodeURIComponent(apiKey)}&external_source=imdb_id`
+    // Finding 14: base URL condivisa (TMDB_BASE_URL env, mock nei test E2E)
+    // invece dell'endpoint hardcodato.
+    const url = `${TMDB_BASE_URL}/find/${encodeURIComponent(cleanId)}?api_key=${encodeURIComponent(apiKey)}&external_source=imdb_id`
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
     const data = await res.json()

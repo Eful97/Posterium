@@ -23,16 +23,17 @@ export const mappingSchema = z.object({
   trendPeriod: z.string().nullable().optional(),
   tvType: z.string().nullable().optional(),
   tvStatus: z.string().nullable().optional(),
-  // accentColor deve essere un colore hex valido (#rgb/#rrggbb/#rrggbbaa) per non
-  // far arrivare stringhe arbitrarie al rendering SVG dei badge.
-  accentColor: z.string().regex(/^#[0-9a-fA-F]{3,8}$/).nullable().optional(),
+  // accentColor deve essere un colore hex valido (#rgb/#rrggbb) per non
+  // far arrivare stringhe arbitrarie al rendering SVG dei badge. Allineata
+  // a poster-render-helpers.isValidHex (#rgb / #rrggbb) — finding 6.
+  accentColor: z.string().regex(/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/).nullable().optional(),
   badgeExtra: z.string().nullable().optional(),
   badgeRank: z.number().int().min(0).nullable().optional(),
   badgeLabel: z.string().nullable().optional(),
   // Rank anime salvato al momento del salvataggio: permette al poster salvato
   // di mostrare il badge Anime anche senza chiave MDBList/profilo lato server.
   animeRank: z.number().int().min(1).nullable().optional(),
-  customBadge: z.string().nullable().optional(),
+  customBadge: z.string().max(40).nullable().optional(),
   releaseDate: z.string().nullable().optional(),
   firstAirDate: z.string().nullable().optional(),
   backdropPath: z.string().nullable().optional(),

@@ -32,8 +32,13 @@ export const configTokenSchema = z.object({
   gradientHeight: z.number().finite(),
   networkLogo: z.boolean(),
   autoRotateClean: z.boolean(),
-  logoFitEnabled: z.boolean(),
-  customBadge: z.string().optional(),
+  // Opzionale (finding 13): i token generati prima dell'aggiunta del campo
+  // (best-fit) non devono fallire il safeParse — il render usa il default del
+  // server quando il campo è assente.
+  logoFitEnabled: z.boolean().optional(),
+  // customBadge con limite di lunghezza (finding 8): un valore illimitato
+  // gonfierebbe il token firmato (URL condivise) e la label SVG del badge.
+  customBadge: z.string().max(40).optional(),
   ribbonSide: ribbonSideSchema.optional(),
 })
 

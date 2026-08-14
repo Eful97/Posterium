@@ -70,7 +70,9 @@ const log = createLogger("poster")
 const RENDER_TIMEOUT_MS = (() => {
   const raw = process.env.POSTERIUM_RENDER_TIMEOUT_MS
   const n = raw ? parseInt(raw, 10) : 30000
-  return Number.isFinite(n) && n >= 1000 && n <= 120000 ? n : 30000
+  // Clamp superiore = maxDuration (40s): un timeout interno più lungo del
+  // limite della funzione serverless non avrebbe mai tempo di scattare (finding 11).
+  return Number.isFinite(n) && n >= 1000 && n <= 40000 ? n : 30000
 })()
 
 // Tetto massimo per l'attesa del voto medio TMDB+IMDb (MDBList) prima del
@@ -98,6 +100,9 @@ function posterErrorResponse(status: PosterErrorStatus): Response {
       status: 503,
       headers: { ...corsHeaders(), "Retry-After": String(Math.max(1, Math.round(RENDER_SLOT_WAIT_MS / 1000))) },
     })
+  }
+  if (status === 404) {
+    return new Response("Poster not found", { status: 404, headers: corsHeaders() })
   }
   return new Response("Poster generation failed", { status: 500, headers: corsHeaders() })
 }
@@ -224,7 +229,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     ])
     if (payload) {
       log.debug("Poster cache: coalesced with in-flight render", { mediaType, tmdbId, ms: Date.now() - startTime })
-      return posterResponse(payload, immutablePoster, false, dynamicPoster)
+      // Finding 5: il waiter della preview deve ricevere gli header no-store
+      // anche quando si coalesce con un render in flight (era hardcoded false).
+      return posterResponse(payload, immutablePoster, isPreview, dynamicPoster)
     }
     // Coalesce scaduto: o il render è fallito (negative cache) o è ancora in
     // corso — mai duplicare il render, rispondere 503 con backoff esplicito.
@@ -432,7 +439,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         const qLogoFit = req.nextUrl.searchParams.get("logoFit")
-        const logoFitEnabled = qLogoFit !== null ? qLogoFit !== "0" : (configOverride !== null ? configOverride.logoFitEnabled : sd.defaultLogoFitEnabled === true)
+        const logoFitEnabled = qLogoFit !== null ? qLogoFit !== "0" : (configOverride !== null ? (configOverride.logoFitEnabled ?? sd.defaultLogoFitEnabled === true) : sd.defaultLogoFitEnabled === true)
         if (logoPath && logoFitEnabled) {
           try {
             const fitStart = Date.now()
@@ -498,6 +505,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     // C1: il ramo non-mappato può già detenere lo slot (logo-fit) — questo
     // return è fuori dal try/finally, quindi il rilascio va fatto qui.
     releaseSlotOnce()
+    // Finding 4: il 404 entra in negative cache (TTL breve) così i waiter
+    // coalesced ricevono 404 (non 503) e le richieste successive non ri-eseguono
+    // tutta la pipeline per lo stesso titolo inesistente.
+    writePosterError(cacheKey, 404)
     completePosterRender(null)
     return new Response("Poster not found", { status: 404, headers: corsHeaders() })
   }
@@ -609,6 +620,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     if (!originalBuf) {
+      // Finding 4: stessa logica del ramo non-mappato — negative cache 404 per
+      // i waiter coalesced e per le richieste successive.
+      writePosterError(cacheKey, 404)
       completePosterRender(null)
       return new Response("Poster image not available", { status: 404, headers: corsHeaders() })
     }

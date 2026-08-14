@@ -1,6 +1,8 @@
 // Base URL sovrascrivibili via env: usate dai test E2E per puntare al mock
 // server locale (e2e/mock-server.mjs) senza chiave TMDB reale.
-const TMDB_BASE = process.env.TMDB_BASE_URL || "https://api.themoviedb.org/3"
+// Esportata (finding 14): imdb-resolver.ts la usa invece di hardcodare la URL.
+export const TMDB_BASE_URL = process.env.TMDB_BASE_URL || "https://api.themoviedb.org/3"
+const TMDB_BASE = TMDB_BASE_URL
 const IMG_BASE = process.env.TMDB_IMG_URL || "https://image.tmdb.org/t/p"
 
 const fetchCache = new Map<string, { data: unknown; timestamp: number }>()

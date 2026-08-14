@@ -49,6 +49,26 @@ function decryptValue(ciphertext: string, key: Buffer): string | null {
   }
 }
 
+/**
+ * Trasforma un apiKey salvata nel valore reale da esporre, gestendo tutti gli
+ * stati di cifratura (finding 9):
+ * - `v1:...` (cifrata) → decifra se la chiave è configurata, altrimenti ritorna
+ *   il valore così com'è (garbage, ma non muta il dato salvato);
+ * - `plain:...` → strip del prefisso;
+ * - legacy senza prefisso → ritorna così com'è (plaintext storico).
+ */
+function unwrapApiKey(stored: string, encKey: Buffer | null): string {
+  if (stored.startsWith("plain:")) return stored.slice("plain:".length)
+  if (stored.startsWith(`${ENC_PREFIX}:`)) {
+    if (encKey) {
+      const d = decryptValue(stored, encKey)
+      if (d) return d
+    }
+    return stored
+  }
+  return stored
+}
+
 export type { PosteriumUserConfig }
 
 export interface ProfileData {
@@ -64,6 +84,14 @@ export interface ProfileData {
   updatedAt?: string
 }
 
+/** Regex UUID condivisa: usata per validare i profileId in ingresso e nei load path. */
+const PROFILE_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** True se la stringa è un profileId UUID valido (stessa regex usata nei load path). */
+export function isValidProfileId(id: string): boolean {
+  return PROFILE_ID_REGEX.test(id)
+}
+
 const PROFILES_FILE = path.join(DATA_DIR, "profiles.json")
 const useKv = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN
 
@@ -74,16 +102,27 @@ export function isKvStorageConfigured(): boolean {
 
 // ---- Password helpers ----
 
-function hashPassword(password: string): { hash: string; salt: string } {
+function hashPassword(password: string): Promise<{ hash: string; salt: string }> {
   const salt = crypto.randomBytes(16).toString("hex")
-  const hash = crypto.scryptSync(password, salt, 64).toString("hex")
-  return { hash, salt }
+  return new Promise((resolve, reject) => {
+    // scrypt async: scryptSync bloccava l'event loop (~decine di ms per hash),
+    // un burst di create/update profilo congelava tutta l'istanza (finding 19).
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) return reject(err)
+      resolve({ hash: derivedKey.toString("hex"), salt })
+    })
+  })
 }
 
-function verifyPassword(password: string, hash: string, salt: string): boolean {
-  const derived = crypto.scryptSync(password, salt, 64).toString("hex")
-  if (derived.length !== hash.length) return false
-  return crypto.timingSafeEqual(Buffer.from(derived), Buffer.from(hash))
+function verifyPassword(password: string, hash: string, salt: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) return resolve(false)
+      const derived = derivedKey.toString("hex")
+      if (derived.length !== hash.length) return resolve(false)
+      resolve(crypto.timingSafeEqual(Buffer.from(derived), Buffer.from(hash)))
+    })
+  })
 }
 
 // ---- Normalize old-style (raw PosteriumUserConfig) to ProfileData ----
@@ -279,19 +318,27 @@ export async function createOrUpdateProfile(
   apiKeys?: { tmdbKey?: string; mdblistApiKey?: string },
   mappings?: Record<string, Mapping>,
 ): Promise<string> {
+  // Defense-in-depth (finding 2): il store non deve MAI usare una chiave
+  // arbitraria (la route valida già, ma altri chiamanti potrebbero non farlo).
+  if (existingProfileId && !isValidProfileId(existingProfileId)) {
+    throw new Error("Invalid profileId")
+  }
   const existing = existingProfileId ? await getFullProfile(existingProfileId) : null
   const uuid = existing ? existingProfileId! : (existingProfileId || generateProfileId())
 
-  // Encrypt apiKeys at rest if encryption key is configured
+  // Encrypt apiKeys at rest if encryption key is configured. Le chiavi salvate
+  // in chiaro vengono marcate con prefisso `plain:` (finding 9): così
+  // getFullProfileData può sempre restituire il valore reale anche quando la
+  // PROFILE_ENCRYPTION_KEY viene rimossa/reinserita dopo un primo uso.
   const encKey = deriveEncryptionKey()
   let storedApiKeys: ProfileData["apiKeys"] | undefined
   if (apiKeys) {
-    if (encKey) {
-      storedApiKeys = {}
-      if (apiKeys.tmdbKey) storedApiKeys.tmdbKey = encryptValue(apiKeys.tmdbKey, encKey)
-      if (apiKeys.mdblistApiKey) storedApiKeys.mdblistApiKey = encryptValue(apiKeys.mdblistApiKey, encKey)
-    } else {
-      storedApiKeys = apiKeys
+    storedApiKeys = {}
+    if (apiKeys.tmdbKey) {
+      storedApiKeys.tmdbKey = encKey ? encryptValue(apiKeys.tmdbKey, encKey) : `plain:${apiKeys.tmdbKey}`
+    }
+    if (apiKeys.mdblistApiKey) {
+      storedApiKeys.mdblistApiKey = encKey ? encryptValue(apiKeys.mdblistApiKey, encKey) : `plain:${apiKeys.mdblistApiKey}`
     }
   } else {
     // Keep existing keys as-is (already encrypted or legacy plaintext)
@@ -307,7 +354,7 @@ export async function createOrUpdateProfile(
   }
 
   if (password) {
-    const { hash, salt } = hashPassword(password)
+    const { hash, salt } = await hashPassword(password)
     data.passwordHash = hash
     data.salt = salt
   } else if (existing) {
@@ -324,7 +371,7 @@ export async function createOrUpdateProfile(
 }
 
 export async function getProfile(profileId: string): Promise<PosteriumUserConfig | null> {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId)) {
+  if (!isValidProfileId(profileId)) {
     return null
   }
   const full = await getFullProfile(profileId)
@@ -332,32 +379,32 @@ export async function getProfile(profileId: string): Promise<PosteriumUserConfig
 }
 
 export async function getFullProfileData(profileId: string): Promise<ProfileData | null> {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId)) {
+  if (!isValidProfileId(profileId)) {
     return null
   }
   const raw = await getFullProfile(profileId)
   if (!raw) return null
+  if (!raw.apiKeys) return raw
 
-  // Decrypt apiKeys if encryption is configured
+  // Unwrap di ogni apiKey (cifrata o plaintext): a differenza del vecchio
+  // codice che usciva subito senza chiave, il prefisso `plain:` permette di
+  // restituire sempre il valore reale, anche con PROFILE_ENCRYPTION_KEY rimossa.
   const encKey = deriveEncryptionKey()
-  if (!encKey || !raw.apiKeys) return raw
 
   // Copy to avoid mutating the internal cache reference
   const result: ProfileData = { ...raw }
   result.apiKeys = { ...raw.apiKeys }
   if (result.apiKeys.tmdbKey) {
-    const d = decryptValue(result.apiKeys.tmdbKey, encKey)
-    if (d) result.apiKeys.tmdbKey = d
+    result.apiKeys.tmdbKey = unwrapApiKey(result.apiKeys.tmdbKey, encKey)
   }
   if (result.apiKeys.mdblistApiKey) {
-    const d = decryptValue(result.apiKeys.mdblistApiKey, encKey)
-    if (d) result.apiKeys.mdblistApiKey = d
+    result.apiKeys.mdblistApiKey = unwrapApiKey(result.apiKeys.mdblistApiKey, encKey)
   }
   return result
 }
 
 export async function verifyProfilePassword(profileId: string, password: string): Promise<boolean> {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId)) {
+  if (!isValidProfileId(profileId)) {
     return false
   }
   const full = await getFullProfile(profileId)
@@ -366,7 +413,7 @@ export async function verifyProfilePassword(profileId: string, password: string)
 }
 
 export async function deleteProfile(profileId: string): Promise<void> {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId)) {
+  if (!isValidProfileId(profileId)) {
     return
   }
   if (useKv) {

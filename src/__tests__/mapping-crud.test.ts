@@ -46,6 +46,20 @@ describe("mappingSchema CRUD", () => {
     expect(mappingSchema.safeParse({ tmdbId: 1, mediaType: "movie", title: "T", posterPath: "/p.jpg", voteAverage: 11 }).success).toBe(false)
     expect(mappingSchema.safeParse({ tmdbId: 1, mediaType: "movie", title: "T", posterPath: "/p.jpg", voteAverage: -1 }).success).toBe(false)
   })
+
+  it("accetta accentColor solo #rgb/#rrggbb (finding 6)", () => {
+    expect(mappingSchema.safeParse({ tmdbId: 1, mediaType: "movie", title: "T", posterPath: "/p.jpg", accentColor: "#abc" }).success).toBe(true)
+    expect(mappingSchema.safeParse({ tmdbId: 1, mediaType: "movie", title: "T", posterPath: "/p.jpg", accentColor: "#aabbcc" }).success).toBe(true)
+    // #rrggbbaa (8 cifre) e forme a 4/5/7 cifre passavano prima ma erano ignorate
+    // da isValidHex al render — ora vengono rifiutate alla validazione.
+    expect(mappingSchema.safeParse({ tmdbId: 1, mediaType: "movie", title: "T", posterPath: "/p.jpg", accentColor: "#aabbccdd" }).success).toBe(false)
+    expect(mappingSchema.safeParse({ tmdbId: 1, mediaType: "movie", title: "T", posterPath: "/p.jpg", accentColor: "#abcd" }).success).toBe(false)
+  })
+
+  it("limita customBadge a 40 caratteri (finding 8)", () => {
+    expect(mappingSchema.safeParse({ tmdbId: 1, mediaType: "movie", title: "T", posterPath: "/p.jpg", customBadge: "x".repeat(40) }).success).toBe(true)
+    expect(mappingSchema.safeParse({ tmdbId: 1, mediaType: "movie", title: "T", posterPath: "/p.jpg", customBadge: "x".repeat(41) }).success).toBe(false)
+  })
 })
 
 describe("badge priority edge cases", () => {

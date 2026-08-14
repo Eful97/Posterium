@@ -81,6 +81,15 @@ describe("poster negative cache (F3)", () => {
     expect(readPosterError(key)).toEqual({ status: 503 })
   })
 
+  it("round-trips a 404 error so coalesced waiters get 404 instead of 503 (finding 4)", () => {
+    cacheClear()
+    const key = "poster:test:404"
+    expect(readPosterError(key)).toBeNull()
+
+    writePosterError(key, 404)
+    expect(readPosterError(key)).toEqual({ status: 404 })
+  })
+
   it("does not collide with the poster payload entry", () => {
     cacheClear()
     const key = "poster:test:2"

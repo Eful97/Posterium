@@ -16,8 +16,12 @@ route Stremio hits. Visual tests are the gate that proves client/server coherenc
 
 ## Available tools
 
-- Built-in Playwright MCP tools (`kilo-playwright_browser_*`): navigate, snapshot,
-  screenshot, click/fill, evaluate — for live inspection of the running app.
+- Playwright MCP browser tools for live inspection of the running app. The tool
+  prefix depends on the client:
+  - Kilo built-in: `kilo-playwright_browser_*`
+  - VS Code / Claude Code (`@playwright/mcp`): `browser_*` (`browser_navigate`,
+    `browser_snapshot`, `browser_take_screenshot`, `browser_evaluate`,
+    `browser_console_messages`, `browser_network_requests`).
 - The repo Playwright suite — deterministic, mock-based; commands in
   [`.agents/visual-testing.md`](../../visual-testing.md).
 

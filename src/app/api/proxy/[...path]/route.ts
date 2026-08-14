@@ -277,7 +277,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
   try {
     const subPath = path.join("/")
     const targetBase = targetUrl.replace(/\/manifest\.json$/, "").replace(/\/$/, "")
-    const fullTargetUrl = `${targetBase}/${subPath}`
+    // Inoltra i query param originali della richiesta (genre/skip/type/id/...):
+    // senza, i cataloghi/meta proxati perdono filtro e paginazione (finding 3).
+    // Esclusi i parametri di controllo del proxy stesso.
+    const targetQuery = new URLSearchParams()
+    for (const [k, v] of searchParams) {
+      if (k === "target" || k === "url" || k === "u" || k === "user") continue
+      targetQuery.append(k, v)
+    }
+    const qs = targetQuery.toString()
+    const fullTargetUrl = `${targetBase}/${subPath}${qs ? `?${qs}` : ""}`
     const res = await safeFetch(fullTargetUrl, { signal: AbortSignal.timeout(12000) })
     if (!res.ok) {
       return Response.json({ error: `Failed to fetch proxy resource: ${res.statusText}` }, { status: res.status, headers: corsHeaders() })
