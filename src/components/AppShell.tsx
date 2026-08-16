@@ -46,7 +46,6 @@ export function AppShell() {
   const mdblistApiKey = usePSelector((v) => v.mdblistApiKey)
   const setMdblistApiKey = usePSelector((v) => v.setMdblistApiKey)
   const goHome = usePSelector((v) => v.goHome)
-  const selected = usePSelector((v) => v.selected)
   const refreshLists = usePSelector((v) => v.refreshLists)
   const langRef = usePSelector((v) => v.langRef)
   const langOpen = usePSelector((v) => v.langOpen)
@@ -139,10 +138,8 @@ return (
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
           <>
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
-          <img onClick={goHome} src="/posterium.png" alt="Posterium" decoding="async" className={`header-logo h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 ${view === "edit" && !selected ? "mb-1 md:mb-2" : "mb-6 md:mb-5"}`} />
-          {view === "edit" && !selected && (
-            <p className="header-tagline mb-5 md:mb-6">{t("ui.homeTagline")}</p>
-          )}
+          <img onClick={goHome} src="/posterium.png" alt="Posterium" decoding="async" className="header-logo h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1 md:mb-2" />
+          <p className="header-tagline mb-5 md:mb-6">{t("ui.homeTagline")}</p>
           <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
             <button type="button" suppressHydrationWarning aria-label={copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { copyUrl() }} disabled={!urlPattern} className="top-action-button top-action-button-primary h-9 w-9 flex items-center justify-center bg-accent-orange text-white border border-accent-orange/50 shadow-lg shadow-accent-orange/25 disabled:opacity-40"><Copy className="w-4 h-4" /></button>
             <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const base = `${window.location.origin}/manifest.json`; const url = profileId ? `${window.location.origin}/u/${profileId}/manifest.json` : base; await navigator.clipboard.writeText(url) }} disabled={!urlPattern && !profileId} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><Download className="w-4 h-4" /></button>
