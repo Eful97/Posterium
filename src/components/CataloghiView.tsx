@@ -97,12 +97,14 @@ const PLATFORM_FILTERS = [
 
 export function CataloghiView() {
   const trending = usePSelector((v) => v.trending)
+  const trendingError = usePSelector((v) => v.trendingError)
   const mappings = usePSelector((v) => v.mappings)
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const STREAMING_PLATFORMS = usePSelector((v) => v.STREAMING_PLATFORMS)
   const mdblistAnimeList = usePSelector((v) => v.mdblistAnimeList)
   const router = usePSelector((v) => v.router)
   const streamingCharts = usePSelector((v) => v.streamingCharts)
+  const refreshLists = usePSelector((v) => v.refreshLists)
   const { t } = useT()
   const movieTrending = trending.filter((r) => r.media_type === "movie").slice(0, 20)
   const tvTrending = trending.filter((r) => r.media_type === "tv").slice(0, 20)
@@ -216,8 +218,8 @@ export function CataloghiView() {
               totalTv={tvTrending.length}
               movieTitle={`${t("ui.movie")} — Top 20`}
               tvTitle={`${t("ui.tvSeries")} — Top 20`}
-              movieGridTitle="JustWatch — Film"
-              tvGridTitle="JustWatch — Serie"
+              movieGridTitle={`JustWatch — ${t("ui.movie")}`}
+              tvGridTitle={`JustWatch — ${t("ui.tvSeries")}`}
               openGrid={openGrid}
               onItemClick={navigateToItem}
               savedKeys={savedKeys}
@@ -249,8 +251,8 @@ export function CataloghiView() {
                     totalTv={chart.tv.length}
                     movieTitle={`${t("ui.movie")} — Top 10`}
                     tvTitle={`${t("ui.tvSeries")} — Top 10`}
-                    movieGridTitle={`${sp.name} — Film`}
-                    tvGridTitle={`${sp.name} — Serie`}
+                    movieGridTitle={`${sp.name} — ${t("ui.movie")}`}
+                    tvGridTitle={`${sp.name} — ${t("ui.tvSeries")}`}
                     openGrid={openGrid}
                     onItemClick={navigateToItem}
                     savedKeys={savedKeys}
@@ -276,8 +278,8 @@ export function CataloghiView() {
               totalTv={animeTv.length}
               movieTitle={`${t("ui.movie")} — Top 20`}
               tvTitle={`${t("ui.tvSeries")} — Top 20`}
-              movieGridTitle="Anime — Film"
-              tvGridTitle="Anime — Serie"
+              movieGridTitle={`Anime — ${t("ui.movie")}`}
+              tvGridTitle={`Anime — ${t("ui.tvSeries")}`}
               openGrid={openGrid}
               onItemClick={navigateToItem}
               savedKeys={savedKeys}
@@ -286,15 +288,29 @@ export function CataloghiView() {
         </ScrollReveal>
       )}
 
-      {trending.length === 0 && (
+      {trending.length === 0 && !trendingError && (
         <div className="flex flex-col items-center justify-center py-24 text-zinc-500 animate-fade-scale-in">
           <div className="empty-state-illustration mb-5">
             <svg className="w-10 h-10 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" opacity="0.5"/>
             </svg>
           </div>
-          <p className="text-sm text-muted mb-2">{t("ui.loadingCatalogs") || "Caricamento cataloghi..."}</p>
+          <p className="text-sm text-muted mb-2">{t("ui.loadingCatalogs")}</p>
           <div className="w-8 h-8 rounded-full border-2 border-border border-t-accent-orange animate-spin" />
+        </div>
+      )}
+
+      {trending.length === 0 && trendingError && (
+        <div className="flex flex-col items-center justify-center py-24 text-zinc-500 animate-fade-scale-in">
+          <div className="empty-state-illustration mb-5">
+            <svg className="w-10 h-10 text-danger/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <p className="text-sm text-muted mb-4">{t("ui.catalogsError")}</p>
+          <button type="button" onClick={() => { void refreshLists() }} className="btn-ghost px-4 py-2 text-xs">{t("ui.retry")}</button>
         </div>
       )}
 
@@ -306,7 +322,7 @@ export function CataloghiView() {
               <button type="button"
                 onClick={() => setGridItems(null)}
                 className="w-9 h-9 flex items-center justify-center rounded-xl bg-surface2 hover:bg-zinc-700 text-muted hover:text-zinc-200 transition-all"
-                aria-label="Chiudi"
+                aria-label={t("ui.close")}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -354,7 +370,7 @@ export function CataloghiView() {
                     {isSaved && (
                       <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-emerald-500/90 text-white text-[10px] font-semibold flex items-center gap-1 shadow-lg backdrop-blur-sm z-10">
                         <Check className="w-3 h-3 stroke-[3]" />
-                        <span>Salvato</span>
+                        <span>{t("ui.savedShort")}</span>
                       </div>
                     )}
                   </button>

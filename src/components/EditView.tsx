@@ -102,7 +102,7 @@ export default function EditView() {
     } catch (e) {
       console.error("[posterium] Copy config link failed:", e)
       import("sonner").then(({ toast }) =>
-        toast.error(e instanceof Error ? e.message : "Errore nel generare il link config"),
+        toast.error(t("ui.configLinkError")),
       )
       setConfigLinkStatus("idle")
     }
@@ -182,7 +182,7 @@ export default function EditView() {
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
-              <span>{sourceView === "cataloghi" ? "Torna ai cataloghi" : sourceView === "myposters" ? "Torna ai miei poster" : "Torna indietro"}</span>
+              <span>{sourceView === "cataloghi" ? t("ui.backToCatalogs") : sourceView === "myposters" ? t("ui.backToMyPosters") : t("ui.back")}</span>
             </button>
           </div>
           {searchBar}
@@ -290,7 +290,7 @@ export default function EditView() {
                       if (!url) return
                       window.open(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`, "_blank")
                     }} className="btn-secondary py-2 px-3 rounded-xl text-[11px]">{t("ui.testUrl")}</button>
-                    <button type="button" aria-label="Copia link config" onClick={copyConfigLink} disabled={configLinkStatus === "copying"} className="btn-secondary py-2 px-3 rounded-xl text-[11px] disabled:opacity-50">{configLinkStatus === "copied" ? "✓ Copiato" : configLinkStatus === "copying" ? "…" : "Copia link config"}</button>
+                    <button type="button" aria-label={t("ui.copyConfigLink")} onClick={copyConfigLink} disabled={configLinkStatus === "copying"} className="btn-secondary py-2 px-3 rounded-xl text-[11px] disabled:opacity-50">{configLinkStatus === "copied" ? t("ui.configLinkCopied") : configLinkStatus === "copying" ? "…" : t("ui.copyConfigLink")}</button>
                     {(() => {
                       if (!selected) return null
                       const key = `${selected.media_type}:${selected.id}`

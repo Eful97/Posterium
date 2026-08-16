@@ -35,6 +35,17 @@ export function SearchView() {
     }
   }, [])
 
+  // Deep-link ?q=: precompila la ricerca dalla URL (es. /search?q=interstellar)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const q = params.get("q")?.trim() ?? ""
+    if (q.length >= 2) {
+      s.setQuery(q)
+      s.doSearch(q)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al mount
+  }, [])
+
   const showRecent = searchFocused && s.recentSearches.length > 0
 
   const handleLoadMore = async () => {
@@ -113,7 +124,7 @@ export function SearchView() {
             </svg>
           </div>
           <p className="text-muted text-sm font-medium mb-1.5">{t("ui.noKey")}</p>
-          <p className="text-zinc-500 text-xs max-w-xs mx-auto leading-relaxed">Inserisci una chiave TMDB nelle impostazioni per cercare film e serie TV.</p>
+          <p className="text-zinc-500 text-xs max-w-xs mx-auto leading-relaxed">{t("ui.noKeySub")}</p>
         </div>
       )}
       {s.error && (
@@ -141,7 +152,7 @@ export function SearchView() {
             </svg>
           </div>
           <p className="text-muted text-sm mb-2">{t("ui.noResults")}</p>
-          <p className="text-zinc-500 text-xs max-w-xs mx-auto leading-relaxed">{t("ui.noResultsForQuery") || `Nessun risultato per "${s.query}". Prova con un titolo diverso o verifica l'ortografia.`}</p>
+          <p className="text-zinc-500 text-xs max-w-xs mx-auto leading-relaxed">{t("ui.noResultsForQuery")}</p>
         </div>
       )}
     </div>

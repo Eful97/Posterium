@@ -9,6 +9,7 @@ import type { EnrichedAnimeItem } from "./validation"
 
 export function useTrending(tmdbKey: string, mdblistApiKey: string) {
   const [trending, setTrending] = useState<Array<SearchResult & { rank: number }>>([])
+  const [trendingError, setTrendingError] = useState(false)
   const [mdblistAnimeList, setMdblistAnimeList] = useState<EnrichedAnimeItem[]>([])
   const [streamingCharts, setStreamingCharts] = useState<Record<string, FlixPatrolChart>>({})
   const lastRefreshRef = useRef(0)
@@ -19,8 +20,8 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
     const ctrl = new AbortController()
     const signal = ctrl.signal
     http<{ movies: Array<SearchResult & { rank: number }>; tv: Array<SearchResult & { rank: number }> }>(`/api/tmdb/trending?api_key=${tmdbKey}`, { timeout: 30000, signal })
-      .then((data) => { if (signal.aborted) return; setTrending([...(data.movies || []), ...(data.tv || [])]) })
-      .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load trending:", e) })
+      .then((data) => { if (signal.aborted) return; setTrending([...(data.movies || []), ...(data.tv || [])]); setTrendingError(false) })
+      .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load trending:", e); setTrendingError(true) })
     if (!mdblistApiKey) {
       http<{ results: SearchResult[] }>(`/api/tmdb/trending/tv/week?api_key=${tmdbKey}&with_original_language=ja&sort_by=popularity`, { timeout: 30000, signal })
         .then((data) => {
@@ -80,10 +81,12 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
       ])
       if (signal.aborted) return
       setTrending([...(trendingData.movies || []), ...(trendingData.tv || [])])
+      setTrendingError(false)
       if (animeData) setMdblistAnimeList(animeData as EnrichedAnimeItem[])
     } catch (e) {
       if ((e as Error).name === "AbortError") return
       console.error("[posterium] Failed to refresh lists:", e)
+      setTrendingError(true)
     }
     for (const p of STREAMING_PLATFORMS) {
       http<FlixPatrolChart>(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 30000 })
@@ -93,5 +96,5 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
     import("sonner").then(({ toast }) => toast(t("ui.listsRefreshed")))
   }, [tmdbKey, mdblistApiKey])
 
-  return { trending, mdblistAnimeList, streamingCharts, refreshLists }
+  return { trending, trendingError, mdblistAnimeList, streamingCharts, refreshLists }
 }

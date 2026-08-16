@@ -2,6 +2,7 @@
 
 import React from "react"
 import { posterUrl } from "@/lib/utils"
+import { useT } from "@/lib/contexts/TranslationContext"
 import { Check } from "lucide-react"
 import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 
@@ -29,6 +30,7 @@ interface SimklCardProps {
 }
 
 export function SimklCard({ items, title, totalCount, meta = [], onClick, onItemClick, savedKeys, className }: SimklCardProps) {
+  const { t } = useT()
   const displayItems = items.slice(0, 10)
   const isSingle = displayItems.length <= 2 && !className?.includes("simkl-list-card--fill")
   const count = totalCount ?? items.length
@@ -87,7 +89,7 @@ export function SimklCard({ items, title, totalCount, meta = [], onClick, onItem
                 {isSaved && (
                   <div
                     className="absolute top-1.5 right-1.5 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg z-10"
-                    title="Già personalizzato nei tuoi poster"
+                    title={t("ui.alreadyCustomized")}
                   >
                     <Check className="w-3 h-3 stroke-[3]" />
                   </div>
@@ -101,12 +103,12 @@ export function SimklCard({ items, title, totalCount, meta = [], onClick, onItem
       <div className="info">
         <h3>
           <span className="truncate">{title}</span>
-          <span className="grid-hint ml-2 shrink-0" title="Vedi tutti">⧉</span>
+          <span className="grid-hint ml-2 shrink-0" title={t("ui.viewAll")}>⧉</span>
         </h3>
         <div className="meta flex items-center justify-between mt-2.5">
           {count > 0 && (
             <span className="counter-badge text-[11px] px-2 py-0.5 rounded-md font-medium bg-white/10 border border-white/10 text-zinc-300 backdrop-blur-sm">
-              {count} {count === 1 ? "titolo" : "titoli"}
+              {count} {count === 1 ? t("ui.itemOne") : t("ui.itemMany")}
             </span>
           )}
           {meta.length > 0 && (

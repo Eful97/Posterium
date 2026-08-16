@@ -56,6 +56,7 @@ export const MOCK_CTX: PosteriumCtx = {
   yearOf: (_r) => "",
   posterUrl: (path) => `https://image.tmdb.org/t/p/w500${path}`,
   trending: [],
+  trendingError: false,
   mdblistAnimeList: [],
   streamingCharts: {},
   STREAMING_PLATFORMS,

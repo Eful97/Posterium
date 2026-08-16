@@ -96,6 +96,7 @@ export interface PosteriumCtx {
   yearOf: (r: SearchResult) => string
   posterUrl: (path: string, size?: string) => string
   trending: (SearchResult & { rank: number })[]
+  trendingError: boolean
   mdblistAnimeList: EnrichedAnimeItem[]
   streamingCharts: Record<string, import("./types").FlixPatrolChart>
   STREAMING_PLATFORMS: typeof STREAMING_PLATFORMS
@@ -1034,7 +1035,7 @@ export function usePosterium(): PosteriumCtx {
     refreshLists: trending.refreshLists,
     tmdbKey, setQuery: search.setQuery, doSearch: search.doSearch, loadMore: search.loadMore,
     titleOf, yearOf, posterUrl,
-    trending: trending.trending, streamingCharts: trending.streamingCharts, mdblistAnimeList: trending.mdblistAnimeList,
+    trending: trending.trending, trendingError: trending.trendingError, streamingCharts: trending.streamingCharts, mdblistAnimeList: trending.mdblistAnimeList,
     STREAMING_PLATFORMS, loadMappings,
     query: search.query, results: search.results, searching: search.searching, error: search.error, setError: search.setError, totalResults: search.totalResults, totalPages: search.totalPages, searchPage: search.searchPage, recentSearches: search.recentSearches, mappings,
     settingsRef, langRef,
@@ -1070,7 +1071,7 @@ export function usePosterium(): PosteriumCtx {
     loadProfile, unlockProfile, dismissProfileLock, profileModalSuppressed,
     accentColor, setAccentColor,
     topEdgeColor, autoSaveExcludedPosters,
-    trending.trending, trending.streamingCharts, trending.mdblistAnimeList,
+    trending.trending, trending.trendingError, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
     theme, uiAccent, serviceErrors, hasNetflixRank,
   ])
