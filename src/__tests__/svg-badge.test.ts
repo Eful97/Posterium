@@ -255,6 +255,39 @@ describe("buildRankingBadgeSVG", () => {
     expect(right.svg).toContain(">TOP</text>")
     expect(right.svg).toContain(">4</text>")
   })
+
+  it("renders the rank label under the number for movie/series ribbons", () => {
+    const { svg, h } = buildNetflixRankBadgeSVG(4, 1000, false, "left", false, "Oggi")
+    expect(svg).toContain(">TOP</text>")
+    expect(svg).toContain(">4</text>")
+    expect(svg).toContain(">Oggi</text>")
+    // Nastro esteso (h × 1.55) come quello anime: il testo ha bisogno di spazio
+    const fs = Math.round(Math.max(23 * 1000 / 380, 14))
+    const w = Math.round(fs * 2.6)
+    const subFs = Math.round(w * 0.20)
+    const extendedH = Math.round(w * 1.55) + Math.round(fs * 0.4) + Math.round(subFs * 0.6)
+    expect(h).toBe(extendedH)
+  })
+
+  it("stays compact without label and not anime", () => {
+    const { svg, h } = buildNetflixRankBadgeSVG(4, 1000, false)
+    expect(svg).not.toContain(">anime</text>")
+    const fs = Math.round(Math.max(23 * 1000 / 380, 14))
+    const w = Math.round(fs * 2.6)
+    expect(h).toBe(Math.round(w * 1.35) + Math.round(fs * 0.4))
+  })
+
+  it("keeps the anime sub-label 'anime' (legacy behavior)", () => {
+    const { svg } = buildNetflixRankBadgeSVG(4, 1000, false, "left", true)
+    expect(svg).toContain(">anime</text>")
+    expect(svg).toContain(">TOP</text>")
+    expect(svg).toContain(">4</text>")
+  })
+
+  it("auto-fits a long label under the number", () => {
+    const { svg } = buildNetflixRankBadgeSVG(4, 1000, false, "left", false, "Supercalifragilistichespiralidoso")
+    expect(svg).toContain(">Supercalifragilistichespiralidoso</text>")
+  })
 })
 
 describe("buildExtraBadgeSVG", () => {

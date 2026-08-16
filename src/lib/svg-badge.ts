@@ -235,11 +235,22 @@ export async function renderGenreBadge(
 
 // --- Ranking badge ---
 
-export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boolean, side: "left" | "right" = "left", isAnime?: boolean) {
+// Testo sotto il numero del nastro Netflix. Per gli anime è l'etichetta fissa
+// "anime" (stessa del passato); per film/serie è l'etichetta del rank (es.
+// "Oggi", "Today") — stesso sistema del badge anime esteso a tutti i rank.
+function netflixSubLabel(isAnime: boolean | undefined, label: string | undefined): string {
+  if (label !== undefined && label !== "") return label
+  return isAnime ? "anime" : ""
+}
+
+export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boolean, side: "left" | "right" = "left", isAnime?: boolean, label?: string) {
   const fs = Math.round(Math.max(23 * pw / 380, 14))
   const w = Math.round(fs * 2.6)
-  // Anime: nastro allungato verso il basso (h × 1.55) per dare spazio alla scritta "anime".
-  const h = Math.round(w * (isAnime ? 1.55 : 1.35))
+  // Sottotitolo presente (anime o film/serie con etichetta): nastro allungato
+  // verso il basso (h × 1.55) per dare spazio alla scritta sotto il numero.
+  const subLabel = netflixSubLabel(isAnime, label)
+  const hasSub = subLabel.length > 0
+  const h = Math.round(w * (hasSub ? 1.55 : 1.35))
   const slant = Math.round(w * 0.12)
   const topFs = Math.round(w * 0.28)
   const rankFs = Math.round(w * 0.54)
@@ -247,21 +258,28 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
   const padBottom = Math.round(fs * 0.4)
   const totalW = w + padRight
   const totalH = h + padBottom
-  // Anime: "anime" sotto il numero (solo per ranking anime). Con il nastro più
-  // alto, numero e "anime" restano sopra la V-notch del bordo inferiore.
-  const animeFs = Math.round(w * 0.20)
-  const animePadBottom = isAnime ? Math.round(animeFs * 0.6) : 0
-  const totalHAnime = totalH + animePadBottom
-  // Anime: TOP, numero e "anime" impilati con la stessa distanza visiva.
-  // Il gap è proporzionale al font più piccolo (topFs/animeFs), così la
-  // spaziatura resta uniforme a ogni scala. Non-anime: posizioni invariate.
-  const topY = isAnime ? Math.round(h * 0.22) : Math.round(h * 0.28)
-  const textGap = isAnime ? Math.round(Math.min(topFs, animeFs) * 0.2) : 0
-  const rankY = isAnime
+  // Sottotitolo sotto il numero: font proporzionale al nastro, auto-fit se
+  // l'etichetta è più larga del nastro (es. traduzioni lunghe). "anime" a
+  // w*0.20 rientra sempre → output anime byte-identico al passato.
+  let subFs = Math.round(w * 0.20)
+  if (hasSub) {
+    const maxSubW = Math.round(w * 0.92)
+    const subW = estimateTextWidth(subLabel, subFs)
+    if (subW > maxSubW) subFs = Math.max(Math.round(subFs * maxSubW / subW), 8)
+  }
+  const subPadBottom = hasSub ? Math.round(subFs * 0.6) : 0
+  const totalHSub = totalH + subPadBottom
+  // TOP, numero e sottotitolo impilati con la stessa distanza visiva.
+  // Il gap è proporzionale al font più piccolo (topFs/subFs), così la
+  // spaziatura resta uniforme a ogni scala. Senza sottotitolo: posizioni
+  // invariate (compatto).
+  const topY = hasSub ? Math.round(h * 0.22) : Math.round(h * 0.28)
+  const textGap = hasSub ? Math.round(Math.min(topFs, subFs) * 0.2) : 0
+  const rankY = hasSub
     ? topY + Math.round(topFs / 2) + textGap + Math.round(rankFs / 2)
     : Math.round(h * 0.60)
-  const animeY = isAnime
-    ? rankY + Math.round(rankFs / 2) + textGap + Math.round(animeFs / 2)
+  const subY = hasSub
+    ? rankY + Math.round(rankFs / 2) + textGap + Math.round(subFs / 2)
     : 0
 
   // Stessa logica adattiva degli altri badge ranking (tlBg/tlFg):
@@ -285,10 +303,10 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
   const textX = isRight ? totalW - ribbonMidX : ribbonMidX
   const shadowDx = isRight ? -3 : 3
 
-  const animeEl = isAnime
-    ? `<text x="${textX}" y="${animeY}" fill="${textColor}" font-family="Inter" font-weight="600" font-size="${animeFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">anime</text>`
+  const subEl = hasSub
+    ? `<text x="${textX}" y="${subY}" fill="${textColor}" font-family="Inter" font-weight="600" font-size="${subFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">${subLabel}</text>`
     : ""
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalHAnime}" viewBox="0 0 ${totalW} ${totalHAnime}">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalHSub}" viewBox="0 0 ${totalW} ${totalHSub}">
     <defs>
       <filter id="shadow3D" x="-20%" y="-20%" width="180%" height="180%">
         <feDropShadow dx="${shadowDx}" dy="3" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.65"/>
@@ -301,9 +319,9 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
     <line x1="${highlightX1}" y1="1" x2="${highlightX2}" y2="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
     <text x="${textX}" y="${topY}" fill="${textColor}" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
     <text x="${textX}" y="${rankY}" fill="${textColor}" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
-    ${animeEl}
+    ${subEl}
   </svg>`
-  return { svg, w: totalW, h: totalHAnime }
+  return { svg, w: totalW, h: totalHSub }
 }
 
 export async function buildRankingBadgeSVG(
@@ -337,7 +355,9 @@ export async function buildRankingBadgeSVG(
 
   let result: { svg: string; w: number; h: number }
   if (isNetflix) {
-    result = buildNetflixRankBadgeSVG(rank, pw, !!topLight, side, isAnime)
+    // Il nastro mostra l'etichetta sotto il numero: per gli anime è "anime",
+    // per film/serie è il periodo del rank (es. "Oggi") — stesso sistema.
+    result = buildNetflixRankBadgeSVG(rank, pw, !!topLight, side, isAnime, periodText)
   } else if (s === "bar") {
     result = buildRankingBarSvg(fullText, pw, fs, fg, bg)
   } else if (s === "pill") {

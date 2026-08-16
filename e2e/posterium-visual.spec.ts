@@ -257,6 +257,14 @@ test.describe("poster API — visual regression", () => {
     await expect(poster).toHaveScreenshot("poster-anime.png", { maxDiffPixelRatio: 0.10 })
   })
 
+  test("movie ranking (netflix ribbon) + label — screenshot", async ({ page }) => {
+    // Nastro Netflix per film/serie: l'etichetta del rank ("Oggi") appare sotto
+    // il numero — stesso sistema del badge anime, esteso ai rank non-anime.
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", label: "Oggi", rs: "netflix" })
+    const poster = await renderPoster(page, url)
+    await expect(poster).toHaveScreenshot("poster-ranking-netflix.png", { maxDiffPixelRatio: 0.10 })
+  })
+
   test("extra badge — screenshot", async ({ page }) => {
     const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", extra: "Oscar 2024" })
     const poster = await renderPoster(page, url)
