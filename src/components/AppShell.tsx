@@ -9,6 +9,8 @@ import { LangPicker } from "@/components/LangPicker"
 import { VersionBadge } from "@/components/VersionBadge"
 import { ToastProvider } from "@/components/Toast"
 import { ProfileUnlock } from "@/components/ProfileUnlock"
+import { HomeStatusStrip } from "@/components/HomeStatusStrip"
+import { QuickSettings } from "@/components/QuickSettings"
 import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Download, User } from "lucide-react"
 
 // Code-splitting: viste/modali pesanti caricate on-demand per ridurre il JS iniziale.
@@ -54,6 +56,7 @@ export function AppShell() {
   const [refreshing, setRefreshing] = useState(false)
   const [proxyOpen, setProxyOpen] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [quickOpen, setQuickOpen] = useState(false)
   const [closingLang, setClosingLang] = useState(false)
   const [closingSettings, setClosingSettings] = useState(false)
   const closingLangRef = useRef<ReturnType<typeof setTimeout>>(null)
@@ -68,6 +71,13 @@ export function AppShell() {
     setClosingSettings(true)
     closingSettingsRef.current = setTimeout(() => { setSettingsOpen(false); setClosingSettings(false) }, 150)
   }
+
+  // Il popup impostazioni rapide si chiude con Esc
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") setQuickOpen(false) }
+    addEventListener("keydown", fn)
+    return () => removeEventListener("keydown", fn)
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -123,6 +133,7 @@ return (
       {/* desktop toolbar — floating island */}
       <div className="hidden md:flex absolute top-4 right-4 z-20">
         {settingsOpen && <div className="hidden md:block fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />}
+        {quickOpen && <div className="hidden md:block fixed inset-0 z-40" onClick={() => setQuickOpen(false)} />}
         <div className="floating-group relative z-50">
           <button type="button" suppressHydrationWarning aria-label={copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { copyUrl() }} disabled={!urlPattern} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-accent-orange hover:bg-white/[0.08] press-scale"><Copy className="w-4 h-4" /></button>
           <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const base = `${window.location.origin}/manifest.json`; const url = profileId ? `${window.location.origin}/u/${profileId}/manifest.json` : base; await navigator.clipboard.writeText(url) }} disabled={!urlPattern && !profileId} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-zinc-300 hover:bg-white/[0.08] press-scale"><Download className="w-4 h-4" /></button>
@@ -131,7 +142,17 @@ return (
           <div className="h-5 w-px bg-white/10 self-center" />
           <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="h-9 w-9 flex items-center justify-center rounded-lg text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] active:scale-[0.93] transition-all duration-150 press-scale">{mappings.length}</button>
           <div className="relative">
-            <button type="button" aria-label={t("ui.settings")} onClick={(e) => { e.stopPropagation(); setSettingsOpen((o) => !o) }} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale"><Settings className="w-4 h-4" /></button>
+            <button type="button" aria-label={t("ui.settings")} onClick={(e) => { e.stopPropagation(); setQuickOpen((o) => !o) }} className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale ${quickOpen ? "dropdown-open" : ""}`}><Settings className="w-4 h-4" /></button>
+            {quickOpen && (
+              <div className="absolute right-0 top-full mt-2 bg-black/60 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl shadow-black/50 z-50 min-w-56 animate-fade-scale-in dropdown-open">
+                <QuickSettings
+                  tmdbKeyInput={tmdbKeyInput}
+                  setTmdbKeyInput={setTmdbKeyInput}
+                  setTmdbKey={setTmdbKey}
+                  onOpenFull={() => { setQuickOpen(false); setSettingsOpen(true) }}
+                />
+              </div>
+            )}
             <div className="hidden md:block">{settingsOpen && <SettingsPanel tmdbKeyInput={tmdbKeyInput} setTmdbKeyInput={setTmdbKeyInput} setTmdbKey={setTmdbKey} setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} mdblistApiKey={mdblistApiKey} setMdblistApiKey={setMdblistApiKey} />}</div>
           </div>
         </div>
@@ -148,7 +169,7 @@ return (
             <button type="button" aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><User className="w-4 h-4" /></button>
             <button type="button" aria-label="Addon Proxy" onClick={() => setProxyOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-accent-orange"><Sparkles className="w-4 h-4" /></button>
             <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="top-action-button h-9 px-2 text-xs font-semibold bg-white/[0.06] border border-white/10 text-zinc-200">{mappings.length}</button>
-            <button type="button" aria-label={t("ui.settings")} onClick={() => setSettingsOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-zinc-200 press-scale"><Settings className="w-4 h-4" /></button>
+            <button type="button" aria-label={t("ui.settings")} onClick={() => setQuickOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-zinc-200 press-scale"><Settings className="w-4 h-4" /></button>
           </div>
           </>
         </div>
@@ -158,6 +179,8 @@ return (
         <div key={view} className="animate-fade-scale-in">
           {view === "search" ? <SearchView /> : view === "myposters" ? <MyPostersView /> : view === "cataloghi" ? <CataloghiView /> : <EditView />}
         </div>
+        {/* Strip di stato: presente in tutte le viste */}
+        <HomeStatusStrip />
       </div>
 
       <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 floating-group">
@@ -185,6 +208,24 @@ return (
           )}
         </div>
       </div>
+
+      {quickOpen && (
+        <div role="dialog" aria-modal="true" aria-label={t("ui.quickSettingsTitle")} className="fixed inset-0 z-[70] bg-background md:hidden overflow-y-auto animate-fade-scale-in">
+          <div className="fixed inset-0 z-[-1]" onClick={() => setQuickOpen(false)} />
+          <div className="flex items-center gap-3 p-4 border-b border-surface2">
+            <button type="button" autoFocus aria-label={t("ui.back")} onClick={() => setQuickOpen(false)} className="text-sm text-zinc-300 hover:text-white active:scale-90 transition-all duration-150 press-scale">{t("ui.back")}</button>
+            <h2 className="text-sm font-semibold text-zinc-200">{t("ui.quickSettingsTitle")}</h2>
+          </div>
+          <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <QuickSettings
+              tmdbKeyInput={tmdbKeyInput}
+              setTmdbKeyInput={setTmdbKeyInput}
+              setTmdbKey={setTmdbKey}
+              onOpenFull={() => { setQuickOpen(false); setSettingsOpen(true) }}
+            />
+          </div>
+        </div>
+      )}
 
       {(settingsOpen || closingSettings) && (
         <div role="dialog" aria-modal="true" aria-label={t("ui.settingsTitle")} className={`fixed inset-0 z-[70] bg-background md:hidden overflow-y-auto ${closingSettings ? "animate-fade-out" : "animate-fade-scale-in"}`}>

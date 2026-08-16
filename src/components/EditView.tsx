@@ -13,7 +13,6 @@ import { SearchBar } from "@/components/SearchBar"
 import { PosterCarousel } from "@/components/PosterCarousel"
 import { ScrollReveal } from "@/components/ScrollReveal"
 import { HomeHero } from "@/components/HomeHero"
-import { HomeStatusStrip } from "@/components/HomeStatusStrip"
 import { PosterPreview } from "@/components/PosterPreview"
 import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 import { BadgeControls } from "@/components/BadgeControls"
@@ -385,7 +384,6 @@ export default function EditView() {
           <ScrollReveal animation="fade-up" threshold={0.05}>
             <PosterCarousel />
           </ScrollReveal>
-          <HomeStatusStrip />
         </>
       )}
     </div>

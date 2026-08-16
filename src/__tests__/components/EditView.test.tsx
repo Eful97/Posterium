@@ -62,8 +62,9 @@ describe("EditView", () => {
     expect(transformTab.closest("button")).toHaveClass("tab-chip-active")
   })
 
-  it("shows home status strip when no item selected and has tmdbKey", () => {
+  it("shows home hero when no item selected and has tmdbKey", () => {
     renderWithCtx(<EditView />, { trending: [] })
-    expect(screen.getByText("ui.allSystemsOperational")).toBeInTheDocument()
+    const title = screen.getByRole("heading", { level: 1 })
+    expect(title.textContent).toContain("ui.heroTitleLead")
   })
 })
