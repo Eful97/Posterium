@@ -130,7 +130,7 @@ export function MoodBoardTile({
             role="button"
             tabIndex={0}
             aria-label={t("ui.quickView")}
-            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/70 hover:bg-black/70 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 active:scale-90 cursor-pointer"
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/70 hover:bg-black/70 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 active:scale-90 cursor-pointer"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </div>
@@ -142,7 +142,7 @@ export function MoodBoardTile({
             onClick={(e) => { e.stopPropagation(); onQuickView(e) }}
             role="button"
             tabIndex={0}
-            aria-label="Collezioni"
+            aria-label={t("ui.collections")}
             className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-zinc-300 hover:text-white hover:bg-black/70 transition-all duration-200 active:scale-90 cursor-pointer"
           >
             <Folder className="w-3 h-3" />
@@ -159,7 +159,7 @@ export function MoodBoardTile({
             aria-label={t("ui.delete")}
             onClick={(e) => { e.stopPropagation(); onRemove(e) }}
             onKeyDown={(e) => e.stopPropagation()}
-            className="absolute top-2 left-2 w-6 h-6 rounded-lg bg-red-900/70 flex items-center justify-center text-xs text-red-300 hover:bg-red-800 hover:text-red-200 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg shadow-black/30"
+            className="absolute top-2 left-2 w-6 h-6 rounded-lg bg-red-900/70 flex items-center justify-center text-xs text-red-300 hover:bg-red-800 hover:text-red-200 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer shadow-lg shadow-black/30"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

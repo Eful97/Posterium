@@ -40,6 +40,6 @@ describe("MyPostersView", () => {
 
   it("shows poster count in title", () => {
     renderWithCtx(<MyPostersView />, { mappings: mockMappings })
-    expect(screen.getByText(/\(3\)/)).toBeInTheDocument()
+    expect(screen.getAllByText("3").length).toBeGreaterThanOrEqual(1)
   })
 })

@@ -16,10 +16,12 @@ import type { Mapping } from "@/lib/types"
 export function MyPostersView() {
   const mappings = usePSelector((v) => v.mappings)
   const goHome = usePSelector((v) => v.goHome)
+  const router = usePSelector((v) => v.router)
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const removeMapping = usePSelector((v) => v.removeMapping)
   const { t } = useT()
   const [filter, setFilter] = useState("")
+  const filterRef = useRef<HTMLInputElement>(null)
   const [typeFilter, setTypeFilter] = useState<"all" | "movie" | "tv" | "anime">("all")
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -163,13 +165,52 @@ export function MyPostersView() {
     return () => document.removeEventListener("mousedown", handler)
   }, [sortOpen, closeSortDropdown])
 
+  // Shortcut "/" per il filtro titolo (non quando si sta già digitando)
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return
+      const el = document.activeElement
+      const isTyping = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || (el as HTMLElement).isContentEditable)
+      if (!isTyping) {
+        e.preventDefault()
+        filterRef.current?.focus()
+      }
+    }
+    addEventListener("keydown", fn)
+    return () => removeEventListener("keydown", fn)
+  }, [])
+
   return (
     <div className="pt-4 animate-fade-scale-in">
-      <h2 className="text-xl font-bold text-center mb-4">{t("ui.myPostersTitle")} <span className="text-xs text-muted font-normal">({mappings.length})</span></h2>
+      {/* Header libreria (da prototipo Open Design): kicker + titolo + conteggio + CTA */}
+      <section className="max-w-[1180px] mx-auto px-4 mb-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="text-center md:text-left">
+            <span className="hero-kicker mb-3">
+              <span className="dot" aria-hidden="true" />
+              {t("ui.myPostersKicker")}
+            </span>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-50 flex items-center justify-center md:justify-start gap-3">
+              {t("ui.myPostersTitle")}
+              <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-muted tabular-nums" aria-label={t("ui.statusPosterCount", { count: mappings.length })}>
+                {mappings.length}
+              </span>
+            </h1>
+            <p className="text-sm text-muted mt-1">{t("ui.myPostersSubtitle")}</p>
+          </div>
+          <div className="flex items-center gap-2 justify-center shrink-0">
+            <button type="button" onClick={() => router.push("search")} className="btn-ghost px-4 py-2 text-xs whitespace-nowrap">{t("ui.myPostersSearchCta")}</button>
+            <button type="button" onClick={goHome} className="btn-primary px-4 py-2 text-xs whitespace-nowrap">{t("ui.myPostersNewCta")}</button>
+          </div>
+        </div>
+      </section>
       <div className="flex items-center gap-2 mb-4 px-4 max-w-7xl mx-auto md:justify-center md:relative">
         <div role="search" className="search-shell flex items-center h-9 md:h-12 rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
           <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors"><Search size={14} /></span>
-          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted focus:placeholder:text-muted px-1.5 md:px-2 h-full transition-colors duration-200" />
+          <input ref={filterRef} value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("ui.filterPlaceholder")} aria-label={t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted focus:placeholder:text-muted px-1.5 md:px-2 h-full transition-colors duration-200" />
+          {filter.length === 0 && (
+            <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 mr-1 text-[10px] font-mono font-medium text-zinc-500 bg-white/[0.06] border border-white/10 rounded-md pointer-events-none select-none">/</kbd>
+          )}
           {filter.length > 0 && (
             <button type="button" aria-label={t("ui.filterPlaceholder")} onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full hover:bg-zinc-600 hover:shadow-lg active:scale-90 transition-all duration-200"><X className="w-4 h-4" /></button>
           )}
