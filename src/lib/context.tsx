@@ -373,6 +373,15 @@ export function usePosterium(): PosteriumCtx {
   const [previewUrl, setPreviewUrl] = useState("")
   const [imdbTop250, setImdbTop250] = useState(false)
   const [accentColor, setAccentColor] = useState<string | null>(null)
+  // Accent adattivo: espone il colore dominante del poster come
+  // --color-accent su <html>. Con uiAccent attivo, tutte le regole
+  // .ui-accent (glow di pagina, slider, toggle, tab chip, podio)
+  // si ritintano col poster in editing. Senza poster: fallback arancione.
+  useEffect(() => {
+    const root = document.documentElement
+    if (uiAccent && accentColor) root.style.setProperty("--color-accent", accentColor)
+    else root.style.removeProperty("--color-accent")
+  }, [uiAccent, accentColor])
   const [topEdgeColor, setTopEdgeColor] = useState<string | null>(null)
   const [serviceErrors, setServiceErrors] = useState<Record<string, boolean>>({})
 

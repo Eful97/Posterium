@@ -203,7 +203,8 @@ export default function EditView() {
             <div className="order-1 lg:order-2 animate-fade-scale-in" style={{animationDelay: "0ms"}}>
             <EditorPanel title={t("ui.previewSection")}>
               <div className="flex flex-col items-center">
-                <div className={`editor-stage relative isolate w-full max-w-[360px] my-2 ${previewPoster?.file_path ? "editor-stage-glow" : ""}`}>
+                <div className="relative w-full max-w-[360px] my-2">
+                <div className={`editor-stage relative isolate w-full ${previewPoster?.file_path ? "editor-stage-glow" : ""}`}>
                   {/* NuvioDesktop-style depth edge */}
                   <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
                   {/* Poster Image Ambient Depth Glow */}
@@ -237,7 +238,8 @@ export default function EditView() {
                       onRetry={retry}
                     />
                   </div>
-                  <PosterDepthSheen sheenStrength={20} />
+                    <PosterDepthSheen sheenStrength={20} />
+                  </div>
                 </div>
 
                 {selected && (

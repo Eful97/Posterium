@@ -258,12 +258,16 @@ export function MyPostersView() {
         <div className="text-center py-16 animate-fade-scale-in">
           {mappings.length === 0 ? (
             <>
-              <div className="empty-state-illustration mb-4">
-                <svg className="w-10 h-10 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" opacity="0.3"/>
-                  <polygon points="9.5 8 15.5 12 9.5 16 9.5 8" fill="currentColor" opacity="0.5"/>
-                  <circle cx="8" cy="8" r="1" fill="currentColor" opacity="0.3"/>
-                </svg>
+              <div className="relative h-[7.5rem] w-20 mx-auto mb-7" aria-hidden="true">
+                <div className="absolute -inset-9 -z-10" style={{ background: "radial-gradient(circle, rgb(var(--accent-rgb) / 0.16), transparent 70%)" }} />
+                <div className="absolute inset-0 rounded-xl border border-white/10 bg-white/[0.04] rotate-[-9deg]" />
+                <div className="absolute inset-0 rounded-xl border border-white/10 bg-white/[0.04] rotate-[9deg]" />
+                <div className="absolute inset-0 rounded-xl border border-accent-orange/45 bg-gradient-to-b from-accent-orange/[0.18] via-accent-orange/[0.06] to-transparent flex items-center justify-center shadow-[0_0_34px_rgb(var(--accent-rgb)/0.25)]">
+                  <svg className="w-7 h-7 text-accent-orange drop-shadow-[0_2px_10px_rgb(var(--accent-rgb)/0.45)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" opacity="0.4"/>
+                    <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
+                  </svg>
+                </div>
               </div>
               <p className="text-zinc-300 text-sm font-medium mb-1.5">{t("ui.emptyPosters")}</p>
               <p className="text-zinc-500 text-xs mb-6 max-w-xs mx-auto leading-relaxed">Cerca un film o una serie, personalizza il poster con badge e logo, poi salvalo qui.</p>
