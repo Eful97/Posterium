@@ -1,7 +1,7 @@
 "use client"
 
 function BadgePreview({ style, accentColor }: { style: string; accentColor?: string | null }) {
-  const base = "inline-flex items-center justify-center text-[8px] font-black leading-none w-7 h-4 rounded select-none"
+  const base = "inline-flex items-center justify-center text-[10px] font-black leading-none w-7 h-4 rounded select-none"
   const ac = accentColor || "#fb923c"
   switch (style) {
     case "shadow":

@@ -27,6 +27,8 @@ const eslintConfig = defineConfig([
     ".next-e2e/**",
     // DistDir di load-smoke.mjs (POSTERIUM_DATA_DIR/NEXT_DIST_DIR dedicati).
     ".next-load/**",
+    // DistDir di bench-image-cache.mjs (stesso pattern di .next-load).
+    ".next-bench/**",
     // Worktree Claude (.claude/worktrees/**): contengono una copia del repo con
     // il proprio .next generato, che altrimenti verrebbe lintato (868 errori
     // dai tipi generati da Next).

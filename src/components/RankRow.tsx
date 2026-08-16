@@ -59,7 +59,7 @@ const RankCard = React.memo(function RankCard({ item, onClick, isFirst, staggerI
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 h-6 md:h-9 bg-black/70 backdrop-blur-sm flex items-center px-2 pointer-events-none rounded-b-xl" />
-          <p className="absolute bottom-0 left-2 right-2 h-6 md:h-9 flex items-center text-[9px] md:text-xs text-white font-medium truncate leading-tight">
+          <p className="absolute bottom-0 left-2 right-2 h-6 md:h-9 flex items-center text-[10px] md:text-xs text-white font-medium truncate leading-tight">
             {label}
           </p>
         </div>

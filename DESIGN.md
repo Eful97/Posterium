@@ -34,12 +34,16 @@ Minimum 44×44px for interactive elements on mobile.
 | `surface2` | `#27272a` | Hover states |
 | `border` | `#3f3f46` | Borders |
 | `muted` | `#a1a1aa` | Secondary text |
-| `accent-orange` | `#ff6430` | Primary accent |
+| `accent-orange` | `#e85d2a` | Primary accent |
 | `accent` | `#ffffff` | Text accent / links |
-| `panel` | `rgba(18,18,22,0.80)` | Translucent glass panels with visible ambience |
-| `panel-strong` | `rgba(21,21,26,0.86)` | Strong panel surfaces |
+| `panel` | `rgba(18,18,22,0.74)` | Translucent glass panels with visible ambience |
+| `panel-strong` | `rgba(21,21,26,0.92)` | Strong panel surfaces |
 | `border-subtle` | `rgba(255,255,255,0.08)` | Default modern borders |
 | `border-strong` | `rgba(255,255,255,0.14)` | Hover/active borders |
+| `danger` | `#f87171` | Destructive actions (btn-danger) |
+| `warning` | `#fbbf24` | Amber best-fit badge (`fit-badge-amber`) |
+
+Light mode: `html.light-mode` overrides `background` → `#f5f5f5` and `foreground` → `#1a1a1a`.
 
 ## Modern Surface Classes
 

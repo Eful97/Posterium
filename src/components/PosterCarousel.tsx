@@ -181,7 +181,7 @@ export function PosterCarousel() {
                       />
                       <div className="absolute bottom-3 left-3 right-3 z-30">
                         <div className="flex flex-wrap gap-1.5">
-                          <span className="px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-md border border-white/10 text-[9px] font-semibold text-white/90">
+                          <span className="px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-semibold text-white/90">
                             {ex.badge}
                           </span>
                         </div>
