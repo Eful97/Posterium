@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo } from "react"
+import { createPortal } from "react-dom"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
@@ -62,6 +63,8 @@ export default function EditView() {
   const [activeRightTab, setActiveRightTab] = useState<"logo" | "badge" | "transform">("logo")
   const [activePosterTab, setActivePosterTab] = useState("clean")
   const [configLinkStatus, setConfigLinkStatus] = useState<"idle" | "copying" | "copied">("idle")
+  const [testUrl, setTestUrl] = useState<string | null>(null)
+  const [urlCopied, setUrlCopied] = useState(false)
 
   const copyConfigLink = async () => {
     setConfigLinkStatus("copying")
@@ -184,6 +187,10 @@ export default function EditView() {
               </svg>
               <span>{sourceView === "cataloghi" ? t("ui.backToCatalogs") : sourceView === "myposters" ? t("ui.backToMyPosters") : t("ui.back")}</span>
             </button>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />
+              {t("ui.saveState")}
+            </span>
           </div>
           {searchBar}
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,1fr)_minmax(400px,480px)_minmax(300px,1fr)] gap-5 items-stretch w-full max-w-[1360px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
@@ -288,7 +295,8 @@ export default function EditView() {
                         ribbonSide: ed.ribbonSide,
                       })
                       if (!url) return
-                      window.open(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`, "_blank")
+                      setUrlCopied(false)
+                      setTestUrl(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`)
                     }} className="btn-secondary py-2 px-3 rounded-xl text-[11px]">{t("ui.testUrl")}</button>
                     <button type="button" aria-label={t("ui.copyConfigLink")} onClick={copyConfigLink} disabled={configLinkStatus === "copying"} className="btn-secondary py-2 px-3 rounded-xl text-[11px] disabled:opacity-50">{configLinkStatus === "copied" ? t("ui.configLinkCopied") : configLinkStatus === "copying" ? "…" : t("ui.copyConfigLink")}</button>
                     {(() => {
@@ -385,6 +393,35 @@ export default function EditView() {
             <PosterCarousel />
           </ScrollReveal>
         </>
+      )}
+
+      {testUrl && createPortal(
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm overflow-y-auto animate-fade-scale-in" onClick={() => setTestUrl(null)}>
+          <div className="max-w-md mx-auto px-4 py-8 min-h-full flex flex-col justify-center" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-zinc-50">{t("ui.testUrlTitle")}</h3>
+              <button type="button" onClick={() => setTestUrl(null)} aria-label={t("ui.close")} className="w-9 h-9 flex items-center justify-center rounded-xl bg-surface2 hover:bg-zinc-700 text-muted hover:text-zinc-200 transition-all"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-white/10 bg-surface shadow-2xl">
+              {/* eslint-disable-next-line @next/next/no-img-element -- poster reale renderizzato dal server */}
+              <img src={testUrl} alt={t("ui.testUrlTitle")} className="w-full" />
+            </div>
+            <div className="mt-4 flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2">
+              <code className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[11px] font-mono text-muted select-text">{testUrl}</code>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button type="button" onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(testUrl)
+                  setUrlCopied(true)
+                  setTimeout(() => setUrlCopied(false), 2000)
+                } catch { /* clipboard non disponibile */ }
+              }} className="btn-secondary py-2 rounded-xl text-[11px]">{urlCopied ? t("ui.copied") : t("ui.copyPosterUrl")}</button>
+              <button type="button" onClick={() => window.open(testUrl, "_blank")} className="btn-primary py-2 rounded-xl text-[11px]">{t("ui.openInNewTab")}</button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )
