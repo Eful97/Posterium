@@ -30,7 +30,7 @@ export function ProfileUnlock() {
       aria-label="Accesso al profilo"
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
     >
-      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-surface p-6 shadow-2xl space-y-5 select-text">
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-surface p-6 shadow-2xl space-y-5 select-text animate-modal-panel-in">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-accent-orange/15 text-accent-orange border border-accent-orange/20">
             <Fingerprint className="w-5 h-5" />

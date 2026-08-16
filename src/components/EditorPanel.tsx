@@ -7,12 +7,14 @@ interface Props {
   onTabChange?: (key: string) => void
   /** Elemento extra in coda all'header (es. count pill, pill formato) */
   headerRight?: React.ReactNode
+  /** Barra fissa in fondo al pannello (fuori dallo scroll del body), es. azioni */
+  footer?: React.ReactNode
   children: React.ReactNode
   className?: string
   "aria-label"?: string
 }
 
-export function EditorPanel({ title, tabs, activeTab, onTabChange, headerRight, children, className = "", ["aria-label"]: ariaLabel }: Props) {
+export function EditorPanel({ title, tabs, activeTab, onTabChange, headerRight, footer, children, className = "", ["aria-label"]: ariaLabel }: Props) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!tabs || !activeTab || !onTabChange) return
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
@@ -54,6 +56,9 @@ export function EditorPanel({ title, tabs, activeTab, onTabChange, headerRight, 
       <div className="editor-panel-body scrollbar-none">
         {children}
       </div>
+      {footer && (
+        <div className="editor-panel-footer">{footer}</div>
+      )}
     </section>
   )
 }

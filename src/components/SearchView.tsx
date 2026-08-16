@@ -94,7 +94,7 @@ export function SearchView() {
                 {r.poster_path && <div className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none" style={{ backgroundImage: `url(${posterUrl(r.poster_path, "w92")})`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(24px) saturate(1.4)", transform: "scale(1.3)" }} />}
                 <div className="aspect-[2/3] bg-surface/80 overflow-hidden flex items-center justify-center relative z-[1]">
                   {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
-                  {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300" /> : <span className="text-3xl font-bold text-zinc-500">{titleOf(r).charAt(0)}</span>}
+                  {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]" /> : <span className="text-3xl font-bold text-zinc-500">{titleOf(r).charAt(0)}</span>}
                 </div>
                 <div className="px-2 py-2.5 text-center">
                   <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{titleOf(r)}</p>

@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { Check, Trash2, Maximize2, Folder } from "lucide-react"
 import { posterUrl } from "@/lib/utils"
 import type { Mapping } from "@/lib/types"
@@ -16,6 +16,8 @@ interface MoodBoardTileProps {
   onQuickView: (e: React.MouseEvent) => void
   onRemove: (e: React.MouseEvent) => void
   collectionCount?: number
+  /** Poster renderizzato dal server (WYSIWYG, /api/poster). Fallback: TMDB. */
+  imgSrc?: string | null
   t: (key: string, params?: Record<string, string | number>) => string
 }
 
@@ -29,6 +31,7 @@ export function MoodBoardTile({
   onQuickView,
   onRemove,
   collectionCount = 0,
+  imgSrc,
   t,
 }: MoodBoardTileProps) {
   const key = `${m.mediaType}:${m.tmdbId}`
@@ -39,6 +42,11 @@ export function MoodBoardTile({
     : (m.genreName || "").toLowerCase().includes("anim")
       ? t("ui.filterAnime")
       : t("ui.tvSeries")
+  const src = imgSrc ?? (m.posterPath ? posterUrl(m.posterPath, "w342") : null)
+  // Se il render server fallisce (es. senza chiave), ripiega sul poster TMDB.
+  const [imgError, setImgError] = useState(false)
+  const rawSrc = m.posterPath ? posterUrl(m.posterPath, "w342") : null
+  const displaySrc = imgError ? rawSrc : src
 
   return (
     <div
@@ -49,7 +57,7 @@ export function MoodBoardTile({
         onClick={() => { if (selectMode) onSelect(); else onOpen() }}
         role="button"
         tabIndex={0}
-        aria-label={`${m.title} — ${m.logoPath ? "with logo" : "clean poster"} — ${m.mediaType}`}
+        aria-label={`${m.title} — ${m.logoPath ? t("ui.posterWithLogo") : t("ui.cleanPoster")} — ${typeLabel}`}
         aria-pressed={selectMode && isSelected}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -70,18 +78,22 @@ export function MoodBoardTile({
         <div className="relative z-[1]">
 
       <div className="aspect-[2/3] bg-surface/80 overflow-hidden relative">
-        {/* Poster image */}
-        {m.posterPath ? (
-          // eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL
+        {/* Poster image — WYSIWYG: poster renderizzato dal server quando disponibile */}
+        {displaySrc ? (
+          // eslint-disable-next-line @next/next/no-img-element -- server-rendered poster / TMDB dynamic URL
           <img
-            src={posterUrl(m.posterPath, "w342")}
+            src={displaySrc}
             alt={m.title}
             loading="lazy"
             decoding="async"
             className="w-full h-full object-cover transition-transform duration-[400ms] ease-out group-hover:scale-[1.06]"
             onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none"
-              ;(e.target as HTMLImageElement).parentElement?.classList.add("show-fallback")
+              if (imgSrc && !imgError) {
+                setImgError(true)
+              } else {
+                (e.target as HTMLImageElement).style.display = "none"
+                ;(e.target as HTMLImageElement).parentElement?.classList.add("show-fallback")
+              }
             }}
           />
         ) : (
@@ -94,8 +106,9 @@ export function MoodBoardTile({
           </div>
         )}
 
-        {/* Logo overlay on poster */}
-        {m.logoPath && (
+        {/* Logo overlay — solo nel fallback TMDB grezzo: il render server (WYSIWYG)
+            cuoce già il logo nell'immagine, sovrapporlo di nuovo lo raddoppierebbe. */}
+        {m.logoPath && (!imgSrc || imgError) && (
           <div className="absolute inset-x-0 bottom-[7.33%] flex items-center justify-center pointer-events-none">
             <div style={{ width: `${m.logoScale ?? 75}%` }}>
               {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
@@ -106,7 +119,7 @@ export function MoodBoardTile({
 
         {/* Hover overlay with metadata */}
         <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+          className="absolute inset-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
           style={{
             background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 50%, transparent 100%)",
           }}
@@ -130,7 +143,7 @@ export function MoodBoardTile({
             role="button"
             tabIndex={0}
             aria-label={t("ui.quickView")}
-            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/70 hover:bg-black/70 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 active:scale-90 cursor-pointer"
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/70 hover:bg-black/70 hover:text-white transition-all duration-200 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 active:scale-90 cursor-pointer"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </div>
@@ -159,7 +172,7 @@ export function MoodBoardTile({
             aria-label={t("ui.delete")}
             onClick={(e) => { e.stopPropagation(); onRemove(e) }}
             onKeyDown={(e) => e.stopPropagation()}
-            className="absolute top-2 left-2 w-6 h-6 rounded-lg bg-red-900/70 flex items-center justify-center text-xs text-red-300 hover:bg-red-800 hover:text-red-200 active:scale-90 transition-all duration-150 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer shadow-lg shadow-black/30"
+            className="absolute top-2 left-2 w-8 h-8 rounded-lg bg-red-900/70 flex items-center justify-center text-xs text-red-300 hover:bg-red-800 hover:text-red-200 active:scale-90 transition-all duration-150 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer shadow-lg shadow-black/30"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
-import { posterUrl } from "@/lib/utils"
 import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
 import { EditorPanel } from "@/components/EditorPanel"
@@ -19,21 +18,12 @@ import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 import { BadgeControls } from "@/components/BadgeControls"
 import { TransformControls } from "@/components/TransformControls"
 import { usePosterPreview } from "@/lib/usePosterPreview"
-import { Clock, X, Check, Copy, Download, Settings } from "lucide-react"
+import { Check, Clock, ExternalLink, Save, Trash2, X } from "lucide-react"
 
-interface EditViewProps {
-  /** Apre il popup impostazioni rapide (gestito da AppShell) */
-  onQuickSettings?: () => void
-}
-
-export default function EditView({ onQuickSettings }: EditViewProps) {
+export default function EditView() {
   const accentColor = usePSelector((v) => v.accentColor)
   const doSearch = usePSelector((v) => v.doSearch)
   const goHome = usePSelector((v) => v.goHome)
-  const copyUrl = usePSelector((v) => v.copyUrl)
-  const urlPattern = usePSelector((v) => v.urlPattern)
-  const profileId = usePSelector((v) => v.profileId)
-  const mappings = usePSelector((v) => v.mappings)
   const loadingImages = usePSelector((v) => v.loadingImages)
   const logos = usePSelector((v) => v.logos)
   const mappingsMap = usePSelector((v) => v.mappingsMap)
@@ -60,7 +50,6 @@ export default function EditView({ onQuickSettings }: EditViewProps) {
   const setSelectedLogo = usePSelector((v) => v.setSelectedLogo)
   const setSettingsOpen = usePSelector((v) => v.setSettingsOpen)
   const setShowLangPicker = usePSelector((v) => v.setShowLangPicker)
-  const sourceView = usePSelector((v) => v.sourceView)
   const titleOf = usePSelector((v) => v.titleOf)
   const tmdbKey = usePSelector((v) => v.tmdbKey)
   const topEdgeColor = usePSelector((v) => v.topEdgeColor)
@@ -72,56 +61,14 @@ export default function EditView({ onQuickSettings }: EditViewProps) {
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [activeRightTab, setActiveRightTab] = useState<"logo" | "badge" | "transform">("logo")
   const [activePosterTab, setActivePosterTab] = useState("clean")
-  const [configLinkStatus, setConfigLinkStatus] = useState<"idle" | "copying" | "copied">("idle")
   const [testUrl, setTestUrl] = useState<string | null>(null)
   const [urlCopied, setUrlCopied] = useState(false)
 
-  const copyConfigLink = async () => {
-    setConfigLinkStatus("copying")
-    try {
-      const config = {
-        globalBadges: ed.globalBadges,
-        rankingBadges: ed.rankingBadges,
-        badgeGenre: ed.badgeGenre,
-        badgeYear: ed.badgeYear,
-        badgeRating: ed.badgeRating,
-        badgeStyle: ed.badgeStyle,
-        rankingBadgeStyle: ed.rankingBadgeStyle,
-        blurEnabled: ed.blurEnabled,
-        blurIntensity: ed.blurIntensity,
-        blurFade: ed.blurFade,
-        blurDarkness: ed.blurDarkness,
-        gradientHeight: ed.gradientHeight,
-        networkLogo: ed.networkLogo,
-        autoRotateClean: ed.autoRotateClean,
-        logoFitEnabled: ed.defaultLogoFitEnabled,
-        customBadge: ed.customBadge || undefined,
-        ribbonSide: ed.ribbonSide,
-      }
-      const res = await fetch("/api/config-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(data?.error || `HTTP ${res.status}`)
-      }
-      const { token } = await res.json()
-      const url = `${window.location.origin}/api/poster/{type}/{imdb_id}?config=${encodeURIComponent(token)}`
-      await navigator.clipboard.writeText(url)
-      setConfigLinkStatus("copied")
-      setTimeout(() => setConfigLinkStatus("idle"), 2000)
-    } catch (e) {
-      console.error("[posterium] Copy config link failed:", e)
-      import("sonner").then(({ toast }) =>
-        toast.error(t("ui.configLinkError")),
-      )
-      setConfigLinkStatus("idle")
-    }
-  }
-
   const { imageError, setImageError, previewLoading, loadProgress, imgSrc, retry } = usePosterPreview()
+
+  const handleSave = useCallback(async () => {
+    await saveConfig()
+  }, [saveConfig])
 
   const searchBar = (
     <div className={selected ? "w-full max-w-lg relative z-[100] isolate" : "max-w-lg mx-auto relative z-[100] isolate mb-8"}>
@@ -150,11 +97,11 @@ export default function EditView({ onQuickSettings }: EditViewProps) {
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (e.key === "Escape") { setSettingsOpen(false); setShowLangPicker(false) }
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); saveConfig() }
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); handleSave() }
     }
     addEventListener("keydown", fn)
     return () => removeEventListener("keydown", fn)
-  }, [setSettingsOpen, setShowLangPicker, saveConfig])
+  }, [setSettingsOpen, setShowLangPicker, handleSave])
 
   const cleanPoster = previewPoster?.iso_639_1 === null
 
@@ -168,37 +115,14 @@ export default function EditView({ onQuickSettings }: EditViewProps) {
     <div>
       {selected && (
         <div className="flex flex-col items-center w-full">
-          {/* Header editor (da prototipo): logo + back + ricerca + stato + azioni */}
-          <header className="w-full max-w-[1360px] mx-auto mb-4 flex items-center gap-3 flex-wrap">
-            {/* eslint-disable-next-line @next/next/no-img-element -- logo locale */}
-            <img onClick={goHome} src="/posterium.png" alt="Posterium" decoding="async" className="header-logo h-10 md:h-12 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
-            <button type="button"
-              onClick={() => { router.back() }}
-              aria-label={sourceView === "cataloghi" ? t("ui.backToCatalogs") : sourceView === "myposters" ? t("ui.backToMyPosters") : t("ui.back")}
-              className="text-xs text-zinc-300 hover:text-white transition-all inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 active:scale-95 shadow-sm"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              <span>{sourceView === "cataloghi" ? t("ui.backToCatalogs") : sourceView === "myposters" ? t("ui.backToMyPosters") : t("ui.back")}</span>
-            </button>
-            <div className="flex-1 min-w-[200px] max-w-lg">{searchBar}</div>
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />
-                {t("ui.saveState")}
-              </span>
-              {/* Azioni rapide (da prototipo: copia, installa, i miei poster, impostazioni) */}
-              <div className="hidden md:flex floating-group">
-                <button type="button" suppressHydrationWarning aria-label={t("ui.copyUrl")} onClick={() => { copyUrl() }} disabled={!urlPattern} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-accent-orange hover:bg-white/[0.08] press-scale"><Copy className="w-4 h-4" /></button>
-                <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const base = `${window.location.origin}/manifest.json`; const url = profileId ? `${window.location.origin}/u/${profileId}/manifest.json` : base; await navigator.clipboard.writeText(url) }} disabled={!urlPattern && !profileId} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-zinc-300 hover:bg-white/[0.08] press-scale"><Download className="w-4 h-4" /></button>
-                <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (router) router.replace("myposters") }} className="h-9 min-w-9 px-1.5 flex items-center justify-center rounded-lg text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] active:scale-[0.93] transition-all duration-150 press-scale">{mappings.length}</button>
-                <div className="h-5 w-px bg-white/10 self-center" />
-                <button type="button" aria-label={t("ui.settings")} onClick={() => { if (onQuickSettings) onQuickSettings(); else setSettingsOpen(true) }} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale"><Settings className="w-4 h-4" /></button>
-              </div>
+          {/* Header editor: solo logo centrato — la toolbar in alto a destra è quella globale di AppShell (come la home) */}
+          <header className="w-full px-4 md:px-6 -mt-1 md:-mt-8 mb-2">
+            <div className="flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element -- logo locale */}
+              <img onClick={goHome} src="/posterium.png" alt="Posterium" decoding="async" className="header-logo h-12 md:h-16 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
             </div>
           </header>
-          <div className="editor-workspace max-w-[1360px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
+          <div className="editor-workspace w-full px-4 md:px-6 lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
 
             {/* LEFT: Poster */}
             <EditorPanel className="animate-fade-scale-in-panel-left" aria-label={`${selected?.title || ""} — Poster selection`} title={t("ui.posterAvailable")} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10 tabular-nums">{posters.length}</span>}>
@@ -210,74 +134,21 @@ export default function EditView({ onQuickSettings }: EditViewProps) {
             </EditorPanel>
 
             {/* CENTER: Preview */}
-            <EditorPanel className="animate-fade-scale-in" title={<><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 align-middle shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />{t("ui.previewLive")}</>} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10">2:3 · JPEG</span>}>
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] font-mono text-muted mb-1" aria-hidden="true">500 × 750</span>
-                <div className="relative w-full max-w-[360px] my-2">
-                <div className={`editor-stage relative isolate w-full ${previewPoster?.file_path ? "editor-stage-glow" : ""}`}>
-                  {/* NuvioDesktop-style depth edge */}
-                  <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
-                  {/* Poster Image Ambient Depth Glow */}
-                  {previewPoster?.file_path && (
-                    <div
-                      className="absolute -inset-6 rounded-3xl opacity-75 blur-2xl pointer-events-none transition-all duration-700 ease-out z-0"
-                      style={{
-                        backgroundImage: `url(${posterUrl(previewPoster.file_path, "w185")})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        filter: "blur(32px) saturate(1.8)",
-                      }}
-                    />
-                  )}
-                  {/* Accent Glow */}
-                  <div
-                    className="absolute -inset-8 rounded-3xl opacity-45 blur-3xl pointer-events-none transition-all duration-700 ease-out z-0"
-                    style={{
-                      background: accentColor
-                        ? `radial-gradient(circle at 50% 50%, ${accentColor}, transparent 70%)`
-                        : "radial-gradient(circle at 50% 50%, rgba(232, 93, 42, 0.40), transparent 70%)",
-                    }}
-                  />
-                  <div className="relative z-[1]">
-                    <PosterPreview
-                      previewLoading={previewLoading}
-                      loadProgress={loadProgress}
-                      imageError={imageError}
-                      setImageError={setImageError}
-                      imgSrc={imgSrc}
-                      onRetry={retry}
-                    />
-                  </div>
-                    <PosterDepthSheen sheenStrength={20} />
-                  </div>
-                </div>
-
-                {selected && (
-                  <div className="mt-4 w-full text-center select-text">
-                    <div className="flex items-center justify-center gap-2 flex-wrap">
-                      <h2 className="text-lg font-bold tracking-tight text-zinc-50">{titleOf(selected)}</h2>
-                      {cleanPoster && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-muted uppercase tracking-wide">{t("ui.clean")}</span>
-                      )}
-                      {(() => {
-                        const key = `${selected.media_type}:${selected.id}`
-                        if (!mappingsMap.get(key)) return null
-                        return (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
-                            <Check className="w-3 h-3 stroke-[3]" />
-                            {t("ui.savedShort")}
-                          </span>
-                        )
-                      })()}
-                    </div>
-                    <p className="text-xs text-zinc-300 mt-0.5">{yearOf(selected)} {selected.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")}</p>
-                    <p className="text-xs text-zinc-500 mt-1 preview-meta-info">TMDB: <a href={`https://www.themoviedb.org/${selected.media_type}/${selected.id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 hover:text-white underline underline-offset-2">{selected.id}</a>{selected.imdb_id ? <> • IMDB: <a href={`https://www.imdb.com/title/${selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 hover:text-white underline underline-offset-2">{selected.imdb_id}</a></> : ""}</p>
-                  </div>
-                )}
-
-                {previewPoster && selected && (
-                  <div className="mt-4 w-full max-w-[360px] grid grid-cols-3 gap-2">
-                    <button type="button" aria-label={t("ui.savePoster")} onClick={saveConfig} className="btn-primary py-2 px-3 rounded-xl active:scale-[0.97]">{t("ui.savePoster")}</button>
+            <EditorPanel className="animate-fade-scale-in" title={<><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 align-middle shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />{t("ui.previewLive")}</>} footer={
+              previewPoster && selected ? (
+<div className="flex flex-wrap items-center justify-center gap-2">
+                    {(() => {
+                      if (!selected) return null
+                      const key = `${selected.media_type}:${selected.id}`
+                      const hasMapping = mappingsMap.get(key)
+                      if (!hasMapping) return null
+                      return (
+                        <button type="button" aria-label={t("ui.remove")} onClick={() => { removeMapping(hasMapping).catch((e) => console.error("[posterium] Remove mapping failed:", e)); setSelected(null); setPreviewPoster(null); setSelectedLogo(null); setPreviewId(null) }} className="btn-danger min-h-[44px] px-4 rounded-xl text-xs">
+                          <Trash2 className="w-4 h-4" />
+                          {t("ui.remove")}
+                        </button>
+                      )
+                    })()}
                     <button type="button" aria-label={t("ui.testUrl")} onClick={() => {
                       if (!selected || !previewPoster) return
                       const url = buildPreviewUrl({
@@ -315,27 +186,75 @@ export default function EditView({ onQuickSettings }: EditViewProps) {
                       if (!url) return
                       setUrlCopied(false)
                       setTestUrl(`${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`)
-                    }} className="btn-secondary py-2 px-3 rounded-xl text-[11px]">{t("ui.testUrl")}</button>
-                    <button type="button" aria-label={t("ui.copyConfigLink")} onClick={copyConfigLink} disabled={configLinkStatus === "copying"} className="btn-secondary py-2 px-3 rounded-xl text-[11px] disabled:opacity-50">{configLinkStatus === "copied" ? t("ui.configLinkCopied") : configLinkStatus === "copying" ? "…" : t("ui.copyConfigLink")}</button>
-                    {(() => {
-                      if (!selected) return null
-                      const key = `${selected.media_type}:${selected.id}`
-                      const hasMapping = mappingsMap.get(key)
-                      if (!hasMapping) return null
-                      return (
-                        <button type="button" aria-label={t("ui.remove")} onClick={() => { removeMapping(hasMapping).catch((e) => console.error("[posterium] Remove mapping failed:", e)); setSelected(null); setPreviewPoster(null); setSelectedLogo(null); setPreviewId(null) }} className="btn-danger py-2 px-3 rounded-xl text-[11px]">{t("ui.remove")}</button>
-                      )
-                    })()}
+                    }} className="btn-secondary min-h-[44px] px-4 rounded-xl text-xs">
+                      <ExternalLink className="w-4 h-4" />
+                      {t("ui.testUrl")}
+                    </button>
+                    <button type="button" aria-label={t("ui.savePoster")} onClick={handleSave} className="btn-primary min-h-[44px] px-5 rounded-xl">
+                      <Save className="w-4 h-4" />
+                      {t("ui.savePoster")}
+                    </button>
                   </div>
-                )}
+              ) : undefined}>
+              <div className="flex flex-col items-center h-full min-h-0">
+                <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+                  <div className="editor-preview-fit relative">
+                    <div className={`editor-stage editor-stage-fill isolate ${previewPoster?.file_path ? "editor-stage-glow" : ""}`}>
+                      {/* NuvioDesktop-style depth edge */}
+                      <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
+                      {/* Accent Glow (firma Posterium: si ritinta col colore dominante) */}
+                      <div
+                        className="absolute -inset-8 rounded-3xl opacity-45 blur-3xl pointer-events-none transition-all duration-700 ease-out z-0"
+                        style={{
+                          background: accentColor
+                            ? `radial-gradient(circle at 50% 50%, ${accentColor}, transparent 70%)`
+                            : "radial-gradient(circle at 50% 50%, rgba(232, 93, 42, 0.40), transparent 70%)",
+                        }}
+                      />
+                      <div className="absolute inset-0 z-[1]">
+                        <PosterPreview
+                          previewLoading={previewLoading}
+                          loadProgress={loadProgress}
+                          imageError={imageError}
+                          setImageError={setImageError}
+                          imgSrc={imgSrc}
+                          onRetry={retry}
+                        />
+                      </div>
+                      <PosterDepthSheen sheenStrength={20} />
+                    </div>
+                  </div>
+                </div>
 
-                <p className="text-[11px] text-zinc-500 text-center mt-3">{selectedLogo ? t("ui.logoSelected") : previewPoster?.iso_639_1 === null ? `${t("ui.clean")} ${t("ui.selected").toLowerCase()}` : previewPoster ? t("ui.logoHint") : t("ui.noPosterSelected")}</p>
+                <p className="text-[11px] text-zinc-500 text-center mt-3 shrink-0">{selectedLogo ? t("ui.logoSelected") : previewPoster?.iso_639_1 === null ? `${t("ui.clean")} ${t("ui.selected").toLowerCase()}` : previewPoster ? t("ui.logoHint") : t("ui.noPosterSelected")}</p>
               </div>
             </EditorPanel>
 
             {/* RIGHT: Edit */}
             <EditorPanel className="animate-fade-scale-in-panel-right" title={t("ui.customize")} tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
-              <div key={activeRightTab} className="animate-fade-in space-y-3">
+              {selected && (
+                <div className="mb-3 pb-3 border-b border-white/[0.08]">
+                  <h3 className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">{t("ui.details")}</h3>
+                  <p className="text-sm font-bold tracking-tight text-zinc-50 truncate">{titleOf(selected)}</p>
+                  <p className="text-[11px] font-mono text-zinc-500 mt-1">{yearOf(selected)} · {selected.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")} · TMDB <a href={`https://www.themoviedb.org/${selected.media_type}/${selected.id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{selected.id}</a>{selected.imdb_id ? <> · IMDB <a href={`https://www.imdb.com/title/${selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{selected.imdb_id}</a></> : ""}</p>
+                  <div className="flex items-center gap-2 flex-wrap mt-2">
+                    {cleanPoster && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-muted uppercase tracking-wide">{t("ui.clean")}</span>
+                    )}
+                    {(() => {
+                      const key = `${selected.media_type}:${selected.id}`
+                      if (!mappingsMap.get(key)) return null
+                      return (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                          {t("ui.savedShort")}
+                        </span>
+                      )
+                    })()}
+                  </div>
+                </div>
+              )}
+              <div key={activeRightTab} className="animate-tab-fade-in space-y-3">
               {activeRightTab === "logo" && <>
                 <LogoOptions logos={logos} selectedLogo={selectedLogo} lang={lang} selectLogo={selectLogo} removeLogo={removeLogo} disabled={!cleanPoster} />
                 {!cleanPoster && <p className="text-xs text-zinc-500 text-center mt-2 px-1">{t("ui.logoHint")}</p>}
@@ -431,8 +350,8 @@ export default function EditView({ onQuickSettings }: EditViewProps) {
                   setUrlCopied(true)
                   setTimeout(() => setUrlCopied(false), 2000)
                 } catch { /* clipboard non disponibile */ }
-              }} className="btn-secondary py-2 rounded-xl text-[11px]">{urlCopied ? t("ui.copied") : t("ui.copyPosterUrl")}</button>
-              <button type="button" onClick={() => window.open(testUrl, "_blank")} className="btn-primary py-2 rounded-xl text-[11px]">{t("ui.openInNewTab")}</button>
+              }} className="btn-secondary min-h-[44px] rounded-xl text-xs">{urlCopied ? t("ui.copied") : t("ui.copyPosterUrl")}</button>
+              <button type="button" onClick={() => window.open(testUrl, "_blank")} className="btn-primary min-h-[44px] rounded-xl text-xs">{t("ui.openInNewTab")}</button>
             </div>
           </div>
         </div>,

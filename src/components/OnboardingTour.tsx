@@ -89,8 +89,9 @@ export function OnboardingTour() {
           <X className="w-4 h-4" />
         </button>
 
-        {/* Slide content */}
-        <div className="px-6 pt-10 pb-4 text-center">
+        {/* Slide content — key={step} rimonta il blocco a ogni cambio: il
+            contenuto nuovo entra da destra invece di scattare */}
+        <div key={step} className="px-6 pt-10 pb-4 text-center animate-step-enter">
           {/* Icon */}
           <div className="w-16 h-16 rounded-2xl bg-accent-orange/10 flex items-center justify-center mx-auto mb-5">
             <StepIcon className="w-7 h-7 text-accent-orange" />

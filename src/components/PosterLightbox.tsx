@@ -15,6 +15,10 @@ interface PosterLightboxProps {
   collections?: PosterCollection[]
   onAddToCollection?: (collectionId: string, posterKey: string) => void
   onRemoveFromCollection?: (collectionId: string, posterKey: string) => void
+  /** Poster renderizzato dal server (WYSIWYG, /api/poster). Fallback: TMDB. */
+  imgSrc?: string | null
+  lang?: string
+  onOpenEditor?: () => void
 }
 
 export function PosterLightbox({
@@ -25,15 +29,22 @@ export function PosterLightbox({
   collections,
   onAddToCollection,
   onRemoveFromCollection,
+  imgSrc,
+  lang,
+  onOpenEditor,
 }: PosterLightboxProps) {
   const [mounted, setMounted] = useState(false)
   const [closing, setClosing] = useState(false)
+  const [imgFailed, setImgFailed] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const mapping = lightbox?.mapping ?? null
   const rect = lightbox?.rect ?? null
   const posterKey = mapping ? `${mapping.mediaType}:${mapping.tmdbId}` : null
+  const mediaSrc = imgFailed || !imgSrc
+    ? (mapping?.posterPath ? posterUrlFn(mapping.posterPath, "w500") : null)
+    : imgSrc
 
   // Start animation on mount
   useEffect(() => {
@@ -42,6 +53,11 @@ export function PosterLightbox({
       requestAnimationFrame(() => setMounted(true))
     })
     return () => cancelAnimationFrame(raf)
+  }, [mapping])
+
+  // Reset del fallback immagine quando cambia il poster
+  useEffect(() => {
+    setImgFailed(false)
   }, [mapping])
 
   // Set transform-origin on the card once measured
@@ -152,13 +168,14 @@ export function PosterLightbox({
 
         {/* Poster area */}
         <div className="aspect-[2/3] bg-surface relative overflow-hidden">
-          {mapping.posterPath ? (
+          {mediaSrc ? (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
+              {/* eslint-disable-next-line @next/next/no-img-element -- server-rendered poster / TMDB dynamic URL */}
               <img
-                src={posterUrlFn(mapping.posterPath, "w500")}
+                src={mediaSrc}
                 alt={mapping.title}
                 className="w-full h-full object-cover"
+                onError={() => { if (imgSrc && !imgFailed) setImgFailed(true) }}
               />
               {/* Gradient overlay for text readability */}
               <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
@@ -183,11 +200,16 @@ export function PosterLightbox({
                   {vote}
                 </span>
               )}
+              {mapping.updatedAt && (
+                <span className="text-[10px] font-medium text-zinc-400 drop-shadow">
+                  {t("ui.savedOn")} {new Date(mapping.updatedAt).toLocaleDateString(lang)}
+                </span>
+              )}
             </div>
           </div>
 
           {/* Poster icon badge */}
-          {mapping.posterPath && (
+          {mediaSrc && (
             <div className="absolute top-3 left-3 w-7 h-7 rounded-lg bg-black/40 backdrop-blur-sm flex items-center justify-center pointer-events-none">
               <Maximize2 className="w-3.5 h-3.5 text-white/60" />
             </div>
@@ -195,14 +217,17 @@ export function PosterLightbox({
         </div>
 
         {/* Collections section */}
-        {posterKey && collections && collections.length > 0 && (
+        {posterKey && collections && (
           <div className="px-4 py-3 border-t border-white/5">
             <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-2">
-              Collezioni
+              {t("ui.collections")}
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {collections.map((col) => {
-                const checked = isInCol(col.id)
+            {collections.length === 0 ? (
+              <p className="text-[11px] text-zinc-500 leading-relaxed">{t("ui.noCollections")}</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {collections.map((col) => {
+                  const checked = isInCol(col.id)
                 return (
                   <button type="button"
                     key={col.id}
@@ -225,6 +250,19 @@ export function PosterLightbox({
                 )
               })}
             </div>
+            )}
+          </div>
+        )}
+
+        {/* Actions — un solo CTA primario: apri nell'editor */}
+        {onOpenEditor && (
+          <div className="px-4 py-3 border-t border-white/5 flex items-center gap-2">
+            <button type="button" onClick={() => { handleClose(); onOpenEditor() }} className="btn-primary flex-1 px-3 py-2 text-xs font-semibold whitespace-nowrap">
+              {t("ui.openInEditor")}
+            </button>
+            <button type="button" onClick={handleClose} className="btn-ghost px-3 py-2 text-xs font-medium whitespace-nowrap">
+              {t("ui.close")}
+            </button>
           </div>
         )}
       </div>

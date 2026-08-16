@@ -131,17 +131,17 @@ export function HomeHero() {
   return (
     <section className="home-hero animate-fade-scale-in-hero">
       <div className="home-hero-copy">
-        <span className="hero-kicker mb-3">
+        <span className="hero-kicker mb-3 animate-fade-up" style={{ animationDelay: "0ms" }}>
           <span className="dot" aria-hidden="true" />
           {t("ui.heroKicker")}
         </span>
-        <h1 className="home-hero-title">
+        <h1 className="home-hero-title animate-fade-up" style={{ animationDelay: "70ms" }}>
           {t("ui.heroTitleLead")}
           <span className="accent-word">{t("ui.heroTitleAccent")}</span>
           {t("ui.heroTitleTail")}
         </h1>
-        <p className="home-hero-sub mt-3">{t("ui.heroSubtitle")}</p>
-        <div className="stat-pills mt-4">
+        <p className="home-hero-sub mt-3 animate-fade-up" style={{ animationDelay: "140ms" }}>{t("ui.heroSubtitle")}</p>
+        <div className="stat-pills mt-4 animate-fade-up" style={{ animationDelay: "210ms" }}>
           <span className="stat-pill">
             <Layers className="w-3.5 h-3.5" />
             {t("ui.heroPillLogos")}
@@ -155,7 +155,7 @@ export function HomeHero() {
             {t("ui.heroPillLangs")}
           </span>
         </div>
-        <div className="home-hero-cta-row">
+        <div className="home-hero-cta-row animate-fade-up" style={{ animationDelay: "280ms" }}>
           <button type="button" onClick={() => router.push("cataloghi")} className="btn-primary px-5 py-2.5 whitespace-nowrap">
             {t("ui.heroCatalogsCta")}
           </button>

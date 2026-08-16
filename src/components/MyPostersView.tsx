@@ -11,14 +11,16 @@ import { MoodBoardTile } from "@/components/MoodBoardTile"
 import { PosterLightbox } from "@/components/PosterLightbox"
 import { CollectionBar } from "@/components/CollectionBar"
 import { useCollections } from "@/lib/useCollections"
+import { useCountUp } from "@/lib/useCountUp"
 import type { Mapping } from "@/lib/types"
 
 export function MyPostersView() {
   const mappings = usePSelector((v) => v.mappings)
   const goHome = usePSelector((v) => v.goHome)
-  const router = usePSelector((v) => v.router)
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const removeMapping = usePSelector((v) => v.removeMapping)
+  const urlPattern = usePSelector((v) => v.urlPattern)
+  const lang = usePSelector((v) => v.lang)
   const { t } = useT()
   const [filter, setFilter] = useState("")
   const filterRef = useRef<HTMLInputElement>(null)
@@ -28,6 +30,7 @@ export function MyPostersView() {
   const [showDeleteAll, setShowDeleteAll] = useState(false)
   // Conferma prima della cancellazione (F9): singolo tile e multi-select.
   const [confirmRemove, setConfirmRemove] = useState<Mapping | null>(null)
+  const [confirmDeleteCollection, setConfirmDeleteCollection] = useState<string | null>(null)
   const [showDeleteSelected, setShowDeleteSelected] = useState(false)
   const [sortBy, setSortBy] = useState<"updated" | "alpha">("updated")
   const [typeOpen, setTypeOpen] = useState(false)
@@ -128,6 +131,15 @@ export function MyPostersView() {
     return acc
   }, [collections, mappings])
 
+  // Poster renderizzato dal server (WYSIWYG): l'URL del pattern con
+  // {type}/{imdb_id} sostituiti dal mapping salvato. Fallback: TMDB raw.
+  const mappingImgUrl = useCallback((m: Mapping): string => {
+    if (urlPattern && urlPattern.includes("{type}")) {
+      return urlPattern.replace("{type}", m.mediaType).replace("{imdb_id}", String(m.tmdbId))
+    }
+    return posterUrl(m.posterPath, "w342")
+  }, [urlPattern])
+
   const filtered = useMemo(() => {
     return mappings
       .filter((m) => {
@@ -183,8 +195,8 @@ export function MyPostersView() {
   return (
     <div className="pt-4 animate-fade-scale-in">
       {/* Header libreria (da prototipo Open Design): kicker + titolo + conteggio + CTA */}
-      <section className="max-w-[1180px] mx-auto px-4 mb-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <section className="max-w-7xl mx-auto px-4 mb-6">
+        <div className="flex flex-col md:flex-row md:items-end gap-4">
           <div className="text-center md:text-left">
             <span className="hero-kicker mb-3">
               <span className="dot" aria-hidden="true" />
@@ -193,19 +205,15 @@ export function MyPostersView() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-50 flex items-center justify-center md:justify-start gap-3">
               {t("ui.myPostersTitle")}
               <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-muted tabular-nums" aria-label={t("ui.statusPosterCount", { count: mappings.length })}>
-                {mappings.length}
+                {useCountUp(mappings.length)}
               </span>
             </h1>
             <p className="text-sm text-muted mt-1">{t("ui.myPostersSubtitle")}</p>
           </div>
-          <div className="flex items-center gap-2 justify-center shrink-0">
-            <button type="button" onClick={() => router.push("search")} className="btn-ghost px-4 py-2 text-xs whitespace-nowrap">{t("ui.myPostersSearchCta")}</button>
-            <button type="button" onClick={goHome} className="btn-primary px-4 py-2 text-xs whitespace-nowrap">{t("ui.myPostersNewCta")}</button>
-          </div>
         </div>
       </section>
-      <div className="flex items-center gap-2 mb-4 px-4 max-w-7xl mx-auto md:justify-center md:relative">
-        <div role="search" className="search-shell flex items-center h-9 md:h-12 rounded-2xl transition-all duration-300 group flex-1 md:flex-none md:w-80 md:max-w-xs">
+      <div className="flex flex-wrap items-center gap-2 mb-4 px-4 max-w-7xl mx-auto">
+        <div role="search" className="search-shell flex items-center h-11 rounded-2xl transition-all duration-300 group w-full md:w-auto md:flex-1 max-w-none md:max-w-[340px]">
           <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors"><Search size={14} /></span>
           <input ref={filterRef} value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("ui.filterPlaceholder")} aria-label={t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted focus:placeholder:text-muted px-1.5 md:px-2 h-full transition-colors duration-200" />
           {filter.length === 0 && (
@@ -215,16 +223,16 @@ export function MyPostersView() {
             <button type="button" aria-label={t("ui.filterPlaceholder")} onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full hover:bg-zinc-600 hover:shadow-lg active:scale-90 transition-all duration-200"><X className="w-4 h-4" /></button>
           )}
         </div>
-        <div className="flex items-center gap-1 md:gap-2 md:absolute md:right-0 shrink-0">
-          <button type="button" aria-label={selectMode ? t("ui.cancel") : t("ui.select")} onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-muted hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? <X className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}</span><span className="hidden md:inline">{selectMode ? t("ui.cancel") : t("ui.select")}</span></button>
+        <div className="flex items-center gap-1 md:gap-2 shrink-0 w-full md:w-auto md:ml-auto">
+          <button type="button" aria-label={selectMode ? t("ui.cancel") : t("ui.select")} onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-11 h-11 md:w-auto md:h-11 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 flex-1 md:flex-none ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-muted hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? <X className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}</span><span className="hidden md:inline">{selectMode ? t("ui.cancel") : t("ui.select")}</span></button>
           {mappings.length > 0 && (
             <div className="relative">
-              <button type="button" aria-label={t("ui.deleteAll")} onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-9 h-9 md:w-auto md:h-10 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-danger hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center press-scale"><Trash2 className="w-4 h-4" /></button>
+              <button type="button" aria-label={t("ui.deleteAll")} onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-11 h-11 md:w-auto md:h-11 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-danger hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center press-scale flex-1 md:flex-none"><Trash2 className="w-4 h-4" /></button>
               <ConfirmDialog open={showDeleteAll} title={t("ui.confirmDeleteAll")} message={t("ui.confirmDeleteAllMsg", { count: mappings.length })} confirmLabel={t("ui.deleteAll")} onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
             </div>
           )}
           <div className="relative" ref={sortRef}>
-            <button type="button" aria-label={sortBy === "updated" ? t("ui.sortRecent") : t("ui.sortAZ")} onClick={() => { setSortOpen((o) => !o); setTypeOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-muted hover:bg-surface2 transition-all duration-150 shrink-0 px-2 press-scale">
+            <button type="button" aria-label={sortBy === "updated" ? t("ui.sortRecent") : t("ui.sortAZ")} onClick={() => { setSortOpen((o) => !o); setTypeOpen(false) }} className="flex items-center gap-1 h-11 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-muted hover:bg-surface2 transition-all duration-150 shrink-0 px-3 press-scale flex-1 md:flex-none justify-center">
               <span className="shrink-0">{sortBy === "updated" ? <Calendar className="w-3.5 h-3.5" /> : <ArrowUpAZ className="w-3.5 h-3.5" />}</span>
               <span className="hidden md:inline truncate">{sortBy === "updated" ? t("ui.recent") : t("ui.sortAZ")}</span>
               <ChevronDown className="w-3 h-3 shrink-0" />
@@ -237,7 +245,7 @@ export function MyPostersView() {
             )}
           </div>
           <div className="relative" ref={typeRef}>
-            <button type="button" aria-label={typeFilter === "all" ? t("ui.all") : typeFilter === "movie" ? t("ui.filterMovie") : typeFilter === "tv" ? t("ui.filterSeries") : t("ui.filterAnime")} onClick={() => { setTypeOpen((o) => !o); setSortOpen(false) }} className="flex items-center gap-1 h-9 md:h-10 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-muted hover:bg-surface2 transition-all duration-150 shrink-0 px-2 press-scale">
+            <button type="button" aria-label={typeFilter === "all" ? t("ui.all") : typeFilter === "movie" ? t("ui.filterMovie") : typeFilter === "tv" ? t("ui.filterSeries") : t("ui.filterAnime")} onClick={() => { setTypeOpen((o) => !o); setSortOpen(false) }} className="flex items-center gap-1 h-11 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-muted hover:bg-surface2 transition-all duration-150 shrink-0 px-3 press-scale flex-1 md:flex-none justify-center">
               <span className="shrink-0">{typeFilter === "movie" ? <Clapperboard className="w-3.5 h-3.5" /> : typeFilter === "tv" ? <Tv className="w-3.5 h-3.5" /> : typeFilter === "anime" ? <Flag className="w-3.5 h-3.5" /> : <Clipboard className="w-3.5 h-3.5" />}</span>
               <span className="hidden md:inline truncate">{typeFilter === "all" ? t("ui.all") : typeFilter === "movie" ? t("ui.filterMovie") : typeFilter === "tv" ? t("ui.filterSeries") : t("ui.filterAnime")}</span>
               <ChevronDown className="w-3 h-3 shrink-0" />
@@ -263,12 +271,10 @@ export function MyPostersView() {
             onSelect={setActiveCollection}
             onCreate={createCollection}
             onRename={renameCollection}
-            onDelete={(id) => {
-              if (activeCollection === id) setActiveCollection(null)
-              deleteCollection(id)
-            }}
+            onDelete={(id) => { setConfirmDeleteCollection(id) }}
             countByCollection={countByCollection}
             totalCount={mappings.length}
+            t={t}
           />
         </div>
       )}
@@ -311,7 +317,7 @@ export function MyPostersView() {
                 </div>
               </div>
               <p className="text-zinc-300 text-sm font-medium mb-1.5">{t("ui.emptyPosters")}</p>
-              <p className="text-zinc-500 text-xs mb-6 max-w-xs mx-auto leading-relaxed">Cerca un film o una serie, personalizza il poster con badge e logo, poi salvalo qui.</p>
+              <p className="text-zinc-500 text-xs mb-6 max-w-xs mx-auto leading-relaxed">{t("ui.emptyPostersSub")}</p>
               <button type="button" onClick={goHome} className="px-6 py-3 btn-primary font-medium press-scale">
                 {t("ui.searchCta")}
               </button>
@@ -328,10 +334,10 @@ export function MyPostersView() {
                   <line x1="3" y1="18" x2="3.01" y2="18"/>
                 </svg>
               </div>
-              <p className="text-zinc-300 text-sm font-medium mb-1">Questa collezione è vuota</p>
-              <p className="text-zinc-500 text-xs mb-4">Apri un poster per aggiungerlo a questa collezione.</p>
+              <p className="text-zinc-300 text-sm font-medium mb-1">{t("ui.emptyCollectionTitle")}</p>
+              <p className="text-zinc-500 text-xs mb-4">{t("ui.emptyCollectionSub")}</p>
               <button type="button" onClick={() => setActiveCollection(null)} className="px-4 py-2 text-xs rounded-xl bg-surface hover:bg-surface2 text-zinc-300 transition-colors press-scale">
-                Mostra tutti i poster ({mappings.length})
+                {t("ui.showAllPosters", { count: mappings.length })}
               </button>
             </>
           ) : (
@@ -347,7 +353,7 @@ export function MyPostersView() {
                 </svg>
               </div>
               <p className="text-muted text-sm mb-1">{t("ui.noFilteredResults")}</p>
-              <p className="text-zinc-500 text-xs">Prova a modificare il filtro o la ricerca.</p>
+              <p className="text-zinc-500 text-xs">{t("ui.noFilteredResultsSub")}</p>
             </>
           )}
         </div>
@@ -370,6 +376,7 @@ export function MyPostersView() {
             }}
             onRemove={(e) => { e.stopPropagation(); setConfirmRemove(m) }}
             collectionCount={collections.filter((c) => c.posterIds.includes(`${m.mediaType}:${m.tmdbId}`)).length}
+            imgSrc={mappingImgUrl(m)}
             t={t}
           />
         ))}
@@ -382,6 +389,13 @@ export function MyPostersView() {
         collections={collections}
         onAddToCollection={addToCollection}
         onRemoveFromCollection={removeFromCollection}
+        imgSrc={lightbox ? mappingImgUrl(lightbox.mapping) : null}
+        lang={lang}
+        onOpenEditor={() => {
+          if (!lightbox) return
+          const m = lightbox.mapping
+          navigateToPoster(toSearchResult({ id: m.tmdbId, media_type: m.mediaType, title: m.title, name: m.title, poster_path: m.posterPath }), "myposters")
+        }}
       />
       <ConfirmDialog
         open={confirmRemove !== null}
@@ -394,6 +408,20 @@ export function MyPostersView() {
           if (target) void removeMapping(target)
         }}
         onCancel={() => setConfirmRemove(null)}
+      />
+      <ConfirmDialog
+        open={confirmDeleteCollection !== null}
+        title={t("ui.confirmDeleteCollection")}
+        message={confirmDeleteCollection ? t("ui.confirmDeleteCollectionMsg", { name: collections.find((c) => c.id === confirmDeleteCollection)?.name ?? "" }) : ""}
+        confirmLabel={t("ui.delete")}
+        onConfirm={() => {
+          const id = confirmDeleteCollection
+          setConfirmDeleteCollection(null)
+          if (!id) return
+          if (activeCollection === id) setActiveCollection(null)
+          deleteCollection(id)
+        }}
+        onCancel={() => setConfirmDeleteCollection(null)}
       />
     </div>
   )

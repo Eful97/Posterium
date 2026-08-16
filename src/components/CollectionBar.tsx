@@ -14,6 +14,7 @@ interface CollectionBarProps {
   onDelete: (id: string) => void
   countByCollection: Record<string, number>
   totalCount?: number
+  t: (key: string, params?: Record<string, string | number>) => string
 }
 
 export function CollectionBar({
@@ -25,6 +26,7 @@ export function CollectionBar({
   onDelete,
   countByCollection,
   totalCount,
+  t,
 }: CollectionBarProps) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
@@ -115,7 +117,7 @@ export function CollectionBar({
               : "collection-chip-glass text-muted hover:text-zinc-300"
           }`}
         >
-          Tutti
+          {t("ui.all")}
           <span className="counter-badge">{total}</span>
         </button>
 
@@ -174,7 +176,7 @@ export function CollectionBar({
                         ? "text-accent-orange bg-accent-orange/10"
                         : "text-zinc-500 hover:text-zinc-300"
                     }`}
-                    aria-label="Opzioni collezione"
+                    aria-label={t("ui.collectionOptions")}
                   >
                     <svg className="w-2.5 h-2.5" viewBox="0 0 16 16" fill="currentColor">
                       <circle cx="8" cy="3" r="1.5" />
@@ -199,7 +201,7 @@ export function CollectionBar({
                 if (e.key === "Enter") handleCreate()
                 if (e.key === "Escape") { setCreating(false); setNameInput("") }
               }}
-              placeholder="Nome collezione"
+              placeholder={t("ui.collectionNamePh")}
               className="w-28 bg-transparent text-xs text-white outline-none placeholder:text-zinc-500"
               maxLength={40}
             />
@@ -241,14 +243,14 @@ export function CollectionBar({
                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-200 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5 text-muted" />
-                  Rinomina
+                  {t("ui.rename")}
                 </button>
                 <button type="button"
                   onClick={() => { closeMenu(); onDelete(col.id) }}
                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-danger hover:text-red-300 hover:bg-red-500/15 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5 text-danger" />
-                  Elimina
+                  {t("ui.delete")}
                 </button>
               </React.Fragment>
             ))}
