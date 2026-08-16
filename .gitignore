@@ -90,3 +90,8 @@ skills-lock.json
 # kilo project config (contains API keys via env refs, machine-specific)
 /.kilo/kilo.json
 .aider*
+
+# probe temporanei
+.probe-*
+.od-probe-*
+
