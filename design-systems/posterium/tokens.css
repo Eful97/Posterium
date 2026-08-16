@@ -1,0 +1,73 @@
+/* Posterium design tokens — compiled from src/app/globals.css (v0.15.2).
+   Keep in sync with the source repo when the UI palette changes. */
+
+:root {
+  /* ── Palette (dark — default) ─────────────────────────────── */
+  --od-color-background: #0a0a0a;
+  --od-color-foreground: #ededed;
+  --od-color-surface: #18181b;
+  --od-color-surface2: #27272a;
+  --od-color-border: #3f3f46;
+  --od-color-muted: #a1a1aa;
+  --od-color-accent-orange: #e85d2a;
+  --od-color-accent: #ffffff;
+  --od-color-danger: #f87171;
+  --od-color-warning: #fbbf24;
+
+  /* Accent as RGB components for alpha variants (rgb(var(--accent-rgb) / a)) */
+  --od-accent-rgb: 232 93 42;
+
+  /* ── Palette (light) ──────────────────────────────────────── */
+  --od-color-background-light: #f5f5f5;
+  --od-color-foreground-light: #1a1a1a;
+
+  /* ── Surfaces — shared glass recipe ───────────────────────── */
+  /* The glass family (panels, cards, shells) composes these four
+     ingredients; per-component overrides are allowed. */
+  --od-glass-grad: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  --od-glass-tint: rgba(13, 13, 16, 0.8);
+  --od-glass-border: rgba(255, 255, 255, 0.08);
+  --od-glass-shadow: 0 16px 36px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --od-glass-blur: 14px;
+  --od-border-subtle: rgba(255, 255, 255, 0.08);
+  --od-border-strong: rgba(255, 255, 255, 0.14);
+  --od-panel: rgba(18, 18, 22, 0.74);
+  --od-panel-strong: rgba(21, 21, 26, 0.92);
+
+  /* ── Typography ───────────────────────────────────────────── */
+  --od-font-ui: "Geist", "Inter", Arial, Helvetica, sans-serif;
+  --od-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+  --od-font-poster: "Inter", "Noto Sans Symbols 2", sans-serif;
+
+  /* ── Radius ───────────────────────────────────────────────── */
+  --od-radius-input: 0.5rem;
+  --od-radius-control: 0.625rem;
+  --od-radius-button: 0.75rem;
+  --od-radius-action: 0.875rem;
+  --od-radius-panel: 1rem;
+  --od-radius-editor: 1.25rem;
+  --od-radius-hero: 1.35rem;
+  --od-radius-pill: 9999px;
+
+  /* ── Motion ───────────────────────────────────────────────── */
+  --od-duration-fast: 150ms;
+  --od-duration-base: 200ms;
+  --od-duration-slow: 300ms;
+  --od-easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ── Z-index scale ────────────────────────────────────────── */
+  --od-z-content: 10;
+  --od-z-overlay: 20;
+  --od-z-gradient: 30;
+  --od-z-controls: 40;
+  --od-z-floating: 50;
+  --od-z-settings-mobile: 70;
+  --od-z-fullscreen: 100;
+  --od-z-confirm-backdrop: 199;
+  --od-z-confirm-dialog: 200;
+
+  /* ── Touch / density ──────────────────────────────────────── */
+  --od-touch-min: 44px;
+  --od-dense-label: 10px;
+  --od-dense-caption: 11px;
+}
