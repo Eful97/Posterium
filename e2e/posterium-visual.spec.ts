@@ -258,9 +258,10 @@ test.describe("poster API — visual regression", () => {
   })
 
   test("movie ranking (netflix ribbon) + label — screenshot", async ({ page }) => {
-    // Nastro Netflix per film/serie: l'etichetta del rank ("Oggi") appare sotto
-    // il numero — stesso sistema del badge anime, esteso ai rank non-anime.
-    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", label: "Oggi", rs: "netflix" })
+    // Nastro Netflix per film/serie: il label del rank per media type ("Film")
+    // appare sotto il numero — stesso sistema del badge anime. Nessun label
+    // esplicito: si testa il default server-side (badge.movie).
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", rs: "netflix" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-ranking-netflix.png", { maxDiffPixelRatio: 0.10 })
   })

@@ -193,7 +193,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
     const isUpcomingReleaseBadge = !!computed.upcomingRelease && computed.badge?.type === "extra" && computed.badge.label === computed.upcomingRelease
     const badgeExtra = computed.badge?.type === "extra" && !isUpcomingReleaseBadge ? computed.badge.label : undefined
     const badgeRank = (!badgeExtra && rankingBadges) ? (computed.badge?.type === "rank" ? computed.badge.rank : trendRank || undefined) : undefined
-    const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && computed.badge?.type === "rank") ? (computed.badge.rankLabel || t("badge.today")) : undefined
+    const badgeLabel = (!badgeExtra && animeRankData) ? t("badge.anime") : (!badgeExtra && computed.badge?.type === "rank") ? (computed.badge.rankLabel || t(selected.media_type === "tv" ? "badge.series" : "badge.movie")) : undefined
     const isClean = posterToSave.iso_639_1 === null
     const isNewMapping = !mappingsMap.has(`${selected.media_type}:${selected.id}`)
     const nextExcludedPosters = overrides.excludedPosters ?? excludedPosters

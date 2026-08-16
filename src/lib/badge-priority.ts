@@ -13,12 +13,13 @@ const _idT: T = (k) => k
 
 
 export function computeBadge(params: {
+  mediaType: "movie" | "tv"
   upcomingRelease: string | null
   isNewMovie: boolean
   isNewSeries: boolean
   animeRank: number | null
   trendRank: number | null
-  award: string | null
+  award: string | null
   nomination: string | null
   studio: string | null
   director: string | null
@@ -29,7 +30,9 @@ export function computeBadge(params: {
   const t = _t || _idT
   if (params.upcomingRelease) return { type: "extra", label: params.upcomingRelease }
   if (params.animeRank) return { type: "rank", label: t("badge.anime"), rank: params.animeRank }
-  if (params.trendRank) return { type: "rank", label: t("badge.today"), rank: params.trendRank }
+  // Label del rank per media type: "Film" per i film, "Serie tv" per le serie
+  // (invece del periodo "Oggi"). qLabel/rankLabel possono comunque sovrascrivere.
+  if (params.trendRank) return { type: "rank", label: t(params.mediaType === "movie" ? "badge.movie" : "badge.series"), rank: params.trendRank }
   if (params.isNewMovie) return { type: "extra", label: t("badge.newMovie") }
   if (params.isNewSeries) return { type: "extra", label: t("badge.newSeries") }
   if (params.award) return { type: "extra", label: params.award }
@@ -81,7 +84,7 @@ export function getAllBadgeOptions(params: {
   if (params.upcomingRelease) options.add(params.upcomingRelease)
   if (params.isNewMovie) options.add(keyed("badge.newMovie"))
   if (params.isNewSeries) options.add(keyed("badge.newSeries"))
-  if (params.trendRank) options.add(keyed("badge.today"))
+  if (params.trendRank) options.add(keyed(params.mediaType === "movie" ? "badge.movie" : "badge.series"))
   if (params.animeRank) options.add(keyed("badge.anime"))
   if (params.award) options.add(params.award)
   if (params.mediaType === "movie" && params.imdbTop250) options.add(keyed("badge.absoluteCinema"))

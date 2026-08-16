@@ -8,6 +8,7 @@ const t = createT("it")
 
 describe("computeBadge", () => {
   const base = {
+    mediaType: "movie" as const,
     upcomingRelease: null,
     isNewMovie: false, isNewSeries: false,
     animeRank: null, trendRank: null,
@@ -50,6 +51,9 @@ describe("computeBadge", () => {
   it("prioritizes trend rank over award", () => {
     expect(computeBadge({ ...base, trendRank: 3, award: "Vincitore Oscar" }, t)?.type).toBe("rank")
     expect(computeBadge({ ...base, trendRank: 3 }, t)?.rank).toBe(3)
+    // Label del rank per media type: "Film" per i film, "Serie tv" per le serie
+    expect(computeBadge({ ...base, trendRank: 3 }, t)?.label).toBe("Film")
+    expect(computeBadge({ ...base, mediaType: "tv", trendRank: 3 }, t)?.label).toBe("Serie tv")
   })
 
   it("prioritizes nomination over subgenre", () => {

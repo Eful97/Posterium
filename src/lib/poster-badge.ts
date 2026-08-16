@@ -100,6 +100,7 @@ export function computeTopBadge(input: BadgeInput, t: BadgeT, locale?: string): 
   const subGenreBadge = getSubGenreLabel(input.keywords || [], locale)
 
   const badge = computeBadge({
+    mediaType: input.mediaType,
     upcomingRelease,
     isNewMovie,
     isNewSeries,
