@@ -33,7 +33,7 @@ describe("EditView", () => {
 
   it("shows preview section when item selected", () => {
     renderWithCtx(<EditView />, { selected: mockSelected })
-    expect(screen.getByText("ui.previewSection")).toBeInTheDocument()
+    expect(screen.getByText("ui.previewLive")).toBeInTheDocument()
   })
 
   it("shows title when item selected", () => {

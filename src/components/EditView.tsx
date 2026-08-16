@@ -19,7 +19,7 @@ import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 import { BadgeControls } from "@/components/BadgeControls"
 import { TransformControls } from "@/components/TransformControls"
 import { usePosterPreview } from "@/lib/usePosterPreview"
-import { Clock, X } from "lucide-react"
+import { Clock, X, Check } from "lucide-react"
 
 export default function EditView() {
   const accentColor = usePSelector((v) => v.accentColor)
@@ -114,7 +114,7 @@ export default function EditView() {
   const { imageError, setImageError, previewLoading, loadProgress, imgSrc, retry } = usePosterPreview()
 
   const searchBar = (
-    <div className={selected ? "w-full max-w-lg mb-5 relative z-[100] isolate" : "max-w-lg mx-auto relative z-[100] isolate mb-8"}>
+    <div className={selected ? "w-full max-w-lg relative z-[100] isolate" : "max-w-lg mx-auto relative z-[100] isolate mb-8"}>
       <SearchBar tmdbKey={tmdbKey} value={query} onChange={setQuery} onSearch={(q) => { setQuery(q); router.push("search"); doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
       {searchFocused && recentSearches.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
@@ -177,7 +177,8 @@ export default function EditView() {
     <div>
       {selected && (
         <div className="flex flex-col items-center">
-          <div className="w-full max-w-[1360px] mx-auto mb-3 flex items-center justify-between">
+          {/* Toolbar editor (da prototipo): back + ricerca + stato salvataggio */}
+          <div className="w-full max-w-[1360px] mx-auto mb-3 flex items-center gap-3 flex-wrap">
             <button type="button"
               onClick={() => { router.back() }}
               className="text-xs text-zinc-300 hover:text-white transition-all inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 active:scale-95 shadow-sm"
@@ -187,17 +188,17 @@ export default function EditView() {
               </svg>
               <span>{sourceView === "cataloghi" ? t("ui.backToCatalogs") : sourceView === "myposters" ? t("ui.backToMyPosters") : t("ui.back")}</span>
             </button>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
+            <div className="flex-1 min-w-[200px] max-w-lg">{searchBar}</div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] ml-auto">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />
               {t("ui.saveState")}
             </span>
           </div>
-          {searchBar}
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,1fr)_minmax(400px,480px)_minmax(300px,1fr)] gap-5 items-stretch w-full max-w-[1360px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
 
             {/* LEFT: Poster */}
             <div className="order-2 lg:order-1 animate-fade-scale-in-panel-left" style={{animationDelay: "80ms"}}>
-            <EditorPanel aria-label={`${selected?.title || ""} — Poster selection`} tabs={leftTabs} activeTab={activePosterTab} onTabChange={setActivePosterTab}>
+            <EditorPanel aria-label={`${selected?.title || ""} — Poster selection`} title={t("ui.posterAvailable")} tabs={leftTabs} activeTab={activePosterTab} onTabChange={setActivePosterTab} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10 tabular-nums">{posters.length}</span>}>
               {loadingImages ? (
                 <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div>
               ) : (
@@ -208,8 +209,9 @@ export default function EditView() {
 
             {/* CENTER: Preview */}
             <div className="order-1 lg:order-2 animate-fade-scale-in" style={{animationDelay: "0ms"}}>
-            <EditorPanel title={t("ui.previewSection")}>
+            <EditorPanel title={t("ui.previewLive")} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10">2:3 · JPEG</span>}>
               <div className="flex flex-col items-center">
+                <span className="text-[10px] font-mono text-muted mb-1" aria-hidden="true">500 × 750</span>
                 <div className="relative w-full max-w-[360px] my-2">
                 <div className={`editor-stage relative isolate w-full ${previewPoster?.file_path ? "editor-stage-glow" : ""}`}>
                   {/* NuvioDesktop-style depth edge */}
@@ -251,7 +253,22 @@ export default function EditView() {
 
                 {selected && (
                   <div className="mt-4 w-full text-center select-text">
-                    <h2 className="text-lg font-bold tracking-tight text-zinc-50">{titleOf(selected)}</h2>
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <h2 className="text-lg font-bold tracking-tight text-zinc-50">{titleOf(selected)}</h2>
+                      {cleanPoster && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-muted uppercase tracking-wide">{t("ui.clean")}</span>
+                      )}
+                      {(() => {
+                        const key = `${selected.media_type}:${selected.id}`
+                        if (!mappingsMap.get(key)) return null
+                        return (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                            {t("ui.savedShort")}
+                          </span>
+                        )
+                      })()}
+                    </div>
                     <p className="text-xs text-zinc-300 mt-0.5">{yearOf(selected)} {selected.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")}</p>
                     <p className="text-xs text-zinc-500 mt-1 preview-meta-info">TMDB: <a href={`https://www.themoviedb.org/${selected.media_type}/${selected.id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 hover:text-white underline underline-offset-2">{selected.id}</a>{selected.imdb_id ? <> • IMDB: <a href={`https://www.imdb.com/title/${selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 hover:text-white underline underline-offset-2">{selected.imdb_id}</a></> : ""}</p>
                   </div>
@@ -318,7 +335,7 @@ export default function EditView() {
 
             {/* RIGHT: Edit */}
             <div className="order-3 lg:order-3 animate-fade-scale-in-panel-right" style={{animationDelay: "80ms"}}>
-            <EditorPanel tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
+            <EditorPanel title={t("ui.customize")} tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
               <div key={activeRightTab} className="animate-fade-in space-y-3">
               {activeRightTab === "logo" && <>
                 <LogoOptions logos={logos} selectedLogo={selectedLogo} lang={lang} selectLogo={selectLogo} removeLogo={removeLogo} disabled={!cleanPoster} />
