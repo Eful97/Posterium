@@ -62,11 +62,6 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-function scrollToExamples() {
-  const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  document.getElementById("poster-examples")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
-}
-
 export function HomeHero() {
   const router = usePSelector((v) => v.router)
   const tmdbKey = usePSelector((v) => v.tmdbKey)
@@ -163,9 +158,6 @@ export function HomeHero() {
         <div className="home-hero-cta-row">
           <button type="button" onClick={() => router.push("cataloghi")} className="btn-primary px-5 py-2.5 whitespace-nowrap">
             {t("ui.heroCatalogsCta")}
-          </button>
-          <button type="button" onClick={scrollToExamples} className="btn-ghost px-5 py-2.5 whitespace-nowrap">
-            {t("ui.posterExamples")}
           </button>
         </div>
       </div>
