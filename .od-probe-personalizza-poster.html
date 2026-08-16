@@ -1,0 +1,1778 @@
+<!doctype html>
+<!--
+  Posterium — sezione "Personalizza poster" (editor).
+  Prototipo web basato sul seed web-prototype, con i token Posterium bindati.
+  Layout: toolbar editor → griglia 3 colonne (galleria | anteprima | opzioni) → status strip.
+  Comportamento firma: l'accento UI si adatta al colore dominante del poster in editing.
+-->
+<html lang="it" class="ui-accent">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Personalizza poster · Posterium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* Posterium design tokens — compiled from src/app/globals.css (v0.15.2).
+   Keep in sync with the source repo when the UI palette changes. */
+
+:root {
+  /* ── Palette (dark — default) ─────────────────────────────── */
+  --od-color-background: #0a0a0a;
+  --od-color-foreground: #ededed;
+  --od-color-surface: #18181b;
+  --od-color-surface2: #27272a;
+  --od-color-border: #3f3f46;
+  --od-color-muted: #a1a1aa;
+  --od-color-accent-orange: #e85d2a;
+  --od-color-accent: #ffffff;
+  --od-color-danger: #f87171;
+  --od-color-warning: #fbbf24;
+
+  /* Accent as RGB components for alpha variants (rgb(var(--accent-rgb) / a)) */
+  --od-accent-rgb: 232 93 42;
+
+  /* ── Palette (light) ──────────────────────────────────────── */
+  --od-color-background-light: #f5f5f5;
+  --od-color-foreground-light: #1a1a1a;
+
+  /* ── Surfaces — shared glass recipe ───────────────────────── */
+  /* The glass family (panels, cards, shells) composes these four
+     ingredients; per-component overrides are allowed. */
+  --od-glass-grad: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  --od-glass-tint: rgba(13, 13, 16, 0.8);
+  --od-glass-border: rgba(255, 255, 255, 0.08);
+  --od-glass-shadow: 0 16px 36px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --od-glass-blur: 14px;
+  --od-border-subtle: rgba(255, 255, 255, 0.08);
+  --od-border-strong: rgba(255, 255, 255, 0.14);
+  --od-panel: rgba(18, 18, 22, 0.74);
+  --od-panel-strong: rgba(21, 21, 26, 0.92);
+
+  /* ── Typography ───────────────────────────────────────────── */
+  --od-font-ui: "Geist", "Inter", Arial, Helvetica, sans-serif;
+  --od-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+  --od-font-poster: "Inter", "Noto Sans Symbols 2", sans-serif;
+
+  /* ── Radius ───────────────────────────────────────────────── */
+  --od-radius-input: 0.5rem;
+  --od-radius-control: 0.625rem;
+  --od-radius-button: 0.75rem;
+  --od-radius-action: 0.875rem;
+  --od-radius-panel: 1rem;
+  --od-radius-editor: 1.25rem;
+  --od-radius-hero: 1.35rem;
+  --od-radius-pill: 9999px;
+
+  /* ── Motion ───────────────────────────────────────────────── */
+  --od-duration-fast: 150ms;
+  --od-duration-base: 200ms;
+  --od-duration-slow: 300ms;
+  --od-easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ── Z-index scale ────────────────────────────────────────── */
+  --od-z-content: 10;
+  --od-z-overlay: 20;
+  --od-z-gradient: 30;
+  --od-z-controls: 40;
+  --od-z-floating: 50;
+  --od-z-settings-mobile: 70;
+  --od-z-fullscreen: 100;
+  --od-z-confirm-backdrop: 199;
+  --od-z-confirm-dialog: 200;
+
+  /* ── Touch / density ──────────────────────────────────────── */
+  --od-touch-min: 44px;
+  --od-dense-label: 10px;
+  --od-dense-caption: 11px;
+}
+
+/* ── Runtime bindings (accento adattivo — firma Posterium) ───────────────
+   --color-accent viene valorizzato da JS col colore dominante del poster
+   in editing; gli stati attivi si ritintano via color-mix. */
+:root {
+  --color-accent-orange: var(--od-color-accent-orange);
+  --color-accent: var(--od-color-accent-orange);
+}
+
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--od-color-background);
+  color: var(--od-color-foreground);
+  font-family: var(--od-font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; }
+p { text-wrap: pretty; }
+h1, h2, h3, h4 { text-wrap: balance; }
+.kbd {
+  font-family: var(--od-font-mono); font-size: 10px; color: var(--od-color-muted);
+  border: 1px solid var(--od-border-subtle); border-bottom-width: 2px;
+  border-radius: 5px; padding: 1px 5px; background: rgba(255,255,255,0.04);
+}
+
+/* ── App shell: sfondo, glow ambientale, vignette ─────────── */
+.app-shell { position: relative; min-height: 100dvh; overflow-x: hidden; }
+.poster-ambient {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-size: cover; background-position: center;
+  filter: blur(92px) saturate(1.4); opacity: 0.20;
+  transition: background-image 0.7s ease, opacity 0.7s ease;
+  mix-blend-mode: screen;
+}
+.page-glow {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(58rem 30rem at 50% -6%, color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 11%, transparent), transparent 70%),
+    radial-gradient(40rem 24rem at 12% 16%, rgba(255,255,255,0.045), transparent 70%);
+  transition: background 0.7s ease;
+}
+.page-vignette {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 20%, transparent 55%, rgba(0,0,0,0.55) 100%);
+}
+.app-grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.05;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(70% 55% at 50% 0%, black, transparent);
+}
+
+/* ── Version badge (fisso, in alto a sinistra) ────────────── */
+.version-badge {
+  position: fixed; top: 10px; left: 12px; z-index: var(--od-z-floating);
+  font-family: var(--od-font-mono); font-size: 10px; font-weight: 500;
+  color: var(--od-color-muted); letter-spacing: 0.06em;
+  border: 1px solid var(--od-border-subtle); border-radius: var(--od-radius-pill);
+  padding: 3px 9px; background: rgba(13,13,16,0.66); backdrop-filter: blur(10px);
+}
+
+/* ── Editor header / toolbar ──────────────────────────────── */
+.editor-header {
+  position: relative; z-index: var(--od-z-content);
+  border-bottom: 1px solid var(--od-border-subtle);
+  background: linear-gradient(180deg, rgba(10,10,10,0.9), rgba(10,10,10,0.55));
+  backdrop-filter: blur(18px);
+}
+.editor-header-inner {
+  padding: 10px 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+.header-logo { height: 34px; width: auto; cursor: pointer; opacity: 0.96; transition: filter 0.3s ease, transform 0.2s ease; }
+.header-logo:hover { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); transform: scale(1.02); }
+.toolbar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.btn-back {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  height: 38px; padding: 0 12px; border-radius: var(--od-radius-control);
+  border: 1px solid var(--od-border-subtle); background: rgba(255,255,255,0.05);
+  color: rgb(212 212 216); font-size: 12px; font-weight: 500;
+  transition: background var(--od-duration-fast) ease, border-color var(--od-duration-fast) ease, color var(--od-duration-fast) ease, transform var(--od-duration-fast) var(--od-easing);
+}
+.btn-back:hover { background: rgba(255,255,255,0.10); border-color: var(--od-border-strong); color: #fff; }
+.btn-back:active { transform: scale(0.96); }
+.btn-back svg { width: 15px; height: 15px; }
+
+.search-shell {
+  position: relative; flex: 1; min-width: 0; max-width: 560px;
+  display: flex; align-items: center; gap: 9px;
+  height: 38px; padding: 0 12px; border-radius: var(--od-radius-control);
+  background: var(--od-glass-grad), rgba(3,3,4,0.40);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 16px 42px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.07);
+  backdrop-filter: blur(18px);
+  transition: border-color var(--od-duration-fast) ease, box-shadow var(--od-duration-fast) ease;
+}
+.search-shell:focus-within {
+  border-color: rgba(255,255,255,0.16);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.30), 0 0 0 3px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 8%, transparent), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.search-shell svg { width: 15px; height: 15px; color: var(--od-color-muted); flex-shrink: 0; }
+.search-shell input {
+  flex: 1; min-width: 0; background: transparent; border: 0; outline: none;
+  color: var(--od-color-foreground); font: inherit; font-size: 13px;
+}
+.search-shell input::placeholder { color: #71717a; }
+.search-hint { font-family: var(--od-font-mono); font-size: 10px; color: #52525b; flex-shrink: 0; }
+.search-recent {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: var(--od-z-fullscreen);
+  display: none; padding: 6px; max-height: 340px; overflow-y: auto; border-radius: var(--od-radius-panel);
+  background: var(--od-glass-grad), rgba(13,13,16,0.94);
+  border: 1px solid var(--od-border-subtle);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(16px);
+}
+.search-shell:focus-within .search-recent { display: block; }
+.search-recent-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--od-color-muted); padding: 6px 8px 4px; }
+.search-recent-item {
+  width: 100%; display: flex; align-items: center; gap: 8px; text-align: left;
+  padding: 8px 9px; border-radius: var(--od-radius-control); background: transparent; border: 0;
+  color: rgb(212 212 216); font-size: 12px;
+  transition: background var(--od-duration-fast) ease, color var(--od-duration-fast) ease;
+}
+.search-recent-item:hover { background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 10%, transparent); color: #fff; }
+.search-recent-item svg { width: 13px; height: 13px; color: #71717a; flex-shrink: 0; }
+.search-recent-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-recent-item .thumb { width: 22px; height: 33px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+.search-recent-item em { flex-shrink: 0; font-style: normal; font-family: var(--od-font-mono); font-size: 9.5px; color: #71717a; }
+.search-noresult { margin: 0; padding: 10px 9px; font-size: 11.5px; color: var(--od-color-muted); }
+
+.header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.save-state {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11px; font-weight: 600; color: var(--od-color-muted);
+  border: 1px solid var(--od-border-subtle); border-radius: var(--od-radius-pill);
+  padding: 5px 11px; background: rgba(255,255,255,0.03); white-space: nowrap;
+}
+.save-state .dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.7); }
+.save-state.saving .dot, .save-state.dirty .dot { background: var(--od-color-warning); box-shadow: 0 0 8px rgba(251,191,36,0.7); animation: pulse 1s ease infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+@keyframes save-sweep { from { background-position: 130% 0; } to { background-position: -130% 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Floating group ───────────────────────────────────────── */
+.floating-group {
+  display: flex; align-items: center; gap: 2px; padding: 4px;
+  border-radius: var(--od-radius-panel);
+  background: var(--od-glass-grad), rgba(18,18,22,0.82);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+  width: max-content;
+}
+.floating-btn {
+  position: relative; display: grid; place-items: center;
+  width: 36px; height: 36px; border: 0; border-radius: var(--od-radius-control);
+  background: transparent; color: var(--od-color-muted);
+  transition: background var(--od-duration-fast) ease, color var(--od-duration-fast) ease, transform var(--od-duration-fast) var(--od-easing);
+}
+.floating-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.floating-btn:active { transform: scale(0.9); }
+.floating-btn svg { width: 15px; height: 15px; }
+.floating-btn.spin svg { animation: spin 0.7s var(--od-easing); }
+.floating-btn.accent { color: var(--color-accent, var(--color-accent-orange)); }
+.floating-btn.accent:hover { background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 14%, transparent); color: var(--color-accent, var(--color-accent-orange)); }
+.floating-btn .count {
+  position: absolute; top: -3px; right: -3px; min-width: 15px; height: 15px; padding: 0 3px;
+  display: grid; place-items: center; border-radius: var(--od-radius-pill);
+  background: var(--color-accent, var(--color-accent-orange)); color: #0a0a0a;
+  font-family: var(--od-font-mono); font-size: 9px; font-weight: 700;
+}
+.floating-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.10); margin-inline: 3px; }
+.floating-btn[aria-label]:hover::after {
+  content: attr(aria-label); position: absolute; right: 0; top: calc(100% + 8px);
+  padding: 5px 9px; border-radius: 6px; white-space: nowrap;
+  background: rgba(10,10,12,0.92); border: 1px solid rgba(255,255,255,0.10);
+  color: rgb(228 228 231); font-size: 11px; font-weight: 500; z-index: var(--od-z-floating);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.4);
+}
+.floating-dock {
+  position: fixed; bottom: 18px; right: 18px; z-index: var(--od-z-floating);
+  display: flex; align-items: center; gap: 8px;
+}
+.floating-dock .lang-chip {
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--od-radius-control);
+  background: rgba(255,255,255,0.06); border: 1px solid var(--od-border-subtle);
+  color: rgb(228 228 231); font-size: 12px; font-weight: 700;
+  transition: background var(--od-duration-fast) ease, transform var(--od-duration-fast) var(--od-easing);
+}
+.floating-dock .lang-chip:hover { background: rgba(255,255,255,0.12); }
+.floating-dock .lang-chip:active { transform: scale(0.9); }
+
+/* ── Editor workspace: griglia 3 colonne ──────────────────── */
+.editor-workspace {
+  position: relative; z-index: var(--od-z-content);
+  padding: 18px 20px 10px;
+  display: grid; gap: 16px; align-items: stretch;
+  grid-template-columns: minmax(300px, 1fr) minmax(400px, 540px) minmax(300px, 1fr);
+}
+.editor-workspace > .editor-panel { min-height: 0; }
+@media (min-width: 1280px) {
+  .editor-workspace { grid-template-columns: minmax(340px, 1fr) minmax(440px, 560px) minmax(340px, 1fr); height: clamp(640px, calc(100dvh - 190px), 880px); }
+}
+
+/* ── Glass family: la ricetta condivisa ───────────────────── */
+.glass-panel, .editor-panel, .poster-tile, .preview-podium, .toast, .status-strip {
+  background: var(--od-glass-grad), var(--od-glass-tint);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: var(--od-glass-shadow);
+}
+
+.editor-panel {
+  --glass-tint: rgba(15,15,18,0.94);
+  --glass-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  position: relative; display: flex; flex-direction: column; overflow: hidden;
+  border-radius: var(--od-radius-editor); backdrop-filter: blur(var(--od-glass-blur));
+}
+.editor-panel::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 1;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 55%, transparent), transparent);
+  pointer-events: none;
+}
+.editor-panel-header {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.02);
+}
+.panel-title { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.panel-title h2 { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(161 161 170); }
+.panel-title .count-pill {
+  font-family: var(--od-font-mono); font-size: 10px; font-weight: 600; color: var(--od-color-muted);
+  border: 1px solid var(--od-border-subtle); border-radius: var(--od-radius-pill); padding: 1px 7px;
+  background: rgba(255,255,255,0.03);
+}
+.panel-title .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent, var(--color-accent-orange)); box-shadow: 0 0 8px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 70%, transparent); animation: pulse 2.4s ease infinite; }
+.editor-panel-body { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; scrollbar-width: thin; }
+.editor-panel-body::-webkit-scrollbar { width: 6px; }
+.editor-panel-body::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 55%, transparent), color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 28%, transparent)); border-radius: 3px; }
+
+/* ── Tab chips ────────────────────────────────────────────── */
+.tab-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.tab-row::-webkit-scrollbar { display: none; }
+.tab-chip {
+  position: relative; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 13px; border-radius: var(--od-radius-control);
+  border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.045);
+  color: rgb(212 212 216); font-size: 12px; font-weight: 700; white-space: nowrap;
+  transition: color var(--od-duration-fast) ease, background var(--od-duration-fast) ease, border-color var(--od-duration-fast) ease;
+}
+.tab-chip .tab-count { font-family: var(--od-font-mono); font-size: 10px; opacity: 0.6; }
+.tab-chip:hover { color: #fff; background: rgba(255,255,255,0.09); }
+.tab-chip-active {
+  color: var(--color-accent, var(--color-accent-orange));
+  background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 40%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.tab-chip-active::after {
+  content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 2px; border-radius: 1px;
+  background: var(--color-accent, var(--color-accent-orange));
+}
+
+/* ── Galleria poster ──────────────────────────────────────── */
+.gallery-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.poster-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.poster-tile {
+  position: relative; aspect-ratio: 2/3; border-radius: var(--od-radius-control);
+  overflow: hidden; cursor: pointer; padding: 0;
+  background: var(--od-glass-grad), rgba(24,24,27,0.9);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  transition: transform var(--od-duration-slow) var(--od-easing), box-shadow var(--od-duration-slow) var(--od-easing), border-color var(--od-duration-slow) ease;
+}
+.poster-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.poster-tile:hover { border-color: rgba(255,255,255,0.16); box-shadow: 0 16px 36px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.04); transform: translateY(-2px) scale(1.015); }
+.poster-tile-active {
+  border-color: var(--color-accent, rgb(var(--od-accent-rgb) / 0.95));
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-accent, rgb(var(--od-accent-rgb) / 0.95)) 55%, transparent), inset 0 1px 0 rgba(255,255,255,0.06);
+  z-index: 2;
+}
+.poster-tile::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0.42), transparent 34%);
+  opacity: 0; transition: opacity var(--od-duration-base) ease;
+}
+.poster-tile:hover::after { opacity: 1; }
+.poster-tile-actions {
+  position: absolute; top: 6px; right: 6px; z-index: 3;
+  display: flex; flex-direction: column; gap: 5px;
+  opacity: 0; transform: translateY(-3px); transition: opacity var(--od-duration-base) ease, transform var(--od-duration-base) var(--od-easing);
+}
+.poster-tile:hover .poster-tile-actions, .poster-tile:focus-within .poster-tile-actions { opacity: 1; transform: none; }
+.tile-action {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px;
+  background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.10); color: rgb(228 228 231);
+  backdrop-filter: blur(6px);
+  transition: background var(--od-duration-fast) ease, color var(--od-duration-fast) ease, border-color var(--od-duration-fast) ease, transform var(--od-duration-fast) var(--od-easing);
+}
+.tile-action:hover { background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 90%, transparent); color: #fff; border-color: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 60%, transparent); }
+.tile-action.danger:hover { background: rgba(239,68,68,0.9); border-color: rgba(248,113,113,0.6); }
+.tile-action svg { width: 12px; height: 12px; }
+.tile-action.on { background: var(--color-accent, var(--color-accent-orange)); color: #0a0a0a; border-color: var(--color-accent, var(--color-accent-orange)); box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 45%, transparent); }
+.fit-badge {
+  position: absolute; top: 6px; left: 6px; z-index: 3; pointer-events: none;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 7px; border-radius: 6px; font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  background: rgba(0,0,0,0.60); border: 1px solid rgba(255,255,255,0.10); color: rgb(228 228 231);
+  backdrop-filter: blur(4px);
+}
+.fit-badge-amber { color: var(--od-color-warning); border-color: rgba(251,191,36,0.30); }
+.gallery-status { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--od-color-muted); }
+.rotation-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: var(--od-radius-pill); font-weight: 600;
+  color: var(--color-accent, var(--color-accent-orange));
+  background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 20%, transparent);
+}
+.excluded-strip {
+  display: none; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 10px; padding: 9px 11px; border-radius: var(--od-radius-control);
+  background: rgba(255,255,255,0.04); border: 1px solid var(--od-border-subtle);
+  font-size: 11px; color: var(--od-color-muted);
+}
+.excluded-strip button { background: none; border: 0; color: var(--color-accent, var(--color-accent-orange)); font: inherit; font-weight: 600; padding: 4px 6px; border-radius: 6px; }
+.excluded-strip button:hover { background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 12%, transparent); }
+.panel-hint { margin: 12px 0 0; font-size: 11px; color: #71717a; text-align: center; }
+.gallery-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 34px 16px; text-align: center; }
+.gallery-empty svg { width: 26px; height: 26px; color: #52525b; }
+.gallery-empty p { margin: 0; font-size: 12px; color: var(--od-color-muted); }
+.gallery-empty .btn { width: max-content; padding-inline: 14px; font-size: 12px; }
+
+/* ── Podio anteprima ──────────────────────────────────────── */
+.preview-body { display: flex; flex-direction: column; align-items: center; }
+.preview-podium {
+  --glass-tint: rgba(13,13,16,0.72);
+  position: relative; width: 100%; max-width: 372px;
+  border-radius: var(--od-radius-hero);
+  padding: 18px 18px 20px;
+  box-shadow: 0 30px 70px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(16px);
+}
+.preview-podium::before {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 14%, transparent), transparent 65%);
+  opacity: 0.9; transition: background var(--od-duration-slow) ease;
+}
+.poster-stage {
+  position: relative; aspect-ratio: 2/3; border-radius: calc(var(--od-radius-hero) - 8px);
+  overflow: hidden; background: var(--od-color-surface);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: border-color var(--od-duration-slow) ease, box-shadow var(--od-duration-slow) ease;
+}
+.poster-stage-glow {
+  border-color: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 30%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 22%, transparent), 0 24px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.poster-stage.saving::after {
+  content: ""; position: absolute; inset: 0; z-index: 8; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.13) 50%, transparent 58%);
+  background-size: 220% 100%; background-repeat: no-repeat;
+  animation: save-sweep 0.85s var(--od-easing) forwards;
+}
+.poster-stage > img.base { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.stage-gradient {
+  position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none;
+  height: var(--grad-h, 62%); opacity: calc(1 - var(--grad-dark, 0.40));
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.25) var(--grad-fade, 55%), rgba(0,0,0,0.92) 100%);
+  backdrop-filter: blur(var(--grad-blur, 5px));
+}
+.stage-logo {
+  position: absolute; left: 0; right: 0; bottom: 14%; pointer-events: none; z-index: 4;
+  text-align: center; padding-inline: 14px;
+  transform: translate(var(--logo-x, 0px), var(--logo-y, 0px)) scale(calc(var(--logo-scale, 100) / 100));
+  transition: transform var(--od-duration-slow) var(--od-easing);
+  display: none;
+}
+.stage-logo .logo-render { font-weight: 900; letter-spacing: 0.02em; color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,0.8); line-height: 1.02; }
+.poster-pill {
+  position: absolute; left: 12px; bottom: 12px; z-index: 5;
+  display: none; align-items: center; gap: 7px;
+  padding: 6px 11px; border-radius: var(--od-radius-pill); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.04em; color: #fff; white-space: nowrap;
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.24);
+  backdrop-filter: blur(8px); box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+.poster-pill .star { color: var(--od-color-warning); }
+.poster-pill.pill-bar {
+  left: 0; right: 0; bottom: 0; border-radius: 0; justify-content: center;
+  background: rgba(0,0,0,0.55); border: 0; border-top: 1px solid rgba(255,255,255,0.18);
+  padding: 9px 12px; backdrop-filter: blur(8px);
+}
+.poster-pill.pill-colored {
+  background: var(--color-accent, var(--color-accent-orange)); color: #0a0a0a;
+  border-color: transparent; box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+}
+.poster-pill.pill-bordo {
+  background: transparent; border: 1.5px solid rgba(255,255,255,0.9);
+  backdrop-filter: none; box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+}
+.poster-custom {
+  position: absolute; left: 12px; bottom: 46px; z-index: 5;
+  display: none; padding: 4px 10px; border-radius: 7px;
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+  color: #fff; background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 88%, black);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+}
+.poster-ribbon {
+  position: absolute; top: 0; right: 0; z-index: 5;
+  display: none; flex-direction: column; align-items: center; gap: 2px;
+  padding: 26px 9px 14px; width: 40px;
+  background: linear-gradient(180deg, #e50914, #b20710);
+  color: #fff; font-family: var(--od-font-mono); font-weight: 700;
+  border-radius: 0 0 0 10px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.poster-ribbon .ribbon-num { font-size: 15px; line-height: 1; }
+.poster-ribbon .ribbon-label { font-size: 7.5px; letter-spacing: 0.14em; text-transform: uppercase; writing-mode: vertical-rl; opacity: 0.85; }
+.poster-ribbon.ribbon-pill {
+  top: auto; bottom: 12px; right: 12px; width: auto;
+  flex-direction: row; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: var(--od-radius-pill);
+}
+.poster-ribbon.ribbon-pill .ribbon-label { writing-mode: horizontal-tb; font-size: 8.5px; }
+.poster-ribbon.ribbon-colored {
+  background: linear-gradient(180deg, var(--color-accent, var(--color-accent-orange)), color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 78%, black));
+}
+.poster-network {
+  position: absolute; top: 12px; right: 52px; z-index: 5;
+  display: none; height: 26px; width: auto;
+  filter: drop-shadow(0 3px 10px rgba(0,0,0,0.6));
+}
+.podium-top {
+  position: absolute; top: 10px; left: 12px; z-index: 6;
+  display: flex; align-items: center; gap: 6px;
+}
+.podium-format {
+  font-family: var(--od-font-mono); font-size: 9.5px; letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.85); padding: 3px 8px; border-radius: var(--od-radius-pill);
+  background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(6px);
+}
+.preview-caption { width: 100%; max-width: 372px; margin-top: 14px; text-align: center; }
+.preview-caption .title-row { display: flex; align-items: center; justify-content: center; gap: 9px; flex-wrap: wrap; }
+.preview-caption h2 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.01em; color: #fafafa; }
+.preview-caption .variant-pill {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--od-color-muted); border: 1px solid var(--od-border-subtle);
+  background: rgba(255,255,255,0.04); padding: 2.5px 8px; border-radius: var(--od-radius-pill); white-space: nowrap;
+}
+.preview-caption .saved-chip {
+  display: none; align-items: center; gap: 4px; font-size: 10px; font-weight: 700;
+  color: #4ade80; border: 1px solid rgba(74,222,128,0.35); background: rgba(74,222,128,0.10);
+  padding: 2px 8px; border-radius: var(--od-radius-pill);
+}
+.preview-caption .meta-row { margin-top: 4px; font-size: 12px; color: rgb(161 161 170); display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.preview-caption .meta-row .sep { opacity: 0.4; }
+.preview-caption .meta-row a { color: rgb(212 212 216); text-decoration: underline; text-underline-offset: 2px; }
+.preview-caption .meta-row a:hover { color: #fff; }
+.preview-caption .fit-hint {
+  display: none; align-items: center; justify-content: center; gap: 5px; margin-top: 8px;
+  font-size: 11px; font-weight: 600;
+  color: var(--od-color-warning); border: 1px solid rgba(251,191,36,0.25); background: rgba(251,191,36,0.08);
+  padding: 4px 10px; border-radius: var(--od-radius-pill); width: max-content; margin-inline: auto;
+}
+.preview-caption .fit-hint svg { width: 12px; height: 12px; }
+
+/* ── Action bar ───────────────────────────────────────────── */
+.action-bar { margin-top: 14px; display: flex; gap: 8px; width: 100%; max-width: 372px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 40px; padding: 0 16px; border-radius: var(--od-radius-button);
+  font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  transition: background var(--od-duration-fast) ease, border-color var(--od-duration-fast) ease, color var(--od-duration-fast) ease, box-shadow var(--od-duration-fast) ease, transform var(--od-duration-fast) var(--od-easing);
+}
+.btn:active { transform: scale(0.96); }
+.btn svg { width: 14px; height: 14px; }
+.btn-primary {
+  flex: 1.4; color: #fff; border: 1px solid color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 75%, black);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 96%, white), color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 88%, black));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 12px 30px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 20%, transparent);
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-primary.saved { background: #16a34a; border-color: #15803d; box-shadow: 0 12px 30px rgba(22,163,74,0.25); }
+.btn-secondary {
+  flex: 1; color: rgb(212 212 216); border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.20); color: #fff; }
+.btn-ghost {
+  flex: 1; color: rgb(161 161 170); border: 1px solid transparent; background: transparent; padding-inline: 10px;
+}
+.btn-ghost:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.btn-ghost.copied { color: #4ade80; }
+
+/* ── Pannello opzioni ─────────────────────────────────────── */
+.option-tabs { margin-bottom: 12px; }
+.section-block { margin-bottom: 6px; }
+.section-block + .section-block { border-top: 1px solid rgba(255,255,255,0.07); margin-top: 6px; padding-top: 12px; }
+.section-block-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: #71717a; margin: 0 0 8px; padding-inline: 2px;
+}
+.section-block-title .tick {
+  width: 3px; height: 10px; border-radius: 2px;
+  background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 65%, transparent);
+}
+.control-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 7px 8px; margin: 0 -8px; border-radius: var(--od-radius-control);
+  transition: background var(--od-duration-fast) ease;
+}
+.control-row:hover { background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 4%, transparent); }
+.control-label { font-size: 12px; font-weight: 500; color: rgb(180 180 185); display: flex; align-items: center; gap: 7px; }
+.control-label svg { width: 13px; height: 13px; color: #71717a; flex-shrink: 0; }
+.control-sub { margin-left: 16px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,0.08); }
+.control-hint { font-size: 10.5px; color: #71717a; padding: 2px 8px 6px; }
+
+/* Toggle */
+.toggle { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+.toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 2; }
+.toggle .track {
+  position: absolute; inset: 0; border-radius: var(--od-radius-pill);
+  background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.12);
+  transition: background var(--od-duration-slow) ease, border-color var(--od-duration-slow) ease, box-shadow var(--od-duration-slow) ease;
+}
+.toggle .thumb {
+  position: absolute; top: 2.5px; left: 3px; width: 19px; height: 19px; border-radius: 50%;
+  background: #f4f4f5; box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  transition: transform 0.35s var(--od-easing);
+}
+.toggle input:checked + .track { background: var(--color-accent, var(--color-accent-orange)); border-color: var(--color-accent, var(--color-accent-orange)); box-shadow: 0 0 12px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 25%, transparent); }
+.toggle input:checked ~ .thumb { transform: translateX(20px); }
+.toggle input:focus-visible + .track { outline: 2px solid var(--color-accent, var(--color-accent-orange)); outline-offset: 2px; }
+
+/* Segmented */
+.segmented-control { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--od-radius-control); border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+.segmented-option {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 5px 10px; border-radius: 8px; border: 0; background: transparent;
+  font-size: 11px; font-weight: 600; color: var(--od-color-muted); white-space: nowrap;
+  transition: color var(--od-duration-fast) ease, background var(--od-duration-fast) ease;
+}
+.segmented-option:hover { color: rgb(228 228 231); background: rgba(255,255,255,0.05); }
+.segmented-option-active { color: var(--color-accent, var(--color-accent-orange)); background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 18%, transparent); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
+
+/* Chip row (stili badge) */
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; padding-inline: 2px; }
+.chip {
+  padding: 6px 11px; border-radius: var(--od-radius-control); border: 1px solid rgba(255,255,255,0.09);
+  background: rgba(255,255,255,0.045); color: rgb(190 190 195);
+  font-size: 11px; font-weight: 600; transition: all var(--od-duration-fast) ease;
+}
+.chip:hover { border-color: rgba(255,255,255,0.2); color: #fff; }
+.chip-active {
+  color: var(--color-accent, var(--color-accent-orange));
+  background: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 40%, transparent);
+}
+.chip .chip-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: -0.5px; }
+
+/* Slider */
+.slider-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; margin: 0 -8px; border-radius: var(--od-radius-control); }
+.slider-row:hover { background: rgba(255,255,255,0.03); }
+.slider-row .slider-label { font-size: 11px; color: rgb(161 161 170); min-width: 62px; }
+.slider-row .slider-val {
+  font-family: var(--od-font-mono); font-size: 10.5px; color: var(--color-accent, var(--color-accent-orange));
+  min-width: 44px; text-align: right; font-variant-numeric: tabular-nums;
+}
+input[type="range"] {
+  -webkit-appearance: none; appearance: none; flex: 1; height: 20px; background: transparent; cursor: pointer; margin: 0;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 3px;
+  background: linear-gradient(to right, var(--color-accent, var(--color-accent-orange)) 0%, color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 60%, black) var(--pct, 0%), var(--od-color-surface2) var(--pct, 0%), var(--od-color-surface2) 100%);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 17px; height: 17px; border-radius: 50%; margin-top: -5.5px;
+  background: #fff; border: 3px solid var(--color-accent, var(--color-accent-orange));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 18%, transparent), 0 3px 8px rgba(0,0,0,0.5);
+  transition: transform var(--od-duration-fast) var(--od-easing);
+}
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
+input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--od-color-surface2); }
+input[type="range"]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--color-accent, var(--color-accent-orange)); }
+input[type="range"]::-moz-range-thumb { width: 11px; height: 11px; border-radius: 50%; background: #fff; border: 3px solid var(--color-accent, var(--color-accent-orange)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 18%, transparent); }
+
+/* Input / select editor */
+.editor-input {
+  background: rgba(0,0,0,0.40); border: 1px solid var(--od-color-border); border-radius: var(--od-radius-input);
+  font-size: 12px; color: rgb(212 212 216); outline: none; padding: 6px 9px;
+  transition: border-color var(--od-duration-fast) ease, box-shadow var(--od-duration-fast) ease;
+}
+.editor-input:focus { border-color: var(--color-accent, var(--color-accent-orange)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 14%, transparent); }
+.color-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px 6px; }
+.color-swatch {
+  width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--od-border-subtle);
+  padding: 0; overflow: hidden; cursor: pointer; background: transparent; flex-shrink: 0;
+}
+.color-swatch::-webkit-color-swatch-wrapper { padding: 2px; }
+.color-swatch::-webkit-color-swatch { border: 0; border-radius: 5px; }
+.color-hex { width: 78px; text-align: center; font-family: var(--od-font-mono); font-size: 11px; padding: 6px 6px; }
+.color-auto {
+  font-size: 10.5px; font-weight: 600; color: var(--od-color-muted);
+  border: 1px solid var(--od-border-subtle); border-radius: 7px; background: rgba(255,255,255,0.04);
+  padding: 5px 9px; transition: all var(--od-duration-fast) ease;
+}
+.color-auto:hover { color: #fff; border-color: var(--od-border-strong); }
+
+/* Logo tiles */
+.logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.logo-tile {
+  position: relative; aspect-ratio: 2/3; border-radius: var(--od-radius-control);
+  border: 1px solid rgba(255,255,255,0.07); background: var(--od-glass-grad), rgba(24,24,27,0.9);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); cursor: pointer;
+  display: grid; place-items: center; padding: 8px; overflow: hidden;
+  transition: transform var(--od-duration-slow) var(--od-easing), border-color var(--od-duration-slow) ease, box-shadow var(--od-duration-slow) ease;
+}
+.logo-tile:hover { border-color: rgba(255,255,255,0.16); transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03); }
+.logo-tile-active {
+  border-color: var(--color-accent, var(--color-accent-orange));
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-accent, var(--color-accent-orange)) 55%, transparent), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.logo-render { width: 100%; text-align: center; font-size: clamp(11px, 2.2vw, 15px); line-height: 1.04; color: #fff; user-select: none; }
+.logo-render.serif { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 600; letter-spacing: 0; }
+.logo-render.mono { font-family: var(--od-font-mono); font-weight: 600; letter-spacing: 0.14em; font-size: clamp(9px, 1.8vw, 12px); }
+.logo-render.outline { color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,0.85); font-weight: 800; letter-spacing: 0.04em; }
+.logo-render.warm { color: var(--color-accent, var(--color-accent-orange)); font-weight: 900; letter-spacing: 0.02em; }
+.logo-tile .tile-check {
+  position: absolute; top: 6px; right: 6px; width: 17px; height: 17px; border-radius: 50%;
+  display: none; place-items: center; background: var(--color-accent, var(--color-accent-orange)); color: #0a0a0a;
+}
+.logo-tile-active .tile-check { display: grid; }
+.logo-tile .tile-check svg { width: 10px; height: 10px; }
+.logo-empty {
+  display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px;
+  width: 100%; height: 34px; border-radius: var(--od-radius-control);
+  border: 1px dashed rgba(255,255,255,0.14); background: transparent;
+  color: #71717a; font-size: 11px; font-weight: 600; transition: all var(--od-duration-fast) ease;
+}
+.logo-empty:hover { color: var(--od-color-muted); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.03); }
+
+/* ── Status strip ─────────────────────────────────────────── */
+.status-strip {
+  position: relative; z-index: var(--od-z-content);
+  margin: 0 20px 18px; padding: 9px 16px;
+  border-radius: var(--od-radius-panel);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  font-size: 11px; color: var(--od-color-muted);
+}
+.status-strip .status-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.status-strip .status-right { font-family: var(--od-font-mono); font-size: 10.5px; letter-spacing: 0.04em; }
+
+/* ── Modale anteprima URL ────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: var(--od-z-confirm-backdrop);
+  display: grid; place-items: center; padding: 20px;
+  background: rgba(0,0,0,0.66); backdrop-filter: blur(8px);
+}
+.modal {
+  width: 100%; max-width: 440px; border-radius: var(--od-radius-editor);
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: 0 40px 90px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(18px);
+  padding: 18px; display: flex; flex-direction: column; gap: 14px;
+  animation: modal-pop 0.28s var(--od-easing);
+}
+@keyframes modal-pop { from { opacity: 0; transform: translateY(10px) scale(0.98); } }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.modal-head h3 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.02em; }
+.modal-close {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--od-radius-control);
+  border: 1px solid var(--od-border-subtle); background: rgba(255,255,255,0.05); color: var(--od-color-muted);
+  transition: background var(--od-duration-fast) ease, color var(--od-duration-fast) ease;
+}
+.modal-close:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.modal-close svg { width: 14px; height: 14px; }
+.modal-stage { width: min(320px, 100%); margin-inline: auto; }
+.modal-stage .poster-stage { box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); }
+.modal-url {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border-radius: var(--od-radius-input); background: rgba(0,0,0,0.4); border: 1px solid var(--od-color-border);
+}
+.modal-url code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--od-font-mono); font-size: 10.5px; color: rgb(161 161 170); }
+.modal-url .btn-ghost { flex-shrink: 0; height: 32px; padding-inline: 10px; font-size: 11.5px; }
+.modal-actions { display: flex; gap: 8px; }
+.modal-actions .btn { flex: 1; }
+
+/* ── Toast ────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 80px); z-index: var(--od-z-confirm-dialog);
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 16px; border-radius: var(--od-radius-action);
+  font-size: 12.5px; font-weight: 600; color: #fff;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  backdrop-filter: blur(16px);
+  opacity: 0; pointer-events: none;
+  transition: transform 0.35s var(--od-easing), opacity 0.35s var(--od-easing);
+}
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+.toast svg { width: 15px; height: 15px; color: #4ade80; flex-shrink: 0; }
+
+[hidden] { display: none !important; }
+
+/* ── Focus & reduced motion ───────────────────────────────── */
+:focus-visible { outline: 2px solid var(--color-accent, var(--color-accent-orange)); outline-offset: 2px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 1180px) {
+  .editor-workspace { grid-template-columns: 1fr 1fr; }
+  .editor-workspace > .editor-panel:nth-child(2) { grid-column: 1 / -1; order: -1; }
+  .editor-workspace > .editor-panel:nth-child(1) { order: 1; }
+  .editor-workspace > .editor-panel:nth-child(3) { order: 2; }
+}
+@media (max-width: 920px) {
+  .editor-workspace { grid-template-columns: 1fr; padding-inline: 12px; }
+  .editor-workspace > .editor-panel:nth-child(2) { grid-column: auto; }
+  .header-right .floating-group { display: none; }
+  .editor-header-inner { flex-wrap: wrap; padding: 10px 14px; }
+  .toolbar { order: 3; flex-basis: 100%; }
+  .header-logo { height: 30px; }
+  .poster-grid, .logo-grid { grid-template-columns: repeat(3, 1fr); }
+  .floating-btn, .floating-dock .lang-chip { width: 44px; height: 44px; }
+  .btn { height: 44px; }
+  .search-shell, .btn-back { height: 44px; }
+  .version-badge { display: none; }
+  .app-shell { padding-bottom: 92px; }
+  .modal-stage { width: min(280px, 100%); }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- Ambient light: poster in editing sfocato dietro la UI -->
+  <div class="poster-ambient" id="ambientBg" style="background-image:url('assets/poster-66732.jpg')"></div>
+  <div class="page-glow"></div>
+  <div class="app-grid"></div>
+  <div class="page-vignette"></div>
+
+  <div class="version-badge">v0.15.2</div>
+
+  <!-- ═══ Toolbar editor ═══ -->
+  <header class="editor-header" data-od-id="editor-toolbar">
+    <div class="editor-header-inner">
+      <img class="header-logo" src="assets/posterium-logo.png" alt="Posterium" data-od-id="logo" />
+      <div class="toolbar">
+        <button type="button" class="btn-back" data-od-id="btn-back" aria-label="Torna indietro">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Indietro
+        </button>
+        <div class="search-shell" data-od-id="search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" placeholder="Cerca un film o una serie…" aria-label="Cerca un film o una serie" />
+          <span class="search-hint">/</span>
+          <div class="search-recent" role="listbox">
+            <p class="search-recent-label">Ricerche recenti</p>
+            <div id="searchItems"></div>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="save-state" id="saveState" data-od-id="save-state"><span class="dot"></span>Salvataggio automatico</span>
+        <div class="floating-group" data-od-id="floating-group">
+          <button type="button" class="floating-btn accent" aria-label="Copia URL catalogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
+          <button type="button" class="floating-btn" aria-label="Installa catalogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+          <button type="button" class="floating-btn" aria-label="I miei poster"><span class="count" id="mappingsCount">3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+          <span class="floating-sep"></span>
+          <a class="floating-btn" href="impostazioni.html" aria-label="Impostazioni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ Workspace: galleria | anteprima | opzioni ═══ -->
+  <main class="editor-workspace">
+
+    <!-- ── Colonna 1: galleria poster ── -->
+    <section class="editor-panel" data-od-id="gallery-panel" aria-label="Selezione poster">
+      <div class="editor-panel-header">
+        <div class="panel-title"><h2>Poster disponibili</h2><span class="count-pill" id="galleryCount">5</span></div>
+      </div>
+      <div class="editor-panel-body">
+        <div class="gallery-head">
+          <div class="tab-row" role="tablist" data-od-id="gallery-tabs" id="galleryTabs">
+            <button type="button" role="tab" class="tab-chip tab-chip-active" data-tab="clean" aria-selected="true">Senza testo<span class="tab-count">3</span></button>
+            <button type="button" role="tab" class="tab-chip" data-tab="it" aria-selected="false">Italiano<span class="tab-count">1</span></button>
+            <button type="button" role="tab" class="tab-chip" data-tab="en" aria-selected="false">English<span class="tab-count">1</span></button>
+          </div>
+        </div>
+
+        <div class="poster-grid" id="posterGrid"><!-- reso da JS --></div>
+
+        <div class="gallery-status">
+          <span class="rotation-pill" id="rotationPill" style="display:none"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg><span id="rotationCount">0</span> in rotazione</span>
+          <span id="fitStatus" style="display:none;font-weight:600;color:var(--od-color-warning)">✦ Migliore per logo</span>
+        </div>
+        <div class="excluded-strip" id="excludedStrip" data-od-id="excluded-strip">
+          <span id="excludedLabel">1 poster escluso</span>
+          <button type="button" id="restoreExcluded">Ripristina</button>
+        </div>
+        <p class="panel-hint">Passa il mouse su un poster per aggiungerlo alla rotazione o escluderlo.</p>
+      </div>
+    </section>
+
+    <!-- ── Colonna 2: anteprima live ── -->
+    <section class="editor-panel" data-od-id="preview-panel" aria-label="Anteprima poster">
+      <div class="editor-panel-header">
+        <div class="panel-title"><span class="live-dot"></span><h2>Anteprima live</h2></div>
+        <span class="count-pill">2:3 · JPEG</span>
+      </div>
+      <div class="editor-panel-body preview-body">
+        <div class="preview-podium" data-od-id="preview-podium">
+          <div class="podium-top">
+            <span class="podium-format">500 × 750</span>
+          </div>
+          <div class="poster-stage poster-stage-glow" id="posterStage" data-od-id="poster-stage">
+            <img class="base" id="stageImg" src="assets/poster-66732.jpg" alt="Anteprima del poster Orizzonte 9" />
+            <div class="stage-gradient" id="stageGradient"></div>
+            <div class="stage-logo" id="stageLogo"><span class="logo-render" id="stageLogoText">ORIZZONTE 9</span></div>
+            <span class="poster-custom" id="posterCustom">Premio Oscar</span>
+            <span class="poster-pill" id="posterPill"><span>FANTASCIENZA</span><span style="opacity:.65">·</span><span>2026</span><span style="opacity:.65">·</span><span class="star">★ 8,4</span></span>
+            <div class="poster-ribbon" id="posterRibbon"><span class="ribbon-num">#3</span><span class="ribbon-label">Tendenza</span></div>
+            <img class="poster-network" id="posterNetwork" src="assets/netflix-n.png" alt="" />
+          </div>
+        </div>
+
+        <div class="preview-caption" data-od-id="preview-caption">
+          <div class="title-row">
+            <h2 id="captionTitle">Orizzonte 9</h2>
+            <span class="variant-pill" id="variantPill">Pulito</span>
+            <span class="saved-chip" id="savedChip"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Salvato</span>
+          </div>
+          <p class="meta-row" id="captionMeta">
+            <span id="captionYear">2024</span><span class="sep">·</span><span id="captionType">Film</span><span class="sep">·</span>
+            <span>TMDB <a id="linkTmdb" href="https://www.themoviedb.org/movie/872585" target="_blank" rel="noopener">872585</a></span><span class="sep">·</span>
+            <span>IMDB <a id="linkImdb" href="https://www.imdb.com/title/tt15239678" target="_blank" rel="noopener">tt15239678</a></span>
+          </p>
+          <p class="fit-hint" id="fitHint"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6z"/></svg>Poster migliore per questo logo</p>
+        </div>
+
+        <div class="action-bar" data-od-id="preview-actions">
+          <button type="button" class="btn btn-primary" id="btnSave" data-od-id="btn-save">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Salva poster
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnTestUrl" data-od-id="btn-test-url">Test URL</button>
+          <button type="button" class="btn btn-ghost" id="btnCopyConfig" data-od-id="btn-copy-config">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            Copia link
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Colonna 3: opzioni ── -->
+    <section class="editor-panel" data-od-id="options-panel" aria-label="Opzioni del poster">
+      <div class="editor-panel-header">
+        <div class="panel-title"><h2>Personalizza</h2></div>
+      </div>
+      <div class="editor-panel-body">
+        <div class="tab-row option-tabs" role="tablist" data-od-id="options-tabs" id="optionsTabs">
+          <button type="button" role="tab" class="tab-chip tab-chip-active" data-otab="logo" aria-selected="true">Logo</button>
+          <button type="button" role="tab" class="tab-chip" data-otab="badge" aria-selected="false">Badge</button>
+          <button type="button" role="tab" class="tab-chip" data-otab="transform" aria-selected="false">Trasforma</button>
+        </div>
+
+        <!-- Logo -->
+        <div class="option-pane" data-pane="logo">
+          <p class="control-hint" style="padding-left:2px">Sovrapponi il logo del titolo al poster pulito.</p>
+          <div class="logo-grid" data-od-id="logo-grid" id="logoGrid">
+            <button type="button" class="logo-tile logo-tile-active" data-logo="bold" aria-label="Logo ORIZZONTE 9 in grassetto" data-od-id="logo-tile-bold">
+              <span class="logo-render">ORIZZONTE 9</span>
+              <span class="tile-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            </button>
+            <button type="button" class="logo-tile" data-logo="serif" aria-label="Logo Orizzonte 9 in corsivo serif" data-od-id="logo-tile-serif">
+              <span class="logo-render serif">Orizzonte 9</span>
+              <span class="tile-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            </button>
+            <button type="button" class="logo-tile" data-logo="mono" aria-label="Logo ORIZZONTE 9 in mono" data-od-id="logo-tile-mono">
+              <span class="logo-render mono">ORIZZONTE&nbsp;9</span>
+              <span class="tile-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            </button>
+            <button type="button" class="logo-tile" data-logo="outline" aria-label="Logo Orizzonte 9 contornato" data-od-id="logo-tile-outline">
+              <span class="logo-render outline">ORIZZONTE&nbsp;9</span>
+              <span class="tile-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            </button>
+          </div>
+          <button type="button" class="logo-empty" id="btnNoLogo" data-od-id="btn-no-logo">Nessun logo</button>
+          <div class="control-row" style="margin-top:10px">
+            <span class="control-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Adatta automaticamente</span>
+            <label class="toggle" data-od-id="toggle-auto-fit">
+              <input type="checkbox" id="autoFit" checked aria-label="Adatta automaticamente il poster al logo" />
+              <span class="track"></span><span class="thumb"></span>
+            </label>
+          </div>
+          <p class="control-hint">Il poster con il miglior incastro per il logo viene scelto e ordinato automaticamente.</p>
+        </div>
+
+        <!-- Badge -->
+        <div class="option-pane" data-pane="badge" style="display:none">
+          <div class="section-block">
+            <p class="section-block-title"><span class="tick"></span>Classifica</p>
+            <div class="control-row">
+              <span class="control-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v6a5 5 0 0 1-10 0z"/></svg>Badge di tendenza</span>
+              <label class="toggle" data-od-id="toggle-ranking">
+                <input type="checkbox" id="rankingBadges" checked aria-label="Badge di tendenza" />
+                <span class="track"></span><span class="thumb"></span>
+              </label>
+            </div>
+            <div class="control-hint" style="display:flex;justify-content:space-between;align-items:center">
+              <span>Stile</span>
+              <div class="segmented-control" data-od-id="ranking-style">
+                <button type="button" class="segmented-option segmented-option-active" data-seg="ribbon">Ribbon</button>
+                <button type="button" class="segmented-option" data-seg="pill">Pill</button>
+                <button type="button" class="segmented-option" data-seg="colored">Colored</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <p class="section-block-title"><span class="tick"></span>Genere · anno · voto</p>
+            <div class="control-row">
+              <span class="control-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Badge genere / rating</span>
+              <label class="toggle" data-od-id="toggle-genre-badge">
+                <input type="checkbox" id="globalBadges" checked aria-label="Badge genere e rating" />
+                <span class="track"></span><span class="thumb"></span>
+              </label>
+            </div>
+            <div class="control-sub" id="genreSub">
+              <div class="control-row">
+                <span class="control-label">Genere</span>
+                <label class="toggle" data-od-id="toggle-genre">
+                  <input type="checkbox" id="badgeGenre" checked aria-label="Genere" />
+                  <span class="track"></span><span class="thumb"></span>
+                </label>
+              </div>
+              <div class="control-row">
+                <span class="control-label">Anno</span>
+                <label class="toggle" data-od-id="toggle-year">
+                  <input type="checkbox" id="badgeYear" checked aria-label="Anno" />
+                  <span class="track"></span><span class="thumb"></span>
+                </label>
+              </div>
+              <div class="control-row">
+                <span class="control-label">Valutazione</span>
+                <label class="toggle" data-od-id="toggle-rating">
+                  <input type="checkbox" id="badgeRating" checked aria-label="Valutazione" />
+                  <span class="track"></span><span class="thumb"></span>
+                </label>
+              </div>
+            </div>
+            <p class="section-block-title" style="margin:10px 0 8px"><span class="tick"></span>Stile badge</p>
+            <div class="chip-row" data-od-id="genre-style" id="genreStyleRow">
+              <button type="button" class="chip chip-active" data-chip="vetro"><span class="chip-dot" style="background:linear-gradient(135deg,rgba(255,255,255,.85),rgba(255,255,255,.25))"></span>Vetro</button>
+              <button type="button" class="chip" data-chip="shadow">Shadow</button>
+              <button type="button" class="chip" data-chip="pill">Pill</button>
+              <button type="button" class="chip" data-chip="bar">Bar</button>
+              <button type="button" class="chip" data-chip="colored">Colored</button>
+              <button type="button" class="chip" data-chip="bordo">Bordo</button>
+            </div>
+            <p class="section-block-title" style="margin:10px 0 6px"><span class="tick"></span>Colore accento</p>
+            <div class="color-row">
+              <input type="color" class="color-swatch" id="accentColorInput" value="#e85d2a" aria-label="Colore accento" />
+              <input type="text" class="editor-input color-hex" id="accentHex" value="#e85d2a" spellcheck="false" aria-label="Colore accento in esadecimale" />
+              <button type="button" class="color-auto" id="accentAuto">Auto dal poster</button>
+            </div>
+            <p class="control-hint">Il colore dominante del poster viene rilevato automaticamente e usato per badge e accenti UI.</p>
+          </div>
+
+          <div class="section-block">
+            <p class="section-block-title"><span class="tick"></span>Extra</p>
+            <div class="control-row">
+              <span class="control-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>Logo della rete</span>
+              <label class="toggle" data-od-id="toggle-network">
+                <input type="checkbox" id="networkLogo" aria-label="Logo della rete" />
+                <span class="track"></span><span class="thumb"></span>
+              </label>
+            </div>
+            <div class="control-row">
+              <span class="control-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6M12 4v16"/></svg>Badge personalizzato</span>
+              <select class="editor-input" id="customBadge" aria-label="Badge personalizzato" style="min-width:118px">
+                <option value="auto">Auto</option>
+                <option value="oscar">Premio Oscar</option>
+                <option value="top250">Top 250 IMDb</option>
+                <option value="miniserie">Miniserie</option>
+                <option value="nuova">Nuova uscita</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <p class="section-block-title"><span class="tick"></span>Sfocatura base</p>
+            <div class="control-row">
+              <span class="control-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>Sfocatura in basso</span>
+              <label class="toggle" data-od-id="toggle-blur">
+                <input type="checkbox" id="blurEnabled" checked aria-label="Sfocatura in basso" />
+                <span class="track"></span><span class="thumb"></span>
+              </label>
+            </div>
+            <div id="blurSliders">
+              <div class="slider-row">
+                <span class="slider-label">Altezza</span>
+                <input type="range" min="5" max="100" value="62" data-slider="h" aria-label="Altezza sfocatura" />
+                <span class="slider-val" data-val="h">62%</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-label">Intensità</span>
+                <input type="range" min="0" max="20" value="5" data-slider="b" aria-label="Intensità sfocatura" />
+                <span class="slider-val" data-val="b">5px</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-label">Sfumatura</span>
+                <input type="range" min="0" max="100" value="55" data-slider="f" aria-label="Sfumatura sfocatura" />
+                <span class="slider-val" data-val="f">55%</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-label">Oscurità</span>
+                <input type="range" min="0" max="100" value="40" data-slider="d" aria-label="Oscurità sfocatura" />
+                <span class="slider-val" data-val="d">40%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trasforma -->
+        <div class="option-pane" data-pane="transform" style="display:none">
+          <p class="control-hint" style="padding-left:2px">Posiziona il logo sul poster. Doppio clic su uno slider per ripristinare.</p>
+          <div class="section-block">
+            <div class="slider-row">
+              <span class="slider-label">Scala</span>
+              <input type="range" min="40" max="180" value="100" data-slider="s" aria-label="Scala logo" />
+              <span class="slider-val" data-val="s">100%</span>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">Offset X</span>
+              <input type="range" min="-80" max="80" value="0" data-slider="x" aria-label="Offset orizzontale logo" />
+              <span class="slider-val" data-val="x">0px</span>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">Offset Y</span>
+              <input type="range" min="-80" max="80" value="0" data-slider="y" aria-label="Offset verticale logo" />
+              <span class="slider-val" data-val="y">0px</span>
+            </div>
+            <button type="button" class="btn btn-secondary" id="btnResetTransform" style="width:100%;margin-top:8px;height:36px">Ripristina posizione</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══ Status strip ═══ -->
+  <footer class="status-strip" data-od-id="status-strip">
+    <div class="status-left">
+      <span><span class="kbd">Ctrl</span> + <span class="kbd">S</span> Salva</span>
+      <span><span class="kbd">Esc</span> Chiudi i pannelli</span>
+      <span><span class="kbd">/</span> Cerca</span>
+      <span id="statusMsg">Pronto. Seleziona un poster per modificarlo.</span>
+    </div>
+    <span class="status-right">Render server · Sharp + Resvg · 500×750</span>
+  </footer>
+
+  <!-- ═══ Floating dock (mobile/desktop) ═══ -->
+  <div class="floating-dock" data-od-id="floating-dock">
+    <div class="floating-group">
+      <button type="button" class="floating-btn" aria-label="Aggiorna classifiche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+      <button type="button" class="floating-btn accent" aria-label="Stato del servizio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg></button>
+    </div>
+    <a class="lang-chip" href="impostazioni.html" aria-label="Lingua: italiano — apri impostazioni" title="Lingua e tema in Impostazioni">IT</a>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" hidden data-od-id="test-url-modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <h3 id="modalTitle">Anteprima URL</h3>
+        <button type="button" class="modal-close" id="modalClose" aria-label="Chiudi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="modal-stage" id="modalStage"></div>
+      <div class="modal-url">
+        <code id="modalUrl"></code>
+        <button type="button" class="btn btn-ghost" id="modalCopy">Copia</button>
+      </div>
+      <div class="modal-actions">
+        <a class="btn btn-primary" id="modalOpen" href="#" target="_blank" rel="noopener">Apri in nuova scheda</a>
+        <button type="button" class="btn btn-secondary" id="modalClose2">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toastMsg">Fatto</span>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s, c) { return (c || document).querySelector(s); };
+  var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
+
+  /* ── Dati ── */
+  var POSTERS = [
+    { id: "p1", src: "assets/poster-66732.jpg", lang: "clean", best: false, title: "Orizzonte 9", genre: "Fantascienza", year: "2024", rating: "8,6", type: "Film", tmdb: "872585", imdb: "tt15239678" },
+    { id: "p2", src: "assets/poster-85552.jpg", lang: "clean", best: false, title: "Fulmine di Mezzanotte", genre: "Azione", year: "2023", rating: "8,5", type: "Serie TV" },
+    { id: "p3", src: "assets/poster-1405.jpg", lang: "clean", best: true, title: "Codice Ombra", genre: "Thriller", year: "2024", rating: "8,1", type: "Film" },
+    { id: "p4", src: "assets/poster-85552.jpg", lang: "it", best: false, title: "Fulmine di Mezzanotte", genre: "Azione", year: "2023", rating: "8,5", type: "Serie TV" },
+    { id: "p5", src: "assets/poster-66732.jpg", lang: "en", best: false, title: "Orizzonte 9", genre: "Fantascienza", year: "2024", rating: "8,6", type: "Film", tmdb: "872585", imdb: "tt15239678" }
+  ];
+  var state = {
+    tab: "clean", poster: "p1", logo: "bold", fit: true,
+    rotation: [], excluded: [], saved: false
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem("posterium-editor-demo") || "{}");
+    if (saved.poster) state.poster = saved.poster;
+    if (saved.rotation) state.rotation = saved.rotation;
+  } catch (e) { /* noop */ }
+
+  /* ── Toast ── */
+  var toastTimer = null;
+  function toast(msg) {
+    $("#toastMsg").textContent = msg;
+    $("#toast").classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { $("#toast").classList.remove("show"); }, 2200);
+  }
+
+  /* ── Galleria ── */
+  var ICO_ROT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>';
+  var ICO_HIDE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>';
+  var ICO_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  function renderGallery() {
+    var grid = $("#posterGrid");
+    var excluded = function (p) { return state.excluded.indexOf(p.id) === -1; };
+    $$("#galleryTabs .tab-chip").forEach(function (t) {
+      var n = POSTERS.filter(function (p) { return p.lang === t.getAttribute("data-tab") && excluded(p); }).length;
+      var c = t.querySelector(".tab-count");
+      if (c) c.textContent = n;
+    });
+    $("#galleryCount").textContent = POSTERS.filter(excluded).length;
+    var list = POSTERS.filter(function (p) { return p.lang === state.tab && excluded(p); });
+    if (!list.length) {
+      grid.innerHTML = '<div class="gallery-empty">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>' +
+        '<p>Nessun poster in questa scheda.</p>' +
+        '<button type="button" class="btn btn-secondary" id="galleryEmptyRestore">Ripristina esclusi</button>' +
+        '</div>';
+      return;
+    }
+    grid.innerHTML = list.map(function (p) {
+      var inRot = state.rotation.indexOf(p.id) !== -1;
+      var active = state.poster === p.id;
+      var best = p.best && state.fit && state.logo;
+      return (
+        '<div class="poster-tile' + (active ? " poster-tile-active" : "") + '" data-pid="' + p.id + '" role="button" tabindex="0" aria-label="Seleziona poster ' + p.title + '" aria-pressed="' + active + '">' +
+          '<img src="' + p.src + '" alt="Variante poster di ' + p.title + '" loading="lazy" />' +
+          (best ? '<span class="fit-badge fit-badge-amber">✦ Migliore per logo</span>' : "") +
+          '<div class="poster-tile-actions">' +
+            '<button type="button" class="tile-action' + (inRot ? " on" : "") + '" data-act="rot" title="' + (inRot ? "Rimuovi dalla rotazione" : "Aggiungi alla rotazione") + '" aria-label="' + (inRot ? "Rimuovi dalla rotazione" : "Aggiungi alla rotazione") + '">' + (inRot ? ICO_CHECK : ICO_ROT) + '</button>' +
+            '<button type="button" class="tile-action danger" data-act="ex" title="Escludi poster" aria-label="Escludi poster">' + ICO_HIDE + '</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  function persist() {
+    try { localStorage.setItem("posterium-editor-demo", JSON.stringify({ poster: state.poster, rotation: state.rotation })); } catch (e) { /* noop */ }
+  }
+
+  /* ── Helpers ── */
+  function currentPoster() { return POSTERS.filter(function (p) { return p.id === state.poster; })[0]; }
+  function langLabel(l) { return l === "clean" ? "Pulito" : l === "it" ? "Italiano" : "English"; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  function setFitState() {
+    $("#fitStatus").style.display = (state.fit && state.logo) ? "inline" : "none";
+    $("#fitHint").style.display = (state.fit && state.logo) ? "flex" : "none";
+    renderGallery();
+  }
+
+  /* ── Accento adattivo: colore dominante del poster ── */
+  function extractAccent(src) {
+    var img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = function () {
+      try {
+        var c = document.createElement("canvas");
+        c.width = 12; c.height = 18;
+        var ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, 12, 18);
+        var data = ctx.getImageData(0, 0, 12, 18).data;
+        var r = 0, g = 0, b = 0, n = 0;
+        for (var i = 0; i < data.length; i += 4) {
+          var a = data[i + 3] / 255;
+          if (a < 0.4) continue;
+          var lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          if (lum < 14) continue; /* salta il nero puro */
+          r += data[i]; g += data[i + 1]; b += data[i + 2]; n++;
+        }
+        if (n < 6) return;
+        var hex = "#" + [r, g, b].map(function (v) { return Math.round(v / n).toString(16).padStart(2, "0"); }).join("");
+        document.documentElement.style.setProperty("--color-accent", hex);
+      } catch (e) { /* cross-origin o simile: resta l'accento attuale */ }
+    };
+    img.src = src;
+  }
+
+  function selectPoster(id, silent) {
+    var p = POSTERS.filter(function (x) { return x.id === id; })[0];
+    if (!p) return;
+    state.poster = id;
+    $("#stageImg").src = p.src;
+    $("#ambientBg").style.backgroundImage = "url('" + p.src + "')";
+    if (!silent) {
+      extractAccent(p.src);
+      $("#posterStage").classList.remove("poster-stage-glow");
+      void $("#posterStage").offsetWidth;
+      $("#posterStage").classList.add("poster-stage-glow");
+    }
+    state.saved = false;
+    $("#btnSave").classList.remove("saved");
+    $("#btnSave").innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salva poster';
+    $("#savedChip").style.display = "none";
+    $("#captionTitle").textContent = p.title;
+    $("#variantPill").textContent = langLabel(p.lang);
+    $("#captionYear").textContent = p.year;
+    $("#captionType").textContent = p.type;
+    $("#linkTmdb").href = p.tmdb ? "https://www.themoviedb.org/movie/" + p.tmdb : "https://www.themoviedb.org/search?query=" + encodeURIComponent(p.title);
+    $("#linkTmdb").textContent = p.tmdb || "cerca";
+    $("#linkImdb").href = p.imdb ? "https://www.imdb.com/title/" + p.imdb : "https://www.imdb.com/find/?q=" + encodeURIComponent(p.title);
+    $("#linkImdb").textContent = p.imdb || "cerca";
+    $("#statusMsg").textContent = "Poster selezionato: " + p.title + " · variante " + langLabel(p.lang) + ".";
+    renderPill();
+    if (!silent) setDirty(true);
+    renderGallery();
+    persist();
+  }
+
+  /* ── Eventi galleria ── */
+  $("#galleryTabs").addEventListener("click", function (e) {
+    var b = e.target.closest(".tab-chip");
+    if (!b) return;
+    $$(".tab-chip", $("#galleryTabs")).forEach(function (t) { t.classList.remove("tab-chip-active"); t.setAttribute("aria-selected", "false"); });
+    b.classList.add("tab-chip-active");
+    b.setAttribute("aria-selected", "true");
+    state.tab = b.getAttribute("data-tab");
+    renderGallery();
+  });
+
+  $("#posterGrid").addEventListener("click", function (e) {
+    var act = e.target.closest("[data-act]");
+    var tile = e.target.closest(".poster-tile");
+    var restore = e.target.closest("#galleryEmptyRestore");
+    if (restore) { state.excluded = []; renderGallery(); updateExtras(); toast("Elenco esclusi ripristinato."); return; }
+    if (!tile) return;
+    var id = tile.getAttribute("data-pid");
+    if (act) {
+      e.stopPropagation();
+      if (act.getAttribute("data-act") === "rot") {
+        var i = state.rotation.indexOf(id);
+        if (i === -1) { state.rotation.push(id); toast("Aggiunto alla rotazione automatica."); }
+        else { state.rotation.splice(i, 1); toast("Rimosso dalla rotazione."); }
+        persist();
+      } else {
+        state.excluded.push(id);
+        if (state.poster === id) {
+          var next = POSTERS.filter(function (p) { return p.id !== id && state.excluded.indexOf(p.id) === -1; })[0];
+          if (next) selectPoster(next.id, true);
+        }
+        toast("Poster escluso dal catalogo.");
+        persist();
+      }
+      updateExtras();
+      renderGallery();
+      return;
+    }
+    selectPoster(id);
+  });
+  $("#posterGrid").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); var t = e.target.closest(".poster-tile"); if (t) selectPoster(t.getAttribute("data-pid")); }
+  });
+
+  function updateExtras() {
+    $("#rotationPill").style.display = state.rotation.length ? "inline-flex" : "none";
+    $("#rotationCount").textContent = state.rotation.length;
+    var ex = $("#excludedStrip");
+    if (state.excluded.length) {
+      ex.style.display = "flex";
+      $("#excludedLabel").textContent = state.excluded.length + (state.excluded.length === 1 ? " poster escluso" : " poster esclusi");
+    } else ex.style.display = "none";
+  }
+  $("#restoreExcluded").addEventListener("click", function () {
+    state.excluded = [];
+    toast("Elenco esclusi ripristinato.");
+    renderGallery(); updateExtras();
+  });
+
+  /* ── Opzioni: tab ── */
+  $("#optionsTabs").addEventListener("click", function (e) {
+    var b = e.target.closest(".tab-chip");
+    if (!b) return;
+    $$(".tab-chip", $("#optionsTabs")).forEach(function (t) { t.classList.remove("tab-chip-active"); t.setAttribute("aria-selected", "false"); });
+    b.classList.add("tab-chip-active");
+    b.setAttribute("aria-selected", "true");
+    var pane = b.getAttribute("data-otab");
+    $$(".option-pane").forEach(function (p) { p.style.display = p.getAttribute("data-pane") === pane ? "" : "none"; });
+  });
+
+  /* ── Logo ── */
+  var LOGO_CLASS = { bold: "", serif: "serif", mono: "mono", outline: "outline" };
+  function logoCaption(style) {
+    var p = currentPoster(); var title = p ? p.title : "ORIZZONTE 9";
+    return style === "serif" ? title : title.toUpperCase();
+  }
+  function renderLogo() {
+    $$(".logo-tile").forEach(function (t) {
+      var on = t.getAttribute("data-logo") === state.logo;
+      t.classList.toggle("logo-tile-active", on);
+      t.querySelector(".logo-render").textContent = logoCaption(t.getAttribute("data-logo"));
+    });
+    var st = $("#stageLogo"), txt = $("#stageLogoText");
+    if (state.logo) {
+      st.style.display = "block";
+      txt.textContent = logoCaption(state.logo);
+      txt.className = "logo-render" + (LOGO_CLASS[state.logo] ? " " + LOGO_CLASS[state.logo] : "");
+    } else {
+      st.style.display = "none";
+    }
+    setFitState();
+  }
+  $("#logoGrid").addEventListener("click", function (e) {
+    var t = e.target.closest(".logo-tile");
+    if (!t) return;
+    state.logo = t.getAttribute("data-logo");
+    toast("Logo selezionato: " + state.logo + ".");
+    renderLogo(); setDirty(true);
+  });
+  $("#btnNoLogo").addEventListener("click", function () { state.logo = null; renderLogo(); toast("Nessun logo."); setDirty(true); });
+  $("#autoFit").addEventListener("change", function (e) { state.fit = e.target.checked; setFitState(); setDirty(true); });
+  /* ── Badge: toggle sovrapposti al podio ── */
+  function renderPill() {
+    var p = currentPoster(); if (!p) return;
+    var parts = [];
+    if ($("#badgeGenre").checked) parts.push(p.genre.toUpperCase());
+    if ($("#badgeYear").checked) parts.push(p.year);
+    if ($("#badgeRating").checked) parts.push('<span class="star">★ ' + p.rating + '</span>');
+    $("#posterPill").innerHTML = parts.map(function (h) { return "<span>" + h + "</span>"; }).join('<span style="opacity:.65">·</span>');
+    $("#posterPill").style.display = ($("#globalBadges").checked && parts.length) ? "inline-flex" : "none";
+  }
+  function syncBadges(silent) {
+    renderPill();
+    $("#posterRibbon").style.display = $("#rankingBadges").checked ? "flex" : "none";
+    $("#posterNetwork").style.display = $("#networkLogo").checked ? "block" : "none";
+    $("#posterCustom").style.display = $("#customBadge").value !== "auto" ? "inline-block" : "none";
+    $("#posterCustom").textContent = $("#customBadge").selectedOptions[0].textContent;
+    $("#genreSub").style.display = $("#globalBadges").checked ? "" : "none";
+    $("#blurSliders").style.display = $("#blurEnabled").checked ? "" : "none";
+    $("#stageGradient").style.display = $("#blurEnabled").checked ? "" : "none";
+    if (!silent) setDirty(true);
+  }
+  $$(".option-pane input[type=checkbox]").forEach(function (cb) {
+    cb.addEventListener("change", syncBadges);
+  });
+  $("#customBadge").addEventListener("change", syncBadges);
+
+  /* Stile badge → classe del pill */
+  $("#genreStyleRow").addEventListener("click", function (e) {
+    var c = e.target.closest(".chip");
+    if (!c) return;
+    $$(".chip", $("#genreStyleRow")).forEach(function (x) { x.classList.remove("chip-active"); });
+    c.classList.add("chip-active");
+    var style = c.getAttribute("data-chip");
+    var pill = $("#posterPill");
+    pill.className = "poster-pill";
+    if (style === "bar") pill.classList.add("pill-bar");
+    if (style === "colored") pill.classList.add("pill-colored");
+    if (style === "bordo") pill.classList.add("pill-bordo");
+    setDirty(true);
+  });
+
+  /* Stile ranking */
+  $$("#ranking-style .segmented-option").forEach(function (b) {
+    b.addEventListener("click", function () {
+      $$("#ranking-style .segmented-option").forEach(function (x) { x.classList.remove("segmented-option-active"); });
+      b.classList.add("segmented-option-active");
+      var st = b.getAttribute("data-seg");
+      var rb = $("#posterRibbon");
+      rb.classList.toggle("ribbon-pill", st === "pill");
+      rb.classList.toggle("ribbon-colored", st === "colored");
+      $("#rankingBadges").checked = true;
+      syncBadges();
+    });
+  });
+
+  /* ── Accento manuale ── */
+  function applyAccent(hex) {
+    if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+    document.documentElement.style.setProperty("--color-accent", hex);
+    $("#accentColorInput").value = hex;
+    $("#accentHex").value = hex;
+  }
+  $("#accentColorInput").addEventListener("input", function (e) { applyAccent(e.target.value); setDirty(true); });
+  $("#accentHex").addEventListener("change", function (e) { applyAccent(e.target.value.trim()); setDirty(true); });
+  $("#accentAuto").addEventListener("click", function () {
+    extractAccent($("#stageImg").src);
+    toast("Accento rilevato dal poster."); setDirty(true);
+  });
+
+  /* ── Slider (fill + valori + stage) ── */
+  function fmtSlider(v, key) {
+    if (key === "h" || key === "f" || key === "d" || key === "s") return v + "%";
+    if (key === "b" || key === "x" || key === "y") return v + "px";
+    return v + "";
+  }
+  $$("input[type=range]").forEach(function (r) {
+    var key = r.getAttribute("data-slider");
+    r.title = "Doppio clic per ripristinare";
+    r.addEventListener("input", function () {
+      var v = r.value;
+      r.style.setProperty("--pct", ((v - r.min) / (r.max - r.min)) * 100 + "%");
+      var el = $('[data-val="' + key + '"]');
+      if (el) el.textContent = fmtSlider(+v, key);
+      var st = $("#posterStage");
+      if (key === "h") st.style.setProperty("--grad-h", v + "%");
+      if (key === "b") st.style.setProperty("--grad-blur", v + "px");
+      if (key === "f") st.style.setProperty("--grad-fade", v + "%");
+      if (key === "d") st.style.setProperty("--grad-dark", (v / 100).toFixed(2));
+      if (key === "s") st.style.setProperty("--logo-scale", v);
+      if (key === "x") st.style.setProperty("--logo-x", v + "px");
+      if (key === "y") st.style.setProperty("--logo-y", v + "px");
+      setDirty(true);
+    });
+    r.addEventListener("dblclick", function () {
+      var defs = { h: 62, b: 5, f: 55, d: 40, s: 100, x: 0, y: 0 };
+      r.value = defs[key];
+      r.dispatchEvent(new Event("input"));
+      toast("Valore ripristinato.");
+    });
+    /* inizializza fill */
+    r.style.setProperty("--pct", ((r.value - r.min) / (r.max - r.min)) * 100 + "%");
+  });
+  $("#btnResetTransform").addEventListener("click", function () {
+    [["s", 100], ["x", 0], ["y", 0]].forEach(function (kv) {
+      var r = $('input[data-slider="' + kv[0] + '"]');
+      r.value = kv[1];
+      r.dispatchEvent(new Event("input"));
+    });
+    toast("Posizione del logo ripristinata."); setDirty(true);
+  });
+
+  /* ── Stato modifiche ── */
+  function setDirty(v) {
+    var el = $("#saveState");
+    el.classList.toggle("dirty", v);
+    el.innerHTML = v
+      ? '<span class="dot"></span>Modifiche non salvate'
+      : '<span class="dot"></span>Salvataggio automatico';
+  }
+
+  /* ── Azioni principali ── */
+  $("#btnSave").addEventListener("click", function () {
+    var btn = this;
+    btn.innerHTML = "Salvataggio…";
+    btn.disabled = true;
+    $("#saveState").classList.add("saving");
+    $("#posterStage").classList.add("saving");
+    setTimeout(function () {
+      btn.classList.add("saved");
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Salvato';
+      btn.disabled = false;
+      $("#saveState").classList.remove("saving");
+      $("#posterStage").classList.remove("saving");
+      $("#savedChip").style.display = "inline-flex";
+      var n = +$("#mappingsCount").textContent;
+      if (state.saved === false) { $("#mappingsCount").textContent = n + 1; state.saved = true; }
+      setDirty(false);
+      toast("Poster salvato nel catalogo.");
+      $("#statusMsg").textContent = "Poster salvato · mappato a " + currentPoster().title + ".";
+    }, 700);
+  });
+  $("#btnTestUrl").addEventListener("click", openModal);
+  $("#btnCopyConfig").addEventListener("click", function () {
+    var b = this;
+    var url = buildUrl();
+    function done() {
+      b.classList.add("copied");
+      b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Copiato';
+      setTimeout(function () {
+        b.classList.remove("copied");
+        b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Copia link';
+      }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { toast("Link config copiato."); done(); }, function () { toast("Link config copiato."); done(); });
+    } else { toast("Link config copiato."); done(); }
+  });
+  /* Il pulsante Indietro naviga a home.html — gestito nella sezione Navigazione. */
+  /* ── Ricerca live ── */
+  var searchInput = $(".search-shell input");
+  var recents = [];
+  try { recents = JSON.parse(localStorage.getItem("posterium-editor-recents") || "[]"); } catch (e) { /* noop */ }
+  function saveRecents() { try { localStorage.setItem("posterium-editor-recents", JSON.stringify(recents)); } catch (e) { /* noop */ } }
+  function addRecent(q) {
+    recents = [q].concat(recents.filter(function (x) { return x !== q; })).slice(0, 4);
+    saveRecents();
+  }
+  function renderRecents() {
+    $("#searchItems").innerHTML = recents.length
+      ? recents.map(function (q) {
+          return '<button type="button" class="search-recent-item" data-q="' + esc(q) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>' + esc(q) + '</span></button>';
+        }).join("")
+      : '<p class="search-noresult">Nessuna ricerca recente.</p>';
+  }
+  function renderSearchMatches(q) {
+    var ql = q.toLowerCase();
+    var seen = {}, hits = [];
+    POSTERS.forEach(function (p) {
+      if (seen[p.title]) return;
+      if (p.title.toLowerCase().indexOf(ql) !== -1 || p.genre.toLowerCase().indexOf(ql) !== -1) {
+        seen[p.title] = true;
+        hits.push(p);
+      }
+    });
+    $("#searchItems").innerHTML = hits.length
+      ? hits.map(function (p) {
+          return '<button type="button" class="search-recent-item" data-pid="' + p.id + '"><img class="thumb" src="' + p.src + '" alt="" loading="lazy" /><span>' + esc(p.title) + '</span><em>' + p.year + " · " + langLabel(p.lang) + '</em></button>';
+        }).join("")
+      : '<p class="search-noresult">Nessun risultato per "' + esc(q) + '".</p>';
+  }
+  searchInput.addEventListener("input", function () {
+    var q = this.value.trim();
+    if (q) renderSearchMatches(q); else renderRecents();
+  });
+  searchInput.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var q = this.value.trim();
+    if (!q) return;
+    var first = $("#searchItems .search-recent-item[data-pid]");
+    if (first) {
+      addRecent(q);
+      selectPoster(first.getAttribute("data-pid"));
+      this.value = ""; renderRecents(); this.blur();
+    } else {
+      toast("Nessun poster trovato per \"" + q + "\".");
+    }
+  });
+  $(".search-recent").addEventListener("click", function (e) {
+    var b = e.target.closest(".search-recent-item");
+    if (!b) return;
+    var pid = b.getAttribute("data-pid");
+    if (pid) selectPoster(pid);
+    else { var q = b.getAttribute("data-q"); searchInput.value = q; searchInput.dispatchEvent(new Event("input")); }
+    searchInput.blur();
+  });
+  $$(".header-logo, .floating-btn, .lang-chip").forEach(function (b) {
+    b.addEventListener("click", function () { if (b.classList.contains("header-logo")) toast("Posterium · Home (demo)."); });
+  });
+
+  /* ── Tastiera ── */
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); $("#btnSave").click(); return; }
+    if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey && document.activeElement !== searchInput) {
+      e.preventDefault(); searchInput.focus();
+      return;
+    }
+    if (e.key === "Escape") {
+      if (!$("#modalBackdrop").hidden) { closeModal(); return; }
+      if (document.activeElement === searchInput) { searchInput.blur(); return; }
+      toast("Pannelli chiusi (demo).");
+    }
+  });
+
+  /* ── Navigazione ── */
+  var backBtn = $(".btn-back");
+  if (backBtn) backBtn.addEventListener("click", function () { location.href = "home.html"; });
+  var myPostersBtn = document.querySelector('.floating-btn[aria-label="I miei poster"]');
+  if (myPostersBtn) myPostersBtn.addEventListener("click", function () { location.href = "i-miei-poster.html"; });
+
+  /* ── Modale anteprima URL ── */
+  function buildUrl() {
+    var p = currentPoster();
+    var kind = p && p.type === "Serie TV" ? "tv" : "movie";
+    var id = (p && p.tmdb) || (p ? p.id : "demo");
+    return "https://posterium.app/api/poster/" + kind + "/" + id + "?config=demo-token";
+  }
+  function stageSnapshot() {
+    var src = $("#posterStage");
+    var clone = src.cloneNode(true);
+    clone.removeAttribute("id");
+    ["--grad-h", "--grad-blur", "--grad-fade", "--grad-dark", "--logo-scale", "--logo-x", "--logo-y"].forEach(function (v) {
+      var val = src.style.getPropertyValue(v);
+      if (val) clone.style.setProperty(v, val);
+    });
+    return clone;
+  }
+  function openModal() {
+    $("#modalUrl").textContent = buildUrl();
+    $("#modalOpen").setAttribute("href", buildUrl());
+    $("#modalStage").innerHTML = "";
+    $("#modalStage").appendChild(stageSnapshot());
+    $("#modalBackdrop").hidden = false;
+    $("#modalClose").focus();
+  }
+  function closeModal() {
+    $("#modalBackdrop").hidden = true;
+    $("#modalStage").innerHTML = "";
+  }
+  $("#modalClose").addEventListener("click", closeModal);
+  $("#modalClose2").addEventListener("click", closeModal);
+  $("#modalBackdrop").addEventListener("click", function (e) { if (e.target === this) closeModal(); });
+  $("#modalCopy").addEventListener("click", function () {
+    var b = this;
+    var done = function () { b.textContent = "Copiato"; setTimeout(function () { b.textContent = "Copia"; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(buildUrl()).then(done, done);
+    } else done();
+    toast("URL copiato.");
+  });
+
+  /* ── Floating group ── */
+  $$(".floating-btn[aria-label=\"Copia URL catalogo\"]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var done = function () { toast("URL catalogo copiato."); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText("https://posterium.app/catalogo/demo").then(done, done);
+      else done();
+    });
+  });
+  $$(".floating-btn[aria-label=\"Installa catalogo\"]").forEach(function (b) {
+    b.addEventListener("click", function () { toast("Installazione del catalogo (demo)."); });
+  });
+  $$(".floating-btn[aria-label=\"Aggiorna classifiche\"]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      b.classList.add("spin");
+      setTimeout(function () { b.classList.remove("spin"); }, 750);
+      toast("Classifiche aggiornate.");
+    });
+  });
+  $$(".floating-btn[aria-label=\"Stato del servizio\"]").forEach(function (b) {
+    b.addEventListener("click", function () { toast("Tutti i sistemi operativi."); });
+  });
+
+  /* ── Tastiera tra tab (frecce) ── */
+  function wireTabs(container) {
+    container.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      var chips = $$(".tab-chip", container);
+      var idx = chips.indexOf(document.activeElement);
+      if (idx === -1) return;
+      e.preventDefault();
+      idx = e.key === "ArrowRight" ? (idx + 1) % chips.length : (idx - 1 + chips.length) % chips.length;
+      chips[idx].click();
+      chips[idx].focus();
+    });
+  }
+  wireTabs($("#galleryTabs"));
+  wireTabs($("#optionsTabs"));
+
+  /* ── Init ── */
+  syncBadges(true);
+  updateExtras();
+  renderGallery();
+  renderLogo();
+  selectPoster(state.poster, true);
+  renderRecents();
+  extractAccent($("#stageImg").src);
+  setDirty(false);
+})();
+</script>
+</body>
+</html>

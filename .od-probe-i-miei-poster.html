@@ -1,0 +1,2005 @@
+<!doctype html>
+<!--
+  Posterium — I miei poster (libreria).
+  Prototipo web basato sul seed web-prototype, con i token Posterium bindati.
+  Layout: header centrato + toolbar isola → intestazione libreria → ricerca/filtri → collezioni → mood board → lightbox.
+  Contenuti: artwork demo (poster TMDB già nel progetto) con i badge del prodotto renderizzati live in CSS.
+-->
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Posterium — I miei poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* Posterium design tokens — compiled from src/app/globals.css (v0.15.2).
+   Keep in sync with the source repo when the UI palette changes. */
+
+:root {
+  /* ── Palette (dark — default) ─────────────────────────────── */
+  --od-color-background: #0a0a0a;
+  --od-color-foreground: #ededed;
+  --od-color-surface: #18181b;
+  --od-color-surface2: #27272a;
+  --od-color-border: #3f3f46;
+  --od-color-muted: #a1a1aa;
+  --od-color-accent-orange: #e85d2a;
+  --od-color-accent: #ffffff;
+  --od-color-danger: #f87171;
+  --od-color-warning: #fbbf24;
+
+  /* Accent as RGB components for alpha variants (rgb(var(--accent-rgb) / a)) */
+  --od-accent-rgb: 232 93 42;
+
+  /* ── Palette (light) ──────────────────────────────────────── */
+  --od-color-background-light: #f5f5f5;
+  --od-color-foreground-light: #1a1a1a;
+
+  /* ── Surfaces — shared glass recipe ───────────────────────── */
+  /* The glass family (panels, cards, shells) composes these four
+     ingredients; per-component overrides are allowed. */
+  --od-glass-grad: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  --od-glass-tint: rgba(13, 13, 16, 0.8);
+  --od-glass-border: rgba(255, 255, 255, 0.08);
+  --od-glass-shadow: 0 16px 36px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --od-glass-blur: 14px;
+  --od-border-subtle: rgba(255, 255, 255, 0.08);
+  --od-border-strong: rgba(255, 255, 255, 0.14);
+  --od-panel: rgba(18, 18, 22, 0.74);
+  --od-panel-strong: rgba(21, 21, 26, 0.92);
+
+  /* ── Typography ───────────────────────────────────────────── */
+  --od-font-ui: "Geist", "Inter", Arial, Helvetica, sans-serif;
+  --od-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+  --od-font-poster: "Inter", "Noto Sans Symbols 2", sans-serif;
+
+  /* ── Radius ───────────────────────────────────────────────── */
+  --od-radius-input: 0.5rem;
+  --od-radius-control: 0.625rem;
+  --od-radius-button: 0.75rem;
+  --od-radius-action: 0.875rem;
+  --od-radius-panel: 1rem;
+  --od-radius-editor: 1.25rem;
+  --od-radius-hero: 1.35rem;
+  --od-radius-pill: 9999px;
+
+  /* ── Motion ───────────────────────────────────────────────── */
+  --od-duration-fast: 150ms;
+  --od-duration-base: 200ms;
+  --od-duration-slow: 300ms;
+  --od-easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ── Z-index scale ────────────────────────────────────────── */
+  --od-z-content: 10;
+  --od-z-overlay: 20;
+  --od-z-gradient: 30;
+  --od-z-controls: 40;
+  --od-z-floating: 50;
+  --od-z-settings-mobile: 70;
+  --od-z-fullscreen: 100;
+  --od-z-confirm-backdrop: 199;
+  --od-z-confirm-dialog: 200;
+
+  /* ── Touch / density ──────────────────────────────────────── */
+  --od-touch-min: 44px;
+  --od-dense-label: 10px;
+  --od-dense-caption: 11px;
+}
+
+/* Accento adattivo: la home non ha un poster in editing, quindi l'accento
+   resta il default arancione; il meccanismo .ui-accent resta disponibile. */
+:root {
+  --color-accent-orange: var(--od-color-accent-orange);
+  --color-accent: var(--od-color-accent-orange);
+}
+
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--od-color-background);
+  color: var(--od-color-foreground);
+  font-family: var(--od-font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img, svg { display: block; max-width: 100%; }
+[hidden] { display: none !important; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; background: none; border: none; color: inherit; }
+p { text-wrap: pretty; }
+h1, h2, h3, h4 { text-wrap: balance; }
+::selection { background: rgb(var(--od-accent-rgb) / 0.35); }
+:focus-visible { outline: 2px solid rgb(var(--od-accent-rgb) / 0.75); outline-offset: 2px; border-radius: 4px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { border-radius: 999px; background: linear-gradient(180deg, rgb(var(--od-accent-rgb) / 0.55), rgb(var(--od-accent-rgb) / 0.28)); }
+
+/* ── Sfondo ambiente ──────────────────────────────────────── */
+.ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.ambient-glow {
+  position: absolute; top: -14rem; left: 50%; transform: translateX(-50%);
+  width: 34rem; height: 34rem; border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--od-accent-rgb) / 0.14), transparent 68%);
+}
+.ambient-white {
+  position: absolute; top: 4rem; left: 12%; width: 24rem; height: 24rem; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.045), transparent 70%);
+}
+.ambient-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 75%);
+          mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 75%);
+  opacity: 0.5;
+}
+.ambient-poster {
+  position: absolute; top: -6rem; right: -4rem; width: 560px; aspect-ratio: 2/3;
+  background: url('assets/poster-66732.jpg') center/cover;
+  filter: blur(72px) saturate(1.5); opacity: 0.16; mix-blend-mode: screen;
+}
+.ambient-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 120% 90% at 50% 10%, transparent 55%, rgba(0,0,0,0.55) 100%);
+}
+
+/* ── Layout shell ─────────────────────────────────────────── */
+.shell { position: relative; z-index: 1; max-width: 1680px; margin: 0 auto; padding: 0 1.25rem 6.5rem; }
+
+/* ── Version badge ────────────────────────────────────────── */
+.version-badge {
+  position: fixed; top: 0.9rem; left: 1rem; z-index: 60;
+  font-family: var(--od-font-mono); font-size: 10px; letter-spacing: 0.08em;
+  color: var(--od-color-muted); background: rgba(255,255,255,0.04);
+  border: 1px solid var(--od-border-subtle); border-radius: var(--od-radius-pill);
+  padding: 0.3rem 0.6rem; backdrop-filter: blur(10px);
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.home-header {
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: clamp(2.5rem, 6vh, 4rem); padding-bottom: 1.75rem;
+}
+.header-logo { height: clamp(3.5rem, 6vw, 4.75rem); width: auto; cursor: pointer; transition: filter var(--od-duration-base) var(--od-easing), transform var(--od-duration-base) var(--od-easing); }
+.header-logo:hover { filter: brightness(1.12); }
+.header-logo:active { transform: scale(0.96); }
+.header-tagline {
+  margin: 0.4rem 0 0;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgb(var(--od-color-muted) / 0.55); text-align: center;
+}
+
+/* Toolbar mobile (sotto l'header, solo < 920px) */
+.mobile-toolbar { display: none; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 1rem; }
+.mobile-toolbar .island-btn { width: 44px; height: 44px; }
+
+/* ── Toolbar isola (desktop, top-right) ───────────────────── */
+.toolbar-wrap { position: fixed; top: 1rem; right: 1rem; z-index: var(--od-z-floating); }
+.toolbar-island {
+  display: flex; align-items: center; gap: 2px; padding: 4px;
+  background: var(--od-glass-grad), var(--od-glass-tint);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-action);
+  box-shadow: var(--od-glass-shadow); backdrop-filter: blur(var(--od-glass-blur));
+  animation: rise-in 0.5s var(--od-easing) both;
+}
+.island-btn {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.625rem; color: var(--od-color-muted);
+  transition: background var(--od-duration-fast) var(--od-easing), color var(--od-duration-fast) var(--od-easing), transform var(--od-duration-fast) var(--od-easing);
+  position: relative;
+}
+.island-btn:hover { background: rgba(255,255,255,0.08); color: var(--od-color-foreground); }
+.island-btn:active { transform: scale(0.92); }
+.island-btn[data-accent="1"] { color: var(--od-color-accent-orange); }
+.island-btn[data-accent="1"]:hover { color: var(--od-color-accent-orange); }
+.island-btn .count-chip {
+  position: absolute; top: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: #fff; background: var(--od-color-accent-orange);
+  border-radius: 999px; box-shadow: 0 2px 8px rgb(var(--od-accent-rgb) / 0.45);
+}
+.island-divider { width: 1px; height: 20px; background: var(--od-border-subtle); margin: 0 2px; }
+/* Tooltip via data-tip */
+.island-btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; top: calc(100% + 8px); right: 0; white-space: nowrap;
+  font-size: 10px; font-weight: 500; letter-spacing: 0.02em; color: var(--od-color-foreground);
+  background: rgba(10,10,10,0.92); border: 1px solid var(--od-border-subtle);
+  border-radius: 0.5rem; padding: 0.35rem 0.6rem; box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+  opacity: 0; transform: translateY(-4px); pointer-events: none;
+  transition: opacity var(--od-duration-fast) var(--od-easing), transform var(--od-duration-fast) var(--od-easing);
+}
+.island-btn[data-tip]:hover::after { opacity: 1; transform: translateY(0); }
+
+/* ── Ricerca ──────────────────────────────────────────────── */
+.search-wrap { max-width: 560px; margin: 0 auto; position: relative; z-index: var(--od-z-controls); animation: rise-in 0.5s var(--od-easing) 0.06s both; }
+.search-shell {
+  display: flex; align-items: center; height: 52px;
+  background: var(--od-glass-grad), rgba(3, 3, 4, 0.4);
+  border: 1px solid var(--od-glass-border); border-radius: 1.05rem;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px);
+  transition: border-color var(--od-duration-base), box-shadow var(--od-duration-base);
+}
+.search-shell:focus-within {
+  border-color: rgb(var(--od-accent-rgb) / 0.45);
+  box-shadow: 0 0 0 3px rgb(var(--od-accent-rgb) / 0.08), 0 16px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.search-ico { margin-left: 1rem; color: var(--od-color-muted); flex-shrink: 0; transition: color var(--od-duration-fast); }
+.search-shell:focus-within .search-ico { color: var(--od-color-foreground); }
+.search-input {
+  flex: 1; min-width: 0; height: 100%; padding: 0 0.85rem;
+  background: transparent; border: none; outline: none;
+  font-size: 13px; color: var(--od-color-foreground);
+}
+.search-input::placeholder { color: var(--od-color-muted); }
+.kbd {
+  margin-right: 0.75rem; flex-shrink: 0;
+  font-family: var(--od-font-mono); font-size: 10px; color: var(--od-color-muted);
+  background: rgba(255,255,255,0.06); border: 1px solid var(--od-border-subtle);
+  border-radius: 0.4rem; padding: 0.2rem 0.45rem;
+}
+.search-go {
+  margin-right: 0.4rem; width: 44px; height: 44px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; background: linear-gradient(180deg, #f2713f, var(--od-color-accent-orange));
+  border-radius: 50%; box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset, 0 8px 20px rgb(var(--od-accent-rgb) / 0.3);
+  transition: transform var(--od-duration-fast) var(--od-easing), box-shadow var(--od-duration-fast);
+}
+.search-go:hover { box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset, 0 10px 26px rgb(var(--od-accent-rgb) / 0.45); }
+.search-go:active { transform: scale(0.9); }
+/* Popup ricerca: recenti + suggerimenti demo */
+.search-pop {
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-panel);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px);
+  padding: 0.5rem; max-height: 340px; overflow-y: auto;
+  animation: pop-in 0.2s var(--od-easing) both;
+}
+.pop-label {
+  padding: 0.45rem 0.6rem 0.3rem; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--od-color-muted);
+}
+.search-item {
+  width: 100%; position: relative; display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 2.4rem 0.55rem 0.6rem; border-radius: 0.65rem;
+  min-height: 40px;
+  font-size: 12px; color: var(--od-color-muted); text-align: left;
+  transition: background var(--od-duration-fast), color var(--od-duration-fast);
+}
+.search-item:hover { background: rgb(var(--od-accent-rgb) / 0.1); color: var(--od-color-foreground); }
+.search-item .si-ico { color: var(--od-color-muted); flex-shrink: 0; }
+.search-item .si-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-item .si-tag {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--od-color-accent-orange); background: rgb(var(--od-accent-rgb) / 0.12);
+  border: 1px solid rgb(var(--od-accent-rgb) / 0.3); border-radius: 999px; padding: 0.15rem 0.45rem; flex-shrink: 0;
+}
+.search-item .si-rm {
+  position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); z-index: 1;
+  display: flex; padding: 0.3rem; color: var(--od-color-danger); opacity: 0.85; border-radius: 0.4rem;
+}
+.search-item .si-rm:hover { background: rgba(248,113,113,0.12); }
+.search-empty { padding: 0.9rem 0.6rem; font-size: 11px; color: var(--od-color-muted); text-align: center; }
+
+/* ── Hero ─────────────────────────────────────────────────── */
+/* ── Libreria: intestazione ─────────────────────────────── */
+.lib-head { max-width: 1180px; margin: clamp(1.5rem, 4vh, 2.75rem) auto 0; animation: rise-in 0.55s var(--od-easing) 0.06s both; }
+.lib-title-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.lib-cta-row { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+.lib-kicker {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.3rem 0.7rem; margin-bottom: 0.75rem;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--od-color-accent-orange);
+  background: rgb(var(--od-accent-rgb) / 0.1);
+  border: 1px solid rgb(var(--od-accent-rgb) / 0.24);
+  border-radius: var(--od-radius-pill);
+}
+.lib-kicker .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--od-color-accent-orange); box-shadow: 0 0 8px rgb(var(--od-accent-rgb) / 0.8); }
+.lib-title { margin: 0; font-size: clamp(1.5rem, 3vw, 2.1rem); line-height: 1.08; font-weight: 700; letter-spacing: -0.025em; color: var(--od-color-foreground); }
+.lib-count {
+  display: inline-block; margin-left: 0.55rem; padding: 0.18rem 0.55rem;
+  font-family: var(--od-font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.03em;
+  color: var(--od-color-muted); background: rgba(255,255,255,0.05);
+  border: 1px solid var(--od-border-subtle); border-radius: var(--od-radius-pill);
+  vertical-align: middle;
+}
+.lib-sub { margin: 0.45rem 0 0; font-size: 12px; color: var(--od-color-muted); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  height: 44px; padding: 0 1.15rem; border-radius: var(--od-radius-button);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
+  transition: transform var(--od-duration-fast) var(--od-easing), box-shadow var(--od-duration-fast), background var(--od-duration-fast), border-color var(--od-duration-fast);
+}
+.btn:active { transform: scale(0.96); }
+.btn-primary {
+  color: #fff; background: linear-gradient(180deg, #f2713f, var(--od-color-accent-orange));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 12px 30px rgb(var(--od-accent-rgb) / 0.22);
+}
+.btn-primary:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 14px 34px rgb(var(--od-accent-rgb) / 0.34); }
+.btn-ghost {
+  color: var(--od-color-muted); background: rgba(255,255,255,0.05);
+  border: 1px solid var(--od-border-subtle);
+}
+.btn-ghost:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.1); border-color: var(--od-border-strong); }
+.btn-danger {
+  color: var(--od-color-danger); background: rgb(248 113 113 / 0.12);
+  border: 1px solid rgb(248 113 113 / 0.45);
+}
+.btn-danger:hover { color: #fecaca; background: rgb(248 113 113 / 0.2); border-color: rgb(248 113 113 / 0.6); }
+
+/* ── Libreria: toolbar filtri ───────────────────────────── */
+.lib-toolbar { max-width: 1180px; margin: 1.4rem auto 0; display: flex; align-items: center; gap: 0.6rem; animation: rise-in 0.55s var(--od-easing) 0.1s both; }
+.lib-filter { flex: 1; max-width: 340px; height: 44px; }
+.lib-clear {
+  margin-right: 0.4rem; width: 32px; height: 32px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; color: var(--od-color-muted);
+  background: rgba(255,255,255,0.07); border: 1px solid var(--od-border-subtle);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast), transform var(--od-duration-fast);
+}
+.lib-clear:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.12); }
+.lib-clear:active { transform: scale(0.88); }
+.lib-actions { display: flex; align-items: center; gap: 0.45rem; margin-left: auto; }
+.lib-btn {
+  height: 44px; padding: 0 0.8rem; display: inline-flex; align-items: center; gap: 0.45rem;
+  border-radius: var(--od-radius-control);
+  font-size: 12px; font-weight: 600; color: var(--od-color-muted); white-space: nowrap;
+  background: var(--od-glass-grad), rgba(24,24,27,0.72);
+  border: 1px solid var(--od-border-subtle);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast), border-color var(--od-duration-fast), transform var(--od-duration-fast) var(--od-easing);
+}
+.lib-btn:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.08); border-color: var(--od-border-strong); }
+.lib-btn:active { transform: scale(0.95); }
+.lib-btn.is-active { color: var(--od-color-accent-orange); background: rgb(var(--od-accent-rgb) / 0.12); border-color: rgb(var(--od-accent-rgb) / 0.35); }
+.lib-btn.danger { color: var(--od-color-danger); background: rgb(248 113 113 / 0.08); border-color: rgb(248 113 113 / 0.3); }
+.lib-btn.danger:hover { color: #fecaca; background: rgb(248 113 113 / 0.16); border-color: rgb(248 113 113 / 0.5); }
+.lib-btn .ld-caret { color: inherit; opacity: 0.7; }
+.lib-dropwrap { position: relative; }
+.lib-drop {
+  position: absolute; right: 0; top: calc(100% + 8px); min-width: 190px; padding: 0.5rem;
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-panel);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px); z-index: var(--od-z-overlay);
+  animation: pop-in 0.18s var(--od-easing) both;
+}
+.lib-drop-item {
+  width: 100%; display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.55rem 0.6rem; border-radius: 0.65rem;
+  font-size: 12px; color: var(--od-color-muted); text-align: left;
+  transition: background var(--od-duration-fast), color var(--od-duration-fast);
+}
+.lib-drop-item:hover { background: rgba(255,255,255,0.07); color: var(--od-color-foreground); }
+.lib-drop-item.is-active { color: var(--od-color-accent-orange); background: rgb(var(--od-accent-rgb) / 0.1); }
+.lib-drop-item .ld-check { margin-left: auto; display: inline-flex; }
+.ld-ico { display: inline-flex; align-items: center; justify-content: center; color: inherit; }
+
+/* ── Libreria: collezioni ───────────────────────────────── */
+.lib-collections { max-width: 1180px; margin: 1rem auto 0; animation: rise-in 0.55s var(--od-easing) 0.14s both; }
+.col-row { display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 0.3rem; }
+.col-row::-webkit-scrollbar { display: none; }
+.col-chip {
+  display: inline-flex; align-items: center; gap: 0.5rem; height: 36px; padding: 0 0.85rem;
+  border-radius: var(--od-radius-control);
+  font-size: 12px; font-weight: 600; color: var(--od-color-muted); white-space: nowrap;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--od-border-subtle);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast), border-color var(--od-duration-fast), box-shadow var(--od-duration-fast), transform var(--od-duration-fast) var(--od-easing);
+}
+.col-chip:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.09); border-color: var(--od-border-strong); }
+.col-chip:active { transform: scale(0.95); }
+.col-chip.is-active, .col-chip-wrap.is-active .col-chip { color: var(--od-color-accent-orange); background: rgb(var(--od-accent-rgb) / 0.12); border-color: rgb(var(--od-accent-rgb) / 0.35); box-shadow: 0 0 14px rgb(var(--od-accent-rgb) / 0.12); }
+.col-chip.add { width: 36px; padding: 0; justify-content: center; color: var(--od-color-muted); border-style: dashed; }
+.col-chip.add:hover { color: var(--od-color-accent-orange); border-color: rgb(var(--od-accent-rgb) / 0.4); }
+.col-count { font-family: var(--od-font-mono); font-size: 10px; font-weight: 600; opacity: 0.75; letter-spacing: 0.02em; }
+.col-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.col-chip-wrap {
+  position: relative; display: inline-flex; align-items: stretch;
+  border-radius: var(--od-radius-control); border: 1px solid var(--od-border-subtle);
+  background: rgba(255,255,255,0.05);
+}
+.col-chip-wrap .col-chip { border: none; background: transparent; height: 36px; }
+.col-chip-wrap .col-menu {
+  width: 34px; display: flex; align-items: center; justify-content: center;
+  color: var(--od-color-muted); border-left: 1px solid var(--od-border-subtle);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast);
+}
+.col-chip-wrap .col-menu:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.07); }
+.col-chip-wrap.is-active .col-menu { color: var(--od-color-accent-orange); border-left-color: rgb(var(--od-accent-rgb) / 0.25); }
+.col-menu-pop {
+  position: absolute; right: 0; top: calc(100% + 6px); min-width: 168px; padding: 0.4rem; z-index: var(--od-z-overlay);
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-panel);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px); animation: pop-in 0.18s var(--od-easing) both;
+}
+.col-menu-item {
+  width: 100%; display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0.6rem; border-radius: 0.6rem;
+  font-size: 12px; font-weight: 500; color: var(--od-color-foreground); text-align: left;
+  transition: background var(--od-duration-fast);
+}
+.col-menu-item:hover { background: rgba(255,255,255,0.08); }
+.col-menu-item.danger { color: var(--od-color-danger); }
+.col-menu-item.danger:hover { background: rgb(248 113 113 / 0.14); }
+.col-edit {
+  display: inline-flex; align-items: center; gap: 0.35rem; height: 36px; padding: 0 0.4rem;
+  background: var(--od-color-surface); border: 1px solid rgb(var(--od-accent-rgb) / 0.4);
+  border-radius: var(--od-radius-control); box-shadow: 0 0 0 3px rgb(var(--od-accent-rgb) / 0.08);
+}
+.col-edit input {
+  width: 130px; height: 100%; background: transparent; border: none; outline: none;
+  font-size: 12px; color: var(--od-color-foreground);
+}
+.col-edit input::placeholder { color: var(--od-color-muted); }
+.col-edit-btn {
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.45rem; color: var(--od-color-muted);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast);
+}
+.col-edit-btn:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.08); }
+.col-edit-btn.ok { color: var(--od-color-accent-orange); }
+.col-edit-btn.ok:hover { background: rgb(var(--od-accent-rgb) / 0.14); }
+
+/* ── Libreria: barra selezione ──────────────────────────── */
+.selbar {
+  max-width: 1180px; margin: 1rem auto 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.6rem 0.9rem; border-radius: var(--od-radius-panel);
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid rgb(248 113 113 / 0.35);
+  box-shadow: 0 0 0 1px rgb(248 113 113 / 0.12), 0 18px 44px rgba(0,0,0,0.4);
+  animation: pop-in 0.2s var(--od-easing) both;
+}
+.selbar-count { font-size: 12px; font-weight: 700; color: var(--od-color-foreground); font-variant-numeric: tabular-nums; }
+.selbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+/* ── Podio poster (eroe, il tratto distintivo) ────────────── */
+.pb-sep { opacity: 0.6; }
+
+/* ── Libreria: mood board ───────────────────────────────── */
+.lib-grid {
+  max-width: 1180px; margin: 1.5rem auto 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.1rem;
+}
+.tile {
+  position: relative; border-radius: var(--od-radius-panel); overflow: hidden;
+  background: var(--od-glass-grad), rgba(18,18,22,0.7);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: transform var(--od-duration-base) var(--od-easing), border-color var(--od-duration-base), box-shadow var(--od-duration-base);
+  animation: rise-in 0.5s var(--od-easing) both;
+  animation-delay: var(--d, 0ms);
+}
+.tile:hover {
+  transform: translateY(-3px); border-color: var(--od-border-strong);
+  box-shadow: 0 0 0 1px rgb(var(--od-accent-rgb) / 0.2), 0 22px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.tile:has(.tile-hit:focus-visible) {
+  outline: none; border-color: rgb(var(--od-accent-rgb) / 0.6);
+  box-shadow: 0 0 0 3px rgb(var(--od-accent-rgb) / 0.25), 0 22px 50px rgba(0,0,0,0.5);
+}
+.tile.is-selected { border-color: rgb(248 113 113 / 0.75); box-shadow: 0 0 0 2px rgb(248 113 113 / 0.4), 0 22px 50px rgba(0,0,0,0.5); }
+.tile-media { position: relative; aspect-ratio: 2/3; overflow: hidden; }
+.tile-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s var(--od-easing); }
+.tile:hover .tile-media img { transform: scale(1.045); }
+.tile-shade {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, transparent 34%, rgba(4,4,6,0.5) 76%, rgba(2,2,3,0.84) 100%);
+}
+.tile-hit {
+  position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%;
+  background: transparent; border: none; cursor: pointer; border-radius: inherit;
+}
+.tile-hit:focus-visible { outline: none; }
+.tile-meta {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 0.8rem 0.85rem 0.7rem;
+  display: flex; flex-direction: column; gap: 0.35rem; pointer-events: none;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity var(--od-duration-base), transform var(--od-duration-base) var(--od-easing);
+}
+.tile:hover .tile-meta, .tile:has(.tile-hit:focus-visible) .tile-meta { opacity: 1; transform: translateY(0); }
+.tile-title { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: -0.01em; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile-sub { display: flex; align-items: center; gap: 0.45rem; }
+.tile-year { font-family: var(--od-font-mono); font-size: 10px; color: rgba(255,255,255,0.75); }
+.tile-type {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.16);
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 0.4rem; padding: 0.14rem 0.4rem;
+  backdrop-filter: blur(6px);
+}
+.tile-act, .tile-cols {
+  position: absolute; z-index: 4; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.55rem; color: rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.16);
+  backdrop-filter: blur(8px);
+  opacity: 0; transform: scale(0.85);
+  transition: opacity var(--od-duration-fast), transform var(--od-duration-fast) var(--od-easing), background var(--od-duration-fast), color var(--od-duration-fast);
+}
+.tile:hover .tile-act, .tile:hover .tile-cols, .tile:has(.tile-hit:focus-visible) .tile-act, .tile:has(.tile-hit:focus-visible) .tile-cols { opacity: 1; transform: scale(1); }
+.tile-act:hover, .tile-cols:hover { background: rgba(0,0,0,0.78); color: #fff; }
+.tile-act:active, .tile-cols:active { transform: scale(0.88); }
+.tile-act.quick { top: 10px; right: 10px; width: 30px; height: 30px; }
+.tile-act.del { top: 10px; left: 10px; width: 28px; height: 28px; color: #fca5a5; }
+.tile-act.del:hover { background: rgb(248 113 113 / 0.28); color: #fff; }
+.tile-cols { bottom: 10px; right: 10px; height: 26px; padding: 0 0.5rem; gap: 0.35rem; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.8); }
+.tile-cols span { font-family: var(--od-font-mono); font-size: 9px; }
+.tile-check {
+  position: absolute; top: 10px; right: 10px; z-index: 5; width: 28px; height: 28px;
+  display: none; align-items: center; justify-content: center;
+  border-radius: 0.55rem; color: #fff;
+  background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.6);
+  transition: background var(--od-duration-fast), border-color var(--od-duration-fast), transform var(--od-duration-fast) var(--od-easing);
+}
+body.select-mode .tile-check { display: flex; }
+body.select-mode .tile-act, body.select-mode .tile-cols { display: none; }
+.tile.is-selected .tile-check { background: var(--od-color-danger); border-color: var(--od-color-danger); box-shadow: 0 0 16px rgb(248 113 113 / 0.55); transform: scale(1.05); }
+/* Badge prodotto sul podio (stessi componenti del server, resi in CSS) */
+.pb-chip {
+  position: absolute; z-index: 3; display: inline-flex; align-items: center; gap: 0.35em;
+  font-family: var(--od-font-poster); font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+  color: #fff; line-height: 1;
+}
+.pb-pill { left: 10px; bottom: 10px; padding: 0.42rem 0.6rem; border-radius: 999px; background: rgba(10,10,12,0.55); border: 1px solid rgba(255,255,255,0.28); backdrop-filter: blur(6px); }
+.pb-bar { left: 0; right: 0; bottom: 0; padding: 0.5rem 0.6rem; justify-content: center; background: linear-gradient(90deg, rgb(var(--od-accent-rgb) / 0.92), rgb(var(--od-accent-rgb) / 0.68)); border-top: 1px solid rgba(255,255,255,0.18); }
+.pb-vetro { left: 10px; bottom: 10px; padding: 0.42rem 0.6rem; border-radius: 0.55rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.35); backdrop-filter: blur(8px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.25); }
+.pb-bordo { left: 10px; bottom: 10px; padding: 0.4rem 0.55rem; border-radius: 0.45rem; background: rgba(8,8,10,0.5); border: 2px solid #fff; }
+.pb-shadow { left: 10px; bottom: 10px; font-size: 15px; font-weight: 900; letter-spacing: 0.04em; text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.8); }
+.pb-star { color: #ffd166; }
+.pb-rating { color: #fff; }
+/* Ribbon tendenza */
+.rb {
+  position: absolute; z-index: 3; top: 14px; display: flex; flex-direction: column;
+  align-items: center; gap: 1px; padding: 0.45rem 0.32rem 0.5rem;
+  font-family: var(--od-font-poster); color: #fff; line-height: 1.1;
+  border-radius: 0.35rem 0.35rem 0 0;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+.rb-netflix { left: 14px; background: #d61023; }
+.rb-num { font-size: 14px; font-weight: 900; }
+.rb-label { font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.92; }
+.rb-bordo { right: 14px; background: rgba(8,8,10,0.78); border: 1.5px solid #fff; border-radius: 0.35rem; }
+/* Logo rete */
+.pb-network { position: absolute; z-index: 3; right: 10px; bottom: 10px; width: 34px; height: auto; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
+/* ── Libreria: empty state ──────────────────────────────── */
+.lib-empty {
+  max-width: 1180px; margin: 2rem auto 0; text-align: center;
+  padding: clamp(2.5rem, 6vh, 4rem) 1.5rem;
+  border-radius: var(--od-radius-editor);
+  background: var(--od-glass-grad), rgba(13,13,16,0.5);
+  border: 1px dashed var(--od-border-strong);
+  animation: rise-in 0.5s var(--od-easing) both;
+}
+.empty-fan { position: relative; width: 84px; height: 118px; margin: 0 auto 1.6rem; }
+.ef-glow { position: absolute; inset: -34px; border-radius: 50%; background: radial-gradient(circle, rgb(var(--od-accent-rgb) / 0.16), transparent 70%); }
+.ef-card {
+  position: absolute; inset: 0; border-radius: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+}
+.ef-left { transform: rotate(-9deg); }
+.ef-right { transform: rotate(9deg); }
+.ef-front {
+  display: flex; align-items: center; justify-content: center; color: var(--od-color-accent-orange);
+  background: linear-gradient(180deg, rgb(var(--od-accent-rgb) / 0.18), rgb(var(--od-accent-rgb) / 0.05) 55%, transparent);
+  border-color: rgb(var(--od-accent-rgb) / 0.45);
+  box-shadow: 0 0 34px rgb(var(--od-accent-rgb) / 0.22);
+}
+.ef-front svg { width: 30px; height: 30px; }
+.empty-list { display: flex; justify-content: center; margin-bottom: 1.2rem; color: var(--od-color-muted); }
+.empty-title { margin: 0; font-size: 14px; font-weight: 700; color: var(--od-color-foreground); }
+.empty-sub { margin: 0.4rem auto 1.3rem; max-width: 38ch; font-size: 12px; line-height: 1.6; color: var(--od-color-muted); }
+
+/* ── Lightbox ───────────────────────────────────────────── */
+body.lb-open { overflow: hidden; }
+.lightbox-back {
+  position: fixed; inset: 0; z-index: var(--od-z-fullscreen);
+  display: flex; align-items: center; justify-content: center; padding: 1.25rem;
+  background: rgba(3,3,4,0.72); backdrop-filter: blur(10px);
+  animation: fade-in 0.2s var(--od-easing) both;
+}
+.lightbox-card {
+  position: relative; display: flex; gap: 1.5rem; align-items: flex-start;
+  width: min(760px, 100%); max-height: 88vh; overflow: auto; padding: 1.4rem;
+  border-radius: var(--od-radius-editor);
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(18px);
+  animation: pop-in 0.25s var(--od-easing) both;
+}
+.lb-close {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.6rem; color: var(--od-color-muted);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast), transform var(--od-duration-fast);
+}
+.lb-close:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.08); }
+.lb-close:active { transform: scale(0.9); }
+.lightbox-media { position: relative; width: 250px; flex-shrink: 0; border-radius: var(--od-radius-panel); overflow: hidden; border: 1px solid var(--od-border-subtle); box-shadow: 0 18px 44px rgba(0,0,0,0.5); }
+.lightbox-media img { width: 100%; display: block; }
+.lightbox-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1.1rem; }
+.lb-title { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; color: var(--od-color-foreground); }
+.lb-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; font-size: 12px; color: var(--od-color-muted); }
+.lb-sep { opacity: 0.5; }
+.lb-type {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--od-color-accent-orange); background: rgb(var(--od-accent-rgb) / 0.1);
+  border: 1px solid rgb(var(--od-accent-rgb) / 0.24); border-radius: 0.4rem; padding: 0.2rem 0.5rem;
+}
+.lb-rating { color: var(--od-color-foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
+.lb-label { margin: 0 0 0.45rem; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--od-color-muted); }
+.lb-cols { display: flex; flex-direction: column; }
+.lb-col {
+  width: 100%; display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 0.65rem; border-radius: 0.65rem;
+  font-size: 12px; font-weight: 500; color: var(--od-color-muted); text-align: left;
+  transition: background var(--od-duration-fast), color var(--od-duration-fast), border-color var(--od-duration-fast);
+}
+.lb-col:hover { background: rgba(255,255,255,0.06); color: var(--od-color-foreground); }
+.lb-col.is-on { color: var(--od-color-foreground); background: rgb(var(--od-accent-rgb) / 0.08); }
+.lb-col-check {
+  width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.45rem; color: transparent;
+  border: 1.5px solid var(--od-border-strong);
+  transition: background var(--od-duration-fast), border-color var(--od-duration-fast), color var(--od-duration-fast);
+}
+.lb-col.is-on .lb-col-check { color: var(--od-color-accent-orange); background: rgb(var(--od-accent-rgb) / 0.14); border-color: rgb(var(--od-accent-rgb) / 0.5); }
+.lb-col-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-col-state { display: inline-flex; color: var(--od-color-muted); opacity: 0.85; }
+.lb-col-state.add { color: var(--od-color-accent-orange); }
+.lb-none { margin: 0; font-size: 11px; color: var(--od-color-muted); opacity: 0.8; }
+.lb-actions { display: flex; align-items: center; gap: 0.5rem; margin-top: auto; padding-top: 0.9rem; border-top: 1px solid var(--od-border-subtle); }
+
+/* ── Dialogo di conferma ────────────────────────────────── */
+.confirm-back {
+  position: fixed; inset: 0; z-index: var(--od-z-confirm-backdrop);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+  background: rgba(3,3,4,0.7); backdrop-filter: blur(8px);
+  animation: fade-in 0.15s var(--od-easing) both;
+}
+.confirm-card {
+  width: min(400px, 100%); padding: 1.3rem;
+  border-radius: var(--od-radius-editor);
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(18px);
+  animation: pop-in 0.2s var(--od-easing) both;
+}
+.confirm-card h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--od-color-foreground); }
+.confirm-card p { margin: 0.55rem 0 0; font-size: 12px; line-height: 1.6; color: var(--od-color-muted); }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.2rem; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Carosello esempi ─────────────────────────────────────── */
+.carousel { max-width: 1180px; margin: clamp(1rem, 4vh, 2.5rem) auto 0; animation: rise-in 0.55s var(--od-easing) 0.2s both; }
+.car-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 0.4rem; }
+.car-title { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--od-color-foreground); }
+.car-title .demo-tag {
+  margin-left: 0.5rem; font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--od-color-warning); background: rgb(251 191 36 / 0.1);
+  border: 1px solid rgb(251 191 36 / 0.3); border-radius: 999px; padding: 0.18rem 0.5rem;
+  vertical-align: middle;
+}
+.car-desc { margin: 0.25rem 0 0; font-size: 11px; color: var(--od-color-muted); }
+.car-meta { display: flex; align-items: center; gap: 0.7rem; flex-shrink: 0; }
+.car-progress { width: 110px; height: 4px; border-radius: 999px; background: var(--od-color-surface2); overflow: hidden; }
+.car-progress-fill { height: 100%; border-radius: inherit; background: var(--od-color-accent-orange); transition: width 0.25s linear; }
+.car-count { font-family: var(--od-font-mono); font-size: 10px; color: var(--od-color-muted); font-variant-numeric: tabular-nums; }
+.car-shell { position: relative; margin-top: 1.1rem; }
+.car-viewport { position: relative; overflow: hidden; }
+.car-track { display: flex; gap: 16px; will-change: transform; }
+.car-card {
+  position: relative; width: 236px; flex-shrink: 0;
+  display: flex; flex-direction: column; border-radius: var(--od-radius-panel);
+  background: var(--od-glass-grad), rgba(18,18,22,0.7);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+  overflow: hidden; cursor: pointer; text-align: left;
+  transition: transform var(--od-duration-base) var(--od-easing), border-color var(--od-duration-base), box-shadow var(--od-duration-base);
+}
+.car-card:hover {
+  transform: translateY(-3px); border-color: var(--od-border-strong);
+  box-shadow: 0 0 0 1px rgb(var(--od-accent-rgb) / 0.2), 0 20px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.car-media { position: relative; aspect-ratio: 2/3; overflow: hidden; }
+.car-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s var(--od-easing); }
+.car-card:hover .car-media img { transform: scale(1.04); }
+.car-shade {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, transparent 32%, rgba(4,4,6,0.55) 78%, rgba(2,2,3,0.85) 100%);
+  pointer-events: none;
+}
+.car-body { padding: 0.7rem 0.8rem 0.8rem; }
+.car-body h3 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: -0.01em; color: var(--od-color-foreground); }
+.car-body p { margin: 0.25rem 0 0; font-size: 10px; line-height: 1.5; color: var(--od-color-muted); }
+.car-arrow {
+  position: absolute; top: 10px; right: 10px; z-index: 4;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; color: #fff; background: rgb(var(--od-accent-rgb) / 0.85);
+  box-shadow: 0 6px 16px rgb(var(--od-accent-rgb) / 0.4), 0 0 0 1px rgba(255,255,255,0.2);
+  opacity: 0; transform: scale(0.7); transition: opacity var(--od-duration-fast), transform var(--od-duration-fast) var(--od-easing);
+}
+.car-card:hover .car-arrow { opacity: 1; transform: scale(1); }
+.car-arrow svg { color: #fff; }
+.car-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 6;
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; color: var(--od-color-foreground);
+  background: rgba(24,24,27,0.85); border: 1px solid var(--od-border-subtle);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.45); backdrop-filter: blur(12px);
+  transition: background var(--od-duration-fast), border-color var(--od-duration-fast), transform var(--od-duration-fast) var(--od-easing);
+}
+.car-nav:hover { background: var(--od-color-surface2); border-color: var(--od-border-strong); }
+.car-nav:active { transform: translateY(-50%) scale(0.92); }
+.car-nav.prev { left: -22px; }
+.car-nav.next { right: -22px; }
+@media (max-width: 1240px) {
+  .car-nav.prev { left: 10px; }
+  .car-nav.next { right: 10px; }
+}
+
+/* ── Pannello cataloghi (dal CTA hero) ────────────────────── */
+.cat-pop {
+  position: absolute; z-index: var(--od-z-overlay);
+  top: calc(100% + 10px); left: 0; width: 300px;
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-panel);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px); padding: 0.5rem;
+  animation: pop-in 0.2s var(--od-easing) both;
+}
+.cat-pop h3 { margin: 0.45rem 0.55rem 0.2rem; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--od-color-muted); }
+.cat-pop .pop-sub { margin: 0 0.55rem 0.5rem; font-size: 10px; color: var(--od-color-muted); opacity: 0.75; }
+.cat-row {
+  width: 100%; display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 0.6rem; border-radius: 0.65rem;
+  font-size: 12px; font-weight: 600; color: var(--od-color-foreground); text-align: left;
+  transition: background var(--od-duration-fast);
+}
+.cat-row:hover { background: rgb(var(--od-accent-rgb) / 0.1); }
+.cat-row .cat-glyph {
+  width: 26px; height: 26px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.5rem; font-size: 10px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--od-color-foreground); background: rgba(255,255,255,0.08); border: 1px solid var(--od-border-subtle);
+}
+.cat-row .cat-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-row .cat-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; color: var(--od-color-muted); text-transform: uppercase; flex-shrink: 0; }
+.cat-row svg { color: var(--od-color-muted); flex-shrink: 0; }
+
+/* ── Strip di stato ───────────────────────────────────────── */
+.status-strip {
+  max-width: 1180px; margin: clamp(2.5rem, 7vh, 4.5rem) auto 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  padding: 0.7rem 1rem; border-radius: var(--od-radius-panel);
+  background: var(--od-glass-grad), rgba(13,13,16,0.6);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+}
+.status-left { display: flex; align-items: center; gap: 0.55rem; font-size: 11px; font-weight: 600; color: var(--od-color-foreground); }
+.pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgb(74 222 128 / 0.5); animation: pulse 2.4s infinite; }
+.status-meta { font-size: 10px; color: var(--od-color-muted); }
+.status-right { display: flex; align-items: center; gap: 0.6rem; font-family: var(--od-font-mono); font-size: 10px; color: var(--od-color-muted); }
+.status-link {
+  display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.6rem;
+  border-radius: 0.5rem; color: var(--od-color-muted);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast);
+}
+.status-link:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.07); }
+
+/* ── Floating group (bottom-right) ────────────────────────── */
+.floating-group {
+  position: fixed; bottom: max(1.25rem, env(safe-area-inset-bottom)); right: 1.25rem; z-index: var(--od-z-floating);
+  display: flex; align-items: center; gap: 2px; padding: 4px;
+  background: var(--od-glass-grad), var(--od-glass-tint);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-panel);
+  box-shadow: var(--od-glass-shadow); backdrop-filter: blur(var(--od-glass-blur));
+}
+.f-btn {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.625rem; color: var(--od-color-muted);
+  transition: background var(--od-duration-fast), color var(--od-duration-fast), transform var(--od-duration-fast);
+}
+.f-btn:hover { background: rgba(255,255,255,0.08); color: var(--od-color-foreground); }
+.f-btn:active { transform: scale(0.92); }
+.f-btn.is-open { background: rgb(var(--od-accent-rgb) / 0.12); color: var(--od-color-accent-orange); }
+.f-btn svg.spinning { animation: spin 0.9s linear infinite; }
+.lang-pop {
+  position: absolute; right: 0; bottom: calc(100% + 10px);
+  width: 190px; padding: 0.5rem;
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-panel);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px);
+  animation: pop-in 0.2s var(--od-easing) both;
+}
+.lang-item {
+  width: 100%; display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 0.6rem; border-radius: 0.65rem;
+  font-size: 12px; color: var(--od-color-muted); text-align: left;
+  transition: background var(--od-duration-fast), color var(--od-duration-fast);
+}
+.lang-item:hover { background: rgba(255,255,255,0.07); color: var(--od-color-foreground); }
+.lang-item .code {
+  width: 30px; flex-shrink: 0; font-family: var(--od-font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--od-color-muted);
+  background: rgba(255,255,255,0.06); border: 1px solid var(--od-border-subtle);
+  border-radius: 0.4rem; padding: 0.2rem 0; text-align: center;
+}
+.lang-item.is-active { color: var(--od-color-accent-orange); background: rgb(var(--od-accent-rgb) / 0.1); }
+.lang-item.is-active .code { color: var(--od-color-accent-orange); border-color: rgb(var(--od-accent-rgb) / 0.35); }
+.lang-item .check { margin-left: auto; opacity: 0; }
+.lang-item.is-active .check { opacity: 1; }
+
+/* ── Tendina impostazioni rapide ──────────────────────────── */
+.island-btn[aria-expanded="true"] { background: rgba(255,255,255,0.08); color: var(--od-color-accent-orange); }
+.settings-pop {
+  position: fixed; z-index: var(--od-z-floating); width: 252px; padding: 0.6rem;
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-panel);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px);
+  animation: pop-in 0.2s var(--od-easing) both;
+}
+.settings-title {
+  display: block; padding: 0.2rem 0.6rem 0.45rem;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--od-color-muted);
+}
+.settings-sep { height: 1px; margin: 0.5rem 0.35rem; background: var(--od-border-subtle); }
+.settings-field { position: relative; display: flex; align-items: center; padding: 0.2rem 0.5rem; }
+.settings-field input {
+  width: 100%; height: 38px; padding: 0 2.35rem 0 0.65rem;
+  font-family: var(--od-font-mono); font-size: 11px; color: var(--od-color-foreground);
+  background: rgba(255,255,255,0.05); border: 1px solid var(--od-border-subtle);
+  border-radius: var(--od-radius-input);
+  transition: border-color var(--od-duration-fast), box-shadow var(--od-duration-fast);
+}
+.settings-field input:focus { outline: none; border-color: rgb(var(--od-accent-rgb) / 0.45); box-shadow: 0 0 0 3px rgb(var(--od-accent-rgb) / 0.12); }
+.settings-eye {
+  position: absolute; right: 9px; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.5rem; color: var(--od-color-muted);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast);
+}
+.settings-eye:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.07); }
+.settings-hint { display: block; padding: 0.25rem 0.6rem 0.35rem; font-size: 10px; color: var(--od-color-muted); opacity: 0.75; }
+.settings-link {
+  width: 100%; display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.55rem 0.6rem; border-radius: 0.65rem;
+  font-size: 12px; font-weight: 600; color: var(--od-color-foreground);
+  transition: background var(--od-duration-fast), color var(--od-duration-fast);
+}
+.settings-link:hover { background: rgba(255,255,255,0.07); color: var(--od-color-accent-orange); }
+.settings-link .arr { margin-left: auto; color: var(--od-color-muted); transition: color var(--od-duration-fast); }
+.settings-link:hover .arr { color: var(--od-color-accent-orange); }
+
+/* ── Toast ────────────────────────────────────────────────── */
+.toast {
+  position: fixed; left: 50%; bottom: max(1.5rem, env(safe-area-inset-bottom)); transform: translate(-50%, 16px);
+  z-index: var(--od-z-fullscreen); display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.65rem 0.95rem; border-radius: var(--od-radius-action);
+  font-size: 12px; font-weight: 600; color: var(--od-color-foreground);
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(18px);
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--od-duration-base), transform var(--od-duration-base) var(--od-easing);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast svg { color: var(--od-color-accent-orange); flex-shrink: 0; }
+.toast[data-kind="ok"] svg { color: #4ade80; }
+
+/* ── Animazioni ───────────────────────────────────────────── */
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgb(74 222 128 / 0.45); } 70% { box-shadow: 0 0 0 7px rgb(74 222 128 / 0); } 100% { box-shadow: 0 0 0 0 rgb(74 222 128 / 0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 920px) {
+  .toolbar-wrap { display: none; }
+  .settings-field input { height: 44px; font-size: 12px; }
+  .settings-eye { width: 40px; height: 40px; right: 7px; }
+  .mobile-toolbar { display: flex; }
+  .lib-title-row { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .lib-toolbar { flex-wrap: wrap; gap: 0.5rem; }
+  .lib-filter { max-width: none; width: 100%; flex-basis: 100%; }
+  .lib-actions { margin-left: 0; width: 100%; flex-wrap: wrap; }
+  .lib-actions .lib-btn { flex: 1 1 auto; justify-content: center; }
+  .lib-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
+  .tile-meta { opacity: 1; transform: none; }
+  .tile-act, .tile-cols { opacity: 1; transform: none; }
+  .tile-act.quick { width: 40px; height: 40px; }
+  .tile-act.del { width: 40px; height: 40px; }
+  .tile-cols { height: 36px; padding: 0 0.75rem; }
+  .tile-check { width: 38px; height: 38px; }
+  .lib-clear { width: 40px; height: 40px; }
+  .lightbox-card { flex-direction: column; align-items: center; text-align: center; }
+  .lightbox-media { width: 200px; }
+  .lb-cols, .lb-actions { width: 100%; text-align: left; }
+  .lb-actions .btn { flex: 1; justify-content: center; }
+  .status-link { min-height: 44px; }
+}
+@media (max-width: 560px) {
+  .status-strip { justify-content: center; text-align: center; }
+  .floating-group { right: 1rem; }
+  .lib-btn .ld-label { display: none; }
+  .floating-group .f-btn { width: 44px; height: 44px; }
+  .ambient-poster { right: -10rem; }
+}
+
+/* ── Riduzione movimento ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Sfondo ambiente -->
+<div class="ambient" aria-hidden="true">
+  <div class="ambient-glow"></div>
+  <div class="ambient-white"></div>
+  <div class="ambient-grid"></div>
+  <div class="ambient-poster"></div>
+  <div class="ambient-vignette"></div>
+</div>
+
+<span class="version-badge" data-od-id="version-badge">v0.15.2</span>
+
+<!-- Toolbar isola desktop -->
+<div class="toolbar-wrap" data-od-id="home-toolbar">
+  <div class="toolbar-island" role="toolbar" aria-label="Azioni rapide">
+    <button type="button" class="island-btn" data-accent="1" data-tip="Copia URL poster" id="btnCopyUrl" data-od-id="toolbar-copy-url" aria-label="Copia URL poster">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    </button>
+    <button type="button" class="island-btn" data-tip="Installa catalogo" id="btnInstall" data-od-id="toolbar-install" aria-label="Installa catalogo">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+    <button type="button" class="island-btn" data-tip="Salva profilo" id="btnProfile" data-od-id="toolbar-profile" aria-label="Salva profilo">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+    <button type="button" class="island-btn" data-accent="1" data-tip="Proxy addon" id="btnProxy" data-od-id="toolbar-proxy" aria-label="Proxy addon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8H20l-5 3.8 1.9 5.9-4.9-3.7-4.9 3.7L9 12.6 4 8.8h6.1z"/></svg>
+    </button>
+    <div class="island-divider" aria-hidden="true"></div>
+    <a class="island-btn" href="personalizza-poster.html" data-tip="I miei poster" data-od-id="toolbar-myposters" aria-label="I miei poster">
+      <span class="count-chip" id="countMappings">3</span>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <button type="button" class="island-btn" id="btnSettings" data-tip="Impostazioni rapide" data-od-id="toolbar-settings" aria-label="Impostazioni rapide" aria-haspopup="true" aria-expanded="false">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Tendina impostazioni rapide (accesso veloce + link alla pagina completa) -->
+<div class="settings-pop" id="settingsPop" hidden role="dialog" aria-label="Impostazioni rapide" data-od-id="settings-pop">
+  <span class="settings-title" id="quickTitle">Impostazioni rapide</span>
+  <button type="button" class="lang-item" data-lang="it"><span class="code">IT</span>Italiano<svg class="check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+  <button type="button" class="lang-item" data-lang="en"><span class="code">EN</span>English<svg class="check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+  <button type="button" class="lang-item" data-lang="de"><span class="code">DE</span>Deutsch<svg class="check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+  <div class="settings-sep" aria-hidden="true"></div>
+  <div class="settings-field">
+    <input id="quickTmdb" type="password" placeholder="Chiave TMDB…" autocomplete="off" spellcheck="false" aria-label="Chiave TMDB personale" data-od-id="input-tmdb-quick" />
+    <button type="button" class="settings-eye" id="quickTmdbEye" aria-label="Mostra chiave TMDB">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+  </div>
+  <span class="settings-hint" id="quickTmdbHint">Invio per salvare</span>
+  <div class="settings-sep" aria-hidden="true"></div>
+  <a class="settings-link" href="impostazioni.html" data-od-id="settings-open-full">
+    <span id="openSettingsLbl">Impostazioni complete</span>
+    <svg class="arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </a>
+</div>
+
+<div class="shell">
+  <main id="content">
+
+    <!-- Header -->
+    <header class="home-header" data-od-id="home-header">
+      <img class="header-logo" src="assets/posterium-logo.png" alt="Posterium" data-od-id="logo" />
+      <p class="header-tagline" id="tagline">Poster personalizzati per la tua libreria Stremio</p>
+      <!-- Toolbar mobile -->
+      <div class="mobile-toolbar" aria-label="Azioni rapide">
+        <button type="button" class="island-btn" data-accent="1" id="mCopyUrl" aria-label="Copia URL poster" data-od-id="mobile-copy-url">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button type="button" class="island-btn" id="mInstall" aria-label="Installa catalogo" data-od-id="mobile-install">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button type="button" class="island-btn" id="mProfile" aria-label="Salva profilo" data-od-id="mobile-profile">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
+        <button type="button" class="island-btn" data-accent="1" id="mProxy" aria-label="Proxy addon" data-od-id="mobile-proxy">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8H20l-5 3.8 1.9 5.9-4.9-3.7-4.9 3.7L9 12.6 4 8.8h6.1z"/></svg>
+        </button>
+        <a class="island-btn" href="personalizza-poster.html" id="mMyPosters" aria-label="I miei poster" data-od-id="mobile-myposters">
+          <span class="count-chip">3</span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </a>
+        <button type="button" class="island-btn" id="mSettings" aria-label="Impostazioni rapide" data-od-id="mobile-settings" aria-haspopup="true" aria-expanded="false">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Intestazione libreria -->
+    <section class="lib-head" data-od-id="lib-head">
+      <div class="lib-title-row">
+        <div class="lib-title-col">
+          <span class="lib-kicker" data-od-id="lib-kicker"><span class="dot" aria-hidden="true"></span><span id="kickerText">Libreria personale</span></span>
+          <h1 class="lib-title"><span id="libTitleText">I miei poster</span><span class="lib-count" id="libCount" aria-label="3 poster">3</span></h1>
+          <p class="lib-sub" id="libSub">I poster personalizzati e salvati per la tua libreria Stremio</p>
+        </div>
+        <div class="lib-cta-row">
+          <a class="btn btn-ghost" href="cerca.html" data-od-id="lib-search-link" id="cercaTitoliLbl">Cerca film e serie</a>
+          <a class="btn btn-primary" href="home.html" data-od-id="lib-new" aria-label="Crea un nuovo poster">+ Nuovo poster</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Barra ricerca e filtri -->
+    <section class="lib-toolbar" data-od-id="lib-toolbar" aria-label="Filtri della libreria">
+      <div class="search-shell lib-filter" role="search">
+        <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="filterInput" type="text" placeholder="Filtra per titolo…" aria-label="Filtra per titolo" autocomplete="off" spellcheck="false" />
+        <kbd class="kbd" aria-hidden="true">/</kbd>
+        <button type="button" class="lib-clear" id="filterClear" aria-label="Cancella filtro" hidden>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="lib-actions">
+        <button type="button" class="lib-btn" id="btnSelect" data-od-id="lib-select" aria-pressed="false">
+          <span class="ld-ico" id="icoSelect"></span>
+          <span class="ld-label" id="lblSelect">Seleziona</span>
+        </button>
+        <button type="button" class="lib-btn danger" id="btnDeleteAll" data-od-id="lib-delete-all" aria-label="Elimina tutti i poster" title="Elimina tutti i poster">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+        <div class="lib-dropwrap" data-od-id="lib-sort">
+          <button type="button" class="lib-btn" id="btnSort" aria-haspopup="listbox" aria-expanded="false">
+            <span class="ld-ico" id="icoSort"></span>
+            <span class="ld-label" id="lblSort">Recenti</span>
+            <svg class="ld-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="lib-drop" id="sortDrop" hidden role="listbox" aria-label="Ordinamento"></div>
+        </div>
+        <div class="lib-dropwrap" data-od-id="lib-type">
+          <button type="button" class="lib-btn" id="btnType" aria-haspopup="listbox" aria-expanded="false">
+            <span class="ld-ico" id="icoType"></span>
+            <span class="ld-label" id="lblType">Tutti</span>
+            <svg class="ld-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="lib-drop" id="typeDrop" hidden role="listbox" aria-label="Tipo di contenuto"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Collezioni -->
+    <section class="lib-collections" data-od-id="lib-collections" aria-label="Collezioni">
+      <div class="col-row" id="colRow"></div>
+    </section>
+
+    <!-- Barra selezione multipla -->
+    <div class="selbar" id="selBar" hidden data-od-id="lib-selection">
+      <span class="selbar-count" id="selCount">0 selezionati</span>
+      <div class="selbar-actions">
+        <button type="button" class="btn btn-ghost" id="btnSelCancel">Annulla</button>
+        <button type="button" class="btn btn-danger" id="btnSelDelete">Elimina</button>
+      </div>
+    </div>
+
+    <!-- Mood board -->
+    <section class="lib-grid" id="libGrid" data-od-id="lib-grid" aria-label="I tuoi poster"></section>
+
+    <!-- Empty states -->
+    <div class="lib-empty" id="emptyState" hidden data-od-id="lib-empty"></div>
+
+    <!-- Lightbox anteprima -->
+    <div class="lightbox-back" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Anteprima poster">
+      <div class="lightbox-card">
+        <button type="button" class="lb-close" id="lbClose" aria-label="Chiudi anteprima">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="lightbox-media">
+          <img id="lbImg" src="" alt="" />
+          <div id="lbBadges" aria-hidden="true"></div>
+        </div>
+        <div class="lightbox-side">
+          <div>
+            <h2 class="lb-title" id="lbTitle"></h2>
+            <div class="lb-meta" id="lbMeta"></div>
+          </div>
+          <div class="lb-cols">
+            <p class="lb-label" id="lbColsLabel">Collezioni</p>
+            <div id="lbColsList"></div>
+          </div>
+          <div class="lb-actions">
+            <a class="btn btn-primary" id="lbOpen" href="personalizza-poster.html">Apri nell'editor</a>
+            <button type="button" class="btn btn-ghost" id="lbCancel">Chiudi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dialogo di conferma -->
+    <div class="confirm-back" id="confirmBack" hidden role="dialog" aria-modal="true" aria-label="Conferma operazione">
+      <div class="confirm-card" role="document">
+        <h3 id="cfTitle"></h3>
+        <p id="cfMsg"></p>
+        <div class="confirm-actions">
+          <button type="button" class="btn btn-ghost" id="cfCancel">Annulla</button>
+          <button type="button" class="btn btn-danger" id="cfOk">Elimina</button>
+        </div>
+      </div>
+    </div>
+    <footer class="status-strip" data-od-id="home-status">
+      <div class="status-left">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span id="statusOk">Tutti i sistemi operativi</span>
+        <span class="status-meta" aria-hidden="true">· API poster · TMDB · Addon</span>
+      </div>
+      <div class="status-right">
+        <button type="button" class="status-link" id="btnStatus" data-od-id="status-detail">Stato del servizio</button>
+        <span aria-hidden="true">Posterium v0.15.2</span>
+      </div>
+    </footer>
+
+  </main>
+</div>
+
+<!-- Floating group -->
+<div class="floating-group" data-od-id="floating-group">
+  <button type="button" class="f-btn" id="btnRefresh" aria-label="Aggiorna le liste" data-od-id="floating-refresh" data-tip="Aggiorna liste">
+    <svg class="ref-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+  </button>
+  <button type="button" class="f-btn" id="btnHealth" aria-label="Stato del servizio" data-od-id="floating-status">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg>
+  </button>
+  <div style="position:relative">
+    <button type="button" class="f-btn" id="btnLang" aria-label="Scegli la lingua" data-od-id="floating-lang" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    </button>
+    <div class="lang-pop" id="langPop" hidden data-od-id="language-picker">
+      <button type="button" class="lang-item is-active" data-lang="it"><span class="code">IT</span>Italiano<svg class="check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+      <button type="button" class="lang-item" data-lang="en"><span class="code">EN</span>English<svg class="check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+      <button type="button" class="lang-item" data-lang="de"><span class="code">DE</span>Deutsch<svg class="check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s, c) { return (c || document).querySelector(s); };
+  var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
+
+  /* ── Dati: poster salvati (artwork demo reali + badge prodotto) ── */
+  var MAPPINGS = [
+    { key: "movie:66732", title: "Orizzonte 9", type: "movie", genre: "Fantascienza", year: "2024", rating: "8,6", badge: "vetro", src: "assets/poster-66732.jpg", logo: "", ribbon: null, updatedAt: "2026-08-05T10:30:00" },
+    { key: "tv:85552", title: "Fulmine di Mezzanotte", type: "tv", genre: "Azione", year: "2023", rating: "8,5", badge: "bar", src: "assets/poster-85552.jpg", logo: "", ribbon: null, updatedAt: "2026-08-04T21:45:00" },
+    { key: "movie:1405", title: "Codice Ombra", type: "movie", genre: "Thriller", year: "2024", rating: "8,1", badge: "pill", src: "assets/poster-1405.jpg", logo: "assets/netflix-n.png", ribbon: { style: "netflix", num: "#4", label: "Top 10" }, updatedAt: "2026-08-03T18:12:00" }
+  ];
+  var DEFAULT_COLLECTIONS = [
+    { id: "c1", name: "Preferiti", posterIds: ["movie:66732"] },
+    { id: "c2", name: "Da rivedere", posterIds: ["movie:1405"] },
+    { id: "c3", name: "Da guardare", posterIds: [] }
+  ];
+
+  /* ── Stato + persistenza ── */
+  var state = {
+    filter: "", type: "all", sort: "updated",
+    selectMode: false, selected: {}, activeCollection: null,
+    deleted: [], collections: null
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem("posterium-library-demo") || "{}");
+    if (saved && Array.isArray(saved.deleted)) state.deleted = saved.deleted;
+    if (saved && Array.isArray(saved.collections) && saved.collections.length > 0) state.collections = saved.collections;
+  } catch (e) { /* noop */ }
+  var collections = (state.collections || DEFAULT_COLLECTIONS).map(function (c) {
+    return { id: c.id, name: c.name, posterIds: (c.posterIds || []).slice() };
+  });
+  var mappings = MAPPINGS.filter(function (m) { return state.deleted.indexOf(m.key) === -1; });
+  function persist() {
+    try {
+      localStorage.setItem("posterium-library-demo", JSON.stringify({
+        deleted: state.deleted, collections: collections
+      }));
+    } catch (e) { /* noop */ }
+  }
+  function byKey(k) {
+    for (var i = 0; i < MAPPINGS.length; i++) if (MAPPINGS[i].key === k) return MAPPINGS[i];
+    return null;
+  }
+  function getCol(id) {
+    for (var i = 0; i < collections.length; i++) if (collections[i].id === id) return collections[i];
+    return null;
+  }
+
+  /* ── Traduzioni (it/en/de) ── */
+  var STRINGS = {
+    it: {
+      tagline: "Poster personalizzati per la tua libreria Stremio",
+      libKicker: "Libreria personale", libTitle: "I miei poster", libSub: "I poster personalizzati e salvati per la tua libreria Stremio",
+      newPoster: "+ Nuovo poster", cercaTitoli: "Cerca film e serie", filterPh: "Filtra per titolo…", select: "Seleziona", cancel: "Annulla",
+      delete: "Elimina", deleteAll: "Elimina tutti", recent: "Recenti", az: "A → Z",
+      all: "Tutti", movie: "Film", tv: "Serie TV", anime: "Anime",
+      selectedCount: "{n} selezionati", delAllAria: "Elimina tutti i poster",
+      emptyTitle: "Nessun poster salvato", emptySub: "Cerca un film o una serie, personalizza il poster con badge e logo, poi salvalo qui.",
+      emptyCta: "Cerca un film o una serie",
+      emptyFilterTitle: "Nessun risultato", emptyFilterSub: "Prova a modificare la ricerca o i filtri.",
+      emptyColTitle: "Questa collezione è vuota", emptyColSub: "Apri un poster e aggiungilo a questa collezione dall'anteprima.",
+      showAll: "Mostra tutti i poster ({n})",
+      collections: "Collezioni", noCollections: "Nessuna collezione — creane una dalla barra qui sopra.",
+      savedOn: "Salvato il", openEditor: "Apri nell'editor", close: "Chiudi",
+      cfDelTitle: "Eliminare il poster?", cfDelMsg: "«{n}» verrà rimosso dalla tua libreria. Il poster resta nel server fino alla prossima sincronizzazione.",
+      cfDelAllTitle: "Eliminare tutti i poster?", cfDelAllMsg: "Tutti i {n} poster verranno rimossi dalla libreria.",
+      cfDelSelTitle: "Eliminare {n} poster?", cfDelSelMsg: "I poster selezionati verranno rimossi dalla libreria.",
+      cfDelColTitle: "Eliminare la collezione?", cfDelColMsg: "«{n}» verrà eliminata. I poster non vengono toccati.",
+      colNamePh: "Nome collezione", newCollection: "Nuova collezione", colOpts: "Opzioni collezione",
+      rename: "Rinomina", deleteCol: "Elimina collezione",
+      created: "Collezione creata", renamed: "Collezione rinominata", deletedCol: "Collezione eliminata",
+      deleted: "Poster eliminato", deletedMany: "{n} poster eliminati",
+      addedTo: "Aggiunto a «{n}»", removedFrom: "Rimosso da «{n}»",
+      demoToast: "Disponibile nell'app completa — prototipo statico",
+      copyOk: "URL copiato", copyErr: "Impossibile copiare l'URL",
+      statusOk: "Tutti i sistemi operativi", quickTitle: "Impostazioni rapide", tmdbPh: "Chiave TMDB…", tmdbPhHint: "Invio per salvare", tmdbSaved: "Chiave TMDB salvata", openSettings: "Impostazioni complete"
+    },
+    en: {
+      tagline: "Personalized posters for your Stremio library",
+      libKicker: "Personal library", libTitle: "My posters", libSub: "Custom posters saved for your Stremio library",
+      newPoster: "+ New poster", cercaTitoli: "Search movies & TV", filterPh: "Filter by title…", select: "Select", cancel: "Cancel",
+      delete: "Delete", deleteAll: "Delete all", recent: "Recent", az: "A → Z",
+      all: "All", movie: "Movies", tv: "TV series", anime: "Anime",
+      selectedCount: "{n} selected", delAllAria: "Delete all posters",
+      emptyTitle: "No posters saved", emptySub: "Search for a movie or series, customize the poster with badges and logo, then save it here.",
+      emptyCta: "Search a movie or series",
+      emptyFilterTitle: "No results", emptyFilterSub: "Try changing the search or the filters.",
+      emptyColTitle: "This collection is empty", emptyColSub: "Open a poster and add it to this collection from the preview.",
+      showAll: "Show all posters ({n})",
+      collections: "Collections", noCollections: "No collections — create one from the bar above.",
+      savedOn: "Saved on", openEditor: "Open in editor", close: "Close",
+      cfDelTitle: "Delete poster?", cfDelMsg: "“{n}” will be removed from your library. The poster stays on the server until the next sync.",
+      cfDelAllTitle: "Delete all posters?", cfDelAllMsg: "All {n} posters will be removed from the library.",
+      cfDelSelTitle: "Delete {n} posters?", cfDelSelMsg: "The selected posters will be removed from the library.",
+      cfDelColTitle: "Delete collection?", cfDelColMsg: "“{n}” will be deleted. Posters are not affected.",
+      colNamePh: "Collection name", newCollection: "New collection", colOpts: "Collection options",
+      rename: "Rename", deleteCol: "Delete collection",
+      created: "Collection created", renamed: "Collection renamed", deletedCol: "Collection deleted",
+      deleted: "Poster deleted", deletedMany: "{n} posters deleted",
+      addedTo: "Added to “{n}”", removedFrom: "Removed from “{n}”",
+      demoToast: "Available in the full app — static prototype",
+      copyOk: "URL copied", copyErr: "Could not copy URL",
+      statusOk: "All systems operational", quickTitle: "Quick settings", tmdbPh: "TMDB key…", tmdbPhHint: "Press Enter to save", tmdbSaved: "TMDB key saved", openSettings: "Full settings"
+    },
+    de: {
+      tagline: "Personalisierte Poster für deine Stremio-Bibliothek",
+      libKicker: "Persönliche Bibliothek", libTitle: "Meine Poster", libSub: "Personalisierte Poster für deine Stremio-Bibliothek",
+      newPoster: "+ Neues Poster", cercaTitoli: "Filme & Serien suchen", filterPh: "Nach Titel filtern…", select: "Auswählen", cancel: "Abbrechen",
+      delete: "Löschen", deleteAll: "Alle löschen", recent: "Neueste", az: "A → Z",
+      all: "Alle", movie: "Filme", tv: "Serien", anime: "Anime",
+      selectedCount: "{n} ausgewählt", delAllAria: "Alle Poster löschen",
+      emptyTitle: "Keine Poster gespeichert", emptySub: "Suche einen Film oder eine Serie, gestalte das Poster mit Badges und Logo und speichere es hier.",
+      emptyCta: "Film oder Serie suchen",
+      emptyFilterTitle: "Keine Treffer", emptyFilterSub: "Ändere die Suche oder die Filter.",
+      emptyColTitle: "Diese Sammlung ist leer", emptyColSub: "Öffne ein Poster und füge es über die Vorschau hinzu.",
+      showAll: "Alle Poster anzeigen ({n})",
+      collections: "Sammlungen", noCollections: "Keine Sammlungen — erstelle eine über die Leiste oben.",
+      savedOn: "Gespeichert am", openEditor: "Im Editor öffnen", close: "Schließen",
+      cfDelTitle: "Poster löschen?", cfDelMsg: "„{n}“ wird aus der Bibliothek entfernt. Das Poster bleibt bis zur nächsten Synchronisierung auf dem Server.",
+      cfDelAllTitle: "Alle Poster löschen?", cfDelAllMsg: "Alle {n} Poster werden aus der Bibliothek entfernt.",
+      cfDelSelTitle: "{n} Poster löschen?", cfDelSelMsg: "Die ausgewählten Poster werden entfernt.",
+      cfDelColTitle: "Sammlung löschen?", cfDelColMsg: "„{n}“ wird gelöscht. Poster bleiben unberührt.",
+      colNamePh: "Sammlungsname", newCollection: "Neue Sammlung", colOpts: "Sammlungsoptionen",
+      rename: "Umbenennen", deleteCol: "Sammlung löschen",
+      created: "Sammlung erstellt", renamed: "Sammlung umbenannt", deletedCol: "Sammlung gelöscht",
+      deleted: "Poster gelöscht", deletedMany: "{n} Poster gelöscht",
+      addedTo: "Zu „{n}“ hinzugefügt", removedFrom: "Aus „{n}“ entfernt",
+      demoToast: "In der vollständigen App verfügbar — statischer Prototyp",
+      copyOk: "URL kopiert", copyErr: "URL konnte nicht kopiert werden",
+      statusOk: "Alle Systeme betriebsbereit", quickTitle: "Schnelleinstellungen", tmdbPh: "TMDB-Schlüssel…", tmdbPhHint: "Enter zum Speichern", tmdbSaved: "TMDB-Schlüssel gespeichert", openSettings: "Alle Einstellungen"
+    }
+  };
+  var lang = "it";
+  try { lang = localStorage.getItem("posterium:lang") || "it"; } catch (e) { /* noop */ }
+  function t(k) {
+    var s = STRINGS[lang] || STRINGS.it;
+    return s[k] !== undefined ? s[k] : (STRINGS.it[k] !== undefined ? STRINGS.it[k] : k);
+  }
+
+  /* ── Toast ── */
+  var toastTimer = null;
+  function toast(msg, kind) {
+    var el = $("toast");
+    el.innerHTML = (kind === "ok"
+      ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+      : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8H20l-5 3.8 1.9 5.9-4.9-3.7-4.9 3.7L9 12.6 4 8.8h6.1z"/></svg>')
+      + "<span>" + msg + "</span>";
+    el.dataset.kind = kind || "info";
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+
+  /* ── Icone ── */
+  var ICO_X = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  var ICO_CHECK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  var ICO_PLUS = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  var ICO_DOTS = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="3" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="8" cy="13" r="1.6"/></svg>';
+  var ICO_SQUARE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/></svg>';
+  var ICO_VIEW = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+  var ICO_DEL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+  var ICO_FOLDER = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>';
+  var ICO_CAL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+  var ICO_AZ = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/><path d="M20 8h-5"/><path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/><path d="M15 14h5l-5 6h5"/></svg>';
+  var ICO_CLIP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>';
+  var ICO_MOVIE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>';
+  var ICO_TV = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="15" x="2" y="7" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>';
+  var ICO_FLAG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>';
+
+  var TYPE_ICONS = { all: ICO_CLIP, movie: ICO_MOVIE, tv: ICO_TV, anime: ICO_FLAG };
+
+  /* ── Badge prodotto (stessi componenti del server, resi in CSS) ── */
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function chipHtml(m) {
+    return '<span class="pb-chip pb-' + m.badge + '"><span>' + m.genre.toUpperCase() + '</span><span class="pb-sep">·</span><span>' + m.year + '</span><span class="pb-sep">·</span><span class="pb-star">★</span><span class="pb-rating">' + m.rating + '</span></span>';
+  }
+  function ribbonHtml(m) {
+    if (!m.ribbon) return "";
+    return '<div class="rb rb-' + m.ribbon.style + '"><span class="rb-num">' + m.ribbon.num + '</span><span class="rb-label">' + m.ribbon.label + '</span></div>';
+  }
+  function logoHtml(m) {
+    return m.logo ? '<img class="pb-network" src="' + m.logo + '" alt="" />' : "";
+  }
+  function typeLabel(m) {
+    if (m.type === "movie") return t("movie");
+    if (m.type === "tv") return (m.genre || "").toLowerCase().indexOf("anim") !== -1 ? t("anime") : t("tv");
+    return t("all");
+  }
+  function isAnime(m) { return m.type === "tv" && (m.genre || "").toLowerCase().indexOf("anim") !== -1; }
+
+  /* ── Filtri ── */
+  function typeOk(m) {
+    if (state.type === "all") return true;
+    if (state.type === "movie") return m.type === "movie";
+    if (state.type === "tv") return m.type === "tv" && !isAnime(m);
+    if (state.type === "anime") return isAnime(m);
+    return true;
+  }
+  function visibleMappings() {
+    var q = state.filter.trim().toLowerCase();
+    return mappings.filter(function (m) {
+      if (q && m.title.toLowerCase().indexOf(q) === -1) return false;
+      if (!typeOk(m)) return false;
+      if (state.activeCollection) {
+        var c = getCol(state.activeCollection);
+        if (!c || c.posterIds.indexOf(m.key) === -1) return false;
+      }
+      return true;
+    }).sort(function (a, b) {
+      return state.sort === "alpha"
+        ? a.title.localeCompare(b.title, "it")
+        : b.updatedAt.localeCompare(a.updatedAt);
+    });
+  }
+  function colCount(c) {
+    return c.posterIds.filter(function (k) { return byKey(k) !== null; }).length;
+  }
+
+  /* ── Render tile ── */
+  function tileHtml(m, i) {
+    var sel = !!state.selected[m.key];
+    var ncols = collections.filter(function (c) { return c.posterIds.indexOf(m.key) !== -1; }).length;
+    return '<div class="tile' + (sel ? " is-selected" : "") + '" data-key="' + m.key + '" data-od-id="tile-' + m.key.replace(":", "-") + '" style="--d:' + Math.min(i * 45, 270) + 'ms">' +
+      '<div class="tile-media">' +
+        '<img src="' + m.src + '" alt="' + esc(m.title) + '" loading="lazy" decoding="async" />' +
+        chipHtml(m) + ribbonHtml(m) + logoHtml(m) +
+        '<div class="tile-shade" aria-hidden="true"></div>' +
+        '<button type="button" class="tile-hit" data-act="open" aria-label="Apri ' + esc(m.title) + '"></button>' +
+        '<div class="tile-meta">' +
+          '<p class="tile-title">' + esc(m.title) + '</p>' +
+          '<div class="tile-sub"><span class="tile-year">' + m.year + '</span><span class="tile-type">' + typeLabel(m) + '</span></div>' +
+        '</div>' +
+        '<button type="button" class="tile-act quick" data-act="view" aria-label="Anteprima di ' + esc(m.title) + '">' + ICO_VIEW + '</button>' +
+        '<button type="button" class="tile-act del" data-act="del" aria-label="Elimina ' + esc(m.title) + '">' + ICO_DEL + '</button>' +
+        '<button type="button" class="tile-cols" data-act="view" aria-label="Collezioni di ' + esc(m.title) + '">' + ICO_FOLDER + (ncols ? '<span>' + ncols + '</span>' : '') + '</button>' +
+        '<span class="tile-check" aria-hidden="true">' + ICO_CHECK + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  /* ── Empty states ── */
+  function fanSvg() {
+    return '<div class="empty-fan" aria-hidden="true">' +
+      '<div class="ef-glow"></div>' +
+      '<div class="ef-card ef-left"></div><div class="ef-card ef-right"></div>' +
+      '<div class="ef-card ef-front"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" opacity="0.4"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg></div>' +
+    '</div>';
+  }
+  function listSvg() {
+    return '<div class="empty-list" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6" opacity="0.3"/><line x1="8" y1="12" x2="21" y2="12" opacity="0.3"/><line x1="8" y1="18" x2="21" y2="18" opacity="0.3"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>';
+  }
+  function renderEmpty() {
+    var el = $("emptyState"), grid = $("libGrid");
+    var vis = visibleMappings();
+    if (mappings.length === 0) {
+      el.innerHTML = fanSvg() +
+        '<p class="empty-title">' + t("emptyTitle") + '</p>' +
+        '<p class="empty-sub">' + t("emptySub") + '</p>' +
+        '<a class="btn btn-primary" href="home.html" data-od-id="empty-cta">' + t("emptyCta") + '</a>';
+      grid.style.display = "none"; el.hidden = false;
+    } else if (vis.length === 0 && state.activeCollection) {
+      el.innerHTML = listSvg() +
+        '<p class="empty-title">' + t("emptyColTitle") + '</p>' +
+        '<p class="empty-sub">' + t("emptyColSub") + '</p>' +
+        '<button type="button" class="btn btn-ghost" id="emptyShowAll" data-od-id="empty-show-all">' + t("showAll").replace("{n}", mappings.length) + '</button>';
+      grid.style.display = "none"; el.hidden = false;
+    } else if (vis.length === 0) {
+      el.innerHTML = listSvg() +
+        '<p class="empty-title">' + t("emptyFilterTitle") + '</p>' +
+        '<p class="empty-sub">' + t("emptyFilterSub") + '</p>';
+      grid.style.display = "none"; el.hidden = false;
+    } else {
+      el.hidden = true; grid.style.display = "";
+    }
+  }
+  $("emptyState").addEventListener("click", function (e) {
+    if (e.target.closest("#emptyShowAll")) {
+      state.activeCollection = null;
+      renderCollections(); renderGrid(); renderEmpty();
+    }
+  });
+
+  /* ── Render griglia ── */
+  function renderGrid() {
+    var grid = $("libGrid");
+    var vis = visibleMappings();
+    grid.innerHTML = vis.map(tileHtml).join("");
+  }
+
+  /* ── Contatori ── */
+  function renderCounts() {
+    var n = mappings.length;
+    $("libCount").textContent = n;
+    $("libCount").setAttribute("aria-label", n + " poster");
+    var chips = document.querySelectorAll(".count-chip");
+    for (var i = 0; i < chips.length; i++) chips[i].textContent = n;
+  }
+
+  /* ── Collezioni ── */
+  var editingCol = null, creatingCol = false, menuCol = null;
+  function renderCollections() {
+    var row = $("colRow");
+    var html = '<button type="button" class="col-chip' + (state.activeCollection === null ? " is-active" : "") + '" data-col="all" data-od-id="col-all">' +
+      '<span>' + t("all") + '</span><span class="col-count">' + mappings.length + '</span></button>';
+    collections.forEach(function (c) {
+      var count = colCount(c);
+      var isActive = state.activeCollection === c.id;
+      if (editingCol === c.id) {
+        html += '<span class="col-edit" data-od-id="col-edit">' +
+          '<input id="colEditInput" maxlength="40" value="' + esc(c.name) + '" aria-label="' + t("rename") + '" />' +
+          '<button type="button" class="col-edit-btn ok" data-cok="' + c.id + '" aria-label="Conferma">' + ICO_CHECK + '</button>' +
+          '<button type="button" class="col-edit-btn" data-cx="' + c.id + '" aria-label="' + t("cancel") + '">' + ICO_X + '</button></span>';
+      } else {
+        html += '<div class="col-chip-wrap' + (isActive ? " is-active" : "") + '">' +
+          '<button type="button" class="col-chip" data-col="' + c.id + '" data-od-id="col-' + c.id + '">' +
+            '<span class="col-name">' + esc(c.name) + '</span><span class="col-count">' + count + '</span>' +
+          '</button>' +
+          '<button type="button" class="col-menu" data-menu="' + c.id + '" aria-label="' + t("colOpts") + '" aria-expanded="' + (menuCol === c.id) + '">' + ICO_DOTS + '</button>' +
+          (menuCol === c.id
+            ? '<div class="col-menu-pop" role="menu" aria-label="' + t("colOpts") + '">' +
+                '<button type="button" class="col-menu-item" data-rncol="' + c.id + '" role="menuitem">' + t("rename") + '</button>' +
+                '<button type="button" class="col-menu-item danger" data-dlcol="' + c.id + '" role="menuitem">' + t("deleteCol") + '</button>' +
+              '</div>'
+            : "") +
+        '</div>';
+      }
+    });
+    if (creatingCol) {
+      html += '<span class="col-edit" data-od-id="col-create">' +
+        '<input id="colNewInput" maxlength="40" placeholder="' + t("colNamePh") + '" aria-label="' + t("colNamePh") + '" />' +
+        '<button type="button" class="col-edit-btn ok" data-cok="new" aria-label="Conferma">' + ICO_CHECK + '</button>' +
+        '<button type="button" class="col-edit-btn" data-cx="new" aria-label="' + t("cancel") + '">' + ICO_X + '</button></span>';
+    } else {
+      html += '<button type="button" class="col-chip add" id="colAdd" aria-label="' + t("newCollection") + '" title="' + t("newCollection") + '">' + ICO_PLUS + '</button>';
+    }
+    row.innerHTML = html;
+    if (editingCol) { var ei = $("colEditInput"); if (ei) { ei.focus(); ei.select(); } }
+    if (creatingCol) { var ni = $("colNewInput"); if (ni) ni.focus(); }
+  }
+  $("colRow").addEventListener("click", function (e) {
+    var tgt = e.target;
+    var colBtn = tgt.closest("[data-col]");
+    if (colBtn) {
+      var id = colBtn.dataset.col === "all" ? null : colBtn.dataset.col;
+      state.activeCollection = id;
+      menuCol = null; editingCol = null; creatingCol = false;
+      renderCollections(); renderGrid(); renderEmpty();
+      return;
+    }
+    var menuBtn = tgt.closest("[data-menu]");
+    if (menuBtn) {
+      menuCol = menuCol === menuBtn.dataset.menu ? null : menuBtn.dataset.menu;
+      renderCollections();
+      return;
+    }
+    var okBtn = tgt.closest("[data-cok]");
+    if (okBtn) {
+      var input = okBtn.dataset.cok === "new" ? $("colNewInput") : $("colEditInput");
+      var name = (input && input.value.trim()) || "";
+      if (name) {
+        if (okBtn.dataset.cok === "new") {
+          collections.push({ id: "c" + Date.now(), name: name, posterIds: [] });
+          toast(t("created"), "ok");
+        } else {
+          getCol(okBtn.dataset.cok).name = name;
+          toast(t("renamed"), "ok");
+        }
+        persist(); editingCol = null; creatingCol = false; menuCol = null;
+        renderCollections();
+      }
+      return;
+    }
+    var xBtn = tgt.closest("[data-cx]");
+    if (xBtn) { editingCol = null; creatingCol = false; renderCollections(); return; }
+    var rnBtn = tgt.closest("[data-rncol]");
+    if (rnBtn) { editingCol = rnBtn.dataset.rncol; menuCol = null; renderCollections(); return; }
+    var dlBtn = tgt.closest("[data-dlcol]");
+    if (dlBtn) {
+      var col = getCol(dlBtn.dataset.dlcol);
+      menuCol = null;
+      askConfirm(t("cfDelColTitle"), t("cfDelColMsg").replace("{n}", col.name), t("deleteCol"), function () {
+        collections = collections.filter(function (c) { return c.id !== col.id; });
+        if (state.activeCollection === col.id) state.activeCollection = null;
+        persist(); renderCollections(); renderGrid(); renderEmpty();
+        toast(t("deletedCol"), "ok");
+      });
+      return;
+    }
+    if (tgt.closest("#colAdd")) {
+      creatingCol = true; editingCol = null; menuCol = null;
+      renderCollections();
+    }
+  });
+  document.addEventListener("click", function (e) {
+    if (menuCol && !e.target.closest(".col-chip-wrap")) { menuCol = null; renderCollections(); }
+  });
+
+  /* ── Barra selezione ── */
+  function setSelectMode(on) {
+    state.selectMode = on;
+    state.selected = {};
+    document.body.classList.toggle("select-mode", on);
+    $("#btnSelect").classList.toggle("is-active", on);
+    $("#btnSelect").setAttribute("aria-pressed", on ? "true" : "false");
+    $("#lblSelect").textContent = on ? t("cancel") : t("select");
+    $("#icoSelect").innerHTML = on ? ICO_X : ICO_SQUARE;
+    renderGrid(); renderSelBar();
+  }
+  function renderSelBar() {
+    var n = Object.keys(state.selected).length;
+    $("#selBar").hidden = n === 0;
+    $("#selCount").textContent = t("selectedCount").replace("{n}", n);
+  }
+
+  /* ── Conferma ── */
+  var cfAction = null;
+  function askConfirm(title, msg, okLabel, fn) {
+    $("#cfTitle").textContent = title;
+    $("#cfMsg").textContent = msg;
+    $("#cfOk").textContent = okLabel;
+    cfAction = fn;
+    $("#confirmBack").hidden = false;
+    $("#cfOk").focus();
+  }
+  function closeConfirm() { $("#confirmBack").hidden = true; cfAction = null; }
+  $("#cfCancel").addEventListener("click", closeConfirm);
+  $("#cfOk").addEventListener("click", function () {
+    var f = cfAction; closeConfirm();
+    if (f) f();
+  });
+  $("#confirmBack").addEventListener("click", function (e) {
+    if (e.target === this) closeConfirm();
+  });
+
+  /* ── Eliminazioni ── */
+  function removeMappings(keys) {
+    keys.forEach(function (k) { if (state.deleted.indexOf(k) === -1) state.deleted.push(k); });
+    persist();
+    mappings = MAPPINGS.filter(function (m) { return state.deleted.indexOf(m.key) === -1; });
+    keys.forEach(function (k) { delete state.selected[k]; });
+    if (state.selectMode && mappings.length === 0) setSelectMode(false);
+    renderCounts(); renderCollections(); renderGrid(); renderEmpty(); renderSelBar();
+  }
+  function askDelete(key) {
+    var m = byKey(key);
+    askConfirm(t("cfDelTitle"), t("cfDelMsg").replace("{n}", m.title), t("delete"), function () {
+      removeMappings([key]);
+      toast(t("deleted"), "ok");
+    });
+  }
+
+  /* ── Griglia: eventi ── */
+  $("#libGrid").addEventListener("click", function (e) {
+    var act = e.target.closest("[data-act]");
+    var tile = e.target.closest(".tile");
+    if (!act || !tile) return;
+    var key = tile.dataset.key;
+    if (act.dataset.act === "del") { askDelete(key); return; }
+    if (state.selectMode) {
+      if (state.selected[key]) delete state.selected[key]; else state.selected[key] = true;
+      renderGrid(); renderSelBar();
+      return;
+    }
+    openLightbox(key);
+  });
+  $("#btnSelect").addEventListener("click", function () { setSelectMode(!state.selectMode); });
+  $("#btnSelCancel").addEventListener("click", function () { setSelectMode(false); });
+  $("#btnSelDelete").addEventListener("click", function () {
+    var keys = Object.keys(state.selected);
+    if (keys.length === 0) return;
+    askConfirm(t("cfDelSelTitle").replace("{n}", keys.length), t("cfDelSelMsg"), t("delete"), function () {
+      removeMappings(keys);
+      toast(t("deletedMany").replace("{n}", keys.length), "ok");
+    });
+  });
+  $("#btnDeleteAll").addEventListener("click", function () {
+    if (mappings.length === 0) return;
+    askConfirm(t("cfDelAllTitle"), t("cfDelAllMsg").replace("{n}", mappings.length), t("deleteAll"), function () {
+      var keys = mappings.map(function (m) { return m.key; });
+      removeMappings(keys);
+      toast(t("deletedMany").replace("{n}", keys.length), "ok");
+    });
+  });
+
+  /* ── Filtro testo ── */
+  $("#filterInput").addEventListener("input", function () {
+    state.filter = this.value;
+    $("#filterClear").hidden = !this.value;
+    renderGrid(); renderEmpty();
+  });
+  $("#filterClear").addEventListener("click", function () {
+    $("#filterInput").value = ""; state.filter = "";
+    this.hidden = true;
+    renderGrid(); renderEmpty();
+    $("#filterInput").focus();
+  });
+
+  /* ── Dropdown sort / tipo ── */
+  function renderDrops() {
+    var sortItems = [
+      { v: "updated", l: t("recent"), i: ICO_CAL },
+      { v: "alpha", l: t("az"), i: ICO_AZ }
+    ];
+    $("#sortDrop").innerHTML = sortItems.map(function (o) {
+      return '<button type="button" class="lib-drop-item' + (state.sort === o.v ? " is-active" : "") + '" data-sort="' + o.v + '" role="option" aria-selected="' + (state.sort === o.v) + '">' +
+        '<span class="ld-ico">' + o.i + '</span>' + o.l +
+        (state.sort === o.v ? '<span class="ld-check">' + ICO_CHECK + '</span>' : '') + '</button>';
+    }).join("");
+    var typeItems = [
+      { v: "all", l: t("all") }, { v: "movie", l: t("movie") }, { v: "tv", l: t("tv") }, { v: "anime", l: t("anime") }
+    ];
+    $("#typeDrop").innerHTML = typeItems.map(function (o) {
+      return '<button type="button" class="lib-drop-item' + (state.type === o.v ? " is-active" : "") + '" data-type="' + o.v + '" role="option" aria-selected="' + (state.type === o.v) + '">' +
+        '<span class="ld-ico">' + TYPE_ICONS[o.v] + '</span>' + o.l +
+        (state.type === o.v ? '<span class="ld-check">' + ICO_CHECK + '</span>' : '') + '</button>';
+    }).join("");
+    $("#icoSort").innerHTML = state.sort === "alpha" ? ICO_AZ : ICO_CAL;
+    $("#lblSort").textContent = state.sort === "alpha" ? t("az") : t("recent");
+    $("#icoType").innerHTML = TYPE_ICONS[state.type];
+    $("#lblType").textContent = state.type === "all" ? t("all") : state.type === "movie" ? t("movie") : state.type === "tv" ? t("tv") : t("anime");
+    $("#sortDrop").hidden = !sortOpen;
+    $("#typeDrop").hidden = !typeOpen;
+    $("#btnSort").setAttribute("aria-expanded", sortOpen ? "true" : "false");
+    $("#btnType").setAttribute("aria-expanded", typeOpen ? "true" : "false");
+  }
+  var sortOpen = false, typeOpen = false;
+  function closeDrops() {
+    sortOpen = false; typeOpen = false;
+    $("#sortDrop").hidden = true; $("#typeDrop").hidden = true;
+    $("#btnSort").setAttribute("aria-expanded", "false");
+    $("#btnType").setAttribute("aria-expanded", "false");
+    $("#btnSort").classList.remove("is-open");
+    $("#btnType").classList.remove("is-open");
+  }
+  $("#btnSort").addEventListener("click", function (e) {
+    e.stopPropagation();
+    sortOpen = !sortOpen; typeOpen = false;
+    renderDrops();
+  });
+  $("#btnType").addEventListener("click", function (e) {
+    e.stopPropagation();
+    typeOpen = !typeOpen; sortOpen = false;
+    renderDrops();
+  });
+  $("#sortDrop").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-sort]");
+    if (!b) return;
+    state.sort = b.dataset.sort;
+    sortOpen = false;
+    renderDrops(); renderGrid();
+  });
+  $("#typeDrop").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-type]");
+    if (!b) return;
+    state.type = b.dataset.type;
+    typeOpen = false;
+    renderDrops(); renderGrid(); renderEmpty();
+  });
+  document.addEventListener("click", function (e) {
+    if (sortOpen && !e.target.closest("#btnSort, #sortDrop")) closeDrops();
+    if (typeOpen && !e.target.closest("#btnType, #typeDrop")) closeDrops();
+  });
+
+  /* ── Lightbox ── */
+  var lbKey = null;
+  function fmtDate(iso) {
+    try {
+      var locales = { it: "it-IT", en: "en-GB", de: "de-DE" };
+      return new Date(iso).toLocaleDateString(locales[lang] || "it-IT", { day: "numeric", month: "short", year: "numeric" });
+    } catch (e) { return iso.slice(0, 10); }
+  }
+  function openLightbox(key) {
+    var m = byKey(key);
+    if (!m) return;
+    lbKey = key;
+    $("#lbImg").src = m.src;
+    $("#lbImg").alt = m.title;
+    $("#lbBadges").innerHTML = chipHtml(m) + ribbonHtml(m) + logoHtml(m);
+    $("#lbTitle").textContent = m.title;
+    $("#lbMeta").innerHTML =
+      '<span class="lb-type">' + typeLabel(m) + '</span><span class="lb-sep">·</span><span>' + m.year + '</span>' +
+      '<span class="lb-sep">·</span><span class="lb-rating">★ ' + m.rating + '</span>' +
+      '<span class="lb-sep">·</span><span>' + t("savedOn") + ' ' + fmtDate(m.updatedAt) + '</span>';
+    renderLbCols();
+    $("#lightbox").hidden = false;
+    document.body.classList.add("lb-open");
+    $("#lbClose").focus();
+  }
+  function closeLightbox() {
+    $("#lightbox").hidden = true;
+    document.body.classList.remove("lb-open");
+    lbKey = null;
+  }
+  function renderLbCols() {
+    var list = $("#lbColsList");
+    if (collections.length === 0) {
+      list.innerHTML = '<p class="lb-none">' + t("noCollections") + '</p>';
+      return;
+    }
+    list.innerHTML = collections.map(function (c) {
+      var on = c.posterIds.indexOf(lbKey) !== -1;
+      return '<button type="button" class="lb-col' + (on ? " is-on" : "") + '" data-lbcol="' + c.id + '" aria-pressed="' + on + '">' +
+        '<span class="lb-col-check">' + ICO_CHECK + '</span>' +
+        '<span class="lb-col-name">' + esc(c.name) + '</span>' +
+        (on ? '<span class="lb-col-state">' + ICO_X + '</span>' : '<span class="lb-col-state add">' + ICO_PLUS + '</span>') +
+      '</button>';
+    }).join("");
+  }
+  $("#lbColsList").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-lbcol]");
+    if (!b || !lbKey) return;
+    var c = getCol(b.dataset.lbcol);
+    var idx = c.posterIds.indexOf(lbKey);
+    if (idx !== -1) {
+      c.posterIds.splice(idx, 1);
+      toast(t("removedFrom").replace("{n}", c.name), "info");
+    } else {
+      c.posterIds.push(lbKey);
+      toast(t("addedTo").replace("{n}", c.name), "ok");
+    }
+    persist();
+    renderLbCols(); renderCollections(); renderGrid();
+  });
+  $("#lbClose").addEventListener("click", closeLightbox);
+  $("#lbCancel").addEventListener("click", closeLightbox);
+  $("#lightbox").addEventListener("click", function (e) {
+    if (e.target === this) closeLightbox();
+  });
+
+  /* ── Lingua ── */
+  function applyLang(l) {
+    lang = l;
+    try { localStorage.setItem("posterium:lang", l); } catch (e) { /* noop */ }
+    $("tagline").textContent = t("tagline");
+    $("kickerText").textContent = t("libKicker");
+    $("libTitleText").textContent = t("libTitle");
+    $("libSub").textContent = t("libSub");
+    $("cercaTitoliLbl").textContent = t("cercaTitoli");
+    $("filterInput").placeholder = t("filterPh");
+    $("#btnDeleteAll").setAttribute("aria-label", t("delAllAria"));
+    $("#btnDeleteAll").setAttribute("title", t("delAllAria"));
+    $("#lbColsLabel").textContent = t("collections");
+    $("#lbCancel").textContent = t("close");
+    $("#lbOpen").textContent = t("openEditor");
+    $("#cfCancel").textContent = t("cancel");
+    $("#statusOk").textContent = t("statusOk");
+    $("#quickTitle").textContent = t("quickTitle");
+    $("#quickTmdb").placeholder = t("tmdbPh");
+    $("#quickTmdbHint").textContent = t("tmdbPhHint");
+    $("#openSettingsLbl").textContent = t("openSettings");
+    renderDrops(); renderCollections(); renderSelBar(); renderEmpty();
+    var items = document.querySelectorAll(".lang-item, .lang-chip");
+    for (var i = 0; i < items.length; i++) {
+      var on = items[i].dataset.lang === lang;
+      items[i].classList.toggle("is-active", on);
+      items[i].setAttribute("aria-pressed", on ? "true" : "false");
+    }
+  }
+
+  /* ── Toolbar isola ── */
+  function closePanels() {
+    $("langPop").hidden = true;
+    $("btnLang").classList.remove("is-open");
+  }
+  function demoToast() { toast(t("demoToast"), "info"); }
+  $("#btnInstall").addEventListener("click", demoToast);
+  $("#btnProfile").addEventListener("click", demoToast);
+  $("#btnProxy").addEventListener("click", demoToast);
+  $("#mInstall").addEventListener("click", demoToast);
+  $("#mProfile").addEventListener("click", demoToast);
+  $("#mProxy").addEventListener("click", demoToast);
+  function copyText(text) {
+    return new Promise(function (resolve, reject) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(resolve, reject);
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); resolve(); } catch (e) { reject(e); }
+        document.body.removeChild(ta);
+      }
+    });
+  }
+  function copyUrl() {
+    copyText(location.href).then(function () {
+      toast(t("copyOk"), "ok");
+    }, function () {
+      toast(t("copyErr"), "info");
+    });
+  }
+  $("#btnCopyUrl").addEventListener("click", copyUrl);
+  $("#mCopyUrl").addEventListener("click", copyUrl);
+
+  /* ── Tendina impostazioni rapide ─────────────────────────── */
+  var settingsPop = $("#settingsPop");
+  var settingsBtns = [$("#btnSettings"), $("#mSettings")];
+  function closeSettingsPop() {
+    if (settingsPop.hidden) return;
+    settingsPop.hidden = true;
+    for (var i = 0; i < settingsBtns.length; i++) settingsBtns[i].setAttribute("aria-expanded", "false");
+  }
+  function openSettingsPop(btn) {
+    var r = btn.getBoundingClientRect();
+    settingsPop.style.top = Math.round(r.bottom + 10) + "px";
+    settingsPop.style.right = Math.round(window.innerWidth - r.right) + "px";
+    settingsPop.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+  }
+  for (var si = 0; si < settingsBtns.length; si++) {
+    (function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (!settingsPop.hidden) { closeSettingsPop(); return; }
+        closePanels();
+        openSettingsPop(btn);
+      });
+    })(settingsBtns[si]);
+  }
+  document.addEventListener("click", function (e) {
+    if (settingsPop.hidden) return;
+    if (settingsPop.contains(e.target)) return;
+    closeSettingsPop();
+  });
+  window.addEventListener("resize", closeSettingsPop);
+  /* Chiave TMDB rapida (stessa chiave di impostazioni.html) */
+  var quickTmdb = $("#quickTmdb");
+  var lastTmdb = "";
+  try { quickTmdb.value = localStorage.getItem("posterium:tmdb") || ""; lastTmdb = quickTmdb.value; } catch (e) {}
+  function saveQuickTmdb(notify) {
+    var v = quickTmdb.value.trim();
+    if (v === lastTmdb) return;
+    lastTmdb = v;
+    try { localStorage.setItem("posterium:tmdb", v); } catch (e) {}
+    if (notify) toast(t("tmdbSaved"), "ok");
+  }
+  quickTmdb.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); saveQuickTmdb(true); }
+  });
+  quickTmdb.addEventListener("blur", function () { saveQuickTmdb(false); });
+  var quickEye = $("#quickTmdbEye");
+  var eyeShown = false;
+  quickEye.addEventListener("click", function () {
+    eyeShown = !eyeShown;
+    quickTmdb.type = eyeShown ? "text" : "password";
+    quickEye.innerHTML = eyeShown
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    quickEye.setAttribute("aria-label", eyeShown ? "Nascondi chiave TMDB" : "Mostra chiave TMDB");
+  });
+  function renderAll() {
+    renderCounts(); renderCollections(); renderGrid(); renderEmpty(); renderSelBar(); renderDrops();
+  }
+
+  /* ── Floating group ── */
+  $("#btnRefresh").addEventListener("click", function () {
+    var ico = this.querySelector("svg");
+    ico.classList.add("spinning");
+    setTimeout(function () {
+      ico.classList.remove("spinning");
+      toast(t("statusOk"), "ok");
+    }, 900);
+  });
+  $("#btnHealth").addEventListener("click", function () {
+    toast(t("statusOk"), "ok");
+  });
+  $("#btnStatus").addEventListener("click", function () { toast(t("statusOk"), "ok"); });
+  $("#btnLang").addEventListener("click", function (e) {
+    e.stopPropagation();
+    var open = $("langPop").hidden;
+    closePanels();
+    $("langPop").hidden = !open;
+    this.classList.toggle("is-open", open);
+  });
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".floating-group")) closePanels();
+  });
+  var langItems = document.querySelectorAll(".lang-item");
+  for (var li = 0; li < langItems.length; li++) {
+    langItems[li].addEventListener("click", function () {
+      applyLang(this.dataset.lang);
+      closePanels();
+    });
+  }
+
+  /* ── Tastiera ── */
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      var tag = document.activeElement && document.activeElement.tagName;
+      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") {
+        e.preventDefault();
+        $("#filterInput").focus();
+      }
+    }
+    if (e.key === "Escape") {
+      if (!$("#lightbox").hidden) { closeLightbox(); return; }
+      if (!$("#confirmBack").hidden) { closeConfirm(); return; }
+      if (menuCol) { menuCol = null; renderCollections(); return; }
+      if (editingCol || creatingCol) { editingCol = null; creatingCol = null; renderCollections(); return; }
+      if (sortOpen || typeOpen) { closeDrops(); return; }
+      if (state.selectMode) { setSelectMode(false); return; }
+      closePanels();
+      closeSettingsPop();
+    }
+  });
+
+  /* ── Avvio ── */
+  applyLang(lang);
+  renderAll();
+})();
+</script>
+</body>
+</html>

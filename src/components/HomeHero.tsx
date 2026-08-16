@@ -1,8 +1,9 @@
 "use client"
 
-import { useMemo, useRef, type MouseEvent } from "react"
+import { useMemo, useRef, type MouseEvent, type KeyboardEvent } from "react"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
+import { toSearchResult, type SearchResult } from "@/lib/types"
 import { Layers, Sparkles, Globe } from "lucide-react"
 
 interface PodiumSlot {
@@ -10,6 +11,7 @@ interface PodiumSlot {
   className: string
   alt: string
   url: string
+  item: SearchResult
 }
 
 interface FallbackSlot extends Omit<PodiumSlot, "url"> {
@@ -17,12 +19,14 @@ interface FallbackSlot extends Omit<PodiumSlot, "url"> {
 }
 
 // Poster statici di riserva (stessi layout del carosello) usati solo finché il
-// trending non è caricato o se le classifiche sono vuote.
+// trending non è caricato o se le classifiche sono vuote. Restano cliccabili:
+// aprono l'editor con quel titolo, come le card del carosello.
 const FALLBACK_PODIUM: FallbackSlot[] = [
   {
     key: "dark",
     className: "p-frame p-frame-side p-frame-left",
     alt: "Dark",
+    item: toSearchResult({ id: 44217, media_type: "tv", title: "Dark", name: "Dark" }),
     url: (k: string) =>
       `/api/poster/tv/44217?genreName=Thriller&voteAverage=8.0&rs=netflix&rank=4&label=Serie%20tv&ranking=&tl=0&gradHeight=25&blur=30&bf=50&bd=40&logoFit=0${k}`,
   },
@@ -30,6 +34,7 @@ const FALLBACK_PODIUM: FallbackSlot[] = [
     key: "shawshank",
     className: "p-frame p-frame-main",
     alt: "The Shawshank Redemption",
+    item: toSearchResult({ id: 278, media_type: "movie", title: "The Shawshank Redemption", name: "The Shawshank Redemption" }),
     url: (k: string) =>
       `/api/poster/movie/278?genreName=Dramma&voteAverage=9.3&bs=vetro&gradHeight=25&blur=30&bf=50&bd=40&tl=0&logoFit=0${k}`,
   },
@@ -37,6 +42,7 @@ const FALLBACK_PODIUM: FallbackSlot[] = [
     key: "inception",
     className: "p-frame p-frame-side p-frame-right",
     alt: "Inception",
+    item: toSearchResult({ id: 27205, media_type: "movie", title: "Inception", name: "Inception" }),
     url: (k: string) =>
       `/api/poster/movie/27205?genreName=Thriller&voteAverage=8.8&bs=bar&tl=0&ac=%23f39c12&gradHeight=30&blur=35&bf=50&bd=45&logoFit=0${k}`,
   },
@@ -66,6 +72,7 @@ export function HomeHero() {
   const tmdbKey = usePSelector((v) => v.tmdbKey)
   const trending = usePSelector((v) => v.trending)
   const titleOf = usePSelector((v) => v.titleOf)
+  const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const { t } = useT()
   const podiumRef = useRef<HTMLDivElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
@@ -91,6 +98,7 @@ export function HomeHero() {
       key: `${item.media_type}-${item.id}`,
       className: ["p-frame p-frame-side p-frame-left", "p-frame p-frame-main", "p-frame p-frame-side p-frame-right"][i],
       alt: titleOf(item),
+      item,
       url: `/api/poster/${item.media_type}/${item.id}?ranking=&rank=${item.rank}&rs=${SLOT_RANK_STYLES[i]}&tl=0&gradHeight=25&blur=30&bf=50&bd=40&logoFit=0${key}`,
     }))
   }, [trending, tmdbKey, titleOf])
@@ -166,9 +174,23 @@ export function HomeHero() {
         <div className="podium-glow" aria-hidden="true" />
         <div className="podium-inner" ref={innerRef}>
           {slots.map((p, i) => (
-            <div key={p.key} className={p.className} ref={i === 0 ? leftRef : i === 2 ? rightRef : undefined}>
+            <div
+              key={p.key}
+              className={`${p.className} cursor-pointer`}
+              ref={i === 0 ? leftRef : i === 2 ? rightRef : undefined}
+              role="button"
+              tabIndex={0}
+              aria-label={p.alt}
+              onClick={() => navigateToPoster(p.item)}
+              onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  navigateToPoster(p.item)
+                }
+              }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element -- poster dinamico /api/poster */}
-              <img src={p.url} alt={p.alt} loading={i === 1 ? "eager" : "lazy"} decoding="async" />
+              <img src={p.url} alt="" loading={i === 1 ? "eager" : "lazy"} decoding="async" />
             </div>
           ))}
         </div>

@@ -1,0 +1,1787 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Impostazioni — Posterium</title>
+<style>
+/* Posterium design tokens — compiled from src/app/globals.css (v0.15.2).
+   Keep in sync with the source repo when the UI palette changes. */
+
+:root {
+  /* ── Palette (dark — default) ─────────────────────────────── */
+  --od-color-background: #0a0a0a;
+  --od-color-foreground: #ededed;
+  --od-color-surface: #18181b;
+  --od-color-surface2: #27272a;
+  --od-color-border: #3f3f46;
+  --od-color-muted: #a1a1aa;
+  --od-color-accent-orange: #e85d2a;
+  --od-color-accent: #ffffff;
+  --od-color-danger: #f87171;
+  --od-color-warning: #fbbf24;
+
+  /* Accent as RGB components for alpha variants (rgb(var(--accent-rgb) / a)) */
+  --od-accent-rgb: 232 93 42;
+
+  /* ── Palette (light) ──────────────────────────────────────── */
+  --od-color-background-light: #f5f5f5;
+  --od-color-foreground-light: #1a1a1a;
+
+  /* ── Surfaces — shared glass recipe ───────────────────────── */
+  /* The glass family (panels, cards, shells) composes these four
+     ingredients; per-component overrides are allowed. */
+  --od-glass-grad: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  --od-glass-tint: rgba(13, 13, 16, 0.8);
+  --od-glass-border: rgba(255, 255, 255, 0.08);
+  --od-glass-shadow: 0 16px 36px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --od-glass-blur: 14px;
+  --od-border-subtle: rgba(255, 255, 255, 0.08);
+  --od-border-strong: rgba(255, 255, 255, 0.14);
+  --od-panel: rgba(18, 18, 22, 0.74);
+  --od-panel-strong: rgba(21, 21, 26, 0.92);
+
+  /* ── Typography ───────────────────────────────────────────── */
+  --od-font-ui: "Geist", "Inter", Arial, Helvetica, sans-serif;
+  --od-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+  --od-font-poster: "Inter", "Noto Sans Symbols 2", sans-serif;
+
+  /* ── Radius ───────────────────────────────────────────────── */
+  --od-radius-input: 0.5rem;
+  --od-radius-control: 0.625rem;
+  --od-radius-button: 0.75rem;
+  --od-radius-action: 0.875rem;
+  --od-radius-panel: 1rem;
+  --od-radius-editor: 1.25rem;
+  --od-radius-hero: 1.35rem;
+  --od-radius-pill: 9999px;
+
+  /* ── Motion ───────────────────────────────────────────────── */
+  --od-duration-fast: 150ms;
+  --od-duration-base: 200ms;
+  --od-duration-slow: 300ms;
+  --od-easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ── Z-index scale ────────────────────────────────────────── */
+  --od-z-content: 10;
+  --od-z-overlay: 20;
+  --od-z-gradient: 30;
+  --od-z-controls: 40;
+  --od-z-floating: 50;
+  --od-z-settings-mobile: 70;
+  --od-z-fullscreen: 100;
+  --od-z-confirm-backdrop: 199;
+  --od-z-confirm-dialog: 200;
+
+  /* ── Touch / density ──────────────────────────────────────── */
+  --od-touch-min: 44px;
+  --od-dense-label: 10px;
+  --od-dense-caption: 11px;
+
+  /* Accento runtime (tinta UI dinamica): alias dell'accento arancione */
+  --color-accent: rgb(var(--od-accent-rgb));
+}
+
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--od-color-background);
+  color: var(--od-color-foreground);
+  font-family: var(--od-font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img, svg { display: block; max-width: 100%; }
+[hidden] { display: none !important; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; background: none; border: none; color: inherit; }
+p { text-wrap: pretty; }
+h1, h2, h3, h4 { text-wrap: balance; }
+::selection { background: rgb(var(--od-accent-rgb) / 0.35); }
+:focus-visible { outline: 2px solid rgb(var(--od-accent-rgb) / 0.75); outline-offset: 2px; border-radius: 4px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { border-radius: 999px; background: linear-gradient(180deg, rgb(var(--od-accent-rgb) / 0.55), rgb(var(--od-accent-rgb) / 0.28)); }
+
+/* ── Sfondo ambiente ──────────────────────────────────────── */
+.ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.ambient-glow {
+  position: absolute; top: -14rem; left: 50%; transform: translateX(-50%);
+  width: 34rem; height: 34rem; border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--od-accent-rgb) / 0.14), transparent 68%);
+}
+.ambient-white {
+  position: absolute; top: 4rem; left: 12%; width: 24rem; height: 24rem; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.045), transparent 70%);
+}
+.ambient-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 75%);
+          mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 75%);
+  opacity: 0.5;
+}
+.ambient-poster {
+  position: absolute; top: -6rem; right: -4rem; width: 560px; aspect-ratio: 2/3;
+  background: url('assets/poster-66732.jpg') center/cover;
+  filter: blur(72px) saturate(1.5); opacity: 0.16; mix-blend-mode: screen;
+}
+.ambient-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 120% 90% at 50% 10%, transparent 55%, rgba(0,0,0,0.55) 100%);
+}
+
+/* ── Layout shell ─────────────────────────────────────────── */
+.shell { position: relative; z-index: 1; max-width: 1680px; margin: 0 auto; padding: 0 1.25rem 6.5rem; }
+
+/* ── Version badge ────────────────────────────────────────── */
+.version-badge {
+  position: fixed; top: 0.9rem; left: 1rem; z-index: 60;
+  font-family: var(--od-font-mono); font-size: 10px; letter-spacing: 0.08em;
+  color: var(--od-color-muted); background: rgba(255,255,255,0.04);
+  border: 1px solid var(--od-border-subtle); border-radius: var(--od-radius-pill);
+  padding: 0.3rem 0.6rem; backdrop-filter: blur(10px);
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.home-header {
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: clamp(2.5rem, 6vh, 4rem); padding-bottom: 1.75rem;
+}
+.header-logo { height: clamp(3.5rem, 6vw, 4.75rem); width: auto; cursor: pointer; transition: filter var(--od-duration-base) var(--od-easing), transform var(--od-duration-base) var(--od-easing); }
+.header-logo:hover { filter: brightness(1.12); }
+.header-logo:active { transform: scale(0.96); }
+.header-tagline {
+  margin: 0.4rem 0 0;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgb(var(--od-color-muted) / 0.55); text-align: center;
+}
+
+/* Toolbar mobile (sotto l'header, solo < 920px) */
+.mobile-toolbar { display: none; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 1rem; }
+.mobile-toolbar .island-btn { width: 44px; height: 44px; }
+
+/* ── Toolbar isola (desktop, top-right) ───────────────────── */
+.toolbar-wrap { position: fixed; top: 1rem; right: 1rem; z-index: var(--od-z-floating); }
+.toolbar-island {
+  display: flex; align-items: center; gap: 2px; padding: 4px;
+  background: var(--od-glass-grad), var(--od-glass-tint);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-action);
+  box-shadow: var(--od-glass-shadow); backdrop-filter: blur(var(--od-glass-blur));
+  animation: rise-in 0.5s var(--od-easing) both;
+}
+.island-btn {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.625rem; color: var(--od-color-muted);
+  transition: background var(--od-duration-fast) var(--od-easing), color var(--od-duration-fast) var(--od-easing), transform var(--od-duration-fast) var(--od-easing);
+  position: relative;
+}
+.island-btn:hover { background: rgba(255,255,255,0.08); color: var(--od-color-foreground); }
+.island-btn:active { transform: scale(0.92); }
+.island-btn[data-accent="1"] { color: var(--color-accent); }
+.island-btn[data-accent="1"]:hover { color: var(--color-accent); }
+.island-btn.is-open { background: rgb(var(--od-accent-rgb) / 0.12); color: var(--color-accent); }
+.island-btn .count-chip {
+  position: absolute; top: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: #fff; background: var(--od-color-accent-orange);
+  border-radius: 999px; box-shadow: 0 2px 8px rgb(var(--od-accent-rgb) / 0.45);
+}
+.island-divider { width: 1px; height: 20px; background: var(--od-border-subtle); margin: 0 2px; }
+.island-btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; top: calc(100% + 8px); right: 0; white-space: nowrap;
+  font-size: 10px; font-weight: 500; letter-spacing: 0.02em; color: var(--od-color-foreground);
+  background: rgba(10,10,10,0.92); border: 1px solid var(--od-border-subtle);
+  border-radius: 0.5rem; padding: 0.35rem 0.6rem; box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+  opacity: 0; transform: translateY(-4px); pointer-events: none;
+  transition: opacity var(--od-duration-fast) var(--od-easing), transform var(--od-duration-fast) var(--od-easing);
+}
+.island-btn[data-tip]:hover::after { opacity: 1; transform: translateY(0); }
+
+/* ── Intestazione pagina ──────────────────────────────────── */
+.page-head { max-width: 1180px; margin: 0 auto clamp(1.75rem, 4vh, 2.5rem); animation: rise-in 0.5s var(--od-easing) both; }
+.kicker {
+  display: inline-flex; align-items: center; gap: 0.45rem; height: 26px; padding: 0 0.75rem;
+  border-radius: var(--od-radius-pill);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--color-accent); background: rgb(var(--od-accent-rgb) / 0.10);
+  border: 1px solid rgb(var(--od-accent-rgb) / 0.22);
+}
+.page-title {
+  margin: 0.65rem 0 0.45rem;
+  font-size: clamp(1.6rem, 3.2vw, 2.25rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15;
+}
+.page-title .accent-word { color: var(--color-accent); }
+.page-sub { margin: 0; max-width: 560px; font-size: 13px; color: var(--od-color-muted); }
+
+/* ── Griglia impostazioni ─────────────────────────────────── */
+.set-grid {
+  display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 1.25rem; align-items: start; max-width: 1180px; margin: 0 auto;
+}
+.set-main, .set-aside { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+
+/* Card vetro con hairline accent in alto (famiglia editor) */
+.set-card {
+  position: relative; padding: 1.05rem 1.15rem 1.15rem;
+  background: var(--od-glass-grad), var(--od-panel);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-editor);
+  box-shadow: var(--od-glass-shadow); backdrop-filter: blur(var(--od-glass-blur));
+  animation: rise-in 0.5s var(--od-easing) both;
+}
+.set-card::before {
+  content: ""; position: absolute; top: 0; left: 1.25rem; right: 1.25rem; height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgb(var(--od-accent-rgb) / 0.55), transparent);
+}
+.card-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+.card-ico {
+  width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.65rem; color: var(--color-accent);
+  background: rgb(var(--od-accent-rgb) / 0.10); border: 1px solid rgb(var(--od-accent-rgb) / 0.18);
+}
+.card-ico svg { width: 14px; height: 14px; }
+.card-title { margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--od-color-foreground); }
+.card-note { margin: 0.1rem 0 0; font-size: 10px; color: var(--od-color-muted); }
+.card-sub { margin: 0.85rem 0 0.15rem; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--od-color-muted); }
+
+/* Righe controllo */
+.set-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.85rem;
+  min-height: 44px; padding: 0.3rem 0.5rem; margin: 0 -0.5rem; border-radius: var(--od-radius-control);
+  transition: background var(--od-duration-fast) ease;
+}
+.set-row:hover { background: rgb(var(--od-accent-rgb) / 0.04); }
+.row-info { min-width: 0; }
+.row-label { font-size: 12px; font-weight: 600; color: var(--od-color-foreground); display: flex; align-items: center; gap: 0.45rem; }
+.row-label svg { width: 13px; height: 13px; color: var(--od-color-muted); flex-shrink: 0; }
+.row-note { font-size: 10.5px; color: var(--od-color-muted); margin-top: 1px; }
+.set-row.sub { margin-left: 1.1rem; padding-left: 0.9rem; border-left: 1px solid var(--od-border-subtle); min-height: 38px; }
+.set-row.sub .row-label { font-size: 11px; font-weight: 500; color: var(--od-color-muted); }
+.set-row + .set-row { border-top: 1px solid var(--od-border-subtle); }
+.set-row.sub + .set-row.sub { border-top: 0; }
+
+/* Toggle (pill 46×26, thumb 19px, accent quando ON) */
+.switch {
+  width: 48px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--od-radius-control); padding: 0;
+}
+.switch .track {
+  position: relative; width: 46px; height: 26px; border-radius: var(--od-radius-pill);
+  background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.12);
+  transition: background var(--od-duration-slow) var(--od-easing), border-color var(--od-duration-slow) var(--od-easing), box-shadow var(--od-duration-slow) var(--od-easing);
+}
+.switch .thumb {
+  position: absolute; top: 2.5px; left: 3px; width: 19px; height: 19px; border-radius: 50%;
+  background: #f4f4f5; box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  transition: transform 0.35s var(--od-easing);
+}
+.switch[aria-checked="true"] .track {
+  background: var(--color-accent); border-color: var(--color-accent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-accent) 25%, transparent);
+}
+.switch[aria-checked="true"] .thumb { transform: translateX(20px); }
+.switch:focus-visible .track { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* Segmented */
+.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--od-radius-control); border: 1px solid var(--od-border-subtle); background: rgba(255,255,255,0.03); }
+.seg button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  padding: 0 0.9rem; border-radius: 0.45rem;
+  font-size: 11px; font-weight: 600; color: var(--od-color-muted); white-space: nowrap;
+  transition: color var(--od-duration-fast) ease, background var(--od-duration-fast) ease;
+}
+.seg button:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.05); }
+.seg button.is-active {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* Chip lingua */
+.lang-row { display: flex; gap: 0.35rem; }
+.lang-chip {
+  height: 30px; padding: 0 0.7rem; border-radius: var(--od-radius-control);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--od-color-muted); background: rgba(255,255,255,0.05);
+  border: 1px solid var(--od-border-subtle);
+  transition: all var(--od-duration-fast) var(--od-easing);
+}
+.lang-chip:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.1); }
+.lang-chip.is-active {
+  color: var(--color-accent);
+  background: rgb(var(--od-accent-rgb) / 0.14);
+  border-color: rgb(var(--od-accent-rgb) / 0.4);
+  box-shadow: 0 0 12px rgb(var(--od-accent-rgb) / 0.15);
+}
+
+/* Slider */
+.slider-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.45rem 0.5rem; margin: 0 -0.5rem; border-radius: var(--od-radius-control); min-height: 38px; }
+.slider-row:hover { background: rgba(255,255,255,0.03); }
+.slider-row .slider-label { font-size: 11px; color: var(--od-color-muted); min-width: 74px; }
+.slider-row .slider-val {
+  font-family: var(--od-font-mono); font-size: 10.5px; color: var(--color-accent);
+  min-width: 46px; text-align: right; font-variant-numeric: tabular-nums;
+}
+input[type="range"] {
+  -webkit-appearance: none; appearance: none; flex: 1; height: 20px; background: transparent; cursor: pointer; margin: 0;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 3px;
+  background: linear-gradient(to right, var(--color-accent) 0%, color-mix(in srgb, var(--color-accent) 60%, black) var(--pct, 0%), var(--od-color-surface2) var(--pct, 0%), var(--od-color-surface2) 100%);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 17px; height: 17px; border-radius: 50%; margin-top: -5.5px;
+  background: #fff; border: 3px solid var(--color-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 18%, transparent), 0 3px 8px rgba(0,0,0,0.5);
+  transition: transform var(--od-duration-fast) var(--od-easing);
+}
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
+input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--od-color-surface2); }
+input[type="range"]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--color-accent); }
+input[type="range"]::-moz-range-thumb { width: 11px; height: 11px; border-radius: 50%; background: #fff; border: 3px solid var(--color-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 18%, transparent); }
+
+/* Selettore stile badge (mini anteprime) */
+.bsel { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.bsel button {
+  display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  min-width: 54px; padding: 0.5rem 0.45rem;
+  border-radius: 0.625rem; border: 1px solid transparent;
+  background: rgba(255,255,255,0.05); color: var(--od-color-muted);
+  transition: all var(--od-duration-fast) var(--od-easing);
+}
+.bsel button:hover { background: rgba(255,255,255,0.09); color: var(--od-color-foreground); }
+.bsel button.is-active {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  color: var(--color-accent);
+}
+.bsel button .bsel-name { font-size: 9px; font-weight: 700; letter-spacing: 0.04em; }
+.bmini {
+  width: 100%; height: 20px; display: flex; align-items: center; justify-content: center;
+  font-size: 7px; font-weight: 800; letter-spacing: 0.06em; border-radius: 0.3rem; color: var(--od-color-foreground);
+  font-family: var(--od-font-ui);
+}
+.bm-shadow { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+.bm-pill { width: auto; padding: 0 8px; border-radius: var(--od-radius-pill); border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.08); color: #fff; }
+.bm-bar { background: rgba(255,255,255,0.14); color: #fff; }
+.bm-colored { background: var(--color-accent); color: #fff; }
+.bm-bordo { width: auto; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); color: #fff; }
+.bm-vetro {
+  width: auto; padding: 0 8px; color: #fff;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.bm-rdefault { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+.bm-rpill {
+  width: auto; padding: 0 8px; border-radius: var(--od-radius-pill); color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+
+/* ── Input chiavi (SecretInput) ───────────────────────────── */
+.key-box { position: relative; }
+.key-box input {
+  width: 100%; height: 42px; padding: 0 2.6rem 0 0.75rem;
+  font-family: var(--od-font-mono); font-size: 11px; color: var(--od-color-foreground);
+  background: rgba(255,255,255,0.05); border: 1px solid var(--od-border-subtle);
+  border-radius: var(--od-radius-input); outline: none;
+  transition: border-color var(--od-duration-fast), box-shadow var(--od-duration-fast);
+}
+.key-box input::placeholder { color: var(--od-color-muted); opacity: 0.55; }
+.key-box input:focus {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+.key-box input.has-err { border-color: var(--od-color-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--od-color-danger) 14%, transparent); }
+.key-eye {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.5rem; color: var(--od-color-muted);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast);
+}
+.key-eye:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.07); }
+.key-err { margin: 0.35rem 0.1rem 0; font-size: 10px; font-weight: 600; color: var(--od-color-danger); display: flex; align-items: center; gap: 0.3rem; }
+.key-err svg { width: 11px; height: 11px; flex-shrink: 0; }
+.field-label { display: block; margin-bottom: 0.4rem; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--od-color-muted); }
+.key-gap { margin-top: 0.9rem; }
+
+/* ── Pulsanti ─────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  height: 44px; padding: 0 1.5rem; border-radius: var(--od-radius-button);
+  font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 75%, #000);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-accent) 96%, #fff), color-mix(in srgb, var(--color-accent) 88%, #000));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 12px 30px color-mix(in srgb, var(--color-accent) 20%, transparent);
+  transition: background var(--od-duration-fast) ease, border-color var(--od-duration-fast) ease, box-shadow var(--od-duration-fast) ease, transform var(--od-duration-fast) var(--od-easing), filter var(--od-duration-fast) ease;
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-primary:active { transform: scale(0.96); }
+.btn-primary.saved { background: #16a34a; border-color: #15803d; box-shadow: 0 12px 30px rgba(22,163,74,0.25); }
+.btn-primary svg { width: 14px; height: 14px; }
+.btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  height: 44px; padding: 0 1.1rem; border-radius: var(--od-radius-button);
+  font-size: 12px; font-weight: 600; color: var(--od-color-muted); white-space: nowrap;
+  border: 1px solid transparent;
+  transition: color var(--od-duration-fast), background var(--od-duration-fast);
+}
+.btn-ghost:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.06); }
+.btn-ghost svg { width: 13px; height: 13px; }
+.btn-soft {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  width: 100%; height: 42px; border-radius: var(--od-radius-button);
+  font-size: 12px; font-weight: 700; color: var(--color-accent);
+  background: rgb(var(--od-accent-rgb) / 0.12); border: 1px solid rgb(var(--od-accent-rgb) / 0.30);
+  transition: background var(--od-duration-fast), color var(--od-duration-fast), transform var(--od-duration-fast) var(--od-easing);
+}
+.btn-soft:hover { background: rgb(var(--od-accent-rgb) / 0.20); }
+.btn-soft:active { transform: scale(0.97); }
+.btn-soft.copied { color: #4ade80; border-color: color-mix(in srgb, #4ade80 45%, transparent); background: color-mix(in srgb, #4ade80 10%, transparent); }
+.btn-soft svg { width: 14px; height: 14px; }
+.set-actions { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; }
+.set-actions .btn-primary { flex: 1; }
+
+/* Mini azioni (warmup / cache) */
+.mini-row { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+.mini-btn {
+  flex: 1; height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  border-radius: var(--od-radius-control); font-size: 11px; font-weight: 700;
+  transition: background var(--od-duration-fast), transform var(--od-duration-fast) var(--od-easing);
+}
+.mini-btn:active { transform: scale(0.96); }
+.mini-btn svg { width: 13px; height: 13px; }
+.mini-warm {
+  color: var(--od-color-warning); background: color-mix(in srgb, var(--od-color-warning) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--od-color-warning) 28%, transparent);
+}
+.mini-warm:hover { background: color-mix(in srgb, var(--od-color-warning) 18%, transparent); }
+.mini-clear {
+  color: var(--od-color-danger); background: color-mix(in srgb, var(--od-color-danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--od-color-danger) 28%, transparent);
+}
+.mini-clear:hover { background: color-mix(in srgb, var(--od-color-danger) 18%, transparent); }
+.mini-btn svg.spinning { animation: spin 0.9s linear infinite; }
+.diag-count {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+  padding: 0.55rem 0.5rem 0; margin: 0.2rem -0.5rem 0;
+  font-size: 10px; font-weight: 600; color: var(--od-color-muted);
+  border-top: 1px solid var(--od-border-subtle);
+}
+.diag-count .dc-val { font-family: var(--od-font-mono); font-size: 10px; color: var(--od-color-foreground); }
+
+/* Profilo */
+.uuid-row {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 0.6rem; border-radius: var(--od-radius-input);
+  background: rgba(255,255,255,0.05); border: 1px solid var(--od-border-subtle);
+}
+.uuid-row code {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--od-font-mono); font-size: 10.5px; color: var(--od-color-foreground);
+}
+.uuid-copy {
+  width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.5rem; color: var(--od-color-muted);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast);
+}
+.uuid-copy:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.07); }
+.uuid-copy.copied { color: #4ade80; }
+.uuid-copy svg { width: 13px; height: 13px; }
+
+/* ── Strip di stato ───────────────────────────────────────── */
+.status-strip {
+  max-width: 1180px; margin: clamp(2.5rem, 7vh, 4.5rem) auto 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  padding: 0.7rem 1rem; border-radius: var(--od-radius-panel);
+  background: var(--od-glass-grad), rgba(13,13,16,0.6);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+}
+.status-left { display: flex; align-items: center; gap: 0.55rem; font-size: 11px; font-weight: 600; color: var(--od-color-foreground); }
+.pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgb(74 222 128 / 0.5); animation: pulse 2.4s infinite; }
+.status-meta { font-size: 10px; color: var(--od-color-muted); }
+.status-right { display: flex; align-items: center; gap: 0.6rem; font-family: var(--od-font-mono); font-size: 10px; color: var(--od-color-muted); }
+.status-link {
+  display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.6rem;
+  border-radius: 0.5rem; color: var(--od-color-muted);
+  transition: color var(--od-duration-fast), background var(--od-duration-fast);
+}
+.status-link:hover { color: var(--od-color-foreground); background: rgba(255,255,255,0.07); }
+
+/* ── Floating group (bottom-right) ────────────────────────── */
+.floating-group {
+  position: fixed; bottom: max(1.25rem, env(safe-area-inset-bottom)); right: 1.25rem; z-index: var(--od-z-floating);
+  display: flex; align-items: center; gap: 2px; padding: 4px;
+  background: var(--od-glass-grad), var(--od-glass-tint);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-panel);
+  box-shadow: var(--od-glass-shadow); backdrop-filter: blur(var(--od-glass-blur));
+}
+.f-btn {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border-radius: 0.625rem; color: var(--od-color-muted);
+  transition: background var(--od-duration-fast), color var(--od-duration-fast), transform var(--od-duration-fast);
+}
+.f-btn:hover { background: rgba(255,255,255,0.08); color: var(--od-color-foreground); }
+.f-btn:active { transform: scale(0.92); }
+.f-btn.is-open { background: rgb(var(--od-accent-rgb) / 0.12); color: var(--color-accent); }
+.f-btn svg.spinning { animation: spin 0.9s linear infinite; }
+.lang-pop {
+  position: absolute; right: 0; bottom: calc(100% + 10px);
+  width: 190px; padding: 0.5rem;
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border); border-radius: var(--od-radius-panel);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px);
+  animation: pop-in 0.2s var(--od-easing) both;
+}
+.lang-item {
+  width: 100%; display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 0.6rem; border-radius: 0.65rem;
+  font-size: 12px; color: var(--od-color-muted); text-align: left;
+  transition: background var(--od-duration-fast), color var(--od-duration-fast);
+}
+.lang-item:hover { background: rgba(255,255,255,0.07); color: var(--od-color-foreground); }
+.lang-item .code {
+  width: 30px; flex-shrink: 0; font-family: var(--od-font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--od-color-muted);
+  background: rgba(255,255,255,0.06); border: 1px solid var(--od-border-subtle);
+  border-radius: 0.4rem; padding: 0.2rem 0; text-align: center;
+}
+.lang-item.is-active { color: var(--color-accent); background: rgb(var(--od-accent-rgb) / 0.10); }
+.lang-item.is-active .code { color: var(--color-accent); border-color: rgb(var(--od-accent-rgb) / 0.35); }
+.lang-item .check { margin-left: auto; opacity: 0; }
+.lang-item.is-active .check { opacity: 1; }
+
+/* ── Toast ────────────────────────────────────────────────── */
+.toast {
+  position: fixed; left: 50%; bottom: max(1.5rem, env(safe-area-inset-bottom)); transform: translate(-50%, 16px);
+  z-index: var(--od-z-fullscreen); display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.65rem 0.95rem; border-radius: var(--od-radius-action);
+  font-size: 12px; font-weight: 600; color: var(--od-color-foreground);
+  background: var(--od-glass-grad), var(--od-panel-strong);
+  border: 1px solid var(--od-glass-border);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(18px);
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--od-duration-base), transform var(--od-duration-base) var(--od-easing);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast svg { color: var(--color-accent); flex-shrink: 0; }
+.toast[data-kind="ok"] svg { color: #4ade80; }
+
+/* ── Animazioni ───────────────────────────────────────────── */
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgb(74 222 128 / 0.45); } 70% { box-shadow: 0 0 0 7px rgb(74 222 128 / 0); } 100% { box-shadow: 0 0 0 0 rgb(74 222 128 / 0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Light mode (override base + famiglia glass) ──────────── */
+html.light-mode {
+  --od-color-background: #f5f5f5;
+  --od-color-foreground: #1a1a1a;
+  --od-color-muted: #52525b;
+  --od-color-border: #d4d4d8;
+  --od-glass-grad: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.12));
+  --od-glass-tint: rgba(255,255,255,0.88);
+  --od-glass-border: rgba(0,0,0,0.08);
+  --od-glass-shadow: inset 0 1px 0 rgba(255,255,255,0.70);
+  --od-panel: rgba(255,255,255,0.82);
+  --od-panel-strong: rgba(250,250,250,0.94);
+  --od-border-subtle: rgba(0,0,0,0.09);
+  --od-border-strong: rgba(0,0,0,0.16);
+  --od-color-surface2: #e4e4e7;
+}
+html.light-mode .ambient-white { background: radial-gradient(circle, rgba(0,0,0,0.05), transparent 70%); }
+html.light-mode .ambient-grid { opacity: 0.16; }
+html.light-mode .ambient-vignette { background: radial-gradient(ellipse 120% 90% at 50% 10%, transparent 60%, rgba(0,0,0,0.08) 100%); }
+html.light-mode .ambient-poster { opacity: 0.10; }
+html.light-mode .version-badge { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.10); }
+html.light-mode .island-btn:hover,
+html.light-mode .f-btn:hover,
+html.light-mode .lang-item:hover,
+html.light-mode .status-link:hover,
+html.light-mode .btn-ghost:hover,
+html.light-mode .uuid-copy:hover,
+html.light-mode .key-eye:hover { background: rgba(0,0,0,0.06); }
+html.light-mode .set-row:hover { background: rgba(0,0,0,0.03); }
+html.light-mode .slider-row:hover { background: rgba(0,0,0,0.03); }
+html.light-mode .switch .track,
+html.light-mode .seg,
+html.light-mode .bsel button,
+html.light-mode .key-box input,
+html.light-mode .uuid-row,
+html.light-mode .lang-item .code,
+html.light-mode .lang-chip { background: rgba(0,0,0,0.045); border-color: rgba(0,0,0,0.10); }
+html.light-mode .switch .thumb { background: #fff; }
+html.light-mode .seg button:hover,
+html.light-mode .bsel button:hover { background: rgba(0,0,0,0.07); }
+html.light-mode .island-btn[data-tip]::after { background: rgba(250,250,250,0.95); border-color: rgba(0,0,0,0.12); }
+html.light-mode .bm-shadow, html.light-mode .bm-bar, html.light-mode .bm-colored,
+html.light-mode .bm-bordo, html.light-mode .bm-vetro, html.light-mode .bm-rdefault { color: #111; }
+html.light-mode .bm-shadow, html.light-mode .bm-rdefault { text-shadow: 0 1px 2px rgba(255,255,255,0.6); }
+html.light-mode .bm-bar { background: rgba(0,0,0,0.12); }
+html.light-mode .bm-bordo { border-color: rgba(0,0,0,0.55); }
+html.light-mode .bm-vetro { border-color: rgba(0,0,0,0.20); background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.4)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9); }
+html.light-mode .bm-pill { border-color: rgba(0,0,0,0.25); background: rgba(255,255,255,0.7); color: #111; }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 920px) {
+  .toolbar-wrap { display: none; }
+  .mobile-toolbar { display: flex; }
+  .set-grid { grid-template-columns: 1fr; }
+  .page-head { text-align: center; }
+  .page-sub { margin-left: auto; margin-right: auto; }
+  .set-actions { flex-direction: column; }
+  .set-actions .btn-primary, .set-actions .btn-ghost { width: 100%; }
+  .seg button { min-height: 44px; }
+  .bsel button { min-height: 48px; }
+  .lang-item { min-height: 44px; }
+  .key-box input { height: 46px; }
+  .key-eye, .uuid-copy { width: 44px; height: 44px; right: 2px; }
+}
+@media (max-width: 560px) {
+  .status-strip { justify-content: center; text-align: center; }
+  .floating-group { right: 1rem; }
+  .floating-group .f-btn { width: 44px; height: 44px; }
+  .ambient-poster { right: -10rem; }
+  .set-card { padding: 0.9rem 0.85rem 1rem; }
+  .set-row { gap: 0.5rem; }
+}
+
+/* ── Riduzione movimento ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Sfondo ambiente -->
+<div class="ambient" aria-hidden="true">
+  <div class="ambient-glow"></div>
+  <div class="ambient-white"></div>
+  <div class="ambient-grid"></div>
+  <div class="ambient-poster"></div>
+  <div class="ambient-vignette"></div>
+</div>
+
+<span class="version-badge" data-od-id="version-badge">v0.15.2</span>
+
+<!-- Toolbar isola desktop -->
+<div class="toolbar-wrap" data-od-id="settings-toolbar">
+  <div class="toolbar-island" role="toolbar" aria-label="Azioni rapide">
+    <a class="island-btn" data-accent="1" data-tip="Indietro" href="home.html" data-od-id="toolbar-back" aria-label="Torna alla home">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    <div class="island-divider" aria-hidden="true"></div>
+    <a class="island-btn" href="i-miei-poster.html" data-tip="I miei poster" data-od-id="toolbar-myposters" aria-label="I miei poster">
+      <span class="count-chip" id="countMappings">3</span>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <div class="island-divider" aria-hidden="true"></div>
+    <a class="island-btn is-open" href="impostazioni.html" data-tip="Impostazioni" data-od-id="toolbar-settings" aria-label="Impostazioni" aria-current="page">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </a>
+  </div>
+</div>
+
+<div class="shell">
+  <main id="content">
+
+    <!-- Header -->
+    <header class="home-header" data-od-id="settings-header">
+      <a href="home.html" aria-label="Posterium — home"><img class="header-logo" src="assets/posterium-logo.png" alt="Posterium" data-od-id="logo" /></a>
+      <p class="header-tagline" id="tagline">Poster personalizzati per la tua libreria Stremio</p>
+      <!-- Toolbar mobile -->
+      <div class="mobile-toolbar" aria-label="Azioni rapide">
+        <a class="island-btn" data-accent="1" href="home.html" aria-label="Torna alla home" data-od-id="mobile-back">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <a class="island-btn" href="i-miei-poster.html" aria-label="I miei poster" data-od-id="mobile-myposters">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </a>
+        <a class="island-btn is-open" href="impostazioni.html" aria-label="Impostazioni" data-od-id="mobile-settings" aria-current="page">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </a>
+      </div>
+    </header>
+
+    <!-- Intestazione pagina -->
+    <section class="page-head" data-od-id="settings-heading">
+      <span class="kicker" id="kicker" data-od-id="settings-kicker">Preferenze</span>
+      <h1 class="page-title" id="pageTitle">Impostazioni</h1>
+      <p class="page-sub" id="pageSub">Chiavi API, predefiniti dell'editor, profilo e diagnostica in un'unica schermata.</p>
+    </section>
+
+    <div class="set-grid">
+
+      <!-- Colonna principale: predefiniti editor -->
+      <div class="set-main">
+
+        <!-- Badge predefiniti -->
+        <section class="set-card" data-od-id="card-badge-defaults" aria-labelledby="tBadges">
+          <div class="card-head">
+            <span class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span>
+            <div>
+              <h2 class="card-title" id="tBadges">Badge predefiniti</h2>
+              <p class="card-note" id="nBadges">Applicati ai nuovi poster creati</p>
+            </div>
+          </div>
+
+          <div class="set-row" data-od-id="row-genre-rating">
+            <div class="row-info">
+              <div class="row-label" id="lGenreRating">Genere / Rating</div>
+              <div class="row-note" id="nGenreRating">Badge con genere, anno e voto</div>
+            </div>
+            <button type="button" class="switch" role="switch" aria-checked="true" data-def="globalBadges" data-i18n-aria="lGenreRating" data-od-id="switch-global-badges"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+          <div class="set-row sub" data-od-id="row-badge-genre">
+            <div class="row-label" id="lGenre">Genere</div>
+            <button type="button" class="switch" role="switch" aria-checked="true" data-def="badgeGenre" data-i18n-aria="lGenre" data-od-id="switch-badge-genre"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+          <div class="set-row sub" data-od-id="row-badge-year">
+            <div class="row-label" id="lYear">Anno</div>
+            <button type="button" class="switch" role="switch" aria-checked="true" data-def="badgeYear" data-i18n-aria="lYear" data-od-id="switch-badge-year"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+          <div class="set-row sub" data-od-id="row-badge-rating">
+            <div class="row-label" id="lRating">Voto</div>
+            <button type="button" class="switch" role="switch" aria-checked="true" data-def="badgeRating" data-i18n-aria="lRating" data-od-id="switch-badge-rating"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+          <div class="set-row" data-od-id="row-trend">
+            <div class="row-info">
+              <div class="row-label" id="lTrend">Trend</div>
+              <div class="row-note" id="nTrend">Badge di classifica e Top 10</div>
+            </div>
+            <button type="button" class="switch" role="switch" aria-checked="true" data-def="rankingBadges" data-i18n-aria="lTrend" data-od-id="switch-trend"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+          <div class="set-row" data-od-id="row-network-logo">
+            <div class="row-info">
+              <div class="row-label" id="lNetwork">Logo Network</div>
+              <div class="row-note" id="nNetwork">Netflix, Prime Video, Disney+…</div>
+            </div>
+            <button type="button" class="switch" role="switch" aria-checked="false" data-def="networkLogo" data-i18n-aria="lNetwork" data-od-id="switch-network-logo"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+          <div class="set-row" data-od-id="row-ribbon-side">
+            <div class="row-info">
+              <div class="row-label" id="lRibbon">Posizione badge</div>
+              <div class="row-note" id="nRibbon">Lato del badge di classifica</div>
+            </div>
+            <div class="seg" role="group" aria-label="Posizione badge" data-seg="ribbonSide">
+              <button type="button" class="is-active" data-val="left" data-i18n-aria="lRibbon">Nuvio</button>
+              <button type="button" data-val="right" data-i18n-aria="lRibbon">Stremio</button>
+            </div>
+          </div>
+
+          <p class="card-sub" id="tRankStyle">Stile ranking predefinito</p>
+          <div class="bsel" role="group" aria-label="Stile ranking predefinito" data-bsel="rankingBadgeStyle" data-od-id="selector-ranking-style">
+            <button type="button" data-val="default" class="is-active"><span class="bmini bm-rdefault">TOP 10</span><span class="bsel-name">Default</span></button>
+            <button type="button" data-val="bar"><span class="bmini bm-bar">TOP 10</span><span class="bsel-name">Barra</span></button>
+            <button type="button" data-val="colored"><span class="bmini bm-colored">TOP 10</span><span class="bsel-name">Colore</span></button>
+            <button type="button" data-val="pill"><span class="bmini bm-rpill">TOP 10</span><span class="bsel-name">Pill</span></button>
+          </div>
+
+          <p class="card-sub" id="tBadgeStyle">Stile badge predefinito</p>
+          <div class="bsel" role="group" aria-label="Stile badge predefinito" data-bsel="badgeStyle" data-od-id="selector-badge-style">
+            <button type="button" data-val="shadow" class="is-active"><span class="bmini bm-shadow">★ 8,6</span><span class="bsel-name">Ombra</span></button>
+            <button type="button" data-val="pill"><span class="bmini bm-pill">★ 8,6</span><span class="bsel-name">Pill</span></button>
+            <button type="button" data-val="bar"><span class="bmini bm-bar">★ 8,6</span><span class="bsel-name">Barra</span></button>
+            <button type="button" data-val="colored"><span class="bmini bm-colored">★ 8,6</span><span class="bsel-name">Colore</span></button>
+            <button type="button" data-val="bordo"><span class="bmini bm-bordo">★ 8,6</span><span class="bsel-name">Bordo</span></button>
+            <button type="button" data-val="vetro"><span class="bmini bm-vetro">★ 8,6</span><span class="bsel-name">Vetro</span></button>
+          </div>
+        </section>
+
+        <!-- Sfocatura predefinita -->
+        <section class="set-card" data-od-id="card-blur-defaults" aria-labelledby="tBlur">
+          <div class="card-head">
+            <span class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg></span>
+            <div>
+              <h2 class="card-title" id="tBlur">Sfocatura predefinita</h2>
+              <p class="card-note" id="nBlur">Gradiente inferiore sui nuovi poster</p>
+            </div>
+          </div>
+
+          <div class="set-row" data-od-id="row-blur-enabled">
+            <div class="row-info">
+              <div class="row-label" id="lBlurOn">Sfocatura attiva</div>
+              <div class="row-note" id="nBlurOn">Sfumatura scura nella parte bassa</div>
+            </div>
+            <button type="button" class="switch" role="switch" aria-checked="true" data-def="blurEnabled" data-i18n-aria="lBlurOn" data-od-id="switch-blur"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+
+          <div id="blurSliders">
+            <div class="slider-row" data-od-id="slider-height">
+              <span class="slider-label" id="lHeight">Altezza</span>
+              <input type="range" min="5" max="100" value="30" data-def="gradientHeight" aria-label="Altezza sfocatura" title="Doppio clic per ripristinare" />
+              <span class="slider-val" id="vHeight">30%</span>
+            </div>
+            <div class="slider-row" data-od-id="slider-intensity">
+              <span class="slider-label" id="lIntensity">Intensità</span>
+              <input type="range" min="1" max="50" value="5" data-def="blurIntensity" aria-label="Intensità sfocatura" title="Doppio clic per ripristinare" />
+              <span class="slider-val" id="vIntensity">5px</span>
+            </div>
+            <div class="slider-row" data-od-id="slider-fade">
+              <span class="slider-label" id="lFade">Sfumatura</span>
+              <input type="range" min="0" max="100" value="60" data-def="blurFade" aria-label="Sfumatura sfocatura" title="Doppio clic per ripristinare" />
+              <span class="slider-val" id="vFade">60%</span>
+            </div>
+            <div class="slider-row" data-od-id="slider-darkness">
+              <span class="slider-label" id="lDarkness">Velatura</span>
+              <input type="range" min="0" max="100" value="40" data-def="blurDarkness" aria-label="Velatura sfocatura" title="Doppio clic per ripristinare" />
+              <span class="slider-val" id="vDarkness">40%</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Extra -->
+        <section class="set-card" data-od-id="card-extra-defaults" aria-labelledby="tExtra">
+          <div class="card-head">
+            <span class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/></svg></span>
+            <div>
+              <h2 class="card-title" id="tExtra">Extra</h2>
+              <p class="card-note" id="nExtra">Comportamenti automatici</p>
+            </div>
+          </div>
+
+          <div class="set-row" data-od-id="row-auto-rotate">
+            <div class="row-info">
+              <div class="row-label" id="lRotate">Rotazione poster ogni 24h</div>
+              <div class="row-note" id="nRotate">Alterna badge e layout nel tempo</div>
+            </div>
+            <button type="button" class="switch" role="switch" aria-checked="false" data-def="autoRotateClean" data-i18n-aria="lRotate" data-od-id="switch-auto-rotate"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+          <div class="set-row" data-od-id="row-ui-accent">
+            <div class="row-info">
+              <div class="row-label" id="lTint">Tinta UI dinamica</div>
+              <div class="row-note" id="nTint">L'accento si adatta al poster selezionato</div>
+            </div>
+            <button type="button" class="switch" role="switch" aria-checked="false" data-def="uiAccent" data-i18n-aria="lTint" data-od-id="switch-ui-accent"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+          <div class="set-row" data-od-id="row-logo-fit">
+            <div class="row-info">
+              <div class="row-label" id="lLogoFit">Compatibilità logo automatica</div>
+              <div class="row-note" id="nLogoFit">Adatta logo e badge senza sovrapposizioni</div>
+            </div>
+            <button type="button" class="switch" role="switch" aria-checked="true" data-def="logoFitEnabled" data-i18n-aria="lLogoFit" data-od-id="switch-logo-fit"><span class="track"><span class="thumb"></span></span></button>
+          </div>
+        </section>
+
+        <!-- Azioni -->
+        <div class="set-actions" data-od-id="settings-actions">
+          <button type="button" class="btn-primary" id="btnSaveDefaults" data-od-id="save-defaults">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Salva come predefiniti</span>
+          </button>
+          <button type="button" class="btn-ghost" id="btnReset" data-od-id="reset-defaults">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            <span>Ripristina</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Colonna laterale -->
+      <div class="set-aside">
+
+        <!-- Chiavi API -->
+        <section class="set-card" data-od-id="card-api-keys" aria-labelledby="tApi">
+          <div class="card-head">
+            <span class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span>
+            <div>
+              <h2 class="card-title" id="tApi">Chiavi API</h2>
+              <p class="card-note" id="nApi">Conservate localmente nel browser</p>
+            </div>
+          </div>
+
+          <div class="key-gap">
+            <label class="field-label" for="tmdbKey">Chiave TMDB personale</label>
+            <div class="key-box">
+              <input id="tmdbKey" type="password" placeholder="Inserisci la tua chiave" autocomplete="off" spellcheck="false" data-od-id="input-tmdb" />
+              <button type="button" class="key-eye" aria-label="Mostra chiave TMDB" data-eye="tmdbKey">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <p class="key-err" id="tmdbErr" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>La chiave deve essere lunga almeno 20 caratteri</span></p>
+          </div>
+
+          <div class="key-gap">
+            <label class="field-label" for="mdblistKey">Chiave MDBList</label>
+            <div class="key-box">
+              <input id="mdblistKey" type="password" placeholder="Inserisci la chiave MDBList" autocomplete="off" spellcheck="false" data-od-id="input-mdblist" />
+              <button type="button" class="key-eye" aria-label="Mostra chiave MDBList" data-eye="mdblistKey">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <p class="key-err" id="mdblistErr" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>La chiave deve essere lunga almeno 20 caratteri</span></p>
+          </div>
+        </section>
+
+        <!-- Lingua & tema -->
+        <section class="set-card" data-od-id="card-lang-theme" aria-labelledby="tLangTheme">
+          <div class="card-head">
+            <span class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+            <div>
+              <h2 class="card-title" id="tLangTheme">Lingua &amp; tema</h2>
+              <p class="card-note" id="nLangTheme">Scegli la tua lingua preferita</p>
+            </div>
+          </div>
+
+          <div class="set-row" data-od-id="row-lang">
+            <div class="row-label" id="lLang">Lingua interfaccia</div>
+            <div class="lang-row" data-od-id="settings-lang">
+              <button type="button" class="lang-chip is-active" data-lang="it" aria-pressed="true">IT</button>
+              <button type="button" class="lang-chip" data-lang="en" aria-pressed="false">EN</button>
+              <button type="button" class="lang-chip" data-lang="de" aria-pressed="false">DE</button>
+            </div>
+          </div>
+          <div class="set-row" data-od-id="row-theme">
+            <div class="row-info">
+              <div class="row-label" id="lTheme">Tema</div>
+              <div class="row-note" id="nTheme">Aspetto dell'interfaccia</div>
+            </div>
+            <div class="seg" role="group" aria-label="Tema" data-seg="theme">
+              <button type="button" class="is-active" data-val="dark" data-i18n-aria="lTheme">Scuro</button>
+              <button type="button" data-val="light" data-i18n-aria="lTheme">Chiaro</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Profilo -->
+        <section class="set-card" data-od-id="card-profile" aria-labelledby="tProfile">
+          <div class="card-head">
+            <span class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <div>
+              <h2 class="card-title" id="tProfile">Profilo</h2>
+              <p class="card-note" id="nProfile">Proteggi la configurazione con una password</p>
+            </div>
+          </div>
+
+          <div class="key-gap">
+            <label class="field-label" for="profileUuid">Il tuo UUID Profilo</label>
+            <div class="uuid-row">
+              <code id="profileUuid" title="">00000000-0000-0000-0000-000000000000</code>
+              <button type="button" class="uuid-copy" id="btnUuidCopy" aria-label="Copia UUID" data-od-id="copy-uuid">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="key-gap">
+            <label class="field-label" for="profilePw">Password del Profilo</label>
+            <div class="key-box">
+              <input id="profilePw" type="password" placeholder="Inserisci una password" autocomplete="new-password" spellcheck="false" data-od-id="input-profile-pw" />
+              <button type="button" class="key-eye" aria-label="Mostra password" data-eye="profilePw">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="key-gap">
+            <button type="button" class="btn-soft" id="btnSaveProfile" data-od-id="save-profile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Salva profilo</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Dati -->
+        <section class="set-card" data-od-id="card-data" aria-labelledby="tData">
+          <div class="card-head">
+            <span class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span>
+            <div>
+              <h2 class="card-title" id="tData">Dati</h2>
+              <p class="card-note" id="nData">Configurazione + libreria in un file JSON</p>
+            </div>
+          </div>
+          <div class="mini-row" data-od-id="data-actions">
+            <button type="button" class="mini-btn mini-warm" id="btnExport" data-od-id="data-export">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Esporta Backup</span>
+            </button>
+            <button type="button" class="mini-btn mini-warm" id="btnImport" data-od-id="data-import">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span>Importa Backup</span>
+            </button>
+          </div>
+          <input type="file" id="importFile" accept="application/json,.json" hidden />
+        </section>
+
+        <!-- Diagnostica & cache -->
+        <section class="set-card" data-od-id="card-diagnostics" aria-labelledby="tDiag">
+          <div class="card-head">
+            <span class="card-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg></span>
+            <div>
+              <h2 class="card-title" id="tDiag">Diagnostica &amp; cache</h2>
+              <p class="card-note" id="nDiag">Demo locale — nessun server attivo</p>
+            </div>
+          </div>
+          <div class="mini-row" data-od-id="diagnostics-actions">
+            <button type="button" class="mini-btn mini-warm" id="btnWarmup" data-od-id="cache-warmup">
+              <svg class="warm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+              <span>Warmup</span>
+            </button>
+            <button type="button" class="mini-btn mini-clear" id="btnClearCache" data-od-id="cache-clear">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <span>Svuota cache</span>
+            </button>
+          </div>
+          <div class="diag-count" data-od-id="cache-count">
+            <span id="lCacheCount">Cache</span>
+            <span class="dc-val" id="cacheCount">Non disponibile</span>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- Strip di stato -->
+    <footer class="status-strip" data-od-id="settings-status">
+      <div class="status-left">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span id="statusOk">Tutti i sistemi operativi</span>
+        <span class="status-meta" aria-hidden="true">· API poster · TMDB · Addon</span>
+      </div>
+      <div class="status-right">
+        <button type="button" class="status-link" id="btnStatus" data-od-id="status-detail">Stato del servizio</button>
+        <span aria-hidden="true">Posterium v0.15.2</span>
+      </div>
+    </footer>
+
+  </main>
+</div>
+
+<!-- Floating group -->
+<div class="floating-group" data-od-id="floating-group">
+  <button type="button" class="f-btn" id="btnRefresh" aria-label="Aggiorna le liste" data-od-id="floating-refresh" data-tip="Aggiorna liste">
+    <svg class="ref-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+  </button>
+  <button type="button" class="f-btn" id="btnHealth" aria-label="Stato del servizio" data-od-id="floating-status">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg>
+  </button>
+  <div style="position:relative">
+    <button type="button" class="f-btn" id="btnLang" aria-label="Scegli la lingua" data-od-id="floating-lang" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    </button>
+    <div class="lang-pop" id="langPop" hidden data-od-id="language-picker">
+      <button type="button" class="lang-item is-active" data-lang="it"><span class="code">IT</span>Italiano<svg class="check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+      <button type="button" class="lang-item" data-lang="en"><span class="code">EN</span>English<svg class="check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+      <button type="button" class="lang-item" data-lang="de"><span class="code">DE</span>Deutsch<svg class="check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ── Traduzioni (it/en/de) ──────────────────────────────── */
+  var STRINGS = {
+    it: {
+      tagline: "Poster personalizzati per la tua libreria Stremio",
+      kicker: "Preferenze", title: "Impostazioni",
+      sub: "Chiavi API, predefiniti dell'editor, profilo e diagnostica in un'unica schermata.",
+      back: "Indietro", myPosters: "I miei poster", settings: "Impostazioni",
+      sBadges: "Badge predefiniti", nBadges: "Applicati ai nuovi poster creati",
+      lGenreRating: "Genere / Rating", nGenreRating: "Badge con genere, anno e voto",
+      lGenre: "Genere", lYear: "Anno", lRating: "Voto",
+      lTrend: "Trend", nTrend: "Badge di classifica e Top 10",
+      lNetwork: "Logo Network", nNetwork: "Netflix, Prime Video, Disney+…",
+      lRibbon: "Posizione badge", nRibbon: "Lato del badge di classifica",
+      tRankStyle: "Stile ranking predefinito", tBadgeStyle: "Stile badge predefinito",
+      sBlur: "Sfocatura predefinita", nBlur: "Gradiente inferiore sui nuovi poster",
+      lBlurOn: "Sfocatura attiva", nBlurOn: "Sfumatura scura nella parte bassa",
+      lHeight: "Altezza", lIntensity: "Intensità", lFade: "Sfumatura", lDarkness: "Velatura",
+      sExtra: "Extra", nExtra: "Comportamenti automatici",
+      lRotate: "Rotazione poster ogni 24h", nRotate: "Alterna badge e layout nel tempo",
+      lTint: "Tinta UI dinamica", nTint: "L'accento si adatta al poster selezionato",
+      lLogoFit: "Compatibilità logo automatica", nLogoFit: "Adatta logo e badge senza sovrapposizioni",
+      saveDefaults: "Salva come predefiniti", restore: "Ripristina",
+      saved: "Salvato!", savedDefaults: "Configurazione salvata!",
+      restored: "Predefiniti ripristinati",
+      sApi: "Chiavi API", nApi: "Conservate localmente nel browser",
+      tmdbKey: "Chiave TMDB personale", tmdbPh: "Inserisci la tua chiave",
+      mdblistKey: "Chiave MDBList", mdblistPh: "Inserisci la chiave MDBList",
+      keyTooShort: "La chiave deve essere lunga almeno 20 caratteri",
+      keySaved: "Chiave salvata",
+      sLangTheme: "Lingua & tema", nLangTheme: "Scegli la tua lingua preferita",
+      lLang: "Lingua interfaccia", lTheme: "Tema", nTheme: "Aspetto dell'interfaccia",
+      themeDark: "Scuro", themeLight: "Chiaro",
+      sProfile: "Profilo", nProfile: "Proteggi la configurazione con una password",
+      uuid: "Il tuo UUID Profilo", pw: "Password del Profilo", pwPh: "Inserisci una password",
+      saveProfile: "Salva profilo", copied: "Copiato!",
+      profileSaved: "Profilo salvato! URL copiato negli appunti.",
+      profileNoPw: "Inserisci una password",
+      sData: "Dati", nData: "Configurazione + libreria in un file JSON",
+      exportJson: "Esporta Backup", importJson: "Importa Backup",
+      exported: "Configurazione esportata", imported: "Configurazione importata",
+      importError: "File JSON non valido",
+      sDiag: "Diagnostica & cache", nDiag: "Demo locale — nessun server attivo",
+      warmup: "Warmup", warmupOk: "Cache cataloghi aggiornata con successo!",
+      clearCache: "Svuota cache", cleared: "Svuotata!", clearing: "Svuoto…",
+      lCacheCount: "Cache", cacheUnavailable: "Non disponibile",
+      statusOk: "Tutti i sistemi operativi"
+    },
+    en: {
+      tagline: "Personalized posters for your Stremio library",
+      kicker: "Preferences", title: "Settings",
+      sub: "API keys, editor defaults, profile and diagnostics in one screen.",
+      back: "Back", myPosters: "My posters", settings: "Settings",
+      sBadges: "Badge defaults", nBadges: "Applied to new posters",
+      lGenreRating: "Genre / Rating", nGenreRating: "Badge with genre, year and rating",
+      lGenre: "Genre", lYear: "Year", lRating: "Rating",
+      lTrend: "Trend", nTrend: "Ranking and Top 10 badges",
+      lNetwork: "Network logo", nNetwork: "Netflix, Prime Video, Disney+…",
+      lRibbon: "Badge position", nRibbon: "Side of the ranking badge",
+      tRankStyle: "Default ranking style", tBadgeStyle: "Default badge style",
+      sBlur: "Default blur", nBlur: "Bottom gradient on new posters",
+      lBlurOn: "Blur enabled", nBlurOn: "Dark gradient at the bottom",
+      lHeight: "Height", lIntensity: "Intensity", lFade: "Fade", lDarkness: "Darkness",
+      sExtra: "Extra", nExtra: "Automatic behaviors",
+      lRotate: "Rotate poster every 24h", nRotate: "Alternates badges and layouts over time",
+      lTint: "Dynamic UI tint", nTint: "Accent adapts to the selected poster",
+      lLogoFit: "Automatic logo fit", nLogoFit: "Fits logos and badges without overlap",
+      saveDefaults: "Save as defaults", restore: "Reset",
+      saved: "Saved!", savedDefaults: "Configuration saved!",
+      restored: "Defaults restored",
+      sApi: "API keys", nApi: "Stored locally in your browser",
+      tmdbKey: "Personal TMDB key", tmdbPh: "Enter your key",
+      mdblistKey: "MDBList key", mdblistPh: "Enter your MDBList key",
+      keyTooShort: "The key must be at least 20 characters long",
+      keySaved: "Key saved",
+      sLangTheme: "Language & theme", nLangTheme: "Choose your preferred language",
+      lLang: "Interface language", lTheme: "Theme", nTheme: "Interface appearance",
+      themeDark: "Dark", themeLight: "Light",
+      sProfile: "Profile", nProfile: "Protect your poster configuration with a password",
+      uuid: "Your Profile UUID", pw: "Profile Password", pwPh: "Enter a password",
+      saveProfile: "Save profile", copied: "Copied!",
+      profileSaved: "Profile saved! URL copied to clipboard.",
+      profileNoPw: "Enter a password",
+      sData: "Data", nData: "Configuration + library in one JSON file",
+      exportJson: "Export Backup", importJson: "Import Backup",
+      exported: "Configuration exported", imported: "Configuration imported",
+      importError: "Invalid JSON file",
+      sDiag: "Diagnostics & cache", nDiag: "Local demo — no server running",
+      warmup: "Warmup", warmupOk: "Catalog cache updated successfully!",
+      clearCache: "Clear cache", cleared: "Cleared!", clearing: "Clearing…",
+      lCacheCount: "Cache", cacheUnavailable: "Unavailable",
+      statusOk: "All systems operational"
+    },
+    de: {
+      tagline: "Personalisierte Poster für deine Stremio-Bibliothek",
+      kicker: "Einstellungen", title: "Einstellungen",
+      sub: "API-Schlüssel, Editor-Standards, Profil und Diagnose auf einem Bildschirm.",
+      back: "Zurück", myPosters: "Meine Poster", settings: "Einstellungen",
+      sBadges: "Badge-Standards", nBadges: "Für neue Poster übernommen",
+      lGenreRating: "Genre / Bewertung", nGenreRating: "Badge mit Genre, Jahr und Bewertung",
+      lGenre: "Genre", lYear: "Jahr", lRating: "Bewertung",
+      lTrend: "Trend", nTrend: "Ranking- und Top-10-Badges",
+      lNetwork: "Netzwerk-Logo", nNetwork: "Netflix, Prime Video, Disney+…",
+      lRibbon: "Badge-Position", nRibbon: "Seite des Ranking-Badges",
+      tRankStyle: "Standard-Ranking-Stil", tBadgeStyle: "Standard-Badge-Stil",
+      sBlur: "Standard-Unschärfe", nBlur: "Unterer Verlauf bei neuen Postern",
+      lBlurOn: "Unschärfe aktiv", nBlurOn: "Dunkler Verlauf unten",
+      lHeight: "Höhe", lIntensity: "Intensität", lFade: "Verlauf", lDarkness: "Abdunklung",
+      sExtra: "Extra", nExtra: "Automatische Verhaltensweisen",
+      lRotate: "Poster alle 24h rotieren", nRotate: "Wechselt Badges und Layouts im Lauf der Zeit",
+      lTint: "Dynamische UI-Farbe", nTint: "Akzent passt sich dem Poster an",
+      lLogoFit: "Automatische Logo-Anpassung", nLogoFit: "Passt Logos und Badges ohne Überlappung an",
+      saveDefaults: "Als Standard speichern", restore: "Zurücksetzen",
+      saved: "Gespeichert!", savedDefaults: "Konfiguration gespeichert!",
+      restored: "Standards wiederhergestellt",
+      sApi: "API-Schlüssel", nApi: "Lokal im Browser gespeichert",
+      tmdbKey: "Persönlicher TMDB-Schlüssel", tmdbPh: "Schlüssel eingeben",
+      mdblistKey: "MDBList-Schlüssel", mdblistPh: "MDBList-Schlüssel eingeben",
+      keyTooShort: "Der Schlüssel muss mindestens 20 Zeichen lang sein",
+      keySaved: "Schlüssel gespeichert",
+      sLangTheme: "Sprache & Design", nLangTheme: "Wähle deine bevorzugte Sprache",
+      lLang: "Oberflächensprache", lTheme: "Design", nTheme: "Darstellung der Oberfläche",
+      themeDark: "Dunkel", themeLight: "Hell",
+      sProfile: "Profil", nProfile: "Schütze deine Poster-Konfiguration mit einem Passwort",
+      uuid: "Deine Profil-UUID", pw: "Profil-Passwort", pwPh: "Passwort eingeben",
+      saveProfile: "Profil speichern", copied: "Kopiert!",
+      profileSaved: "Profil gespeichert! URL in die Zwischenablage kopiert.",
+      profileNoPw: "Passwort eingeben",
+      sData: "Daten", nData: "Konfiguration + Bibliothek in einer JSON-Datei",
+      exportJson: "Backup exportieren", importJson: "Backup importieren",
+      exported: "Konfiguration exportiert", imported: "Konfiguration importiert",
+      importError: "Ungültige JSON-Datei",
+      sDiag: "Diagnose & Cache", nDiag: "Lokale Demo — kein Server aktiv",
+      warmup: "Warmup", warmupOk: "Katalog-Cache erfolgreich aktualisiert!",
+      clearCache: "Cache leeren", cleared: "Geleert!", clearing: "Leere…",
+      lCacheCount: "Cache", cacheUnavailable: "Nicht verfügbar",
+      statusOk: "Alle Systeme betriebsbereit"
+    }
+  };
+
+  /* ── Toast ───────────────────────────────────────────────── */
+  var toastTimer = null;
+  function toast(msg, kind) {
+    var el = $("toast");
+    el.innerHTML = (kind === "ok"
+      ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+      : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8H20l-5 3.8 1.9 5.9-4.9-3.7-4.9 3.7L9 12.6 4 8.8h6.1z"/></svg>')
+      + "<span>" + msg + "</span>";
+    el.dataset.kind = kind || "info";
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+
+  /* ── Lingua ──────────────────────────────────────────────── */
+  var lang = "it";
+  try { lang = localStorage.getItem("posterium:lang") || "it"; } catch (e) {}
+  function applyLang(l) {
+    lang = l;
+    var s = STRINGS[l];
+    $("tagline").textContent = s.tagline;
+    $("kicker").textContent = s.kicker;
+    $("pageTitle").textContent = s.title;
+    $("pageSub").textContent = s.sub;
+    $("statusOk").textContent = s.statusOk;
+    $("cacheCount").textContent = s.cacheUnavailable;
+    var byId = {
+      tBadges: s.sBadges, nBadges: s.nBadges,
+      lGenreRating: s.lGenreRating, nGenreRating: s.nGenreRating,
+      lGenre: s.lGenre, lYear: s.lYear, lRating: s.lRating,
+      lTrend: s.lTrend, nTrend: s.nTrend,
+      lNetwork: s.lNetwork, nNetwork: s.nNetwork,
+      lRibbon: s.lRibbon, nRibbon: s.nRibbon,
+      tRankStyle: s.tRankStyle, tBadgeStyle: s.tBadgeStyle,
+      tBlur: s.sBlur, nBlur: s.nBlur,
+      lBlurOn: s.lBlurOn, nBlurOn: s.nBlurOn,
+      lHeight: s.lHeight, lIntensity: s.lIntensity, lFade: s.lFade, lDarkness: s.lDarkness,
+      tExtra: s.sExtra, nExtra: s.nExtra,
+      lRotate: s.lRotate, nRotate: s.nRotate,
+      lTint: s.lTint, nTint: s.nTint,
+      lLogoFit: s.lLogoFit, nLogoFit: s.nLogoFit,
+      tApi: s.sApi, nApi: s.nApi,
+      tLangTheme: s.sLangTheme, nLangTheme: s.nLangTheme,
+      lLang: s.lLang, lTheme: s.lTheme, nTheme: s.nTheme,
+      tProfile: s.sProfile, nProfile: s.nProfile,
+      tData: s.sData, nData: s.nData,
+      tDiag: s.sDiag, nDiag: s.nDiag,
+      lCacheCount: s.lCacheCount
+    };
+    for (var k in byId) { var el = $(k); if (el) el.textContent = byId[k]; }
+    /* Label dei campi */
+    var fl = $("tmdbKey").labels; if (fl && fl[0]) fl[0].textContent = s.tmdbKey;
+    var fl2 = $("mdblistKey").labels; if (fl2 && fl2[0]) fl2[0].textContent = s.mdblistKey;
+    var fl3 = $("profileUuid").labels; if (fl3 && fl3[0]) fl3[0].textContent = s.uuid;
+    var fl4 = $("profilePw").labels; if (fl4 && fl4[0]) fl4[0].textContent = s.pw;
+    $("tmdbKey").placeholder = s.tmdbPh;
+    $("mdblistKey").placeholder = s.mdblistPh;
+    $("profilePw").placeholder = s.pwPh;
+    var errs = document.querySelectorAll(".key-err span");
+    for (var i = 0; i < errs.length; i++) errs[i].textContent = s.keyTooShort;
+    /* Testo pulsanti */
+    var saves = $("btnSaveDefaults").querySelector("span");
+    if (!$("btnSaveDefaults").classList.contains("is-saved")) saves.textContent = s.saveDefaults;
+    $("btnReset").querySelector("span").textContent = s.restore;
+    $("btnSaveProfile").querySelector("span").textContent = s.saveProfile;
+    $("btnExport").querySelector("span").textContent = s.exportJson;
+    $("btnImport").querySelector("span").textContent = s.importJson;
+    $("btnWarmup").querySelector("span").textContent = s.warmup;
+    var clearBtn = $("btnClearCache").querySelector("span");
+    if (clearBtn.dataset.state !== "cleared") clearBtn.textContent = s.clearCache;
+    $("lCacheCount").textContent = s.lCacheCount;
+    /* Segmented tema */
+    var themeSegs = document.querySelectorAll('.seg[data-seg="theme"] button');
+    themeSegs[0].textContent = s.themeDark;
+    themeSegs[1].textContent = s.themeLight;
+    /* aria-label tradotti */
+    var arias = document.querySelectorAll("[data-i18n-aria]");
+    for (var j = 0; j < arias.length; j++) {
+      var key = arias[j].getAttribute("data-i18n-aria");
+      if (byId[key] !== undefined) arias[j].setAttribute("aria-label", byId[key]);
+    }
+    try { localStorage.setItem("posterium:lang", l); } catch (e) {}
+    var items = document.querySelectorAll(".lang-item, .lang-chip");
+    for (var m = 0; m < items.length; m++) {
+      var on = items[m].dataset.lang === l;
+      items[m].classList.toggle("is-active", on);
+      items[m].setAttribute("aria-pressed", on ? "true" : "false");
+    }
+  }
+  function bindLang(els) {
+    for (var i = 0; i < els.length; i++) {
+      els[i].addEventListener("click", function () {
+        applyLang(this.dataset.lang);
+        $("langPop").hidden = true;
+        $("btnLang").classList.remove("is-open");
+      });
+    }
+  }
+  bindLang(document.querySelectorAll(".lang-item"));
+  bindLang(document.querySelectorAll(".lang-chip"));
+
+  /* ── Stato predefiniti (stessa chiave del prodotto reale) ── */
+  var DEF = {
+    globalBadges: true, rankingBadges: true, badgeGenre: true, badgeYear: true, badgeRating: true,
+    badgeStyle: "shadow", rankingBadgeStyle: "default",
+    networkLogo: false, ribbonSide: "left",
+    blurEnabled: true, gradientHeight: 30, blurIntensity: 5, blurFade: 60, blurDarkness: 40,
+    autoRotateClean: false, uiAccent: false, logoFitEnabled: true
+  };
+  try {
+    var savedDefs = JSON.parse(localStorage.getItem("badgeDefaults") || "null");
+    if (savedDefs) for (var dk in savedDefs) if (dk in DEF) DEF[dk] = savedDefs[dk];
+  } catch (e) {}
+  var UI = {};
+
+  /* Switch */
+  var switches = document.querySelectorAll(".switch");
+  for (var si = 0; si < switches.length; si++) {
+    (function (sw) {
+      var key = sw.getAttribute("data-def");
+      sw.setAttribute("aria-checked", DEF[key] ? "true" : "false");
+      sw.addEventListener("click", function () {
+        DEF[key] = !DEF[key];
+        sw.setAttribute("aria-checked", DEF[key] ? "true" : "false");
+        if (key === "uiAccent") applyTint(DEF.uiAccent);
+        if (key === "blurEnabled") $("blurSliders").hidden = !DEF.blurEnabled;
+      });
+    })(switches[si]);
+  }
+
+  /* Slider */
+  var sliders = document.querySelectorAll('input[type="range"]');
+  var SLIDER_SUFFIX = { gradientHeight: "%", blurIntensity: "px", blurFade: "%", blurDarkness: "%" };
+  function paintSlider(r) {
+    var pct = ((r.value - r.min) / (r.max - r.min)) * 100;
+    r.style.setProperty("--pct", pct + "%");
+  }
+  for (var sl = 0; sl < sliders.length; sl++) {
+    (function (r) {
+      var key = r.getAttribute("data-def");
+      var valEl = document.getElementById("v" + key.charAt(0).toUpperCase() + key.slice(1));
+      r.value = DEF[key];
+      paintSlider(r);
+      var upd = function () {
+        DEF[key] = parseInt(r.value, 10);
+        if (valEl) valEl.textContent = DEF[key] + SLIDER_SUFFIX[key];
+        paintSlider(r);
+      };
+      r.addEventListener("input", upd);
+      r.addEventListener("dblclick", function () {
+        var resets = { gradientHeight: 30, blurIntensity: 5, blurFade: 60, blurDarkness: 40 };
+        r.value = resets[key];
+        upd();
+      });
+    })(sliders[sl]);
+  }
+  $("blurSliders").hidden = !DEF.blurEnabled;
+
+  /* Segmented */
+  var segs = document.querySelectorAll(".seg");
+  for (var sg = 0; sg < segs.length; sg++) {
+    (function (seg) {
+      var group = seg.getAttribute("data-seg");
+      var btns = seg.querySelectorAll("button");
+      for (var b = 0; b < btns.length; b++) {
+        (function (btn) {
+          if (group === "theme") {
+            var cur = "dark";
+            try { cur = localStorage.getItem("posterium:theme") || "dark"; } catch (e) {}
+            btn.classList.toggle("is-active", btn.dataset.val === cur);
+          } else {
+            btn.classList.toggle("is-active", btn.dataset.val === DEF[group]);
+          }
+          btn.addEventListener("click", function () {
+            for (var k = 0; k < btns.length; k++) btns[k].classList.remove("is-active");
+            btn.classList.add("is-active");
+            if (group === "theme") setTheme(btn.dataset.val);
+            else DEF[group] = btn.dataset.val;
+          });
+        })(btns[b]);
+      }
+    })(segs[sg]);
+  }
+
+  /* Selettori stile badge */
+  var bsets = document.querySelectorAll(".bsel");
+  for (var bs = 0; bs < bsets.length; bs++) {
+    (function (set) {
+      var key = set.getAttribute("data-bsel");
+      var btns = set.querySelectorAll("button");
+      for (var bb = 0; bb < btns.length; bb++) {
+        (function (btn) {
+          btn.classList.toggle("is-active", btn.dataset.val === DEF[key]);
+          btn.addEventListener("click", function () {
+            DEF[key] = btn.dataset.val;
+            for (var k = 0; k < btns.length; k++) btns[k].classList.remove("is-active");
+            btn.classList.add("is-active");
+          });
+        })(btns[bb]);
+      }
+    })(bsets[bs]);
+  }
+
+  /* ── Salva / ripristina predefiniti ──────────────────────── */
+  var saveBtn = $("btnSaveDefaults");
+  $("btnSaveDefaults").addEventListener("click", function () {
+    try { localStorage.setItem("badgeDefaults", JSON.stringify(DEF)); } catch (e) {}
+    saveBtn.classList.add("saved", "is-saved");
+    saveBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>' + STRINGS[lang].saved + '</span>';
+    toast(STRINGS[lang].savedDefaults, "ok");
+    setTimeout(function () {
+      saveBtn.classList.remove("saved", "is-saved");
+      saveBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>' + STRINGS[lang].saveDefaults + '</span>';
+    }, 1600);
+  });
+  $("btnReset").addEventListener("click", function () {
+    var factory = {
+      globalBadges: true, rankingBadges: true, badgeGenre: true, badgeYear: true, badgeRating: true,
+      badgeStyle: "shadow", rankingBadgeStyle: "default",
+      networkLogo: false, ribbonSide: "left",
+      blurEnabled: true, gradientHeight: 30, blurIntensity: 5, blurFade: 60, blurDarkness: 40,
+      autoRotateClean: false, uiAccent: false, logoFitEnabled: true
+    };
+    for (var k in factory) DEF[k] = factory[k];
+    for (var rsi = 0; rsi < switches.length; rsi++) switches[rsi].setAttribute("aria-checked", DEF[switches[rsi].getAttribute("data-def")] ? "true" : "false");
+    for (var rsl = 0; rsl < sliders.length; rsl++) {
+      var r = sliders[rsl], key2 = r.getAttribute("data-def");
+      r.value = DEF[key2];
+      var vEl = document.getElementById("v" + key2.charAt(0).toUpperCase() + key2.slice(1));
+      if (vEl) vEl.textContent = DEF[key2] + SLIDER_SUFFIX[key2];
+      paintSlider(r);
+    }
+    var segAll = document.querySelectorAll(".seg[data-seg='ribbonSide'] button");
+    for (var rb = 0; rb < segAll.length; rb++) segAll[rb].classList.toggle("is-active", segAll[rb].dataset.val === DEF.ribbonSide);
+    var bselAll = document.querySelectorAll(".bsel button");
+    for (var bb2 = 0; bb2 < bselAll.length; bb2++) {
+      var setKey = bselAll[bb2].parentNode.getAttribute("data-bsel");
+      bselAll[bb2].classList.toggle("is-active", bselAll[bb2].dataset.val === DEF[setKey]);
+    }
+    $("blurSliders").hidden = !DEF.blurEnabled;
+    applyTint(false);
+    toast(STRINGS[lang].restored);
+  });
+
+  /* ── Tinta UI dinamica (accento dal poster) ──────────────── */
+  function extractAccent(cb) {
+    var img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = function () {
+      try {
+        var c = document.createElement("canvas");
+        c.width = 32; c.height = 48;
+        var ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, 32, 48);
+        var data = ctx.getImageData(0, 0, 32, 48).data;
+        var r = 0, g = 0, b = 0, n = 0;
+        for (var i = 0; i < data.length; i += 4) {
+          if (data[i + 3] < 128) continue;
+          var lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+          if (lum > 40) { r += data[i]; g += data[i + 1]; b += data[i + 2]; n++; }
+        }
+        if (!n) { cb(null); return; }
+        var rr = Math.round(r / n), gg = Math.round(g / n), bb = Math.round(b / n);
+        cb("#" + [rr, gg, bb].map(function (v) { return v.toString(16).padStart(2, "0"); }).join(""));
+      } catch (e) { cb(null); }
+    };
+    img.onerror = function () { cb(null); };
+    img.src = "assets/poster-66732.jpg";
+  }
+  var tintApplied = false;
+  function applyTint(on) {
+    if (on && !tintApplied) {
+      extractAccent(function (hex) {
+        if (hex) {
+          document.documentElement.style.setProperty("--color-accent", hex);
+          tintApplied = true;
+        }
+      });
+    } else if (!on && tintApplied) {
+      document.documentElement.style.removeProperty("--color-accent");
+      tintApplied = false;
+    }
+  }
+  if (DEF.uiAccent) applyTint(true);
+
+  /* ── Tema chiaro/scuro ───────────────────────────────────── */
+  function setTheme(t) {
+    document.documentElement.classList.toggle("light-mode", t === "light");
+    try { localStorage.setItem("posterium:theme", t); } catch (e) {}
+  }
+  var theme = "dark";
+  try { theme = localStorage.getItem("posterium:theme") || "dark"; } catch (e) {}
+  setTheme(theme);
+
+  /* ── Chiavi API ──────────────────────────────────────────── */
+  var tmdbInput = $("tmdbKey"), mdblistInput = $("mdblistKey");
+  try { tmdbInput.value = localStorage.getItem("posterium:tmdb") || ""; } catch (e) {}
+  try { mdblistInput.value = localStorage.getItem("mdblist_key") || ""; } catch (e) {}
+  function validateKey(input, errEl) {
+    var v = input.value.trim();
+    if (v.length > 0 && v.length < 20) {
+      errEl.hidden = false;
+      input.classList.add("has-err");
+      return false;
+    }
+    errEl.hidden = true;
+    input.classList.remove("has-err");
+    return true;
+  }
+  tmdbInput.addEventListener("blur", function () {
+    if (validateKey(tmdbInput, $("tmdbErr"))) {
+      try { localStorage.setItem("posterium:tmdb", tmdbInput.value.trim()); } catch (e) {}
+    }
+  });
+  tmdbInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      if (validateKey(tmdbInput, $("tmdbErr"))) {
+        try { localStorage.setItem("posterium:tmdb", tmdbInput.value.trim()); } catch (e) {}
+        toast(STRINGS[lang].keySaved, "ok");
+      }
+    }
+  });
+  mdblistInput.addEventListener("blur", function () {
+    if (validateKey(mdblistInput, $("mdblistErr"))) {
+      try { localStorage.setItem("mdblist_key", mdblistInput.value.trim()); } catch (e) {}
+    }
+  });
+  mdblistInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      if (validateKey(mdblistInput, $("mdblistErr"))) {
+        try { localStorage.setItem("mdblist_key", mdblistInput.value.trim()); } catch (e) {}
+        toast(STRINGS[lang].keySaved, "ok");
+      }
+    }
+  });
+  /* Occhio mostra/nascondi */
+  var eyes = document.querySelectorAll(".key-eye");
+  for (var ei = 0; ei < eyes.length; ei++) {
+    (function (eye) {
+      var target = $(eye.getAttribute("data-eye"));
+      var openIco = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      var closedIco = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+      var shown = false;
+      eye.addEventListener("click", function () {
+        shown = !shown;
+        target.type = shown ? "text" : "password";
+        eye.innerHTML = shown ? closedIco : openIco;
+        eye.setAttribute("aria-label", shown ? "Nascondi" : "Mostra");
+      });
+    })(eyes[ei]);
+  }
+
+  /* ── Profilo ─────────────────────────────────────────────── */
+  var uuidEl = $("profileUuid");
+  var profileId = "";
+  try { profileId = localStorage.getItem("posterium:profile") || ""; } catch (e) {}
+  if (!profileId) {
+    profileId = (crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0, v = c === "x" ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    }));
+    try { localStorage.setItem("posterium:profile", profileId); } catch (e) {}
+  }
+  uuidEl.textContent = profileId;
+  uuidEl.title = profileId;
+  function copyText(txt, okMsg) {
+    function done() { toast(okMsg, "ok"); }
+    function fallback() {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        var ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (ok) done(); else toast(STRINGS[lang].copied, "info");
+      } catch (e) { toast(STRINGS[lang].copied, "info"); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, fallback);
+    } else fallback();
+  }
+  $("btnUuidCopy").addEventListener("click", function () {
+    var b = this;
+    b.classList.add("copied");
+    setTimeout(function () { b.classList.remove("copied"); }, 1200);
+    copyText(profileId, STRINGS[lang].copied);
+  });
+  var profilePw = $("profilePw");
+  try { profilePw.value = localStorage.getItem("posterium:profile_pw") || ""; } catch (e) {}
+  $("btnSaveProfile").addEventListener("click", function () {
+    var pw = profilePw.value.trim();
+    if (!pw) { toast(STRINGS[lang].profileNoPw, "info"); profilePw.focus(); return; }
+    try { localStorage.setItem("posterium:profile_pw", pw); } catch (e) {}
+    var url = location.href.split("?")[0] + "?profile=" + encodeURIComponent(profileId);
+    var b = this;
+    b.classList.add("copied");
+    var span = b.querySelector("span");
+    span.textContent = STRINGS[lang].copied;
+    setTimeout(function () {
+      b.classList.remove("copied");
+      span.textContent = STRINGS[lang].saveProfile;
+    }, 1600);
+    copyText(url, STRINGS[lang].profileSaved);
+  });
+
+  /* ── Dati: export / import ───────────────────────────────── */
+  $("btnExport").addEventListener("click", function () {
+    try {
+      var cfg = {
+        app: "posterium",
+        version: "0.15.2",
+        tmdb: tmdbInput.value.trim(),
+        mdblist: mdblistInput.value.trim(),
+        lang: lang,
+        theme: theme,
+        badgeDefaults: DEF,
+        profileId: profileId
+      };
+      try {
+        var lib = JSON.parse(localStorage.getItem("posterium-library-demo") || "null");
+        if (lib) cfg.library = lib;
+      } catch (e) {}
+      var blob = new Blob([JSON.stringify(cfg, null, 2)], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "posterium-config.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast(STRINGS[lang].exported, "ok");
+    } catch (e) { toast(STRINGS[lang].importError, "info"); }
+  });
+  $("btnImport").addEventListener("click", function () { $("importFile").click(); });
+  $("importFile").addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var cfg = JSON.parse(reader.result);
+        if (typeof cfg.tmdb === "string") {
+          tmdbInput.value = cfg.tmdb;
+          try { localStorage.setItem("posterium:tmdb", cfg.tmdb); } catch (e) {}
+        }
+        if (typeof cfg.mdblist === "string") {
+          mdblistInput.value = cfg.mdblist;
+          try { localStorage.setItem("mdblist_key", cfg.mdblist); } catch (e) {}
+        }
+        if (typeof cfg.badgeDefaults === "object" && cfg.badgeDefaults) {
+          for (var k in cfg.badgeDefaults) if (k in DEF) DEF[k] = cfg.badgeDefaults[k];
+          syncUIFromDEF();
+          try { localStorage.setItem("badgeDefaults", JSON.stringify(DEF)); } catch (e) {}
+        }
+        if (typeof cfg.lang === "string" && STRINGS[cfg.lang]) applyLang(cfg.lang);
+        if (cfg.theme === "light" || cfg.theme === "dark") setTheme(cfg.theme);
+        if (cfg.library && typeof cfg.library === "object") {
+          try { localStorage.setItem("posterium-library-demo", JSON.stringify(cfg.library)); } catch (e) {}
+        }
+        toast(STRINGS[lang].imported, "ok");
+      } catch (err) {
+        toast(STRINGS[lang].importError, "info");
+      }
+    };
+    reader.readAsText(f);
+    this.value = "";
+  });
+  function syncUIFromDEF() {
+    for (var i = 0; i < switches.length; i++) switches[i].setAttribute("aria-checked", DEF[switches[i].getAttribute("data-def")] ? "true" : "false");
+    for (var j = 0; j < sliders.length; j++) {
+      var r = sliders[j], key = r.getAttribute("data-def");
+      r.value = DEF[key];
+      var vEl = document.getElementById("v" + key.charAt(0).toUpperCase() + key.slice(1));
+      if (vEl) vEl.textContent = DEF[key] + SLIDER_SUFFIX[key];
+      paintSlider(r);
+    }
+    $("blurSliders").hidden = !DEF.blurEnabled;
+    var rib = document.querySelectorAll('.seg[data-seg="ribbonSide"] button');
+    for (var m = 0; m < rib.length; m++) rib[m].classList.toggle("is-active", rib[m].dataset.val === DEF.ribbonSide);
+    var allB = document.querySelectorAll(".bsel button");
+    for (var n = 0; n < allB.length; n++) {
+      var sk = allB[n].parentNode.getAttribute("data-bsel");
+      allB[n].classList.toggle("is-active", allB[n].dataset.val === DEF[sk]);
+    }
+    applyTint(DEF.uiAccent);
+  }
+
+  /* ── Diagnostica & cache (demo locale) ───────────────────── */
+  $("btnWarmup").addEventListener("click", function () {
+    var ico = this.querySelector(".warm-ico");
+    ico.classList.add("spinning");
+    var b = this;
+    b.disabled = true;
+    setTimeout(function () {
+      ico.classList.remove("spinning");
+      b.disabled = false;
+      toast(STRINGS[lang].warmupOk, "ok");
+    }, 900);
+  });
+  var cacheBtn = $("btnClearCache");
+  $("btnClearCache").addEventListener("click", function () {
+    var span = cacheBtn.querySelector("span");
+    span.dataset.state = "clearing";
+    span.textContent = STRINGS[lang].clearing;
+    setTimeout(function () {
+      span.dataset.state = "cleared";
+      span.textContent = STRINGS[lang].cleared;
+      toast(STRINGS[lang].cleared, "ok");
+      setTimeout(function () {
+        span.dataset.state = "";
+        span.textContent = STRINGS[lang].clearCache;
+      }, 1800);
+    }, 800);
+  });
+
+  /* ── Floating group / strip ──────────────────────────────── */
+  $("btnRefresh").addEventListener("click", function () {
+    var ico = this.querySelector(".ref-ico");
+    ico.classList.add("spinning");
+    setTimeout(function () {
+      ico.classList.remove("spinning");
+      toast(STRINGS[lang].warmupOk, "ok");
+    }, 900);
+  });
+  $("btnHealth").addEventListener("click", function () {
+    toast(STRINGS[lang].statusOk + " · API poster · TMDB · Addon", "ok");
+  });
+  $("btnStatus").addEventListener("click", function () {
+    toast(STRINGS[lang].statusOk + " · API poster · TMDB · Addon", "ok");
+  });
+  $("btnLang").addEventListener("click", function (e) {
+    e.stopPropagation();
+    var open = $("langPop").hidden;
+    $("langPop").hidden = !open;
+    this.classList.toggle("is-open", !open);
+    this.setAttribute("aria-expanded", String(!open));
+  });
+  document.addEventListener("click", function (e) {
+    var pop = $("langPop");
+    if (!pop.hidden && !pop.contains(e.target) && e.target !== $("btnLang")) {
+      pop.hidden = true;
+      $("btnLang").classList.remove("is-open");
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      $("langPop").hidden = true;
+      $("btnLang").classList.remove("is-open");
+    }
+  });
+
+  /* ── Stato iniziale ──────────────────────────────────────── */
+  applyLang(lang);
+})();
+</script>
+</body>
+</html>

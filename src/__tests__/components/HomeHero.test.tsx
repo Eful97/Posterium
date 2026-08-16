@@ -21,9 +21,8 @@ describe("HomeHero", () => {
   })
 
   it("renders three real rendered podium posters via /api/poster", () => {
-    renderWithCtx(<HomeHero />, { tmdbKey: "test-key" })
-    const imgs = screen.getAllByRole("img")
-    const posterSrcs = imgs.map((i) => i.getAttribute("src"))
+    const { container } = renderWithCtx(<HomeHero />, { tmdbKey: "test-key" })
+    const posterSrcs = Array.from(container.querySelectorAll(".p-frame img")).map((i) => i.getAttribute("src"))
     expect(posterSrcs.filter((s) => s?.startsWith("/api/poster/"))).toHaveLength(3)
     // La chiave personale va in query per i titoli non mappati
     expect(posterSrcs[0]).toContain("api_key=test-key")
@@ -36,11 +35,8 @@ describe("HomeHero", () => {
       { id: 102, media_type: "movie", title: "Movie C", name: "", poster_path: "/c.jpg", release_date: "2020-01-01", rank: 3 },
       { id: 200, media_type: "tv", title: "", name: "Series A", poster_path: "/s.jpg", release_date: "2020-01-01", rank: 1 },
     ] as const
-    renderWithCtx(<HomeHero />, { tmdbKey: "test-key", trending: [...trending] })
-    const posterSrcs = screen
-      .getAllByRole("img")
-      .map((i) => i.getAttribute("src") || "")
-      .filter((s) => s.includes("/api/poster/"))
+    const { container } = renderWithCtx(<HomeHero />, { tmdbKey: "test-key", trending: [...trending] })
+    const posterSrcs = Array.from(container.querySelectorAll(".p-frame img")).map((i) => i.getAttribute("src") || "")
     expect(posterSrcs).toHaveLength(3)
     // 2 film distinti tra quelli in classifica + 1 serie; rank reali in URL
     const movieIds = posterSrcs.map((s) => s.match(/\/movie\/(\d+)\?/)?.[1]).filter(Boolean)
@@ -64,6 +60,24 @@ describe("HomeHero", () => {
     renderWithCtx(<HomeHero />, { router: { push, replace: vi.fn(), back: vi.fn() } })
     await u.click(screen.getByText("ui.heroCatalogsCta"))
     expect(push).toHaveBeenCalledWith("cataloghi")
+  })
+
+  it("opens the editor when a podium poster is clicked", async () => {
+    const u = userEvent.setup()
+    const navigateToPoster = vi.fn()
+    const trending = [
+      { id: 100, media_type: "movie", title: "Movie A", name: "", poster_path: "/a.jpg", release_date: "2020-01-01", rank: 1 },
+      { id: 101, media_type: "movie", title: "Movie B", name: "", poster_path: "/b.jpg", release_date: "2020-01-01", rank: 2 },
+      { id: 200, media_type: "tv", title: "", name: "Series A", poster_path: "/s.jpg", release_date: "2020-01-01", rank: 1 },
+    ] as const
+    renderWithCtx(<HomeHero />, { tmdbKey: "test-key", trending: [...trending], navigateToPoster })
+    await u.click(screen.getByRole("button", { name: "Movie A" }))
+    expect(navigateToPoster).toHaveBeenCalledWith(expect.objectContaining({ id: 100, media_type: "movie" }))
+    // Anche il fallback statico resta cliccabile (nessun trending)
+    navigateToPoster.mockClear()
+    renderWithCtx(<HomeHero />, { tmdbKey: "test-key", navigateToPoster })
+    await u.click(screen.getByRole("button", { name: "Dark" }))
+    expect(navigateToPoster).toHaveBeenCalledWith(expect.objectContaining({ id: 44217, media_type: "tv" }))
   })
 })
 
