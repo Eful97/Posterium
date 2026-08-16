@@ -585,6 +585,45 @@ input[type="range"]::-moz-range-thumb {
   will-change: transform, opacity;
 }
 
+/* Workspace editor (da prototipo personalizza-poster): 3 colonne con la
+   preview che sale in cima sotto 1180px e colonna singola sotto 920px. */
+.editor-workspace {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(400px, 540px) minmax(300px, 1fr);
+  gap: 1.25rem;
+  align-items: stretch;
+  width: 100%;
+}
+
+@media (max-width: 1180px) {
+  .editor-workspace {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .editor-workspace > .editor-panel:nth-child(2) {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+
+  .editor-workspace > .editor-panel:nth-child(1) {
+    order: 1;
+  }
+
+  .editor-workspace > .editor-panel:nth-child(3) {
+    order: 2;
+  }
+}
+
+@media (max-width: 920px) {
+  .editor-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-workspace > .editor-panel:nth-child(2) {
+    grid-column: auto;
+  }
+}
+
 .tab-chip-active {
   color: var(--color-accent-orange);
   background: rgb(var(--accent-rgb) / 0.14);

@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
-import { LANG_NAMES, groupBy, posterUrl } from "@/lib/utils"
+import { posterUrl } from "@/lib/utils"
 import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
 import { EditorPanel } from "@/components/EditorPanel"
@@ -19,11 +19,21 @@ import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 import { BadgeControls } from "@/components/BadgeControls"
 import { TransformControls } from "@/components/TransformControls"
 import { usePosterPreview } from "@/lib/usePosterPreview"
-import { Clock, X, Check } from "lucide-react"
+import { Clock, X, Check, Copy, Download, Settings } from "lucide-react"
 
-export default function EditView() {
+interface EditViewProps {
+  /** Apre il popup impostazioni rapide (gestito da AppShell) */
+  onQuickSettings?: () => void
+}
+
+export default function EditView({ onQuickSettings }: EditViewProps) {
   const accentColor = usePSelector((v) => v.accentColor)
   const doSearch = usePSelector((v) => v.doSearch)
+  const goHome = usePSelector((v) => v.goHome)
+  const copyUrl = usePSelector((v) => v.copyUrl)
+  const urlPattern = usePSelector((v) => v.urlPattern)
+  const profileId = usePSelector((v) => v.profileId)
+  const mappings = usePSelector((v) => v.mappings)
   const loadingImages = usePSelector((v) => v.loadingImages)
   const logos = usePSelector((v) => v.logos)
   const mappingsMap = usePSelector((v) => v.mappingsMap)
@@ -148,25 +158,6 @@ export default function EditView() {
 
   const cleanPoster = previewPoster?.iso_639_1 === null
 
-  const leftTabs = useMemo(() => {
-    const tabs: { key: string; label: string; count: number }[] = []
-    const cleanCount = posters.filter((img) => img.iso_639_1 === null).length
-    if (cleanCount > 0) tabs.push({ key: "clean", label: "Clean", count: cleanCount })
-    const langGrouped = groupBy(posters.filter((img) => img.iso_639_1 !== null), (img) => img.iso_639_1 || "other")
-    Object.entries(langGrouped)
-      .filter(([, imgs]) => imgs.length > 0)
-      .sort(([a], [b]) => { if (a === lang) return -1; if (b === lang) return 1; if (a === "en") return -1; if (b === "en") return 1; return a.localeCompare(b) })
-      .forEach(([lang, imgs]) => tabs.push({ key: lang, label: LANG_NAMES[lang] || lang, count: imgs.length }))
-    return tabs
-  }, [lang, posters])
-
-  useEffect(() => {
-    if (leftTabs.length === 0) return
-    if (!leftTabs.some((tab) => tab.key === activePosterTab)) {
-      setActivePosterTab(leftTabs[0]?.key ?? "clean")
-    }
-  }, [activePosterTab, leftTabs])
-
   const rightTabs = [
     { key: "logo", label: t("ui.logoSection") },
     ...(cleanPoster ? [{ key: "badge", label: t("ui.badgeSection") }] : []),
@@ -176,11 +167,14 @@ export default function EditView() {
   return (
     <div>
       {selected && (
-        <div className="flex flex-col items-center">
-          {/* Toolbar editor (da prototipo): back + ricerca + stato salvataggio */}
-          <div className="w-full max-w-[1360px] mx-auto mb-3 flex items-center gap-3 flex-wrap">
+        <div className="flex flex-col items-center w-full">
+          {/* Header editor (da prototipo): logo + back + ricerca + stato + azioni */}
+          <header className="w-full max-w-[1360px] mx-auto mb-4 flex items-center gap-3 flex-wrap">
+            {/* eslint-disable-next-line @next/next/no-img-element -- logo locale */}
+            <img onClick={goHome} src="/posterium.png" alt="Posterium" decoding="async" className="header-logo h-10 md:h-12 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
             <button type="button"
               onClick={() => { router.back() }}
+              aria-label={sourceView === "cataloghi" ? t("ui.backToCatalogs") : sourceView === "myposters" ? t("ui.backToMyPosters") : t("ui.back")}
               className="text-xs text-zinc-300 hover:text-white transition-all inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 active:scale-95 shadow-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -189,27 +183,34 @@ export default function EditView() {
               <span>{sourceView === "cataloghi" ? t("ui.backToCatalogs") : sourceView === "myposters" ? t("ui.backToMyPosters") : t("ui.back")}</span>
             </button>
             <div className="flex-1 min-w-[200px] max-w-lg">{searchBar}</div>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] ml-auto">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />
-              {t("ui.saveState")}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,1fr)_minmax(400px,480px)_minmax(300px,1fr)] gap-5 items-stretch w-full max-w-[1360px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />
+                {t("ui.saveState")}
+              </span>
+              {/* Azioni rapide (da prototipo: copia, installa, i miei poster, impostazioni) */}
+              <div className="hidden md:flex floating-group">
+                <button type="button" suppressHydrationWarning aria-label={t("ui.copyUrl")} onClick={() => { copyUrl() }} disabled={!urlPattern} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-accent-orange hover:bg-white/[0.08] press-scale"><Copy className="w-4 h-4" /></button>
+                <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const base = `${window.location.origin}/manifest.json`; const url = profileId ? `${window.location.origin}/u/${profileId}/manifest.json` : base; await navigator.clipboard.writeText(url) }} disabled={!urlPattern && !profileId} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-zinc-300 hover:bg-white/[0.08] press-scale"><Download className="w-4 h-4" /></button>
+                <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (router) router.replace("myposters") }} className="h-9 min-w-9 px-1.5 flex items-center justify-center rounded-lg text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] active:scale-[0.93] transition-all duration-150 press-scale">{mappings.length}</button>
+                <div className="h-5 w-px bg-white/10 self-center" />
+                <button type="button" aria-label={t("ui.settings")} onClick={() => { if (onQuickSettings) onQuickSettings(); else setSettingsOpen(true) }} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale"><Settings className="w-4 h-4" /></button>
+              </div>
+            </div>
+          </header>
+          <div className="editor-workspace max-w-[1360px] mx-auto lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
 
             {/* LEFT: Poster */}
-            <div className="order-2 lg:order-1 animate-fade-scale-in-panel-left" style={{animationDelay: "80ms"}}>
-            <EditorPanel aria-label={`${selected?.title || ""} — Poster selection`} title={t("ui.posterAvailable")} tabs={leftTabs} activeTab={activePosterTab} onTabChange={setActivePosterTab} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10 tabular-nums">{posters.length}</span>}>
+            <EditorPanel className="animate-fade-scale-in-panel-left" aria-label={`${selected?.title || ""} — Poster selection`} title={t("ui.posterAvailable")} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10 tabular-nums">{posters.length}</span>}>
               {loadingImages ? (
                 <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div>
               ) : (
-                <PosterOptions posters={posters} posterActivePath={posterActivePath} lang={lang} selectPoster={selectPoster} activeGroup={activePosterTab} onActiveGroupChange={setActivePosterTab} showTabs={false} />
+                <PosterOptions posters={posters} posterActivePath={posterActivePath} lang={lang} selectPoster={selectPoster} activeGroup={activePosterTab} onActiveGroupChange={setActivePosterTab} showTabs />
               )}
             </EditorPanel>
-            </div>
 
             {/* CENTER: Preview */}
-            <div className="order-1 lg:order-2 animate-fade-scale-in" style={{animationDelay: "0ms"}}>
-            <EditorPanel title={t("ui.previewLive")} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10">2:3 · JPEG</span>}>
+            <EditorPanel className="animate-fade-scale-in" title={<><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 align-middle shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />{t("ui.previewLive")}</>} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10">2:3 · JPEG</span>}>
               <div className="flex flex-col items-center">
                 <span className="text-[10px] font-mono text-muted mb-1" aria-hidden="true">500 × 750</span>
                 <div className="relative w-full max-w-[360px] my-2">
@@ -331,11 +332,9 @@ export default function EditView() {
                 <p className="text-[11px] text-zinc-500 text-center mt-3">{selectedLogo ? t("ui.logoSelected") : previewPoster?.iso_639_1 === null ? `${t("ui.clean")} ${t("ui.selected").toLowerCase()}` : previewPoster ? t("ui.logoHint") : t("ui.noPosterSelected")}</p>
               </div>
             </EditorPanel>
-            </div>
 
             {/* RIGHT: Edit */}
-            <div className="order-3 lg:order-3 animate-fade-scale-in-panel-right" style={{animationDelay: "80ms"}}>
-            <EditorPanel title={t("ui.customize")} tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
+            <EditorPanel className="animate-fade-scale-in-panel-right" title={t("ui.customize")} tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
               <div key={activeRightTab} className="animate-fade-in space-y-3">
               {activeRightTab === "logo" && <>
                 <LogoOptions logos={logos} selectedLogo={selectedLogo} lang={lang} selectLogo={selectLogo} removeLogo={removeLogo} disabled={!cleanPoster} />
@@ -345,7 +344,6 @@ export default function EditView() {
               {activeRightTab === "transform" && <TransformControls />}
               </div>
             </EditorPanel>
-            </div>
 
           </div>
         </div>

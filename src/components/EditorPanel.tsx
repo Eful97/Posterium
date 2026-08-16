@@ -1,7 +1,7 @@
 "use client"
 
 interface Props {
-  title?: string
+  title?: React.ReactNode
   tabs?: { key: string; label: string; count?: number }[]
   activeTab?: string
   onTabChange?: (key: string) => void

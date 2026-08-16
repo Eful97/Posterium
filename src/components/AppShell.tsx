@@ -130,8 +130,8 @@ return (
         />
       )}
       {showLangPicker && <LangPicker onPick={pickLang} />}
-      {/* desktop toolbar — floating island */}
-      <div className="hidden md:flex absolute top-4 right-4 z-20">
+      {/* desktop toolbar — floating island (nascosta nell'editor: la gestisce EditView) */}
+      <div className={`hidden md:flex absolute top-4 right-4 z-20 ${view === "edit" && selected ? "!hidden" : ""}`}>
         {settingsOpen && <div className="hidden md:block fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />}
         {quickOpen && <div className="hidden md:block fixed inset-0 z-40" onClick={() => setQuickOpen(false)} />}
         <div className="floating-group relative z-50">
@@ -158,6 +158,9 @@ return (
         </div>
       </div>
       <div className="relative z-10 max-w-[1680px] mx-auto px-4 pt-5 md:pt-[68px] pb-20 md:pb-6 pb-[max(5rem,env(safe-area-inset-bottom)+4rem)]">
+        {/* Header globale (logo + tagline + toolbar mobile): nascosto nell'editor,
+            che ha il proprio header da prototipo */}
+        {!(view === "edit" && selected) && (
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
           <>
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
@@ -173,11 +176,12 @@ return (
           </div>
           </>
         </div>
+        )}
 
         <ProxyModal isOpen={proxyOpen} onClose={() => setProxyOpen(false)} />
         <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
         <div key={view} className="animate-fade-scale-in">
-          {view === "search" ? <SearchView /> : view === "myposters" ? <MyPostersView /> : view === "cataloghi" ? <CataloghiView /> : <EditView />}
+          {view === "search" ? <SearchView /> : view === "myposters" ? <MyPostersView /> : view === "cataloghi" ? <CataloghiView /> : <EditView onQuickSettings={() => setQuickOpen(true)} />}
         </div>
         {/* Strip di stato: presente in tutte le viste */}
         <HomeStatusStrip />
