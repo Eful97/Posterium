@@ -39,7 +39,6 @@ html.light-mode .preview-frame,
 html.light-mode .floating-action,
 html.light-mode .floating-group,
 html.light-mode .search-shell,
-html.light-mode .hero-section,
 html.light-mode .simkl-list-card,
 html.light-mode .carousel-card {
   --glass-grad: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.12));
@@ -99,7 +98,6 @@ html.light-mode ::-webkit-scrollbar-thumb:hover {
 .floating-action,
 .floating-group,
 .search-shell,
-.hero-section,
 .simkl-list-card,
 .carousel-card {
   background: var(--glass-grad), var(--glass-tint);
@@ -691,15 +689,6 @@ input[type="range"]::-moz-range-thumb {
   transform: scale(1.02);
 }
 
-.hero-section {
-  --glass-tint: rgba(12,12,16,0.90);
-  --glass-border: rgba(255,255,255,0.04);
-  --glass-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
-  position: relative;
-  overflow: hidden;
-  border-radius: 1.35rem;
-}
-
 /* Quiet dark: orb decorativo rimosso */
 
 .floating-group {
@@ -1276,6 +1265,380 @@ select:focus-visible {
   border-radius: 1.25rem;
   border: 1px solid rgba(255,255,255,0.05);
   background: rgba(255,255,255,0.015);
+}
+
+/* ============================================================
+   Home — hero, podio e strip di stato
+   ============================================================ */
+
+/* Hero a due colonne: copia (sinistra) + podio poster (destra) */
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vh, 4rem) 0 clamp(1.5rem, 4vh, 2.5rem);
+}
+
+.home-hero-title {
+  font-size: clamp(2rem, 4.2vw, 2.9rem);
+  line-height: 1.04;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-foreground);
+}
+
+.home-hero-title .accent-word {
+  color: var(--color-accent-orange);
+}
+
+.home-hero-sub {
+  max-width: 46ch;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--color-muted);
+}
+
+/* Punto luminoso nel kicker */
+.hero-kicker .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-accent-orange);
+  box-shadow: 0 0 8px rgb(var(--accent-rgb) / 0.8);
+}
+
+/* Pills vantaggi (contenitore) */
+.stat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.home-hero-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1.4rem;
+  flex-wrap: wrap;
+}
+
+/* Bottone secondario ghost (stesso linguaggio visivo di .btn-primary) */
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 disabled:opacity-40;
+  color: var(--color-muted);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.btn-ghost:hover {
+  color: var(--color-foreground);
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.14);
+}
+
+/* ── Podio poster (3D) ─────────────────────────────────────── */
+.podium {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+  min-height: 400px;
+}
+
+.podium-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.p-frame {
+  position: relative;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015)), rgba(20,20,24,0.9);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.p-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.p-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0.14), transparent 30%, transparent 55%, rgba(0,0,0,0.62));
+  border-radius: inherit;
+}
+
+.p-frame-side {
+  width: clamp(120px, 12vw, 170px);
+  aspect-ratio: 2/3;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+
+.p-frame-side:hover {
+  transform: translateY(-4px) !important;
+}
+
+.p-frame-main {
+  width: clamp(150px, 15vw, 215px);
+  aspect-ratio: 2/3;
+  z-index: 2;
+  border-color: rgb(var(--accent-rgb) / 0.4);
+  box-shadow:
+    0 0 0 1px rgb(var(--accent-rgb) / 0.2),
+    0 0 44px rgb(var(--accent-rgb) / 0.18),
+    0 30px 70px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.p-frame-left {
+  transform: rotateY(18deg) rotateZ(2.5deg) translateX(14px);
+  z-index: 1;
+}
+
+.p-frame-right {
+  transform: rotateY(-18deg) rotateZ(-2.5deg) translateX(-14px);
+  z-index: 1;
+}
+
+.podium-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  width: 78%;
+  height: 46%;
+  background: radial-gradient(ellipse at center, rgb(var(--accent-rgb) / 0.2), transparent 70%);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+/* Chip flottanti attorno al podio */
+.float-chip {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.625rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-foreground);
+  background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015)), rgba(13,13,16,0.82);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 16px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.03);
+  backdrop-filter: blur(14px);
+  animation: bob 5.5s ease-in-out infinite;
+}
+
+.float-chip svg {
+  color: var(--color-accent-orange);
+}
+
+.float-chip.fc-ai {
+  top: 6%;
+  right: 2%;
+  animation-delay: 0.8s;
+}
+
+.float-chip.fc-saved {
+  bottom: 16%;
+  left: 0;
+  animation-delay: 1.6s;
+}
+
+.float-chip.fc-saved svg {
+  color: #4ade80;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+/* Tag "Demo" accanto al titolo del carosello */
+.demo-tag {
+  margin-left: 0.5rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-warning);
+  background: rgb(251 191 36 / 0.1);
+  border: 1px solid rgb(251 191 36 / 0.3);
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  vertical-align: middle;
+}
+
+/* Freccia hover sulle card del carosello */
+.car-arrow {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  background: rgb(var(--accent-rgb) / 0.85);
+  box-shadow: 0 6px 16px rgb(var(--accent-rgb) / 0.4), 0 0 0 1px rgba(255,255,255,0.2);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 150ms ease, transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.carousel-card:hover .car-arrow {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ── Strip di stato (footer home) ──────────────────────────── */
+.status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 1rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015)), rgba(13,13,16,0.6);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 0 rgb(74 222 128 / 0.5);
+  animation: pulse 2.4s infinite;
+}
+
+.status-meta {
+  font-size: 10px;
+  color: var(--color-muted);
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-muted);
+}
+
+.status-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.5rem;
+  color: var(--color-muted);
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.status-link:hover {
+  color: var(--color-foreground);
+  background: rgba(255,255,255,0.07);
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgb(74 222 128 / 0.45); }
+  70% { box-shadow: 0 0 0 7px rgb(74 222 128 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(74 222 128 / 0); }
+}
+
+/* Home responsive */
+@media (max-width: 920px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+    text-align: center;
+  }
+
+  .home-hero-sub {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .stat-pills,
+  .home-hero-cta-row {
+    justify-content: center;
+  }
+
+  .podium {
+    min-height: 0;
+    order: -1;
+  }
+
+  .p-frame-side {
+    display: none;
+  }
+
+  .p-frame-main {
+    width: 190px;
+  }
+
+  .float-chip.fc-ai {
+    right: 4%;
+    top: 2%;
+  }
+
+  .float-chip.fc-saved {
+    left: 6%;
+    bottom: 10%;
+  }
+}
+
+@media (max-width: 560px) {
+  .status-strip {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .float-chip {
+    display: none;
+  }
+}
+
+/* Riduzione movimento: congela bob/pulse (il marquee rAF è gestito in JS) */
+@media (prefers-reduced-motion: reduce) {
+  .float-chip,
+  .pulse-dot {
+    animation: none;
+  }
 }
 
 /* ============================================================

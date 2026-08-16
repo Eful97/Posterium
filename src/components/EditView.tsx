@@ -12,12 +12,14 @@ import { buildPreviewUrl } from "@/lib/poster-url"
 import { SearchBar } from "@/components/SearchBar"
 import { PosterCarousel } from "@/components/PosterCarousel"
 import { ScrollReveal } from "@/components/ScrollReveal"
+import { HomeHero } from "@/components/HomeHero"
+import { HomeStatusStrip } from "@/components/HomeStatusStrip"
 import { PosterPreview } from "@/components/PosterPreview"
 import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 import { BadgeControls } from "@/components/BadgeControls"
 import { TransformControls } from "@/components/TransformControls"
 import { usePosterPreview } from "@/lib/usePosterPreview"
-import { Clock, X, Layers, Sparkles, Globe } from "lucide-react"
+import { Clock, X } from "lucide-react"
 
 export default function EditView() {
   const accentColor = usePSelector((v) => v.accentColor)
@@ -52,7 +54,6 @@ export default function EditView() {
   const titleOf = usePSelector((v) => v.titleOf)
   const tmdbKey = usePSelector((v) => v.tmdbKey)
   const topEdgeColor = usePSelector((v) => v.topEdgeColor)
-  const trending = usePSelector((v) => v.trending)
   const trendRank = usePSelector((v) => v.trendRank)
   const yearOf = usePSelector((v) => v.yearOf)
   const { t, lang } = useT()
@@ -380,42 +381,11 @@ export default function EditView() {
       )}
       {!selected && tmdbKey && (
         <>
-          <section className="hero-section max-w-5xl mx-auto px-8 py-8 mb-10 animate-fade-scale-in-hero">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex flex-col items-center md:items-start text-center md:text-left min-w-0">
-                <span className="hero-kicker mb-3">{t("ui.heroKicker")}</span>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent-orange/15 border border-accent-orange/20 flex items-center justify-center shrink-0">
-                    <svg className="w-5 h-5 text-accent-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                      <polygon points="9.5 8 15.5 12 9.5 16 9.5 8" fill="currentColor" stroke="none"/>
-                    </svg>
-                  </div>
-                  <h1 className="text-xl md:text-2xl tracking-tight font-bold text-zinc-50">{t("ui.heroTitle")}</h1>
-                </div>
-                <p className="text-xs text-muted mt-2 max-w-md">{t("ui.heroSubtitle")}</p>
-                <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
-                  <span className="stat-pill"><Layers className="w-3.5 h-3.5" />{t("ui.heroPillLogos")}</span>
-                  <span className="stat-pill"><Sparkles className="w-3.5 h-3.5" />{t("ui.heroPillAi")}</span>
-                  <span className="stat-pill"><Globe className="w-3.5 h-3.5" />{t("ui.heroPillLangs")}</span>
-                </div>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <button type="button" onClick={() => router.push("cataloghi")} className="btn-primary px-5 py-2.5 whitespace-nowrap">
-                  {t("ui.heroCatalogsCta")}
-                </button>
-              </div>
-            </div>
-          </section>
+          <HomeHero />
           <ScrollReveal animation="fade-up" threshold={0.05}>
             <PosterCarousel />
           </ScrollReveal>
-          {trending.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 text-zinc-500">
-              <div className="w-12 h-12 rounded-full border-2 border-border border-t-accent-orange animate-spin mb-4" />
-              <p className="text-sm text-muted">{t("ui.loading")}</p>
-            </div>
-          )}
+          <HomeStatusStrip />
         </>
       )}
     </div>

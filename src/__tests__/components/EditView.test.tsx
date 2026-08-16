@@ -27,7 +27,8 @@ describe("EditView", () => {
 
   it("shows trending when no item selected and has tmdbKey", () => {
     renderWithCtx(<EditView />)
-    expect(screen.getByText("ui.heroTitle")).toBeInTheDocument()
+    const title = screen.getByRole("heading", { level: 1 })
+    expect(title.textContent).toContain("ui.heroTitleLead")
   })
 
   it("shows preview section when item selected", () => {
@@ -61,8 +62,8 @@ describe("EditView", () => {
     expect(transformTab.closest("button")).toHaveClass("tab-chip-active")
   })
 
-  it("shows trending loading state when no trending data", () => {
+  it("shows home status strip when no item selected and has tmdbKey", () => {
     renderWithCtx(<EditView />, { trending: [] })
-    expect(screen.getByText("ui.loading")).toBeInTheDocument()
+    expect(screen.getByText("ui.allSystemsOperational")).toBeInTheDocument()
   })
 })

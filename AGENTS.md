@@ -188,6 +188,8 @@ Never manually edit `render-version.ts`.
 | `npm run verify` | Typecheck + lint + unit test + build |
 | `npm run test` | Unit tests (Vitest) |
 | `npx playwright test e2e/posterium-visual.spec.ts` | Visual regression tests |
+| `npm run e2e:visual` | Visual regression tests (riusa `.next-e2e` se presente — iterazione veloce) |
+| `npm run e2e:visual:clean` | Visual regression tests con `.next-e2e` ricostruito da zero (run affidabile) |
 | `npx playwright test e2e/` | Complete Playwright suite |
 | `npx playwright test --update-snapshots` | Update snapshots after intentional visual changes only |
 | `node scripts/write-render-version.mjs` | Regenerate `RENDER_VERSION` |

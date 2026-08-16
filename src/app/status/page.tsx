@@ -44,13 +44,16 @@ interface CacheStatusData {
   untaggedEntries: number
 }
 
-function StatusBadge({ ok }: { ok: boolean }) {
+function StatusBadge({ ok }: { ok: boolean | null }) {
+  if (ok === null) {
+    return <span className="inline-block w-2.5 h-2.5 rounded-full bg-zinc-500 shadow-[0_0_6px_rgba(113,113,122,0.5)] mr-2 shrink-0" />
+  }
   return ok
     ? <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)] mr-2 shrink-0" />
     : <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)] mr-2 shrink-0" />
 }
 
-function StatusRow({ label, ok, extra }: { label: string; ok: boolean; extra?: React.ReactNode }) {
+function StatusRow({ label, ok, extra }: { label: string; ok: boolean | null; extra?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 py-2 px-3 even:bg-white/[0.03] rounded-lg text-sm">
       <StatusBadge ok={ok} />
@@ -78,7 +81,11 @@ export default function StatusPage() {
   }
 
   useEffect(() => {
-    fetch("/api/health")
+    // La chiave TMDB è personale (localStorage) e la route /api/health la
+    // accetta SOLO via header x-api-key: senza, tutti i check rispondono 401
+    // e la pagina mostrerebbe punti rossi anche a servizi sani.
+    const key = typeof window !== "undefined" ? (localStorage.getItem("tmdb_key") || "") : ""
+    fetch("/api/health", { headers: key ? { "x-api-key": key } : undefined })
       .then((r) => (r.ok || r.status === 503 ? r.json() : Promise.reject("Errore " + r.status)))
       .then((d) => { setData(d); setLoading(false) })
       .catch((e) => { setError(String(e)); setLoading(false) })
@@ -100,19 +107,25 @@ export default function StatusPage() {
                 <h2 className="text-base font-semibold">{t("ui.statusTmdb")}</h2>
                 {data.tmdb.apiKey && <span className="text-xs text-zinc-400">({data.tmdb.apiKeyLength} caratteri)</span>}
               </div>
-              <div className="space-y-1">
-                <StatusRow label={t("ui.statusTrending")} ok={data.tmdb.trending.ok} extra={<>{data.tmdb.trending.status} — {data.tmdb.trending.time}ms</>} />
-                <StatusRow label={t("ui.statusSearch")} ok={data.tmdb.search.ok} extra={<>{data.tmdb.search.status} — {data.tmdb.search.time}ms</>} />
-                <StatusRow label={t("ui.statusPopular")} ok={data.tmdb.popular.ok} extra={<>{data.tmdb.popular.status} — {data.tmdb.popular.time}ms</>} />
-                <StatusRow label={t("ui.statusExternalIds")} ok={data.tmdb.externalIds.ok} extra={<>{data.tmdb.externalIds.status} — {data.tmdb.externalIds.time}ms</>} />
-              </div>
+              {data.tmdb.apiKey ? (
+                <div className="space-y-1">
+                  <StatusRow label={t("ui.statusTrending")} ok={data.tmdb.trending.ok} extra={<>{data.tmdb.trending.status} — {data.tmdb.trending.time}ms</>} />
+                  <StatusRow label={t("ui.statusSearch")} ok={data.tmdb.search.ok} extra={<>{data.tmdb.search.status} — {data.tmdb.search.time}ms</>} />
+                  <StatusRow label={t("ui.statusPopular")} ok={data.tmdb.popular.ok} extra={<>{data.tmdb.popular.status} — {data.tmdb.popular.time}ms</>} />
+                  <StatusRow label={t("ui.statusExternalIds")} ok={data.tmdb.externalIds.ok} extra={<>{data.tmdb.externalIds.status} — {data.tmdb.externalIds.time}ms</>} />
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <StatusRow label={t("ui.statusTmdbKeyMissing")} ok={null} />
+                </div>
+              )}
             </div>
 
             <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
               <h2 className="text-base font-semibold mb-3">{t("ui.statusStreaming")}</h2>
               <div className="space-y-1">
-                <StatusRow label={t("ui.statusJustwatch")} ok={data.streaming.justwatch.ok} extra={<>{data.streaming.justwatch.status} — {data.streaming.justwatch.time}ms</>} />
-                <StatusRow label={t("ui.statusFlixpatrol")} ok={data.streaming.flixpatrol.ok} extra={<>{data.streaming.flixpatrol.status} — {data.streaming.flixpatrol.time}ms</>} />
+                <StatusRow label={t("ui.statusJustwatch")} ok={data.tmdb.apiKey ? data.streaming.justwatch.ok : null} extra={data.tmdb.apiKey ? <>{data.streaming.justwatch.status} — {data.streaming.justwatch.time}ms</> : t("ui.statusTmdbKeyMissing")} />
+                <StatusRow label={t("ui.statusFlixpatrol")} ok={data.tmdb.apiKey ? data.streaming.flixpatrol.ok : null} extra={data.tmdb.apiKey ? <>{data.streaming.flixpatrol.status} — {data.streaming.flixpatrol.time}ms</> : t("ui.statusTmdbKeyMissing")} />
               </div>
             </div>
 
@@ -133,7 +146,7 @@ export default function StatusPage() {
             <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
               <h2 className="text-base font-semibold mb-3">{t("ui.statusSystem")}</h2>
               <div className="space-y-1">
-                <StatusRow label={t("ui.statusOverall")} ok={data.status === "healthy"} extra={data.status === "healthy" ? t("ui.statusHealthy") : t("ui.statusDegraded")} />
+                <StatusRow label={t("ui.statusOverall")} ok={data.tmdb.apiKey ? data.status === "healthy" : null} extra={data.tmdb.apiKey ? (data.status === "healthy" ? t("ui.statusHealthy") : t("ui.statusDegraded")) : t("ui.statusTmdbKeyMissing")} />
               </div>
             </div>
 

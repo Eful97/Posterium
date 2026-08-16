@@ -38,6 +38,7 @@ export function AppShell() {
   const profileLocked = usePSelector((v) => v.profileLocked)
   const profileModalSuppressed = usePSelector((v) => v.profileModalSuppressed)
   const mappings = usePSelector((v) => v.mappings)
+  const selected = usePSelector((v) => v.selected)
   const tmdbKeyInput = usePSelector((v) => v.tmdbKeyInput)
   const setTmdbKeyInput = usePSelector((v) => v.setTmdbKeyInput)
   const setTmdbKey = usePSelector((v) => v.setTmdbKey)
@@ -101,7 +102,8 @@ return (
     <ToastProvider>
     {profileLocked && <ProfileUnlock />}
     <div className="app-shell text-foreground relative overflow-x-hidden">
-      <VersionBadge />
+      {/* Home: la versione è già nella strip di stato in basso → badge in alto nascosto */}
+      {!(view === "edit" && !selected) && <VersionBadge />}
       {serviceErrors.tmdb && (
         <div className="mx-auto max-w-lg mt-2 mb-0 px-4 py-2 bg-red-900/40 border border-red-800/50 rounded-xl text-xs text-red-300 text-center">
           TMDB service unavailable — some data may be incomplete

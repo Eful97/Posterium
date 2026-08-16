@@ -69,6 +69,46 @@ test("home — mobile viewport", async ({ page }) => {
   })
 })
 
+test("home with key — hero podium and status strip", async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      // Podio: la scelta dei 2 film + 1 serie è random a ogni refresh (Fisher–
+      // Yates su Math.random) → stub costante per screenshot deterministici.
+      Math.random = () => 0
+      localStorage.setItem("posterium_profile_id", "e2e")
+      localStorage.setItem("posterium_onboarding_done", "true")
+      localStorage.setItem("preferred_lang", "it")
+      localStorage.setItem("tmdb_key", "e2e-key")
+    } catch {}
+  })
+  // Congela marquee/bob/pulse: screenshot deterministici
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await page.goto("/")
+  await page.evaluate(() => window.scrollTo(0, 0))
+  // Attende il caricamento dei poster reali del podio: i 3 frame mostrano le
+  // classifiche giornaliere (film #1/#2 + serie #1, dati deterministici del
+  // mock). Il fallback statico iniziale viene sostituito al primo render del
+  // trending: attendiamo gli src attesi e poi il decode completo delle img.
+  await page.waitForFunction(() => {
+    const imgs = Array.from(document.querySelectorAll(".p-frame img")) as HTMLImageElement[]
+    const srcs = imgs.map((i) => i.getAttribute("src") || "")
+    const expected =
+      srcs.some((s) => s.includes("/movie/19995?")) &&
+      srcs.some((s) => s.includes("/movie/157336?")) &&
+      srcs.some((s) => s.includes("/tv/19995?"))
+    return expected && imgs.length >= 3 && imgs.every((i) => i.complete && i.naturalWidth > 0)
+  }, { timeout: 30_000, polling: 500 })
+  await expect(page).toHaveScreenshot("home-key-hero.png", {
+    maxDiffPixelRatio: 0.03,
+  })
+  // Strip di stato sotto il carosello
+  await page.locator('[data-testid="home-status"]').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(800)
+  await expect(page).toHaveScreenshot("home-key-status.png", {
+    maxDiffPixelRatio: 0.03,
+  })
+})
+
 //
 // ─── STATUS PAGE (no API key needed) ──────────────────────────
 //

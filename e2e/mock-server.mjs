@@ -88,6 +88,16 @@ function json(res, status, body) {
   respond(res, status, JSON.stringify(body), "application/json")
 }
 
+/** Legge il body di una richiesta (usato dalle POST con payload JSON). */
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = ""
+    req.on("data", (chunk) => { data += chunk })
+    req.on("end", () => resolve(data))
+    req.on("error", reject)
+  })
+}
+
 // ---- Router ----
 
 const server = http.createServer(async (req, res) => {
@@ -140,16 +150,23 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { id: Number(kwMatch[2]), keywords: [] })
     }
 
-    // JustWatch GraphQL (rank deterministico per Avatar)
+    // JustWatch GraphQL: classifiche giornaliere deterministiche. La home
+    // mostra i primi 2 film + la prima serie (podio) → serviamo 2 film e 1 serie.
     if (pathname === "/graphql" && method === "POST") {
+      let objectType = "SHOW"
+      try {
+        const body = JSON.parse(await readBody(req))
+        objectType = body?.variables?.filter?.objectType || "SHOW"
+      } catch {}
+      const movieEdges = [
+        { streamingChartInfo: { rank: 1 }, node: { content: { externalIds: { tmdbId: 19995 } } } },
+        { streamingChartInfo: { rank: 2 }, node: { content: { externalIds: { tmdbId: 157336 } } } },
+      ]
+      const showEdges = [
+        { streamingChartInfo: { rank: 1 }, node: { content: { externalIds: { tmdbId: 19995 } } } },
+      ]
       return json(res, 200, {
-        data: {
-          streamingCharts: {
-            edges: [
-              { streamingChartInfo: { rank: 7 }, node: { content: { externalIds: { tmdbId: 19995 } } } },
-            ],
-          },
-        },
+        data: { streamingCharts: { edges: objectType === "MOVIE" ? movieEdges : showEdges } },
       })
     }
 

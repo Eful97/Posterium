@@ -1,35 +1,57 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult } from "@/lib/types"
+import { titleOf } from "@/lib/utils"
 import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 
-const EXAMPLES = [
+/** Numero di card del carosello: 20 poster demo scelti a caso tra esempi statici e top. */
+const CAROUSEL_SIZE = 20
+
+/** Fisher–Yates: copia mescolata deterministica solo per test (Math.random stub). */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+interface CarouselEntry {
+  id: number
+  type: "movie" | "tv"
+  title: string
+  params: string
+  desc: string
+}
+
+const EXAMPLES: CarouselEntry[] = [
   // --- Film ---
-  { id: 278, type: "movie" as const, title: "The Shawshank Redemption", params: "?genreName=Dramma&voteAverage=9.3&bs=vetro&gradHeight=25&blur=30&bf=50&bd=40&tl=0&logoFit=0", badge: "Vetro · Dramma 9.3", desc: "Badge vetro con effetto liquid glass, tema scuro morbido" },
-  { id: 155, type: "movie" as const, title: "The Dark Knight", params: "?genreName=Azione&voteAverage=8.5&bs=bordo&gradHeight=20&blur=20&bf=55&bd=35&tl=1&logoFit=0", badge: "Bordo · Azione 8.5", desc: "Badge bordato elegante, tema chiaro con sfocatura leggera" },
-  { id: 27205, type: "movie" as const, title: "Inception", params: "?genreName=Thriller&voteAverage=8.8&bs=bar&tl=0&ac=%23f39c12&gradHeight=30&blur=35&bf=50&bd=45&logoFit=0", badge: "Bar · accent arancione", desc: "Badge a barra con colore accentato arancione, tema scuro" },
-  { id: 157336, type: "movie" as const, title: "Interstellar", params: "?genreName=Fantascienza&voteAverage=8.7&bs=vetro&be=0&tl=1&gradHeight=15&blur=0&logoFit=0", badge: "Vetro · pulito", desc: "Badge vetro senza sfocatura, asciutto e luminoso" },
-  { id: 299534, type: "movie" as const, title: "Avengers: Endgame", params: "?genreName=Azione&voteAverage=8.4&bs=shadow&gradHeight=40&blur=50&bf=70&bd=50&tl=0&logoFit=0", badge: "Shadow · blur intenso", desc: "Sfocatura intensa con gradiente scuro molto pronunciato" },
-  { id: 238, type: "movie" as const, title: "The Godfather", params: "?genreName=Crime&voteAverage=9.2&bs=bordo&gradHeight=10&tl=0&logoFit=0", badge: "Bordo · Crime pulito", desc: "Badge bordato, tema scuro, pulito senza blur extra" },
-  { id: 11, type: "movie" as const, title: "Star Wars", params: "?genreName=Fantascienza&voteAverage=8.5&bs=colored&tl=1&gradHeight=25&blur=25&bf=45&bd=30&logoFit=0", badge: "Colored · Fantascienza", desc: "Badge colorato genere Fantascienza con sfocatura media" },
-  { id: 680, type: "movie" as const, title: "Pulp Fiction", params: "?genreName=Crime&voteAverage=8.9&bs=pill&tl=0&ac=%23e74c3c&gradHeight=15&blur=15&bf=40&bd=25&logoFit=0", badge: "Pill · accent rosso", desc: "Badge pill con accento rosso, tema scuro minimal" },
-  { id: 597, type: "movie" as const, title: "Titanic", params: "?genreName=Dramma&voteAverage=8.4&bs=shadow&gradHeight=20&blur=30&bf=60&bd=40&tl=1&logoFit=0", badge: "Shadow · Dramma", desc: "Badge ombra con dramma e gradiente morbido" },
-  { id: 122, type: "movie" as const, title: "The Return of the King", params: "?genreName=Avventura&voteAverage=8.5&bs=pill&gradHeight=30&blur=40&bf=65&bd=45&tl=0&ac=%23d4a017&logoFit=0", badge: "Pill · accent dorato", desc: "Badge pill tema scuro con accento dorato" },
+  { id: 278, type: "movie", title: "The Shawshank Redemption", params: "?genreName=Dramma&voteAverage=9.3&bs=vetro&gradHeight=25&blur=30&bf=50&bd=40&tl=0&logoFit=0", desc: "Badge vetro con effetto liquid glass, tema scuro morbido" },
+  { id: 155, type: "movie", title: "The Dark Knight", params: "?genreName=Azione&voteAverage=8.5&bs=bordo&gradHeight=20&blur=20&bf=55&bd=35&tl=1&logoFit=0", desc: "Badge bordato elegante, tema chiaro con sfocatura leggera" },
+  { id: 27205, type: "movie", title: "Inception", params: "?genreName=Thriller&voteAverage=8.8&bs=bar&tl=0&ac=%23f39c12&gradHeight=30&blur=35&bf=50&bd=45&logoFit=0", desc: "Badge a barra con colore accentato arancione, tema scuro" },
+  { id: 157336, type: "movie", title: "Interstellar", params: "?genreName=Fantascienza&voteAverage=8.7&bs=vetro&be=0&tl=1&gradHeight=15&blur=0&logoFit=0", desc: "Badge vetro senza sfocatura, asciutto e luminoso" },
+  { id: 299534, type: "movie", title: "Avengers: Endgame", params: "?genreName=Azione&voteAverage=8.4&bs=shadow&gradHeight=40&blur=50&bf=70&bd=50&tl=0&logoFit=0", desc: "Sfocatura intensa con gradiente scuro molto pronunciato" },
+  { id: 238, type: "movie", title: "The Godfather", params: "?genreName=Crime&voteAverage=9.2&bs=bordo&gradHeight=10&tl=0&logoFit=0", desc: "Badge bordato, tema scuro, pulito senza blur extra" },
+  { id: 11, type: "movie", title: "Star Wars", params: "?genreName=Fantascienza&voteAverage=8.5&bs=colored&tl=1&gradHeight=25&blur=25&bf=45&bd=30&logoFit=0", desc: "Badge colorato genere Fantascienza con sfocatura media" },
+  { id: 680, type: "movie", title: "Pulp Fiction", params: "?genreName=Crime&voteAverage=8.9&bs=pill&tl=0&ac=%23e74c3c&gradHeight=15&blur=15&bf=40&bd=25&logoFit=0", desc: "Badge pill con accento rosso, tema scuro minimal" },
+  { id: 597, type: "movie", title: "Titanic", params: "?genreName=Dramma&voteAverage=8.4&bs=shadow&gradHeight=20&blur=30&bf=60&bd=40&tl=1&logoFit=0", desc: "Badge ombra con dramma e gradiente morbido" },
+  { id: 122, type: "movie", title: "The Return of the King", params: "?genreName=Avventura&voteAverage=8.5&bs=pill&gradHeight=30&blur=40&bf=65&bd=45&tl=0&ac=%23d4a017&logoFit=0", desc: "Badge pill tema scuro con accento dorato" },
   // --- Serie TV ---
-  { id: 1396, type: "tv" as const, title: "Breaking Bad", params: "?genreName=Crime&voteAverage=9.5&rs=bordo&rank=1&label=Oggi&ranking=&tl=1&gradHeight=20&blur=25&bf=50&bd=30&logoFit=0", badge: "Bordo ranking · #1", desc: "Ranking badge bordato con genere Crime in primo piano" },
-  { id: 66732, type: "tv" as const, title: "Stranger Things", params: "?genreName=Fantascienza&voteAverage=8.6&bs=colored&tl=1&gradHeight=20&blur=20&bf=45&bd=25&logoFit=0", badge: "Colored · Fantascienza", desc: "Badge colorato genere Fantascienza con leggera sfocatura" },
-  { id: 1668, type: "tv" as const, title: "Friends", params: "?genreName=Commedia&voteAverage=8.3&bs=bordo&tl=1&gradHeight=10&be=0&logoFit=0", badge: "Bordo · Commedia clean", desc: "Badge bordato pulito, senza sfocatura, tema chiaro" },
-  { id: 1399, type: "tv" as const, title: "Game of Thrones", params: "?genreName=Dramma&voteAverage=8.4&bs=bar&tl=0&ac=%233498db&gradHeight=35&blur=45&bf=70&bd=50&logoFit=0", badge: "Bar · accent blu", desc: "Badge a barra con accento blu e sfocatura forte" },
-  { id: 456, type: "tv" as const, title: "The Simpsons", params: "?genreName=Commedia&voteAverage=8.0&bs=vetro&tl=1&gradHeight=10&blur=10&bf=30&bd=15&logoFit=0", badge: "Vetro · Commedia", desc: "Badge vetro su tema chiaro, leggero e vivace" },
-  { id: 76479, type: "tv" as const, title: "The Boys", params: "?genreName=Azione&voteAverage=8.4&bs=shadow&tl=0&gradHeight=25&blur=30&bf=55&bd=40&logoFit=0", badge: "Shadow · Azione dark", desc: "Badge ombra tema scuro, gradiente marcato" },
-  { id: 82883, type: "tv" as const, title: "The Mandalorian", params: "?genreName=Fantascienza&voteAverage=8.2&bs=bordo&tl=0&gradHeight=20&blur=20&bf=45&bd=30&logoFit=0", badge: "Bordo · Fantascienza dark", desc: "Badge bordato tema scuro genere Fantascienza" },
-  { id: 60574, type: "tv" as const, title: "Peaky Blinders", params: "?genreName=Crime&voteAverage=8.5&bs=pill&tl=0&gradHeight=15&blur=15&bf=40&bd=25&logoFit=0", badge: "Pill · Crime british", desc: "Badge pill tema scuro, essenziale" },
-  { id: 71912, type: "tv" as const, title: "The Witcher", params: "?genreName=Azione&voteAverage=8.2&bs=colored&tl=1&gradHeight=30&blur=35&bf=60&bd=40&ac=%239b59b6&logoFit=0", badge: "Colored · accent viola", desc: "Badge colorato con accento viola e sfocatura media" },
-  { id: 44217, type: "tv" as const, title: "Dark", params: "?genreName=Thriller&voteAverage=8.0&rs=netflix&rank=4&label=Oggi&ranking=&tl=0&gradHeight=25&blur=30&bf=50&bd=40&logoFit=0", badge: "Netflix Top 10 · #4", desc: "Ranking badge stile Netflix Top 10, tema scuro e misterioso" },
+  { id: 1396, type: "tv", title: "Breaking Bad", params: "?genreName=Crime&voteAverage=9.5&rs=bordo&rank=1&label=Serie%20tv&ranking=&tl=1&gradHeight=20&blur=25&bf=50&bd=30&logoFit=0", desc: "Ranking badge bordato con genere Crime in primo piano" },
+  { id: 66732, type: "tv", title: "Stranger Things", params: "?genreName=Fantascienza&voteAverage=8.6&bs=colored&tl=1&gradHeight=20&blur=20&bf=45&bd=25&logoFit=0", desc: "Badge colorato genere Fantascienza con leggera sfocatura" },
+  { id: 1668, type: "tv", title: "Friends", params: "?genreName=Commedia&voteAverage=8.3&bs=bordo&tl=1&gradHeight=10&be=0&logoFit=0", desc: "Badge bordato pulito, senza sfocatura, tema chiaro" },
+  { id: 1399, type: "tv", title: "Game of Thrones", params: "?genreName=Dramma&voteAverage=8.4&bs=bar&tl=0&ac=%233498db&gradHeight=35&blur=45&bf=70&bd=50&logoFit=0", desc: "Badge a barra con accento blu e sfocatura forte" },
+  { id: 456, type: "tv", title: "The Simpsons", params: "?genreName=Commedia&voteAverage=8.0&bs=vetro&tl=1&gradHeight=10&blur=10&bf=30&bd=15&logoFit=0", desc: "Badge vetro su tema chiaro, leggero e vivace" },
+  { id: 76479, type: "tv", title: "The Boys", params: "?genreName=Azione&voteAverage=8.4&bs=shadow&tl=0&gradHeight=25&blur=30&bf=55&bd=40&logoFit=0", desc: "Badge ombra tema scuro, gradiente marcato" },
+  { id: 82883, type: "tv", title: "The Mandalorian", params: "?genreName=Fantascienza&voteAverage=8.2&bs=bordo&tl=0&gradHeight=20&blur=20&bf=45&bd=30&logoFit=0", desc: "Badge bordato tema scuro genere Fantascienza" },
+  { id: 60574, type: "tv", title: "Peaky Blinders", params: "?genreName=Crime&voteAverage=8.5&bs=pill&tl=0&gradHeight=15&blur=15&bf=40&bd=25&logoFit=0", desc: "Badge pill tema scuro, essenziale" },
+  { id: 71912, type: "tv", title: "The Witcher", params: "?genreName=Azione&voteAverage=8.2&bs=colored&tl=1&gradHeight=30&blur=35&bf=60&bd=40&ac=%239b59b6&logoFit=0", desc: "Badge colorato con accento viola e sfocatura media" },
+  { id: 44217, type: "tv", title: "Dark", params: "?genreName=Thriller&voteAverage=8.0&rs=netflix&rank=4&label=Serie%20tv&ranking=&tl=0&gradHeight=25&blur=30&bf=50&bd=40&logoFit=0", desc: "Ranking badge stile Netflix Top 10, tema scuro e misterioso" },
 ]
 
 const CARD_W = 240
@@ -40,10 +62,29 @@ const SCROLL_SPEED = 0.5 // px per frame
 export function PosterCarousel() {
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const tmdbKey = usePSelector((v) => v.tmdbKey)
+  const trending = usePSelector((v) => v.trending)
   const { t } = useT()
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // 20 poster demo scelti a caso a ogni refresh tra gli esempi statici e i film/
+  // serie delle classifiche giornaliere (JustWatch DAILY_POPULARITY esposta da
+  // /api/tmdb/trending): i titoli in classifica mostrano il badge rank reale.
+  // Senza trending (chiave assente o classifiche vuote) restano solo gli esempi
+  // statici, comunque mescolati.
+  const items = useMemo<CarouselEntry[]>(() => {
+    const rankParams = (rank: number) =>
+      `?ranking=&rank=${rank}&rs=netflix&tl=0&gradHeight=25&blur=30&bf=50&bd=40&logoFit=0`
+    const top = trending.map((i) => ({
+      id: i.id,
+      type: i.media_type,
+      title: titleOf(i),
+      params: rankParams(i.rank),
+      desc: i.media_type === "movie" ? `Top ${i.rank} film di oggi` : `Top ${i.rank} serie di oggi`,
+    }))
+    return shuffle([...EXAMPLES, ...top]).slice(0, CAROUSEL_SIZE)
+  }, [trending])
   // D4: il transform della pista è scritto DIRETTAMENTE sul DOM via ref.
-  // Prima setOffset() a ogni frame (60fps) ri-renderizzava le 40 card del
+  // Prima setOffset() a ogni frame (60fps) ri-renderizzava tutte le card del
   // carousel via React; ora solo activeIndex/showLeft/showRight restano state
   // (aggiornati ogni 12 frame) e il movimento è puro CSS senza re-render.
   const trackRef = useRef<HTMLDivElement>(null)
@@ -56,7 +97,7 @@ export function PosterCarousel() {
   const [showLeft, setShowLeft] = useState(false)
   const [showRight, setShowRight] = useState(true)
 
-  const totalItems = EXAMPLES.length
+  const totalItems = items.length
   const totalW = totalItems * STEP
 
   const applyTransform = useCallback((x: number) => {
@@ -69,8 +110,10 @@ export function PosterCarousel() {
 
   useEffect(() => {
     let frameCount = 0
+    // jsdom (vitest) non implementa matchMedia: assenza => animazione attiva.
+    const reduced = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
     const tick = () => {
-      if (!hoveringRef.current) {
+      if (!hoveringRef.current && !reduced) {
         posRef.current += SCROLL_SPEED
         if (posRef.current >= totalW) {
           posRef.current = 0
@@ -112,10 +155,11 @@ export function PosterCarousel() {
   }, [totalW, applyTransform])
 
   return (
-    <div className="mt-14 max-w-5xl mx-auto px-8">
+    <div id="poster-examples" className="mt-14 max-w-5xl mx-auto px-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="section-heading text-xl font-bold">
           {t("ui.posterExamples")}
+          <span className="demo-tag">{t("ui.demoTag")}</span>
         </h2>
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2">
@@ -153,7 +197,7 @@ export function PosterCarousel() {
             ref={trackRef}
             className="flex gap-4 will-change-transform"
           >
-            {[...EXAMPLES, ...EXAMPLES].map((ex, i) => {
+            {[...items, ...items].map((ex, i) => {
               // La chiave personale va in query: senza, i titoli non mappati
               // fallirebbero l'auto-fetch TMDB (solo chiavi personali, niente
               // chiave d'istanza). ex.params inizia con "?".
@@ -166,7 +210,7 @@ export function PosterCarousel() {
                 >
                   <div
                     onClick={() => navigateToPoster(toSearchResult({ id: ex.id, media_type: ex.type, title: ex.title, name: ex.title }))}
-                    className="carousel-card group cursor-pointer h-full flex flex-col"
+                    className="carousel-card group cursor-pointer h-full flex flex-col bg-white/[0.03] border border-white/[0.06]"
                   >
                     <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
                     <div className="relative z-[1] flex flex-col flex-1">
@@ -179,13 +223,6 @@ export function PosterCarousel() {
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      <div className="absolute bottom-3 left-3 right-3 z-30">
-                        <div className="flex flex-wrap gap-1.5">
-                          <span className="px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-semibold text-white/90">
-                            {ex.badge}
-                          </span>
-                        </div>
-                      </div>
                     </div>
                     <div className="p-3 relative z-10 flex-1">
                       <h3 className="text-xs font-semibold text-zinc-100 group-hover:text-white transition-colors duration-200">{ex.title}</h3>
@@ -193,13 +230,11 @@ export function PosterCarousel() {
                     </div>
                     </div>
                     <PosterDepthSheen sheenStrength={20} />
-                    <div className="absolute top-2 right-2 z-30 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
-                      <div className="w-7 h-7 rounded-full bg-accent-orange/80 ring-1 ring-white/20 flex items-center justify-center shadow-lg shadow-accent-orange/30">
-                        <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                      </div>
-                    </div>
+                    <span className="car-arrow" aria-hidden="true">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </span>
                   </div>
                 </div>
               )
