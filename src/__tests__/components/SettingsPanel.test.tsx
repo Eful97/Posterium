@@ -89,7 +89,7 @@ describe("SettingsPanel", () => {
     const input = screen.getByPlaceholderText("ui.tmdbKeyPlaceholder")
     await u.click(input)
     await u.tab()
-    expect(screen.getByText(/almeno 20 caratteri/)).toBeInTheDocument()
+    expect(screen.getByText("ui.keyTooShort")).toBeInTheDocument()
   })
 
   it("renders clear cache button", () => {
