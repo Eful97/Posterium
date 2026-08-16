@@ -23,6 +23,8 @@ od plugin install ./design-systems/posterium
 
 Then select **Posterium** in the Design System surface (no daemon restart needed).
 
+Ready-made generation briefs (editor mockup, landing page, pitch deck, social banner): see `docs/open-design-briefs.md` in the Posterium repo.
+
 ## Provenance & regeneration
 
 - **Source of truth**: `src/app/globals.css` (tokens) and `DESIGN.md` (root of the Posterium repo) — v0.15.2, `RENDER_VERSION efbfbbbe94`.
