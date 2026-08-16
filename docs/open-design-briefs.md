@@ -13,6 +13,8 @@
 
 ## Brief 1 — Editor UI mockup (Prototype)
 
+> ⚠️ **Superato da Brief 5** — usare il Brief 5 (allineato alla struttura reale v2).
+
 ```
 Create a single-page HTML prototype of the Posterium editor, following the
 Posterium design system (tokens.css + DESIGN.md) exactly: dark glassmorphism,
@@ -130,9 +132,57 @@ Output at high resolution.
 
 ---
 
+## Brief 5 — Editor UI hi-fi, struttura reale (Prototype) ⭐ USARE QUESTO
+
+> Obiettivo: mockup **hi-fi implementabile** dell'editor attuale (struttura v2 validata).
+> Nell'app: skill `od-default` + design system Posterium, artefatto Prototype.
+
+```
+Create a HIGH-FIDELITY single-page HTML prototype of the Posterium editor,
+ready to be ported to React/Tailwind. Follow the Posterium design system
+(tokens.css + DESIGN.md) exactly: dark glassmorphism, #0a0a0a background
+with soft radial accent glow top-center, accent #e85d2a, Geist/Inter font,
+glass recipe (gradient + tint + border + shadow + 14px blur), compact dense
+labels (10-12px, 600-700), tabular numbers, min 44px touch targets.
+
+Use REAL-looking content: pick a known sci-fi movie (e.g. "Dune: Part Two",
+2024, Sci-Fi, rating 8.7). The center poster is a real 2:3 cinematic
+artwork you generate as inline SVG (dark desert tones), and must show the
+actual Posterium badge system composed on it: a genre/rating pill badge
+(bottom center, accent-colored, "SCI-FI • 2024 • 8.7") and a red
+Netflix-style ranking ribbon on the left edge with the rank number "1" and
+the word "Netflix" beneath. The poster also shows the bottom blur gradient.
+
+Structure (exactly these 6 zones, from the validated spec):
+1. Context row: back button (left) + centered rounded search input.
+2. Poster column (left, ~300px): tab chips "CLEAN 12 / IT 4 / EN 3"; a row
+   with auto-rotate toggle pill (ON); a segmented control "TMDB | BEST FIT";
+   a primary button "Choose the best poster"; a 3-col grid of 6 poster
+   tiles (2:3) with one selected (accent ring) and one with an amber "BEST
+   FIT" chip; a "+12 load more" row; a muted "excluded — RIPRISTINA" row.
+3. Preview (center, ~400-480px): the poster on a frosted podium with a soft
+   accent glow ring; beneath it read-only metadata (title, year · type,
+   TMDB/IMDB links) and an action row: primary "Save poster", secondary
+   "Test URL", secondary "Copy config link".
+4. Details column (right, ~300px): tab chips "LOGO / BADGE / TRANSFORM";
+   a 2-col grid of 6 logo tiles (square, one selected) with a remove icon
+   on the selected one.
+5. Floating app toolbar (top-right, absolute): glass island with 6 icon
+   buttons (copy URL, install catalog, profile, proxy, "3" counter, settings).
+6. Floating status island (bottom-right, fixed): refresh, status, language.
+   Keep the two islands separate.
+
+Responsive: 3 columns → 2 (≤1160px, preview full-width first) → 1 (≤860px).
+Self-contained HTML/CSS, no external images except Google Fonts (Inter).
+The mock poster and all icons must be inline SVG. Output must be clean,
+semantic, class-based CSS (Tailwind-friendly) — no inline style hacks.
+```
+
+---
+
 ## Consigli
 
 - **Itera con la critica**, non rigenerare da zero: "keep the layout, make the center poster bigger", "switch the ribbon to the right side (Stremio)", "use the pill badge style everywhere".
-- **Il prototipo editor (Brief 1)** è il candidato migliore per tornare nel repo: esporta l'HTML e portalo in React/Tailwind seguendo i componenti già esistenti (`EditorPanel`, `PosterOptions`, `preview-frame`…), poi verifica con la visual suite.
+- **Il prototipo hi-fi (Brief 5)** è quello che poi implemento nell'editor reale: esporta l'HTML e me lo invii — lo porto in React/Tailwind seguendo i componenti esistenti (`EditView`, `EditorPanel`, `PosterOptions`, `LogoOptions`, `BadgeControls`…), rispettando le regole del repo (single renderer, golden rule client/server, visual suite).
 - **Il deck (Brief 3)** può andare in `docs/` del repo quando lo esporti.
 - Se un output non rispetta i token (es. accent sbagliato), punta l'errore nella critica: "use #e85d2a for the accent and the glass recipe from tokens.css" — il package è lì per questo.
