@@ -20,6 +20,10 @@ export function ProfileModal({ isOpen, onClose }: Props) {
   const mdblistApiKey = usePSelector((v) => v.mdblistApiKey)
   const setProfileId = usePSelector((v) => v.setProfileId)
   const setProfilePassword = usePSelector((v) => v.setProfilePassword)
+  const setProfileStateless = usePSelector((v) => v.setProfileStateless)
+  const setProfileConfigToken = usePSelector((v) => v.setProfileConfigToken)
+  const profileStateless = usePSelector((v) => v.profileStateless)
+  const profileConfigToken = usePSelector((v) => v.profileConfigToken)
   const loadProfile = usePSelector((v) => v.loadProfile)
   const { t } = useT()
   const ed = usePosterEditor()
@@ -106,8 +110,24 @@ export function ProfileModal({ isOpen, onClose }: Props) {
         try { localStorage.setItem("posterium_profile_id", newProfileId) } catch {}
       }
       setProfileId(newProfileId)
-      setProfilePassword(password)
-      toast.success(t("ui.profileSaved"))
+      if (data.stateless === true) {
+        // Profilo STATELESS (nessuno storage server): config e token firmato
+        // vivono in localStorage; il link condiviso usa `?config=`.
+        const token = data.configToken as string
+        setProfileStateless(true)
+        setProfileConfigToken(token)
+        if (typeof window !== "undefined") {
+          try { localStorage.setItem("posterium_profile_stateless", "1") } catch {}
+          try { localStorage.setItem("posterium_profile_config_token", token) } catch {}
+          try { localStorage.setItem("posterium_profile_config", JSON.stringify(config)) } catch {}
+        }
+        toast.success(t("ui.profileStatelessSaved"))
+      } else {
+        setProfileStateless(false)
+        setProfileConfigToken(null)
+        setProfilePassword(password)
+        toast.success(t("ui.profileSaved"))
+      }
       onClose()
     } catch (e) {
       console.error("[posterium] Failed to save profile:", e)
@@ -195,40 +215,63 @@ export function ProfileModal({ isOpen, onClose }: Props) {
             {profileId && (
               <div className="space-y-2 p-3 rounded-xl bg-black/40 border border-white/10 text-[11px] text-zinc-300 space-y-2">
                 <div className="font-semibold text-accent-orange">📌 {t("ui.aiomLinkTitle")}</div>
-                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/60 border border-white/5">
-                  <div className="truncate font-mono text-[10px] text-zinc-300">
-                    {typeof window !== "undefined" ? `${window.location.origin}/api/poster/{type}/{imdb_id}?u=${activeUuid}` : ""}
+                {profileStateless && profileConfigToken ? (
+                  // Profilo stateless: il link usa `?config=` (nessun server).
+                  <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/60 border border-white/5">
+                    <div className="truncate font-mono text-[10px] text-zinc-300">
+                      {typeof window !== "undefined" ? `${window.location.origin}/api/poster/{type}/{imdb_id}?config=${profileConfigToken}` : ""}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (typeof window !== "undefined") {
+                          await navigator.clipboard.writeText(`${window.location.origin}/api/poster/{type}/{imdb_id}?config=${profileConfigToken}`)
+                          toast.success(t("ui.copied"))
+                        }
+                      }}
+                      className="px-2 py-1 text-[10px] font-semibold rounded bg-white/10 hover:bg-accent-orange/20 text-zinc-200 hover:text-accent-orange shrink-0"
+                    >
+                      AIOMetadata
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (typeof window !== "undefined") {
-                        await navigator.clipboard.writeText(`${window.location.origin}/api/poster/{type}/{imdb_id}?u=${activeUuid}`)
-                        toast.success(t("ui.copied"))
-                      }
-                    }}
-                    className="px-2 py-1 text-[10px] font-semibold rounded bg-white/10 hover:bg-accent-orange/20 text-zinc-200 hover:text-accent-orange shrink-0"
-                  >
-                    AIOMetadata
-                  </button>
-                </div>
-                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/60 border border-white/5">
-                  <div className="truncate font-mono text-[10px] text-zinc-300">
-                    {typeof window !== "undefined" ? `${window.location.origin}/u/${activeUuid}/manifest.json` : ""}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (typeof window !== "undefined") {
-                        await navigator.clipboard.writeText(`${window.location.origin}/u/${activeUuid}/manifest.json`)
-                        toast.success(t("ui.copied"))
-                      }
-                    }}
-                    className="px-2 py-1 text-[10px] font-semibold rounded bg-white/10 hover:bg-accent-orange/20 text-zinc-200 hover:text-accent-orange shrink-0"
-                  >
-                    Stremio Addon
-                  </button>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/60 border border-white/5">
+                      <div className="truncate font-mono text-[10px] text-zinc-300">
+                        {typeof window !== "undefined" ? `${window.location.origin}/api/poster/{type}/{imdb_id}?u=${activeUuid}` : ""}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (typeof window !== "undefined") {
+                            await navigator.clipboard.writeText(`${window.location.origin}/api/poster/{type}/{imdb_id}?u=${activeUuid}`)
+                            toast.success(t("ui.copied"))
+                          }
+                        }}
+                        className="px-2 py-1 text-[10px] font-semibold rounded bg-white/10 hover:bg-accent-orange/20 text-zinc-200 hover:text-accent-orange shrink-0"
+                      >
+                        AIOMetadata
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/60 border border-white/5">
+                      <div className="truncate font-mono text-[10px] text-zinc-300">
+                        {typeof window !== "undefined" ? `${window.location.origin}/u/${activeUuid}/manifest.json` : ""}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (typeof window !== "undefined") {
+                            await navigator.clipboard.writeText(`${window.location.origin}/u/${activeUuid}/manifest.json`)
+                            toast.success(t("ui.copied"))
+                          }
+                        }}
+                        className="px-2 py-1 text-[10px] font-semibold rounded bg-white/10 hover:bg-accent-orange/20 text-zinc-200 hover:text-accent-orange shrink-0"
+                      >
+                        Stremio Addon
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

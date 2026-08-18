@@ -261,6 +261,8 @@
     "ui.profilePasswordRequired":  "Please enter a password",
     "ui.profileWrongPassword":  "Wrong password",
     "ui.profileSaved":  "Profile saved! URL copied to clipboard.",
+    "ui.profileStatelessSaved":  "Zustandsloses Profil im Browser gespeichert (nichts wird auf dem Server gespeichert).",
+    "ui.saveStatelessUnavailable":  "Speichern nicht verfügbar: zustandsloses Profil ohne Speicher. Die Config reist im Link.",
     "ui.saving":  "Saving...",
     "ui.viewGrid":  "Raster",
     "ui.viewMoodboard":  "Mood Board",

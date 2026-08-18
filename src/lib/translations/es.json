@@ -261,6 +261,8 @@
     "ui.profilePasswordRequired":  "Please enter a password",
     "ui.profileWrongPassword":  "Wrong password",
     "ui.profileSaved":  "Profile saved! URL copied to clipboard.",
+    "ui.profileStatelessSaved":  "Perfil stateless guardado en el navegador (nada se almacena en el servidor).",
+    "ui.saveStatelessUnavailable":  "Guardado no disponible: perfil stateless sin almacenamiento. La config viaja en el enlace.",
     "ui.saving":  "Saving...",
     "ui.viewGrid":  "Cuadrícula",
     "ui.viewMoodboard":  "Mood Board",

@@ -62,6 +62,31 @@ describe("buildUrlPattern", () => {
     expect(url).toContain("/api/poster/{type}/{imdb_id}?u=550e8400-e29b-41d4-a716-446655440000")
   })
 
+  it("uses ?config= stateless token when configToken is set (wins over profileId)", () => {
+    const url = buildUrlPattern({
+      ...baseBadgeParams,
+      tmdbKey: "key",
+      lang: "it",
+      profileId: "550e8400-e29b-41d4-a716-446655440000",
+      configToken: "abc.def",
+    })
+    expect(url).toContain("/api/poster/{type}/{imdb_id}?config=abc.def")
+    expect(url).not.toContain("?u=")
+  })
+
+  it("includes api_key and mdblist_key in stateless config-token URL", () => {
+    const url = buildUrlPattern({
+      ...baseBadgeParams,
+      tmdbKey: "tmdb-key",
+      lang: "it",
+      mdblistApiKey: "mdblist-key",
+      configToken: "abc.def",
+    })
+    expect(url).toContain("config=abc.def")
+    expect(url).toContain("api_key=tmdb-key")
+    expect(url).toContain("mdblist_key=mdblist-key")
+  })
+
   it("includes api_key param", () => {
     const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "abc123", lang: "it" })
     expect(url).toContain("api_key=abc123")

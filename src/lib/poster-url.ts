@@ -61,7 +61,19 @@ interface PosterState {
   tmdbKey: string
 }
 
-export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string; profileId?: string | null; mdblistApiKey?: string }): string {
+export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string; profileId?: string | null; mdblistApiKey?: string; configToken?: string | null }): string {
+  // Profilo STATELESS: la config viaggia nel config token firmato (`?config=`)
+  // invece di `?u=` — nessun salvataggio sul server. Le chiavi (TMDB/MDBList)
+  // restano esplicite nell'URL come nel ramo senza profilo.
+  if (bp.configToken) {
+    const params = buildStremioPosterSearchParams({
+      apiKey: bp.tmdbKey,
+      mdblistKey: bp.mdblistApiKey,
+      lang: bp.lang,
+      config: bp.configToken,
+    })
+    return `${getPosterPublicBaseUrl()}/api/poster/{type}/{imdb_id}?${params.toString()}`
+  }
   // Con un profilo attivo l'URL è corto: la config e le chiavi sono sul server
   // (per-utente) e vengono applicate leggendo `?u=`. Nessun parametro esposto.
   if (bp.profileId) {

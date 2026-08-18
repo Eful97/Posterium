@@ -11,7 +11,7 @@ import {
   isKvStorageConfigured,
   type ProfileData,
 } from "@/lib/profile-store"
-import { type PosteriumUserConfig, configTokenSchema } from "@/lib/config-token"
+import { type PosteriumUserConfig, configTokenSchema, encodeConfig } from "@/lib/config-token"
 import { requireAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { createLogger } from "@/lib/logger"
@@ -32,6 +32,11 @@ const log = createLogger("profile")
  *
  * Risponde con { profileId: string, url: string }
  * 401 se la password è errata per un profilo esistente.
+ *
+ * Se lo storage non è disponibile (Vercel senza KV: filesystem read-only),
+ * il profilo viene restituito come STATELESS: { profileId, url, stateless: true,
+ * configToken } — la config è firmata in un config token `?config=` e non viene
+ * salvata nulla sul server. Richiede CONFIG_HMAC_SECRET in produzione.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -197,20 +202,40 @@ export async function POST(req: NextRequest) {
       mappings = validMappings
     }
 
-    const profileId = await createOrUpdateProfile(validConfig, existingProfileId, password, apiKeys, mappings)
-    const url = `${getDomain()}/api/poster/{type}/{imdb_id}?u=${profileId}`
-
-    return Response.json({ profileId, url })
+    // Crea/aggiorna il profilo. Se lo storage non è disponibile (es. Vercel
+    // serverless read-only senza KV), invece di fallire il profilo diventa
+    // STATELESS: la config viene firmata in un config token (`?config=`) che
+    // viaggia nell'URL senza salvare nulla sul server.
+    try {
+      const profileId = await createOrUpdateProfile(validConfig, existingProfileId, password, apiKeys, mappings)
+      const url = `${getDomain()}/api/poster/{type}/{imdb_id}?u=${profileId}`
+      return Response.json({ profileId, url })
+    } catch (createError) {
+      log.error("POST failed", { error: createError instanceof Error ? createError.message : String(createError) })
+      if (!isKvStorageConfigured() && isStorageError(createError)) {
+        try {
+          const token = encodeConfig(validConfig)
+          const statelessId = existingProfileId || generateProfileId()
+          const url = `${getDomain()}/api/poster/{type}/{imdb_id}?config=${token}`
+          return Response.json({ profileId: statelessId, url, stateless: true, configToken: token })
+        } catch (tokenError) {
+          // encodeConfig lancia in produzione senza CONFIG_HMAC_SECRET
+          // (fail-closed): senza storage né secret il profilo stateless non è
+          // possibile — messaggio che spiega entrambe le strade.
+          const msg = tokenError instanceof Error ? tokenError.message : String(tokenError)
+          return Response.json(
+            {
+              error: `Storage not configured and no HMAC secret to sign a stateless profile: ${msg}. ` +
+                "Set CONFIG_HMAC_SECRET (or ENCRYPTION_KEY_SECRET) to enable stateless profiles, or configure Vercel KV to persist profiles.",
+            },
+            { status: 500 },
+          )
+        }
+      }
+      throw createError
+    }
   } catch (error) {
     log.error("POST failed", { error: error instanceof Error ? error.message : String(error) })
-    // Storage non disponibile (es. Vercel serverless read-only senza KV):
-    // messaggio chiaro invece del generico 500.
-    if (!isKvStorageConfigured() && isStorageError(error)) {
-      return Response.json(
-        { error: "Storage not configured: set KV_REST_API_URL and KV_REST_API_TOKEN (Vercel/Upstash) to persist profiles" },
-        { status: 500 },
-      )
-    }
     return Response.json({ error: "Failed to create/update profile" }, { status: 500 })
   }
 }

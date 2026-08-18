@@ -278,6 +278,8 @@
     "ui.profilePasswordRequired":  "Inserisci una password",
     "ui.profileWrongPassword":  "Password errata",
     "ui.profileSaved":  "Profilo salvato! URL copiato negli appunti.",
+    "ui.profileStatelessSaved":  "Profilo stateless salvato nel browser (nessun salvataggio sul server).",
+    "ui.saveStatelessUnavailable":  "Salvataggio non disponibile: profilo stateless senza storage. La config viaggia nel link.",
     "ui.saving":  "Salvataggio...",
     "ui.viewGrid":  "Griglia",
     "ui.viewMoodboard":  "Mood Board",

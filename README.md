@@ -43,6 +43,8 @@ pinned: false
 
 ## 🚀 Quick Start
 
+> 💡 **Non vuoi installare nulla?** Prova Posterium subito con il deploy gratuito su [▲ Vercel](#vercel): un click, nessun server da gestire.
+
 ```bash
 git clone https://github.com/Eful97/Posterium && cd Posterium
 npm install
@@ -93,12 +95,14 @@ Supportati: **Netflix, HBO Max, Disney+, Prime Video, Apple TV+, Paramount+, Rai
 
 | Piattaforma | Costo | Ideale per |
 |---|---|---|
+| [▲ Vercel](#vercel) | Gratis (Hobby) | **Prova subito**: deploy in 1 click, zero server, CDN rapido |
 | [🤗 Hugging Face Spaces](#hf-spaces) | Gratis se già Docker, altrimenti PRO | 16GB RAM, avvio in 2 minuti |
-| [▲ Vercel](#vercel) | Gratis (Hobby) | CDN rapido, zero server da gestire |
 | [🦾 Oracle Cloud A1](#oracle) | Gratis 24/7 | Sempre acceso e potente (4 OCPU / 24GB) |
 | [📱 Termux (Android)](#termux) | Gratis | Server da un vecchio telefono |
 | [🐳 Docker / Locale](#docker) | Gratis | Sviluppo e test |
 | [🖥️ VPS + Caddy](#vps) | ~5€/mese | Multi-utente (famiglia/amici) |
+
+> 💡 **Vuoi provare Posterium senza installare nulla?** Usa il deploy **▲ Vercel**: gratis, un click e in un paio di minuti hai la tua istanza online. L'**Opzione A** (sotto) basta per provare tutto — editor, anteprima e link condivisibili — senza configurare storage.
 
 > ⚠️ **Per tutte le piattaforme**: le chiavi TMDB/MDBList **non** si configurano via env — si inseriscono dal browser nelle **Impostazioni** e si salvano nel profilo. Senza chiave esplicita i poster rispondono 404 e i cataloghi sono vuoti.
 
@@ -118,28 +122,31 @@ Il repo è già configurato per HF Spaces Docker (`sdk: docker` + `app_port: 808
 </details>
 
 <details id="vercel">
-<summary><strong>▲ Vercel (Gratis, CDN rapido)</strong></summary>
+<summary><strong>▲ Vercel (Gratis, CDN rapido) — il modo più veloce per provare Posterium</strong></summary>
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FEful97%2FPosterium)
 
-Su Vercel il filesystem è **read-only e non persistente**: i poster vengono sempre generati e serviti correttamente, ma il salvataggio di mapping e profili richiede uno store esterno (Vercel KV). Scegli la modalità che preferisci:
+**Provalo subito, gratis**: un click su **Deploy**, pochi minuti e hai Posterium online senza gestire server. Su Vercel il filesystem è **read-only e non persistente**: i poster vengono sempre generati e serviti correttamente, ma il salvataggio di mapping e profili richiede uno store esterno (Vercel KV). Scegli la modalità che preferisci:
 
 ---
 
-**Opzione A — Senza persistenza (solo rendering)**
+**Opzione A — Prova senza persistenza (consigliata per iniziare)**
 
-Funziona subito, senza configurazione aggiuntiva. I poster vengono generati e serviti normalmente, ma **non puoi salvare** mapping personalizzati né profili cloud: ogni tentativo di salvataggio restituisce errore 500 (`Storage not configured`).
+Funziona subito, senza configurazione aggiuntiva. I poster vengono generati e serviti normalmente, ma mapping e profili **non vengono salvati sul server** (filesystem read-only).
 
 1. Clicca **Deploy** (o Vercel → Add New → Project → importa `Eful97/Posterium`). Framework Next.js, build default.
-2. Fine. L'app è online e genera poster; usa i **config token** (`?config=<token>`, vedi sotto) per personalizzare i poster senza salvare nulla sul server.
+2. Imposta **almeno** `CONFIG_HMAC_SECRET` (o `ENCRYPTION_KEY_SECRET`): senza di essa il salvataggio del profilo fallisce anche in modalità stateless.
+3. Fine. L'app è online e genera poster — ottima per provare l'editor, l'anteprima WYSIWYG e condividere i tuoi poster.
 
-> ⚠️ Senza KV: niente profili cloud, niente "I miei poster", niente salvataggio mapping. Se ti serve solo generare poster al volo con parametri nell'URL, questa opzione basta.
+**Profilo stateless (consigliato in questa modalità)**: con `CONFIG_HMAC_SECRET` impostato, "Salva Profilo" **non fallisce più**: il server genera un **config token firmato** e il profilo diventa **stateless** — la configurazione viaggia nel link `?config=<token>` invece di essere salvata sul server. Il client la conserva in `localStorage` (rientro automatico nello stesso browser) e il link resta condivisibile cross-device.
+
+> ⚠️ Limiti della modalità stateless: niente profili cloud server-side (niente "I miei poster", niente mapping per-titolo salvati), le chiavi TMDB/MDBList vanno nell'URL (`api_key=`, `mdblist_key=`) e il manifest addon `/u/<uuid>/manifest.json` non è disponibile. Se ti servono profili veri con mapping salvati, passa all'**Opzione B** quando vuoi (basta aggiungere KV).
 
 ---
 
 **Opzione B — Con persistenza (salvataggio mapping e profili)**
 
-Aggiunge uno store **Vercel KV (Upstash)** dove vengono salvati mapping, profili e apiKeys cifrate.
+Aggiunge uno store **Vercel KV (Upstash)** dove vengono salvati mapping, profili e apiKeys cifrate. Consigliata se usi Posterium tutti i giorni o per più dispositivi.
 
 1. Clicca **Deploy** (o Vercel → Add New → Project → importa `Eful97/Posterium`). Framework Next.js, build default.
 2. **Crea lo store KV**: nella dashboard Vercel vai su **Storage → Create Database → KV** (Upstash). Collega il database al progetto appena creato.
@@ -148,8 +155,8 @@ Aggiunge uno store **Vercel KV (Upstash)** dove vengono salvati mapping, profili
 5. (Consigliato) Imposta le env aggiuntive:
    | Variabile | Necessità |
    |---|---|
-   | `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 Obbligatorie (senza: salvare = 500) |
-   | `CONFIG_HMAC_SECRET` | 🟠 Consigliata — sblocca i config token |
+   | `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 Obbligatorie (senza: profili solo stateless) |
+   | `CONFIG_HMAC_SECRET` | 🟠 Consigliata — sblocca i config token e il profilo stateless |
    | `PROFILE_ENCRYPTION_KEY` | 🟠 Consigliata — cifra le apiKeys dei profili (`openssl rand -hex 32`) |
    | `POSTERIUM_ADMIN_TOKEN` | Opzionale — proteggi le route admin |
 6. Verifica: apri `https://<tuo-app>.vercel.app/api/status` → la sezione **storage** deve mostrare `kv`.
@@ -163,7 +170,8 @@ Aggiunge uno store **Vercel KV (Upstash)** dove vengono salvati mapping, profili
 **Troubleshooting**:
 - Poster 404 con `TMDB API key is missing` → manca la chiave nella richiesta: passa `?api_key=` / header `x-api-key`, o usa un link `?u=<uuid>` col profilo.
 - Cataloghi vuoti → il catalogo richiede una chiave TMDB nella richiesta.
-- `ENOENT` / "Storage not configured" → manca lo store KV: segui l'Opzione B dal punto 2.
+- `ENOENT` / "Storage not configured" → manca lo store KV: i profili restano **stateless** (config nel link, Opzione A) oppure segui l'Opzione B dal punto 2 per il salvataggio server-side.
+- "no HMAC secret to sign a stateless profile" → manca `CONFIG_HMAC_SECRET` (o `ENCRYPTION_KEY_SECRET`): impostalo per abilitare il profilo stateless.
 
 📌 Manifest Stremio: `https://<tuo-app>.vercel.app/manifest.json` (o `/u/<uuid>/manifest.json` col profilo).
 </details>

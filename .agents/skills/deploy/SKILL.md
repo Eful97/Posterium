@@ -21,7 +21,7 @@ operator/agent checklist.
 | Docker manual | `docker build --build-arg NODE_MAX_OLD_SPACE=1024 -t posterium .` then `docker run -p 8080:8080 -v posterium-data:/data posterium` | named volume `/data` | entrypoint self-warmup (needs rebuilt image) |
 | Docker Compose | `docker compose up -d` (`.env` only for admin token; hardening cap_drop ALL, no-new-privileges; 512MB mem limit) | volume `posterium-data` | same |
 | HF Spaces | frontmatter `sdk: docker` + `app_port: 8080`; env `NODE_OPTIONS=--max-old-space-size=1024` | Storage bucket → `/data` (uid 1000) | same |
-| Vercel | deploy button / import repo; Next.js runtime | **KV required** (KV_REST_API_URL/TOKEN) — fs is read-only | NOT useful on Hobby (10s limit) |
+| Vercel | deploy button / import repo; Next.js runtime | **KV required for server-side saves** (KV_REST_API_URL/TOKEN); without it profiles degrade to stateless `?config=` (needs CONFIG_HMAC_SECRET) — fs is read-only | NOT useful on Hobby (10s limit) |
 | VPS/Oracle/Termux | `npm run build && npm start` (or docker compose); Oracle A1 4 OCPU free tier | local `/data` | none |
 
 ## Build args & env (Dockerfile)
@@ -66,8 +66,17 @@ Run these against the deployed instance:
 
 ## Vercel specifics
 
-- KV is **mandatory** for saving mappings/profiles (`KV_REST_API_URL` +
-  `KV_REST_API_TOKEN`); without it saves fail with `ENOENT` / storage error.
+- KV (`KV_REST_API_URL` + `KV_REST_API_TOKEN`) is required for **server-side
+  persistence** of mappings/profiles. Without it the filesystem is read-only and
+  saves degrade: mapping saves fail, and **profile creation falls back to a
+  STATELESS profile** — `POST /api/profile` returns `{ stateless: true,
+  configToken }` and the config travels in the signed `?config=` link instead of
+  being stored. Stateless profiles live in browser localStorage (same-browser
+  reload works); no per-title mappings, no `/u/<uuid>/manifest.json`, and API
+  keys must be passed in the URL.
+- The stateless fallback requires `CONFIG_HMAC_SECRET` (or
+  `ENCRYPTION_KEY_SECRET`) to sign the token — without storage AND without the
+  secret, profile creation still fails with an explanatory 500.
 - Hobby function duration is 10s: cold catalogs (~10s) and burst poster renders
   can time out. Warmup does not complete on Hobby — not critical.
 - `CONFIG_HMAC_SECRET` unlocks config tokens (fail-closed without it).
