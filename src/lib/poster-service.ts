@@ -117,10 +117,31 @@ async function getVignette(): Promise<Buffer> {
 // ---------------------------------------------------------------------------
 
 function badgeCacheKey(type: string, ...parts: (string | number | boolean | undefined | null)[]): string {
-  return `badge:${type}:${parts.map(p => typeof p === "number" ? Math.round(p * 10) / 10 : (p ?? "x")).join(":")}`
+  // Fix L1: i segmenti stringa vengono escapati — una label utente con ":" 
+  // (es. customBadge "Top:10") prima produceva chiavi ambigue collidenti con
+  // i campi successivi (segmenti di lunghezza variabile separati da ":").
+  return `badge:${type}:${parts.map(p => typeof p === "number" ? Math.round(p * 10) / 10 : (typeof p === "string" ? encodeURIComponent(p) : (p ?? "x"))).join(":")}`
 }
 
 const badgeInflight = new Map<string, Promise<unknown>>()
+// Fix L2: timeout difensivo sulle promise badge in-flight — un render badge
+// che non si assesta (sharp appeso, bug) non deve bloccare PER SEMPRE le
+// richieste future sulla stessa chiave. Dopo il timeout la chiave viene
+// liberata e il prossimo render riparte da zero (l'eventuale completamento
+// tardivo popola comunque la cache condivisa).
+const BADGE_INFLIGHT_TIMEOUT_MS = 20_000
+
+function coalesceBadgeRender<T>(key: string, run: () => Promise<T>): Promise<T | null> {
+  const existing = badgeInflight.get(key) as Promise<T | null> | undefined
+  if (existing) return existing
+  const promise: Promise<T | null> = Promise.race([
+    run().catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), BADGE_INFLIGHT_TIMEOUT_MS)),
+  ])
+  promise.finally(() => { badgeInflight.delete(key) })
+  badgeInflight.set(key, promise)
+  return promise
+}
 
 // ---------------------------------------------------------------------------
 // Image-level caches (colori badge, resize logo/backdrop)
@@ -380,36 +401,21 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   const [genreBadgeResult, rankBadgeResult] = await Promise.all([
     genreBadgeKey
       ? (cacheGet<{ png: Buffer; w: number; h: number }>(genreBadgeKey)
-          || (() => {
-              const existing = badgeInflight.get(genreBadgeKey) as Promise<{ png: Buffer; w: number; h: number } | null> | undefined
-              if (existing) return existing
-              const p = renderGenreBadge(genreName ?? "", voteAverage ?? 0, STD_W, year, badgeStyle, accentColorGenre, topLight, { showGenre: badgeGenre, showYear: badgeYear, showRating: badgeRating })
+          || coalesceBadgeRender(genreBadgeKey, () =>
+              renderGenreBadge(genreName ?? "", voteAverage ?? 0, STD_W, year, badgeStyle, accentColorGenre, topLight, { showGenre: badgeGenre, showYear: badgeYear, showRating: badgeRating })
                 .then((r) => { if (r) cacheSet(genreBadgeKey, r, ["badge"], BADGE_CACHE_TTL); return r })
-                .catch(() => null)
-              p.finally(() => { badgeInflight.delete(genreBadgeKey) })
-              badgeInflight.set(genreBadgeKey, p)
-              return p
-            })())
+            ))
       : Promise.resolve(null),
     rankBadgeKey
       ? (cacheGet<{ png: Buffer; w: number; h: number; isRank?: boolean }>(rankBadgeKey)
-          || (() => {
-              const existing = badgeInflight.get(rankBadgeKey) as Promise<{ png: Buffer; w: number; h: number; isRank?: boolean } | null> | undefined
-              if (existing) return existing
-              let p: Promise<{ png: Buffer; w: number; h: number; isRank?: boolean } | null>
+          || coalesceBadgeRender(rankBadgeKey, () => {
               if (topBadge!.type === "extra") {
-                p = renderExtraBadge(topBadge!.label, STD_W, topLight, rankingBadgeStyle, accentColorRank)
+                return renderExtraBadge(topBadge!.label, STD_W, topLight, rankingBadgeStyle, accentColorRank)
                   .then((r) => { const v = { ...r, isRank: false }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
-                  .catch(() => null)
-              } else {
-                p = renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
-                  .then((r) => { const v = { ...r, isRank: true }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
-                  .catch(() => null)
               }
-              p.finally(() => { badgeInflight.delete(rankBadgeKey) })
-              badgeInflight.set(rankBadgeKey, p)
-              return p
-            })())
+              return renderRankingBadge(topBadge!.rank!, STD_W, topBadge!.label, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
+                .then((r) => { const v = { ...r, isRank: true }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
+            }))
       : Promise.resolve(null),
   ])
 

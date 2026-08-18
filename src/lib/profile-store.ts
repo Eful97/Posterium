@@ -52,19 +52,22 @@ function decryptValue(ciphertext: string, key: Buffer): string | null {
 /**
  * Trasforma un apiKey salvata nel valore reale da esporre, gestendo tutti gli
  * stati di cifratura (finding 9):
- * - `v1:...` (cifrata) → decifra se la chiave è configurata, altrimenti ritorna
- *   il valore così com'è (garbage, ma non muta il dato salvato);
+ * - `v1:...` (cifrata) → decifra se la chiave è configurata; se la decifratura
+ *   fallisce (chiave assente o ruotata) ritorna `null` (fix M10: prima veniva
+ *   restituito il ciphertext stesso, usato poi come api_key TMDB → 401 su
+ *   tutti i poster e ri-cifrato al salvataggio successivo = doppia cifratura);
  * - `plain:...` → strip del prefisso;
  * - legacy senza prefisso → ritorna così com'è (plaintext storico).
  */
-function unwrapApiKey(stored: string, encKey: Buffer | null): string {
+function unwrapApiKey(stored: string, encKey: Buffer | null): string | null {
   if (stored.startsWith("plain:")) return stored.slice("plain:".length)
   if (stored.startsWith(`${ENC_PREFIX}:`)) {
     if (encKey) {
       const d = decryptValue(stored, encKey)
       if (d) return d
     }
-    return stored
+    log.warn("apiKey cifrata non decifrabile (PROFILE_ENCRYPTION_KEY assente o ruotata) — la chiave viene ignorata, non restituita come ciphertext")
+    return null
   }
   return stored
 }
@@ -233,7 +236,10 @@ async function loadProfilesFromDisk(): Promise<Record<string, ProfileData>> {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       memCache = {}
-      memCacheTime = Date.now()
+      // Fix L8: sentinella 0 come in store.ts — con Date.now() una scrittura
+      // di un altro worker nello stesso millisecondo non veniva rilevata
+      // (mtime == cacheTime) e la cache restava stantia.
+      memCacheTime = 0
       return {}
     }
     log.warn("Failed to load profiles", { error: error instanceof Error ? error.message : String(error) })
@@ -395,10 +401,16 @@ export async function getFullProfileData(profileId: string): Promise<ProfileData
   const result: ProfileData = { ...raw }
   result.apiKeys = { ...raw.apiKeys }
   if (result.apiKeys.tmdbKey) {
-    result.apiKeys.tmdbKey = unwrapApiKey(result.apiKeys.tmdbKey, encKey)
+    const unwrapped = unwrapApiKey(result.apiKeys.tmdbKey, encKey)
+    // Fix M10: null = non decifrabile → la chiave viene omessa (il caller si
+    // comporta come "profilo senza chiave"), mai esposta come ciphertext.
+    if (unwrapped === null) delete result.apiKeys.tmdbKey
+    else result.apiKeys.tmdbKey = unwrapped
   }
   if (result.apiKeys.mdblistApiKey) {
-    result.apiKeys.mdblistApiKey = unwrapApiKey(result.apiKeys.mdblistApiKey, encKey)
+    const unwrapped = unwrapApiKey(result.apiKeys.mdblistApiKey, encKey)
+    if (unwrapped === null) delete result.apiKeys.mdblistApiKey
+    else result.apiKeys.mdblistApiKey = unwrapped
   }
   return result
 }

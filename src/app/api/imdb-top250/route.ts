@@ -7,12 +7,20 @@
  */
 import { NextRequest } from "next/server"
 import { isImdbTop250 } from "@/lib/imdb-top250"
+import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 export async function GET(req: NextRequest) {
+  // Fix L23: rate limit (prima la route era illimitata e senza header cache).
+  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const imdbId = req.nextUrl.searchParams.get("imdbId") || ""
+  // Solo id IMDb validi: un input arbitrario non deve scaldare la lookup.
+  if (!/^tt\d+$/.test(imdbId)) {
+    return Response.json({ inTop250: false }, { headers: { "Cache-Control": "no-store" } })
+  }
   try {
     const inTop250 = await isImdbTop250(imdbId)
-    return Response.json({ inTop250 })
+    return Response.json({ inTop250 }, { headers: { "Cache-Control": "public, max-age=300, s-maxage=1800" } })
   } catch {
     return Response.json({ inTop250: false })
   }

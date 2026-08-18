@@ -40,13 +40,23 @@ const cached = cacheGet<{ title?: string; name?: string; genres: Genre[]; voteAv
       getDetails(mediaType, tmdbId, language, apiKey),
       getExternalIds(mediaType, tmdbId, apiKey).catch(() => ({ imdb_id: null })),
     ])
-    const rating = extIds.imdb_id
-      ? (await Promise.race([
-          fetchAggregatedRating(extIds.imdb_id, mdblistKey).catch(() => null),
-          new Promise<Awaited<ReturnType<typeof fetchAggregatedRating>>>((resolve) => setTimeout(() => resolve(null), RATING_WAIT_MS)),
-        ]))?.average ?? data.vote_average ?? 0
+    const imdbId = extIds.imdb_id
+    const rating = imdbId
+      ? (await (async () => {
+          // Fix L19: timer della race cancellato se vince il fetch del rating.
+          let ratingTimer: ReturnType<typeof setTimeout> | undefined
+          const ratingTimeout = new Promise<Awaited<ReturnType<typeof fetchAggregatedRating>>>((resolve) => {
+            ratingTimer = setTimeout(() => resolve(null), RATING_WAIT_MS)
+          })
+          const aggregated = await Promise.race([
+            fetchAggregatedRating(imdbId, mdblistKey).catch(() => null),
+            ratingTimeout,
+          ])
+          if (ratingTimer) clearTimeout(ratingTimer)
+          return aggregated
+        })().then((r) => r?.average ?? data.vote_average ?? 0))
       : data.vote_average ?? 0
-    const body = { title: data.title, name: data.name, genres: data.genres, voteAverage: rating, voteCount: data.vote_count, type: data.type, status: data.status, release_date: data.release_date, first_air_date: data.first_air_date, last_air_date: data.last_air_date, next_episode_to_air: data.next_episode_to_air, number_of_seasons: data.number_of_seasons, number_of_episodes: data.number_of_episodes, networks: data.networks, production_companies: data.production_companies, imdb_id: extIds.imdb_id, original_language: data.original_language }
+    const body = { title: data.title, name: data.name, genres: data.genres || [], voteAverage: rating, voteCount: data.vote_count, type: data.type, status: data.status, release_date: data.release_date, first_air_date: data.first_air_date, last_air_date: data.last_air_date, next_episode_to_air: data.next_episode_to_air, number_of_seasons: data.number_of_seasons, number_of_episodes: data.number_of_episodes, networks: data.networks, production_companies: data.production_companies, imdb_id: extIds.imdb_id, original_language: data.original_language }
     cacheSet(cacheKey, body, ["tmdb", "details"])
     return Response.json(body)
   } catch {

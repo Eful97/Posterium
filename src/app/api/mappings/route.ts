@@ -7,7 +7,8 @@ import { checkAdminToken, requireAdminToken, isSameOrigin, adminAuthResponse, or
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
-import { getFullProfileData, createOrUpdateProfile } from "@/lib/profile-store"
+import { resolveRequestApiKey } from "@/lib/tmdb"
+import { getFullProfileData, createOrUpdateProfile, verifyProfilePassword } from "@/lib/profile-store"
 import { createLogger } from "@/lib/logger"
 import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/read-body"
 
@@ -72,6 +73,24 @@ export async function POST(req: NextRequest) {
   if (profileId) {
     const fullProfile = await getFullProfileData(profileId)
     if (fullProfile) {
+      // Fix H7: il write-back nel profilo richiede la password del profilo
+      // (o un admin token valido). Prima chiunque conoscesse l'UUID — esposto
+      // nelle URL poster pubbliche — poteva sovrascrivere i mapping salvati
+      // della vittima su istanze pubbliche. Profilo protetto senza password
+      // fornita → 401; password errata → 401. Il mapping globale è già stato
+      // salvato sopra: si rifiuta solo la parte profilo.
+      const password = typeof rawBody.password === "string" ? rawBody.password : ""
+      const adminOverride = requireAdminToken(req)
+      if (fullProfile.passwordHash && fullProfile.salt) {
+        if (!adminOverride && (!password || !(await verifyProfilePassword(profileId, password)))) {
+          return Response.json({ error: "Invalid profile password" }, { status: 401 })
+        }
+      } else if (!adminOverride) {
+        // Profilo legacy senza password: come in /api/profile (finding 1) il
+        // write-back da non-admin è rifiutato, altrimenti l'UUID pubblico
+        // basta a sovrascrivere i mapping altrui.
+        return Response.json({ error: "Profile password required" }, { status: 401 })
+      }
       const updatedMappings = {
         ...(fullProfile.mappings || {}),
         [`${newMapping.mediaType}:${newMapping.tmdbId}`]: newMapping,
@@ -89,30 +108,39 @@ export async function POST(req: NextRequest) {
   // Invalidazione mirata al mapping salvato, non globale (i default impattano
   // tutto, un singolo mapping solo il suo poster/badge).
   cacheInvalidatePosterDataFor(parsed.data.mediaType, parsed.data.tmdbId)
-  // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano
-  const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
-  void (async () => {
-    const savedMapping = await getById(parsed.data.mediaType, parsed.data.tmdbId)
-    const warmUrl = buildStremioPosterUrl({
-      origin: internalOrigin,
-      type: parsed.data.mediaType === "tv" ? "series" : "movie",
-      id: parsed.data.tmdbId,
-      defaults: getServerDefaults(),
-      mapping: savedMapping,
-      lang: parsed.data.language || "it",
-    })
-    await fetch(warmUrl, { signal: AbortSignal.timeout(25000) })
-  })().catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : String(error)
-    log.warn("Poster warmup failed", { error: message })
-  })
-  // Warm catalog cache — ricostruisci cataloghi principali in background
-  for (const catalog of getWarmupCatalogs()) {
-    const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
-    void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
+  // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano.
+  // Guardia VERCEL (fix M11): il self-fetch su 127.0.0.1 non esiste su Vercel
+  // serverless; prima il warmup falliva sempre e loggava warning ingannevoli.
+  if (!process.env.VERCEL) {
+    const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
+    void (async () => {
+      const savedMapping = await getById(parsed.data.mediaType, parsed.data.tmdbId)
+      const warmUrl = buildStremioPosterUrl({
+        origin: internalOrigin,
+        type: parsed.data.mediaType === "tv" ? "series" : "movie",
+        id: parsed.data.tmdbId,
+        defaults: getServerDefaults(),
+        mapping: savedMapping,
+        lang: parsed.data.language || "it",
+      })
+      await fetch(warmUrl, { signal: AbortSignal.timeout(25000) })
+    })().catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error)
-      log.warn("Catalog warmup failed", { catalog: catalog.id, error: message })
+      log.warn("Poster warmup failed", { error: message })
     })
+    // Warm catalog cache — ricostruisci cataloghi principali in background.
+    // Fix M11: la chiave TMDB della richiesta viene inoltrata — senza, i
+    // cataloghi keyed (JW) venivano cacchettati vuoti per 60s sotto la cache
+    // key `aknone` che nessuna richiesta reale riusa.
+    const requestApiKey = resolveRequestApiKey(req)
+    for (const catalog of getWarmupCatalogs()) {
+      const keyParam = requestApiKey ? `?api_key=${encodeURIComponent(requestApiKey)}` : ""
+      const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json${keyParam}`
+      void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error)
+        log.warn("Catalog warmup failed", { catalog: catalog.id, error: message })
+      })
+    }
   }
   return Response.json({ ok: true })
 }

@@ -3,6 +3,7 @@ import { resolveLabel, isRankKey, t as tFn } from "./i18n"
 import { getPosterPublicBaseUrl } from "./poster-public-url"
 import { buildStremioPosterSearchParams } from "./stremio-poster-params"
 import { RENDER_VERSION } from "./render-version"
+import { TOP_LIGHT_LUMINANCE } from "./constants"
 import type { SearchResult, TMDBImage } from "./types"
 import type { EnrichedAnimeItem } from "./validation"
 import type { BadgeStyle, RankingBadgeStyle } from "./badge-styles"
@@ -108,6 +109,11 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
     const genre = ps.metaInfo.genres[0]?.name
     if (genre) params.push(`genreName=${encodeURIComponent(genre)}`)
     if (ps.metaInfo.voteAverage > 0) params.push(`voteAverage=${ps.metaInfo.voteAverage}`)
+    // Fix M1: l'anno della preview — senza, il server non imposta
+    // releaseDate/firstAirDate nel ramo query e il badge genere della preview
+    // omette "• 2024" che compare invece sul poster finale.
+    const year = ps.metaInfo.release_date?.slice(0, 4) || ps.metaInfo.first_air_date?.slice(0, 4)
+    if (year) params.push(`year=${year}`)
     const imdbId = ps.metaInfo.imdb_id || ps.selected.imdb_id
     if (imdbId) params.push(`imdbId=${encodeURIComponent(imdbId)}`)
   }
@@ -132,10 +138,17 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   params.push(`rs=${bp.rankingBadgeStyle}`)
   if (!bp.blurEnabled) params.push("be=0")
   if (bp.networkLogo === false) params.push("netLogo=0")
-  if (bp.ribbonSide === "right") params.push("side=right")
+  // Fix M2: side viene emesso SEMPRE (left|right) — prima soltanto "right";
+  // senza il parametro il server risolve dal mapping/config salvati (di
+  // default right in modalità Stremio) e la preview rendeva a destra anche
+  // quando l'editor mostra lo stato sinistra.
+  if (bp.ribbonSide) params.push(`side=${bp.ribbonSide}`)
   if (ps.accentColor) params.push(`ac=${encodeURIComponent(ps.accentColor)}`)
+  // Fix M16: tl è inviato SOLO a calcolo completato: con topEdgeColor null
+  // (colore non ancora campionato) la preview forzava tl=1 (testo chiaro)
+  // anche quando il server avrebbe calcolato scuro — ora il server decide.
   const topLight = computeTopLight(ps.topEdgeColor)
-  params.push(`tl=${topLight ? "1" : "0"}`)
+  if (topLight !== null) params.push(`tl=${topLight ? "1" : "0"}`)
   if (bp.rankingBadges) {
     const badgeParams = computeBadgeParams(ps, bp)
     params.push(...badgeParams)
@@ -153,14 +166,21 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   return `${getDomain()}/api/poster/${ps.selected.media_type}/${ps.selected.id}${qs}`
 }
 
-function computeTopLight(hexColor: string | null): boolean {
-  const h = hexColor
-  if (!h || h.length < 7) return true
-  const r = parseInt(h.slice(1, 3), 16) / 255
-  const g = parseInt(h.slice(3, 5), 16) / 255
-  const b = parseInt(h.slice(5, 7), 16) / 255
+/**
+ * Top-light della preview. Ritorna `null` quando il colore non è ancora stato
+ * campionato (topEdgeColor null): in quel caso il parametro tl viene OMESSO e
+ * decide il server (calcolo sull'immagine reale). Formula Rec.709 sugli stessi
+ * coefficienti del server (image-utils.luma) e soglia condivisa
+ * TOP_LIGHT_LUMINANCE (fix M16): prima i byte sRGB venivano confrontati con
+ * una soglia hardcoded e il null diventava true (testo chiaro forzato).
+ */
+function computeTopLight(hexColor: string | null): boolean | null {
+  if (!hexColor || hexColor.length < 7) return null
+  const r = parseInt(hexColor.slice(1, 3), 16) / 255
+  const g = parseInt(hexColor.slice(3, 5), 16) / 255
+  const b = parseInt(hexColor.slice(5, 7), 16) / 255
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-  return luminance > 0.60
+  return luminance > TOP_LIGHT_LUMINANCE
 }
 
 function computeBadgeParams(ps: PosterState, bp: BadgeParams): string[] {

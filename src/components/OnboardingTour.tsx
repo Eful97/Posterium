@@ -2,37 +2,21 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import { Search, Sparkles, Image, MonitorSmartphone, ChevronRight, ChevronLeft, X } from "lucide-react"
+import { useT } from "@/lib/contexts/TranslationContext"
 
+// Fix M20: gli step usano chiavi i18n (STEPS era interamente hardcoded in
+// italiano). Le chiavi vivono nei 5 dizionari (ui.onboarding*).
 const STEPS = [
-  {
-    icon: Search,
-    title: "Cerca un film o serie TV",
-    description:
-      "Digita il titolo nella barra di ricerca per trovare il tuo film o serie preferita. Posterium cerca su TMDB e ti mostra i risultati con poster, anno e genere.",
-  },
-  {
-    icon: Sparkles,
-    title: "Personalizza badge e stili",
-    description:
-      "Scegli tra 6 stili per badge genere/rating, 5 stili per badge trend, sfocatura sfondo, gradienti e colori accent che si adattano automaticamente al poster.",
-  },
-  {
-    icon: Image,
-    title: "Scegli locandina o logo",
-    description:
-      "Seleziona una locandina pulita con un click o aggiungi il logo originale del film. L'algoritmo Best Fit trova automaticamente il miglior poster per il logo.",
-  },
-  {
-    icon: MonitorSmartphone,
-    title: "Salva e vedi su Stremio",
-    description:
-      "Salva il poster personalizzato e sarà subito visibile su Stremio! Crea un profilo cloud con password per portare le tue impostazioni su qualsiasi dispositivo.",
-  },
+  { icon: Search, titleKey: "ui.onboardingSearchTitle", descKey: "ui.onboardingSearchDesc" },
+  { icon: Sparkles, titleKey: "ui.onboardingBadgesTitle", descKey: "ui.onboardingBadgesDesc" },
+  { icon: Image, titleKey: "ui.onboardingPosterTitle", descKey: "ui.onboardingPosterDesc" },
+  { icon: MonitorSmartphone, titleKey: "ui.onboardingSaveTitle", descKey: "ui.onboardingSaveDesc" },
 ]
 
 const LS_KEY = "posterium_onboarding_done"
 
 export function OnboardingTour() {
+  const { t } = useT()
   const [show, setShow] = useState(false)
   const [step, setStep] = useState(0)
   const [leaving, setLeaving] = useState(false)
@@ -83,7 +67,7 @@ export function OnboardingTour() {
         {/* Close button */}
         <button type="button"
           onClick={close}
-          aria-label="Chiudi"
+          aria-label={t("ui.close")}
           className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-zinc-500 hover:bg-white/10 hover:text-zinc-300 transition-all duration-200 active:scale-90 z-10"
         >
           <X className="w-4 h-4" />
@@ -99,12 +83,12 @@ export function OnboardingTour() {
 
           {/* Title */}
           <h3 className="text-lg font-bold text-white mb-2">
-            {STEPS[step].title}
+            {t(STEPS[step].titleKey)}
           </h3>
 
           {/* Description */}
           <p className="text-sm text-muted leading-relaxed">
-            {STEPS[step].description}
+            {t(STEPS[step].descKey)}
           </p>
         </div>
 
@@ -116,7 +100,7 @@ export function OnboardingTour() {
               <button type="button"
                 key={i}
                 onClick={() => setStep(i)}
-                aria-label={`Slide ${i + 1}`}
+                aria-label={t("ui.slide", { n: i + 1 })}
                 className="w-8 h-8 rounded-full flex items-center justify-center"
               >
                 <span className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${i === step ? "w-6 bg-accent-orange" : "w-1.5 bg-zinc-600 hover:bg-zinc-500"}`} />
@@ -132,7 +116,7 @@ export function OnboardingTour() {
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium text-zinc-300 hover:bg-white/5 hover:text-white transition-all duration-150 active:scale-95"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
-                Indietro
+                {t("ui.back")}
               </button>
             ) : (
               <div className="flex-1" />
@@ -143,14 +127,14 @@ export function OnboardingTour() {
                 onClick={close}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold bg-accent-orange text-white hover:brightness-110 transition-all duration-150 active:scale-95 shadow-lg shadow-accent-orange/20"
               >
-                Inizia!
+                {t("ui.onboardingStart")}
               </button>
             ) : (
               <button type="button"
                 onClick={() => setStep((s) => s + 1)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium text-white bg-white/10 hover:bg-white/20 transition-all duration-150 active:scale-95"
               >
-                Avanti
+                {t("ui.next")}
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}
@@ -162,7 +146,7 @@ export function OnboardingTour() {
           onClick={close}
           className="w-full py-2.5 text-xs text-zinc-600 hover:text-muted transition-colors duration-150 border-t border-white/5"
         >
-          Salta tutorial
+          {t("ui.onboardingSkip")}
         </button>
       </div>
     </div>

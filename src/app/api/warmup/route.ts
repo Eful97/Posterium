@@ -172,11 +172,24 @@ export async function POST(req: NextRequest) {
     const queue = dedupeTargets(targets)
     const results: WarmupResult[] = []
 
+    // Fix M14: deadline complessivo sotto maxDuration (60s). Prima i batch
+    // sequenziali con timeout 20s l'uno potevano sommare ~14 min nel caso
+    // peggiore: la funzione serverless veniva terminata a metà senza ritorno.
+    // Dopo WARMUP_DEADLINE_MS non si avviano più nuovi batch (il timeout di
+    // ogni fetch in corso è ridotto al tempo residuo).
+    const WARMUP_DEADLINE_MS = 50_000
+    const deadlineAt = Date.now() + WARMUP_DEADLINE_MS
     for (let i = 0; i < queue.length; i += concurrency) {
+      const remaining = deadlineAt - Date.now()
+      if (remaining <= 0) {
+        log.warn("Warmup deadline reached — batch loop truncated", { processed: results.length, total: queue.length })
+        break
+      }
       const batch = queue.slice(i, i + concurrency)
+      const batchTimeout = Math.max(1_000, Math.min(20_000, remaining))
       const batchResults = await Promise.all(batch.map(async (target): Promise<WarmupResult> => {
         try {
-          const res = await fetch(buildPosterUrl({ req, target, lang }), { signal: AbortSignal.timeout(20_000) })
+          const res = await fetch(buildPosterUrl({ req, target, lang }), { signal: AbortSignal.timeout(batchTimeout) })
           if (!res.ok) return { ...target, status: "fail", statusCode: res.status }
           await res.arrayBuffer()
           return { ...target, status: "ok" }

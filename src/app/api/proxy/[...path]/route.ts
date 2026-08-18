@@ -10,6 +10,16 @@ const log = createLogger("addon-proxy")
 
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024
 
+// Deadline complessiva dell'intera operazione di proxy (fix H9): ogni hop ha
+// il proprio timeout (10-12s), ma fino a 5 redirect × timeout + lettura body
+// potevano superare il maxDuration della piattaforma, terminando la funzione a
+// metà risposta. Un unico tetto globale avvolge safeFetch + readJsonCapped.
+const PROXY_DEADLINE_MS = (() => {
+  const raw = process.env.POSTERIUM_PROXY_DEADLINE_MS
+  const n = raw ? parseInt(raw, 10) : 20000
+  return Number.isFinite(n) && n >= 5000 && n <= 120000 ? n : 20000
+})()
+
 class ProxyBodyTooLargeError extends Error {}
 
 function corsHeaders() {
@@ -171,6 +181,17 @@ async function readJsonCapped(res: Response): Promise<unknown> {
 }
 
 /**
+ * Signal di un singolo hop: il timeout specifico dell'hop E la deadline
+ * complessiva del proxy (H9). Il primo hop non può superare i suoi 10-12s,
+ * ma la somma di tutti gli hop + lettura body non può superare
+ * PROXY_DEADLINE_MS: un'abort della deadline propaga come AbortError.
+ */
+function hopSignal(hopTimeoutMs: number): { signal: AbortSignal; deadline: AbortSignal } {
+  const deadline = AbortSignal.timeout(PROXY_DEADLINE_MS)
+  return { deadline, signal: AbortSignal.any([deadline, AbortSignal.timeout(hopTimeoutMs)]) }
+}
+
+/**
  * Esegue un fetch con redirect manuali, validando ogni destinazione.
  * Previene SSRF via redirect 302 verso IP privati. Il DNS pin (SAFE_AGENT)
  * garantisce che ogni connessione usi solo indirizzi pubblici verificati.
@@ -238,8 +259,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
 
   // 1. Manifest Proxy
   if (firstPath === "manifest") {
+    const { signal, deadline } = hopSignal(10000)
     try {
-      const manifestRes = await safeFetch(targetUrl, { signal: AbortSignal.timeout(10000) })
+      const manifestRes = await safeFetch(targetUrl, { signal })
       if (!manifestRes.ok) {
         return Response.json({ error: `Failed to fetch target manifest: ${manifestRes.statusText}` }, { status: manifestRes.status, headers: corsHeaders() })
       }
@@ -255,9 +277,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
         logo: origManifest.logo || `${origin}/App.png`,
       }
 
-      return Response.json(proxiedManifest, { headers: corsHeaders() })
+      // Echo del Content-Type upstream: il manifest può essere servito da
+      // addon con media type diversi dal JSON "puro" (fix H9).
+      return Response.json(proxiedManifest, { headers: { ...corsHeaders(), "Content-Type": manifestRes.headers.get("content-type") || "application/json; charset=utf-8" } })
     } catch (e) {
       log.error("Manifest proxy error", { error: e instanceof Error ? e.message : String(e) })
+      if (deadline.aborted) {
+        return Response.json({ error: "Proxy deadline exceeded" }, { status: 504, headers: corsHeaders() })
+      }
       if (e instanceof ProxyBodyTooLargeError) {
         return Response.json({ error: "Target manifest too large" }, { status: 413, headers: corsHeaders() })
       }
@@ -274,20 +301,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
     log.warn("Blocked non-addon proxy path", { path: firstPath })
     return Response.json({ error: "Invalid proxy resource path" }, { status: 400, headers: corsHeaders() })
   }
+  let deadline: AbortSignal | null = null
   try {
     const subPath = path.join("/")
     const targetBase = targetUrl.replace(/\/manifest\.json$/, "").replace(/\/$/, "")
     // Inoltra i query param originali della richiesta (genre/skip/type/id/...):
     // senza, i cataloghi/meta proxati perdono filtro e paginazione (finding 3).
-    // Esclusi i parametri di controllo del proxy stesso.
+    // Esclusi i parametri di controllo del proxy stesso e le chiavi API
+    // (fix M6): la chiave TMDB/MDBList dell'utente non deve finire sul server
+    // dell'addon proxyato.
+    const STRIPPED_PARAMS = new Set(["target", "url", "u", "user", "api_key", "apikey", "x-api-key", "mdblist_key"])
     const targetQuery = new URLSearchParams()
     for (const [k, v] of searchParams) {
-      if (k === "target" || k === "url" || k === "u" || k === "user") continue
+      if (STRIPPED_PARAMS.has(k.toLowerCase())) continue
       targetQuery.append(k, v)
     }
     const qs = targetQuery.toString()
     const fullTargetUrl = `${targetBase}/${subPath}${qs ? `?${qs}` : ""}`
-    const res = await safeFetch(fullTargetUrl, { signal: AbortSignal.timeout(12000) })
+    const { signal, deadline: d } = hopSignal(12000)
+    deadline = d
+    const res = await safeFetch(fullTargetUrl, { signal })
     if (!res.ok) {
       return Response.json({ error: `Failed to fetch proxy resource: ${res.statusText}` }, { status: res.status, headers: corsHeaders() })
     }
@@ -300,9 +333,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
       data.meta = rewriteSingleMetaPoster(data.meta as StremioItemMeta, origin, userUuid)
     }
 
-    return Response.json(data, { headers: corsHeaders() })
+    // Echo del Content-Type upstream invece di forzare JSON (fix H9): addon
+    // stream/metadata possono rispondere con altri media type (es. M3U8).
+    return Response.json(data, { headers: { ...corsHeaders(), "Content-Type": res.headers.get("content-type") || "application/json; charset=utf-8" } })
   } catch (e) {
     log.error("Resource proxy error", { error: e instanceof Error ? e.message : String(e) })
+    if (deadline && deadline.aborted) {
+      return Response.json({ error: "Proxy deadline exceeded" }, { status: 504, headers: corsHeaders() })
+    }
     if (e instanceof ProxyBodyTooLargeError) {
       return Response.json({ error: "Proxy resource too large" }, { status: 413, headers: corsHeaders() })
     }

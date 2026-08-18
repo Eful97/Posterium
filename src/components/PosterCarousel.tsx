@@ -6,6 +6,7 @@ import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult } from "@/lib/types"
 import { titleOf } from "@/lib/utils"
+import { useSecurePosterUrl } from "@/lib/useSecurePosterUrl"
 import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 
 /** Numero di card del carosello: 20 poster demo scelti a caso tra esempi statici e top. */
@@ -58,6 +59,15 @@ const CARD_W = 240
 const GAP = 16
 const STEP = CARD_W + GAP
 const SCROLL_SPEED = 0.5 // px per frame
+
+/** M21: `<img>` che porta la chiave nell'header x-api-key (object URL) invece
+ *  di esporla nel query string del DOM pubblico. */
+function SecureCarouselImg({ url, alt, className }: { url: string; alt: string; className: string }) {
+  const tmdbKey = usePSelector((v) => v.tmdbKey)
+  const src = useSecurePosterUrl(url, tmdbKey)
+  // eslint-disable-next-line @next/next/no-img-element -- poster dinamico /api/poster
+  return <img src={src ?? undefined} alt={alt} className={className} loading="lazy" />
+}
 
 export function PosterCarousel() {
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
@@ -186,7 +196,7 @@ export function PosterCarousel() {
           <button type="button"
             onClick={() => scrollTo(-1)}
             className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-surface/80 border border-border/50 backdrop-blur-xl flex items-center justify-center text-zinc-300 hover:text-white hover:bg-surface2/80 active:scale-90 transition-all shadow-xl"
-            aria-label="Scorri a sinistra"
+            aria-label={t("ui.scrollLeft")}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -216,13 +226,8 @@ export function PosterCarousel() {
                     <div className="relative z-[1] flex flex-col flex-1">
                     <div className="aspect-[2/3] shrink-0 relative overflow-hidden bg-surface2">
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/20 to-transparent z-10" />
-                      {/* eslint-disable-next-line @next/next/no-img-element -- dynamic poster URL */}
-                      <img
-                        src={posterUrl}
-                        alt={ex.title}
-                        className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
-                        loading="lazy"
-                      />
+                      {/* M21: la chiave viaggia nell'header x-api-key, mai nel DOM */}
+                    <SecureCarouselImg url={posterUrl} alt={ex.title} className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]" />
                     </div>
                     <div className="p-3 relative z-10 flex-1">
                       <h3 className="text-xs font-semibold text-zinc-100 group-hover:text-white transition-colors duration-200">{ex.title}</h3>
@@ -246,7 +251,7 @@ export function PosterCarousel() {
           <button type="button"
             onClick={() => scrollTo(1)}
             className="absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-surface/80 border border-border/50 backdrop-blur-xl flex items-center justify-center text-zinc-300 hover:text-white hover:bg-surface2/80 active:scale-90 transition-all shadow-xl"
-            aria-label="Scorri a destra"
+            aria-label={t("ui.scrollRight")}
           >
             <ChevronRight className="w-4 h-4" />
           </button>

@@ -85,12 +85,28 @@ function hostnameOf(value: string | null): string | null {
   }
 }
 
+/** Allowlist opzionale di hostname pubblici ammessi (POSTERIUM_ALLOWED_HOSTS).
+ *  Stessa logica di poster-public-url.ts: X-Forwarded-Host è fidato solo se
+ *  combacia con l'header Host o se è in allowlist. */
+function isAllowedHostname(hostname: string): boolean {
+  const raw = process.env.POSTERIUM_ALLOWED_HOSTS
+  if (!raw) return false
+  const allowed = raw.split(",").map((h) => h.trim().toLowerCase()).filter(Boolean)
+  return allowed.includes(hostname)
+}
+
 /**
  * CSRF guard per le mutazioni: se la richiesta include un header Origin
  * (i browser lo inviano sempre per POST/PUT/DELETE cross-origin), il suo
- * hostname deve combaciare con l'host pubblico della richiesta
- * (X-Forwarded-Host se presente — reverse proxy — altrimenti Host).
+ * hostname deve combaciare con l'host pubblico della richiesta.
  * Le richieste senza Origin (curl, test, Stremio, tooling) passano.
+ *
+ * X-Forwarded-Host è fidato SOLO se combacia con l'header Host o è in
+ * POSTERIUM_ALLOWED_HOSTS (fix H6, stessa logica di getOriginFromRequest):
+ * XFH non è un header forbidden per i browser, quindi una pagina malevola
+ * poteva inviare Origin: evil.com + X-Forwarded-Host: evil.com e superare il
+ * controllo su ogni deploy senza proxy che sovrascrive XFH. XFH non fidato
+ * → si ripiega sull'header Host / hostname della URL.
  */
 export function isSameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin")
@@ -101,11 +117,14 @@ export function isSameOrigin(request: Request): boolean {
   } catch {
     return false
   }
-  // Preferenza: X-Forwarded-Host (reverse proxy) → Host → hostname dell'URL
-  // della richiesta (fallback: NextRequest può non popolare l'header Host).
+  const hostHeader = hostnameOf(request.headers.get("host"))
+  const xfh = hostnameOf(request.headers.get("x-forwarded-host"))
+  // Preferenza: X-Forwarded-Host (reverse proxy, solo se fidato) → Host →
+  // hostname dell'URL della richiesta (fallback: NextRequest può non popolare
+  // l'header Host).
   const host =
-    hostnameOf(request.headers.get("x-forwarded-host")) ||
-    hostnameOf(request.headers.get("host")) ||
+    (xfh && (xfh === hostHeader || isAllowedHostname(xfh)) ? xfh : null) ||
+    hostHeader ||
     hostnameOf(new URL(request.url).hostname)
   // Fail-closed (finding 10): host irrisolvibile → rifiuta. Prima il fail-open
   // lasciava passare le richieste con Origin quando l'host non era derivabile.

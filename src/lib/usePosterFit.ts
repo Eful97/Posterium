@@ -57,8 +57,11 @@ function cacheSet(key: string, value: PosterFitApiResponse): void {
 
 function serialise(input: UsePosterFitInput): string | null {
   if (!input.enabled || !input.selectedLogo || input.cleanPosters.length < 2) return null
+  // Fix L28: la chiave include anche vote/width/height dei candidati — prima
+  // la ometteva e dopo un refresh dei dati TMDB la selezione restava stantia
+  // (l'API riceve e usa questi campi).
   return JSON.stringify([
-    input.cleanPosters.map((p) => p.file_path),
+    input.cleanPosters.map((p) => [p.file_path, p.vote_average, p.width, p.height]),
     input.selectedLogo.file_path,
     input.logoScale,
     input.logoOffsetX,
@@ -88,6 +91,10 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
 
     const cached = resultCache.get(cacheKey)
     if (cached) {
+      // Fix L28: il cache-hit deve azzerare loading — prima, se un fetch
+      // precedente aveva lasciato loading=true, la UI restava sulla finestra
+      // "analisi in corso" anche con i risultati già pronti.
+      setLoading(false)
       setResults(cached.ranked)
       setBestFitPath(cached.bestPosterPath)
       return

@@ -8,6 +8,7 @@
 import type { PosteriumUserConfig } from "./config-token"
 import type { Mapping } from "./types"
 import type { ServerDefaults } from "./server-defaults"
+import { resolveLabelFor } from "./i18n"
 import {
   isBadgeStyle,
   isRankingBadgeStyle,
@@ -34,6 +35,8 @@ export interface PosterRenderConfigInput {
   animeRank: number | null
   rankingResult: number | null
   finalRank: number | null
+  /** lingua per la risoluzione delle label prefissate (__badge.*) — fix L32 */
+  lang?: string
 }
 
 export interface PosterRenderConfig {
@@ -124,7 +127,11 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
   const logoOffsetX = qOx ? Number(qOx) || null : mapping?.logoOffsetX ?? null
   const logoOffsetY = qOy ? Number(qOy) || null : mapping?.logoOffsetY ?? null
 
-  const queryExtra = q.get("extra") || configOverride?.customBadge || null
+  // Fix L32: le label prefissate (__badge.*) vengono risolte con la lingua
+  // della richiesta — prima un customBadge "__badge.anime" dal config token
+  // arrivava letterale al renderer (la preview invece la risolveva → desync).
+  const rawExtra = q.get("extra") || configOverride?.customBadge || null
+  const queryExtra = rawExtra ? resolveLabelFor(rawExtra, input.lang || "it") : null
   const qNetLogo = q.get("netLogo") ?? (configOverride !== null ? (configOverride.networkLogo ? null : "0") : null)
   // Modalità layout nastro Netflix + logo network: query `side=right` (Stremio), mapping salvato o config/profilo
   const qSide = q.get("side")

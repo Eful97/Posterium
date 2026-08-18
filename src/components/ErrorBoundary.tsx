@@ -1,6 +1,9 @@
 "use client"
 
 import React from "react"
+// Fix M20: i fallback testuali seguono la lingua attiva (setLang aggiorna il
+// modulo i18n), anche in un component a classi senza accesso agli hook.
+import { t } from "@/lib/i18n"
 
 interface Props {
   children: React.ReactNode
@@ -32,9 +35,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback
-      const title = this.props.title || "Qualcosa è andato storto"
-      const message = this.props.message || this.state.error?.message || "Errore sconosciuto"
-      const retryLabel = this.props.retryLabel || "Riprova"
+      const title = this.props.title || t("ui.errorDefaultTitle")
+      const message = this.props.message || this.state.error?.message || t("ui.errorUnknown")
+      const retryLabel = this.props.retryLabel || t("ui.retry")
       return (
         <div className="flex flex-col items-center justify-center min-h-[200px] p-6 text-center animate-fade-scale-in">
           <div className="empty-state-illustration mb-4">

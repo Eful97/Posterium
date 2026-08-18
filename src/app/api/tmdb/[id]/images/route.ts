@@ -17,7 +17,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const acceptEncoding = req.headers.get("accept-encoding")
   const cached = cacheGet(cacheKey)
   if (cached) return jsonGzip(cached, 200, undefined, acceptEncoding)
-  const data = await getImages(type as "movie" | "tv", Number(id), languages, apiKey).catch(() => ({ posters: [], logos: [], backdrops: [] }))
+  // Niente catch-and-cache: un errore/outage upstream NON deve finire in cache
+  // come "lista vuota" per 30 minuti (avvelenerebbe la visuale di ogni titolo
+  // durante un down di TMDB). Si risponde 502: il client gestisce il fallo
+  // e può riprovare al tick successivo, senza che nessun altro veda dati falsi.
+  let data: Awaited<ReturnType<typeof getImages>>
+  try {
+    data = await getImages(type as "movie" | "tv", Number(id), languages, apiKey)
+  } catch {
+    return jsonGzip({ error: "TMDB images unavailable" }, 502, undefined, acceptEncoding)
+  }
   cacheSet(cacheKey, data, ["tmdb", "images"])
   return jsonGzip(data, 200, undefined, acceptEncoding)
 }

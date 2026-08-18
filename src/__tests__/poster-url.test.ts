@@ -209,9 +209,12 @@ describe("buildPreviewUrl", () => {
     expect(url).toContain("side=right")
   })
 
-  it("does not include side param when ribbonSide is left (Nuvio mode)", () => {
+  it("includes side=left when ribbonSide is left (fix M2: desync preview)", () => {
+    // Prima la preview emetteva side SOLO per right: il server risolveva dal
+    // mapping/config salvati (default right in Stremio mode) e la preview
+    // rendeva a destra anche con l'editor su sinistra.
     const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, ribbonSide: "left" })
-    expect(url).not.toContain("side=")
+    expect(url).toContain("side=left")
   })
 
   it("includes netLogo=0 when networkLogo is false", () => {
@@ -239,9 +242,36 @@ describe("buildPreviewUrl", () => {
     expect(url).not.toContain("be=0")
   })
 
-  it("always includes tl param", () => {
-    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, rankingBadges: false })
-    expect(url).toMatch(/tl=[01]/)
+  it("omits tl param when topEdgeColor is not computed (server decides, fix M16)", () => {
+    // Prima il null forzava tl=1 (testo chiaro) anche quando il server
+    // avrebbe calcolato scuro: ora senza colore campionato il parametro è
+    // omesso e la decisione spetta al render server.
+    const url = buildPreviewUrl({ ...basePosterState, topEdgeColor: null }, { ...baseBadgeParams, rankingBadges: false })
+    expect(url).not.toContain("tl=")
+  })
+
+  it("includes tl=1 for a light top edge and tl=0 for a dark one", () => {
+    const lightUrl = buildPreviewUrl({ ...basePosterState, topEdgeColor: "#f0f0f0" }, { ...baseBadgeParams, rankingBadges: false })
+    expect(lightUrl).toContain("tl=1")
+    const darkUrl = buildPreviewUrl({ ...basePosterState, topEdgeColor: "#101010" }, { ...baseBadgeParams, rankingBadges: false })
+    expect(darkUrl).toContain("tl=0")
+  })
+
+  it("includes year param from metaInfo release_date (fix M1)", () => {
+    const url = buildPreviewUrl({
+      ...basePosterState,
+      metaInfo: { ...basePosterState.metaInfo, release_date: "2024-05-17" },
+    }, baseBadgeParams)
+    expect(url).toContain("year=2024")
+  })
+
+  it("uses first_air_date for tv items when release_date is absent (fix M1)", () => {
+    const url = buildPreviewUrl({
+      ...basePosterState,
+      selected: { ...basePosterState.selected!, media_type: "tv" },
+      metaInfo: { ...basePosterState.metaInfo, first_air_date: "2017-12-01" },
+    }, baseBadgeParams)
+    expect(url).toContain("year=2017")
   })
 
   it("includes ac param when accentColor is set", () => {

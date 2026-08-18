@@ -1,4 +1,5 @@
 import fs from "node:fs"
+import fsp from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { DATA_DIR } from "@/lib/data-dir"
@@ -129,13 +130,22 @@ function loadCache(country: string): CacheData {
 
 function saveCache(country: string, data: CacheData) {
   const file = cacheFile(country)
-  const dir = path.dirname(file)
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  // Write atomica: tmp + rename. Se il processo muore a metà scrittura, il file
-  // principale resta intatto e loadCache() continua a funzionare sullo stato valido.
-  const tmp = `${file}.tmp`
-  fs.writeFileSync(tmp, JSON.stringify(data))
-  fs.renameSync(tmp, file)
+  // Fix H10: la scrittura è asincrona e fire-and-forget — prima era
+  // writeFileSync/renameSync nel request path: un JSON da 2-10 MB su un
+  // cold fetch bloccava l'event loop dell'intera istanza. L'ordine resta
+  // tmp + rename (atomico): se il processo muore a metà scrittura il file
+  // principale resta intatto.
+  void (async () => {
+    try {
+      const dir = path.dirname(file)
+      await fsp.mkdir(dir, { recursive: true })
+      const tmp = `${file}.tmp`
+      await fsp.writeFile(tmp, JSON.stringify(data), "utf-8")
+      await fsp.rename(tmp, file)
+    } catch (e) {
+      log.error("Failed to save cache", { error: e instanceof Error ? e.message : String(e), country })
+    }
+  })()
 }
 
 async function fetchCatalog(country: string): Promise<CatalogData> {
@@ -236,8 +246,12 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
     }
   }
 
-  const movieChart = catalog.charts.find((c) => c.platform === platformName && c.category === "movies")
-  const tvChart = catalog.charts.find((c) => c.platform === platformName && c.category === "tv shows")
+  // Fix L20: guardia sul catalogo corrotto/parziale — un JSON senza "charts"
+  // (o con la piattaforma/categoria mancante) prima faceva lanciare
+  // TypeError fuori dal try → 500 per l'intera route.
+  const charts = Array.isArray(catalog?.charts) ? catalog.charts : []
+  const movieChart = charts.find((c) => c.platform === platformName && c.category === "movies")
+  const tvChart = charts.find((c) => c.platform === platformName && c.category === "tv shows")
 
   const toItem = async (entry: CatalogEntry, type: "movie" | "tv"): Promise<FlixPatrolEnrichedItem> => {
     const tmdbId = entry.tmdb?.id ?? null
@@ -287,4 +301,10 @@ export function getSupportedPlatforms(): { slug: string; name: string }[] {
 
 export function getSupportedCountries(): string[] {
   return [...SUPPORTED_COUNTRIES].sort()
+}
+
+/** Fix L26: svuota le cache FlixPatrol (memoria + TMDB) per /api/cache/clear. */
+export function __clearFlixpatrolCache(): void {
+  memCache.clear()
+  tmdbCache.clear()
 }

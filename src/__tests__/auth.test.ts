@@ -187,15 +187,48 @@ describe("isSameOrigin (CSRF)", () => {
     expect(isSameOrigin(req)).toBe(false)
   })
 
-  it("matches against X-Forwarded-Host when present (reverse proxy)", () => {
+  it("matches against X-Forwarded-Host when it agrees with Host (trusted proxy)", () => {
     const req = new NextRequest("http://localhost:3000/api/mappings", {
       method: "POST",
       headers: {
         origin: "https://posterium.example.com",
+        host: "posterium.example.com",
         "x-forwarded-host": "posterium.example.com",
       },
     })
     expect(isSameOrigin(req)).toBe(true)
+  })
+
+  it("ignores a spoofed X-Forwarded-Host that disagrees with Host (fix H6)", () => {
+    // Attacco: Origin: evil.com + X-Forwarded-Host: evil.com. Prima del fix
+    // XFH vinceva sempre e la guardia passava; ora XFH non fidato viene
+    // ignorato e il confronto avviene sull'Host reale → rifiuto.
+    const req = new NextRequest("http://localhost:3000/api/mappings", {
+      method: "POST",
+      headers: {
+        origin: "https://evil.example.com",
+        host: "localhost:3000",
+        "x-forwarded-host": "evil.example.com",
+      },
+    })
+    expect(isSameOrigin(req)).toBe(false)
+  })
+
+  it("trusts X-Forwarded-Host when listed in POSTERIUM_ALLOWED_HOSTS", () => {
+    process.env.POSTERIUM_ALLOWED_HOSTS = "posterium.example.com"
+    try {
+      const req = new NextRequest("http://localhost:3000/api/mappings", {
+        method: "POST",
+        headers: {
+          origin: "https://posterium.example.com",
+          host: "internal.local",
+          "x-forwarded-host": "posterium.example.com",
+        },
+      })
+      expect(isSameOrigin(req)).toBe(true)
+    } finally {
+      delete process.env.POSTERIUM_ALLOWED_HOSTS
+    }
   })
 
   it("ignores the port when comparing hosts", () => {

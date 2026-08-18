@@ -5,6 +5,48 @@ import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { DATA_DIR } from "@/lib/data-dir"
 import { getAll, getStorageMode } from "@/lib/store"
 import { checkTmdbEndpoint } from "@/lib/tmdb"
+import { getJWRankings } from "@/lib/justwatch"
+import { getTop10 } from "@/lib/flixpatrol"
+
+// Fix L15: i campi streaming devono testare DAVVERO JustWatch e FlixPatrol
+// (prima testavano due endpoint TMDB, fuorviante). I probe girano solo con
+// una chiave TMDB presente: senza, la status page mostra già "chiave mancante"
+// e i test restano veloci (niente rete).
+const PROBE_TIMEOUT_MS = 4000
+
+async function withTimeout<T>(run: () => Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("probe timeout")), PROBE_TIMEOUT_MS)
+  })
+  try {
+    return await Promise.race([run(), timeout])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+async function probeJustWatch(): Promise<{ ok: boolean; status: number; time: number }> {
+  const start = Date.now()
+  try {
+    // Cache condivisa 30min: i probe successivi sono istantanei.
+    await withTimeout(() => getJWRankings("MOVIE", "IT", 1))
+    return { ok: true, status: 200, time: Date.now() - start }
+  } catch {
+    return { ok: false, status: 0, time: Date.now() - start }
+  }
+}
+
+async function probeFlixPatrol(): Promise<{ ok: boolean; status: number; time: number }> {
+  const start = Date.now()
+  try {
+    // Cache disco+memoria 4h: i probe successivi non toccano la rete.
+    await withTimeout(() => getTop10("netflix", "italy", undefined, { enrich: false }))
+    return { ok: true, status: 200, time: Date.now() - start }
+  } catch {
+    return { ok: false, status: 0, time: Date.now() - start }
+  }
+}
 
 async function fileExists(file: string): Promise<boolean> {
   try {
@@ -61,10 +103,10 @@ export async function GET(request: Request) {
       ]
 
   const justwatch = apiKey
-    ? await checkTmdbEndpoint("/movie/popular?watch_region=IT", apiKey)
+    ? await probeJustWatch()
     : { ok: false, status: 401, time: 0 }
   const flixpatrol = apiKey
-    ? await checkTmdbEndpoint("/tv/popular", apiKey)
+    ? await probeFlixPatrol()
     : { ok: false, status: 401, time: 0 }
 
   const mappingsFile = path.join(DATA_DIR, "mappings.json")

@@ -59,6 +59,8 @@ export default function EditView() {
   const ed = usePosterEditor()
   const [searchFocused, setSearchFocused] = useState(false)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Fix L30: timer del "copied" ripulito su unmount (setState post-unmount).
+  const urlCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [activeRightTab, setActiveRightTab] = useState<"logo" | "badge" | "transform">("logo")
   const [activePosterTab, setActivePosterTab] = useState("clean")
   const [testUrl, setTestUrl] = useState<string | null>(null)
@@ -91,6 +93,7 @@ export default function EditView() {
   useEffect(() => {
     return () => {
       if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
+      if (urlCopiedTimerRef.current) clearTimeout(urlCopiedTimerRef.current)
     }
   }, [])
 
@@ -348,7 +351,8 @@ export default function EditView() {
                 try {
                   await navigator.clipboard.writeText(testUrl)
                   setUrlCopied(true)
-                  setTimeout(() => setUrlCopied(false), 2000)
+                  if (urlCopiedTimerRef.current) clearTimeout(urlCopiedTimerRef.current)
+                  urlCopiedTimerRef.current = setTimeout(() => setUrlCopied(false), 2000)
                 } catch { /* clipboard non disponibile */ }
               }} className="btn-secondary min-h-[44px] rounded-xl text-xs">{urlCopied ? t("ui.copied") : t("ui.copyPosterUrl")}</button>
               <button type="button" onClick={() => window.open(testUrl, "_blank")} className="btn-primary min-h-[44px] rounded-xl text-xs">{t("ui.openInNewTab")}</button>

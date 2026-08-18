@@ -56,7 +56,12 @@ interface CacheEntry {
 const autoFitCache = new Map<string, CacheEntry>()
 
 function cacheKey(candidates: readonly PosterCandidate[], input: SelectBestLogoFitPosterInput): string {
-  const posterSignature = candidates.map((poster) => poster.file_path).join(",")
+  // Fix L6: la firma include anche vote_average/width/height dei candidati —
+  // prima la chiave ignorava questi campi e dopo un refresh dei dati TMDB
+  // (nuovi voti/dimensioni) la selezione best-fit restava stantia fino al TTL.
+  const posterSignature = candidates.map((poster) =>
+    `${poster.file_path}:${poster.vote_average ?? "x"}:${poster.width ?? "x"}:${poster.height ?? "x"}`,
+  ).join(",")
   return `auto-fit:${posterSignature}:${input.logoPath}:${input.logoScale ?? "auto"}:${input.logoOffsetX ?? 0}:${input.logoOffsetY ?? 0}:${input.hasBadges}`
 }
 

@@ -21,7 +21,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   }
   const mapping = await getById(type as "movie" | "tv", tmdbId)
   if (!mapping) return Response.json({ error: "not found" }, { status: 404 })
-  return Response.json(mapping)
+  // Fix L34: header cache esplicito. Nota fail-open: su istanza pubblica senza
+  // ADMIN_TOKEN questa GET è aperta (l'editor la usa per il WYSIWYG) — i dati
+  // dei mapping non sono segreti (stesso livello dei poster pubblici), ma sono
+  // mutabili: no-store evita che browser/CDN servano copie stantie.
+  return Response.json(mapping, { headers: { "Cache-Control": "no-store" } })
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<RouteParams> }) {

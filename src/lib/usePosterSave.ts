@@ -66,6 +66,9 @@ interface PosterSaveDeps {
   lang: string
   /** Profilo attivo: il mapping si salva anche per l'utente (merge server-side). */
   profileId?: string | null
+  /** Password del profilo attivo: richiesta dal server (fix H7) per il
+   *  write-back dei mapping nel profilo. */
+  profilePassword?: string
 }
 
 export interface SaveConfigOverrides {
@@ -88,7 +91,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
     blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, setGradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
     setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, ribbonSide, lang,
-    profileId,
+    profileId, profilePassword,
   } = deps
 
   const selectPoster = useCallback(async (image: TMDBImage) => {
@@ -257,6 +260,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
           networkLogo: networkLogo !== undefined ? networkLogo : undefined,
           ribbonSide: ribbonSide !== undefined ? ribbonSide : undefined,
           profileId: profileId || undefined,
+          password: profileId && profilePassword ? profilePassword : undefined,
         }),
       })
       setPreviewId(`${selected.media_type}:${selected.id}`)
@@ -266,7 +270,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
       if (!overrides.silent) import("sonner").then(({ toast }) => toast(t("ui.saveError")))
       if (overrides.silent) throw error
     }
-  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop, networkLogo, ribbonSide, profileId]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
+  }, [selected, previewPoster, selectedLogo, metaInfo, logoScale, logoOffsetX, logoOffsetY, trendRank, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, mdblistAnimeList, loadMappings, customBadge, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, defaultBadgeStyle, defaultRankingBadgeStyle, posters, mappingsMap, accentColor, backdropOffsetX, backdropOffsetY, backdropScale, selectedBackdrop, networkLogo, ribbonSide, profileId, profilePassword]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally complete to save all poster state
 
   return { selectPoster, selectLogo, removeLogo, selectBackdrop, removeBackdrop, saveConfig }
 }

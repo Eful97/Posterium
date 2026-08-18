@@ -37,7 +37,10 @@ export const mappingSchema = z.object({
   releaseDate: z.string().nullable().optional(),
   firstAirDate: z.string().nullable().optional(),
   backdropPath: z.string().nullable().optional(),
-  backdropScale: z.number().int().nullable().optional(),
+  // Stessi bound del ramo query della poster route (bscale): un valore 0 o
+  // negativo arrivava a resizeBackdropCached (fit 'fill') → sharp lancia →
+  // 500 + negative cache per un titolo permanentemente rotto (fix M5).
+  backdropScale: z.number().int().min(5).max(500).nullable().optional(),
   backdropOffsetX: z.number().int().nullable().optional(),
   backdropOffsetY: z.number().int().nullable().optional(),
   blurEnabled: z.boolean().nullable().optional(),

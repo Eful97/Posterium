@@ -58,12 +58,12 @@ export function ProxyModal({ isOpen, onClose }: Props) {
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h3 id="proxy-modal-title" className="text-base font-bold text-white">Generatore Addon Proxy</h3>
-            <p className="text-xs text-muted">Inietta i poster di Posterium in qualsiasi Add-on Stremio</p>
+            <h3 id="proxy-modal-title" className="text-base font-bold text-white">{t("ui.proxyTitle")}</h3>
+            <p className="text-xs text-muted">{t("ui.proxySubtitle")}</p>
           </div>
         </div>
         <button type="button"
-          aria-label="Chiudi"
+          aria-label={t("ui.close")}
           onClick={onClose}
           className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-white/10 transition-colors"
         >
@@ -73,7 +73,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
 
         <div className="space-y-3">
           <label className="block text-xs font-semibold text-zinc-300">
-            Incolla il link manifest.json dell&apos;Add-on originale:
+            {t("ui.proxyPasteLabel")}
           </label>
           <div className="relative">
             <input
@@ -87,7 +87,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap pt-1">
-            <span className="text-[11px] text-zinc-500 mr-1">Preset rapidi:</span>
+            <span className="text-[11px] text-zinc-500 mr-1">{t("ui.proxyPresets")}</span>
             {POPULAR_PRESETS.map((preset) => (
               <button
                 key={preset.name}
@@ -104,7 +104,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
         {proxyUrl ? (
           <div className="space-y-2 pt-2 border-t border-white/10">
             <label className="block text-xs font-semibold text-accent-orange flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5" /> URL Addon Proxy generato:
+              <Check className="w-3.5 h-3.5" /> {t("ui.proxyGeneratedLabel")}
             </label>
             <div className="p-3 rounded-xl bg-black/60 border border-accent-orange/20 break-all text-[11px] font-mono text-zinc-200">
               {proxyUrl}
@@ -117,7 +117,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
                 className="h-9 px-3 text-xs font-bold rounded-xl btn-primary flex items-center justify-center gap-2 active:scale-[0.98]"
               >
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? "Copiato!" : "Copia Link Proxy"}
+                {copied ? t("ui.copied") : t("ui.proxyCopyLink")}
               </button>
               <button
                 type="button"
@@ -125,13 +125,13 @@ export function ProxyModal({ isOpen, onClose }: Props) {
                 className="h-9 px-3 text-xs font-semibold rounded-xl bg-white/[0.08] border border-white/15 text-zinc-200 hover:bg-white/[0.15] hover:text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
               >
                 <ExternalLink className="w-4 h-4 text-accent-orange" />
-                Apri su Stremio
+                {t("ui.proxyOpenStremio")}
               </button>
             </div>
           </div>
         ) : (
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-[11px] text-muted text-center">
-            Inserisci l&apos;URL di un add-on per generare il tuo link proxy personalizzato.
+            {t("ui.proxyHint")}
           </div>
         )}
     </Modal>

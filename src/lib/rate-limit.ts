@@ -57,12 +57,18 @@ export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter:
   startCleanup()
   const cfg = limits[bucket] || limits.default
   const now = Date.now()
-  let b = buckets.get(key)
+  // Chiave composta (bucket, client): con la chiave client condivisa "shared"
+  // (senza POSTERIUM_TRUST_PROXY) tutte le route finivano in un UNICO bucket
+  // il cui maxTokens/refill veniva sovrascritto dall'ultima route chiamata
+  // (una chiamata warmup con max 5 sgonfiava il bucket di poster/tmdb e
+  // viceversa, rendendo i limiti per-route illusori).
+  const bucketKey = `${bucket}:${key}`
+  let b = buckets.get(bucketKey)
 
   if (!b) {
     if (buckets.size >= MAX_KEYS) evictOldest()
     b = { tokens: cfg.maxTokens, lastRefill: now }
-    buckets.set(key, b)
+    buckets.set(bucketKey, b)
   }
 
   const elapsed = now - b.lastRefill
@@ -93,14 +99,17 @@ export function rateLimitKey(request: Request): string {
   if (process.env.POSTERIUM_TRUST_PROXY === "1") {
     // Preferenza: header impostati/sovrascritti da proxy trusted e quindi non
     // falsificabili dal client.
-    // 1) cf-connecting-ip — scritto da Cloudflare, ignora il valore client.
-    // 2) x-real-ip — scritto da Nginx/HF, ignora il valore client.
+    // 1) x-real-ip — scritto da Nginx/HF; va letto PRIMA di cf-connecting-ip
+    //    (fix L27): su deploy non-Cloudflare che impostano solo x-real-ip,
+    //    cf-connecting-ip è un valore client spoofabile — prima aveva la
+    //    precedenza e il rate limit era bypassabile ruotando quell'header.
+    // 2) cf-connecting-ip — scritto da Cloudflare (che non imposta x-real-ip).
     // 3) ultimo hop di x-forwarded-for — con un proxy trusted che APPENDE il
     //    proprio valore, l'ultimo elemento è l'IP reale del client.
-    const cfIp = request.headers.get("cf-connecting-ip")
-    if (cfIp) return cfIp.trim()
     const realIp = request.headers.get("x-real-ip")
     if (realIp) return realIp.trim()
+    const cfIp = request.headers.get("cf-connecting-ip")
+    if (cfIp) return cfIp.trim()
     const forwarded = request.headers.get("x-forwarded-for")
     if (forwarded) {
       const parts = forwarded.split(",")

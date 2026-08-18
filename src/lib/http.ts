@@ -29,9 +29,19 @@ export async function http<T = unknown>(path: string, opts: ApiOptions = {}): Pr
       signalPair?.cleanup()
 
       if (!res.ok) {
-        if (res.status === 429 && attempt < retries) {
-          await delay(parseRetryAfter(res.headers.get("Retry-After")))
-          continue
+        // Fix L21: retry anche per i 5xx (il server può essere in riavvio o
+        // transitoriamente sovraccarico). Prima solo il 429 ritentava: un
+        // timeout/500 dell'upstream falliva subito e l'utente vedeva
+        // l'errore anche se un attimo dopo il server rispondeva.
+        if (attempt < retries) {
+          if (res.status === 429) {
+            await delay(parseRetryAfter(res.headers.get("Retry-After")))
+            continue
+          }
+          if (res.status >= 500) {
+            await delay(1000 * (attempt + 1))
+            continue
+          }
         }
         throw new ApiError(res.status, `API ${res.status}: ${path}`)
       }

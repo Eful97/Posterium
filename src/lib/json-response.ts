@@ -10,7 +10,10 @@ export function jsonGzip(data: unknown, status = 200, extraHeaders?: Record<stri
   // legacy), si mantiene il comportamento precedente.
   const acceptsGzip = acceptEncoding ? /\bgzip\b/.test(acceptEncoding) : true
   if (buf.length < MIN_GZIP || !acceptsGzip) {
-    return NextResponse.json(data, { status, headers: { ...extraHeaders } })
+    // Fix L16: anche il ramo non-gzip dichiara Vary: Accept-Encoding — senza,
+    // una CDN poteva servire la variante gzip (o plain) a client che ne
+    // accettano un'altra.
+    return NextResponse.json(data, { status, headers: { "Vary": "Accept-Encoding", ...extraHeaders } })
   }
   const compressed = gzipSync(buf, { level: 6 })
   return new NextResponse(compressed, {

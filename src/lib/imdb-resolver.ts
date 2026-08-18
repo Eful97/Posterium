@@ -1,5 +1,5 @@
 import { cacheGet, cacheSet } from "./cache"
-import { TMDB_BASE_URL } from "@/lib/tmdb"
+import { tmdbFindByImdb } from "@/lib/tmdb"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("imdb-resolver")
@@ -17,26 +17,16 @@ export async function resolveImdbToTmdb(imdbId: string, mediaType: "movie" | "tv
   if (cached !== null) return cached === -1 ? null : cached
 
   // S9: la chiave arriva esplicita (richiesta/profilo), mai da una chiave
-  // d'istanza. Resta in query nell'URL outbound perché la v3 TMDB la richiede
-  // così; nessun log cattura l'URL completo.
+  // d'istanza.
   if (!apiKey) return null
 
   try {
-    // Finding 14: base URL condivisa (TMDB_BASE_URL env, mock nei test E2E)
-    // invece dell'endpoint hardcodato.
-    const url = `${TMDB_BASE_URL}/find/${encodeURIComponent(cleanId)}?api_key=${encodeURIComponent(apiKey)}&external_source=imdb_id`
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
-    if (!res.ok) return null
-    const data = await res.json()
+    // Fix L22: il fetch passa dal layer condiviso tmdb.ts (cache 5min a chiave
+    // neutra + inflight coalescing) invece di un fetch dedicato duplicato.
+    // La cache lunga (7gg / 60s no-match) resta qui, sopra quella di rete.
+    const tmdbId = await tmdbFindByImdb(cleanId, mediaType, apiKey)
 
-    let tmdbId: number | undefined
-    if (mediaType === "movie") {
-      tmdbId = data.movie_results?.[0]?.id
-    } else {
-      tmdbId = data.tv_results?.[0]?.id || data.movie_results?.[0]?.id
-    }
-
-    if (tmdbId && typeof tmdbId === "number" && tmdbId > 0) {
+    if (tmdbId) {
       cacheSet(cacheKey, tmdbId, ["tmdb", "imdb"], 86400 * 7)
       return tmdbId
     }

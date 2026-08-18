@@ -1,4 +1,3 @@
-import crypto from "node:crypto"
 import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheGet, cacheSet } from "@/lib/cache"
@@ -15,10 +14,11 @@ export async function GET(req: NextRequest) {
 
   const apiKey = req.nextUrl.searchParams.get("api_key") || ""
   const origLang = req.nextUrl.searchParams.get("with_original_language")
-  // Hash della chiave API nel cache key — mai il frammento grezzo (i log/status
-  // della cache non devono esporre porzioni di credential).
-  const apiKeyHash = crypto.createHash("sha1").update(apiKey).digest("hex").slice(0, 8)
-  const cacheKey = `trending:tv:week:${origLang || "all"}:${apiKeyHash}`
+  // Fix L18: la cache key NON frammenta per chiave — i dati sono pubblici e
+  // identici per ogni chiave (la chiave è solo un gate di accesso, come nelle
+  // altre route TMDB). Prima l'apiKeyHash generava una cache per utente che
+  // nessuna altra richiesta riusava.
+  const cacheKey = `trending:tv:week:${origLang || "all"}`
 
   const acceptEncoding = req.headers.get("accept-encoding")
   const cached = cacheGet<{ results: unknown[] }>(cacheKey)

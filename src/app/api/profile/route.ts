@@ -16,6 +16,8 @@ import { requireAdminToken, isSameOrigin, adminAuthResponse, originMismatchRespo
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { createLogger } from "@/lib/logger"
 import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/read-body"
+import { mappingSchema } from "@/lib/validation"
+import type { Mapping } from "@/lib/types"
 
 const log = createLogger("profile")
 
@@ -49,8 +51,10 @@ export async function POST(req: NextRequest) {
 
     // Login / Load action: authenticate existing profile and return full profile data
     if (raw.action === "load" || raw.action === "login") {
-      // Rate limiting per IP per prevenire brute-force sugli UUID profilo
-      const rl = rateLimit(rateLimitKey(req), "default")
+      // Fix L14: bucket "profile" (20 burst) invece di "default" (120): il
+      // vecchio bucket condiviso permetteva 120 tentativi prima del blocco e
+      // un client poteva loggare in blocco tutti (fail-safe condiviso).
+      const rl = rateLimit(rateLimitKey(req), "profile")
       if (!rl.ok) return rateLimitResponse(rl.retAfter)
       const profileId = typeof raw.profileId === "string" ? raw.profileId.trim() : ""
       const password = typeof raw.password === "string" ? raw.password : ""
@@ -87,7 +91,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limiting anche su create/update (non solo load/login): evita crescita disco illimitata
-    const rlCreate = rateLimit(rateLimitKey(req), "default")
+    const rlCreate = rateLimit(rateLimitKey(req), "profile")
     if (!rlCreate.ok) return rateLimitResponse(rlCreate.retAfter)
 
     // Validazione completa con lo stesso schema Zod di /api/config-token
@@ -169,7 +173,29 @@ export async function POST(req: NextRequest) {
     }
 
     const apiKeys = raw.apiKeys && typeof raw.apiKeys === "object" ? (raw.apiKeys as ProfileData["apiKeys"]) : undefined
-    const mappings = raw.mappings && typeof raw.mappings === "object" ? (raw.mappings as ProfileData["mappings"]) : undefined
+    // Fix L36: i mappings salvati vengono validati con lo stesso schema della
+    // route mappings (mappingSchema). Prima un valore arbitrario (es.
+    // `mappings: { "movie:1": "garbage" }`) veniva persistito verbatim e la
+    // poster route lo trattava come Mapping (leggeva .updatedAt) → crash del
+    // render. Le entry invalide vengono scartate; se NESSUNA è valida la
+    // richiesta è rifiutata (niente salvataggio silenzioso di stato corrotto).
+    let mappings: ProfileData["mappings"] | undefined
+    if (raw.mappings !== undefined && raw.mappings !== null) {
+      if (typeof raw.mappings !== "object" || Array.isArray(raw.mappings)) {
+        return Response.json({ error: "Invalid mappings in request body" }, { status: 400 })
+      }
+      const validMappings: ProfileData["mappings"] = {}
+      let entryCount = 0
+      for (const [key, value] of Object.entries(raw.mappings as Record<string, unknown>)) {
+        entryCount++
+        const parsed = value && typeof value === "object" ? mappingSchema.safeParse(value) : null
+        if (parsed?.success) validMappings[key] = parsed.data as Mapping
+      }
+      if (entryCount > 0 && Object.keys(validMappings).length === 0) {
+        return Response.json({ error: "Invalid mappings in request body" }, { status: 400 })
+      }
+      mappings = validMappings
+    }
 
     const profileId = await createOrUpdateProfile(validConfig, existingProfileId, password, apiKeys, mappings)
     const url = `${getDomain()}/api/poster/{type}/{imdb_id}?u=${profileId}`
@@ -203,6 +229,11 @@ function isStorageError(error: unknown): boolean {
  * Genera e restituisce un nuovo UUID senza salvarlo.
  */
 export async function GET(req: NextRequest) {
+  // Fix L14: anche le GET (incluse ?new) passano dal rate limit — prima
+  // erano illimitate e un client poteva generare UUID a raffica o scandire
+  // i profili per UUID.
+  const rl = rateLimit(rateLimitKey(req), "profile")
+  if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const uuid = req.nextUrl.searchParams.get("u")
 
   if (req.nextUrl.searchParams.has("new")) {

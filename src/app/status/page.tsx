@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
-import { t } from "@/lib/i18n"
+import { t, getLang } from "@/lib/i18n"
 
 interface CheckResult {
   ok: boolean
@@ -173,7 +173,7 @@ export default function StatusPage() {
               )}
             </div>
 
-            <p className="text-xs text-zinc-500 text-center">{t("ui.statusUpdated", { time: new Date(data.timestamp).toLocaleString("it-IT") })}</p>
+            <p className="text-xs text-zinc-500 text-center">{t("ui.statusUpdated", { time: new Date(data.timestamp).toLocaleString(getLang()) })}</p>
           </div>
         )}
       </div>

@@ -37,7 +37,7 @@ export function BadgeControls() {
     <div className="space-y-2.5">
       <div className="control-row flex items-center justify-between px-1">
         <span className="control-label">{t("ui.trendBadge")}</span>
-        <Toggle value={ed.rankingBadges} onChange={(v) => ed.setRankingBadges(v)} />
+        <Toggle value={ed.rankingBadges} onChange={(v) => ed.setRankingBadges(v)} label={t("ui.trendBadge")} />
       </div>
 
       <div className="mt-2 pt-2 border-t border-surface2/60">
@@ -55,27 +55,27 @@ export function BadgeControls() {
 
       <div className="control-row flex items-center justify-between px-1">
         <span className="control-label">{t("ui.genreRatingBadge")}</span>
-        <Toggle value={ed.globalBadges} onChange={(v) => ed.setGlobalBadges(v)} />
+        <Toggle value={ed.globalBadges} onChange={(v) => ed.setGlobalBadges(v)} label={t("ui.genreRatingBadge")} />
       </div>
 
       <div className="pl-4 space-y-2.5 border-l border-surface2/60 ml-1.5">
         <div className="control-row flex items-center justify-between px-1">
           <span className="control-label">{t("ui.badgeGenre")}</span>
-          <Toggle value={ed.badgeGenre} onChange={(v) => ed.setBadgeGenre(v)} />
+          <Toggle value={ed.badgeGenre} onChange={(v) => ed.setBadgeGenre(v)} label={t("ui.badgeGenre")} />
         </div>
         <div className="control-row flex items-center justify-between px-1">
           <span className="control-label">{t("ui.badgeYear")}</span>
-          <Toggle value={ed.badgeYear} onChange={(v) => ed.setBadgeYear(v)} />
+          <Toggle value={ed.badgeYear} onChange={(v) => ed.setBadgeYear(v)} label={t("ui.badgeYear")} />
         </div>
         <div className="control-row flex items-center justify-between px-1">
           <span className="control-label">{t("ui.badgeRating")}</span>
-          <Toggle value={ed.badgeRating} onChange={(v) => ed.setBadgeRating(v)} />
+          <Toggle value={ed.badgeRating} onChange={(v) => ed.setBadgeRating(v)} label={t("ui.badgeRating")} />
         </div>
       </div>
 
       <div className="control-row flex items-center justify-between px-1">
         <span className="control-label">{t("ui.networkLogo")}</span>
-        <Toggle value={ed.networkLogo} onChange={(v) => ed.setNetworkLogo(v)} />
+        <Toggle value={ed.networkLogo} onChange={(v) => ed.setNetworkLogo(v)} label={t("ui.networkLogo")} />
       </div>
 
       <div className="control-row flex items-center justify-between px-1">
@@ -125,10 +125,22 @@ export function BadgeControls() {
                 voteAverage: metaInfo.voteAverage, tvType, tvStatus,
                 imdbTop250: !!imdbTop250,
               })
-              return options.map((o) => {
-                const display = isPrefixedKey(o) ? t(badgeKey(o)) : o
-                return <option key={o} value={o}>{display}</option>
-              })
+              // Fix L32: se il valore salvato non è tra le opzioni correnti
+              // (es. badge di un altro titolo o chiave non più disponibile), il
+              // select mostrerebbe un campo vuoto: lo si aggiunge come opzione
+              // non rimovibile così l'utente vede cosa è salvato.
+              const savedMissing = ed.customBadge && !options.includes(ed.customBadge) ? ed.customBadge : null
+              return (
+                <>
+                  {options.map((o) => {
+                    const display = isPrefixedKey(o) ? t(badgeKey(o)) : o
+                    return <option key={o} value={o}>{display}</option>
+                  })}
+                  {savedMissing && (
+                    <option value={savedMissing}>{isPrefixedKey(savedMissing) ? t(badgeKey(savedMissing)) : savedMissing}</option>
+                  )}
+                </>
+              )
             })()}
             <option value="__custom__">{t("ui.customOption")}</option>
           </select>

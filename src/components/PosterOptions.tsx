@@ -208,6 +208,10 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   const [excludedSaveState, setExcludedSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
 
   const excludePoster = (filePath: string) => {
+    // Fix L29: rollback su errore — prima l'exclude ottimistico restava in UI
+    // anche se il salvataggio falliva (mostrava escluso, disco no).
+    const prevExcluded = ed.excludedPosters
+    const prevRotation = ed.rotationPosters
     const nextExcluded = Array.from(new Set([...ed.excludedPosters, filePath]))
     const nextRotationPosters = ed.rotationPosters.filter((path) => path !== filePath)
     ed.setExcludedPosters(nextExcluded)
@@ -225,7 +229,13 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
     }
     autoSaveExcludedPosters(nextExcluded, nextRotationPosters, fallback)
       .then(() => { setExcludedSaveState("saved"); toast.success(t("ui.posterExcluded")) })
-      .catch(() => { setExcludedSaveState("error"); toast.error(t("ui.saveError")) })
+      .catch(() => {
+        // Rollback dello stato ottimistico: l'UI torna a riflettere il disco.
+        ed.setExcludedPosters(prevExcluded)
+        ed.setRotationPosters(prevRotation)
+        setExcludedSaveState("error")
+        toast.error(t("ui.saveError"))
+      })
   }
 
   function shortPath(p: string): string {

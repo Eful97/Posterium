@@ -70,7 +70,18 @@ export function SimklCard({ items, title, totalCount, meta = [], onClick, onItem
             <div
               key={tmdbId ?? idx}
               className="relative isolate shrink-0 overflow-hidden cursor-pointer"
+              role="button"
+              tabIndex={0}
               onClick={(e) => handlePosterClick(e, item)}
+              // Fix L31: le tile interne erano click-only (inaccessibili da
+              // tastiera); ora Enter/Space attivano lo stesso handler.
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onItemClick?.(item)
+                }
+              }}
             >
               <PosterDepthEdge edgeStrength={40} edgeCoverage={10} />
               <div className="relative z-[1]">

@@ -28,25 +28,60 @@ export interface WikidataResult {
 // ---- Circuit breaker ----
 let breakerFailures = 0
 let breakerOpenUntil = 0
+let breakerHalfOpen = false
 const BREAKER_THRESHOLD = 5
 const BREAKER_BACKOFF_MS = 60_000
 
+/**
+ * True se le richieste verso Wikidata devono essere rifiutate subito.
+ *
+ * Half-open: una volta raggiunta la soglia, la finestra di backoff viene
+ * aperta al momento del fallimento (recordFailure). Alla scadenza della
+ * finestra UNA sola richiesta di prova attraversa per verificare lo stato
+ * dell'upstream; le altre restano rifiutate finché la prova non decide.
+ * Prima il breaker restava aperto per sempre: nessuna richiesta usciva mai a
+ * resettare i contatori, quindi allo scadere della finestra si riapriva.
+ */
 function isBreakerOpen(): boolean {
-  if (breakerOpenUntil > Date.now()) return true
+  const now = Date.now()
+  // Finestra di backoff: tutte le richieste rifiutate.
+  if (breakerOpenUntil > now) return true
+  // Soglia raggiunta e finestra scaduta: entra in half-open.
   if (breakerFailures >= BREAKER_THRESHOLD) {
-    breakerOpenUntil = Date.now() + BREAKER_BACKOFF_MS
-    log.warn(`Circuit breaker opened for ${BREAKER_BACKOFF_MS}ms (${breakerFailures} failures)`)
-    return true
+    if (breakerHalfOpen) return true // una prova è già in corso → rifiuta
+    breakerHalfOpen = true
+    log.info("Circuit breaker half-open: one trial request allowed")
+    return false
   }
   return false
 }
 
 function recordSuccess(): void {
   breakerFailures = 0
+  breakerHalfOpen = false
 }
 
 function recordFailure(): void {
   breakerFailures++
+  breakerHalfOpen = false
+  // Apre la finestra di backoff solo al raggiungimento della soglia: i primi
+  // N fallimenti non devono ancora rifiutare alcuna richiesta. Anche il
+  // fallimento della prova half-open (già sopra soglia) impone un'altra
+  // attesa prima della prossima prova.
+  if (breakerFailures >= BREAKER_THRESHOLD) {
+    breakerOpenUntil = Date.now() + BREAKER_BACKOFF_MS
+    log.warn(`Circuit breaker failure #${breakerFailures} — backoff ${BREAKER_BACKOFF_MS}ms`)
+  }
+}
+
+// Esposte per i test unitari del circuito (stesso pattern di __resetJWRankingsCache).
+export { isBreakerOpen, recordSuccess, recordFailure }
+
+/** Solo per i test: azzera lo stato del circuit breaker. */
+export function __resetCircuitBreaker(): void {
+  breakerFailures = 0
+  breakerOpenUntil = 0
+  breakerHalfOpen = false
 }
 
 // ---- Concurrency limiter (max 2 parallel SPARQL queries) ----

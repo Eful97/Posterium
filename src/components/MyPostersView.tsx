@@ -132,7 +132,11 @@ export function MyPostersView() {
   }, [collections, mappings])
 
   // Poster renderizzato dal server (WYSIWYG): l'URL del pattern con
-  // {type}/{imdb_id} sostituiti dal mapping salvato. Fallback: TMDB raw.
+  // {type}/{imdb_id} sostituiti dal mapping salvato. Il placeholder
+  // "{imdb_id}" (convenzione Stremio) viene riempito con l'id TMDB: la route
+  // poster accetta sia numeri TMDB sia tt... (nota: se il profilo attivo è
+  // stato cancellato server-side, MoodBoardTile ripiega sul poster TMDB raw
+  // via onError). Fallback: TMDB raw.
   const mappingImgUrl = useCallback((m: Mapping): string => {
     if (urlPattern && urlPattern.includes("{type}")) {
       return urlPattern.replace("{type}", m.mediaType).replace("{imdb_id}", String(m.tmdbId))

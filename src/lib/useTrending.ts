@@ -89,7 +89,11 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
       setTrendingError(true)
     }
     for (const p of STREAMING_PLATFORMS) {
-      http<FlixPatrolChart>(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 30000 })
+      // Fix M17: il signal del refresh viene passato anche ai fetch FlixPatrol
+      // del loop — prima partivano senza signal dopo il check di abort: un
+      // secondo refresh non interrompeva il primo, che poteva sovrascrivere
+      // le classifiche più nuove al suo completamento.
+      http<FlixPatrolChart>(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 30000, signal })
         .then((data) => { if (signal.aborted) return; setStreamingCharts((prev) => ({ ...prev, [p.slug]: data })) })
         .catch((e) => { if (signal.aborted) return; console.error("[posterium] FlixPatrol refresh failed for", p.slug, e) })
     }

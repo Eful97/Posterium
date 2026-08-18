@@ -6,7 +6,11 @@ import { cacheGet, cacheSet } from "@/lib/cache"
 export async function GET(req: NextRequest) {
   const rl = rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
-  const page = parseInt(req.nextUrl.searchParams.get("page") || "1", 10)
+  // Fix L24: page validato e bounded — prima un valore arbitrario/NaN creava
+  // cache key illimitate e 422 upstream.
+  const rawPage = req.nextUrl.searchParams.get("page")
+  const parsedPage = rawPage ? parseInt(rawPage, 10) : 1
+  const page = Number.isFinite(parsedPage) ? Math.min(Math.max(parsedPage, 1), 500) : 1
   const language = req.nextUrl.searchParams.get("language") || "it-IT"
   // api_key esclusa dal cache key: i dati popular non dipendono dalla chiave.
   // Inserirla qui metterebbe il segreto in una Map key e frammenterebbe la cache.

@@ -94,9 +94,11 @@ function corsHeaders(): Record<string, string> {
 
 // Risposta di errore coerente per 500/503 con Retry-After esplicito sul 503
 // (F5/F8): la CDN/Stremio fa backoff invece di rimbalzare subito sull'endpoint.
+// Il body è generico: il 503 copre sia slot esauriti sia deadline/upstream
+// lento (fix H3), non solo il busy da render concorrenti.
 function posterErrorResponse(status: PosterErrorStatus): Response {
   if (status === 503) {
-    return new Response("Server busy: too many concurrent renders", {
+    return new Response("Poster temporarily unavailable", {
       status: 503,
       headers: { ...corsHeaders(), "Retry-After": String(Math.max(1, Math.round(RENDER_SLOT_WAIT_MS / 1000))) },
     })
@@ -222,11 +224,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   if (pendingPoster) {
     // F8: il waiter coalesced attende al massimo RENDER_SLOT_WAIT_MS, poi 503
     // con Retry-After invece di tenere la connessione fino all'INFLIGHT_TIMEOUT
-    // (60s) del render lento.
-    const payload = await Promise.race([
-      pendingPoster,
-      new Promise<PosterCachePayload | null>((resolve) => setTimeout(() => resolve(null), RENDER_SLOT_WAIT_MS)),
-    ])
+    // (60s) del render lento. Fix L3: il timer della race viene cancellato se
+    // vince la promise concorrente (prima restava attivo fino alla scadenza).
+    let coalesceTimer: ReturnType<typeof setTimeout> | undefined
+    const coalesceTimeout = new Promise<PosterCachePayload | null>((resolve) => {
+      coalesceTimer = setTimeout(() => resolve(null), RENDER_SLOT_WAIT_MS)
+    })
+    const payload = await Promise.race([pendingPoster, coalesceTimeout])
+    if (coalesceTimer) clearTimeout(coalesceTimer)
     if (payload) {
       log.debug("Poster cache: coalesced with in-flight render", { mediaType, tmdbId, ms: Date.now() - startTime })
       // Finding 5: il waiter della preview deve ricevere gli header no-store
@@ -254,6 +259,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   const completePosterRender = beginPosterRender(cacheKey)
 
+  // Flag impostato dal watchdog: se la pipeline supera RENDER_TIMEOUT_MS le
+  // risposte di errore successive devono essere 503 (upstream lento/assente),
+  // MAI 404: un titolo reale non è "non trovato" solo perché il render ha
+  // sforato il tempo massimo (prima il ramo !originalBuf rispondeva 404 e
+  // scriveva una negative-cache 404, facendo credere inesistente un titolo
+  // sano per i 5s di TTL).
+  let deadlineFired = false
+
   // Deadline complessivo del render (F2): se la pipeline non finisce entro
   // RENDER_TIMEOUT_MS (es. sharp appeso o upstream degradato), il watchdog
   // abbandona il render e libera sia la inflight map sia lo slot, così gli
@@ -269,6 +282,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
   }
   const renderDeadline = setTimeout(() => {
+    deadlineFired = true
     renderAbort.abort()
     completePosterRender(null)
     releaseSlotOnce()
@@ -290,6 +304,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let etag: string
   let genreName: string | null = null
   let voteAverage: number | null = null
+  // Il ramo non-mappato ha fallito il fetch automatico dei dati TMDB
+  // (errore/outage upstream, non titolo inesistente): le risposte da
+  // !posterPath devono essere 503, non 404.
+  let autoFetchFailed = false
   // A1: promise del voto medio TMDB+IMDb (MDBList) lanciata nel ramo
   // non-mappato ma attesa SOLO dopo il blocco dati parallelo, con un tetto
   // breve (RATING_WAIT_MS): se MDBList è lenta, il poster usa il voto TMDB
@@ -337,6 +355,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       if (!Number.isFinite(voteAverage)) voteAverage = null
       else voteAverage = Math.min(Math.max(voteAverage, 0), 10) // clamp a [0,10]
     }
+    // Fix M1: anno della preview (WYSIWYG). Senza, il ramo query non impostava
+    // releaseDate/firstAirDate e il badge genere della preview ometteva
+    // "• 2024" presente invece sul poster finale.
+    const queryYear = req.nextUrl.searchParams.get("year")
+    if (queryYear && /^\d{4}$/.test(queryYear.slice(0, 4))) {
+      const y = queryYear.slice(0, 4)
+      if (mediaType === "tv") firstAirDate = `${y}-01-01`
+      else releaseDate = `${y}-01-01`
+    }
     imdbId = req.nextUrl.searchParams.get("imdbId") || null
     showBadges = true
     etag = `"p${etagBase}"`
@@ -345,6 +372,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     logoPath = queryLogo || mapping.logoPath
     backdropPath = queryBackdrop || mapping?.backdropPath || null
     backdropScale = mapping?.backdropScale ?? 100
+    // Fix M5: clamp difensivo anche sui mapping già salvati (pre-bounds zod):
+    // 0/negativi rompono resizeBackdropCached → 500 permanente.
+    if (!Number.isFinite(backdropScale) || backdropScale < 5 || backdropScale > 500) backdropScale = 100
     backdropOffsetX = mapping?.backdropOffsetX ?? 0
     backdropOffsetY = mapping?.backdropOffsetY ?? 0
     genreName = mapping.genreName ?? null
@@ -496,7 +526,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         const chosen = langPoster || origPoster || images.posters[0]
         if (chosen) posterPath = chosen.file_path
       }
-    } catch (e) { log.error("Auto image fetch failed", { error: e instanceof Error ? e.message : String(e) }) }
+    } catch (e) {
+      autoFetchFailed = true
+      log.error("Auto image fetch failed", { error: e instanceof Error ? e.message : String(e) })
+    }
     etag = `"a${etagBase}"`
   }
 
@@ -505,9 +538,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     // C1: il ramo non-mappato può già detenere lo slot (logo-fit) — questo
     // return è fuori dal try/finally, quindi il rilascio va fatto qui.
     releaseSlotOnce()
-    // Finding 4: il 404 entra in negative cache (TTL breve) così i waiter
-    // coalesced ricevono 404 (non 503) e le richieste successive non ri-eseguono
-    // tutta la pipeline per lo stesso titolo inesistente.
+    // Deadline sforato o fetch upstream fallito: NIENTE 404. Il titolo può
+    // semplicemente essere lento/indisponibile upstream; la negative-cache 503
+    // (TTL breve) evita la tempesta di ri-render senza marchiare il titolo
+    // come inesistente.
+    if (deadlineFired || autoFetchFailed) {
+      writePosterError(cacheKey, 503)
+      completePosterRender(null)
+      return posterErrorResponse(503)
+    }
+    // Nessun poster davvero disponibile per questo titolo: 404 + negative cache.
     writePosterError(cacheKey, 404)
     completePosterRender(null)
     return new Response("Poster not found", { status: 404, headers: corsHeaders() })
@@ -583,12 +623,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       ]),
       // Block B: badge data (independent of Block A — runs concurrently)
       Promise.all([
-        Promise.race([
-          rankingEnabledEarly
-            ? fetchAllWikidata(tmdbId, mediaType, t).catch(() => emptyWikidata)
-            : Promise.resolve(emptyWikidata),
-          new Promise<typeof emptyWikidata>((r) => setTimeout(() => r(emptyWikidata), WIKIDATA_TIMEOUT)),
-        ]),
+        // Fix L3: il timer della race Wikidata viene cancellato quando vince
+        // il fetch (prima restava attivo fino alla scadenza del timeout).
+        (async () => {
+          let wikidataTimer: ReturnType<typeof setTimeout> | undefined
+          const wikidataTimeout = new Promise<typeof emptyWikidata>((r) => {
+            wikidataTimer = setTimeout(() => r(emptyWikidata), WIKIDATA_TIMEOUT)
+          })
+          const result = await Promise.race([
+            rankingEnabledEarly
+              ? fetchAllWikidata(tmdbId, mediaType, t).catch(() => emptyWikidata)
+              : Promise.resolve(emptyWikidata),
+            wikidataTimeout,
+          ])
+          if (wikidataTimer) clearTimeout(wikidataTimer)
+          return result
+        })(),
         rankingEnabledEarly
           ? getKeywords(mediaType, tmdbId, (profileTmdbKey || resolveRequestApiKey(req)), renderAbort.signal).catch(() => [])
           : Promise.resolve([]),
@@ -611,17 +661,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     // Dopo la race, se il fetch è ancora in corso viene abortito (no-op se ha
     // già vinto): il risultato è scartato, non ha senso tenerlo in background.
     if (aggregatedRating) {
-      const aggregated = await Promise.race([
-        aggregatedRating,
-        new Promise<Awaited<ReturnType<typeof fetchAggregatedRating>>>((resolve) => setTimeout(() => resolve(null), RATING_WAIT_MS)),
-      ])
+      // Fix L3: timer della race RATING_WAIT cancellato se vince il fetch.
+      let ratingTimer: ReturnType<typeof setTimeout> | undefined
+      const ratingTimeout = new Promise<Awaited<ReturnType<typeof fetchAggregatedRating>>>((resolve) => {
+        ratingTimer = setTimeout(() => resolve(null), RATING_WAIT_MS)
+      })
+      const aggregated = await Promise.race([aggregatedRating, ratingTimeout])
+      if (ratingTimer) clearTimeout(ratingTimer)
       if (aggregated?.average) voteAverage = aggregated.average
       ratingAbort?.abort()
     }
 
     if (!originalBuf) {
-      // Finding 4: stessa logica del ramo non-mappato — negative cache 404 per
-      // i waiter coalesced e per le richieste successive.
+      // Deadline sforato → 503 con negative cache: il fetch dell'immagine è
+      // stato abortito dal watchdog, non è un titolo inesistente.
+      if (deadlineFired) {
+        writePosterError(cacheKey, 503)
+        completePosterRender(null)
+        return posterErrorResponse(503)
+      }
+      // Immagine davvero non disponibile dal CDN: 404 + negative cache per i
+      // waiter coalesced e per le richieste successive.
       writePosterError(cacheKey, 404)
       completePosterRender(null)
       return new Response("Poster image not available", { status: 404, headers: corsHeaders() })
@@ -681,6 +741,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       animeRank: animeRankResult,
       rankingResult,
       finalRank,
+      // Fix L32: lingua per la risoluzione delle label prefissate (__badge.*).
+      lang: req.nextUrl.searchParams.get("lang") || mapping?.language || "it",
     })
     const {
       badgeStyle, rankingBadgeStyle,
@@ -829,6 +891,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster, isPreview, dynamicPoster) })
   } catch (e) {
     completePosterRender(null)
+    // Deadline sforato: il render è stato abbandonato dal watchdog perché
+    // troppo lento → 503 (con negative cache) invece di un 500 generico.
+    if (deadlineFired) {
+      writePosterError(cacheKey, 503)
+      log.error("Poster generation failed (render deadline exceeded)", { error: e instanceof Error ? e.message : String(e) })
+      return posterErrorResponse(503)
+    }
     // F3: negative cache — lo stesso errore non ri-rende la pipeline per il TTL.
     writePosterError(cacheKey, 500)
     log.error("Poster generation failed", { error: e instanceof Error ? e.message : String(e) })

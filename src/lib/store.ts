@@ -218,7 +218,12 @@ export async function upsert(mapping: Mapping) {
     return
   }
   return enqueueWrite(async () => {
-    const data = await readFromMem()
+    // Fix M13: rilettura FORZATA da disco dentro la coda di scrittura.
+    // Prima readFromMem() poteva restituire la memCache stantia (TTL 500ms):
+    // due istanze che scrivevano insieme si sovrascrivevano le entry (lost
+    // update). La coda serializza le scritture di questo processo, ma il
+    // merge deve partire dallo stato reale su disco, non dal mirror.
+    const data = await loadFromDisk()
     const key = `${mapping.mediaType}:${mapping.tmdbId}`
     data[key] = { ...mapping, updatedAt: new Date().toISOString() }
     await persist(data)
@@ -231,7 +236,7 @@ export async function remove(type: "movie" | "tv", id: number) {
     return
   }
   return enqueueWrite(async () => {
-    const data = await readFromMem()
+    const data = await loadFromDisk()
     const key = `${type}:${id}`
     delete data[key]
     await persist(data)
@@ -254,7 +259,7 @@ export async function importMappings(mappings: Mapping[]) {
     return
   }
   return enqueueWrite(async () => {
-    const data = await readFromMem()
+    const data = await loadFromDisk() // Fix M13: merge sullo stato reale su disco
     const now = new Date().toISOString()
     for (const m of mappings) {
       const key = `${m.mediaType}:${m.tmdbId}`

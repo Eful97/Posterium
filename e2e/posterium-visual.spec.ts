@@ -83,20 +83,27 @@ test("home with key — hero podium and status strip", async ({ page }) => {
   })
   // Congela marquee/bob/pulse: screenshot deterministici
   await page.emulateMedia({ reducedMotion: "reduce" })
+  // M21: i poster del podio vengono scaricati via fetch con la chiave in
+  // header x-api-key (object URL) — la URL non compare più nell'attributo src.
+  // Registriamo le richieste effettive a /api/poster per verificare i titoli.
+  const posterRequests: string[] = []
+  page.on("request", (req) => {
+    if (req.url().includes("/api/poster/")) posterRequests.push(req.url())
+  })
   await page.goto("/")
   await page.evaluate(() => window.scrollTo(0, 0))
-  // Attende il caricamento dei poster reali del podio: i 3 frame mostrano le
-  // classifiche giornaliere (film #1/#2 + serie #1, dati deterministici del
-  // mock). Il fallback statico iniziale viene sostituito al primo render del
-  // trending: attendiamo gli src attesi e poi il decode completo delle img.
+  // I titoli giusti devono essere STATI RICHIESTI (niente api_key negli URL:
+  // la chiave viaggia nell'header x-api-key). Il podio di fallback statico
+  // verrebbe sostituito appena il trending arriva; i tre fetch confermano che
+  // il podio reale è in corso.
+  await expect.poll(() => posterRequests.map((u) => new URL(u).pathname)).toContain("/api/poster/movie/19995")
+  await expect.poll(() => posterRequests.map((u) => new URL(u).pathname)).toContain("/api/poster/movie/157336")
+  await expect.poll(() => posterRequests.map((u) => new URL(u).pathname)).toContain("/api/poster/tv/19995")
+  posterRequests.forEach((u) => expect(u).not.toContain("api_key"))
+  // Attende il decode completo delle img del podio reale (src = object URL).
   await page.waitForFunction(() => {
     const imgs = Array.from(document.querySelectorAll(".p-frame img")) as HTMLImageElement[]
-    const srcs = imgs.map((i) => i.getAttribute("src") || "")
-    const expected =
-      srcs.some((s) => s.includes("/movie/19995?")) &&
-      srcs.some((s) => s.includes("/movie/157336?")) &&
-      srcs.some((s) => s.includes("/tv/19995?"))
-    return expected && imgs.length >= 3 && imgs.every((i) => i.complete && i.naturalWidth > 0)
+    return imgs.length >= 3 && imgs.every((i) => i.complete && i.naturalWidth > 0)
   }, { timeout: 30_000, polling: 500 })
   await expect(page).toHaveScreenshot("home-key-hero.png", {
     maxDiffPixelRatio: 0.03,

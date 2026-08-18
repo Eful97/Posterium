@@ -239,3 +239,24 @@ export async function getTrending(mediaType: "movie" | "tv", timeWindow: "day" |
   const data = await tmdbFetch(`/trending/${mediaType}/${timeWindow}?language=it-IT&page=${page}`, apiKey)
   return data as TMDBTrendingResponse
 }
+
+/** Fix L26: svuota la cache TMDB condivisa (per /api/cache/clear). */
+export function __clearTMDBCache(): void {
+  fetchCache.clear()
+}
+
+/**
+ * Risolve un id IMDb (tt...) al corrispondente id TMDB via /find (fix L22).
+ * Riusa il layer condiviso (cache 5min a chiave neutra + inflight coalescing)
+ * invece di un fetch dedicato come faceva imdb-resolver.
+ */
+export async function tmdbFindByImdb(imdbId: string, mediaType: "movie" | "tv", apiKey?: string, signal?: AbortSignal): Promise<number | null> {
+  const data = await tmdbFetch(`/find/${encodeURIComponent(imdbId)}?external_source=imdb_id`, apiKey, signal) as {
+    movie_results?: { id?: number }[]
+    tv_results?: { id?: number }[]
+  }
+  const id = mediaType === "movie"
+    ? data.movie_results?.[0]?.id
+    : (data.tv_results?.[0]?.id ?? data.movie_results?.[0]?.id)
+  return typeof id === "number" && id > 0 ? id : null
+}

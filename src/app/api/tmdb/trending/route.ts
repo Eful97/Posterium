@@ -113,13 +113,16 @@ export async function GET(req: NextRequest) {
     // Se c'erano rank ma non è stato arricchito nulla → probabile outage TMDB.
     const emptyEnrichment = movieResults.length === 0 && tvResults.length === 0 && (movieRanks.length > 0 || tvRanks.length > 0)
     if (degraded || emptyEnrichment) {
+      // Fix M12: flag esplicito — prima la risposta era 200 con array vuoti e
+      // i client/CDN la trattavano come "niente in evidenza". Con `degraded`
+      // il client può mostrare uno stato di outage invece di una home vuota.
       log.warn("Trending degraded — response not cached", { country, movies: movieResults.length, tv: tvResults.length })
-      return jsonGzip(body, 200, { "Cache-Control": "no-store" }, acceptEncoding)
+      return jsonGzip({ ...body, degraded: true }, 200, { "Cache-Control": "no-store" }, acceptEncoding)
     }
     cacheSet(cacheKey, body, ["tmdb", "trending", country])
-    return jsonGzip(body, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" }, acceptEncoding)
+    return jsonGzip({ ...body, degraded: false }, 200, { "Cache-Control": "public, max-age=300, s-maxage=1800" }, acceptEncoding)
   } catch (err) {
     log.error("Trending fetch failed", { error: err instanceof Error ? err.message : String(err) })
-    return jsonGzip({ movies: [], tv: [] }, 200, { "Cache-Control": "no-store" }, acceptEncoding)
+    return jsonGzip({ movies: [], tv: [], degraded: true }, 200, { "Cache-Control": "no-store" }, acceptEncoding)
   }
 }

@@ -37,6 +37,15 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   const [saved, setSaved] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
   const [clearStatus, setClearStatus] = useState<"idle" | "clearing" | "cleared">("idle")
+  // Fix L30: timer dello stato "cleared" e del toast "saved" ripuliti su unmount.
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => {
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current)
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    }
+  }, [])
   const [tmdbKeyError, setTmdbKeyError] = useState<string | undefined>(undefined)
   const [mdblistKeyError, setMdblistKeyError] = useState<string | undefined>(undefined)
   const [cacheCount, setCacheCount] = useState<number | null>(null)
@@ -76,7 +85,8 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       await http<{ ok: boolean }>("/api/cache/clear", { method: "POST", retries: 0 })
       setClearStatus("cleared")
       toast.success(t("ui.cleared"))
-      setTimeout(() => setClearStatus("idle"), 1500)
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current)
+      clearTimerRef.current = setTimeout(() => setClearStatus("idle"), 1500)
     } catch (error) {
       setClearStatus("idle")
       const message = error instanceof ApiError && error.status === 401
@@ -94,29 +104,29 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <hr className="border-surface2/60 my-1" />
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Star className="w-3 h-3" /> {t("ui.genreRatingBadge")}</span>
-        <Toggle value={ed.defaultGlobalBadges} onChange={ed.setDefaultGlobalBadges} />
+        <Toggle value={ed.defaultGlobalBadges} onChange={ed.setDefaultGlobalBadges} label={t("ui.genreRatingBadge")} />
       </div>
       <div className="pl-4 space-y-1 border-l border-surface2/60 ml-1.5">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted">{t("ui.badgeGenre")}</span>
-          <Toggle value={ed.defaultBadgeGenre} onChange={ed.setDefaultBadgeGenre} />
+          <Toggle value={ed.defaultBadgeGenre} onChange={ed.setDefaultBadgeGenre} label={t("ui.badgeGenre")} />
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted">{t("ui.badgeYear")}</span>
-          <Toggle value={ed.defaultBadgeYear} onChange={ed.setDefaultBadgeYear} />
+          <Toggle value={ed.defaultBadgeYear} onChange={ed.setDefaultBadgeYear} label={t("ui.badgeYear")} />
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted">{t("ui.badgeRating")}</span>
-          <Toggle value={ed.defaultBadgeRating} onChange={ed.setDefaultBadgeRating} />
+          <Toggle value={ed.defaultBadgeRating} onChange={ed.setDefaultBadgeRating} label={t("ui.badgeRating")} />
         </div>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {t("ui.trendBadge")}</span>
-        <Toggle value={ed.defaultRankingBadges} onChange={ed.setDefaultRankingBadges} />
+        <Toggle value={ed.defaultRankingBadges} onChange={ed.setDefaultRankingBadges} label={t("ui.trendBadge")} />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Tv className="w-3 h-3" /> {t("ui.networkLogo")}</span>
-        <Toggle value={ed.defaultNetworkLogo} onChange={(v) => { ed.setDefaultNetworkLogo(v); ed.setNetworkLogo(v) }} />
+        <Toggle value={ed.defaultNetworkLogo} onChange={(v) => { ed.setDefaultNetworkLogo(v); ed.setNetworkLogo(v) }} label={t("ui.networkLogo")} />
       </div>
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs text-muted flex items-center gap-1.5 shrink-0"><Flame className="w-3 h-3" /> {t("ui.badgePosition")}</span>
@@ -149,7 +159,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <hr className="border-border my-1" />
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-muted">{t("ui.blurDefault")}</span>
-        <Toggle value={ed.defaultBlurEnabled} onChange={ed.setDefaultBlurEnabled} />
+        <Toggle value={ed.defaultBlurEnabled} onChange={ed.setDefaultBlurEnabled} label={t("ui.blurDefault")} />
       </div>
       {ed.defaultBlurEnabled && <>
         <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => ed.setDefaultGradientHeight(v)} onDoubleClick={() => ed.setDefaultGradientHeight(30)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="gh" suffix="%" />
@@ -159,19 +169,19 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       </>}
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-muted flex items-center gap-1.5"><RotateCcw className="w-3 h-3" /> {t("ui.autoRotateDefault")}</span>
-        <Toggle value={ed.defaultAutoRotateClean} onChange={ed.setDefaultAutoRotateClean} />
+        <Toggle value={ed.defaultAutoRotateClean} onChange={ed.setDefaultAutoRotateClean} label={t("ui.autoRotateDefault")} />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Palette className="w-3 h-3" /> {t("ui.uiAccentDynamic")}</span>
-        <Toggle value={uiAccent} onChange={setUiAccent} />
+        <Toggle value={uiAccent} onChange={setUiAccent} label={t("ui.uiAccentDynamic")} />
       </div>
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-muted flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> {t("ui.logoFitEnabled")}</span>
-        <Toggle value={ed.defaultLogoFitEnabled} onChange={ed.setDefaultLogoFitEnabled} />
+        <Toggle value={ed.defaultLogoFitEnabled} onChange={ed.setDefaultLogoFitEnabled} label={t("ui.logoFitEnabled")} />
       </div>
       <hr className="border-border my-1" />
 
-      <button type="button" onClick={() => { saveDefaults({ selected, mappingsMap }, ed); setSaved(true); setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {t("ui.saved")}</> : <><Save className="w-3 h-3" /> {t("ui.saveDefaults")}</>}</span></button>
+      <button type="button" onClick={() => { saveDefaults({ selected, mappingsMap }, ed); setSaved(true); if (savedTimerRef.current) clearTimeout(savedTimerRef.current); savedTimerRef.current = setTimeout(() => setSaved(false), 1500) }} className="w-full text-center text-xs font-semibold py-2 rounded-lg bg-accent-orange/90 text-white hover:bg-accent-orange active:scale-[0.98] transition-all duration-150"><span className="flex items-center gap-1.5 justify-center">{saved ? <><Check className="w-3 h-3" /> {t("ui.saved")}</> : <><Save className="w-3 h-3" /> {t("ui.saveDefaults")}</>}</span></button>
       <hr className="border-border my-1" />
       <MenuItem icon={<Download className="w-3 h-3 text-accent-orange" />} label={t("ui.exportJson")} onClick={() => { exportData(); setSettingsOpen(false) }} />
       <MenuItem icon={<Upload className="w-3 h-3 text-blue-400" />} label={t("ui.importJson")} onClick={() => { importData(); setSettingsOpen(false) }} />

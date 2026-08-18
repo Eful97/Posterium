@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 import { textColorForBg } from "./accent-color"
-import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg } from "./badge-svg-shared"
+import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg, escSvg } from "./badge-svg-shared"
 import type { GenreParts } from "./badge-svg-shared"
 import type { BadgeStyle, RankingBadgeStyle, ExtraBadgeStyle } from "./badge-styles"
 
@@ -303,8 +303,11 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
   const textX = isRight ? totalW - ribbonMidX : ribbonMidX
   const shadowDx = isRight ? -3 : 3
 
+  // Fix M4: la label va escapata (come negli altri stili via escSvg): una
+  // subLabel con "&" o "<" produceva XML malformato → resvg falliva → il
+  // badge spariva silenziosamente (.catch(() => null)).
   const subEl = hasSub
-    ? `<text x="${textX}" y="${subY}" fill="${textColor}" font-family="Inter" font-weight="600" font-size="${subFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">${subLabel}</text>`
+    ? `<text x="${textX}" y="${subY}" fill="${textColor}" font-family="Inter" font-weight="600" font-size="${subFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">${escSvg(subLabel)}</text>`
     : ""
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalHSub}" viewBox="0 0 ${totalW} ${totalHSub}">
     <defs>

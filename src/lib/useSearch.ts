@@ -81,6 +81,11 @@ export function useSearch(tmdbKey: string, lang: string) {
       setResults(page === 1 ? newResults : (prev) => [...prev, ...newResults])
       setTotalResults(data.total_results || 0)
       setTotalPages(data.total_pages || 0)
+      // Fix M18: searchPage avanza SOLO a successo. Prima loadMore() la
+      // avanzava ottimisticamente prima del fetch: un fallimento/abort
+      // lasciava il contatore avanti di uno e il successivo "Show more"
+      // richiedeva page+2 saltando una pagina di risultati.
+      if (page > 1) setSearchPage(page)
       if (page === 1) {
         setSearchPage(1)
         setRecentSearches((prev) => [searchQuery, ...prev.filter((s) => s !== searchQuery)].slice(0, 5))
@@ -103,7 +108,8 @@ export function useSearch(tmdbKey: string, lang: string) {
     if (searching || searchPage >= totalPages || loadMoreRef.current) return
     loadMoreRef.current = true
     const nextPage = searchPage + 1
-    setSearchPage(nextPage)
+    // Fix M18: nessun setSearchPage ottimistico — avanza solo a successo
+    // (dentro doSearch), così un fetch fallito/abortito non salta pagine.
     try {
       await doSearch(query, nextPage)
     } finally {

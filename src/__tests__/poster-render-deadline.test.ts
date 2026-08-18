@@ -124,9 +124,9 @@ describe("render deadline watchdog (F2)", () => {
     const res = await GET(req(42), { params: Promise.resolve({ type: "movie", id: "42" }) })
     const elapsed = Date.now() - started
 
-    // Il render appeso termina per forza del watchdog (fetch → null → 404),
-    // invece di restare appeso per sempre.
-    expect(res.status).toBe(404)
+    // Il render appeso termina per forza del watchdog (fetch → null). NIENTE
+    // 404: il titolo esiste, è solo lento/upstream degradato → 503 (fix H3).
+    expect(res.status).toBe(503)
     expect(elapsed).toBeLessThan(5000)
 
     // Lo slot è stato rilasciato: una nuova acquisizione è immediata.
@@ -151,7 +151,8 @@ describe("render deadline watchdog (F2)", () => {
     expect(res2.headers.get("Retry-After")).toBeTruthy()
 
     const res1 = await p1
-    expect(res1.status).toBe(404)
+    // Deadline sforato → 503 (non 404: fix H3).
+    expect(res1.status).toBe(503)
   })
 
   it("serves the negative cache immediately for a recently failed cache key (F3)", async () => {

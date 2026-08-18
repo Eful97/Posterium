@@ -118,10 +118,20 @@ export function readCachedPoster(cacheKey: string): { readonly payload: PosterCa
   }
 }
 
+// Poster non-mappati (composti al volo con dati dinamici): TTL esplicito 6h
+// (fix M3). Prima writeCachedPoster non passava alcun TTL → il tag "poster"
+// finiva nel refresh schedulato giornaliero alle 3 UTC (cache.ts) e l'header
+// HTTP dynamic (6h) mentiva: in memoria il payload restava fino al refresh
+// delle 3, con rank/IMDb Top 250 potenzialmente stantii per un giorno intero.
+const DYNAMIC_POSTER_TTL_MS = 6 * 60 * 60 * 1000
+
 export function writeCachedPoster(cacheKey: string, payload: PosterCachePayload, mappingTag?: string): void {
   const tags = mappingTag ? ["poster", mappingTag] : ["poster"]
-  cacheSet(cacheKey, payload.buffer, tags)
-  cacheSet(`${cacheKey}:headers`, { etag: payload.etag }, tags)
+  // TTL esplicito solo per i non-mappati: per i mappati resta il refresh
+  // schedulato giornaliero (immutable per un anno alla CDN, invalido per tag).
+  const ttl = mappingTag ? undefined : DYNAMIC_POSTER_TTL_MS
+  cacheSet(cacheKey, payload.buffer, tags, ttl)
+  cacheSet(`${cacheKey}:headers`, { etag: payload.etag }, tags, ttl)
 }
 
 // ---------------------------------------------------------------------------

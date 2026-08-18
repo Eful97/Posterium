@@ -156,8 +156,11 @@ export async function posteriumCatalog(
     let metas: StremioMeta[] = []
 
     if (catalogId.startsWith("posterium-jw")) {
-      const rows = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW")
+      // Fix L12: la chiave si controlla PRIMA del fetch JustWatch — prima i
+      // 15s del fetch JW venivano sprecati su ogni cache-miss senza chiave
+      // (risultato comunque vuoto).
       if (!apiKey) return catalogResponse({ metas: [] })
+      const rows = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW")
       const results = await Promise.all(rows.slice(0, 20).map(async (row) => {
         try {
           const d = await getDetails(stType === "movie" ? "movie" : "tv", row.tmdbId, "it-IT", apiKey)

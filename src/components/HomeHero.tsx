@@ -4,6 +4,7 @@ import { useMemo, useRef, type MouseEvent, type KeyboardEvent } from "react"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult, type SearchResult } from "@/lib/types"
+import { useSecurePosterUrl } from "@/lib/useSecurePosterUrl"
 import { Layers, Sparkles, Globe } from "lucide-react"
 
 interface PodiumSlot {
@@ -16,6 +17,15 @@ interface PodiumSlot {
 
 interface FallbackSlot extends Omit<PodiumSlot, "url"> {
   url: (apiKeyParam: string) => string
+}
+
+/** M21: `<img>` che recupera il poster con la chiave in header x-api-key
+ *  (object URL) invece di incollare api_key nel query string del DOM. */
+function SecurePosterImg({ url, loading }: { url: string; loading: "eager" | "lazy" }) {
+  const tmdbKey = usePSelector((v) => v.tmdbKey)
+  const src = useSecurePosterUrl(url, tmdbKey)
+  // eslint-disable-next-line @next/next/no-img-element -- poster dinamico /api/poster
+  return <img src={src ?? undefined} alt="" loading={loading} decoding="async" />
 }
 
 // Poster statici di riserva (stessi layout del carosello) usati solo finché il
@@ -181,8 +191,8 @@ export function HomeHero() {
                 }
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- poster dinamico /api/poster */}
-              <img src={p.url} alt="" loading={i === 1 ? "eager" : "lazy"} decoding="async" />
+              {/* M21: la chiave viaggia nell'header x-api-key, mai nel DOM */}
+              <SecurePosterImg url={p.url} loading={i === 1 ? "eager" : "lazy"} />
             </div>
           ))}
         </div>

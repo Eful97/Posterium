@@ -84,14 +84,30 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 })
   }
 
-  if (!body.posterPaths?.length || !body.logoPath) {
-    return Response.json({ error: "posterPaths and logoPath are required" }, { status: 400 })
+  // Fix L5: validazione STRUTTURALE del body — prima `body.posterPaths?.length`
+// passava anche per valori non-array con `.length` (es. una stringa) e il
+// successivo `.map` schiantava con TypeError → 500 generico.
+const isValidPosterPath = (p: unknown): p is string => typeof p === "string" && p.startsWith("/") && p.length > 1 && p.length <= 300
+if (!Array.isArray(body.posterPaths) || body.posterPaths.length === 0 || !body.posterPaths.every(isValidPosterPath)) {
+  return Response.json({ error: "posterPaths must be a non-empty array of absolute poster paths" }, { status: 400 })
+}
+if (typeof body.logoPath !== "string" || !isValidPosterPath(body.logoPath)) {
+  return Response.json({ error: "logoPath must be an absolute path starting with '/'" }, { status: 400 })
+}
+for (const field of ["logoScale", "logoOffsetX", "logoOffsetY"] as const) {
+  const v = body[field]
+  if (v !== undefined && (typeof v !== "number" || !Number.isFinite(v))) {
+    return Response.json({ error: `Invalid body field: '${field}' must be a finite number` }, { status: 400 })
   }
+}
+if (body.hasBadges !== undefined && typeof body.hasBadges !== "boolean") {
+  return Response.json({ error: "Invalid body field: 'hasBadges' must be a boolean" }, { status: 400 })
+}
 
-  // logoPath entra in una URL TMDB: deve essere un path assoluto, non una URL.
-  if (!body.logoPath.startsWith("/")) {
-    return Response.json({ error: "logoPath must be a path starting with '/'" }, { status: 400 })
-  }
+// logoPath entra in una URL TMDB: deve essere un path assoluto, non una URL.
+if (!body.logoPath.startsWith("/")) {
+  return Response.json({ error: "logoPath must be a path starting with '/'" }, { status: 400 })
+}
 
   // Endpoint CPU/network-heavy: limita il numero di candidati da analizzare.
   if (body.posterPaths.length > MAX_CANDIDATES) {
