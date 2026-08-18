@@ -44,6 +44,11 @@ async function renderPoster(page: Page, posterUrl: string) {
 test("home — full page", async ({ page }) => {
   await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
+  // Cold start di Next dev in CI: al primo hit la route viene compilata on
+  // demand e il contenuto sotto il fold può tardare a montare. Attendi che la
+  // pagina superi il viewport prima dello screenshot full-page, altrimenti
+  // l'immagine cattura solo il viewport (720px) e non i 947px dello snapshot.
+  await page.waitForFunction(() => document.body.scrollHeight > window.innerHeight, { timeout: 30_000 })
   await expect(page).toHaveScreenshot("home-fullpage.png", {
     fullPage: true,
     maxDiffPixelRatio: 0.03,
