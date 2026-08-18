@@ -122,24 +122,48 @@ Il repo è già configurato per HF Spaces Docker (`sdk: docker` + `app_port: 808
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FEful97%2FPosterium)
 
+Su Vercel il filesystem è **read-only e non persistente**: i poster vengono sempre generati e serviti correttamente, ma il salvataggio di mapping e profili richiede uno store esterno (Vercel KV). Scegli la modalità che preferisci:
+
+---
+
+**Opzione A — Senza persistenza (solo rendering)**
+
+Funziona subito, senza configurazione aggiuntiva. I poster vengono generati e serviti normalmente, ma **non puoi salvare** mapping personalizzati né profili cloud: ogni tentativo di salvataggio restituisce errore 500 (`Storage not configured`).
+
 1. Clicca **Deploy** (o Vercel → Add New → Project → importa `Eful97/Posterium`). Framework Next.js, build default.
-2. **Crea lo store KV (obbligatorio per salvare)**: Vercel → Storage → Create Database → **KV** (Upstash). Vercel aggiunge da solo `KV_REST_API_URL` e `KV_REST_API_TOKEN`; poi **redeploy**.
-3. Imposta le altre env:
+2. Fine. L'app è online e genera poster; usa i **config token** (`?config=<token>`, vedi sotto) per personalizzare i poster senza salvare nulla sul server.
+
+> ⚠️ Senza KV: niente profili cloud, niente "I miei poster", niente salvataggio mapping. Se ti serve solo generare poster al volo con parametri nell'URL, questa opzione basta.
+
+---
+
+**Opzione B — Con persistenza (salvataggio mapping e profili)**
+
+Aggiunge uno store **Vercel KV (Upstash)** dove vengono salvati mapping, profili e apiKeys cifrate.
+
+1. Clicca **Deploy** (o Vercel → Add New → Project → importa `Eful97/Posterium`). Framework Next.js, build default.
+2. **Crea lo store KV**: nella dashboard Vercel vai su **Storage → Create Database → KV** (Upstash). Collega il database al progetto appena creato.
+3. Vercel aggiunge automaticamente le env `KV_REST_API_URL` e `KV_REST_API_TOKEN` al progetto.
+4. **Redeploy**: vai su Deployments → ultimo deploy → ⋯ → **Redeploy** (le env nuove vengono lette solo al build/deploy successivo).
+5. (Consigliato) Imposta le env aggiuntive:
    | Variabile | Necessità |
    |---|---|
-   | `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 Obbligatorie su Vercel (senza: salvare = 500) |
+   | `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 Obbligatorie (senza: salvare = 500) |
    | `CONFIG_HMAC_SECRET` | 🟠 Consigliata — sblocca i config token |
    | `PROFILE_ENCRYPTION_KEY` | 🟠 Consigliata — cifra le apiKeys dei profili (`openssl rand -hex 32`) |
    | `POSTERIUM_ADMIN_TOKEN` | Opzionale — proteggi le route admin |
+6. Verifica: apri `https://<tuo-app>.vercel.app/api/status` → la sezione **storage** deve mostrare `kv`.
 
 **Dove vengono salvati i dati**: profili, mapping e apiKeys su **KV Upstash**; cache poster in-memory (effimera); cache flixpatrol su `/tmp` (fallback automatico).
+
+---
 
 **Limiti Hobby da conoscere**: durata funzione **10s** (Pro 60s); il warmup non completa su Hobby (non critico); la cache in-memory si svuota al cold start.
 
 **Troubleshooting**:
 - Poster 404 con `TMDB API key is missing` → manca la chiave nella richiesta: passa `?api_key=` / header `x-api-key`, o usa un link `?u=<uuid>` col profilo.
 - Cataloghi vuoti → il catalogo richiede una chiave TMDB nella richiesta.
-- `ENOENT` / "Storage not configured" → manca lo store KV (punto 2).
+- `ENOENT` / "Storage not configured" → manca lo store KV: segui l'Opzione B dal punto 2.
 
 📌 Manifest Stremio: `https://<tuo-app>.vercel.app/manifest.json` (o `/u/<uuid>/manifest.json` col profilo).
 </details>

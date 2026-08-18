@@ -294,7 +294,11 @@ input[type="range"]::-moz-range-thumb {
    semplice fade-scale-in usato per dropdown/modali. */
 @keyframes view-enter {
   from { opacity: 0; transform: translateY(16px) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  /* `transform: none` nel frame finale: con fill-mode both un transform
+     identità (translateY(0) scale(1)) resterebbe applicato PER SEMPRE,
+     creando un containing block che rompe i position:fixed discendenti
+     (dialog di conferma, lightbox): apparivano disallineati/"in basso". */
+  to { opacity: 1; transform: none; }
 }
 .animate-view-enter { animation: view-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
