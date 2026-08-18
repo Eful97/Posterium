@@ -37,13 +37,24 @@ interface SelectBestLogoFitPosterInput {
 // Più candidati del passato (8): col decode-once dello scoring il budget di
 // tempo basta per 16 poster — più candidati = miglior best-of.
 const TMDB_CANDIDATE_COUNT = 16
-// Tetto del best-fit: lo scoring è una metrica, non il prodotto — oltre questo
-// tempo si usa il fallback (primo clean). Ridotto a 1200ms per stringere il
-// caso peggiore del render non-mappato; sovrascrivibile via env.
+// Tetto dello SCORING (CPU-bound): lo scoring è una metrica, non il prodotto —
+// oltre questo tempo si usa il fallback (primo clean). Ridotto a 1200ms per
+// stringere il caso peggiore del render non-mappato; sovrascrivibile via env.
 const AUTO_FIT_TIMEOUT_MS = (() => {
   const raw = process.env.POSTERIUM_AUTO_FIT_TIMEOUT_MS
   const n = raw ? parseInt(raw, 10) : 1200
   return Number.isFinite(n) && n >= 300 && n <= 10000 ? n : 1200
+})()
+// Tetto dei FETCH di rete (logo + candidati da TMDB): SEPARATO dallo scoring.
+// Prima condivideva AUTO_FIT_TIMEOUT_MS: su piattaforme con latenza di rete
+// (HF, Vercel → TMDB) un fetch >1200ms faceva saltare TUTTO il best-fit sul
+// primo clean, anche quando un altro poster sarebbe stato molto migliore.
+// Il fetch del logo e dei candidati è I/O, non CPU: gli diamo il budget della
+// route (5000ms), coerente con AbortSignal.timeout(5000) già usato nei fetch.
+const AUTO_FIT_FETCH_TIMEOUT_MS = (() => {
+  const raw = process.env.POSTERIUM_AUTO_FIT_FETCH_TIMEOUT_MS
+  const n = raw ? parseInt(raw, 10) : 5000
+  return Number.isFinite(n) && n >= 1000 && n <= 15000 ? n : 5000
 })()
 const CACHE_TTL = 24 * 60 * 60 * 1000
 const CACHE_MAX_ENTRIES = 500
@@ -161,7 +172,7 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
     logoBuffer = await withTimeout(
       input.fetchImage(input.logoPath),
       Buffer.alloc(0),
-      AUTO_FIT_TIMEOUT_MS,
+      AUTO_FIT_FETCH_TIMEOUT_MS,
     )
     if (logoBuffer.length === 0) {
       return fallbackResult
@@ -177,7 +188,7 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
         const buf = await withTimeout(
           fetchPoster(poster.file_path),
           null,
-          AUTO_FIT_TIMEOUT_MS,
+          AUTO_FIT_FETCH_TIMEOUT_MS,
         )
         if (!buf) return null
         return { posterPath: poster.file_path, posterBuffer: buf, voteAverage: poster.vote_average ?? 0, width: poster.width ?? 0, height: poster.height ?? 0 }

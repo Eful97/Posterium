@@ -340,7 +340,8 @@ tuodominio.com {
 | `POSTERIUM_RENDER_SLOT_WAIT_MS` | ❌ | Attesa massima di un posto render prima del 503 (default: 15000; clamp 500–60000) |
 | `POSTERIUM_RENDER_TIMEOUT_MS` | ❌ | Deadline complessivo del render (default: 30000; clamp 1000–40000) |
 | `POSTERIUM_RENDER_QUEUE` | ❌ | Coda bounded del limiter (default: 0 = accoda fino a SLOT_WAIT) |
-| `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | ❌ | Tetto del best-fit logo (default: 1200; clamp 300–10000) |
+| `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | ❌ | Tetto dello **scoring** best-fit logo (default: 1200; clamp 300–10000) |
+| `POSTERIUM_AUTO_FIT_FETCH_TIMEOUT_MS` | ❌ | Tetto dei **fetch** best-fit (logo + candidati da TMDB, default: 5000; clamp 1000–15000) |
 | `POSTERIUM_RATING_WAIT_MS` | ❌ | Attesa max upgrade voto TMDB+IMDb (default: 1500; clamp 300–10000) |
 | `POSTERIUM_NEGATIVE_CACHE_TTL_MS` | ❌ | TTL negative cache errori 500/503 (default: 5000; clamp 1000–60000) |
 | `POSTERIUM_RATELIMIT_POSTER_MAX` | ❌ | Token burst rate-limit poster (default: 200; clamp 10–10000) |

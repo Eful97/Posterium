@@ -536,4 +536,48 @@ describe("selectBestLogoFitPosterPath", () => {
 
     expect(selected?.posterPath).toBe("/dark.jpg")
   })
+
+  it("non ricade sul primo clean quando il fetch del logo è lento ma entro il budget di rete", async () => {
+    // Regressione HF/Vercel: prima il budget di rete condivideva lo scoring
+    // (1200ms) e un fetch >1200ms faceva saltare TUTTO il best-fit sul primo
+    // clean. Ora i fetch hanno un budget separato (5000ms): un fetch lento
+    // deve comunque produrre la selezione migliore.
+    const darkPoster = await solidPoster("#050505") // ottimo per logo bianco
+    const lightPoster = await solidPoster("#f8f8f8") // pessimo per logo bianco
+    const logo = await solidLogo("#ffffff")
+    const images = new Map([
+      ["/dark.jpg", darkPoster],
+      ["/light.jpg", lightPoster],
+      ["/logo.png", logo],
+    ])
+
+    const selected = await selectBestLogoFitPosterPath({
+      posters: [
+        { file_path: "/light.jpg", iso_639_1: null },
+        { file_path: "/dark.jpg", iso_639_1: null },
+      ],
+      logoPath: "/logo.png",
+      fetchImage: async (path) => {
+        if (path === "/logo.png") {
+          // Lento (oltre il vecchio budget di 1200ms) ma dentro il budget di
+          // rete separato (5000ms): lo scoring deve comunque girare.
+          await new Promise((r) => setTimeout(r, 1400))
+        }
+        const img = images.get(path)
+        if (!img) throw new Error(`Missing ${path}`)
+        return img
+      },
+      fetchCandidateImage: async (path) => {
+        const img = images.get(path)
+        if (!img) throw new Error(`Missing ${path}`)
+        return img
+      },
+      logoScale: 50,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
+      hasBadges: true,
+    })
+
+    expect(selected?.posterPath).toBe("/dark.jpg")
+  })
 })

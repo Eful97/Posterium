@@ -3,11 +3,12 @@ name: perf
 description: >
   Render-pipeline performance invariants for Posterium — the caps and patterns
   that keep cold poster renders fast without OOM: getImages parallel with
-  getDetails, worst-case timeout caps (auto-fit 1200 / Wikidata 2500 / rating
-  1500 ms), AbortSignal.any in fetch layers, blur as raw RGBA overlay (no PNG
-  roundtrip), buffer reuse from best-fit, slot limiter, RENDER_VERSION
-  regeneration rule. Trigger: "performance", "slow poster", "ottimizzazione",
-  "render lento", "latency", "timeout", "RENDER_VERSION", "pipeline audit".
+  getDetails, worst-case timeout caps (auto-fit scoring 1200 / fetch 5000 /
+  Wikidata 2500 / rating 1500 ms), AbortSignal.any in fetch layers, blur as raw
+  RGBA overlay (no PNG roundtrip), buffer reuse from best-fit, slot limiter,
+  RENDER_VERSION regeneration rule. Trigger: "performance", "slow poster",
+  "ottimizzazione", "render lento", "latency", "timeout", "RENDER_VERSION",
+  "pipeline audit".
 ---
 
 These are the invariants of the poster render pipeline. When editing the pipeline
@@ -26,9 +27,16 @@ or auditing it for speed, preserve them. They were established in the
 ### 2. Worst-case caps (env-overridable, module-level)
 | Cap | Default | Env var | Clamp |
 |---|---|---|---|
-| Auto-fit best-fit | 1200 ms | `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | 300–10000 |
+| Auto-fit **scoring** (CPU) | 1200 ms | `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | 300–10000 |
+| Auto-fit **fetch** (logo + candidates, I/O) | 5000 ms | `POSTERIUM_AUTO_FIT_FETCH_TIMEOUT_MS` | 1000–15000 |
 | Wikidata awards | 2500 ms | `WIKIDATA_TIMEOUT` | – |
 | Rating wait (TMDB+IMDb upgrade) | 1500 ms | `POSTERIUM_RATING_WAIT_MS` | 300–10000 |
+
+The auto-fit **scoring** cap is the CPU bound (metrics, not product). The
+auto-fit **fetch** cap is separate network I/O to TMDB: when both shared
+`POSTERIUM_AUTO_FIT_TIMEOUT_MS`, slow-network platforms (HF, Vercel) exceeded
+1200 ms on the logo/candidates fetch and skipped best-fit entirely, falling
+back to the first clean poster. Keep the two caps separate.
 
 Rating wait is SHARED with the tmdb-details route (same knob).
 
