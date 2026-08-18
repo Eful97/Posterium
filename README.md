@@ -130,12 +130,27 @@ Il repo è già configurato per HF Spaces Docker (`sdk: docker` + `app_port: 808
 
 ---
 
+**👣 Primi passi — Posterium online in 3 step**
+
+Ogni persona che deploya la propria istanza Vercel fa questi 3 passi (il segreto di firma è **per-istanza**: non può essere condiviso né generato automaticamente su serverless):
+
+1. **Deploy**: clicca il pulsante qui sopra (o Vercel → Add New → Project → importa `Eful97/Posterium`). Framework Next.js, build default.
+2. **Aggiungi una variabile d'ambiente**: Settings → Environment Variables → `CONFIG_HMAC_SECRET`, con un valore generato da `openssl rand -hex 32` (serve per firmare i profili stateless).
+3. **Redeploy**: Deployments → ultimo deploy → ⋯ → **Redeploy** (le env nuove vengono lette solo al deploy successivo).
+
+Fatto: apri la tua app, inserisci le chiavi TMDB/MDBList nelle **Impostazioni** e premi **"Salva Profilo"** — il profilo è **stateless** (la config viaggia nel link `?config=`, nessun salvataggio sul server).
+
+- Vuoi anche il salvataggio server-side (mapping/profili veri)? Aggiungi lo store **KV** — vedi Opzione B qui sotto.
+- Vedi l'errore *"no HMAC secret to sign a stateless profile"*? Ti manca solo il punto 2: aggiungi `CONFIG_HMAC_SECRET` e fai redeploy.
+
+---
+
 **Opzione A — Prova senza persistenza (consigliata per iniziare)**
 
 Funziona subito, senza configurazione aggiuntiva. I poster vengono generati e serviti normalmente, ma mapping e profili **non vengono salvati sul server** (filesystem read-only).
 
 1. Clicca **Deploy** (o Vercel → Add New → Project → importa `Eful97/Posterium`). Framework Next.js, build default.
-2. Imposta **almeno** `CONFIG_HMAC_SECRET` (o `ENCRYPTION_KEY_SECRET`): senza di essa il salvataggio del profilo fallisce anche in modalità stateless.
+2. Imposta **almeno** `CONFIG_HMAC_SECRET` (o `ENCRYPTION_KEY_SECRET`): senza di essa il salvataggio del profilo fallisce anche in modalità stateless (passi esatti nella guida **👣 Primi passi** qui sopra).
 3. Fine. L'app è online e genera poster — ottima per provare l'editor, l'anteprima WYSIWYG e condividere i tuoi poster.
 
 **Profilo stateless (consigliato in questa modalità)**: con `CONFIG_HMAC_SECRET` impostato, "Salva Profilo" **non fallisce più**: il server genera un **config token firmato** e il profilo diventa **stateless** — la configurazione viaggia nel link `?config=<token>` invece di essere salvata sul server. Il client la conserva in `localStorage` (rientro automatico nello stesso browser) e il link resta condivisibile cross-device.
