@@ -206,11 +206,23 @@ describe("POST /api/poster-fit — auth (S10)", () => {
   afterEach(() => {
     delete process.env.POSTERIUM_ADMIN_TOKEN
     delete process.env.ADMIN_TOKEN
+    delete process.env.POSTERIUM_PUBLIC_INSTANCE
     vi.restoreAllMocks()
   })
 
   it("returns 401 without a valid admin token when one is configured", async () => {
     process.env.POSTERIUM_ADMIN_TOKEN = "secret"
+    const req = mockNextRequest({ posterPaths: ["/test.jpg"], logoPath: "/logo.png" })
+    const res = await POST(req)
+    expect(res.status).toBe(401)
+  })
+
+  it("returns 401 in production without POSTERIUM_PUBLIC_INSTANCE (fail-closed, caso HF/Vercel)", async () => {
+    // Regressione: in locale (NODE_ENV=development) le route admin sono aperte,
+    // ma in produzione senza POSTERIUM_PUBLIC_INSTANCE=1 (o ADMIN_TOKEN) il
+    // best-fit UI risponde 401 → l'editor non mostra il poster migliore.
+    delete process.env.POSTERIUM_PUBLIC_INSTANCE
+    vi.stubEnv("NODE_ENV", "production")
     const req = mockNextRequest({ posterPaths: ["/test.jpg"], logoPath: "/logo.png" })
     const res = await POST(req)
     expect(res.status).toBe(401)

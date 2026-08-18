@@ -114,7 +114,7 @@ Supportati: **Netflix, HBO Max, Disney+, Prime Video, Apple TV+, Paramount+, Rai
 Il repo è già configurato per HF Spaces Docker (`sdk: docker` + `app_port: 8080` + `Dockerfile`).
 
 1. Crea (o usa) una Space con SDK **Docker**, collegandola al repo `Eful97/Posterium`.
-2. **Env** (Space Settings → Variables): `NODE_OPTIONS=--max-old-space-size=1024` e opzionalmente `POSTERIUM_ADMIN_TOKEN`.
+2. **Env** (Space Settings → Variables): `NODE_OPTIONS=--max-old-space-size=1024`, **`POSTERIUM_PUBLIC_INSTANCE=1`** (necessaria in produzione: apre le route admin dell'editor — salvataggio poster e best-fit — senza token; senza, in produzione restano chiuse e il best-fit non esce) e opzionalmente `POSTERIUM_ADMIN_TOKEN`.
 3. **Persistenza**: collega uno Storage bucket HF a `/data` (Settings → Storage → Link bucket), altrimenti i dati non persistono tra i rebuild.
 4. **Sleep**: sul piano free la Space dorme dopo 48h di inattività e si riavvia al primo visitatore.
 
@@ -132,16 +132,19 @@ Il repo è già configurato per HF Spaces Docker (`sdk: docker` + `app_port: 808
 
 **👣 Primi passi — Posterium online in 3 step**
 
-Ogni persona che deploya la propria istanza Vercel fa questi 3 passi (il segreto di firma è **per-istanza**: non può essere condiviso né generato automaticamente su serverless):
+Ogni persona che deploya la propria istanza Vercel fa questi passi (il segreto di firma è **per-istanza**: non può essere condiviso né generato automaticamente su serverless):
 
 1. **Deploy**: clicca il pulsante qui sopra (o Vercel → Add New → Project → importa `Eful97/Posterium`). Framework Next.js, build default.
-2. **Aggiungi una variabile d'ambiente**: Settings → Environment Variables → `CONFIG_HMAC_SECRET`, con un valore generato da `openssl rand -hex 32` (serve per firmare i profili stateless).
+2. **Aggiungi le variabili d'ambiente** (Settings → Environment Variables):
+   - `CONFIG_HMAC_SECRET`: valore generato da `openssl rand -hex 32` (firma i profili stateless)
+   - `POSTERIUM_PUBLIC_INSTANCE=1`: apre le route admin senza token — senza, in produzione l'editor **non salva i poster e il best-fit non esce** (le route admin sono fail-closed; in locale dev sono sempre aperte)
 3. **Redeploy**: Deployments → ultimo deploy → ⋯ → **Redeploy** (le env nuove vengono lette solo al deploy successivo).
 
 Fatto: apri la tua app, inserisci le chiavi TMDB/MDBList nelle **Impostazioni** e premi **"Salva Profilo"** — il profilo è **stateless** (la config viaggia nel link `?config=`, nessun salvataggio sul server).
 
 - Vuoi anche il salvataggio server-side (mapping/profili veri)? Aggiungi lo store **KV** — vedi Opzione B qui sotto.
-- Vedi l'errore *"no HMAC secret to sign a stateless profile"*? Ti manca solo il punto 2: aggiungi `CONFIG_HMAC_SECRET` e fai redeploy.
+- Vedi l'errore *"no HMAC secret to sign a stateless profile"*? Ti manca `CONFIG_HMAC_SECRET` (punto 2).
+- Il best-fit o il salvataggio non funzionano su HF/Vercel ma sì in locale? Ti manca `POSTERIUM_PUBLIC_INSTANCE=1` (punto 2).
 
 ---
 
@@ -151,7 +154,8 @@ Funziona subito, senza configurazione aggiuntiva. I poster vengono generati e se
 
 1. Clicca **Deploy** (o Vercel → Add New → Project → importa `Eful97/Posterium`). Framework Next.js, build default.
 2. Imposta **almeno** `CONFIG_HMAC_SECRET` (o `ENCRYPTION_KEY_SECRET`): senza di essa il salvataggio del profilo fallisce anche in modalità stateless (passi esatti nella guida **👣 Primi passi** qui sopra).
-3. Fine. L'app è online e genera poster — ottima per provare l'editor, l'anteprima WYSIWYG e condividere i tuoi poster.
+3. Imposta **`POSTERIUM_PUBLIC_INSTANCE=1`**: in produzione le route admin (salvataggio poster, **best-fit 1-click**) restano chiuse senza questo flag o `POSTERIUM_ADMIN_TOKEN` — senza di esso l'editor non salva e il best-fit non esce (in locale dev funziona sempre).
+4. Fine. L'app è online e genera poster — ottima per provare l'editor, l'anteprima WYSIWYG e condividere i tuoi poster.
 
 **Profilo stateless (consigliato in questa modalità)**: con `CONFIG_HMAC_SECRET` impostato, "Salva Profilo" **non fallisce più**: il server genera un **config token firmato** e il profilo diventa **stateless** — la configurazione viaggia nel link `?config=<token>` invece di essere salvata sul server. Il client la conserva in `localStorage` (rientro automatico nello stesso browser) e il link resta condivisibile cross-device.
 
@@ -171,9 +175,10 @@ Aggiunge uno store **Vercel KV (Upstash)** dove vengono salvati mapping, profili
    | Variabile | Necessità |
    |---|---|
    | `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 Obbligatorie (senza: profili solo stateless) |
+   | `POSTERIUM_PUBLIC_INSTANCE=1` | 🔴 Consigliata su Vercel — apre le route admin (editor: salvataggio + best-fit) senza token |
    | `CONFIG_HMAC_SECRET` | 🟠 Consigliata — sblocca i config token e il profilo stateless |
    | `PROFILE_ENCRYPTION_KEY` | 🟠 Consigliata — cifra le apiKeys dei profili (`openssl rand -hex 32`) |
-   | `POSTERIUM_ADMIN_TOKEN` | Opzionale — proteggi le route admin |
+   | `POSTERIUM_ADMIN_TOKEN` | Opzionale — proteggi le route admin (alternativa a PUBLIC_INSTANCE) |
 6. Verifica: apri `https://<tuo-app>.vercel.app/api/status` → la sezione **storage** deve mostrare `kv`.
 
 **Dove vengono salvati i dati**: profili, mapping e apiKeys su **KV Upstash**; cache poster in-memory (effimera); cache flixpatrol su `/tmp` (fallback automatico).
@@ -318,6 +323,7 @@ tuodominio.com {
 | `KV_REST_API_TOKEN` | ❌ | Token Upstash Redis |
 | `POSTERIUM_ADMIN_TOKEN` | ❌ | Protegge le route admin (`/api/mappings`, `/api/cache/clear`, `/api/defaults`) |
 | `ADMIN_TOKEN` | ❌ | Alias per POSTERIUM_ADMIN_TOKEN (legacy) |
+| `POSTERIUM_PUBLIC_INSTANCE` | 🟠 Su Vercel/HF | `=1` apre le route admin senza token (editor completo: salvataggio poster, best-fit 1-click). In produzione senza questo flag né `POSTERIUM_ADMIN_TOKEN` le route admin restano chiuse (fail-closed) → l'editor non salva e il best-fit non esce. Sempre attiva in dev. |
 | `POSTERIUM_WARMUP_TOKEN` | ❌ | Token dedicato per `/api/warmup` (header `x-warmup-token`) |
 | `POSTERIUM_PROXY_ALLOW_DOMAINS` | ❌ | Allowlist (virgole) dei domini ammessi dal proxy addon `/api/proxy` |
 | `POSTERIUM_ALLOWED_HOSTS` | ❌ | Allowlist di hostname pubblici per cui fidarsi di `X-Forwarded-Host` |

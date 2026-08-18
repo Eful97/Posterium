@@ -20,9 +20,16 @@ operator/agent checklist.
 |---|---|---|---|
 | Docker manual | `docker build --build-arg NODE_MAX_OLD_SPACE=1024 -t posterium .` then `docker run -p 8080:8080 -v posterium-data:/data posterium` | named volume `/data` | entrypoint self-warmup (needs rebuilt image) |
 | Docker Compose | `docker compose up -d` (`.env` only for admin token; hardening cap_drop ALL, no-new-privileges; 512MB mem limit) | volume `posterium-data` | same |
-| HF Spaces | frontmatter `sdk: docker` + `app_port: 8080`; env `NODE_OPTIONS=--max-old-space-size=1024` | Storage bucket → `/data` (uid 1000) | same |
-| Vercel | deploy button / import repo; Next.js runtime | **KV required for server-side saves** (KV_REST_API_URL/TOKEN); without it profiles degrade to stateless `?config=` (needs CONFIG_HMAC_SECRET) — fs is read-only | NOT useful on Hobby (10s limit) |
+| HF Spaces | frontmatter `sdk: docker` + `app_port: 8080`; env `NODE_OPTIONS=--max-old-space-size=1024` + **`POSTERIUM_PUBLIC_INSTANCE=1`** | Storage bucket → `/data` (uid 1000) | same |
+| Vercel | deploy button / import repo; Next.js runtime; **`POSTERIUM_PUBLIC_INSTANCE=1`** needed for editor routes | **KV required for server-side saves** (KV_REST_API_URL/TOKEN); without it profiles degrade to stateless `?config=` (needs CONFIG_HMAC_SECRET) — fs is read-only | NOT useful on Hobby (10s limit) |
 | VPS/Oracle/Termux | `npm run build && npm start` (or docker compose); Oracle A1 4 OCPU free tier | local `/data` | none |
+
+> **Editor routes** (`POST/GET /api/mappings`, `/api/poster-fit`, `/api/defaults`)
+> are admin-protected and **fail-closed in production** (`NODE_ENV=production`)
+> unless `POSTERIUM_PUBLIC_INSTANCE=1` is set or an admin token is configured.
+> Without the flag the editor cannot save posters and the 1-click best-fit
+> returns nothing on HF/Vercel while working in local dev. Set the flag on any
+> public multi-user instance (HF, Vercel, public VPS).
 
 ## Build args & env (Dockerfile)
 

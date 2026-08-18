@@ -69,7 +69,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
 
   let idx = 0
 
-  const { bestFitPath, results, loading: fitLoading } = usePosterFit({
+  const { bestFitPath, results, loading: fitLoading, error: fitError } = usePosterFit({
     enabled: ed.defaultLogoFitEnabled,
     selectedLogo: selectedLogo,
     cleanPosters,
@@ -306,6 +306,11 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
           {fitLoading && (
             <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] text-zinc-500">
               <Clock className="w-3 h-3 animate-spin" />{t("ui.analyzing")}
+            </div>
+          )}
+          {fitError && !fitLoading && (
+            <div className="px-3 py-1.5 text-[10px] text-amber-400/90 leading-relaxed">
+              {fitError}
             </div>
           )}
           {hasFitData && (

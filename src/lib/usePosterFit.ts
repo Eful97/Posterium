@@ -74,6 +74,7 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
   const [bestFitPath, setBestFitPath] = useState<string | null>(null)
   const [results, setResults] = useState<PosterFitEntry[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -86,6 +87,7 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
     if (!cacheKey) {
       setBestFitPath(null)
       setResults([])
+      setError(null)
       return
     }
 
@@ -97,11 +99,13 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
       setLoading(false)
       setResults(cached.ranked)
       setBestFitPath(cached.bestPosterPath)
+      setError(null)
       return
     }
 
     if (timerRef.current) clearTimeout(timerRef.current)
     if (abortRef.current) abortRef.current.abort()
+    setError(null)
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -131,7 +135,20 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
           signal: controller.signal,
         })
 
-        if (!res.ok) throw new Error(`API returned ${res.status}`)
+        if (!res.ok) {
+          // 401: la route admin è chiusa in produzione senza
+          // POSTERIUM_PUBLIC_INSTANCE=1 (o ADMIN_TOKEN). In locale (dev) le
+          // route admin sono aperte, quindi il best-fit funziona solo in dev
+          // finché il flag manca — messaggio esplicito invece del silenzio.
+          if (res.status === 401) {
+            setError("Best-fit non disponibile: l'istanza non è in modalità pubblica (imposta POSTERIUM_PUBLIC_INSTANCE=1).")
+          } else {
+            setError(`Analisi best-fit fallita (HTTP ${res.status})`)
+          }
+          setBestFitPath(null)
+          setResults([])
+          return
+        }
 
         const data = await res.json() as PosterFitApiResponse
 
@@ -141,6 +158,7 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
         setBestFitPath(data.bestPosterPath)
       } catch (err) {
         if ((err as Error)?.name === "AbortError") return
+        setError("Errore di rete durante l'analisi best-fit")
       } finally {
         setLoading(false)
       }
@@ -152,5 +170,5 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
     }
   }, [cacheKey])
 
-  return { bestFitPath, results, loading, error: null }
+  return { bestFitPath, results, loading, error }
 }
