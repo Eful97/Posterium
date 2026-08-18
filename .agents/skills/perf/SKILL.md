@@ -38,6 +38,9 @@ auto-fit **fetch** cap is separate network I/O to TMDB: when both shared
 1200 ms on the logo/candidates fetch and skipped best-fit entirely, falling
 back to the first clean poster. Keep the two caps separate.
 
+`POSTERIUM_BEST_FIT_ENABLED` is a global on/off/auto switch read at module
+level that overrides the per-request decision (route poster + `/api/poster-fit`).
+
 Rating wait is SHARED with the tmdb-details route (same knob).
 
 ### 3. `AbortSignal.any` in fetch layers

@@ -42,6 +42,9 @@ export interface UsePosterFitResult {
 interface PosterFitApiResponse {
   readonly ranked: PosterFitEntry[]
   readonly bestPosterPath: string | null
+  /** Vero quando il best-fit è disabilitato globalmente dall'istanza
+   *  (POSTERIUM_BEST_FIT_ENABLED=0): la UI non deve mostrare il best-fit. */
+  readonly disabled?: boolean
 }
 
 const resultCache = new Map<string, PosterFitApiResponse>()
@@ -151,6 +154,15 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
         }
 
         const data = await res.json() as PosterFitApiResponse
+
+        // Best-fit disabilitato globalmente (POSTERIUM_BEST_FIT_ENABLED=0):
+        // nessun risultato, nessun errore — la UI semplicemente non lo mostra.
+        if (data.disabled === true) {
+          setResults([])
+          setBestFitPath(null)
+          setError(null)
+          return
+        }
 
         cacheSet(cacheKey, data)
 

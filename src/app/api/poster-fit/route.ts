@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { selectAcceptedPosterPath } from "@/lib/poster-fit-adjust"
 import { rankBestFitPosters, selectAutoFitCandidates } from "@/lib/poster-auto-fit"
+import { BEST_FIT_GLOBAL } from "@/lib/best-fit-config"
 import { createLogger } from "@/lib/logger"
 import { readJsonBody, BodyTooLargeError } from "@/lib/read-body"
 import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
@@ -70,6 +71,12 @@ export async function POST(req: NextRequest) {
   // l'editor; con ADMIN_TOKEN configurato richiede il token.
   if (!checkAdminToken(req)) return adminAuthResponse()
   if (!isSameOrigin(req)) return originMismatchResponse()
+
+  // Override globale dell'istanza (POSTERIUM_BEST_FIT_ENABLED): se disabilitato
+  // il best-fit non viene nemmeno calcolato — risposta vuota con flag.
+  if (BEST_FIT_GLOBAL === "off") {
+    return Response.json({ ranked: [], bestPosterPath: null, total: 0, failed: 0, disabled: true })
+  }
 
   const contentLength = Number(req.headers.get("content-length") || "0")
   if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {

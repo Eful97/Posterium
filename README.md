@@ -138,6 +138,7 @@ Ogni persona che deploya la propria istanza Vercel fa questi passi (il segreto d
 2. **Aggiungi le variabili d'ambiente** (Settings → Environment Variables):
    - `CONFIG_HMAC_SECRET`: valore generato da `openssl rand -hex 32` (firma i profili stateless)
    - `POSTERIUM_PUBLIC_INSTANCE=1`: apre le route admin senza token — senza, in produzione l'editor **non salva i poster e il best-fit non esce** (le route admin sono fail-closed; in locale dev sono sempre aperte)
+   - Opzionale — `POSTERIUM_BEST_FIT_ENABLED`: `0` disabilita globalmente il best-fit (vince su config/query/defaults), `1` lo forza; non impostato = automatico
 3. **Redeploy**: Deployments → ultimo deploy → ⋯ → **Redeploy** (le env nuove vengono lette solo al deploy successivo).
 
 Fatto: apri la tua app, inserisci le chiavi TMDB/MDBList nelle **Impostazioni** e premi **"Salva Profilo"** — il profilo è **stateless** (la config viaggia nel link `?config=`, nessun salvataggio sul server).
@@ -348,6 +349,7 @@ tuodominio.com {
 | `POSTERIUM_RENDER_QUEUE` | ❌ | Coda bounded del limiter (default: 0 = accoda fino a SLOT_WAIT) |
 | `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | ❌ | Tetto dello **scoring** best-fit logo (default: 1200; clamp 300–10000) |
 | `POSTERIUM_AUTO_FIT_FETCH_TIMEOUT_MS` | ❌ | Tetto dei **fetch** best-fit (logo + candidati da TMDB, default: 5000; clamp 1000–15000) |
+| `POSTERIUM_BEST_FIT_ENABLED` | ❌ | Interruttore globale del best-fit: `0`/`false` lo disabilita sempre (vince su config/query/defaults), `1`/`true` lo forza sempre, non impostato = automatico. Utile su Vercel/HF dove il toggle client o i defaults non sempre arrivano al server. |
 | `POSTERIUM_RATING_WAIT_MS` | ❌ | Attesa max upgrade voto TMDB+IMDb (default: 1500; clamp 300–10000) |
 | `POSTERIUM_NEGATIVE_CACHE_TTL_MS` | ❌ | TTL negative cache errori 500/503 (default: 5000; clamp 1000–60000) |
 | `POSTERIUM_RATELIMIT_POSTER_MAX` | ❌ | Token burst rate-limit poster (default: 200; clamp 10–10000) |

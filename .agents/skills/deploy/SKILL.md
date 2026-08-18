@@ -30,6 +30,12 @@ operator/agent checklist.
 > Without the flag the editor cannot save posters and the 1-click best-fit
 > returns nothing on HF/Vercel while working in local dev. Set the flag on any
 > public multi-user instance (HF, Vercel, public VPS).
+>
+> **Best-fit global switch**: `POSTERIUM_BEST_FIT_ENABLED` (`0`/`false`/
+> `off` → always disabled, `1`/`true`/`on` → always enabled, unset → auto)
+> overrides config token, query params and server defaults. On Vercel/HF where
+> the client toggle or saved defaults may not reach the server, set `0` to
+> force best-fit off for the whole instance.
 
 ## Build args & env (Dockerfile)
 

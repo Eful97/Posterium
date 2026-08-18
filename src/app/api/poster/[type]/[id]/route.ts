@@ -6,6 +6,7 @@ import { getJWRankings } from "@/lib/justwatch"
 import { getById } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { getServerDefaults } from "@/lib/server-defaults"
+import { BEST_FIT_GLOBAL } from "@/lib/best-fit-config"
 import { warmFonts } from "@/lib/svg-badge"
 import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { fetchAllWikidata, matchTMDBStudios } from "@/lib/awards"
@@ -469,7 +470,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           if (chosenLogo) logoPath = chosenLogo.file_path
         }
         const qLogoFit = req.nextUrl.searchParams.get("logoFit")
-        const logoFitEnabled = qLogoFit !== null ? qLogoFit !== "0" : (configOverride !== null ? (configOverride.logoFitEnabled ?? sd.defaultLogoFitEnabled === true) : sd.defaultLogoFitEnabled === true)
+        // Override globale dell'istanza (POSTERIUM_BEST_FIT_ENABLED): vince su
+        // query, config token e server defaults. Utile su Vercel/HF dove il
+        // toggle client o i defaults salvati non sempre arrivano al server.
+        const logoFitEnabled = BEST_FIT_GLOBAL === "off" ? false
+          : BEST_FIT_GLOBAL === "on" ? true
+          : qLogoFit !== null ? qLogoFit !== "0" : (configOverride !== null ? (configOverride.logoFitEnabled ?? sd.defaultLogoFitEnabled === true) : sd.defaultLogoFitEnabled === true)
         if (logoPath && logoFitEnabled) {
           try {
             const fitStart = Date.now()
