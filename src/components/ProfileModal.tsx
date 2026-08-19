@@ -73,6 +73,9 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       const config = {
         globalBadges: ed.globalBadges,
         rankingBadges: ed.rankingBadges,
+        badgeGenre: ed.badgeGenre === false ? false : undefined,
+        badgeYear: ed.badgeYear === false ? false : undefined,
+        badgeRating: ed.badgeRating === false ? false : undefined,
         badgeStyle: ed.badgeStyle,
         rankingBadgeStyle: ed.rankingBadgeStyle,
         blurEnabled: ed.blurEnabled,
