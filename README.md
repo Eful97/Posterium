@@ -132,18 +132,19 @@ Il repo è già configurato per HF Spaces Docker (`sdk: docker` + `app_port: 808
 
 **👣 Primi passi — Posterium online in 3 step**
 
-Ogni persona che deploya la propria istanza Vercel fa questi passi (il segreto di firma è **per-istanza**: non può essere condiviso né generato automaticamente su serverless):
+Ogni persona deploya la **propria** istanza Vercel e usa le **proprie** chiavi (il segreto di firma è **per-istanza**, le chiavi API sono personali). Passi:
 
 1. **Deploy**: clicca il pulsante qui sopra (o Vercel → Add New → Project → importa `Eful97/Posterium`). Framework Next.js, build default.
-2. **Aggiungi le variabili d'ambiente** (Settings → Environment Variables):
+2. **Aggiungi le variabili d'ambiente** (Settings → Environment Variables) — **le tue**, non condivise:
    - `CONFIG_HMAC_SECRET`: valore generato da `openssl rand -hex 32` (firma i profili stateless)
    - `POSTERIUM_PUBLIC_INSTANCE=1`: apre le route admin senza token — senza, in produzione l'editor **non salva i poster e il best-fit non esce** (le route admin sono fail-closed; in locale dev sono sempre aperte)
-   - Opzionale — `POSTERIUM_BEST_FIT_ENABLED`: `0` disabilita globalmente il best-fit (vince su config/query/defaults), `1` lo forza; non impostato = automatico
+   - `POSTERIUM_TMDB_KEY` + `POSTERIUM_MDBLIST_KEY`: **le tue chiavi** TMDB/MDBList come fallback d'istanza — così i cataloghi si popolano da soli su Stremio senza passare `api_key` (scegli due per istanza personale). ⚠️ Non sono per istanze pubbliche condivise.
+   - Opzionale — `POSTERIUM_BEST_FIT_ENABLED`: `0` disabilita globalmente il best-fit, `1` lo forza; non impostato = automatico
 3. **Redeploy**: Deployments → ultimo deploy → ⋯ → **Redeploy** (le env nuove vengono lette solo al deploy successivo).
 
-Fatto: apri la tua app, inserisci le chiavi TMDB/MDBList nelle **Impostazioni** e premi **"Salva Profilo"** — il profilo è **stateless** (la config viaggia nel link `?config=`, nessun salvataggio sul server).
+Fatto: la tua istanza è online con i **tuoi** cataloghi e poster. In alternativa alle env, puoi inserire le chiavi nelle **Impostazioni** dell'app (per-utente) e premi **"Salva Profilo"** — su un'istanza personale senza KV il profilo è **stateless** (config nel link `?config=`). Per il massimo del comfort (profili salvati server-side), aggiungi **KV** (Opzione B).
 
-- Vuoi anche il salvataggio server-side (mapping/profili veri)? Aggiungi lo store **KV** — vedi Opzione B qui sotto.
+- Il tuo catalogo non si popola su Stremio? Ti mancano `POSTERIUM_TMDB_KEY` / `POSTERIUM_MDBLIST_KEY` (punto 2) o il KV con profilo.
 - Vedi l'errore *"no HMAC secret to sign a stateless profile"*? Ti manca `CONFIG_HMAC_SECRET` (punto 2).
 - Il best-fit o il salvataggio non funzionano su HF/Vercel ma sì in locale? Ti manca `POSTERIUM_PUBLIC_INSTANCE=1` (punto 2).
 

@@ -94,6 +94,11 @@ Run these against the deployed instance:
   can time out. Warmup does not complete on Hobby — not critical.
 - `CONFIG_HMAC_SECRET` unlocks config tokens (fail-closed without it).
 - `PROFILE_ENCRYPTION_KEY` encrypts profile apiKeys at rest.
+- **Personal single-user instances** (one person deploying their own Vercel):
+  set `POSTERIUM_TMDB_KEY` / `POSTERIUM_MDBLIST_KEY` so catalogs populate on
+  Stremio without passing `api_key` (read as last-resort fallback; header /
+  query / profile always win). Each person uses their own keys on their own
+  instance — do NOT share keys across public multi-user instances.
 
 ## Rules
 
