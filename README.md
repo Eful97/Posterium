@@ -350,6 +350,8 @@ tuodominio.com {
 | `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | ❌ | Tetto dello **scoring** best-fit logo (default: 1200; clamp 300–10000) |
 | `POSTERIUM_AUTO_FIT_FETCH_TIMEOUT_MS` | ❌ | Tetto dei **fetch** best-fit (logo + candidati da TMDB, default: 5000; clamp 1000–15000) |
 | `POSTERIUM_BEST_FIT_ENABLED` | ❌ | Interruttore globale del best-fit: `0`/`false` lo disabilita sempre (vince su config/query/defaults), `1`/`true` lo forza sempre, non impostato = automatico. Utile su Vercel/HF dove il toggle client o i defaults non sempre arrivano al server. |
+| `POSTERIUM_TMDB_KEY` | ❌ | Chiave TMDB **d'istanza (fallback, opt-in)**: usata solo quando la richiesta (header/query) e il profilo non portano una chiave. Per istanze **personali** (es. Vercel con un solo utente) dove i cataloghi devono funzionare senza passare `api_key`. ⚠️ Non impostarla su istanze pubbliche multi-utente (quota condivisa). |
+| `POSTERIUM_MDBLIST_KEY` | ❌ | Chiave MDBList **d'istanza (fallback, opt-in)**: stessa logica di `POSTERIUM_TMDB_KEY`, per i rank anime. |
 | `POSTERIUM_RATING_WAIT_MS` | ❌ | Attesa max upgrade voto TMDB+IMDb (default: 1500; clamp 300–10000) |
 | `POSTERIUM_NEGATIVE_CACHE_TTL_MS` | ❌ | TTL negative cache errori 500/503 (default: 5000; clamp 1000–60000) |
 | `POSTERIUM_RATELIMIT_POSTER_MAX` | ❌ | Token burst rate-limit poster (default: 200; clamp 10–10000) |

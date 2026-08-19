@@ -11,15 +11,22 @@ const CACHE_MAX = 500
 
 /**
  * Risolve la chiave API TMDB dalla richiesta.
- * Priorità: header x-api-key > query param api_key.
+ * Priorità: header x-api-key > query param api_key > env POSTERIUM_TMDB_KEY.
  * L'header evita che la chiave appaia nei log del proxy/CDN.
- * Non esiste più chiave d'istanza: ogni chiamata TMDB porta la propria chiave.
+ *
+ * L'env `POSTERIUM_TMDB_KEY` è un FALLBACK d'istanza (opt-in): pensata per le
+ * istanze personali (es. deploy Vercel con un solo utente) dove i cataloghi
+ * devono funzionare senza che Stremio passi la chiave in ogni richiesta. Per
+ * istanze multi-utente pubbliche NON configurarla: la policy storica (nessuna
+ * chiave d'istanza) resta valida per quel caso — header/query/profilo bastano.
  */
 export function resolveRequestApiKey(req: { headers: Headers | { get: (name: string) => string | null }; nextUrl?: { searchParams: URLSearchParams } }): string | undefined {
   const headerKey = req.headers.get("x-api-key")
   if (headerKey) return headerKey
   const queryKey = req.nextUrl?.searchParams.get("api_key")
   if (queryKey) return queryKey
+  const envKey = process.env.POSTERIUM_TMDB_KEY
+  if (envKey) return envKey
   return undefined
 }
 

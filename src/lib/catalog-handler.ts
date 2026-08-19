@@ -136,8 +136,9 @@ export async function posteriumCatalog(
   // Chiave TMDB della richiesta: parte del cache key così un catalogo vuoto
   // servito a una richiesta senza chiave non avvelena quelle keyed (D3).
   let apiKey = resolveRequestApiKey(req)
-  // Chiave MDBList della richiesta (anime): può arrivare dal profilo.
-  let mdblistKey = mdblistKeyParam
+  // Chiave MDBList della richiesta (anime): può arrivare dal profilo o, come
+  // fallback per istanze personali, dall'env POSTERIUM_MDBLIST_KEY.
+  let mdblistKey = mdblistKeyParam || process.env.POSTERIUM_MDBLIST_KEY
   // Profilo utente (?u=): config + apiKeys (tmdbKey/mdblistApiKey) risiedono
   // lato server. Come nel poster route, la chiave del profilo vince su quella
   // della richiesta (header/query), così i cataloghi keyed con profilo non

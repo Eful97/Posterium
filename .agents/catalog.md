@@ -63,11 +63,18 @@ manca, `resolveImdbId("tv", tmdbId)` → fallback `tmdb:<id>`.
 1. header `x-api-key`;
 2. query `api_key`.
 
-**Nessuna chiave d'istanza e nessuna env var** (`TMDB_API_KEY`/`MDBLIST_API_KEY`
-non sono lette). L'unica fonte di chiavi è la richiesta (header/query) o il
-profilo utente (`?u=`): senza chiave esplicita la chiamata TMDB/MDBList
-fallisce (poster 404, cataloghi vuoti). `resolveImdbId` DEVE ricevere la chiave
-della richiesta (è così oggi).
+**Nessuna chiave d'istanza di default** (`TMDB_API_KEY`/`MDBLIST_API_KEY` non
+sono lette). La fonte primaria di chiavi è la richiesta (header `x-api-key` >
+query `api_key`) o il profilo utente (`?u=`): senza chiave esplicita la chiamata
+TMDB/MDBList fallisce (poster 404, cataloghi vuoti). `resolveImdbId` DEVE
+ricevere la chiave della richiesta (è così oggi).
+
+**Fallback d'istanza (opt-in, per istanze personali)**: `POSTERIUM_TMDB_KEY` e
+`POSTERIUM_MDBLIST_KEY` sono lette come FALLBACK quando la richiesta e il profilo
+non portano la chiave. Pensate per deploy personali (es. Vercel con un solo
+utente) dove i cataloghi devono funzionare senza che Stremio passi la chiave.
+Per istanze multi-utente pubbliche NON configurarle: la policy storica (nessuna
+chiave d'istanza condivisa) resta valida per quel caso.
 
 ## Caching & risposte
 

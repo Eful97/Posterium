@@ -430,7 +430,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       // A1: fetch deferito — la media TMDB+IMDb parte subito ma non blocca.
       ratingAbort = imdbId ? new AbortController() : null
       aggregatedRating = imdbId
-        ? fetchAggregatedRating(imdbId, profileMdbListKey || req.nextUrl.searchParams.get("mdblist_key") || undefined, ratingAbort!.signal).catch(() => null)
+        ? fetchAggregatedRating(imdbId, profileMdbListKey || req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || undefined, ratingAbort!.signal).catch(() => null)
         : Promise.resolve(null)
       genreName = details.genres[0]?.name || null
       voteAverage = details.vote_average ?? 0
@@ -613,7 +613,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         (rankingEnabledEarly && mediaType === "tv")
           ? (Number.isFinite(qAnimeRank) && qAnimeRank > 0
               ? Promise.resolve(qAnimeRank)
-              : fetchMDBList("mdblistAnime", req.nextUrl.searchParams.get("mdblist_key") || profileMdbListKey || undefined)
+              : fetchMDBList("mdblistAnime", req.nextUrl.searchParams.get("mdblist_key") || profileMdbListKey || process.env.POSTERIUM_MDBLIST_KEY || undefined)
                   .then((entries) => {
                     if (!Array.isArray(entries)) return null
                     const idx = entries.findIndex((e) => {

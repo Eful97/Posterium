@@ -9,19 +9,27 @@ description: >
   "poster path", "image.tmdb.org", "chiamata TMDB", "chiave api", "mock server".
 ---
 
-Posterium has NO instance-level TMDB key. Every TMDB call carries the key from the
-request (`x-api-key` header, fallback `api_key` query param) or from the user
-profile. `TMDB_API_KEY` env var is intentionally NOT read by the app.
+Posterium has NO instance-level TMDB key by default. Every TMDB call carries the
+key from the request (`x-api-key` header, fallback `api_key` query param) or from
+the user profile. `TMDB_API_KEY` env var is intentionally NOT read by the app.
+
+An **opt-in instance fallback** exists for personal single-user deploys (e.g. a
+Vercel instance used by one person): `POSTERIUM_TMDB_KEY` (and
+`POSTERIUM_MDBLIST_KEY` for MDBList) are read as a LAST-RESORT when the request
+carries no key. Header/query/profile always win. Do NOT set these on public
+multi-user instances (HF Spaces, shared VPS) — a shared instance key would burn
+one quota for everyone.
 
 ## Key resolution
 
 `resolveRequestApiKey(req)` in `src/lib/tmdb.ts`:
 1. Header `x-api-key`
 2. Query param `api_key`
-3. Otherwise `undefined` → TMDB calls fail (poster 404, empty catalogs)
+3. Env `POSTERIUM_TMDB_KEY` (fallback d'istanza, opt-in)
+4. Otherwise `undefined` → TMDB calls fail (poster 404, empty catalogs)
 
 `resolveImdbId`/`resolveImdbToTmdb` MUST receive the request key explicitly. Never
-reintroduce a server-side default key.
+reintroduce a default key in the fetch layer itself.
 
 ## Endpoints used
 
