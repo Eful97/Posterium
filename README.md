@@ -168,7 +168,7 @@ Aggiungi queste 3 (clicca **Add**, incolla il valore, lascia **All Environments*
 
 > ⚠️ Queste 3 chiavi sono **solo tue**, sulla **tua** istanza. Non metterle su un'istanza pubblica condivisa con estranei.
 >
-> 🎨 **Vuoi personalizzare i badge dei CATALOGHI?** I poster nei cataloghi Stremio non usano la tua configurazione salvata, ma le impostazioni dell'istanza. Per disattivare qualcosa anche lì, aggiungi qui una riga per ogni preferenza, es: `POSTERIUM_RANKING_BADGES=0` (niente badge Top 10), `POSTERIUM_BADGE_YEAR=0` (niente anno), `POSTERIUM_NETWORK_LOGO=0` (niente logo Netflix ecc.). Lista completa nella tabella "Default di stile d'istanza" più sotto. Le impostazioni salvate dall'editor hanno sempre la precedenza.
+> 🎨 **Vuoi personalizzare i badge dei CATALOGHI?** I poster nei cataloghi Stremio non usano la tua configurazione salvata, ma le impostazioni dell'istanza. Per disattivare qualcosa anche lì, aggiungi qui una riga per ogni preferenza, es: `POSTERIUM_RANKING_BADGES=0` (niente badge Top 10), `POSTERIUM_BADGE_YEAR=0` (niente anno), `POSTERIUM_NETWORK_LOGO=0` (niente logo Netflix ecc.). Lista completa nella tabella **"Default di stile d'istanza"** nella sezione [Variabili d'Ambiente](#-variabili-dambiente). Le impostazioni salvate dall'editor hanno sempre la precedenza.
 
 #### Passo 3 — Rendi effettive le impostazioni (Redeploy)
 
@@ -215,13 +215,15 @@ Come funziona: quando premi **Salva Profilo**, il server crea un **link speciale
 
 #### 🔵 Strada Completa — *“Lo uso tutti i giorni / su più dispositivi”* (con salvataggio vero)
 
-Aggiungi un **piccolo database** (si chiama **Vercel KV / Upstash**) dove Posterium salva per davvero profili, mapping e chiavi cifrate. È gratis entro limiti generosi.
+Aggiungi un **piccolo database** (si chiama **Vercel KV / Global Config / Upstash**) dove Posterium salva per davvero profili, mapping e chiavi cifrate. È gratis entro limiti generosi.
+
+> 📌 **Nota sui nomi**: Vercel ha rinominato **KV → "Global Config"**. Nello **Storage** che vedi oggi trovi sia **Global Config** (il rebrand di Vercel KV, la scelta più semplice) sia **Upstash** (il provider Redis da cui nasce). Entrambi forniscono le `KV_REST_API_URL`/`KV_REST_API_TOKEN` che Posterium legge. Se scegli Upstash dal Marketplace, verifica poi che le env aggiunte al progetto si chiamino **esattamente** `KV_REST_API_URL` e `KV_REST_API_TOKEN` (a volte le mette come `UPSTASH_REDIS_REST_URL`/`..._TOKEN` — in quel caso rinominale).
 
 **Come attivarlo (2 minuti):**
 
-1. Vercel Dashboard → in alto clicca **Storage** → **Create Database** → scegli **KV (Upstash)**.
+1. Vercel Dashboard → in alto clicca **Storage** → **Create Database** → scegli **Global Config** (consigliato) oppure **Upstash** dal Marketplace.
 2. Clicca **Create** e collega (**Connect**) il database al tuo progetto Posterium quando te lo chiede.
-3. Vercel aggiunge da solo due impostazioni: `KV_REST_API_URL` e `KV_REST_API_TOKEN` — non devi toccarle.
+3. Vercel aggiunge da solo due impostazioni: `KV_REST_API_URL` e `KV_REST_API_TOKEN` — non devi toccarle (verifica i nomi, vedi nota sopra).
 4. Torna su **Deployments → ⋯ → Redeploy** (come al Passo 3).
 5. Verifica: apri `https://<tuo-app>.vercel.app/api/status` — nella sezione **storage** dovresti leggere `kv` (se leggi `memory` o `none`, il database non è collegato — ripeti dal punto 2).
 
