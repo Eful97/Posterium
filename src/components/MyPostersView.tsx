@@ -22,6 +22,7 @@ export function MyPostersView() {
   const urlPattern = usePSelector((v) => v.urlPattern)
   const lang = usePSelector((v) => v.lang)
   const { t } = useT()
+  const posterCount = useCountUp(mappings.length)
   const [filter, setFilter] = useState("")
   const filterRef = useRef<HTMLInputElement>(null)
   const [typeFilter, setTypeFilter] = useState<"all" | "movie" | "tv" | "anime">("all")
@@ -209,7 +210,7 @@ export function MyPostersView() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-50 flex items-center justify-center md:justify-start gap-3">
               {t("ui.myPostersTitle")}
               <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-muted tabular-nums" aria-label={t("ui.statusPosterCount", { count: mappings.length })}>
-                {useCountUp(mappings.length)}
+                {posterCount}
               </span>
             </h1>
             <p className="text-sm text-muted mt-1">{t("ui.myPostersSubtitle")}</p>

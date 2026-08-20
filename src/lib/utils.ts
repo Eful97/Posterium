@@ -39,19 +39,6 @@ export function yearOf(r: SearchResult) {
   return d ? d.slice(0, 4) : ""
 }
 
-export async function api(path: string, opts?: RequestInit, retries = 2) {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const res = await fetch(path, opts)
-    if (res.ok) return res.json()
-    if (res.status === 429 && attempt < retries) {
-      const retryAfter = Number(res.headers.get("Retry-After") || 1) * 1000
-      await new Promise((r) => setTimeout(r, retryAfter))
-      continue
-    }
-    throw new Error(`API error: ${res.status}`)
-  }
-}
-
 export function groupBy<T>(arr: T[], fn: (item: T) => string): Record<string, T[]> {
   return arr.reduce((acc, item) => {
     const key = fn(item)

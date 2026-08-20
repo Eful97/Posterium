@@ -184,8 +184,6 @@ export interface PosteriumCtx {
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
-export const AppCtx = createContext<PosteriumCtx | null>(null)
-export const EditCtx = createContext<PosteriumCtx | null>(null)
 
 // Store scoped al provider per la subscription ottimizzata (usePSelector):
 // ogni PosteriumProvider ha il proprio store, così i test restano isolati e i
@@ -217,18 +215,6 @@ export function usePSelector<T>(selector: (v: PosteriumCtx) => T): T {
   ) as T
 }
 
-export function useAppCtx(): PosteriumCtx {
-  const v = useContext(AppCtx)
-  if (!v) throw new Error("useAppCtx must be inside PosteriumProvider")
-  return v
-}
-
-export function useEditCtx(): PosteriumCtx {
-  const v = useContext(EditCtx)
-  if (!v) throw new Error("useEditCtx must be inside PosteriumProvider")
-  return v
-}
-
 export function useP() {
   const ctx = useContext(Ctx)
   if (!ctx) throw new Error("useP must be inside PosteriumProvider")
@@ -246,17 +232,13 @@ export function PosteriumProvider({ value, children }: { value: PosteriumCtx; ch
   }, [value, store])
   return (
     <SelectorStoreCtx.Provider value={store}>
-      <AppCtx.Provider value={value}>
-        <EditCtx.Provider value={value}>
-          <TranslationProvider value={value}>
-            <SettingsProvider value={value}>
-              <SearchProvider value={value}>
-                <Ctx.Provider value={value}>{children}</Ctx.Provider>
-              </SearchProvider>
-            </SettingsProvider>
-          </TranslationProvider>
-        </EditCtx.Provider>
-      </AppCtx.Provider>
+      <TranslationProvider value={value}>
+        <SettingsProvider value={value}>
+          <SearchProvider value={value}>
+            <Ctx.Provider value={value}>{children}</Ctx.Provider>
+          </SearchProvider>
+        </SettingsProvider>
+      </TranslationProvider>
     </SelectorStoreCtx.Provider>
   )
 }

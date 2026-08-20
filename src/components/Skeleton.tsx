@@ -30,21 +30,3 @@ export function PosterCardSkeleton() {
   )
 }
 
-export function RankRowSkeleton() {
-  return (
-    <div>
-      <div className="h-3 w-24 rounded skeleton-shimmer-subtle mb-3" />
-      <div className="flex gap-0">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={i}
-            className={`flex-shrink-0 w-[170px] md:w-72 ${i > 0 ? "-ml-8 md:-ml-14" : ""} z-10 animate-stagger-in`}
-            style={{ animationDelay: `${i * 80}ms` }}
-          >
-            <div className="aspect-[2/3] rounded-lg skeleton-shimmer-subtle" />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}

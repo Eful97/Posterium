@@ -21,7 +21,6 @@ const RENDER_FILES = [
   "src/lib/image-utils.ts",
   "src/lib/logo-layout.ts",
   "src/lib/logo-selection.ts",
-  "src/lib/luminance.ts",
   "src/lib/network-svgs.ts",
   "src/lib/poster-auto-fit.ts",
   "src/lib/poster-badge.ts",

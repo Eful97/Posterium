@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Single source of truth per gli stili badge.
 // Condiviso da: schemi Zod (validation.ts, config-token.ts), stato client
-// (PosterEditorContext, useDefaults, useBadgeContext) e rendering server
+// (PosterEditorContext, useDefaults) e rendering server
 // (svg-badge.ts, poster-service.ts, route poster). Tenere gli enum qui rende
 // impossibile un drift tra lista client, lista server e validazione.
 // ---------------------------------------------------------------------------
