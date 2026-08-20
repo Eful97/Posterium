@@ -8,5 +8,5 @@ type RouteParams = { uuid: string }
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const { uuid } = await params
   const config = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c")
-  return buildManifestResponse(req, uuid, config)
+  return await buildManifestResponse(req, uuid, config)
 }

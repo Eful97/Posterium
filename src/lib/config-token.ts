@@ -17,6 +17,14 @@ const badgeStyleSchema = z.enum(BADGE_STYLES)
 const rankingBadgeStyleSchema = z.enum(RANKING_BADGE_STYLES)
 const ribbonSideSchema = z.enum(["left", "right"])
 
+const customCatalogSchema = z.object({
+  id: z.string().max(64),
+  name: z.string().max(100),
+  type: z.enum(["movie", "series"]),
+  url: z.string().max(500),
+  enabled: z.boolean().optional(),
+})
+
 export const configTokenSchema = z.object({
   globalBadges: z.boolean(),
   rankingBadges: z.boolean(),
@@ -40,6 +48,8 @@ export const configTokenSchema = z.object({
   // gonfierebbe il token firmato (URL condivise) e la label SVG del badge.
   customBadge: z.string().max(40).optional(),
   ribbonSide: ribbonSideSchema.optional(),
+  customCatalogs: z.array(customCatalogSchema).optional(),
+  disabledCatalogIds: z.array(z.string().max(80)).optional(),
 })
 
 export type PosteriumUserConfig = z.infer<typeof configTokenSchema>

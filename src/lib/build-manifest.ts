@@ -2,6 +2,8 @@ import { NextRequest } from "next/server"
 import { APP_VERSION } from "@/generated/app-version"
 import { POSTERIUM_CATALOGS } from "@/lib/catalog-definitions"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
+import { getFullProfileData } from "@/lib/profile-store"
+import { decodeConfig } from "@/lib/config-token"
 
 /**
  * Costruisce il manifest Stremio. `user`/`config` arrivano dal query string
@@ -21,13 +23,39 @@ function safeSuffix(value: string | null | undefined): string | null {
   return value
 }
 
-export function buildManifestResponse(req: NextRequest, user?: string | null, config?: string | null): Response {
+export async function buildManifestResponse(req: NextRequest, user?: string | null, config?: string | null): Promise<Response> {
   const domain = getOriginFromRequest(req)
 
   const safeUser = safeSuffix(user)
   const safeConfig = safeSuffix(config)
   const suffix = safeUser ? `.${safeUser.slice(0, 8)}` : safeConfig ? `.${safeConfig.slice(0, 8)}` : ""
   const addonId = `org.posterium${suffix}`
+
+  let userConfig = null
+  if (user) {
+    const profile = await getFullProfileData(user).catch(() => null)
+    if (profile?.config) userConfig = profile.config
+  }
+  if (!userConfig && config) {
+    userConfig = decodeConfig(config)
+  }
+
+  let catalogs: Array<{ id: string; name: string; type: "movie" | "series" }> = [...POSTERIUM_CATALOGS]
+  if (userConfig?.disabledCatalogIds && userConfig.disabledCatalogIds.length > 0) {
+    const disabledSet = new Set(userConfig.disabledCatalogIds)
+    catalogs = catalogs.filter(c => !disabledSet.has(c.id))
+  }
+  if (userConfig?.customCatalogs && userConfig.customCatalogs.length > 0) {
+    for (const cc of userConfig.customCatalogs) {
+      if (cc.enabled !== false) {
+        catalogs.push({
+          id: `posterium-custom-${cc.id}`,
+          name: cc.name,
+          type: cc.type,
+        })
+      }
+    }
+  }
 
   return Response.json({
     id: addonId,
@@ -40,7 +68,7 @@ export function buildManifestResponse(req: NextRequest, user?: string | null, co
     addonCatalogs: [],
     manifestVersion: 1,
     behaviorHints: { adult: false },
-    catalogs: POSTERIUM_CATALOGS,
+    catalogs,
   }, {
     headers: {
       "Access-Control-Allow-Origin": "*",

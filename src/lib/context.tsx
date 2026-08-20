@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from "react"
-import type { SearchResult, TMDBImage, Mapping } from "./types"
+import type { SearchResult, TMDBImage, Mapping, CustomCatalogConfig } from "./types"
 import { posterUrl, titleOf, yearOf, STREAMING_PLATFORMS } from "./utils"
 import { matchTMDBStudios } from "./awards"
 import { setLang as setI18nLang, t } from "./i18n"
@@ -164,6 +164,14 @@ export interface PosteriumCtx {
   serviceErrors: Record<string, boolean>
   setServiceErrors: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
   hasNetflixRank: boolean
+  customCatalogs: CustomCatalogConfig[]
+  setCustomCatalogs: (catalogs: CustomCatalogConfig[]) => void
+  addCustomCatalog: (catalog: Omit<CustomCatalogConfig, "id">) => void
+  removeCustomCatalog: (id: string) => void
+  toggleCustomCatalog: (id: string) => void
+  disabledCatalogIds: string[]
+  setDisabledCatalogIds: (ids: string[]) => void
+  toggleBuiltinCatalog: (id: string) => void
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
@@ -456,6 +464,57 @@ export function usePosterium(): PosteriumCtx {
     })
   }, [navigation.previewPoster, navigation.selectedLogo, logoScale, hasBadges])
 
+  const [customCatalogs, setCustomCatalogsState] = useState<CustomCatalogConfig[]>([])
+  const [disabledCatalogIds, setDisabledCatalogIdsState] = useState<string[]>([])
+
+  const setCustomCatalogs = useCallback((catalogs: CustomCatalogConfig[]) => {
+    setCustomCatalogsState(catalogs)
+    safeSetItem("posterium_custom_catalogs", JSON.stringify(catalogs))
+  }, [safeSetItem])
+
+  const addCustomCatalog = useCallback((catalog: Omit<CustomCatalogConfig, "id">) => {
+    const slug = catalog.name.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 24) || "custom"
+    const newCat: CustomCatalogConfig = {
+      ...catalog,
+      id: `${slug}-${Date.now().toString(36)}`,
+      enabled: catalog.enabled ?? true,
+    }
+    setCustomCatalogsState((prev) => {
+      const next = [...prev, newCat]
+      safeSetItem("posterium_custom_catalogs", JSON.stringify(next))
+      return next
+    })
+  }, [safeSetItem])
+
+  const removeCustomCatalog = useCallback((id: string) => {
+    setCustomCatalogsState((prev) => {
+      const next = prev.filter((c) => c.id !== id)
+      safeSetItem("posterium_custom_catalogs", JSON.stringify(next))
+      return next
+    })
+  }, [safeSetItem])
+
+  const toggleCustomCatalog = useCallback((id: string) => {
+    setCustomCatalogsState((prev) => {
+      const next = prev.map((c) => (c.id === id ? { ...c, enabled: c.enabled === false ? true : false } : c))
+      safeSetItem("posterium_custom_catalogs", JSON.stringify(next))
+      return next
+    })
+  }, [safeSetItem])
+
+  const setDisabledCatalogIds = useCallback((ids: string[]) => {
+    setDisabledCatalogIdsState(ids)
+    safeSetItem("posterium_disabled_catalogs", JSON.stringify(ids))
+  }, [safeSetItem])
+
+  const toggleBuiltinCatalog = useCallback((id: string) => {
+    setDisabledCatalogIdsState((prev) => {
+      const next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      safeSetItem("posterium_disabled_catalogs", JSON.stringify(next))
+      return next
+    })
+  }, [safeSetItem])
+
   // --- Initialization ---
   // Applica una PosteriumUserConfig ai setters dei default (condivisa tra
   // loadProfile server-based e il ripristino del profilo stateless locale).
@@ -474,7 +533,9 @@ export function usePosterium(): PosteriumCtx {
     if (typeof c.autoRotateClean === "boolean") setAutoRotateClean(c.autoRotateClean)
     if (typeof c.logoFitEnabled === "boolean") setDefaultLogoFitEnabled(c.logoFitEnabled)
     if (typeof c.customBadge === "string") setCustomBadge(c.customBadge)
-  }, [setDefaultGlobalBadges, setDefaultRankingBadges, setDefaultBadgeStyle, setDefaultRankingBadgeStyle, setBlurEnabled, setBlurIntensity, setBlurFade, setBlurDarkness, setGradientHeight, setNetworkLogo, setRibbonSide, setAutoRotateClean, setDefaultLogoFitEnabled, setCustomBadge])
+    if (Array.isArray(c.customCatalogs)) setCustomCatalogs(c.customCatalogs)
+    if (Array.isArray(c.disabledCatalogIds)) setDisabledCatalogIds(c.disabledCatalogIds)
+  }, [setDefaultGlobalBadges, setDefaultRankingBadges, setDefaultBadgeStyle, setDefaultRankingBadgeStyle, setBlurEnabled, setBlurIntensity, setBlurFade, setBlurDarkness, setGradientHeight, setNetworkLogo, setRibbonSide, setAutoRotateClean, setDefaultLogoFitEnabled, setCustomBadge, setCustomCatalogs, setDisabledCatalogIds])
 
   useEffect(() => {
     if (keyInit.current) return
@@ -488,6 +549,14 @@ export function usePosterium(): PosteriumCtx {
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme)
     const savedProfileId = safeGetItem("posterium_profile_id")
     const savedStateless = safeGetItem("posterium_profile_stateless") === "1"
+    const savedCustomCats = safeGetItem("posterium_custom_catalogs")
+    if (savedCustomCats) {
+      try { setCustomCatalogsState(JSON.parse(savedCustomCats)) } catch {}
+    }
+    const savedDisabledCats = safeGetItem("posterium_disabled_catalogs")
+    if (savedDisabledCats) {
+      try { setDisabledCatalogIdsState(JSON.parse(savedDisabledCats)) } catch {}
+    }
     if (savedProfileId) {
       // All'avvio interroghiamo il server per quel profilo: una risposta 200
       // (profilo salvato server-side, es. KV/Upstash) → richiedi la password
@@ -729,6 +798,8 @@ export function usePosterium(): PosteriumCtx {
       blurEnabled, blurIntensity, blurFade, blurDarkness,
       gradientHeight, networkLogo, ribbonSide, autoRotateClean, logoFitEnabled: defaultLogoFitEnabled,
       customBadge: customBadge || undefined,
+      customCatalogs: customCatalogs.length > 0 ? customCatalogs : undefined,
+      disabledCatalogIds: disabledCatalogIds.length > 0 ? disabledCatalogIds : undefined,
     }
     // `profilePassword` è nella chiave di dedup: è una dependency dell'effetto ma non
     // parte di `config`, quindi senza include un cambio password durante il debounce
@@ -758,7 +829,7 @@ export function usePosterium(): PosteriumCtx {
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [profileId, profilePassword, profileStateless, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, tmdbKey, mdblistApiKey])
+  }, [profileId, profilePassword, profileStateless, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, tmdbKey, mdblistApiKey])
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -1072,6 +1143,8 @@ export function usePosterium(): PosteriumCtx {
       autoRotateClean,
       logoFitEnabled: defaultLogoFitEnabled,
       customBadge: customBadge || undefined,
+      customCatalogs: customCatalogs.length > 0 ? customCatalogs : undefined,
+      disabledCatalogIds: disabledCatalogIds.length > 0 ? disabledCatalogIds : undefined,
     }
     try {
       const res = await fetch("/api/profile", {
@@ -1108,7 +1181,7 @@ export function usePosterium(): PosteriumCtx {
       console.error("[posterium] Failed to save profile:", e)
       import("sonner").then(({ toast }) => toast.error("Errore nel salvare il profilo"))
     }
-  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, profileId, profilePassword, safeSetItem])
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, profileId, profilePassword, safeSetItem])
 
   const posterActivePath = navigation.previewPoster?.file_path
 
@@ -1187,6 +1260,8 @@ export function usePosterium(): PosteriumCtx {
     uiAccent, setUiAccent,
     serviceErrors, setServiceErrors,
     hasNetflixRank,
+    customCatalogs, setCustomCatalogs, addCustomCatalog, removeCustomCatalog, toggleCustomCatalog,
+    disabledCatalogIds, setDisabledCatalogIds, toggleBuiltinCatalog,
     t,
   // eslint-disable-next-line react-hooks/exhaustive-deps -- context value deps intentionally stable to prevent re-render cascades
   }), [
@@ -1206,5 +1281,6 @@ export function usePosterium(): PosteriumCtx {
     trending.trending, trending.trendingError, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
     theme, uiAccent, serviceErrors, hasNetflixRank,
+    customCatalogs, disabledCatalogIds,
   ])
 }

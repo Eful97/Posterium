@@ -7,8 +7,9 @@ import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
 import { getFullProfileData } from "@/lib/profile-store"
-import { getDetails, getExternalIds, resolveRequestApiKey, type TMDBDetails } from "@/lib/tmdb"
-import { fetchMDBList } from "@/lib/mdblist"
+import { decodeConfig } from "@/lib/config-token"
+import { getDetails, getExternalIds, resolveRequestApiKey, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
+import { fetchCustomMDBList, fetchMDBList } from "@/lib/mdblist"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { getJWRankings, type JWRankEntry } from "@/lib/justwatch"
@@ -136,17 +137,18 @@ export async function posteriumCatalog(
   // Chiave TMDB della richiesta: parte del cache key così un catalogo vuoto
   // servito a una richiesta senza chiave non avvelena quelle keyed (D3).
   let apiKey = resolveRequestApiKey(req)
-  // Chiave MDBList della richiesta (anime): può arrivare dal profilo o, come
+  // Chiave MDBList della richiesta (anime/custom): può arrivare dal profilo o, come
   // fallback per istanze personali, dall'env POSTERIUM_MDBLIST_KEY.
   let mdblistKey = mdblistKeyParam || process.env.POSTERIUM_MDBLIST_KEY
-  // Profilo utente (?u=): config + apiKeys (tmdbKey/mdblistApiKey) risiedono
-  // lato server. Come nel poster route, la chiave del profilo vince su quella
-  // della richiesta (header/query), così i cataloghi keyed con profilo non
-  // restano vuoti per mancanza di chiave esplicita nella URL.
+  let userConfig = null
   if (userParam) {
     const fullProfile = await getFullProfileData(userParam).catch(() => null)
     if (fullProfile?.apiKeys?.tmdbKey) apiKey = fullProfile.apiKeys.tmdbKey
     if (!mdblistKey && fullProfile?.apiKeys?.mdblistApiKey) mdblistKey = fullProfile.apiKeys.mdblistApiKey
+    if (fullProfile?.config) userConfig = fullProfile.config
+  }
+  if (!userConfig && configParam) {
+    userConfig = decodeConfig(configParam)
   }
 
   const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
@@ -156,7 +158,38 @@ export async function posteriumCatalog(
   try {
     let metas: StremioMeta[] = []
 
-    if (catalogId.startsWith("posterium-jw")) {
+    if (catalogId.startsWith("posterium-custom-")) {
+      const customId = catalogId.replace(/^posterium-custom-/, "")
+      const customCat = userConfig?.customCatalogs?.find((c) => c.id === customId)
+      if (customCat && customCat.enabled !== false) {
+        const items = await fetchCustomMDBList(customCat.url, mdblistKey, 20)
+        const results = await Promise.all(items.map(async (item, idx) => {
+          let tmdbId = Number(item.tmdb)
+          if (!tmdbId && item.imdb) {
+            tmdbId = await tmdbFindByImdb(item.imdb, stType === "movie" ? "movie" : "tv", apiKey) || 0
+          }
+          if (!tmdbId) return null
+          try {
+            const d = await getDetails(stType === "movie" ? "movie" : "tv", tmdbId, "it-IT", apiKey)
+            if (!d?.id) return null
+            return { d, tmdbId, imdb: item.imdb, rank: idx + 1 }
+          } catch {
+            return null
+          }
+        }))
+        const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdb: string; rank: number } => r !== null)
+        metas = await Promise.all(validResults.map(async (r) => {
+          const imdbId = r.imdb || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
+          return {
+            id: catalogMetaId(imdbId, r.tmdbId),
+            type: stType,
+            name: r.d.title || r.d.name || "",
+            poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
+            releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
+          }
+        }))
+      }
+    } else if (catalogId.startsWith("posterium-jw")) {
       // Fix L12: la chiave si controlla PRIMA del fetch JustWatch — prima i
       // 15s del fetch JW venivano sprecati su ogni cache-miss senza chiave
       // (risultato comunque vuoto).

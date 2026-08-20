@@ -103,3 +103,11 @@ export interface Mapping {
   bestFitScore?: number | null
   bestFitReasons?: string[] | null
 }
+
+export interface CustomCatalogConfig {
+  id: string
+  name: string
+  type: "movie" | "series"
+  url: string
+  enabled?: boolean
+}

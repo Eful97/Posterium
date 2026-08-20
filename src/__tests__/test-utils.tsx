@@ -122,6 +122,14 @@ export const MOCK_CTX: PosteriumCtx = {
   setServiceErrors: stubFn,
   hasNetflixRank: false,
   sourceView: null,
+  customCatalogs: [],
+  setCustomCatalogs: stubFn,
+  addCustomCatalog: stubFn,
+  removeCustomCatalog: stubFn,
+  toggleCustomCatalog: stubFn,
+  disabledCatalogIds: [],
+  setDisabledCatalogIds: stubFn,
+  toggleBuiltinCatalog: stubFn,
 }
 
 export function createWrapper(overrides?: Partial<PosteriumCtx>) {
