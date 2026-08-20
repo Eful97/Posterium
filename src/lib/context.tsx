@@ -484,78 +484,85 @@ export function usePosterium(): PosteriumCtx {
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme)
     const savedProfileId = safeGetItem("posterium_profile_id")
     const savedStateless = safeGetItem("posterium_profile_stateless") === "1"
-    if (savedProfileId && savedStateless) {
-      // Profilo STATELESS: config e token vivono in localStorage (nessun
-      // server da interrogare) → riattiva direttamente, senza lock/password.
-      savedProfileIdRef.current = null
-      setProfileId(savedProfileId)
-      setProfileStateless(true)
-      const savedToken = safeGetItem("posterium_profile_config_token")
-      if (savedToken) setProfileConfigToken(savedToken)
-      const savedConfig = safeGetItem("posterium_profile_config")
-      if (savedConfig) {
-        try {
-          applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
-        } catch {
-          // Config corrotta in localStorage: ignora, restano i default.
-        }
-      }
-      // Fix: il flag stateless può essere stantio — persistito quando lo
-      // storage non c'era. Se ora l'istanza HA storage (es. KV/Upstash
-      // configurato dopo), il profilo NON è più stateless: azzera lo stato
-      // così il salvataggio poster non viene bloccato e l'utente può (ri)
-      // salvare il profilo normalmente. La verifica è in background via
-      // /api/health (storage.mode === "kv").
-      void (async () => {
-        try {
-          const res = await fetch("/api/health", { signal: AbortSignal.timeout(8000) })
-          if (res.ok) {
-            const data = await res.json()
-            if (data?.storage?.mode === "kv") {
-              // Storage ora disponibile: il profilo stateless (che viveva solo
-              // nel browser) non vale più — ripulisci id/token/flag così l'app
-              // torna senza profilo e l'utente ne salva uno nuovo server-side.
-              try { localStorage.removeItem("posterium_profile_stateless") } catch {}
-              try { localStorage.removeItem("posterium_profile_config_token") } catch {}
-              try { localStorage.removeItem("posterium_profile_config") } catch {}
-              try { localStorage.removeItem("posterium_profile_id") } catch {}
-              setProfileStateless(false)
-              setProfileConfigToken(null)
-              setProfileId(null)
-              savedProfileIdRef.current = null
-            }
-          }
-        } catch {
-          // Errore di rete: mantieni lo stato stateless (fallback sicuro per
-          // il link ?config=); al prossimo salvataggio profilo si riallinea.
-        }
-      })()
-    } else if (savedProfileId) {
-      // Profilo salvato → richiedi la password al rientro. Non attivare il
-      // profilo né usare la password memorizzata: l'utente deve confermare.
+    if (savedProfileId) {
+      // All'avvio interroghiamo il server per quel profilo: una risposta 200
+      // (profilo salvato server-side, es. KV/Upstash) → richiedi la password
+      // (locked, come sempre). Una 404 → il profilo non esiste sul server:
+      //   - se era stateless (browser-only) → attiva la modalità stateless per
+      //     riusare il link ?config=;
+      //   - altrimenti è uno stale → rimuovi l'id.
+      // Questo evita due bug: (a) un profilo stateless stantio bloccava il
+      // salvataggio anche dopo l'aggiunta di storage; (b) rimuovendo del tutto
+      // il profilo quando c'era storage, all'avvio non veniva più chiesta la
+      // password per un profilo server-side vero.
       savedProfileIdRef.current = savedProfileId
       setProfileLocked(true)
-      // Verifica in background: profilo inesistente (stale) o senza password →
-      // niente da confermare → sblocca subito e rimuove l'id non più valido.
       void (async () => {
         try {
           const res = await fetch(`/api/profile?u=${encodeURIComponent(savedProfileId)}`, { signal: AbortSignal.timeout(8000) })
-          if (!res.ok) {
-            try { localStorage.removeItem("posterium_profile_id") } catch {}
+          if (res.ok) {
+            const data = await res.json()
+            if (data && data.hasPassword === true) {
+              // Profilo server-side con password: resta locked, l'utente la
+              // inserisce nel ProfileUnlock. Facciamo sparire l'eventuale flag
+              // stateless residuo (non è più tale).
+              try { localStorage.removeItem("posterium_profile_stateless") } catch {}
+              try { localStorage.removeItem("posterium_profile_config_token") } catch {}
+              return
+            }
+            // Profilo server-side senza password: niente da confermare.
             savedProfileIdRef.current = null
             setProfileLocked(false)
             setProfileModalSuppressed(true)
+            setProfileId(null)
             return
           }
-          const data = await res.json()
-          if (data && data.hasPassword !== true) {
+          // 404: il profilo non è sul server.
+          if (savedStateless) {
+            // Stateless browser-only: attiva direttamente, senza lock.
+            savedProfileIdRef.current = null
+            setProfileLocked(false)
+            setProfileId(savedProfileId)
+            setProfileStateless(true)
+            const savedToken = safeGetItem("posterium_profile_config_token")
+            if (savedToken) setProfileConfigToken(savedToken)
+            const savedConfig = safeGetItem("posterium_profile_config")
+            if (savedConfig) {
+              try {
+                applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
+              } catch {
+                // Config corrotta: ignora, restano i default.
+              }
+            }
+          } else {
+            // Stale senza flag stateless: rimuovi l'id non più valido.
             try { localStorage.removeItem("posterium_profile_id") } catch {}
             savedProfileIdRef.current = null
             setProfileLocked(false)
             setProfileModalSuppressed(true)
+            setProfileId(null)
           }
         } catch {
-          // Errore di rete → resta locked (safe: si chiede comunque la password).
+          // Errore di rete: non sappiamo se il profilo esiste sul server.
+          // Se era stateless, riusiamo la config locale (fallback sicuro).
+          if (savedStateless) {
+            savedProfileIdRef.current = null
+            setProfileLocked(false)
+            setProfileId(savedProfileId)
+            setProfileStateless(true)
+            const savedToken = safeGetItem("posterium_profile_config_token")
+            if (savedToken) setProfileConfigToken(savedToken)
+            const savedConfig = safeGetItem("posterium_profile_config")
+            if (savedConfig) {
+              try {
+                applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
+              } catch {
+                // ignora
+              }
+            }
+          }
+          // Se NON era stateless e la rete fallisce → resta locked (safe: si
+          // chiede comunque la password, come nel flusso originale).
         }
       })()
     }
