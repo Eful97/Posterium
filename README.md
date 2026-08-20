@@ -215,28 +215,28 @@ Come funziona: quando premi **Salva Profilo**, il server crea un **link speciale
 
 #### 🔵 Strada Completa — *“Lo uso tutti i giorni / su più dispositivi”* (con salvataggio vero)
 
-Aggiungi un **piccolo database** (si chiama **Vercel KV / Global Config / Upstash**) dove Posterium salva per davvero profili, mapping e chiavi cifrate. È gratis entro limiti generosi.
+Aggiungi un **piccolo database Redis** (si chiama **Vercel KV / Upstash**) dove Posterium salva per davvero profili, mapping e chiavi cifrate. È gratis entro limiti generosi.
 
-> 📌 **Nota sui nomi**: Vercel ha rinominato **KV → "Global Config"**. Nello **Storage** che vedi oggi trovi sia **Global Config** (il rebrand di Vercel KV, la scelta più semplice) sia **Upstash** (il provider Redis da cui nasce). Entrambi forniscono le `KV_REST_API_URL`/`KV_REST_API_TOKEN` che Posterium legge. Se scegli Upstash dal Marketplace, verifica poi che le env aggiunte al progetto si chiamino **esattamente** `KV_REST_API_URL` e `KV_REST_API_TOKEN` (a volte le mette come `UPSTASH_REDIS_REST_URL`/`..._TOKEN` — in quel caso rinominale).
+> ✅ **Consigliato: usa Upstash (Redis)** — è la via che funziona davvero. (Vercel ha rinominato il KV interno in **"Global Config"**, ma in pratica non fornisce i valori `KV_REST_API_URL`/`KV_REST_API_TOKEN` che Posterium legge con le stesse modalità; la scelta affidabile e verificata è **Upstash** con **Redis**.)
 
 **Come attivarlo (2 minuti):**
 
-1. Vercel Dashboard → in alto clicca **Storage** → **Create Database** → scegli **Global Config** (consigliato) oppure **Upstash** dal Marketplace.
-2. Clicca **Create** e collega (**Connect**) il database al tuo progetto Posterium quando te lo chiede.
-3. Vercel aggiunge da solo due impostazioni: `KV_REST_API_URL` e `KV_REST_API_TOKEN` — non devi toccarle (verifica i nomi, vedi nota sopra).
+1. Vercel Dashboard → in alto clicca **Storage** → **Create Database** → scegli **Upstash**.
+2. Clicca **Create** e collega (**Connect**) il database Redis al tuo progetto Posterium quando te lo chiede.
+3. Assicurati che le due impostazioni aggiunte al progetto si chiamino **esattamente** `KV_REST_API_URL` e `KV_REST_API_TOKEN`. (A volte Upstash le mette come `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`: in quel caso aggiungi tu `KV_REST_API_URL` e `KV_REST_API_TOKEN` copiando gli stessi valori, oppure rinominale.)
 4. Torna su **Deployments → ⋯ → Redeploy** (come al Passo 3).
-5. Verifica: apri `https://<tuo-app>.vercel.app/api/status` — nella sezione **storage** dovresti leggere `kv` (se leggi `memory` o `none`, il database non è collegato — ripeti dal punto 2).
+5. Verifica: apri `https://<tuo-app>.vercel.app/api/status` — nella sezione **storage** dovresti leggere `kv` (se leggi `memory` o `none`, il database non è collegato o le env non si chiamano `KV_REST_API_*` — controlla il punto 3).
 
 **Impostazioni consigliate in questa modalità** (sempre in Settings → Environment Variables):
 
 | Variabile | Quando serve |
 |---|---|
-| `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 Create da Vercel al punto 3 — non toccarle |
+| `KV_REST_API_URL` + `KV_REST_API_TOKEN` | 🔴 Create da Vercel al punto 2/3 (con Upstash verifica i nomi: devono essere `KV_REST_API_*`) |
 | `POSTERIUM_PUBLIC_INSTANCE=1` | 🔴 Già messa al Passo 2 — lasciala |
 | `CONFIG_HMAC_SECRET` | 🟠 Consigliata — sblocca anche i link `?config=` di backup |
 | `PROFILE_ENCRYPTION_KEY` | 🟠 Consigliata — cifra le chiavi salvate (`openssl rand -hex 32`) |
 
-Dove finiscono i dati: profili/mapping/chiavi su **KV Upstash** · cache poster in memoria (si azzera ad ogni cold start, è normale) · cache classifiche su `/tmp`.
+Dove finiscono i dati: profili/mapping/chiavi su **Redis Upstash** · cache poster in memoria (si azzera ad ogni cold start, è normale) · cache classifiche su `/tmp`.
 
 ---
 
