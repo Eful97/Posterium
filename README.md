@@ -139,6 +139,7 @@ Ogni persona deploya la **propria** istanza Vercel e usa le **proprie** chiavi (
    - `CONFIG_HMAC_SECRET`: valore generato da `openssl rand -hex 32` (firma i profili stateless)
    - `POSTERIUM_PUBLIC_INSTANCE=1`: apre le route admin senza token — senza, in produzione l'editor **non salva i poster e il best-fit non esce** (le route admin sono fail-closed; in locale dev sono sempre aperte)
    - `POSTERIUM_TMDB_KEY` + `POSTERIUM_MDBLIST_KEY`: **le tue chiavi** TMDB/MDBList come fallback d'istanza — così i cataloghi si popolano da soli su Stremio senza passare `api_key` (scegli due per istanza personale). ⚠️ Non sono per istanze pubbliche condivise.
+   - (Per i **cataloghi**) il default di stile che vuoi: es. `POSTERIUM_RANKING_BADGES=0`, `POSTERIUM_BADGE_YEAR=0`, `POSTERIUM_NETWORK_LOGO=0`… I poster dei cataloghi usano i default d'istanza (non il tuo config), quindi queste env sono il modo per disattivare badge/logo su catalogo. Vedi la tabella "Default di stile d'istanza" sotto.
    - Opzionale — `POSTERIUM_BEST_FIT_ENABLED`: `0` disabilita globalmente il best-fit, `1` lo forza; non impostato = automatico
 3. **Redeploy**: Deployments → ultimo deploy → ⋯ → **Redeploy** (le env nuove vengono lette solo al deploy successivo).
 
@@ -354,6 +355,21 @@ tuodominio.com {
 | `POSTERIUM_TMDB_KEY` | ❌ | Chiave TMDB **d'istanza (fallback, opt-in)**: usata solo quando la richiesta (header/query) e il profilo non portano una chiave. Per istanze **personali** (es. Vercel con un solo utente) dove i cataloghi devono funzionare senza passare `api_key`. ⚠️ Non impostarla su istanze pubbliche multi-utente (quota condivisa). |
 | `POSTERIUM_MDBLIST_KEY` | ❌ | Chiave MDBList **d'istanza (fallback, opt-in)**: stessa logica di `POSTERIUM_TMDB_KEY`, per i rank anime. |
 | `POSTERIUM_RATING_WAIT_MS` | ❌ | Attesa max upgrade voto TMDB+IMDb (default: 1500; clamp 300–10000) |
+
+**Default di stile d'istanza** (`POSTERIUM_*`): definiscono la resa di base dei poster anche quando `defaults.json` è vuoto o non persiste (es. Vercel senza KV) — e sono **l'unico modo per far rispettare le preferenze ai poster dei CATALOGHI** (il catalogo usa `getServerDefaults()`, non il config utente). Il file/KV salvato dall'editor vince sempre su queste env. Insieme alla chiave d'istanza, sono pensate per istanze personali.
+
+| Variabile | Valori | Default di stile che imposta |
+|---|---|---|
+| `POSTERIUM_GLOBAL_BADGES` | `1`/`0` | badge genere/rating globali |
+| `POSTERIUM_RANKING_BADGES` | `1`/`0` | badge trend/ranking |
+| `POSTERIUM_BADGE_GENRE` / `_YEAR` / `_RATING` | `1`/`0` | singoli componenti del badge |
+| `POSTERIUM_NETWORK_LOGO` | `1`/`0` | logo network |
+| `POSTERIUM_BADGE_STYLE` | `shadow/pill/bar/colored/bordo/vetro` | stile badge genere |
+| `POSTERIUM_RANKING_BADGE_STYLE` | `default/bar/colored/pill/netflix` | stile badge trend |
+| `POSTERIUM_RIBBON_SIDE` | `left/right` | lato nastro Netflix |
+| `POSTERIUM_BLUR_ENABLED` / `_INTENSITY` / `_FADE` / `_DARKNESS` | `1/0`, numeri | sfocatura |
+| `POSTERIUM_GRADIENT_HEIGHT` | numero 5–100 | altezza gradiente |
+| `POSTERIUM_AUTO_ROTATE_CLEAN` / `_LOGO_FIT_ENABLED` | `1`/`0` | rotazione/auto-fit |
 | `POSTERIUM_NEGATIVE_CACHE_TTL_MS` | ❌ | TTL negative cache errori 500/503 (default: 5000; clamp 1000–60000) |
 | `POSTERIUM_RATELIMIT_POSTER_MAX` | ❌ | Token burst rate-limit poster (default: 200; clamp 10–10000) |
 | `POSTER_CDN_URL` / `NEXT_PUBLIC_POSTER_CDN_URL` | ❌ | URL CDN per i link poster |

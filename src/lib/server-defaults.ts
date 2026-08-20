@@ -4,6 +4,7 @@ import path from "node:path"
 import { DATA_DIR } from "@/lib/data-dir"
 import { createLogger } from "@/lib/logger"
 import type { BadgeStyle, RankingBadgeStyle } from "@/lib/badge-styles"
+import { isBadgeStyle, isRankingBadgeStyle } from "@/lib/badge-styles"
 
 const log = createLogger("server-defaults")
 
@@ -29,6 +30,64 @@ export interface ServerDefaults {
 const FILE = path.join(DATA_DIR, "defaults.json")
 const useKv = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN
 const KV_KEY = "defaults"
+
+// ── Default di stile da env d'istanza (POSTERIUM_*) ─────────────────────────
+// Per istanze personali (es. Vercel senza KV): fissano il default di resa
+// (Genere/Anno/Voto, stile badge, blur, network logo, nastro...) anche quando
+// defaults.json è vuoto/non persiste. Il file/KV salvato (dall'editor) vince
+// SEMPRE su queste env: se l'utente salva i default, quelli contano. Env non
+// impostate → nessun override ({} → comportamento attuale).
+// Cruciale per i CATALOGHI: i poster dei cataloghi usano getServerDefaults() e
+// non il config utente, quindi senza questi default d'istanza i badge escono
+// tutti ON indipendentemente dalle preferenze salvate.
+function envBool(name: string): boolean | undefined {
+  const raw = process.env[name]?.trim().toLowerCase()
+  if (raw === "1" || raw === "true" || raw === "yes" || raw === "on") return true
+  if (raw === "0" || raw === "false" || raw === "no" || raw === "off") return false
+  return undefined
+}
+function envNum(name: string): number | undefined {
+  const raw = process.env[name]?.trim()
+  const n = raw ? Number(raw) : NaN
+  return Number.isFinite(n) ? n : undefined
+}
+function defaultsFromEnv(): ServerDefaults {
+  const d: ServerDefaults = {}
+  const bG = envBool("POSTERIUM_GLOBAL_BADGES")
+  const bR = envBool("POSTERIUM_RANKING_BADGES")
+  const bg = envBool("POSTERIUM_BADGE_GENRE")
+  const by = envBool("POSTERIUM_BADGE_YEAR")
+  const br = envBool("POSTERIUM_BADGE_RATING")
+  const blurEn = envBool("POSTERIUM_BLUR_ENABLED")
+  const netLogo = envBool("POSTERIUM_NETWORK_LOGO")
+  const autoRotate = envBool("POSTERIUM_AUTO_ROTATE_CLEAN")
+  const logoFit = envBool("POSTERIUM_LOGO_FIT_ENABLED")
+  if (bG !== undefined) d.globalBadges = bG
+  if (bR !== undefined) d.rankingBadges = bR
+  if (bg !== undefined) d.badgeGenre = bg
+  if (by !== undefined) d.badgeYear = by
+  if (br !== undefined) d.badgeRating = br
+  if (blurEn !== undefined) d.blurEnabled = blurEn
+  if (netLogo !== undefined) d.networkLogo = netLogo
+  if (autoRotate !== undefined) d.autoRotateClean = autoRotate
+  if (logoFit !== undefined) d.defaultLogoFitEnabled = logoFit
+  const bs = process.env.POSTERIUM_BADGE_STYLE?.trim()
+  const rbs = process.env.POSTERIUM_RANKING_BADGE_STYLE?.trim()
+  const side = process.env.POSTERIUM_RIBBON_SIDE?.trim().toLowerCase()
+  const blurI = envNum("POSTERIUM_BLUR_INTENSITY")
+  const blurF = envNum("POSTERIUM_BLUR_FADE")
+  const blurD = envNum("POSTERIUM_BLUR_DARKNESS")
+  const gradH = envNum("POSTERIUM_GRADIENT_HEIGHT")
+  if (bs && isBadgeStyle(bs)) d.badgeStyle = bs
+  if (rbs && isRankingBadgeStyle(rbs)) d.rankingBadgeStyle = rbs
+  if (side === "left" || side === "right") d.ribbonSide = side
+  if (blurI !== undefined) d.blurIntensity = blurI
+  if (blurF !== undefined) d.blurFade = blurF
+  if (blurD !== undefined) d.blurDarkness = blurD
+  if (gradH !== undefined) d.gradientHeight = gradH
+  return d
+}
+const ENV_DEFAULTS: ServerDefaults = defaultsFromEnv()
 
 let cached: ServerDefaults | null = null
 let warmPromise: Promise<void> | null = null
@@ -75,24 +134,25 @@ function warmDefaults(): Promise<void> {
 }
 
 export function getServerDefaults(): ServerDefaults {
-  if (cached) return cached
-  // In modalità file: lettura sync una tantum al cold start (i chiamanti sono
-  // sync). In modalità KV: la lettura è async, la cache si riempie con
-  // warmDefaults() — i primi millisecondi restituiscono {} (i chiamanti hanno
-  // i propri default di fallback; Vercel tiene le istanze calde).
+  // Il risultato fonde gli ENV_DEFAULTS (default d'istanza, opt-in) con i
+  // defaults salvati (file/KV): il salvato vince sull'env. Non mutiamo `cached`
+  // così setServerDefaults scrive solo i valori dell'utente e l'env continua a
+  // coprire solo i campi NON salvati.
+  if (cached) return { ...ENV_DEFAULTS, ...cached }
+  let loaded: ServerDefaults | null = null
   if (!useKv) {
     try {
       if (existsSync(FILE)) {
         const raw = readFileSync(FILE, "utf-8")
-        cached = JSON.parse(raw) as ServerDefaults
+        loaded = JSON.parse(raw) as ServerDefaults
       }
     } catch (error) {
       logDefaultsError("failed to load defaults (cold start)", error)
     }
   }
-  if (!cached) cached = {}
+  cached = loaded ?? {}
   warmDefaults()
-  return cached
+  return { ...ENV_DEFAULTS, ...cached }
 }
 export async function setServerDefaults(d: ServerDefaults): Promise<void> {
   if (useKv) {

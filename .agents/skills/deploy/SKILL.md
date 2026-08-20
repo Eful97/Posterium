@@ -99,6 +99,13 @@ Run these against the deployed instance:
   Stremio without passing `api_key` (read as last-resort fallback; header /
   query / profile always win). Each person uses their own keys on their own
   instance — do NOT share keys across public multi-user instances.
+- **Catalog posters use instance defaults, not the user config**: catalog
+  posters are built from `getServerDefaults()`, so the user's saved style
+  (badge off, network logo off) is NOT applied to catalogs. On a personal
+  instance, set the style defaults via env (`POSTERIUM_GLOBAL_BADGES`,
+  `POSTERIUM_RANKING_BADGES`, `POSTERIUM_BADGE_YEAR`, `POSTERIUM_NETWORK_LOGO`,
+  `POSTERIUM_BADGE_STYLE`, …) so catalog posters respect them. Saved
+  `defaults.json`/KV wins over these envs.
 
 ## Rules
 
