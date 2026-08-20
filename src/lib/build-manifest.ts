@@ -70,6 +70,28 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     }
   }
 
+  // Applica rinomine personalizzate dei cataloghi
+  if (userConfig?.catalogRenames && Object.keys(userConfig.catalogRenames).length > 0) {
+    catalogs = catalogs.map((cat) => {
+      const customName = userConfig?.catalogRenames?.[cat.id]
+      if (customName && customName.trim()) {
+        return { ...cat, name: customName.trim() }
+      }
+      return cat
+    })
+  }
+
+  // Applica ordinamento / priorità personalizzata
+  if (userConfig?.catalogOrder && userConfig.catalogOrder.length > 0) {
+    const orderMap = new Map<string, number>()
+    userConfig.catalogOrder.forEach((id, idx) => orderMap.set(id, idx))
+    catalogs.sort((a, b) => {
+      const orderA = orderMap.has(a.id) ? orderMap.get(a.id)! : 9999
+      const orderB = orderMap.has(b.id) ? orderMap.get(b.id)! : 9999
+      return orderA - orderB
+    })
+  }
+
   return Response.json({
     id: addonId,
     version: APP_VERSION,

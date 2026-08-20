@@ -130,6 +130,14 @@ export const MOCK_CTX: PosteriumCtx = {
   disabledCatalogIds: [],
   setDisabledCatalogIds: stubFn,
   toggleBuiltinCatalog: stubFn,
+  catalogOrder: [],
+  setCatalogOrder: stubFn,
+  moveCatalog: stubFn,
+  catalogRenames: {},
+  setCatalogRenames: stubFn,
+  renameCatalog: stubFn,
+  resetCatalogNames: stubFn,
+  resetCatalogOrder: stubFn,
 }
 
 export function createWrapper(overrides?: Partial<PosteriumCtx>) {

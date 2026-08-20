@@ -8,8 +8,9 @@ import { createPortal } from "react-dom"
 import { ScrollReveal } from "@/components/ScrollReveal"
 import { SimklCard, type SimklCardItem } from "@/components/SimklCard"
 import { CustomCatalogModal } from "@/components/CustomCatalogModal"
+import { CatalogManagerModal } from "@/components/CatalogManagerModal"
 import { posterUrl } from "@/lib/utils"
-import { X, Check, ListPlus, Trash2, Film, Tv, Shuffle, Power } from "lucide-react"
+import { X, Check, ListPlus, Trash2, Film, Tv, Shuffle, Power, SlidersHorizontal } from "lucide-react"
 
 interface GridViewItem {
   tmdbId: number | null
@@ -120,6 +121,7 @@ export function CataloghiView() {
   const [gridTitle, setGridTitle] = useState("")
   const [platformFilter, setPlatformFilter] = useState<string>("all")
   const [isAddCustomOpen, setIsAddCustomOpen] = useState(false)
+  const [isManagerOpen, setIsManagerOpen] = useState(false)
 
   const savedKeys = useMemo(
     () => new Set(mappings.map((m) => `${m.mediaType}:${m.tmdbId}`)),
@@ -159,13 +161,15 @@ export function CataloghiView() {
     }
   }, [])
 
+  // Blocca lo scroll del body quando la griglia è aperta
   useEffect(() => {
     if (gridItems) {
-      const prevOverflow = document.body.style.overflow
       document.body.style.overflow = "hidden"
-      return () => {
-        document.body.style.overflow = prevOverflow
-      }
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => {
+      document.body.style.overflow = ""
     }
   }, [gridItems])
 
@@ -181,6 +185,8 @@ export function CataloghiView() {
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-scale-in">
+      <CatalogManagerModal isOpen={isManagerOpen} onClose={() => setIsManagerOpen(false)} />
+
       <ScrollReveal animation="fade-up-fast">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -196,19 +202,29 @@ export function CataloghiView() {
             <h1 className="text-2xl font-bold text-zinc-50">{t("ui.catalogsTitle")}</h1>
             <p className="text-sm text-muted mt-1">{t("ui.catalogsSubtitle")}</p>
           </div>
-          <div className="relative self-start sm:self-center">
+          <div className="flex items-center gap-2 self-start sm:self-center">
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                setIsAddCustomOpen((prev) => !prev)
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-orange text-white text-xs font-semibold hover:bg-accent-orange/90 active:scale-95 transition-all shadow-md"
+              onClick={() => setIsManagerOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface2 border border-white/10 hover:border-white/20 text-zinc-200 text-xs font-semibold hover:text-white active:scale-95 transition-all shadow-sm"
             >
-              <ListPlus className="w-4 h-4" />
-              <span>Aggiungi Catalogo</span>
+              <SlidersHorizontal className="w-3.5 h-3.5 text-accent-orange" />
+              <span>Priorità & Nomi</span>
             </button>
-            <CustomCatalogModal isOpen={isAddCustomOpen} onClose={() => setIsAddCustomOpen(false)} />
+            <div className="relative">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsAddCustomOpen((prev) => !prev)
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-orange text-white text-xs font-semibold hover:bg-accent-orange/90 active:scale-95 transition-all shadow-md"
+              >
+                <ListPlus className="w-4 h-4" />
+                <span>Aggiungi Catalogo</span>
+              </button>
+              <CustomCatalogModal isOpen={isAddCustomOpen} onClose={() => setIsAddCustomOpen(false)} />
+            </div>
           </div>
         </div>
       </ScrollReveal>

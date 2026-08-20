@@ -137,6 +137,46 @@ describe("Custom Catalogs & MDBList Parsing", () => {
       expect(seriesCat?.name).toBe("I Miei Preferiti — Serie TV")
       expect(seriesCat?.type).toBe("series")
     })
+
+    it("applies catalog renames and custom priority order in manifest", async () => {
+      const token = encodeConfig({
+        globalBadges: true,
+        rankingBadges: true,
+        badgeStyle: "pill",
+        rankingBadgeStyle: "default",
+        blurEnabled: true,
+        blurIntensity: 50,
+        blurFade: 30,
+        blurDarkness: 40,
+        gradientHeight: 35,
+        networkLogo: true,
+        autoRotateClean: true,
+        catalogOrder: [
+          "posterium-anime",
+          "posterium-netflix-movies",
+          "posterium-jw-movies",
+        ],
+        catalogRenames: {
+          "posterium-netflix-movies": "🔴 Super Netflix Film",
+          "posterium-anime": "⛩️ Anime Popolari",
+        },
+      })
+
+      const req = new NextRequest(`https://posterium.test/manifest.json?config=${token}`)
+      const res = await buildManifestResponse(req, null, token)
+      const data = await res.json()
+
+      // The first catalog in the list should be posterium-anime
+      expect(data.catalogs[0].id).toBe("posterium-anime")
+      expect(data.catalogs[0].name).toBe("⛩️ Anime Popolari")
+
+      // The second catalog should be posterium-netflix-movies
+      expect(data.catalogs[1].id).toBe("posterium-netflix-movies")
+      expect(data.catalogs[1].name).toBe("🔴 Super Netflix Film")
+
+      // The third catalog should be posterium-jw-movies
+      expect(data.catalogs[2].id).toBe("posterium-jw-movies")
+    })
   })
 })
 

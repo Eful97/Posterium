@@ -23,6 +23,7 @@ import type { PosteriumUserConfig } from "./config-token"
 import { SearchProvider } from "./contexts/SearchContext"
 import { SettingsProvider } from "./contexts/SettingsContext"
 import { TranslationProvider } from "./contexts/TranslationContext"
+import { POSTERIUM_CATALOGS } from "./catalog-definitions"
 
 export type ViewType = "search" | "myposters" | "edit" | "cataloghi"
 
@@ -172,6 +173,14 @@ export interface PosteriumCtx {
   disabledCatalogIds: string[]
   setDisabledCatalogIds: (ids: string[]) => void
   toggleBuiltinCatalog: (id: string) => void
+  catalogOrder: string[]
+  setCatalogOrder: (order: string[]) => void
+  moveCatalog: (id: string, direction: "up" | "down") => void
+  catalogRenames: Record<string, string>
+  setCatalogRenames: (renames: Record<string, string>) => void
+  renameCatalog: (id: string, newName: string) => void
+  resetCatalogNames: () => void
+  resetCatalogOrder: () => void
 }
 
 const Ctx = createContext<PosteriumCtx | null>(null)
@@ -466,6 +475,8 @@ export function usePosterium(): PosteriumCtx {
 
   const [customCatalogs, setCustomCatalogsState] = useState<CustomCatalogConfig[]>([])
   const [disabledCatalogIds, setDisabledCatalogIdsState] = useState<string[]>([])
+  const [catalogOrder, setCatalogOrderState] = useState<string[]>([])
+  const [catalogRenames, setCatalogRenamesState] = useState<Record<string, string>>({})
 
   const setCustomCatalogs = useCallback((catalogs: CustomCatalogConfig[]) => {
     setCustomCatalogsState(catalogs)
@@ -515,6 +526,74 @@ export function usePosterium(): PosteriumCtx {
     })
   }, [safeSetItem])
 
+  const setCatalogOrder = useCallback((order: string[]) => {
+    setCatalogOrderState(order)
+    safeSetItem("posterium_catalog_order", JSON.stringify(order))
+  }, [safeSetItem])
+
+  const moveCatalog = useCallback((id: string, direction: "up" | "down") => {
+    setCatalogOrderState((prev) => {
+      const allIds: string[] = []
+      const existing = new Set<string>()
+      prev.forEach((catId) => {
+        allIds.push(catId)
+        existing.add(catId)
+      })
+      POSTERIUM_CATALOGS.forEach((c) => {
+        if (!existing.has(c.id)) {
+          allIds.push(c.id)
+          existing.add(c.id)
+        }
+      })
+      customCatalogs.forEach((c) => {
+        if (c.type === "mixed") {
+          const mId = `posterium-custom-movie-${c.id}`
+          const sId = `posterium-custom-series-${c.id}`
+          if (!existing.has(mId)) { allIds.push(mId); existing.add(mId) }
+          if (!existing.has(sId)) { allIds.push(sId); existing.add(sId) }
+        } else {
+          const cId = `posterium-custom-${c.type}-${c.id}`
+          if (!existing.has(cId)) { allIds.push(cId); existing.add(cId) }
+        }
+      })
+
+      const idx = allIds.indexOf(id)
+      if (idx === -1) return prev
+      const targetIdx = direction === "up" ? idx - 1 : idx + 1
+      if (targetIdx < 0 || targetIdx >= allIds.length) return allIds
+
+      const next = [...allIds]
+      const [item] = next.splice(idx, 1)
+      next.splice(targetIdx, 0, item)
+      safeSetItem("posterium_catalog_order", JSON.stringify(next))
+      return next
+    })
+  }, [customCatalogs, safeSetItem])
+
+  const setCatalogRenames = useCallback((renames: Record<string, string>) => {
+    setCatalogRenamesState(renames)
+    safeSetItem("posterium_catalog_renames", JSON.stringify(renames))
+  }, [safeSetItem])
+
+  const renameCatalog = useCallback((id: string, newName: string) => {
+    setCatalogRenamesState((prev) => {
+      const next = { ...prev, [id]: newName }
+      if (!newName.trim()) delete next[id]
+      safeSetItem("posterium_catalog_renames", JSON.stringify(next))
+      return next
+    })
+  }, [safeSetItem])
+
+  const resetCatalogNames = useCallback(() => {
+    setCatalogRenamesState({})
+    try { localStorage.removeItem("posterium_catalog_renames") } catch {}
+  }, [])
+
+  const resetCatalogOrder = useCallback(() => {
+    setCatalogOrderState([])
+    try { localStorage.removeItem("posterium_catalog_order") } catch {}
+  }, [])
+
   // --- Initialization ---
   // Applica una PosteriumUserConfig ai setters dei default (condivisa tra
   // loadProfile server-based e il ripristino del profilo stateless locale).
@@ -535,7 +614,9 @@ export function usePosterium(): PosteriumCtx {
     if (typeof c.customBadge === "string") setCustomBadge(c.customBadge)
     if (Array.isArray(c.customCatalogs)) setCustomCatalogs(c.customCatalogs)
     if (Array.isArray(c.disabledCatalogIds)) setDisabledCatalogIds(c.disabledCatalogIds)
-  }, [setDefaultGlobalBadges, setDefaultRankingBadges, setDefaultBadgeStyle, setDefaultRankingBadgeStyle, setBlurEnabled, setBlurIntensity, setBlurFade, setBlurDarkness, setGradientHeight, setNetworkLogo, setRibbonSide, setAutoRotateClean, setDefaultLogoFitEnabled, setCustomBadge, setCustomCatalogs, setDisabledCatalogIds])
+    if (Array.isArray(c.catalogOrder)) setCatalogOrder(c.catalogOrder)
+    if (c.catalogRenames && typeof c.catalogRenames === "object") setCatalogRenames(c.catalogRenames)
+  }, [setDefaultGlobalBadges, setDefaultRankingBadges, setDefaultBadgeStyle, setDefaultRankingBadgeStyle, setBlurEnabled, setBlurIntensity, setBlurFade, setBlurDarkness, setGradientHeight, setNetworkLogo, setRibbonSide, setAutoRotateClean, setDefaultLogoFitEnabled, setCustomBadge, setCustomCatalogs, setDisabledCatalogIds, setCatalogOrder, setCatalogRenames])
 
   useEffect(() => {
     if (keyInit.current) return
@@ -556,6 +637,14 @@ export function usePosterium(): PosteriumCtx {
     const savedDisabledCats = safeGetItem("posterium_disabled_catalogs")
     if (savedDisabledCats) {
       try { setDisabledCatalogIdsState(JSON.parse(savedDisabledCats)) } catch {}
+    }
+    const savedOrder = safeGetItem("posterium_catalog_order")
+    if (savedOrder) {
+      try { setCatalogOrderState(JSON.parse(savedOrder)) } catch {}
+    }
+    const savedRenames = safeGetItem("posterium_catalog_renames")
+    if (savedRenames) {
+      try { setCatalogRenamesState(JSON.parse(savedRenames)) } catch {}
     }
     if (savedProfileId) {
       // All'avvio interroghiamo il server per quel profilo: una risposta 200
@@ -800,6 +889,8 @@ export function usePosterium(): PosteriumCtx {
       customBadge: customBadge || undefined,
       customCatalogs: customCatalogs.length > 0 ? customCatalogs : undefined,
       disabledCatalogIds: disabledCatalogIds.length > 0 ? disabledCatalogIds : undefined,
+      catalogOrder: catalogOrder.length > 0 ? catalogOrder : undefined,
+      catalogRenames: Object.keys(catalogRenames).length > 0 ? catalogRenames : undefined,
     }
     // `profilePassword` è nella chiave di dedup: è una dependency dell'effetto ma non
     // parte di `config`, quindi senza include un cambio password durante il debounce
@@ -829,7 +920,7 @@ export function usePosterium(): PosteriumCtx {
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [profileId, profilePassword, profileStateless, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, tmdbKey, mdblistApiKey])
+  }, [profileId, profilePassword, profileStateless, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames, tmdbKey, mdblistApiKey])
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -1145,6 +1236,8 @@ export function usePosterium(): PosteriumCtx {
       customBadge: customBadge || undefined,
       customCatalogs: customCatalogs.length > 0 ? customCatalogs : undefined,
       disabledCatalogIds: disabledCatalogIds.length > 0 ? disabledCatalogIds : undefined,
+      catalogOrder: catalogOrder.length > 0 ? catalogOrder : undefined,
+      catalogRenames: Object.keys(catalogRenames).length > 0 ? catalogRenames : undefined,
     }
     try {
       const res = await fetch("/api/profile", {
@@ -1181,7 +1274,7 @@ export function usePosterium(): PosteriumCtx {
       console.error("[posterium] Failed to save profile:", e)
       import("sonner").then(({ toast }) => toast.error("Errore nel salvare il profilo"))
     }
-  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, profileId, profilePassword, safeSetItem])
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames, profileId, profilePassword, safeSetItem])
 
   const posterActivePath = navigation.previewPoster?.file_path
 
@@ -1262,6 +1355,8 @@ export function usePosterium(): PosteriumCtx {
     hasNetflixRank,
     customCatalogs, setCustomCatalogs, addCustomCatalog, removeCustomCatalog, toggleCustomCatalog,
     disabledCatalogIds, setDisabledCatalogIds, toggleBuiltinCatalog,
+    catalogOrder, setCatalogOrder, moveCatalog,
+    catalogRenames, setCatalogRenames, renameCatalog, resetCatalogNames, resetCatalogOrder,
     t,
   // eslint-disable-next-line react-hooks/exhaustive-deps -- context value deps intentionally stable to prevent re-render cascades
   }), [
@@ -1281,6 +1376,6 @@ export function usePosterium(): PosteriumCtx {
     trending.trending, trending.trendingError, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
     theme, uiAccent, serviceErrors, hasNetflixRank,
-    customCatalogs, disabledCatalogIds,
+    customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames,
   ])
 }
