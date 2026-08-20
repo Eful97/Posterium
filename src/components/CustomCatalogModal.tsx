@@ -159,12 +159,30 @@ export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps)
         </div>
 
         <div>
-          <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
-            Nome Catalogo
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-[11px] font-semibold text-zinc-300">
+              Nome Catalogo
+            </label>
+            <span className="text-[10px] text-muted">Scegli un&apos;emoji:</span>
+          </div>
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-1 mb-1.5">
+            {["🍿", "🎬", "📺", "⛩️", "☁️", "🍎", "🏔️", "🏰", "🔴", "📦", "🟣", "🌶️", "🏆", "🔥", "⭐", "🎭"].map((em) => (
+              <button
+                key={em}
+                type="button"
+                onClick={() => {
+                  const cleaned = name.replace(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic}|\p{Emoji})\s*/u, "")
+                  setName(`${em} ${cleaned}`)
+                }}
+                className="shrink-0 p-1 text-xs hover:scale-125 transition-transform rounded-lg hover:bg-white/10"
+              >
+                {em}
+              </button>
+            ))}
+          </div>
           <input
             type="text"
-            placeholder="es. Sky & NOW — Top 10"
+            placeholder="es. ☁️ Sky & NOW — Top 10"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 bg-surface2 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-accent-orange transition-colors"
