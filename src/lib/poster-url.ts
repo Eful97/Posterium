@@ -65,12 +65,33 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
   // Profilo STATELESS: la config viaggia nel config token firmato (`?config=`)
   // invece di `?u=` — nessun salvataggio sul server. Le chiavi (TMDB/MDBList)
   // restano esplicite nell'URL come nel ramo senza profilo.
+  //
+  // IMPORTANTE: oltre al token si emettono TUTTI i parametri di stile dello
+  // stato corrente dell'editor (bg/by/br/netLogo/bs/rs/blur...). Nel parsing
+  // della route la query ha precedenza sul config token, quindi i toggle OFF
+  // (es. badge anno disattivato → `by=0`) vengono applicati anche se il token
+  // salvato è stantio o non contiene quei campi. Senza, l'URL non dice al
+  // server cosa disattivare e il badge compare comunque (default ON).
   if (bp.configToken) {
     const params = buildStremioPosterSearchParams({
       apiKey: bp.tmdbKey,
       mdblistKey: bp.mdblistApiKey,
       lang: bp.lang,
       config: bp.configToken,
+      globalBadges: bp.globalBadges,
+      rankingBadges: bp.rankingBadges,
+      badgeGenre: bp.badgeGenre,
+      badgeYear: bp.badgeYear,
+      badgeRating: bp.badgeRating,
+      badgeStyle: bp.badgeStyle,
+      rankingBadgeStyle: bp.rankingBadgeStyle,
+      gradientHeight: bp.gradientHeight,
+      blurIntensity: bp.blurIntensity,
+      blurFade: bp.blurFade,
+      blurDarkness: bp.blurDarkness,
+      blurEnabled: bp.blurEnabled,
+      networkLogo: bp.networkLogo,
+      ribbonSide: bp.ribbonSide,
     })
     return `${getPosterPublicBaseUrl()}/api/poster/{type}/{imdb_id}?${params.toString()}`
   }

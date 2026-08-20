@@ -87,6 +87,51 @@ describe("buildUrlPattern", () => {
     expect(url).toContain("mdblist_key=mdblist-key")
   })
 
+  it("stateless config-token URL emits badge OFF flags (by=0/br=0/bg=0) so disables win over token", () => {
+    // Regressione: disattivando anno/voto/genere nell'editor, il link ?config=
+    // deve portare by=0/br=0/bg=0 (la query vince sul config token nel parsing
+    // della route) — altrimenti il badge compare comunque (default ON).
+    const url = buildUrlPattern({
+      ...baseBadgeParams,
+      tmdbKey: "k",
+      lang: "it",
+      configToken: "abc.def",
+      globalBadges: false,
+      rankingBadges: false,
+      badgeGenre: false,
+      badgeYear: false,
+      badgeRating: false,
+      networkLogo: false,
+    })
+    expect(url).toContain("config=abc.def")
+    expect(url).toContain("badges=0")
+    expect(url).toContain("ranking=0")
+    expect(url).toContain("bg=0")
+    expect(url).toContain("by=0")
+    expect(url).toContain("br=0")
+    expect(url).toContain("netLogo=0")
+  })
+
+  it("stateless config-token URL omits bg/by/br when those badges are ON (not false)", () => {
+    // Con i badge attivi (true/undefined) NON si emette bg/by/br: il server usa
+    // il config token / i default. Solo i flag OFF devono comparire.
+    const url = buildUrlPattern({
+      ...baseBadgeParams,
+      tmdbKey: "k",
+      lang: "it",
+      configToken: "abc.def",
+      globalBadges: true,
+      rankingBadges: true,
+      badgeGenre: true,
+      badgeYear: true,
+      badgeRating: true,
+    })
+    expect(url).toContain("config=abc.def")
+    expect(url).not.toContain("bg=0")
+    expect(url).not.toContain("by=0")
+    expect(url).not.toContain("br=0")
+  })
+
   it("includes api_key param", () => {
     const url = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "abc123", lang: "it" })
     expect(url).toContain("api_key=abc123")
