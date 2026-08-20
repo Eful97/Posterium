@@ -68,6 +68,7 @@ export const STREAMING_PLATFORMS = [
   { slug: "netflix", name: "Netflix", icon: "" },
   { slug: "amazon-prime", name: "Prime Video", icon: "" },
   { slug: "disney", name: "Disney+", icon: "" },
+  { slug: "now", name: "NOW / Sky", icon: "" },
   { slug: "apple-tv", name: "Apple TV+", icon: "" },
   { slug: "hbo-max", name: "HBO Max", icon: "" },
   { slug: "paramount-plus", name: "Paramount+", icon: "" },

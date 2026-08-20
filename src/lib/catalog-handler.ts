@@ -43,6 +43,7 @@ function hashFragment(value: string): string {
 
 const PLATFORM_SLUGS: Record<string, string> = {
   netflix: "netflix", prime: "amazon-prime", disney: "disney",
+  now: "now",
   apple: "apple-tv", hbo: "hbo-max", paramount: "paramount-plus",
 }
 

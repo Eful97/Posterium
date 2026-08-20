@@ -74,6 +74,9 @@ const SLUG_TO_PLATFORM: Record<string, string> = {
   "hbo-max": "HBO Max",
   "apple-tv": "Apple TV",
   "paramount-plus": "Paramount+",
+  now: "NOW",
+  "now-tv": "NOW",
+  hayu: "hayu",
 }
 
 interface CatalogEntry {

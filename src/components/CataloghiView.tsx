@@ -91,6 +91,7 @@ const PLATFORM_FILTERS = [
   { id: "netflix", label: "Netflix" },
   { id: "amazon-prime", label: "Prime Video" },
   { id: "disney", label: "Disney+" },
+  { id: "now", label: "NOW / Sky" },
   { id: "apple-tv", label: "Apple TV+" },
   { id: "hbo-max", label: "HBO Max" },
   { id: "paramount-plus", label: "Paramount+" },

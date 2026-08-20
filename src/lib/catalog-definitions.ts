@@ -15,6 +15,8 @@ export const POSTERIUM_CATALOGS = [
   { id: "posterium-prime-series", name: "Prime Video — Serie TV", type: "series" },
   { id: "posterium-disney-movies", name: "Disney+ — Film", type: "movie" },
   { id: "posterium-disney-series", name: "Disney+ — Serie TV", type: "series" },
+  { id: "posterium-now-movies", name: "NOW / Sky — Film", type: "movie" },
+  { id: "posterium-now-series", name: "NOW / Sky — Serie TV", type: "series" },
   { id: "posterium-apple-movies", name: "Apple TV+ — Film", type: "movie" },
   { id: "posterium-apple-series", name: "Apple TV+ — Serie TV", type: "series" },
   { id: "posterium-hbo-movies", name: "HBO Max — Film", type: "movie" },
