@@ -500,6 +500,36 @@ export function usePosterium(): PosteriumCtx {
           // Config corrotta in localStorage: ignora, restano i default.
         }
       }
+      // Fix: il flag stateless può essere stantio — persistito quando lo
+      // storage non c'era. Se ora l'istanza HA storage (es. KV/Upstash
+      // configurato dopo), il profilo NON è più stateless: azzera lo stato
+      // così il salvataggio poster non viene bloccato e l'utente può (ri)
+      // salvare il profilo normalmente. La verifica è in background via
+      // /api/health (storage.mode === "kv").
+      void (async () => {
+        try {
+          const res = await fetch("/api/health", { signal: AbortSignal.timeout(8000) })
+          if (res.ok) {
+            const data = await res.json()
+            if (data?.storage?.mode === "kv") {
+              // Storage ora disponibile: il profilo stateless (che viveva solo
+              // nel browser) non vale più — ripulisci id/token/flag così l'app
+              // torna senza profilo e l'utente ne salva uno nuovo server-side.
+              try { localStorage.removeItem("posterium_profile_stateless") } catch {}
+              try { localStorage.removeItem("posterium_profile_config_token") } catch {}
+              try { localStorage.removeItem("posterium_profile_config") } catch {}
+              try { localStorage.removeItem("posterium_profile_id") } catch {}
+              setProfileStateless(false)
+              setProfileConfigToken(null)
+              setProfileId(null)
+              savedProfileIdRef.current = null
+            }
+          }
+        } catch {
+          // Errore di rete: mantieni lo stato stateless (fallback sicuro per
+          // il link ?config=); al prossimo salvataggio profilo si riallinea.
+        }
+      })()
     } else if (savedProfileId) {
       // Profilo salvato → richiedi la password al rientro. Non attivare il
       // profilo né usare la password memorizzata: l'utente deve confermare.
