@@ -575,7 +575,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
 
     const qRankingEarly = req.nextUrl.searchParams.get("ranking")
-    const hasQueryEarly = !!queryPoster || !!mapping
+    // hasQuery: true se lo stile è specificato esplicitamente — via poster/mapping
+    // espliciti O via config token (\`?config=\`). Senza, i flag query (ranking=
+    // badges= bg/by/br) verrebbero ignorati e il server applicherebbe i default
+    // (tutti ON), così un link ?config= con "ranking=0" mostrava comunque il badge
+    // trend. Con un config token la personalizzazione è esplicita → i flag off
+    // devono valere.
+    const hasQueryEarly = !!queryPoster || !!mapping || !!configToken
     const rankingEnabledEarly = hasQueryEarly ? (qRankingEarly !== null ? qRankingEarly !== "0" : rankingBadges) : true
     // Rank anime inviato dal client nella preview WYSIWYG (override del fetch).
     const qAnimeRankParam = req.nextUrl.searchParams.get("animerank")
@@ -741,7 +747,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       mapping,
       configOverride,
       sd,
-      hasQuery: !!queryPoster || !!mapping,
+      hasQuery: !!queryPoster || !!mapping || !!configToken,
       showBadges,
       rankingBadges,
       animeRank: animeRankResult,

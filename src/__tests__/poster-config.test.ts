@@ -156,6 +156,23 @@ describe("resolvePosterRenderConfig", () => {
     expect(r.rankingEnabled).toBe(false)
   })
 
+  it("config token with ranking=0/other OFF flags disables them even with a configOverride", () => {
+    // Regressione: un link ?config= + ranking=0/badges=0 (hasQuery true perché
+    // c'è il config token) DEVE rispettare i flag OFF della query — prima
+    // senza poster=/mapping espliciti hasQuery era false e il server forzava
+    // badgesEnabled/rankingEnabled a true, mostrando il badge trend comunque.
+    const r = resolvePosterRenderConfig(baseInput({
+      searchParams: new URLSearchParams({ badges: "0", ranking: "0", bg: "0", by: "0", br: "0", netLogo: "0" }),
+      configOverride: config({}),
+    }))
+    expect(r.badgesEnabled).toBe(false)
+    expect(r.rankingEnabled).toBe(false)
+    expect(r.badgeGenre).toBe(false)
+    expect(r.badgeYear).toBe(false)
+    expect(r.badgeRating).toBe(false)
+    expect(r.qNetLogo).toBe("0")
+  })
+
   it("be=0 disables blur; blur defaults respect config token when set", () => {
     const r = resolvePosterRenderConfig(baseInput({
       searchParams: new URLSearchParams({ be: "0" }),
