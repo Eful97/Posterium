@@ -159,10 +159,23 @@ export async function posteriumCatalog(
     let metas: StremioMeta[] = []
 
     if (catalogId.startsWith("posterium-custom-")) {
-      const customId = catalogId.replace(/^posterium-custom-/, "")
+      let customId = catalogId.replace(/^posterium-custom-/, "")
+      if (customId.startsWith("movie-")) customId = customId.slice(6)
+      else if (customId.startsWith("series-")) customId = customId.slice(7)
+
       const customCat = userConfig?.customCatalogs?.find((c) => c.id === customId)
       if (customCat && customCat.enabled !== false) {
-        const items = await fetchCustomMDBList(customCat.url, mdblistKey, 20)
+        let items = await fetchCustomMDBList(customCat.url, mdblistKey, 40)
+        // Se la lista è mista o contiene mediatype, filtra in base al tipo di catalogo richiesto
+        if (customCat.type === "mixed") {
+          if (stType === "movie") {
+            items = items.filter((it) => it.mediatype !== "show" && it.mediatype !== "tv" && it.mediatype !== "anime")
+          } else {
+            items = items.filter((it) => it.mediatype !== "movie")
+          }
+        }
+        items = items.slice(0, 20)
+
         const results = await Promise.all(items.map(async (item, idx) => {
           let tmdbId = Number(item.tmdb)
           if (!tmdbId && item.imdb) {

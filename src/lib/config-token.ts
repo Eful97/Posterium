@@ -20,7 +20,7 @@ const ribbonSideSchema = z.enum(["left", "right"])
 const customCatalogSchema = z.object({
   id: z.string().max(64),
   name: z.string().max(100),
-  type: z.enum(["movie", "series"]),
+  type: z.enum(["movie", "series", "mixed"]),
   url: z.string().max(500),
   enabled: z.boolean().optional(),
 })

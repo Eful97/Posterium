@@ -92,10 +92,50 @@ describe("Custom Catalogs & MDBList Parsing", () => {
       // Should exclude disabled posterium-jw-movies
       expect(data.catalogs.some((c: { id: string }) => c.id === "posterium-jw-movies")).toBe(false)
       // Should include custom catalog
-      const custom = data.catalogs.find((c: { id: string }) => c.id === "posterium-custom-sky-now-1")
+      const custom = data.catalogs.find((c: { id: string }) => c.id === "posterium-custom-movie-sky-now-1")
       expect(custom).toBeDefined()
       expect(custom?.name).toBe("Sky & NOW — Top 10")
       expect(custom?.type).toBe("movie")
+    })
+
+    it("splits mixed custom catalogs into movie and series catalogs for Stremio", async () => {
+      const token = encodeConfig({
+        globalBadges: true,
+        rankingBadges: true,
+        badgeStyle: "pill",
+        rankingBadgeStyle: "default",
+        blurEnabled: true,
+        blurIntensity: 50,
+        blurFade: 30,
+        blurDarkness: 40,
+        gradientHeight: 35,
+        networkLogo: true,
+        autoRotateClean: true,
+        customCatalogs: [
+          {
+            id: "mixed-watchlist",
+            name: "I Miei Preferiti",
+            type: "mixed",
+            url: "https://mdblist.com/lists/snoak/favorites",
+            enabled: true,
+          },
+        ],
+      })
+
+      const req = new NextRequest(`https://posterium.test/manifest.json?config=${token}`)
+      const res = await buildManifestResponse(req, null, token)
+      const data = await res.json()
+
+      const movieCat = data.catalogs.find((c: { id: string }) => c.id === "posterium-custom-movie-mixed-watchlist")
+      const seriesCat = data.catalogs.find((c: { id: string }) => c.id === "posterium-custom-series-mixed-watchlist")
+
+      expect(movieCat).toBeDefined()
+      expect(movieCat?.name).toBe("I Miei Preferiti — Film")
+      expect(movieCat?.type).toBe("movie")
+
+      expect(seriesCat).toBeDefined()
+      expect(seriesCat?.name).toBe("I Miei Preferiti — Serie TV")
+      expect(seriesCat?.type).toBe("series")
     })
   })
 })

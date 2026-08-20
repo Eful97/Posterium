@@ -6,6 +6,7 @@ export interface MDBListEntry {
   title: string
   year: number
   tmdb?: number
+  mediatype?: "movie" | "show" | "anime" | "tv"
 }
 
 export const MDBLISTS = [
@@ -121,11 +122,12 @@ export async function fetchCustomMDBList(urlOrSlug: string, apiKey?: string, lim
     const data = await res.json()
     const payload = key && !explicitUrl ? (data?.data || data) : data
     const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
-    const items = rawItems.slice(0, limit).map((item: { imdb_id?: string; imdb?: string; title?: string; year?: number; tmdb_id?: number | string; tmdb?: number | string; ids?: { tmdb?: number | string }; id?: number | string }) => ({
+    const items = rawItems.slice(0, limit).map((item: { imdb_id?: string; imdb?: string; title?: string; name?: string; year?: number; release_year?: number; tmdb_id?: number | string; tmdb?: number | string; ids?: { tmdb?: number | string }; id?: number | string; mediatype?: "movie" | "show" | "anime" | "tv"; media_type?: "movie" | "show" | "anime" | "tv"; type?: "movie" | "show" | "anime" | "tv" }) => ({
       imdb: item.imdb_id || item.imdb || '',
-      title: item.title || '',
-      year: item.year || 0,
+      title: item.title || item.name || '',
+      year: item.year || item.release_year || 0,
       tmdb: item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id || undefined,
+      mediatype: item.mediatype || item.media_type || item.type,
     }))
     if (items.length > 0) cacheSet(cacheKey, items, ["mdblist"], CACHE_TTL_MS)
     return items

@@ -104,10 +104,12 @@ export interface Mapping {
   bestFitReasons?: string[] | null
 }
 
+export type CustomCatalogType = "movie" | "series" | "mixed"
+
 export interface CustomCatalogConfig {
   id: string
   name: string
-  type: "movie" | "series"
+  type: CustomCatalogType
   url: string
   enabled?: boolean
 }

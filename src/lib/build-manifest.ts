@@ -48,11 +48,24 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
   if (userConfig?.customCatalogs && userConfig.customCatalogs.length > 0) {
     for (const cc of userConfig.customCatalogs) {
       if (cc.enabled !== false) {
-        catalogs.push({
-          id: `posterium-custom-${cc.id}`,
-          name: cc.name,
-          type: cc.type,
-        })
+        if (cc.type === "mixed") {
+          catalogs.push({
+            id: `posterium-custom-movie-${cc.id}`,
+            name: `${cc.name} — Film`,
+            type: "movie",
+          })
+          catalogs.push({
+            id: `posterium-custom-series-${cc.id}`,
+            name: `${cc.name} — Serie TV`,
+            type: "series",
+          })
+        } else {
+          catalogs.push({
+            id: `posterium-custom-${cc.type}-${cc.id}`,
+            name: cc.name,
+            type: cc.type,
+          })
+        }
       }
     }
   }

@@ -9,7 +9,7 @@ import { ScrollReveal } from "@/components/ScrollReveal"
 import { SimklCard, type SimklCardItem } from "@/components/SimklCard"
 import { CustomCatalogModal } from "@/components/CustomCatalogModal"
 import { posterUrl } from "@/lib/utils"
-import { X, Check, ListPlus, Trash2, Film, Tv, Power } from "lucide-react"
+import { X, Check, ListPlus, Trash2, Film, Tv, Shuffle, Power } from "lucide-react"
 
 interface GridViewItem {
   tmdbId: number | null
@@ -180,8 +180,6 @@ export function CataloghiView() {
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-scale-in">
-      <CustomCatalogModal isOpen={isAddCustomOpen} onClose={() => setIsAddCustomOpen(false)} />
-
       <ScrollReveal animation="fade-up-fast">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -197,14 +195,20 @@ export function CataloghiView() {
             <h1 className="text-2xl font-bold text-zinc-50">{t("ui.catalogsTitle")}</h1>
             <p className="text-sm text-muted mt-1">{t("ui.catalogsSubtitle")}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsAddCustomOpen(true)}
-            className="self-start sm:self-center flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-orange text-white text-xs font-semibold hover:bg-accent-orange/90 active:scale-95 transition-all shadow-md"
-          >
-            <ListPlus className="w-4 h-4" />
-            <span>Aggiungi Catalogo MDBList</span>
-          </button>
+          <div className="relative self-start sm:self-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsAddCustomOpen((prev) => !prev)
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-orange text-white text-xs font-semibold hover:bg-accent-orange/90 active:scale-95 transition-all shadow-md"
+            >
+              <ListPlus className="w-4 h-4" />
+              <span>Aggiungi Catalogo</span>
+            </button>
+            <CustomCatalogModal isOpen={isAddCustomOpen} onClose={() => setIsAddCustomOpen(false)} />
+          </div>
         </div>
       </ScrollReveal>
 
@@ -238,6 +242,8 @@ export function CataloghiView() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {customCatalogs.map((cat) => {
                 const isEnabled = cat.enabled !== false
+                const isMixed = cat.type === "mixed"
+                const isMovie = cat.type === "movie"
                 return (
                   <div
                     key={cat.id}
@@ -250,10 +256,14 @@ export function CataloghiView() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider ${
-                          cat.type === "movie" ? "bg-blue-500/15 text-blue-400 border border-blue-500/20" : "bg-purple-500/15 text-purple-400 border border-purple-500/20"
+                          isMixed
+                            ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+                            : isMovie
+                            ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
+                            : "bg-purple-500/15 text-purple-400 border border-purple-500/20"
                         }`}>
-                          {cat.type === "movie" ? <Film className="w-3 h-3" /> : <Tv className="w-3 h-3" />}
-                          {cat.type === "movie" ? "Film" : "Serie TV"}
+                          {isMixed ? <Shuffle className="w-3 h-3" /> : isMovie ? <Film className="w-3 h-3" /> : <Tv className="w-3 h-3" />}
+                          {isMixed ? "Misto" : isMovie ? "Film" : "Serie TV"}
                         </span>
                         <div className="flex items-center gap-1.5">
                           <button
