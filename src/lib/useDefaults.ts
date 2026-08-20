@@ -142,20 +142,20 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
     defaultLogoFitEnabled: d.defaultLogoFitEnabled ?? true,
     defaultNetworkLogo: d.defaultNetworkLogo ?? d.networkLogo ?? true,
     defaultRibbonSide: d.defaultRibbonSide ?? d.ribbonSide ?? "left",
-    globalBadges: d.globalBadges ?? true,
-    rankingBadges: d.rankingBadges ?? true,
-    badgeGenre: d.badgeGenre ?? true,
-    badgeYear: d.badgeYear ?? true,
-    badgeRating: d.badgeRating ?? true,
-    networkLogo: d.networkLogo ?? true,
-    ribbonSide: d.ribbonSide ?? "left",
-    gradientHeight: d.gradientHeight ?? 30,
-    blurIntensity: d.blurIntensity ?? 5,
-    blurFade: d.blurFade ?? 60,
-    blurDarkness: d.blurDarkness ?? 40,
-    blurEnabled: d.blurEnabled ?? true,
-    badgeStyle: d.badgeStyle ?? "shadow",
-    rankingBadgeStyle: d.rankingBadgeStyle ?? "default",
+    globalBadges: d.globalBadges ?? d.defaultGlobalBadges ?? true,
+    rankingBadges: d.rankingBadges ?? d.defaultRankingBadges ?? true,
+    badgeGenre: d.badgeGenre ?? d.defaultBadgeGenre ?? true,
+    badgeYear: d.badgeYear ?? d.defaultBadgeYear ?? true,
+    badgeRating: d.badgeRating ?? d.defaultBadgeRating ?? true,
+    networkLogo: d.networkLogo ?? d.defaultNetworkLogo ?? true,
+    ribbonSide: d.ribbonSide ?? d.defaultRibbonSide ?? "left",
+    gradientHeight: d.gradientHeight ?? d.defaultGradientHeight ?? 30,
+    blurIntensity: d.blurIntensity ?? d.defaultBlurIntensity ?? 5,
+    blurFade: d.blurFade ?? d.defaultBlurFade ?? 60,
+    blurDarkness: d.blurDarkness ?? d.defaultBlurDarkness ?? 40,
+    blurEnabled: d.blurEnabled ?? d.defaultBlurEnabled ?? true,
+    badgeStyle: d.badgeStyle ?? d.defaultBadgeStyle ?? "shadow",
+    rankingBadgeStyle: d.rankingBadgeStyle ?? d.defaultRankingBadgeStyle ?? "default",
   }
 }
 
@@ -204,20 +204,19 @@ export function useDefaults() {
     lastPersistRef.current = JSON.stringify(defaultsToPayload(hydrated))
   }, [])
 
-  // Auto-persist con debounce (1s): ogni cambio dei default scrive su localStorage
+  // Auto-persist: ogni cambio dei default scrive SUBITO su localStorage
   // e tenta il sync server (/api/defaults). Dedup via payload string — se cambiano
-  // solo i valori "corrente" (globalBadges, badgeStyle…) il payload resta identico
-  // e non viene schedulata nessuna scrittura. Il PUT server può ricevere 401 se è
-  // configurato un POSTERIUM_ADMIN_TOKEN: il catch silenzioso lascia il comportamento
-  // invariato (stesso fail-open del bottone manuale "Save Defaults").
+  // solo i valori "corrente" il payload resta identico e non viene riscritta.
   useEffect(() => {
     const payload = defaultsToPayload(state)
     const payloadStr = JSON.stringify(payload)
     if (lastPersistRef.current === payloadStr) return
     lastPersistRef.current = payloadStr
 
+    // Scrittura immediata e sincrona in localStorage ad ogni cambio
+    safeSetItem("badgeDefaults", payloadStr)
+
     const timer = setTimeout(() => {
-      safeSetItem("badgeDefaults", payloadStr)
       fetch("/api/defaults", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -229,7 +228,7 @@ export function useDefaults() {
         const message = error instanceof Error ? error.message : String(error)
         console.warn(`[defaults] Auto-sync failed: ${message}`)
       })
-    }, 1000)
+    }, 500)
 
     return () => clearTimeout(timer)
   }, [state])

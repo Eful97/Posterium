@@ -137,170 +137,6 @@ export function PosterEditorProvider({
 }) {
   const defaults = useDefaults()
 
-  const {
-    globalBadges, rankingBadges, networkLogo, ribbonSide,
-    badgeGenre, badgeYear, badgeRating,
-    gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled,
-    badgeStyle, rankingBadgeStyle,
-    defaultBadgeStyle, defaultRankingBadgeStyle,
-    defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness,
-    defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges,
-    defaultBadgeGenre, defaultBadgeYear, defaultBadgeRating,
-    defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo, defaultRibbonSide,
-    loadDefaultsToState, update,
-  } = defaults
-
-  const setGlobalBadges = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(globalBadges) : v
-      update({ globalBadges: next })
-    }, [globalBadges, update])
-  const setRankingBadges = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(rankingBadges) : v
-      update({ rankingBadges: next })
-    }, [rankingBadges, update])
-  const setBadgeGenre = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(badgeGenre) : v
-      update({ badgeGenre: next })
-    }, [badgeGenre, update])
-  const setBadgeYear = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(badgeYear) : v
-      update({ badgeYear: next })
-    }, [badgeYear, update])
-  const setBadgeRating = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(badgeRating) : v
-      update({ badgeRating: next })
-    }, [badgeRating, update])
-  const setNetworkLogo = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(networkLogo) : v
-      update({ networkLogo: next })
-    }, [networkLogo, update])
-  const setRibbonSide = useCallback(
-    (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => {
-      const next = typeof v === "function" ? v(ribbonSide) : v
-      update({ ribbonSide: next })
-    }, [ribbonSide, update])
-  const setGradientHeight = useCallback(
-    (v: number | ((prev: number) => number)) => {
-      const next = typeof v === "function" ? v(gradientHeight) : v
-      update({ gradientHeight: next })
-    }, [gradientHeight, update])
-  const setBlurIntensity = useCallback(
-    (v: number | ((prev: number) => number)) => {
-      const next = typeof v === "function" ? v(blurIntensity) : v
-      update({ blurIntensity: next })
-    }, [blurIntensity, update])
-  const setBlurFade = useCallback(
-    (v: number | ((prev: number) => number)) => {
-      const next = typeof v === "function" ? v(blurFade) : v
-      update({ blurFade: next })
-    }, [blurFade, update])
-  const setBlurDarkness = useCallback(
-    (v: number | ((prev: number) => number)) => {
-      const next = typeof v === "function" ? v(blurDarkness) : v
-      update({ blurDarkness: next })
-    }, [blurDarkness, update])
-  const setBlurEnabled = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(blurEnabled) : v
-      update({ blurEnabled: next })
-    }, [blurEnabled, update])
-  const setBadgeStyle = useCallback(
-    (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => {
-      const next = typeof v === "function" ? v(badgeStyle) : v
-      update({ badgeStyle: next })
-    }, [badgeStyle, update])
-  const setRankingBadgeStyle = useCallback(
-    (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => {
-      const next = typeof v === "function" ? v(rankingBadgeStyle) : v
-      update({ rankingBadgeStyle: next })
-    }, [rankingBadgeStyle, update])
-  const setDefaultBadgeStyle = useCallback(
-    (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => {
-      const next = typeof v === "function" ? v(defaultBadgeStyle) : v
-      update({ defaultBadgeStyle: next })
-    }, [defaultBadgeStyle, update])
-  const setDefaultRankingBadgeStyle = useCallback(
-    (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => {
-      const next = typeof v === "function" ? v(defaultRankingBadgeStyle) : v
-      update({ defaultRankingBadgeStyle: next })
-    }, [defaultRankingBadgeStyle, update])
-  const setDefaultBlurEnabled = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(defaultBlurEnabled) : v
-      update({ defaultBlurEnabled: next })
-    }, [defaultBlurEnabled, update])
-  const setDefaultBlurIntensity = useCallback(
-    (v: number | ((prev: number) => number)) => {
-      const next = typeof v === "function" ? v(defaultBlurIntensity) : v
-      update({ defaultBlurIntensity: next })
-    }, [defaultBlurIntensity, update])
-  const setDefaultBlurFade = useCallback(
-    (v: number | ((prev: number) => number)) => {
-      const next = typeof v === "function" ? v(defaultBlurFade) : v
-      update({ defaultBlurFade: next })
-    }, [defaultBlurFade, update])
-  const setDefaultBlurDarkness = useCallback(
-    (v: number | ((prev: number) => number)) => {
-      const next = typeof v === "function" ? v(defaultBlurDarkness) : v
-      update({ defaultBlurDarkness: next })
-    }, [defaultBlurDarkness, update])
-  const setDefaultGradientHeight = useCallback(
-    (v: number | ((prev: number) => number)) => {
-      const next = typeof v === "function" ? v(defaultGradientHeight) : v
-      update({ defaultGradientHeight: next })
-    }, [defaultGradientHeight, update])
-  const setDefaultGlobalBadges = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(defaultGlobalBadges) : v
-      update({ defaultGlobalBadges: next })
-    }, [defaultGlobalBadges, update])
-  const setDefaultRankingBadges = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(defaultRankingBadges) : v
-      update({ defaultRankingBadges: next })
-    }, [defaultRankingBadges, update])
-  const setDefaultBadgeGenre = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(defaultBadgeGenre) : v
-      update({ defaultBadgeGenre: next })
-    }, [defaultBadgeGenre, update])
-  const setDefaultBadgeYear = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(defaultBadgeYear) : v
-      update({ defaultBadgeYear: next })
-    }, [defaultBadgeYear, update])
-  const setDefaultBadgeRating = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(defaultBadgeRating) : v
-      update({ defaultBadgeRating: next })
-    }, [defaultBadgeRating, update])
-  const setDefaultAutoRotateClean = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(defaultAutoRotateClean) : v
-      update({ defaultAutoRotateClean: next })
-    }, [defaultAutoRotateClean, update])
-  const setDefaultLogoFitEnabled = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(defaultLogoFitEnabled) : v
-      update({ defaultLogoFitEnabled: next })
-    }, [defaultLogoFitEnabled, update])
-  const setDefaultNetworkLogo = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(defaultNetworkLogo) : v
-      update({ defaultNetworkLogo: next })
-    }, [defaultNetworkLogo, update])
-  const setDefaultRibbonSide = useCallback(
-    (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => {
-      const next = typeof v === "function" ? v(defaultRibbonSide) : v
-      update({ defaultRibbonSide: next })
-    }, [defaultRibbonSide, update])
-
   // ---- Logo state ----
   const [logoScale, setLogoScale] = useState(75)
   const [logoOffsetX, setLogoOffsetX] = useState(0)
@@ -321,6 +157,171 @@ export function PosterEditorProvider({
 
   // ---- Custom badge ----
   const [customBadge, setCustomBadge] = useState<string | null>(null)
+
+  const {
+    globalBadges, rankingBadges, networkLogo, ribbonSide,
+    badgeGenre, badgeYear, badgeRating,
+    gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled,
+    badgeStyle, rankingBadgeStyle,
+    defaultBadgeStyle, defaultRankingBadgeStyle,
+    defaultBlurEnabled, defaultBlurIntensity, defaultBlurFade, defaultBlurDarkness,
+    defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges,
+    defaultBadgeGenre, defaultBadgeYear, defaultBadgeRating,
+    defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo, defaultRibbonSide,
+    loadDefaultsToState, update,
+  } = defaults
+
+  const setGlobalBadges = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(globalBadges) : v
+      update({ globalBadges: next, defaultGlobalBadges: next })
+    }, [globalBadges, update])
+  const setRankingBadges = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(rankingBadges) : v
+      update({ rankingBadges: next, defaultRankingBadges: next })
+    }, [rankingBadges, update])
+  const setBadgeGenre = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(badgeGenre) : v
+      update({ badgeGenre: next, defaultBadgeGenre: next })
+    }, [badgeGenre, update])
+  const setBadgeYear = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(badgeYear) : v
+      update({ badgeYear: next, defaultBadgeYear: next })
+    }, [badgeYear, update])
+  const setBadgeRating = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(badgeRating) : v
+      update({ badgeRating: next, defaultBadgeRating: next })
+    }, [badgeRating, update])
+  const setNetworkLogo = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(networkLogo) : v
+      update({ networkLogo: next, defaultNetworkLogo: next })
+    }, [networkLogo, update])
+  const setRibbonSide = useCallback(
+    (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => {
+      const next = typeof v === "function" ? v(ribbonSide) : v
+      update({ ribbonSide: next, defaultRibbonSide: next })
+    }, [ribbonSide, update])
+  const setGradientHeight = useCallback(
+    (v: number | ((prev: number) => number)) => {
+      const next = typeof v === "function" ? v(gradientHeight) : v
+      update({ gradientHeight: next, defaultGradientHeight: next })
+    }, [gradientHeight, update])
+  const setBlurIntensity = useCallback(
+    (v: number | ((prev: number) => number)) => {
+      const next = typeof v === "function" ? v(blurIntensity) : v
+      update({ blurIntensity: next, defaultBlurIntensity: next })
+    }, [blurIntensity, update])
+  const setBlurFade = useCallback(
+    (v: number | ((prev: number) => number)) => {
+      const next = typeof v === "function" ? v(blurFade) : v
+      update({ blurFade: next, defaultBlurFade: next })
+    }, [blurFade, update])
+  const setBlurDarkness = useCallback(
+    (v: number | ((prev: number) => number)) => {
+      const next = typeof v === "function" ? v(blurDarkness) : v
+      update({ blurDarkness: next, defaultBlurDarkness: next })
+    }, [blurDarkness, update])
+  const setBlurEnabled = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(blurEnabled) : v
+      update({ blurEnabled: next, defaultBlurEnabled: next })
+    }, [blurEnabled, update])
+  const setBadgeStyle = useCallback(
+    (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => {
+      const next = typeof v === "function" ? v(badgeStyle) : v
+      update({ badgeStyle: next, defaultBadgeStyle: next })
+    }, [badgeStyle, update])
+  const setRankingBadgeStyle = useCallback(
+    (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => {
+      const next = typeof v === "function" ? v(rankingBadgeStyle) : v
+      update({ rankingBadgeStyle: next, defaultRankingBadgeStyle: next })
+    }, [rankingBadgeStyle, update])
+  const setDefaultBadgeStyle = useCallback(
+    (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => {
+      const next = typeof v === "function" ? v(defaultBadgeStyle) : v
+      update({ defaultBadgeStyle: next, badgeStyle: next })
+    }, [defaultBadgeStyle, update])
+  const setDefaultRankingBadgeStyle = useCallback(
+    (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => {
+      const next = typeof v === "function" ? v(defaultRankingBadgeStyle) : v
+      update({ defaultRankingBadgeStyle: next, rankingBadgeStyle: next })
+    }, [defaultRankingBadgeStyle, update])
+  const setDefaultBlurEnabled = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultBlurEnabled) : v
+      update({ defaultBlurEnabled: next, blurEnabled: next })
+    }, [defaultBlurEnabled, update])
+  const setDefaultBlurIntensity = useCallback(
+    (v: number | ((prev: number) => number)) => {
+      const next = typeof v === "function" ? v(defaultBlurIntensity) : v
+      update({ defaultBlurIntensity: next, blurIntensity: next })
+    }, [defaultBlurIntensity, update])
+  const setDefaultBlurFade = useCallback(
+    (v: number | ((prev: number) => number)) => {
+      const next = typeof v === "function" ? v(defaultBlurFade) : v
+      update({ defaultBlurFade: next, blurFade: next })
+    }, [defaultBlurFade, update])
+  const setDefaultBlurDarkness = useCallback(
+    (v: number | ((prev: number) => number)) => {
+      const next = typeof v === "function" ? v(defaultBlurDarkness) : v
+      update({ defaultBlurDarkness: next, blurDarkness: next })
+    }, [defaultBlurDarkness, update])
+  const setDefaultGradientHeight = useCallback(
+    (v: number | ((prev: number) => number)) => {
+      const next = typeof v === "function" ? v(defaultGradientHeight) : v
+      update({ defaultGradientHeight: next, gradientHeight: next })
+    }, [defaultGradientHeight, update])
+  const setDefaultGlobalBadges = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultGlobalBadges) : v
+      update({ defaultGlobalBadges: next, globalBadges: next })
+    }, [defaultGlobalBadges, update])
+  const setDefaultRankingBadges = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultRankingBadges) : v
+      update({ defaultRankingBadges: next, rankingBadges: next })
+    }, [defaultRankingBadges, update])
+  const setDefaultBadgeGenre = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultBadgeGenre) : v
+      update({ defaultBadgeGenre: next, badgeGenre: next })
+    }, [defaultBadgeGenre, update])
+  const setDefaultBadgeYear = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultBadgeYear) : v
+      update({ defaultBadgeYear: next, badgeYear: next })
+    }, [defaultBadgeYear, update])
+  const setDefaultBadgeRating = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultBadgeRating) : v
+      update({ defaultBadgeRating: next, badgeRating: next })
+    }, [defaultBadgeRating, update])
+  const setDefaultAutoRotateClean = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultAutoRotateClean) : v
+      update({ defaultAutoRotateClean: next })
+      setAutoRotateClean(next)
+    }, [defaultAutoRotateClean, update])
+  const setDefaultLogoFitEnabled = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultLogoFitEnabled) : v
+      update({ defaultLogoFitEnabled: next })
+    }, [defaultLogoFitEnabled, update])
+  const setDefaultNetworkLogo = useCallback(
+    (v: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof v === "function" ? v(defaultNetworkLogo) : v
+      update({ defaultNetworkLogo: next, networkLogo: next })
+    }, [defaultNetworkLogo, update])
+  const setDefaultRibbonSide = useCallback(
+    (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => {
+      const next = typeof v === "function" ? v(defaultRibbonSide) : v
+      update({ defaultRibbonSide: next, ribbonSide: next })
+    }, [defaultRibbonSide, update])
 
   const editorCtx = useMemo<PosterEditorCtx>(
     () => ({

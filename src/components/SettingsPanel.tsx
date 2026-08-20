@@ -104,25 +104,25 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       <hr className="border-surface2/60 my-1" />
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Star className="w-3 h-3" /> {t("ui.genreRatingBadge")}</span>
-        <Toggle value={ed.defaultGlobalBadges} onChange={ed.setDefaultGlobalBadges} label={t("ui.genreRatingBadge")} />
+        <Toggle value={ed.defaultGlobalBadges} onChange={(v) => { ed.setDefaultGlobalBadges(v); ed.setGlobalBadges(v) }} label={t("ui.genreRatingBadge")} />
       </div>
       <div className="pl-4 space-y-1 border-l border-surface2/60 ml-1.5">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted">{t("ui.badgeGenre")}</span>
-          <Toggle value={ed.defaultBadgeGenre} onChange={ed.setDefaultBadgeGenre} label={t("ui.badgeGenre")} />
+          <Toggle value={ed.defaultBadgeGenre} onChange={(v) => { ed.setDefaultBadgeGenre(v); ed.setBadgeGenre(v) }} label={t("ui.badgeGenre")} />
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted">{t("ui.badgeYear")}</span>
-          <Toggle value={ed.defaultBadgeYear} onChange={ed.setDefaultBadgeYear} label={t("ui.badgeYear")} />
+          <Toggle value={ed.defaultBadgeYear} onChange={(v) => { ed.setDefaultBadgeYear(v); ed.setBadgeYear(v) }} label={t("ui.badgeYear")} />
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted">{t("ui.badgeRating")}</span>
-          <Toggle value={ed.defaultBadgeRating} onChange={ed.setDefaultBadgeRating} label={t("ui.badgeRating")} />
+          <Toggle value={ed.defaultBadgeRating} onChange={(v) => { ed.setDefaultBadgeRating(v); ed.setBadgeRating(v) }} label={t("ui.badgeRating")} />
         </div>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {t("ui.trendBadge")}</span>
-        <Toggle value={ed.defaultRankingBadges} onChange={ed.setDefaultRankingBadges} label={t("ui.trendBadge")} />
+        <Toggle value={ed.defaultRankingBadges} onChange={(v) => { ed.setDefaultRankingBadges(v); ed.setRankingBadges(v) }} label={t("ui.trendBadge")} />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Tv className="w-3 h-3" /> {t("ui.networkLogo")}</span>
@@ -153,23 +153,23 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       </div>
       <hr className="border-border my-1" />
       <label className="text-xs text-muted font-medium flex items-center gap-1.5"><Circle className="w-3 h-3" /> {t("ui.styleRankingDefault")}</label>
-      <BadgeStyleSelector value={ed.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill"]} onChange={ed.setDefaultRankingBadgeStyle} t={t} accentColor={accentColor} />
+      <BadgeStyleSelector value={ed.defaultRankingBadgeStyle} options={["default", "bar", "colored", "pill"]} onChange={(v) => { ed.setDefaultRankingBadgeStyle(v); ed.setRankingBadgeStyle(v) }} t={t} accentColor={accentColor} />
       <label className="text-xs text-muted font-medium flex items-center gap-1.5 mt-1"><Palette className="w-3 h-3" /> {t("ui.styleDefault")}</label>
-      <BadgeStyleSelector value={ed.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored", "bordo", "vetro"]} onChange={ed.setDefaultBadgeStyle} t={t} />
+      <BadgeStyleSelector value={ed.defaultBadgeStyle} options={["shadow", "pill", "bar", "colored", "bordo", "vetro"]} onChange={(v) => { ed.setDefaultBadgeStyle(v); ed.setBadgeStyle(v) }} t={t} />
       <hr className="border-border my-1" />
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-muted">{t("ui.blurDefault")}</span>
-        <Toggle value={ed.defaultBlurEnabled} onChange={ed.setDefaultBlurEnabled} label={t("ui.blurDefault")} />
+        <Toggle value={ed.defaultBlurEnabled} onChange={(v) => { ed.setDefaultBlurEnabled(v); ed.setBlurEnabled(v) }} label={t("ui.blurDefault")} />
       </div>
       {ed.defaultBlurEnabled && <>
-        <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => ed.setDefaultGradientHeight(v)} onDoubleClick={() => ed.setDefaultGradientHeight(30)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="gh" suffix="%" />
-        <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={t("ui.intensity")} value={ed.defaultBlurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => ed.setDefaultBlurIntensity(v)} onDoubleClick={() => ed.setDefaultBlurIntensity(5)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bi" suffix="px" />
-        <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={t("ui.fade")} value={ed.defaultBlurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setDefaultBlurFade(v)} onDoubleClick={() => ed.setDefaultBlurFade(60)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bf" suffix="%" />
-        <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={t("ui.darkness")} value={ed.defaultBlurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => ed.setDefaultBlurDarkness(v)} onDoubleClick={() => ed.setDefaultBlurDarkness(40)} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bd" suffix="%" />
+        <SliderRow icon={<Ruler className="w-3.5 h-3.5" />} label={t("ui.height")} value={ed.defaultGradientHeight} min={5} max={100} boundsMin={5} boundsMax={100} onChange={(v) => { ed.setDefaultGradientHeight(v); ed.setGradientHeight(v) }} onDoubleClick={() => { ed.setDefaultGradientHeight(30); ed.setGradientHeight(30) }} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="gh" suffix="%" />
+        <SliderRow icon={<Cloud className="w-3.5 h-3.5" />} label={t("ui.intensity")} value={ed.defaultBlurIntensity} min={1} max={50} boundsMin={1} boundsMax={50} onChange={(v) => { ed.setDefaultBlurIntensity(v); ed.setBlurIntensity(v) }} onDoubleClick={() => { ed.setDefaultBlurIntensity(5); ed.setBlurIntensity(5) }} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bi" suffix="px" />
+        <SliderRow icon={<Minus className="w-3.5 h-3.5" />} label={t("ui.fade")} value={ed.defaultBlurFade} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { ed.setDefaultBlurFade(v); ed.setBlurFade(v) }} onDoubleClick={() => { ed.setDefaultBlurFade(60); ed.setBlurFade(60) }} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bf" suffix="%" />
+        <SliderRow icon={<Circle className="w-3.5 h-3.5" />} label={t("ui.darkness")} value={ed.defaultBlurDarkness} min={0} max={100} boundsMin={0} boundsMax={100} onChange={(v) => { ed.setDefaultBlurDarkness(v); ed.setBlurDarkness(v) }} onDoubleClick={() => { ed.setDefaultBlurDarkness(40); ed.setBlurDarkness(40) }} editingValue={editVal} editText={editTxt} setEditingValue={setEditVal} setEditText={setEditTxt} editingKey="bd" suffix="%" />
       </>}
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-muted flex items-center gap-1.5"><RotateCcw className="w-3 h-3" /> {t("ui.autoRotateDefault")}</span>
-        <Toggle value={ed.defaultAutoRotateClean} onChange={ed.setDefaultAutoRotateClean} label={t("ui.autoRotateDefault")} />
+        <Toggle value={ed.defaultAutoRotateClean} onChange={(v) => { ed.setDefaultAutoRotateClean(v); ed.setAutoRotateClean(v) }} label={t("ui.autoRotateDefault")} />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted flex items-center gap-1.5"><Palette className="w-3 h-3" /> {t("ui.uiAccentDynamic")}</span>

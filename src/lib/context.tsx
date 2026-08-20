@@ -312,8 +312,12 @@ export function usePosterium(): PosteriumCtx {
     // Defaults
     defaultBadgeStyle, setDefaultBadgeStyle,
     defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
-    setDefaultGlobalBadges,
-    setDefaultRankingBadges,
+    defaultGlobalBadges, setDefaultGlobalBadges,
+    defaultRankingBadges, setDefaultRankingBadges,
+    defaultBadgeGenre,
+    defaultBadgeYear,
+    defaultBadgeRating,
+    defaultRibbonSide,
     setRibbonSide,
     setDefaultLogoFitEnabled,
     defaultBlurEnabled,
@@ -905,11 +909,13 @@ export function usePosterium(): PosteriumCtx {
     if (existing) {
       setBadgeStyle(existing.badgeStyle ?? defaultBadgeStyle)
       setRankingBadgeStyle(existing.rankingBadgeStyle ?? defaultRankingBadgeStyle)
-      setGlobalBadges(existing.showBadges ?? true)
-      setRankingBadges(existing.rankingBadges ?? true)
-      setBadgeGenre(existing.badgeGenre ?? true)
-      setBadgeYear(existing.badgeYear ?? true)
-      setBadgeRating(existing.badgeRating ?? true)
+      setGlobalBadges(existing.showBadges ?? defaultGlobalBadges)
+      setRankingBadges(existing.rankingBadges ?? defaultRankingBadges)
+      setBadgeGenre(existing.badgeGenre ?? defaultBadgeGenre)
+      setBadgeYear(existing.badgeYear ?? defaultBadgeYear)
+      setBadgeRating(existing.badgeRating ?? defaultBadgeRating)
+      setNetworkLogo(existing.networkLogo ?? defaultNetworkLogo)
+      setRibbonSide(existing.ribbonSide ?? defaultRibbonSide)
       setGradientHeight(existing.gradientHeight ?? defaultGradientHeight)
       setBlurIntensity(existing.blurIntensity ?? defaultBlurIntensity)
       setBlurFade(existing.blurFade ?? defaultBlurFade)
@@ -917,7 +923,7 @@ export function usePosterium(): PosteriumCtx {
       setBlurEnabled(existing.blurEnabled ?? defaultBlurEnabled)
       setCustomBadge(existing.customBadge ?? null)
       setRotationPosters(existing.cleanPosters || [])
-      setAutoRotateClean(existing.autoRotateClean ?? false)
+      setAutoRotateClean(existing.autoRotateClean ?? defaultAutoRotateClean)
       setExcludedPosters(existing.excludedPosters || [])
       setLogoDisabled(existing.logoDisabled ?? false)
       setLogoOffsetX(existing.logoOffsetX ?? 0)
@@ -926,9 +932,23 @@ export function usePosterium(): PosteriumCtx {
       setBackdropOffsetX(existing.backdropOffsetX ?? 0)
       setBackdropOffsetY(existing.backdropOffsetY ?? 0)
     } else {
+      setBadgeStyle(defaultBadgeStyle)
+      setRankingBadgeStyle(defaultRankingBadgeStyle)
+      setGlobalBadges(defaultGlobalBadges)
+      setRankingBadges(defaultRankingBadges)
+      setBadgeGenre(defaultBadgeGenre)
+      setBadgeYear(defaultBadgeYear)
+      setBadgeRating(defaultBadgeRating)
+      setGradientHeight(defaultGradientHeight)
+      setBlurIntensity(defaultBlurIntensity)
+      setBlurFade(defaultBlurFade)
+      setBlurDarkness(defaultBlurDarkness)
+      setBlurEnabled(defaultBlurEnabled)
+      setNetworkLogo(defaultNetworkLogo)
+      setRibbonSide(defaultRibbonSide)
       setCustomBadge(null)
       setRotationPosters([])
-      setAutoRotateClean(false)
+      setAutoRotateClean(defaultAutoRotateClean)
       setExcludedPosters([])
       setLogoDisabled(false)
       setLogoOffsetX(0)

@@ -145,7 +145,7 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
     // Fix M1: l'anno della preview — senza, il server non imposta
     // releaseDate/firstAirDate nel ramo query e il badge genere della preview
     // omette "• 2024" che compare invece sul poster finale.
-    const year = ps.metaInfo.release_date?.slice(0, 4) || ps.metaInfo.first_air_date?.slice(0, 4)
+    const year = ps.metaInfo.release_date?.slice(0, 4) || ps.metaInfo.first_air_date?.slice(0, 4) || ps.selected?.release_date?.slice(0, 4) || ps.selected?.first_air_date?.slice(0, 4)
     if (year) params.push(`year=${year}`)
     const imdbId = ps.metaInfo.imdb_id || ps.selected.imdb_id
     if (imdbId) params.push(`imdbId=${encodeURIComponent(imdbId)}`)
