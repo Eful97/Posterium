@@ -187,7 +187,8 @@ export async function getTvdbEpisodes(tvdbSeriesId: number, language = "ita", ap
     let hasMore = true
 
     while (hasMore && page < 10) {
-      const url = `${TVDB_BASE}/series/${tvdbSeriesId}/episodes/default/${encodeURIComponent(language)}?page=${page}`
+      const langSegment = language && language !== "default" ? `/${encodeURIComponent(language)}` : ""
+      const url = `${TVDB_BASE}/series/${tvdbSeriesId}/episodes/default${langSegment}?page=${page}`
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -197,8 +198,8 @@ export async function getTvdbEpisodes(tvdbSeriesId: number, language = "ita", ap
       })
 
       if (!res.ok) {
-        // Se la lingua specifica (es. ita) fallisce, prova il default generico
-        if (page === 0 && language !== "eng" && language !== "default") {
+        // Se la lingua specifica (es. ita) fallisce o non ha episodi, prova il default
+        if (page === 0 && language !== "default") {
           return getTvdbEpisodes(tvdbSeriesId, "default", apiKey)
         }
         break

@@ -102,6 +102,34 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
     }
   }
 
+  const validateKey = async (provider: "tmdb" | "mdblist" | "tvdb", key: string): Promise<boolean> => {
+    if (!key.trim()) return false
+    try {
+      const res = await fetch("/api/validate-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, key: key.trim() }),
+      })
+      const data = await res.json()
+      if (data.valid === true) {
+        toast.success(
+          provider === "tmdb"
+            ? "Chiave TMDB valida ✓"
+            : provider === "mdblist"
+              ? "Chiave MDBList valida ✓"
+              : "Chiave TheTVDB valida ✓"
+        )
+        return true
+      } else {
+        toast.error(data.message || "Chiave non valida o scaduta")
+        return false
+      }
+    } catch {
+      toast.error("Errore durante la verifica della chiave")
+      return false
+    }
+  }
+
   const content = (
     <div className="space-y-3.5 text-xs">
       {/* SEZIONE 1: Chiavi API */}
@@ -115,6 +143,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
           onKeyDown={(e) => { if (e.key === "Enter") { setTmdbKey(tmdbKeyInput); setSettingsOpen(false) } }}
           placeholder={t("ui.tmdbKeyPlaceholder")}
           error={tmdbKeyError}
+          onValidate={(k) => validateKey("tmdb", k)}
         />
         <SecretInput
           label={t("ui.mdblistKey")}
@@ -124,6 +153,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
           onBlur={() => { if (mdblistApiKey.length > 0 && mdblistApiKey.length < 20) { setMdblistKeyError(t("ui.keyTooShort")); } else { setMdblistKeyError(undefined) } }}
           placeholder={t("ui.mdblistKeyPlaceholder")}
           error={mdblistKeyError}
+          onValidate={(k) => validateKey("mdblist", k)}
         />
         <SecretInput
           label={t("ui.tvdbKey")}
@@ -133,6 +163,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
           onBlur={() => { if (tvdbApiKey.length > 0 && tvdbApiKey.length < 10) { setTvdbKeyError(t("ui.keyTooShort")); } else { setTvdbKeyError(undefined) } }}
           placeholder={t("ui.tvdbKeyPlaceholder")}
           error={tvdbKeyError}
+          onValidate={(k) => validateKey("tvdb", k)}
         />
       </div>
 

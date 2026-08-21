@@ -12,6 +12,7 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
     badgeGenre: ed.defaultBadgeGenre,
     badgeYear: ed.defaultBadgeYear,
     badgeRating: ed.defaultBadgeRating,
+    ratingSources: ed.defaultRatingSources,
     badgeStyle: ed.defaultBadgeStyle,
     rankingBadgeStyle: ed.defaultRankingBadgeStyle,
     blurEnabled: ed.defaultBlurEnabled,
@@ -23,8 +24,10 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
     defaultLogoFitEnabled: ed.defaultLogoFitEnabled,
     defaultNetworkLogo: ed.defaultNetworkLogo,
     defaultRibbonSide: ed.defaultRibbonSide,
+    defaultEpisodeMetadataSource: ed.defaultEpisodeMetadataSource,
     networkLogo: ed.defaultNetworkLogo,
     ribbonSide: ed.defaultRibbonSide,
+    episodeMetadataSource: ed.defaultEpisodeMetadataSource,
   }
   safeSetItem("badgeDefaults", JSON.stringify(d))
   void fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })

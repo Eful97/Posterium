@@ -1,7 +1,5 @@
-"use client"
-
 import { useState } from "react"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Check, X, Loader2, ShieldCheck } from "lucide-react"
 
 export function SecretInput({
   label,
@@ -13,6 +11,7 @@ export function SecretInput({
   placeholder,
   className = "",
   error,
+  onValidate,
 }: {
   label: string
   icon: React.ReactNode
@@ -23,8 +22,31 @@ export function SecretInput({
   placeholder?: string
   className?: string
   error?: string
+  onValidate?: (v: string) => Promise<boolean | void>
 }) {
   const [show, setShow] = useState(false)
+  const [validating, setValidating] = useState(false)
+  const [validStatus, setValidStatus] = useState<"valid" | "invalid" | null>(null)
+
+  const handleValidate = async () => {
+    if (!onValidate || validating) return
+    setValidating(true)
+    setValidStatus(null)
+    try {
+      const res = await onValidate(value)
+      if (res !== false) {
+        setValidStatus("valid")
+      } else {
+        setValidStatus("invalid")
+      }
+    } catch {
+      setValidStatus("invalid")
+    } finally {
+      setValidating(false)
+      setTimeout(() => setValidStatus(null), 3000)
+    }
+  }
+
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       <label className="text-xs text-muted font-medium flex items-center gap-1.5">
@@ -35,7 +57,10 @@ export function SecretInput({
         <input
           type={show ? "text" : "password"}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value)
+            setValidStatus(null)
+          }}
           onBlur={onBlur}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
@@ -44,11 +69,38 @@ export function SecretInput({
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
-          className="px-2 bg-surface2 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150"
+          className="px-2 bg-surface2 rounded-lg text-xs hover:bg-zinc-700 active:scale-90 transition-all duration-150 text-zinc-300"
           aria-label={show ? "Hide password" : "Show password"}
+          title={show ? "Nascondi chiave" : "Mostra chiave"}
         >
-          {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          {show ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
         </button>
+        {onValidate && (
+          <button
+            type="button"
+            disabled={validating || !value.trim()}
+            onClick={handleValidate}
+            className={`px-2 rounded-lg text-xs font-medium border transition-all duration-150 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed ${
+              validStatus === "valid"
+                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                : validStatus === "invalid"
+                  ? "bg-red-500/20 text-red-400 border-red-500/40"
+                  : "bg-surface2 border-surface2/60 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-90"
+            }`}
+            title="Verifica validità chiave"
+            aria-label="Verifica validità chiave"
+          >
+            {validating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-orange" />
+            ) : validStatus === "valid" ? (
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+            ) : validStatus === "invalid" ? (
+              <X className="w-3.5 h-3.5 text-red-400" />
+            ) : (
+              <ShieldCheck className="w-3.5 h-3.5" />
+            )}
+          </button>
+        )}
       </div>
       {error && <p className="text-[10px] text-danger font-medium">{error}</p>}
     </div>

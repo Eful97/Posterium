@@ -220,6 +220,26 @@ export function useDefaults() {
     const hydrated = buildFromStored(stored)
     setState(hydrated)
     lastPersistRef.current = JSON.stringify(defaultsToPayload(hydrated))
+
+    fetch("/api/defaults")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((serverData) => {
+        if (!serverData) return
+        const currentStored = readStoredDefaults()
+        const merged: StoredDefaults = {
+          ...(serverData || {}),
+          ...(currentStored || {}),
+        }
+        if (!currentStored?.episodeMetadataSource && !currentStored?.defaultEpisodeMetadataSource && serverData.episodeMetadataSource) {
+          merged.defaultEpisodeMetadataSource = serverData.episodeMetadataSource
+          merged.episodeMetadataSource = serverData.episodeMetadataSource
+        }
+        const updated = buildFromStored(merged)
+        setState(updated)
+        lastPersistRef.current = JSON.stringify(defaultsToPayload(updated))
+        safeSetItem("badgeDefaults", JSON.stringify(defaultsToPayload(updated)))
+      })
+      .catch(() => {})
   }, [])
 
   // Auto-persist: ogni cambio dei default scrive SUBITO su localStorage

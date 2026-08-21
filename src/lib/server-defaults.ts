@@ -86,6 +86,8 @@ function defaultsFromEnv(): ServerDefaults {
   const blurF = envNum("POSTERIUM_BLUR_FADE")
   const blurD = envNum("POSTERIUM_BLUR_DARKNESS")
   const gradH = envNum("POSTERIUM_GRADIENT_HEIGHT")
+  const epSrc = process.env.POSTERIUM_EPISODE_METADATA_SOURCE?.trim().toLowerCase()
+  if (epSrc === "tmdb" || epSrc === "tvdb") d.episodeMetadataSource = epSrc
   if (bs && isBadgeStyle(bs)) d.badgeStyle = bs
   if (rbs && isRankingBadgeStyle(rbs)) d.rankingBadgeStyle = rbs
   if (side === "left" || side === "right") d.ribbonSide = side
