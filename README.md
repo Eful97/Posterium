@@ -122,7 +122,7 @@ Scegli la modalità di hosting più adatta alle tue esigenze:
 
 | Piattaforma | Costo | Tipologia | Persistenza | Ideale per |
 |---|---|---|---|---|
-| [▲ Vercel](#vercel) | **Gratis** (Hobby) | Serverless | Upstash Redis (KV) o Stateless | **Iniziare subito**: 1 click, zero manutenzione, CDN globale |
+| [▲ Vercel](#vercel) | **Gratis** (Hobby) | Serverless | Upstash Redis (KV) | **Iniziare subito**: 1 click, zero manutenzione, CDN globale |
 | [🤗 Hugging Face Spaces](#hf-spaces) | **Gratis** (Base) / PRO | Docker (16GB RAM) | Storage Bucket (`/data`) | Ottime prestazioni con 16GB di RAM |
 | [🦾 Oracle Cloud A1](#oracle) | **Gratis 24/7** | VPS ARM (4 OCPU / 24GB) | Disco Locale (`/data`) | Massima potenza e sempre online a costo zero |
 | [🐳 Docker / Docker Compose](#docker) | **Gratis** | Container | Volume (`posterium-data`) | Self-hosting su proprio server/NAS |
@@ -132,68 +132,46 @@ Scegli la modalità di hosting più adatta alle tue esigenze:
 ---
 
 <details id="vercel" open>
-<summary><strong>▲ Vercel — Guida Passo-Passo (Consigliato per iniziare)</strong></summary>
+<summary><strong>▲ Vercel — Guida Passo-Passo Rapida (Consigliato)</strong></summary>
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FEful97%2FPosterium)
 
-Vercel permette di mettere online Posterium in 2 minuti senza configurare alcun server. Ciascun utente crea la **propria istanza personale** con le **proprie chiavi API**.
+Vercel permette di mettere online Posterium in 2 minuti senza configurare alcun server, con persistenza cloud gratuita per conservare per sempre i tuoi poster personalizzati e cataloghi.
 
 ### 🧰 Cosa ti serve prima di iniziare
 1. **Account Vercel gratuito**: [vercel.com/signup](https://vercel.com/signup) (accedi con GitHub).
-2. **Chiave API TMDB gratuita**: [themoviedb.org → Settings → API](https://www.themoviedb.org/settings/api) (richiedi una chiave *Developer*).
-3. **Chiave API MDBList opzionale**: [mdblist.com/preferences](https://mdblist.com/preferences/) (per Top 10 anime/Netflix).
+2. **Chiave API TMDB gratuita**: [themoviedb.org → Settings → API](https://www.themoviedb.org/settings/api).
+3. **Chiavi Opzionali**: [MDBList](https://mdblist.com/preferences/) (per liste personalizzate/anime) e [TheTVDB](https://thetvdb.com/dashboard/account/apikeys) (per episodi).
 
 ---
 
-### 👣 Installazione in 4 Passaggi
+### 👣 Installazione Rapida in 4 Passaggi
 
 #### 1. Crea il progetto su Vercel
-* Clicca il pulsante **Deploy with Vercel** qui sopra (oppure da Vercel Dashboard vai su **Add New… → Project** e importa `Eful97/Posterium`).
-* Lascia tutte le impostazioni predefinite (Framework: **Next.js**) e clicca **Deploy**.
-* Attendi ~1-2 minuti fino alla conferma ✅ **Ready**.
+* Clicca sul pulsante **Deploy with Vercel** qui sopra.
+* Lascia tutte le opzioni predefinite e clicca **Deploy** (attendi ~1 minuto fino a ✅ **Ready**).
 
-#### 2. Configura le Variabili d'Ambiente Fondamentali
-Vai su **Vercel Dashboard → il tuo progetto Posterium → Settings → Environment Variables** e aggiungi queste 3 variabili:
+#### 2. Collega lo Storage Cloud Gratuito (Upstash KV)
+Per salvare i poster personalizzati e i cataloghi:
+1. Nella Dashboard del tuo progetto su Vercel, clicca sul tab **Storage** in alto.
+2. Clicca **Create Database** → seleziona **Upstash** (Redis) → clicca **Continue** e collegalo al tuo progetto.
+3. Vercel configurerà automaticamente `KV_REST_API_URL` e `KV_REST_API_TOKEN`.
 
-| Nome Variabile | Valore da inserire | A cosa serve |
+#### 3. Imposta le Variabili d'Ambiente
+Vai in **Settings → Environment Variables** e aggiungi:
+
+| Nome Variabile | Valore | A cosa serve |
 |---|---|---|
-| `CONFIG_HMAC_SECRET` | Stringa casuale lunga (es. generata da terminale con `openssl rand -hex 32` o 64 caratteri hex) | **Firma digitale dei link**: indispensabile per firmare i profili e i parametri URL. |
-| `POSTERIUM_PUBLIC_INSTANCE` | `1` | **Sblocca l'editor**: permette di salvare i poster e usare il *Best-fit 1-click* in produzione senza token admin. |
-| `POSTERIUM_TMDB_KEY` | La tua chiave API TMDB personale | **Cataloghi Stremio automatici**: popola i cataloghi sulla tua istanza personale senza dover inserire `?api_key=` a mano. *(Opzionale: puoi aggiungere anche `POSTERIUM_MDBLIST_KEY`)*. |
+| `POSTERIUM_PUBLIC_INSTANCE` | `1` | **Sblocca l'editor**: permette di salvare i poster e modificare i cataloghi. |
+| `POSTERIUM_TMDB_KEY` | *La tua chiave TMDB* | **Cataloghi & Locandine**: popola e renderizza automaticamente i poster su Stremio. |
+| `POSTERIUM_MDBLIST_KEY` | *(Opzionale)* | **Liste MDBList**: per importare e visualizzare le liste personalizzate. |
+| `POSTERIUM_TVDB_API_KEY` | *(Opzionale)* | **Episodi TVDB**: per descrizioni e thumbnail degli episodi da TheTVDB. |
 
-#### 3. Rendi effettive le modifiche (Redeploy)
-Su Vercel le variabili d'ambiente sono lette durante la build:
-* Vai nella scheda **Deployments** in alto.
-* Trova l'ultimo deploy, clicca sui **tre puntini ⋯** → seleziona **Redeploy** e conferma.
+#### 4. Applica le modifiche (Redeploy) & Installa su Stremio
+1. Vai nella scheda **Deployments** → clicca sui **tre puntini ⋯** accanto all'ultimo deploy → seleziona **Redeploy**.
+2. Apri il tuo sito `https://<tuo-progetto>.vercel.app` e clicca **Installa su Stremio** (oppure incolla `https://<tuo-progetto>.vercel.app/manifest.json` in Stremio/Nuvio).
 
-#### 4. Collega Posterium a Stremio
-* Apri il tuo sito: `https://<tuo-progetto>.vercel.app`.
-* Copia il link del manifest e incollalo nella barra di ricerca di Stremio:
-  * Manifest Standard: `https://<tuo-progetto>.vercel.app/manifest.json`
-
----
-
-### 🔀 Gestione della Persistenza: Scegli la tua modalità
-
-#### 🟢 Modalità Stateless ("Strada Semplice" — Zero Database)
-Con i 4 passi appena completati hai già tutto funzionante. Quando salvi una configurazione dall'interfaccia, le impostazioni vengono firmate digitalmente direttamente nell'URL (`?config=eyJ...`) e memorizzate nel browser.
-* ✅ Nessun database da configurare.
-* ✅ Condivisione facile dei link tra i tuoi dispositivi.
-* ⚠️ Non memorizza i mapping specifici per singolo film/serie tra diversi browser.
-
-#### 🔵 Modalità Upstash Redis ("Strada Completa" — Con Database Cloud Gratuito)
-Per salvare profili protetti da password (`/u/<uuid>/manifest.json`) e mapping per-titolo persistenti nel cloud:
-1. Nella Dashboard di Vercel, clicca sulla scheda **Storage** → **Create Database** → seleziona **Upstash** (Redis).
-2. Collega il database al tuo progetto Posterium.
-3. Verifica che le variabili create nel progetto siano nominate esattamente `KV_REST_API_URL` e `KV_REST_API_TOKEN` (se hanno prefisso `UPSTASH_`, aggiungi un alias con `KV_REST_API_*`).
-4. Effettua un **Redeploy** (Deployments → ⋯ → Redeploy).
-5. Verifica aprendo `https://<tuo-progetto>.vercel.app/api/status`: nella sezione **storage** leggerai `kv`.
-
----
-
-### ℹ️ Note importanti su Vercel Hobby
-* **Timeout funzioni (10–15s)**: Il piano gratuito di Vercel applica un timeout di 10–15 secondi per singola richiesta. Se apri per la prima volta un catalogo molto esteso a freddo, un poster potrebbe andare in timeout temporaneo: è sufficiente ricaricare la schermata.
-* **Cold Starts**: Se l'istanza rimane inattiva, la funzione serverless si spegne. Il primo caricamento successivo richiederà ~1-2 secondi in più per risvegliarsi, poi la CDN di Vercel manterrà i poster in cache per 24 ore.
+> 💡 **Verifica Storage**: Aprendo `https://<tuo-progetto>.vercel.app/api/status` vedrai `storage: "kv"` a conferma che la persistenza è attiva.
 </details>
 
 ---
