@@ -234,11 +234,17 @@ export async function posteriumMeta(
     if (stType === "series") {
       videos = []
 
-      // Controlla se esistono Episode Groups alternativi (es. Netflix Order / Digital per La Casa di Carta, Lupin, ecc.)
+      // Controlla se esistono Episode Groups alternativi (es. Italian Part, Netflix Order, Digital, ecc.)
       const epGroups = await getTVEpisodeGroups(tmdbId, apiKey)
       const preferredGroup = epGroups.find((g) => {
         const n = g.name.toLowerCase()
-        return n.includes("netflix") || n.includes("digital") || (g.type === 1 && g.group_count > 1)
+        return n.includes("italian") || n.includes("italia") || n.includes("italy")
+      }) || epGroups.find((g) => {
+        const n = g.name.toLowerCase()
+        return n.includes("netflix")
+      }) || epGroups.find((g) => {
+        const n = g.name.toLowerCase()
+        return n.includes("digital") || n.includes("part") || n.includes("streaming") || (g.type === 1 && g.group_count > 1)
       })
 
       if (preferredGroup) {
