@@ -34,15 +34,8 @@ export function AppShell() {
   const router = usePSelector((v) => v.router)
   const mappings = usePSelector((v) => v.mappings)
   const selected = usePSelector((v) => v.selected)
-  const tmdbKeyInput = usePSelector((v) => v.tmdbKeyInput)
-  const setTmdbKeyInput = usePSelector((v) => v.setTmdbKeyInput)
-  const setTmdbKey = usePSelector((v) => v.setTmdbKey)
   const exportData = usePSelector((v) => v.exportData)
   const importData = usePSelector((v) => v.importData)
-  const mdblistApiKey = usePSelector((v) => v.mdblistApiKey)
-  const setMdblistApiKey = usePSelector((v) => v.setMdblistApiKey)
-  const tvdbApiKey = usePSelector((v) => v.tvdbApiKey)
-  const setTvdbApiKey = usePSelector((v) => v.setTvdbApiKey)
   const goHome = usePSelector((v) => v.goHome)
   const refreshLists = usePSelector((v) => v.refreshLists)
   const langRef = usePSelector((v) => v.langRef)
@@ -189,7 +182,7 @@ export function AppShell() {
           <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="h-9 w-9 flex items-center justify-center rounded-lg text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] active:scale-[0.93] transition-all duration-150 press-scale">{mappings.length}</button>
           <div className="relative">
             <button type="button" aria-label={t("ui.settings")} onClick={(e) => { e.stopPropagation(); setSettingsOpen((o) => !o) }} className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale ${settingsOpen ? "dropdown-open" : ""}`}><Settings className="w-4 h-4" /></button>
-            <div className="hidden md:block">{settingsOpen && <SettingsPanel tmdbKeyInput={tmdbKeyInput} setTmdbKeyInput={setTmdbKeyInput} setTmdbKey={setTmdbKey} setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} mdblistApiKey={mdblistApiKey} setMdblistApiKey={setMdblistApiKey} tvdbApiKey={tvdbApiKey} setTvdbApiKey={setTvdbApiKey} />}</div>
+            <div className="hidden md:block">{settingsOpen && <SettingsPanel setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} />}</div>
           </div>
         </div>
       </div>
@@ -253,7 +246,7 @@ export function AppShell() {
             <h2 className="text-sm font-semibold text-zinc-200">{t("ui.settingsTitle")}</h2>
           </div>
           <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <SettingsPanel mobile tmdbKeyInput={tmdbKeyInput} setTmdbKeyInput={setTmdbKeyInput} setTmdbKey={setTmdbKey} setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} mdblistApiKey={mdblistApiKey} setMdblistApiKey={setMdblistApiKey} tvdbApiKey={tvdbApiKey} setTvdbApiKey={setTvdbApiKey} />
+            <SettingsPanel mobile setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} />
           </div>
         </div>
       )}

@@ -234,6 +234,10 @@ export function useDefaults() {
           merged.defaultEpisodeMetadataSource = serverData.episodeMetadataSource
           merged.episodeMetadataSource = serverData.episodeMetadataSource
         }
+        if (!currentStored?.ratingSources && !currentStored?.defaultRatingSources && Array.isArray(serverData.ratingSources)) {
+          merged.defaultRatingSources = serverData.ratingSources
+          merged.ratingSources = serverData.ratingSources
+        }
         const updated = buildFromStored(merged)
         setState(updated)
         lastPersistRef.current = JSON.stringify(defaultsToPayload(updated))

@@ -9,26 +9,26 @@ import { ApiError, http } from "@/lib/http"
 import { saveDefaults } from "@/lib/save-defaults"
 import { SliderRow } from "@/components/SliderRow"
 import { Toggle } from "@/components/Toggle"
-import { BadgeStyleSelector, SecretInput, MenuItem } from "@/components/ui"
+import { BadgeStyleSelector, MenuItem } from "@/components/ui"
 import { UI_RATING_SOURCES } from "@/lib/ratings"
 import { RatingSourceIcon } from "@/components/RatingSourceIcon"
-import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Clipboard, Trash2, Key, Sparkles, Tv, Flame, ChevronDown, Sliders, Database, Layers } from "lucide-react"
+import { Star, Trophy, Palette, Ruler, Cloud, Minus, Circle, RotateCcw, Save, Check, Upload, Download, Trash2, Sparkles, Tv, Flame, ChevronDown, Sliders, Database, Layers } from "lucide-react"
 
 interface Props {
-  tmdbKeyInput: string
-  setTmdbKeyInput: (v: string) => void
-  setTmdbKey: (v: string) => void
+  tmdbKeyInput?: string
+  setTmdbKeyInput?: (v: string) => void
+  setTmdbKey?: (v: string) => void
   setSettingsOpen: (v: boolean) => void
   exportData: () => void
   importData: () => void
-  mdblistApiKey: string
-  setMdblistApiKey: (v: string) => void
+  mdblistApiKey?: string
+  setMdblistApiKey?: (v: string) => void
   tvdbApiKey?: string
   setTvdbApiKey?: (v: string) => void
   mobile?: boolean
 }
 
-export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSettingsOpen, exportData, importData, mdblistApiKey, setMdblistApiKey, tvdbApiKey = "", setTvdbApiKey, mobile }: Props) {
+export function SettingsPanel({ setSettingsOpen, exportData, importData, mobile }: Props) {
   const accentColor = usePSelector((v) => v.accentColor)
   const uiAccent = usePSelector((v) => v.uiAccent)
   const setUiAccent = usePSelector((v) => v.setUiAccent)
@@ -51,9 +51,6 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
     }
   }, [])
-  const [tmdbKeyError, setTmdbKeyError] = useState<string | undefined>(undefined)
-  const [mdblistKeyError, setMdblistKeyError] = useState<string | undefined>(undefined)
-  const [tvdbKeyError, setTvdbKeyError] = useState<string | undefined>(undefined)
   const [cacheCount, setCacheCount] = useState<number | null>(null)
 
   useEffect(() => {
@@ -102,72 +99,9 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
     }
   }
 
-  const validateKey = async (provider: "tmdb" | "mdblist" | "tvdb", key: string): Promise<boolean> => {
-    if (!key.trim()) return false
-    try {
-      const res = await fetch("/api/validate-key", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, key: key.trim() }),
-      })
-      const data = await res.json()
-      if (data.valid === true) {
-        toast.success(
-          provider === "tmdb"
-            ? "Chiave TMDB valida ✓"
-            : provider === "mdblist"
-              ? "Chiave MDBList valida ✓"
-              : "Chiave TheTVDB valida ✓"
-        )
-        return true
-      } else {
-        toast.error(data.message || "Chiave non valida o scaduta")
-        return false
-      }
-    } catch {
-      toast.error("Errore durante la verifica della chiave")
-      return false
-    }
-  }
-
   const content = (
     <div className="space-y-3.5 text-xs">
-      {/* SEZIONE 1: Chiavi API */}
-      <div className="bg-surface/50 border border-surface2/60 rounded-xl p-3 space-y-2.5 shadow-sm">
-        <SecretInput
-          label={t("ui.tmdbKey")}
-          icon={<Key className="w-3.5 h-3.5" />}
-          value={tmdbKeyInput}
-          onChange={setTmdbKeyInput}
-          onBlur={() => { setTmdbKey(tmdbKeyInput); if (tmdbKeyInput.length < 20) { setTmdbKeyError(t("ui.keyTooShort")); } else { setTmdbKeyError(undefined) } }}
-          onKeyDown={(e) => { if (e.key === "Enter") { setTmdbKey(tmdbKeyInput); setSettingsOpen(false) } }}
-          placeholder={t("ui.tmdbKeyPlaceholder")}
-          error={tmdbKeyError}
-          onValidate={(k) => validateKey("tmdb", k)}
-        />
-        <SecretInput
-          label={t("ui.mdblistKey")}
-          icon={<Clipboard className="w-3.5 h-3.5" />}
-          value={mdblistApiKey}
-          onChange={(v) => { setMdblistApiKey(v); try { localStorage.setItem("mdblist_key", v) } catch {} }}
-          onBlur={() => { if (mdblistApiKey.length > 0 && mdblistApiKey.length < 20) { setMdblistKeyError(t("ui.keyTooShort")); } else { setMdblistKeyError(undefined) } }}
-          placeholder={t("ui.mdblistKeyPlaceholder")}
-          error={mdblistKeyError}
-          onValidate={(k) => validateKey("mdblist", k)}
-        />
-        <SecretInput
-          label={t("ui.tvdbKey")}
-          icon={<Tv className="w-3.5 h-3.5" />}
-          value={tvdbApiKey}
-          onChange={(v) => { if (setTvdbApiKey) setTvdbApiKey(v); try { localStorage.setItem("tvdb_key", v) } catch {} }}
-          onBlur={() => { if (tvdbApiKey.length > 0 && tvdbApiKey.length < 10) { setTvdbKeyError(t("ui.keyTooShort")); } else { setTvdbKeyError(undefined) } }}
-          placeholder={t("ui.tvdbKeyPlaceholder")}
-          error={tvdbKeyError}
-          onValidate={(k) => validateKey("tvdb", k)}
-        />
-      </div>
-
-      {/* SEZIONE 2: Badge & Provider Predefiniti */}
+      {/* SEZIONE: Badge & Provider Predefiniti */}
       <div className="bg-surface/50 border border-surface2/60 rounded-xl p-3 space-y-3 shadow-sm">
         <span className="font-semibold text-zinc-200 flex items-center gap-1.5">
           <Layers className="w-3.5 h-3.5 text-accent-orange" />
