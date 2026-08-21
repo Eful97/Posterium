@@ -352,12 +352,15 @@ export async function posteriumCatalog(
     } else if (catalogId.startsWith("posterium-anime")) {
       const key = mdblistKey
       if (key) {
-        const items = await fetchMDBList("mdblistAnime", key)
+        const isMovie = catalogId === "posterium-anime-movies" || stType === "movie"
+        const listKey = isMovie ? "mdblistAnimeMovie" : "mdblistAnime"
+        const mediaType = isMovie ? "movie" : "tv"
+        const items = await fetchMDBList(listKey, key)
         const results = await Promise.all(items.map(async (item, idx) => {
           const tmdbId = Number(item.tmdb)
           if (!tmdbId) return null
           try {
-            const d = await getDetails("tv", tmdbId, "it-IT", apiKey)
+            const d = await getDetails(mediaType, tmdbId, "it-IT", apiKey)
             if (!d?.id) return null
             return { d, tmdbId, imdb: item.imdb, rank: idx + 1 }
           } catch {
@@ -366,13 +369,13 @@ export async function posteriumCatalog(
         }))
         const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdb: string; rank: number } => r !== null)
         metas = await Promise.all(validResults.map(async (r) => {
-          const imdbId = r.imdb || await resolveImdbId("tv", r.tmdbId, apiKey)
+          const imdbId = r.imdb || await resolveImdbId(mediaType, r.tmdbId, apiKey)
           return {
             id: catalogMetaId(imdbId, r.tmdbId),
-            type: "series",
-            name: r.d.name || "",
-            poster: await posteriumPosterUrl(req, "series", r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
-            releaseInfo: (r.d.first_air_date || "").slice(0, 4) || undefined,
+            type: stType,
+            name: r.d.title || r.d.name || "",
+            poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
+            releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
           }
         }))
       }

@@ -10,10 +10,11 @@ describe("catalog definitions", () => {
     expect(warmupCatalogs.map((catalog) => catalog.id)).toEqual([
       "posterium-jw-movies",
       "posterium-jw-series",
+      "posterium-anime-movies",
       "posterium-anime",
     ])
     expect(warmupCatalogs.every((catalog) => manifestIds.has(catalog.id))).toBe(true)
-    expect(warmupCatalogs.map((catalog) => catalog.type)).toEqual(["movie", "series", "series"])
-    expect(WARMUP_CATALOG_IDS).toHaveLength(3)
+    expect(warmupCatalogs.map((catalog) => catalog.type)).toEqual(["movie", "series", "movie", "series"])
+    expect(WARMUP_CATALOG_IDS).toHaveLength(4)
   })
 })

@@ -23,7 +23,8 @@ export const POSTERIUM_CATALOGS = [
   { id: "posterium-hbo-series", name: "🟣 HBO Max — Serie TV", type: "series" },
   { id: "posterium-paramount-movies", name: "🏔️ Paramount+ — Film", type: "movie" },
   { id: "posterium-paramount-series", name: "🏔️ Paramount+ — Serie TV", type: "series" },
-  { id: "posterium-anime", name: "⛩️ Top 20 Anime", type: "series" },
+  { id: "posterium-anime-movies", name: "⛩️ Top 20 Film Anime", type: "movie" },
+  { id: "posterium-anime", name: "⛩️ Top 20 Serie Anime", type: "series" },
 ] as const satisfies readonly PosteriumCatalogDefinition[]
 
 export type StremioCatalogExtra = {
@@ -47,6 +48,7 @@ export const POSTERIUM_SEARCH_CATALOGS = [
 export const WARMUP_CATALOG_IDS = [
   "posterium-jw-movies",
   "posterium-jw-series",
+  "posterium-anime-movies",
   "posterium-anime",
 ] as const
 

@@ -598,10 +598,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         // chiave, TTL 30min), quindi niente cache manuale non-keyed.
         // Precedenza: `animerank` (preview/catalogo) > fetch live > mapping.animeRank
         // (badge salvato: funziona anche senza chiavi, come nel WYSIWYG).
-        (rankingEnabledEarly && mediaType === "tv")
+        rankingEnabledEarly
           ? (Number.isFinite(qAnimeRank) && qAnimeRank > 0
               ? Promise.resolve(qAnimeRank)
-              : fetchMDBList("mdblistAnime", req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || undefined)
+              : fetchMDBList(
+                  mediaType === "movie" ? "mdblistAnimeMovie" : "mdblistAnime",
+                  req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || process.env.MDBLIST_KEY || process.env.MDBLIST_API_KEY || undefined
+                )
                   .then((entries) => {
                     if (!Array.isArray(entries)) return null
                     const idx = entries.findIndex((e) => {

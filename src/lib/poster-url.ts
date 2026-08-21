@@ -151,7 +151,7 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
     // senza questo parametro la preview non può calcolarlo (la URL non porta
     // chiavi/profilo) e il badge Anime non comparirebbe nella preview.
     const selected = ps.selected
-    const animeRank = selected && selected.media_type === "tv"
+    const animeRank = selected
       ? (ps.mdblistAnimeList.find((a) => a.id === selected.id)?.rank ?? null)
       : null
     if (animeRank) params.push(`animerank=${animeRank}`)

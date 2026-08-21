@@ -22,24 +22,44 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
     http<{ movies: Array<SearchResult & { rank: number }>; tv: Array<SearchResult & { rank: number }> }>(`/api/tmdb/trending?api_key=${tmdbKey}`, { timeout: 30000, signal })
       .then((data) => { if (signal.aborted) return; setTrending([...(data.movies || []), ...(data.tv || [])]); setTrendingError(false) })
       .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load trending:", e); setTrendingError(true) })
-    if (!mdblistApiKey) {
-      http<{ results: SearchResult[] }>(`/api/tmdb/trending/tv/week?api_key=${tmdbKey}&with_original_language=ja&sort_by=popularity`, { timeout: 30000, signal })
-        .then((data) => {
-          if (signal.aborted) return
-          const fallback = (data.results || []).map((item: SearchResult, idx: number) => ({
-            ...item,
-            rank: idx + 1,
-            mdblistKey: "tmdb-fallback",
-            title: item.title || "",
-          })) as EnrichedAnimeItem[]
-          setMdblistAnimeList(fallback)
-        })
-        .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load TMDB anime fallback:", e) })
-    } else {
-      http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal })
-        .then((data) => { if (signal.aborted) return; setMdblistAnimeList(data) })
-        .catch((e) => { if (signal.aborted) return; console.error("[posterium] Failed to load anime list:", e) })
-    }
+    http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${encodeURIComponent(mdblistApiKey || "")}&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 30000, signal })
+      .then((data) => {
+        if (signal.aborted) return
+        if (Array.isArray(data) && data.length > 0) {
+          setMdblistAnimeList(data)
+        } else {
+          // Fallback TMDB trending anime
+          http<{ results: SearchResult[] }>(`/api/tmdb/trending/tv/week?api_key=${tmdbKey}&with_original_language=ja&sort_by=popularity`, { timeout: 30000, signal })
+            .then((tmdbData) => {
+              if (signal.aborted) return
+              const fallback: EnrichedAnimeItem[] = (tmdbData.results || []).map((item: SearchResult, idx: number) => ({
+                id: item.id,
+                title: item.title || item.name || "",
+                poster_path: item.poster_path || "",
+                rank: idx + 1,
+                media_type: item.media_type || "tv",
+              }))
+              setMdblistAnimeList(fallback)
+            })
+            .catch(() => {})
+        }
+      })
+      .catch(() => {
+        if (signal.aborted) return
+        http<{ results: SearchResult[] }>(`/api/tmdb/trending/tv/week?api_key=${tmdbKey}&with_original_language=ja&sort_by=popularity`, { timeout: 30000, signal })
+          .then((tmdbData) => {
+            if (signal.aborted) return
+            const fallback: EnrichedAnimeItem[] = (tmdbData.results || []).map((item: SearchResult, idx: number) => ({
+              id: item.id,
+              title: item.title || item.name || "",
+              poster_path: item.poster_path || "",
+              rank: idx + 1,
+              media_type: item.media_type || "tv",
+            }))
+            setMdblistAnimeList(fallback)
+          })
+          .catch(() => {})
+      })
     return () => { ctrl.abort() }
   }, [tmdbKey, mdblistApiKey])
 
@@ -70,11 +90,21 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
     const signal = ctrl.signal
     abortRef.current = ctrl
     try {
-      const animePromise = mdblistApiKey
-        ? http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${mdblistApiKey}&api_key=${tmdbKey}`, { timeout: 30000, signal }).catch(() => null)
-        : http<{ results: SearchResult[] }>(`/api/tmdb/trending/tv/week?api_key=${tmdbKey}&with_original_language=ja&sort_by=popularity`, { timeout: 30000, signal })
-          .then((data) => (data.results || []).map((item: SearchResult, idx: number) => ({ ...item, rank: idx + 1, mdblistKey: "tmdb-fallback", title: item.title || "" })))
-          .catch(() => null)
+      const animePromise = http<EnrichedAnimeItem[]>(`/api/mdblist/anime?mdblist_key=${encodeURIComponent(mdblistApiKey || "")}&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 30000, signal })
+        .then((data) => (Array.isArray(data) && data.length > 0 ? data : null))
+        .catch(() => null)
+        .then((res) => {
+          if (res) return res
+          return http<{ results: SearchResult[] }>(`/api/tmdb/trending/tv/week?api_key=${tmdbKey}&with_original_language=ja&sort_by=popularity`, { timeout: 30000, signal })
+            .then((data): EnrichedAnimeItem[] => (data.results || []).map((item: SearchResult, idx: number) => ({
+              id: item.id,
+              title: item.title || item.name || "",
+              poster_path: item.poster_path || "",
+              rank: idx + 1,
+              media_type: item.media_type || "tv",
+            })))
+            .catch(() => null)
+        })
       const [trendingData, animeData] = await Promise.all([
         http<{ movies: Array<SearchResult & { rank: number }>; tv: Array<SearchResult & { rank: number }> }>(`/api/tmdb/trending?api_key=${tmdbKey}`, { timeout: 30000, signal }),
         animePromise,
