@@ -199,14 +199,17 @@ async function aiSearchFallback(
     if (!ai?.results?.length) return []
 
     const wanted = stType === "movie" ? "movie" : "tv"
-    const filtered = ai.results.filter((r) => r.media_type === wanted)
+    // Un catalogo Stremio mostra 20 titoli per pagina, ma la pagina AI è già il
+    // risultato intero: inutile mappare tutte le raccomandazioni del modello.
+    // Limitiamo a 8 per evitare troppe fetch TMDB/poster sincrone sulla richiesta.
+    const filtered = ai.results.filter((r) => r.media_type === wanted).slice(0, 8)
 
     const rows: (StremioMeta | null)[] = await Promise.all(filtered.map(async (item) => {
       if (!item.id) return null
-      const mediaType = stType === "movie" ? "movie" : "tv"
-      const imdbId = item.imdb_id || await resolveImdbId(mediaType, item.id, apiKey)
       return {
-        id: catalogMetaId(imdbId, item.id),
+        // catalogMetaId ignora l'imdb: l'id è sempre `tmdb:<id>`, quindi la
+        // risoluzione external_ids (resolveImdbId) qui sarebbe lavoro morto.
+        id: catalogMetaId(item.imdb_id, item.id),
         type: stType,
         name: item.title || item.name || "",
         poster: await posteriumPosterUrl(req, stType, item.id, configParam, userParam, mdblistKeyParam),

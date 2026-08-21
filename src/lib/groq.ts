@@ -103,15 +103,28 @@ You MUST reply with valid JSON only matching this schema:
     max_tokens: 1024,
   }
 
-  const res = await fetch(GROQ_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-    signal,
-  })
+  // Hard timeout: groq/compound è un sistema agentico più lento e rate-limitato
+  // (200 RPM su developer). Meglio fallire veloce e ricadere sul modello/percorso
+  // normale piuttosto che bloccare una ricerca Stremio sincrona.
+  const timeout = AbortSignal.timeout(8000)
+  const combined = signal ? AbortSignal.any([signal, timeout]) : timeout
+
+  let res: Response
+  try {
+    res = await fetch(GROQ_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal: combined,
+    })
+  } catch (e) {
+    // Timeout/abort/network: fallback al modello successivo senza sollevare.
+    log.warn(`Groq request aborted/failed for model ${model}: ${e instanceof Error ? e.message : String(e)}`)
+    return null
+  }
 
   if (!res.ok) {
     const errorText = await res.text().catch(() => "")
