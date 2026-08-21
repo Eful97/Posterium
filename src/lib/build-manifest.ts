@@ -2,20 +2,9 @@ import { NextRequest } from "next/server"
 import { APP_VERSION } from "@/generated/app-version"
 import { POSTERIUM_CATALOGS } from "@/lib/catalog-definitions"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
-import { getFullProfileData } from "@/lib/profile-store"
-import { decodeConfig } from "@/lib/config-token"
+import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
+import { getServerDefaults } from "@/lib/server-defaults"
 
-/**
- * Costruisce il manifest Stremio. `user`/`config` arrivano dal query string
- * (URL classico `manifest.json?u=...`) oppure dal path (`/u/<uuid>/manifest.json`)
- * per gli import AIOMetadata, che rifiutano/rompono le URL con query string.
- */
-/**
- * Fix L13: i frammenti user/config entrano in addonId/name — prima stringhe
- * arbitrarie (caratteri non URL-safe, lunghezze enormi) finivano verbatim.
- * Solo [A-Za-z0-9_-] e lunghezza ≤ 64: qualunque altra cosa → nessun suffisso
- * (comportamento pulito invece di un id/name sporco).
- */
 function safeSuffix(value: string | null | undefined): string | null {
   if (!value) return null
   if (value.length > 64) return null
@@ -26,18 +15,22 @@ function safeSuffix(value: string | null | undefined): string | null {
 export async function buildManifestResponse(req: NextRequest, user?: string | null, config?: string | null): Promise<Response> {
   const domain = getOriginFromRequest(req)
 
-  const safeUser = safeSuffix(user)
   const safeConfig = safeSuffix(config)
-  const suffix = safeUser ? `.${safeUser.slice(0, 8)}` : safeConfig ? `.${safeConfig.slice(0, 8)}` : ""
+  const suffix = safeConfig ? `.${safeConfig.slice(0, 8)}` : ""
   const addonId = `org.posterium${suffix}`
 
-  let userConfig = null
-  if (user) {
-    const profile = await getFullProfileData(user).catch(() => null)
-    if (profile?.config) userConfig = profile.config
-  }
-  if (!userConfig && config) {
+  let userConfig: Partial<PosteriumUserConfig> | null = null
+  if (config) {
     userConfig = decodeConfig(config)
+  }
+  if (!userConfig) {
+    const serverDefaults = getServerDefaults()
+    userConfig = {
+      disabledCatalogIds: serverDefaults.disabledCatalogIds,
+      customCatalogs: serverDefaults.customCatalogs,
+      catalogRenames: serverDefaults.catalogRenames,
+      catalogOrder: serverDefaults.catalogOrder,
+    }
   }
 
   let catalogs: Array<{ id: string; name: string; type: "movie" | "series" }> = [...POSTERIUM_CATALOGS]
@@ -84,7 +77,7 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
   // Applica ordinamento / priorità personalizzata
   if (userConfig?.catalogOrder && userConfig.catalogOrder.length > 0) {
     const orderMap = new Map<string, number>()
-    userConfig.catalogOrder.forEach((id, idx) => orderMap.set(id, idx))
+    userConfig.catalogOrder.forEach((id: string, idx: number) => orderMap.set(id, idx))
     catalogs.sort((a, b) => {
       const orderA = orderMap.has(a.id) ? orderMap.get(a.id)! : 9999
       const orderB = orderMap.has(b.id) ? orderMap.get(b.id)! : 9999
@@ -114,7 +107,7 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
   return Response.json({
     id: addonId,
     version: APP_VERSION,
-    name: safeUser ? `Posterium (${safeUser.slice(0, 8)})` : "Posterium",
+    name: safeConfig ? `Posterium (${safeConfig.slice(0, 8)})` : "Posterium",
     description: "Custom poster manager for Stremio — loghi, badge trend, premi e rating",
     resources: [
       "catalog",

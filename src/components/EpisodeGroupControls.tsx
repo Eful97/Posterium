@@ -11,7 +11,6 @@ export function EpisodeGroupControls() {
   const tmdbKey = usePSelector((v) => v.tmdbKey)
   const mappingsMap = usePSelector((v) => v.mappingsMap)
   const loadMappings = usePSelector((v) => v.loadMappings)
-  const profileStateless = usePSelector((v) => v.profileStateless)
   const ed = usePosterEditor()
 
   const [epGroups, setEpGroups] = useState<{ id: string; name: string; group_count: number; episode_count: number }[]>([])
@@ -48,11 +47,6 @@ export function EpisodeGroupControls() {
 
   const handleSaveEpisodeGroup = async () => {
     if (!selected) return
-    if (profileStateless) {
-      const { toast } = await import("sonner")
-      toast("Funzione non disponibile in modalità stateless")
-      return
-    }
 
     setSaving(true)
     try {

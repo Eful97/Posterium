@@ -26,6 +26,11 @@ export interface ServerDefaults {
   defaultLogoFitEnabled?: boolean
   networkLogo?: boolean
   ribbonSide?: "left" | "right"
+  episodeMetadataSource?: "tmdb" | "tvdb"
+  customCatalogs?: import("@/lib/types").CustomCatalogConfig[]
+  disabledCatalogIds?: string[]
+  catalogOrder?: string[]
+  catalogRenames?: Record<string, string>
 }
 
 const FILE = path.join(DATA_DIR, "defaults.json")

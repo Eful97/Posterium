@@ -419,7 +419,10 @@
     "ui.aiomLinkTitle":  "Link for AIOMetadata & Stremio:",
     "ui.existingProfileUuid":  "Existing Profile UUID",
     "ui.profileYourPassword":  "Your password",
-    "ui.loadAndAccess":  "Unlock & Load Profile"
-,
-    "ui.statusTmdbUnavailable":  "TMDB service unavailable — some data may be incomplete"
+    "ui.loadAndAccess":  "Unlock & Load Profile",
+    "ui.statusTmdbUnavailable":  "TMDB service unavailable — some data may be incomplete",
+    "ui.tvdbKey": "TheTVDB API Key",
+    "ui.tvdbKeyPlaceholder": "Enter TheTVDB API key...",
+    "ui.episodeMetadataSource": "Episode Metadata Source",
+    "ui.episodeMetadataSourceHint": "Use TheTVDB or TMDB for episode covers (screencaps) and episode overviews."
 }

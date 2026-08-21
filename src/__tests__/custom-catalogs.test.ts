@@ -26,6 +26,13 @@ describe("Custom Catalogs & MDBList Parsing", () => {
       expect(res).toEqual({ user: "snoak", slug: "trending-movies" })
     })
 
+    it("parses URL with trailing slash, /json, or query params", () => {
+      expect(parseMDBListTarget("https://mdblist.com/lists/snoak/trending-movies/")).toEqual({ user: "snoak", slug: "trending-movies" })
+      expect(parseMDBListTarget("https://mdblist.com/lists/snoak/trending-movies/json")).toEqual({ user: "snoak", slug: "trending-movies" })
+      expect(parseMDBListTarget("https://mdblist.com/lists/snoak/trending-movies?sort=rank")).toEqual({ user: "snoak", slug: "trending-movies" })
+      expect(parseMDBListTarget("https://api.mdblist.com/lists/snoak/trending-movies/items?apikey=123")).toEqual({ user: "snoak", slug: "trending-movies" })
+    })
+
     it("parses plain numeric ID", () => {
       const res = parseMDBListTarget("98765")
       expect(res).toEqual({ id: "98765" })

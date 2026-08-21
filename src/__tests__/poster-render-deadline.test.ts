@@ -68,11 +68,6 @@ vi.mock("@/lib/tmdb", () => ({
   resolveRequestApiKey: vi.fn(() => undefined),
 }))
 
-vi.mock("@/lib/profile-store", () => ({
-  getProfile: vi.fn(async () => null),
-  getFullProfileData: vi.fn(async () => null),
-}))
-
 vi.mock("@/lib/imdb-resolver", () => ({
   resolveImdbToTmdb: vi.fn(async () => null),
 }))

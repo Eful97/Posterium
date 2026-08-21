@@ -419,7 +419,10 @@
     "ui.aiomLinkTitle":  "Link für AIOMetadata und Stremio:",
     "ui.existingProfileUuid":  "Vorhandene Profil-UUID",
     "ui.profileYourPassword":  "Ihr Passwort",
-    "ui.loadAndAccess":  "Entsperren und Profil laden"
-,
-    "ui.statusTmdbUnavailable":  "TMDB-Dienst nicht verfügbar — einige Daten sind möglicherweise unvollständig"
+    "ui.loadAndAccess":  "Entsperren und Profil laden",
+    "ui.statusTmdbUnavailable":  "TMDB-Dienst nicht verfügbar — einige Daten sind möglicherweise unvollständig",
+    "ui.tvdbKey": "TheTVDB-API-Schlüssel",
+    "ui.tvdbKeyPlaceholder": "TheTVDB-API-Schlüssel eingeben...",
+    "ui.episodeMetadataSource": "Episoden-Metadatenquelle",
+    "ui.episodeMetadataSourceHint": "TheTVDB oder TMDB für Episoden-Cover und -Beschreibungen verwenden."
 }

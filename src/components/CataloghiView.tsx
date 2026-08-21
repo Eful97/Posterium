@@ -85,6 +85,156 @@ function CatalogPair({
   )
 }
 
+function CustomCatalogEntry({
+  cat,
+  openGrid,
+  onItemClick,
+  savedKeys,
+  toggleCustomCatalog,
+  removeCustomCatalog,
+  tmdbKey,
+  mdblistApiKey,
+}: {
+  cat: import("@/lib/types").CustomCatalogConfig
+  openGrid: (items: GridViewItem[], title: string) => void
+  onItemClick: (item: SimklCardItem) => void
+  savedKeys: Set<string>
+  toggleCustomCatalog: (id: string) => void
+  removeCustomCatalog: (id: string) => void
+  tmdbKey: string
+  mdblistApiKey: string
+}) {
+  const [items, setItems] = useState<SimklCardItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const isEnabled = cat.enabled !== false
+  const isMixed = cat.type === "mixed"
+  const isMovie = cat.type === "movie"
+
+  useEffect(() => {
+    let active = true
+    const params = new URLSearchParams({
+      url: cat.url,
+      api_key: tmdbKey || "",
+      mdblist_key: mdblistApiKey || "",
+    })
+    fetch(`/api/mdblist/custom?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active) return
+        if (Array.isArray(data?.items)) {
+          setItems(data.items)
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [cat.url, tmdbKey, mdblistApiKey])
+
+  const movies = items.filter((it) => (it.media_type || it.mediaType) === "movie")
+  const tv = items.filter((it) => (it.media_type || it.mediaType) !== "movie")
+
+  return (
+    <div className={`p-4 rounded-2xl border transition-all duration-200 ${
+      isEnabled ? "bg-surface border-white/10 shadow-sm" : "bg-surface/40 border-white/5 opacity-60"
+    }`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider ${
+            isMixed
+              ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+              : isMovie
+              ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
+              : "bg-purple-500/15 text-purple-400 border border-purple-500/20"
+          }`}>
+            {isMixed ? <Shuffle className="w-3 h-3" /> : isMovie ? <Film className="w-3 h-3" /> : <Tv className="w-3 h-3" />}
+            {isMixed ? "Misto" : isMovie ? "Film" : "Serie TV"}
+          </span>
+          <h3 className="text-base font-bold text-white line-clamp-1">{cat.name}</h3>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => toggleCustomCatalog(cat.id)}
+            title={isEnabled ? "Disattiva da Stremio" : "Attiva su Stremio"}
+            className={`p-1.5 rounded-lg border transition-colors ${
+              isEnabled
+                ? "bg-accent-orange/15 border-accent-orange/30 text-accent-orange hover:bg-accent-orange/25"
+                : "bg-white/5 border-white/5 text-muted hover:text-white"
+            }`}
+          >
+            <Power className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => removeCustomCatalog(cat.id)}
+            title="Elimina catalogo"
+            className="p-1.5 rounded-lg border border-white/5 text-muted hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="h-28 flex items-center justify-center rounded-xl bg-black/20 border border-white/5 text-xs text-muted">
+          <div className="w-4 h-4 border-2 border-accent-orange/30 border-t-accent-orange rounded-full animate-spin mr-2" />
+          Caricamento titoli...
+        </div>
+      ) : items.length === 0 ? (
+        <div className="p-3 rounded-xl bg-black/20 border border-white/5 text-xs text-muted">
+          Nessun titolo trovato per questa lista.
+        </div>
+      ) : isMixed ? (
+        <CatalogPair
+          movies={movies}
+          tv={tv}
+          totalMovies={movies.length}
+          totalTv={tv.length}
+          movieTitle={`${cat.name} — Film`}
+          tvTitle={`${cat.name} — Serie TV`}
+          movieGridTitle={`${cat.name} — Film`}
+          tvGridTitle={`${cat.name} — Serie TV`}
+          openGrid={openGrid}
+          onItemClick={onItemClick}
+          savedKeys={savedKeys}
+        />
+      ) : isMovie ? (
+        <CatalogPair
+          movies={movies.length > 0 ? movies : items}
+          tv={[]}
+          totalMovies={movies.length > 0 ? movies.length : items.length}
+          totalTv={0}
+          movieTitle={cat.name}
+          tvTitle=""
+          movieGridTitle={cat.name}
+          tvGridTitle=""
+          openGrid={openGrid}
+          onItemClick={onItemClick}
+          savedKeys={savedKeys}
+        />
+      ) : (
+        <CatalogPair
+          movies={[]}
+          tv={tv.length > 0 ? tv : items}
+          totalMovies={0}
+          totalTv={tv.length > 0 ? tv.length : items.length}
+          movieTitle=""
+          tvTitle={cat.name}
+          movieGridTitle=""
+          tvGridTitle={cat.name}
+          openGrid={openGrid}
+          onItemClick={onItemClick}
+          savedKeys={savedKeys}
+        />
+      )}
+    </div>
+  )
+}
+
 const PLATFORM_FILTERS = [
   { id: "all", label: "Tutti" },
   { id: "custom", label: "Personalizzati" },
@@ -112,6 +262,8 @@ export function CataloghiView() {
   const customCatalogs = usePSelector((v) => v.customCatalogs)
   const removeCustomCatalog = usePSelector((v) => v.removeCustomCatalog)
   const toggleCustomCatalog = usePSelector((v) => v.toggleCustomCatalog)
+  const tmdbKey = usePSelector((v) => v.tmdbKey)
+  const mdblistApiKey = usePSelector((v) => v.mdblistApiKey)
   const { t } = useT()
   const movieTrending = trending.filter((r) => r.media_type === "movie").slice(0, 20)
   const tvTrending = trending.filter((r) => r.media_type === "tv").slice(0, 20)
@@ -253,68 +405,27 @@ export function CataloghiView() {
       {/* Custom Catalogs Section */}
       {showCustom && customCatalogs.length > 0 && (
         <ScrollReveal animation="fade-up" threshold={0.05}>
-          <div className="mb-12">
+          <div className="mb-12 space-y-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="section-heading text-xl font-bold">Cataloghi Personalizzati</h2>
               <span className="text-xs text-muted">
-                {customCatalogs.filter(c => c.enabled !== false).length} attivi su Stremio
+                {customCatalogs.filter((c) => c.enabled !== false).length} attivi su Stremio
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {customCatalogs.map((cat) => {
-                const isEnabled = cat.enabled !== false
-                const isMixed = cat.type === "mixed"
-                const isMovie = cat.type === "movie"
-                return (
-                  <div
-                    key={cat.id}
-                    className={`flex flex-col justify-between p-4 rounded-2xl border transition-all duration-200 ${
-                      isEnabled
-                        ? "bg-surface border-white/10 shadow-sm"
-                        : "bg-surface/40 border-white/5 opacity-60"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider ${
-                          isMixed
-                            ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-                            : isMovie
-                            ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
-                            : "bg-purple-500/15 text-purple-400 border border-purple-500/20"
-                        }`}>
-                          {isMixed ? <Shuffle className="w-3 h-3" /> : isMovie ? <Film className="w-3 h-3" /> : <Tv className="w-3 h-3" />}
-                          {isMixed ? "Misto" : isMovie ? "Film" : "Serie TV"}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => toggleCustomCatalog(cat.id)}
-                            title={isEnabled ? "Disattiva da Stremio" : "Attiva su Stremio"}
-                            className={`p-1.5 rounded-lg border transition-colors ${
-                              isEnabled
-                                ? "bg-accent-orange/15 border-accent-orange/30 text-accent-orange hover:bg-accent-orange/25"
-                                : "bg-white/5 border-white/5 text-muted hover:text-white"
-                            }`}
-                          >
-                            <Power className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeCustomCatalog(cat.id)}
-                            title="Elimina catalogo"
-                            className="p-1.5 rounded-lg border border-white/5 text-muted hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      <h3 className="text-sm font-bold text-white mb-1 line-clamp-1">{cat.name}</h3>
-                      <p className="text-[11px] text-muted line-clamp-1 font-mono">{cat.url}</p>
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="space-y-6">
+              {customCatalogs.map((cat) => (
+                <CustomCatalogEntry
+                  key={cat.id}
+                  cat={cat}
+                  openGrid={openGrid}
+                  onItemClick={navigateToItem}
+                  savedKeys={savedKeys}
+                  toggleCustomCatalog={toggleCustomCatalog}
+                  removeCustomCatalog={removeCustomCatalog}
+                  tmdbKey={tmdbKey}
+                  mdblistApiKey={mdblistApiKey}
+                />
+              ))}
             </div>
           </div>
         </ScrollReveal>

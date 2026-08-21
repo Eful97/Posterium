@@ -11,6 +11,14 @@ import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/r
 
 const log = createLogger("defaults")
 
+const customCatalogSchema = z.object({
+  id: z.string().max(64),
+  name: z.string().max(100),
+  type: z.enum(["movie", "series", "mixed"]),
+  url: z.string().max(500),
+  enabled: z.boolean().optional(),
+})
+
 const defaultsSchema = z.object({
   badgeStyle: z.enum(BADGE_STYLES).optional(),
   rankingBadgeStyle: z.enum(RANKING_BADGE_STYLES).optional(),
@@ -29,6 +37,11 @@ const defaultsSchema = z.object({
   defaultLogoFitEnabled: z.boolean().optional(),
   networkLogo: z.boolean().optional(),
   ribbonSide: z.enum(["left", "right"]).optional(),
+  episodeMetadataSource: z.enum(["tmdb", "tvdb"]).optional(),
+  customCatalogs: z.array(customCatalogSchema).optional(),
+  disabledCatalogIds: z.array(z.string().max(80)).optional(),
+  catalogOrder: z.array(z.string().max(80)).optional(),
+  catalogRenames: z.record(z.string().max(80), z.string().max(100)).optional(),
 })
 
 export async function GET() {

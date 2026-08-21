@@ -6,8 +6,7 @@ import { getTop10 } from "@/lib/flixpatrol"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
-import { getFullProfileData } from "@/lib/profile-store"
-import { decodeConfig } from "@/lib/config-token"
+import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
 import { getDetails, getExternalIds, resolveRequestApiKey, searchMovies, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
 import { fetchCustomMDBList, fetchMDBList } from "@/lib/mdblist"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
@@ -200,19 +199,22 @@ export async function posteriumCatalog(
   const mdblistKeyParam = req.nextUrl.searchParams.get("mdblist_key") || undefined
   // Chiave TMDB della richiesta: parte del cache key così un catalogo vuoto
   // servito a una richiesta senza chiave non avvelena quelle keyed (D3).
-  let apiKey = resolveRequestApiKey(req)
+  const apiKey = resolveRequestApiKey(req)
   // Chiave MDBList della richiesta (anime/custom): può arrivare dal profilo o, come
   // fallback per istanze personali, dall'env POSTERIUM_MDBLIST_KEY.
-  let mdblistKey = mdblistKeyParam || process.env.POSTERIUM_MDBLIST_KEY
-  let userConfig = null
-  if (userParam) {
-    const fullProfile = await getFullProfileData(userParam).catch(() => null)
-    if (fullProfile?.apiKeys?.tmdbKey) apiKey = fullProfile.apiKeys.tmdbKey
-    if (!mdblistKey && fullProfile?.apiKeys?.mdblistApiKey) mdblistKey = fullProfile.apiKeys.mdblistApiKey
-    if (fullProfile?.config) userConfig = fullProfile.config
-  }
-  if (!userConfig && configParam) {
+  const mdblistKey = mdblistKeyParam || process.env.POSTERIUM_MDBLIST_KEY
+  let userConfig: Partial<PosteriumUserConfig> | null = null
+  if (configParam) {
     userConfig = decodeConfig(configParam)
+  }
+  if (!userConfig) {
+    const serverDefaults = getServerDefaults()
+    userConfig = {
+      disabledCatalogIds: serverDefaults.disabledCatalogIds,
+      customCatalogs: serverDefaults.customCatalogs,
+      catalogRenames: serverDefaults.catalogRenames,
+      catalogOrder: serverDefaults.catalogOrder,
+    } as PosteriumUserConfig
   }
 
   // --- Gestione Ricerca Stremio (sia via barra di ricerca che catalogo dedicato) ---
@@ -269,7 +271,7 @@ export async function posteriumCatalog(
       if (customId.startsWith("movie-")) customId = customId.slice(6)
       else if (customId.startsWith("series-")) customId = customId.slice(7)
 
-      const customCat = userConfig?.customCatalogs?.find((c) => c.id === customId)
+      const customCat = userConfig?.customCatalogs?.find((c: { id: string }) => c.id === customId)
       if (customCat && customCat.enabled !== false) {
         let items = await fetchCustomMDBList(customCat.url, mdblistKey, 40)
         // Se la lista è mista o contiene mediatype, filtra in base al tipo di catalogo richiesto
@@ -288,23 +290,33 @@ export async function posteriumCatalog(
             tmdbId = await tmdbFindByImdb(item.imdb, stType === "movie" ? "movie" : "tv", apiKey) || 0
           }
           if (!tmdbId) return null
-          try {
-            const d = await getDetails(stType === "movie" ? "movie" : "tv", tmdbId, "it-IT", apiKey)
-            if (!d?.id) return null
-            return { d, tmdbId, imdb: item.imdb, rank: idx + 1 }
-          } catch {
-            return null
+          let details: TMDBDetails | null = null
+          if (apiKey) {
+            try {
+              details = await getDetails(stType === "movie" ? "movie" : "tv", tmdbId, "it-IT", apiKey)
+            } catch {
+              details = null
+            }
+          }
+          const title = details?.title || details?.name || item.title || "Titolo"
+          const releaseInfo = (details?.release_date || details?.first_air_date || (item.year ? String(item.year) : "")).slice(0, 4) || undefined
+          return {
+            tmdbId,
+            imdb: item.imdb,
+            title,
+            releaseInfo,
+            rank: idx + 1,
           }
         }))
-        const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdb: string; rank: number } => r !== null)
+        const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null)
         metas = await Promise.all(validResults.map(async (r) => {
           const imdbId = r.imdb || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
           return {
             id: catalogMetaId(imdbId, r.tmdbId),
             type: stType,
-            name: r.d.title || r.d.name || "",
+            name: r.title,
             poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
-            releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
+            releaseInfo: r.releaseInfo,
           }
         }))
       }

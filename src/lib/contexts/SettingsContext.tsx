@@ -17,6 +17,8 @@ export interface SettingsCtx {
   setShowKey: React.Dispatch<React.SetStateAction<boolean>>
   mdblistApiKey: string
   setMdblistApiKey: (v: string) => void
+  tvdbApiKey: string
+  setTvdbApiKey: (v: string) => void
   theme: "dark" | "light"
   setTheme: React.Dispatch<React.SetStateAction<"dark" | "light">>
   uiAccent: boolean
@@ -24,14 +26,9 @@ export interface SettingsCtx {
   lang: string
   t: (key: string, params?: Record<string, string | number>) => string
   pickLang: (l: string) => void
-  profileId: string | null
-  setProfileId: React.Dispatch<React.SetStateAction<string | null>>
-  profilePassword: string
-  setProfilePassword: (v: string) => void
   exportData: () => Promise<void>
   importData: () => void
   copyUrl: () => Promise<void>
-  saveAndCopyProfileUrl: () => Promise<void>
 }
 
 const Ctx = createContext<SettingsCtx | null>(null)
@@ -59,6 +56,8 @@ export function SettingsProvider({
       setShowKey: value.setShowKey,
       mdblistApiKey: value.mdblistApiKey,
       setMdblistApiKey: value.setMdblistApiKey,
+      tvdbApiKey: value.tvdbApiKey,
+      setTvdbApiKey: value.setTvdbApiKey,
       theme: value.theme,
       setTheme: value.setTheme,
       uiAccent: value.uiAccent,
@@ -66,28 +65,22 @@ export function SettingsProvider({
       lang: value.lang,
       t: value.t,
       pickLang: value.pickLang,
-      profileId: value.profileId,
-      setProfileId: value.setProfileId,
-      profilePassword: value.profilePassword,
-      setProfilePassword: value.setProfilePassword,
       exportData: value.exportData,
       importData: value.importData,
       copyUrl: value.copyUrl,
-      saveAndCopyProfileUrl: value.saveAndCopyProfileUrl,
     }),
     [
       value.tmdbKey, value.setTmdbKey,
       value.tmdbKeyInput, value.setTmdbKeyInput,
       value.showKey, value.setShowKey,
       value.mdblistApiKey, value.setMdblistApiKey,
+      value.tvdbApiKey, value.setTvdbApiKey,
       value.theme, value.setTheme,
       value.uiAccent, value.setUiAccent,
       value.lang,
       value.t, value.pickLang,
-      value.profileId, value.setProfileId,
-      value.profilePassword, value.setProfilePassword,
       value.exportData, value.importData,
-      value.copyUrl, value.saveAndCopyProfileUrl,
+      value.copyUrl,
     ],
   )
 

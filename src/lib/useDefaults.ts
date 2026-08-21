@@ -24,6 +24,7 @@ export interface DefaultsState {
   defaultLogoFitEnabled: boolean
   defaultNetworkLogo: boolean
   defaultRibbonSide: RibbonSide
+  defaultEpisodeMetadataSource: "tmdb" | "tvdb"
   globalBadges: boolean
   rankingBadges: boolean
   /** Componenti del badge genere/rating (default tutti ON). */
@@ -33,6 +34,7 @@ export interface DefaultsState {
   ratingSources: string[]
   networkLogo: boolean
   ribbonSide: RibbonSide
+  episodeMetadataSource: "tmdb" | "tvdb"
   gradientHeight: number
   blurIntensity: number
   blurFade: number
@@ -60,6 +62,7 @@ const DEFAULTS: DefaultsState = {
   defaultLogoFitEnabled: true,
   defaultNetworkLogo: true,
   defaultRibbonSide: "left",
+  defaultEpisodeMetadataSource: "tmdb",
   globalBadges: true,
   rankingBadges: true,
   badgeGenre: true,
@@ -68,6 +71,7 @@ const DEFAULTS: DefaultsState = {
   ratingSources: ["imdb", "tmdb"],
   networkLogo: true,
   ribbonSide: "left",
+  episodeMetadataSource: "tmdb",
   gradientHeight: 30,
   blurIntensity: 5,
   blurFade: 60,
@@ -110,6 +114,8 @@ interface StoredDefaults {
   defaultNetworkLogo?: boolean
   defaultRibbonSide?: RibbonSide
   ribbonSide?: RibbonSide
+  defaultEpisodeMetadataSource?: "tmdb" | "tvdb"
+  episodeMetadataSource?: "tmdb" | "tvdb"
   autoRotateClean?: boolean
 }
 
@@ -149,6 +155,7 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
     defaultLogoFitEnabled: d.defaultLogoFitEnabled ?? true,
     defaultNetworkLogo: d.defaultNetworkLogo ?? d.networkLogo ?? true,
     defaultRibbonSide: d.defaultRibbonSide ?? d.ribbonSide ?? "left",
+    defaultEpisodeMetadataSource: d.defaultEpisodeMetadataSource ?? d.episodeMetadataSource ?? "tmdb",
     globalBadges: d.globalBadges ?? d.defaultGlobalBadges ?? true,
     rankingBadges: d.rankingBadges ?? d.defaultRankingBadges ?? true,
     badgeGenre: d.badgeGenre ?? d.defaultBadgeGenre ?? true,
@@ -157,6 +164,7 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
     ratingSources: d.ratingSources ?? d.defaultRatingSources ?? ["imdb", "tmdb"],
     networkLogo: d.networkLogo ?? d.defaultNetworkLogo ?? true,
     ribbonSide: d.ribbonSide ?? d.defaultRibbonSide ?? "left",
+    episodeMetadataSource: d.episodeMetadataSource ?? d.defaultEpisodeMetadataSource ?? "tmdb",
     gradientHeight: d.gradientHeight ?? d.defaultGradientHeight ?? 30,
     blurIntensity: d.blurIntensity ?? d.defaultBlurIntensity ?? 5,
     blurFade: d.blurFade ?? d.defaultBlurFade ?? 60,
@@ -192,6 +200,7 @@ function defaultsToPayload(d: DefaultsState): Record<string, unknown> {
     defaultLogoFitEnabled: d.defaultLogoFitEnabled,
     networkLogo: d.defaultNetworkLogo,
     ribbonSide: d.defaultRibbonSide,
+    episodeMetadataSource: d.defaultEpisodeMetadataSource,
   }
 }
 

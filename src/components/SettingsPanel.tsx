@@ -23,10 +23,12 @@ interface Props {
   importData: () => void
   mdblistApiKey: string
   setMdblistApiKey: (v: string) => void
+  tvdbApiKey?: string
+  setTvdbApiKey?: (v: string) => void
   mobile?: boolean
 }
 
-export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSettingsOpen, exportData, importData, mdblistApiKey, setMdblistApiKey, mobile }: Props) {
+export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSettingsOpen, exportData, importData, mdblistApiKey, setMdblistApiKey, tvdbApiKey = "", setTvdbApiKey, mobile }: Props) {
   const accentColor = usePSelector((v) => v.accentColor)
   const uiAccent = usePSelector((v) => v.uiAccent)
   const setUiAccent = usePSelector((v) => v.setUiAccent)
@@ -51,6 +53,7 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
   }, [])
   const [tmdbKeyError, setTmdbKeyError] = useState<string | undefined>(undefined)
   const [mdblistKeyError, setMdblistKeyError] = useState<string | undefined>(undefined)
+  const [tvdbKeyError, setTvdbKeyError] = useState<string | undefined>(undefined)
   const [cacheCount, setCacheCount] = useState<number | null>(null)
 
   useEffect(() => {
@@ -121,6 +124,15 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
           onBlur={() => { if (mdblistApiKey.length > 0 && mdblistApiKey.length < 20) { setMdblistKeyError(t("ui.keyTooShort")); } else { setMdblistKeyError(undefined) } }}
           placeholder={t("ui.mdblistKeyPlaceholder")}
           error={mdblistKeyError}
+        />
+        <SecretInput
+          label={t("ui.tvdbKey")}
+          icon={<Tv className="w-3.5 h-3.5" />}
+          value={tvdbApiKey}
+          onChange={(v) => { if (setTvdbApiKey) setTvdbApiKey(v); try { localStorage.setItem("tvdb_key", v) } catch {} }}
+          onBlur={() => { if (tvdbApiKey.length > 0 && tvdbApiKey.length < 10) { setTvdbKeyError(t("ui.keyTooShort")); } else { setTvdbKeyError(undefined) } }}
+          placeholder={t("ui.tvdbKeyPlaceholder")}
+          error={tvdbKeyError}
         />
       </div>
 
@@ -488,6 +500,39 @@ export function SettingsPanel({ tmdbKeyInput, setTmdbKeyInput, setTmdbKey, setSe
             {t("ui.uiAccentDynamic")}
           </span>
           <Toggle value={uiAccent} onChange={setUiAccent} label={t("ui.uiAccentDynamic")} />
+        </div>
+        <div className="pt-2 border-t border-surface2/40 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-zinc-300 font-medium flex items-center gap-1.5 shrink-0">
+              <Tv className="w-3.5 h-3.5 text-sky-400" />
+              {t("ui.episodeMetadataSource")}
+            </span>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => { ed.setDefaultEpisodeMetadataSource("tmdb"); ed.setEpisodeMetadataSource("tmdb") }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
+                  ed.episodeMetadataSource === "tmdb"
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "bg-white/5 text-muted hover:bg-white/10 hover:text-zinc-200"
+                }`}
+              >
+                TMDB
+              </button>
+              <button
+                type="button"
+                onClick={() => { ed.setDefaultEpisodeMetadataSource("tvdb"); ed.setEpisodeMetadataSource("tvdb") }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
+                  ed.episodeMetadataSource === "tvdb"
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "bg-white/5 text-muted hover:bg-white/10 hover:text-zinc-200"
+                }`}
+              >
+                TVDB
+              </button>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted leading-tight">{t("ui.episodeMetadataSourceHint")}</p>
         </div>
       </div>
 

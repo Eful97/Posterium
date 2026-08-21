@@ -5,8 +5,7 @@ import { cacheGet, cacheSet } from "@/lib/cache"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
-import { getFullProfileData } from "@/lib/profile-store"
-import { decodeConfig } from "@/lib/config-token"
+import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
 import {
   getFullDetails,
   getExternalIds,
@@ -22,6 +21,7 @@ import {
 } from "@/lib/tmdb"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
+import { enrichVideosWithTvdb } from "@/lib/tvdb"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("meta")
@@ -152,20 +152,21 @@ export async function posteriumMeta(
   const stType = normalizeMediaType(mediaType)
   const tmdbMediaType = stType === "movie" ? "movie" : "tv"
   const mdblistKeyParam = req.nextUrl.searchParams.get("mdblist_key") || undefined
+  const tvdbKeyParam = req.nextUrl.searchParams.get("tvdb_key") || undefined
 
-  let apiKey = resolveRequestApiKey(req)
-  let mdblistKey = mdblistKeyParam || process.env.POSTERIUM_MDBLIST_KEY
-  let userConfig = null
+  const apiKey = resolveRequestApiKey(req)
+  const mdblistKey = mdblistKeyParam || process.env.POSTERIUM_MDBLIST_KEY
+  const tvdbApiKey = tvdbKeyParam || process.env.POSTERIUM_TVDB_API_KEY || process.env.TVDB_API_KEY
+  let userConfig: Partial<PosteriumUserConfig> | null = null
 
-  if (userParam) {
-    const fullProfile = await getFullProfileData(userParam).catch(() => null)
-    if (fullProfile?.apiKeys?.tmdbKey) apiKey = fullProfile.apiKeys.tmdbKey
-    if (!mdblistKey && fullProfile?.apiKeys?.mdblistApiKey) mdblistKey = fullProfile.apiKeys.mdblistApiKey
-    if (fullProfile?.config) userConfig = fullProfile.config
-  }
-  if (!userConfig && configParam) {
+  if (configParam) {
     userConfig = decodeConfig(configParam)
   }
+  if (!userConfig) {
+    userConfig = getServerDefaults()
+  }
+
+  const episodeMetadataSource = userConfig?.episodeMetadataSource || (tvdbApiKey ? "tvdb" : "tmdb")
 
   // Risoluzione ID TMDB e IMDb
   let tmdbId: number | null = null
@@ -186,7 +187,7 @@ export async function posteriumMeta(
     return metaResponse({ meta: null })
   }
 
-  const cacheKey = `stremio:meta:${stType}:${cleanId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+  const cacheKey = `stremio:meta:${stType}:${cleanId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${tvdbApiKey ? `:tk${hashFragment(tvdbApiKey)}` : ""}:es${episodeMetadataSource}`
   const cached = cacheGet<{ meta: StremioMetaDetail }>(cacheKey)
   if (cached) return metaResponse(cached)
 
@@ -309,6 +310,11 @@ export async function posteriumMeta(
             })
           }
         }
+      }
+
+      // Se la fonte metadati episodi è TVDB ed è presente una chiave TVDB, arricchisci con copertine e trame TVDB
+      if (videos.length > 0 && episodeMetadataSource === "tvdb" && tvdbApiKey) {
+        await enrichVideosWithTvdb(videos, imdbId, tmdbId, tvdbApiKey, "ita")
       }
     }
 

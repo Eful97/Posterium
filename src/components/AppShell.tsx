@@ -7,9 +7,8 @@ import { useT } from "@/lib/contexts/TranslationContext"
 import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
 import { ToastProvider } from "@/components/Toast"
-import { ProfileUnlock } from "@/components/ProfileUnlock"
 import { HomeStatusStrip } from "@/components/HomeStatusStrip"
-import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Download, User, Check } from "lucide-react"
+import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Download, Check } from "lucide-react"
 
 // Code-splitting: viste/modali pesanti caricate on-demand per ridurre il JS iniziale.
 const SettingsPanel = dynamic(() => import("@/components/SettingsPanel").then((m) => m.SettingsPanel), { ssr: false })
@@ -18,15 +17,12 @@ const MyPostersView = dynamic(() => import("@/components/MyPostersView").then((m
 const CataloghiView = dynamic(() => import("@/components/CataloghiView").then((m) => m.CataloghiView), { ssr: false })
 const EditView = dynamic(() => import("@/components/EditView"), { ssr: false, loading: () => <div className="h-64 flex items-center justify-center text-xs text-zinc-500 animate-pulse">…</div> })
 const ProxyModal = dynamic(() => import("@/components/ProxyModal").then((m) => m.ProxyModal), { ssr: false })
-const ProfileModal = dynamic(() => import("@/components/ProfileModal").then((m) => m.ProfileModal), { ssr: false })
 const OnboardingTour = dynamic(() => import("@/components/OnboardingTour").then((m) => m.OnboardingTour), { ssr: false })
 
 export function AppShell() {
   const setLangOpen = usePSelector((v) => v.setLangOpen)
   const setSettingsOpen = usePSelector((v) => v.setSettingsOpen)
   const accentColor = usePSelector((v) => v.accentColor)
-  const profileId = usePSelector((v) => v.profileId)
-  const profileStateless = usePSelector((v) => v.profileStateless)
   const settingsOpen = usePSelector((v) => v.settingsOpen)
   const serviceErrors = usePSelector((v) => v.serviceErrors)
 
@@ -36,8 +32,6 @@ export function AppShell() {
   const urlPattern = usePSelector((v) => v.urlPattern)
   const view = usePSelector((v) => v.view)
   const router = usePSelector((v) => v.router)
-  const profileLocked = usePSelector((v) => v.profileLocked)
-  const profileModalSuppressed = usePSelector((v) => v.profileModalSuppressed)
   const mappings = usePSelector((v) => v.mappings)
   const selected = usePSelector((v) => v.selected)
   const tmdbKeyInput = usePSelector((v) => v.tmdbKeyInput)
@@ -47,6 +41,8 @@ export function AppShell() {
   const importData = usePSelector((v) => v.importData)
   const mdblistApiKey = usePSelector((v) => v.mdblistApiKey)
   const setMdblistApiKey = usePSelector((v) => v.setMdblistApiKey)
+  const tvdbApiKey = usePSelector((v) => v.tvdbApiKey)
+  const setTvdbApiKey = usePSelector((v) => v.setTvdbApiKey)
   const goHome = usePSelector((v) => v.goHome)
   const refreshLists = usePSelector((v) => v.refreshLists)
   const langRef = usePSelector((v) => v.langRef)
@@ -54,7 +50,6 @@ export function AppShell() {
   const { t, lang, pickLang } = useT()
   const [refreshing, setRefreshing] = useState(false)
   const [proxyOpen, setProxyOpen] = useState(false)
-  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [closingLang, setClosingLang] = useState(false)
   const [closingSettings, setClosingSettings] = useState(false)
   const closingLangRef = useRef<ReturnType<typeof setTimeout>>(null)
@@ -84,18 +79,6 @@ export function AppShell() {
     }
   }, [])
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      // Con un profilo salvato (profileLocked) l'overlay di sblocco prende il
-      // posto del modale di benvenuto. profileModalSuppressed: profilo stale o
-      // rifiutato in questa sessione → niente "crea un profilo".
-      if (!profileId && !profileLocked && !profileModalSuppressed) {
-        setProfileModalOpen(true)
-      }
-    }, 100)
-    return () => clearTimeout(t)
-  }, [profileId, profileLocked, profileModalSuppressed])
-
   // Blocca lo scroll del body quando le impostazioni mobili sono aperte
   useEffect(() => {
     if (!settingsOpen) return
@@ -115,8 +98,7 @@ export function AppShell() {
   }, [])
 
   const handleInstallCatalog = async () => {
-    const base = `${window.location.origin}/manifest.json`
-    const url = profileId && !profileStateless ? `${window.location.origin}/u/${profileId}/manifest.json` : base
+    const url = `${window.location.origin}/manifest.json`
     await navigator.clipboard.writeText(url)
     setManifestCopied(true)
     if (manifestCopiedTimerRef.current) clearTimeout(manifestCopiedTimerRef.current)
@@ -146,7 +128,6 @@ export function AppShell() {
         suppressHydrationWarning
         aria-label={manifestCopied ? t("ui.copied") : t("ui.installCatalog")}
         onClick={handleInstallCatalog}
-        disabled={!urlPattern && !profileId}
         className={`top-action-button h-9 w-9 flex items-center justify-center border transition-all duration-150 ${
           manifestCopied
             ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm"
@@ -155,7 +136,6 @@ export function AppShell() {
       >
         {manifestCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Download className="w-4 h-4" />}
       </button>
-      <button type="button" aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><User className="w-4 h-4" /></button>
       <button type="button" aria-label={t("ui.addonProxy")} onClick={() => setProxyOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-accent-orange"><Sparkles className="w-4 h-4" /></button>
       <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="top-action-button h-9 px-2 text-xs font-semibold bg-white/[0.06] border border-white/10 text-zinc-200">{mappings.length}</button>
       <button type="button" aria-label={t("ui.settings")} onClick={() => setSettingsOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-zinc-200 press-scale"><Settings className="w-4 h-4" /></button>
@@ -165,7 +145,6 @@ export function AppShell() {
   return (
     <>
     <ToastProvider>
-    {profileLocked && <ProfileUnlock />}
     <div className="app-shell text-foreground relative overflow-x-hidden" style={{ "--bg-accent": accentColor ?? undefined } as CSSProperties}>
       {/* Home: la versione è già nella strip di stato in basso → badge in alto rimosso */}
       {serviceErrors.tmdb && (
@@ -197,8 +176,7 @@ export function AppShell() {
             suppressHydrationWarning
             aria-label={manifestCopied ? t("ui.copied") : t("ui.installCatalog")}
             onClick={handleInstallCatalog}
-            disabled={!urlPattern && !profileId}
-            className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 press-scale ${
+            className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 press-scale ${
               manifestCopied
                 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
                 : "text-zinc-300 hover:bg-white/[0.08]"
@@ -206,13 +184,12 @@ export function AppShell() {
           >
             {manifestCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Download className="w-4 h-4" />}
           </button>
-          <button type="button" aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale"><User className="w-4 h-4" /></button>
           <button type="button" aria-label={t("ui.addonProxy")} onClick={() => setProxyOpen(true)} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-accent-orange hover:bg-white/[0.08] press-scale"><Sparkles className="w-4 h-4" /></button>
           <div className="h-5 w-px bg-white/10 self-center" />
           <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="h-9 w-9 flex items-center justify-center rounded-lg text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] active:scale-[0.93] transition-all duration-150 press-scale">{mappings.length}</button>
           <div className="relative">
             <button type="button" aria-label={t("ui.settings")} onClick={(e) => { e.stopPropagation(); setSettingsOpen((o) => !o) }} className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale ${settingsOpen ? "dropdown-open" : ""}`}><Settings className="w-4 h-4" /></button>
-            <div className="hidden md:block">{settingsOpen && <SettingsPanel tmdbKeyInput={tmdbKeyInput} setTmdbKeyInput={setTmdbKeyInput} setTmdbKey={setTmdbKey} setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} mdblistApiKey={mdblistApiKey} setMdblistApiKey={setMdblistApiKey} />}</div>
+            <div className="hidden md:block">{settingsOpen && <SettingsPanel tmdbKeyInput={tmdbKeyInput} setTmdbKeyInput={setTmdbKeyInput} setTmdbKey={setTmdbKey} setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} mdblistApiKey={mdblistApiKey} setMdblistApiKey={setMdblistApiKey} tvdbApiKey={tvdbApiKey} setTvdbApiKey={setTvdbApiKey} />}</div>
           </div>
         </div>
       </div>
@@ -235,7 +212,6 @@ export function AppShell() {
         )}
 
         <ProxyModal isOpen={proxyOpen} onClose={() => setProxyOpen(false)} />
-        <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
         <div key={view} className="animate-view-enter">
           {view === "search" ? <SearchView /> : view === "myposters" ? <MyPostersView /> : view === "cataloghi" ? <CataloghiView /> : <EditView />}
         </div>
@@ -277,7 +253,7 @@ export function AppShell() {
             <h2 className="text-sm font-semibold text-zinc-200">{t("ui.settingsTitle")}</h2>
           </div>
           <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <SettingsPanel mobile tmdbKeyInput={tmdbKeyInput} setTmdbKeyInput={setTmdbKeyInput} setTmdbKey={setTmdbKey} setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} mdblistApiKey={mdblistApiKey} setMdblistApiKey={setMdblistApiKey} />
+            <SettingsPanel mobile tmdbKeyInput={tmdbKeyInput} setTmdbKeyInput={setTmdbKeyInput} setTmdbKey={setTmdbKey} setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} mdblistApiKey={mdblistApiKey} setMdblistApiKey={setMdblistApiKey} tvdbApiKey={tvdbApiKey} setTvdbApiKey={setTvdbApiKey} />
           </div>
         </div>
       )}

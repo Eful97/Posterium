@@ -6,7 +6,6 @@ import { cacheClear } from "@/lib/cache"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getTop10 } from "@/lib/flixpatrol"
 import { getById } from "@/lib/store"
-import { getFullProfileData } from "@/lib/profile-store"
 import { __resetJWRankingsCache } from "@/lib/justwatch"
 
 vi.mock("@/lib/flixpatrol", () => ({
@@ -21,13 +20,8 @@ vi.mock("@/lib/server-defaults", () => ({
   getServerDefaults: vi.fn(() => ({})),
 }))
 
-vi.mock("@/lib/profile-store", () => ({
-  getFullProfileData: vi.fn(),
-}))
-
 const mockedGetTop10 = vi.mocked(getTop10)
 const mockedGetById = vi.mocked(getById)
-const mockedGetFullProfileData = vi.mocked(getFullProfileData)
 
 function justWatchResponse(tmdbId: number, imdbId?: string): Response {
   return Response.json({
@@ -66,7 +60,6 @@ describe("GET /catalog/[type]/[id]", () => {
     vi.restoreAllMocks()
     mockedGetTop10.mockReset()
     mockedGetById.mockReset()
-    mockedGetFullProfileData.mockReset()
     __resetJWRankingsCache()
     cacheClear()
   })
@@ -222,46 +215,6 @@ describe("GET /catalog/[type]/[id]", () => {
       name: "House of the Dragon",
       poster: expect.stringContaining("/api/poster/movie/8282"),
     })
-  })
-
-  it("resolves the TMDB key from the profile (?u=) so catalogs are not empty", async () => {
-    mockedGetFullProfileData.mockResolvedValue({
-      config: { globalBadges: true, logo: true } as never,
-      apiKeys: { tmdbKey: "profile-key", mdblistApiKey: "mdblist-key" },
-    })
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(justWatchResponse(8282, "tt0848228"))
-      .mockResolvedValueOnce(tmdbShowResponse(8282))
-
-    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-jw-movies.json?u=550e8400-e29b-41d4-a716-446655440000")
-    const res = await GET(req, { params: Promise.resolve({ type: "movie", id: "posterium-jw-movies.json" }) })
-    const body = await res.json()
-
-    expect(mockedGetFullProfileData).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000")
-    expect(res.status).toBe(200)
-    expect(body.metas).toHaveLength(1)
-    expect(body.metas[0]).toMatchObject({ id: "tmdb:8282", type: "movie" })
-  })
-
-  it("uses the profile MDBList key for anime catalogs", async () => {
-    mockedGetFullProfileData.mockResolvedValue({
-      config: { globalBadges: true, logo: true } as never,
-      apiKeys: { tmdbKey: "profile-key", mdblistApiKey: "mdblist-key" },
-    })
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(Response.json({ items: [{ tmdb: 3026, imdb: "tt1068680" }] }))
-      .mockResolvedValueOnce(Response.json({ id: 3026, name: "Cowboy Bebop", first_air_date: "1998-04-03" }))
-
-    const req = new NextRequest("http://localhost:3000/catalog/series/posterium-anime.json?u=550e8400-e29b-41d4-a716-446655440000")
-    const res = await GET(req, { params: Promise.resolve({ type: "series", id: "posterium-anime.json" }) })
-    const body = await res.json()
-
-    expect(res.status).toBe(200)
-    expect(body.metas).toHaveLength(1)
-    expect(body.metas[0]).toMatchObject({ id: "tmdb:3026", type: "series", name: "Cowboy Bebop" })
-    // Il catalogo conosce la posizione in lista: la incorpora nell'URL poster
-    // come animerank, così il rank appare su Stremio senza dipendere da chiavi.
-    expect(body.metas[0].poster).toContain("animerank=1")
   })
 
   it("exposes a tmdb:<id> provider id when no IMDb id is resolvable (AIOMetadata compat)", async () => {

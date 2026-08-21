@@ -71,22 +71,31 @@ export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps)
       if (target.id) {
         testEndpoint = mdblistApiKey
           ? `https://api.mdblist.com/lists/${target.id}/items?apikey=${encodeURIComponent(mdblistApiKey)}&limit=3`
-          : `https://mdblist.com/api/lists/${target.id}`
+          : `https://mdblist.com/lists/${encodeURIComponent(target.id)}/json`
       } else if (target.user && target.slug) {
         testEndpoint = mdblistApiKey
           ? `https://api.mdblist.com/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}/items?apikey=${encodeURIComponent(mdblistApiKey)}&limit=3`
-          : `https://mdblist.com/api/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}`
+          : `https://mdblist.com/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}/json`
       }
 
       if (testEndpoint) {
-        const res = await fetch(testEndpoint, { signal: AbortSignal.timeout(6000) }).catch(() => null)
+        let res = await fetch(testEndpoint, {
+          headers: { "User-Agent": "Mozilla/5.0 Posterium" },
+          signal: AbortSignal.timeout(6000),
+        }).catch(() => null)
+        if ((!res || !res.ok) && target.user && target.slug) {
+          res = await fetch(`https://mdblist.com/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}/json`, {
+            headers: { "User-Agent": "Mozilla/5.0 Posterium" },
+            signal: AbortSignal.timeout(6000),
+          }).catch(() => null)
+        }
         if (res && res.ok) {
           const data = await res.json()
-          const payload = data?.data?.items || data?.items || data?.shows || data?.movies || (Array.isArray(data) ? data : [])
+          const payload = Array.isArray(data) ? data : (data?.data?.items || data?.items || data?.shows || data?.movies || [])
           if (Array.isArray(payload) && payload.length > 0) {
-            setPreviewItems(payload.slice(0, 3).map((it: { title?: string; name?: string; year?: number }) => ({
+            setPreviewItems(payload.slice(0, 3).map((it: { title?: string; name?: string; year?: number; release_year?: number }) => ({
               title: it.title || it.name || "Titolo",
-              year: it.year || 0,
+              year: it.year || it.release_year || 0,
             })))
           }
         }

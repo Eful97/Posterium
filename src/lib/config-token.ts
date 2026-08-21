@@ -53,6 +53,7 @@ export const configTokenSchema = z.object({
   catalogRenames: z.record(z.string().max(80), z.string().max(100)).optional(),
   customCatalogs: z.array(customCatalogSchema).optional(),
   disabledCatalogIds: z.array(z.string().max(80)).optional(),
+  episodeMetadataSource: z.enum(["tmdb", "tvdb"]).optional(),
 })
 
 export type PosteriumUserConfig = z.infer<typeof configTokenSchema>

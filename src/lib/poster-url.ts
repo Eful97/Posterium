@@ -62,52 +62,10 @@ interface PosterState {
   tmdbKey: string
 }
 
-export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string; profileId?: string | null; mdblistApiKey?: string; configToken?: string | null }): string {
-  // Profilo STATELESS: la config viaggia nel config token firmato (`?config=`)
-  // invece di `?u=` — nessun salvataggio sul server. Le chiavi (TMDB/MDBList)
-  // restano esplicite nell'URL come nel ramo senza profilo.
-  //
-  // IMPORTANTE: oltre al token si emettono TUTTI i parametri di stile dello
-  // stato corrente dell'editor (bg/by/br/netLogo/bs/rs/blur...). Nel parsing
-  // della route la query ha precedenza sul config token, quindi i toggle OFF
-  // (es. badge anno disattivato → `by=0`) vengono applicati anche se il token
-  // salvato è stantio o non contiene quei campi. Senza, l'URL non dice al
-  // server cosa disattivare e il badge compare comunque (default ON).
-  if (bp.configToken) {
-    const params = buildStremioPosterSearchParams({
-      apiKey: bp.tmdbKey,
-      mdblistKey: bp.mdblistApiKey,
-      lang: bp.lang,
-      config: bp.configToken,
-      globalBadges: bp.globalBadges,
-      rankingBadges: bp.rankingBadges,
-      badgeGenre: bp.badgeGenre,
-      badgeYear: bp.badgeYear,
-      badgeRating: bp.badgeRating,
-      ratingSources: bp.ratingSources,
-      badgeStyle: bp.badgeStyle,
-      rankingBadgeStyle: bp.rankingBadgeStyle,
-      gradientHeight: bp.gradientHeight,
-      blurIntensity: bp.blurIntensity,
-      blurFade: bp.blurFade,
-      blurDarkness: bp.blurDarkness,
-      blurEnabled: bp.blurEnabled,
-      networkLogo: bp.networkLogo,
-      ribbonSide: bp.ribbonSide,
-    })
-    return `${getPosterPublicBaseUrl()}/api/poster/{type}/{imdb_id}?${params.toString()}`
-  }
-  // Con un profilo attivo l'URL è corto: la config e le chiavi sono sul server
-  // (per-utente) e vengono applicate leggendo `?u=`. Nessun parametro esposto.
-  if (bp.profileId) {
-    return `${getPosterPublicBaseUrl()}/api/poster/{type}/{imdb_id}?u=${bp.profileId}`
-  }
+export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: string; mdblistApiKey?: string }): string {
   let url = `${getPosterPublicBaseUrl()}/api/poster/{type}/{imdb_id}`
   const params = buildStremioPosterSearchParams({
     apiKey: bp.tmdbKey,
-    // Senza profilo la chiave MDBList non è risolvibile server-side: va
-    // esposta nell'URL come `mdblist_key`, così il rank anime dei poster
-    // generati dal pattern funziona anche fuori dal profilo (come api_key).
     mdblistKey: bp.mdblistApiKey,
     lang: bp.lang,
     globalBadges: bp.globalBadges,

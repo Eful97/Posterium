@@ -67,8 +67,8 @@ npm run dev
 ## 🧠 Come Funziona l'Architettura
 
 * **Un solo endpoint di rendering (`/api/poster/{type}/{id}`)**: Lo stesso identico motore grafico SVG/Sharp serve sia l'anteprima interattiva nell'editor (WYSIWYG) sia il poster finale visualizzato su Stremio. Ciò che vedi nell'editor è al pixel identico al risultato su schermo.
-* **Sicurezza & Privacy First**: Nessuna chiave API viene salvata in chiaro sul server o condivisa tra gli utenti. Le chiavi viaggiano con la richiesta oppure risiedono cifrate con AES-256-GCM nel profilo personale dell'utente.
-* **Profili Cloud & Modalità Stateless**: I poster personalizzati e le impostazioni si sincronizzano tramite profili cloud protetti da password (`/u/<uuid>/manifest.json`) oppure viaggiano compressi e firmati digitalmente in un token URL stateless (`?config=eyJ...`).
+* **Semplicità & Manifest Unico**: Nessun sistema di profili o password complesse. L'addon si installa su Stremio direttamente tramite `https://<tuodominio>/manifest.json` e mantiene sempre aggiornati tutti i cataloghi e i poster personalizzati salvati su disco o cloud KV.
+* **Integrazione Dual-Source TMDB & TheTVDB (TVDB)**: Supporto completo per chiavi API TMDB e TVDB con commutazione rapida o selezione preferenziale per thumbnail degli episodi e descrizioni in italiano.
 * **Cache Intelligente & Invalidation Versioning**: Ogni render incorpora una `RENDER_VERSION` deterministica (hash dei file di rendering). Quando il codice grafico o i layout vengono aggiornati, le cache di Stremio e del browser si invalidano automaticamente.
 
 ---
@@ -96,11 +96,13 @@ npm run dev
 ### 🔍 Ricerca & Interfaccia Utente
 * **Ricerca Cinematografica con Depth Sheen**: Schede titoli immersive con riflessi glass, indicatori tipologia media (*Film* / *Serie TV*), voto medio e badge per titoli già personalizzati.
 * **Cronologia Ricerche Rapida**: Salvataggio automatico delle ricerche recenti con pulsante di pulizia immediata in 1-click.
-* **Installazione & Condivisione Manifest Istantanea**: Copia rapida dell'URL del manifest per Stremio con feedback visivo contestuale.
+* **Installazione & Condivisione Manifest Istantanea**: Copia rapida dell'URL del manifest `/manifest.json` per Stremio con feedback visivo contestuale.
 
 ### 📺 Cataloghi & Ricerca Globale Stremio Integrata
 * **Cataloghi Piattaforme & Trend in Tempo Reale**: Top 20 Italia (JustWatch GraphQL), Netflix, Prime Video, Disney+, Sky/NOW, Apple TV+, HBO Max, Paramount+, Top 20 Anime (MDBList) e liste MDBList personalizzate.
-* **Ricerca Globale Diretta in Stremio**: Cerca qualsiasi film o serie TV direttamente dalla barra di ricerca di Stremio (Smart TV, PC, smartphone); Posterium interroga TMDB e genera al volo i poster personalizzati per ogni risultato con i tuoi loghi, badge di rating, gradienti e stili di profilo.
+* **Importazione Liste MDBList con Anteprima Istantanea**: Aggiungi qualsiasi lista MDBList pubblica o privata; l'app la carica all'istante sia nell'anteprima web che nel manifest Stremio senza richiedere riavvii.
+* **Integrazione Episodi TMDB / TheTVDB (TVDB)**: Possibilità di scegliere nelle Impostazioni se recuperare le immagini still e le descrizioni degli episodi tramite TMDB o TVDB (con supporto lingua italiana e fallback automatico).
+* **Ricerca Globale Diretta in Stremio**: Cerca qualsiasi film o serie TV direttamente dalla barra di ricerca di Stremio (Smart TV, PC, smartphone); Posterium interroga TMDB e genera al volo i poster personalizzati per ogni risultato con i tuoi loghi, badge di rating, gradienti e stili.
 * **Fornitore Metadati 100% Autonomo (`resource: meta`)**: Posterium fornisce direttamente a Stremio le schede dettagli complete (trame in italiano, cast, registi, loghi trasparenti, sfondi 4K, trailer YouTube e **tutte le stagioni ed episodi con titoli italiani, trame e thumbnail**). Nessun addon aggiuntivo o AIOMetadata richiesto: installi solo Posterium ed hai tutto pronto!
 * **Compatibilità Universale Streaming**: Generazione automatica degli ID compatibili (`tt...` e `tt...:S:E`) che si integrano immediatamente con Torrentio, Debrid e qualsiasi lettore Stremio.
 * **Ordinamento e Rinomina Cataloghi**: Personalizza l'ordine di visualizzazione, attiva o disattiva singoli cataloghi e rinominali a piacere direttamente dall'interfaccia web.
@@ -344,7 +346,8 @@ Tutte le variabili sono opzionali con fallback sicuri integrati.
 | `POSTERIUM_SELF_WARMUP` | `1` | Esegue il preriscaldamento automatico dei cataloghi in background all'avvio del container (`0` per disattivare). |
 | `POSTERIUM_BEST_FIT_ENABLED` | *Auto* | Forza l'attivazione (`1`) o la disattivazione (`0`) globale dell'algoritmo Best-Fit. |
 | `POSTERIUM_TMDB_KEY` | *Nessuno* | Chiave TMDB d'istanza (fallback per istanze personali a singolo utente). |
-| `POSTERIUM_MDBLIST_KEY` | *Nessuno* | Chiave MDBList d'istanza (fallback per classifiche anime). |
+| `POSTERIUM_MDBLIST_KEY` | *Nessuno* | Chiave MDBList d'istanza (fallback per classifiche anime e liste). |
+| `POSTERIUM_TVDB_API_KEY` | *Nessuno* | Chiave TheTVDB (TVDB) d'istanza (fallback per thumbnail e trame episodi). |
 
 ### 🎨 Personalizzazione Default per i Cataloghi Stremio
 I poster visualizzati all'interno dei cataloghi Stremio utilizzano i valori di default dell'istanza (`getServerDefaults()`). Su un'istanza personale puoi personalizzarli tramite queste variabili d'ambiente:

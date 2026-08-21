@@ -40,14 +40,20 @@ export function useCustomCatalogs(
 
   const addCustomCatalog = useCallback((catalog: Omit<CustomCatalogConfig, "id">) => {
     const id = `cat_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-    const next = [...customCatalogs, { ...catalog, id }]
-    setCustomCatalogs(next)
-  }, [customCatalogs, setCustomCatalogs])
+    setCustomCatalogsState((prev) => {
+      const next = [...prev, { ...catalog, id }]
+      safeSetItem("posterium_custom_catalogs", JSON.stringify(next))
+      return next
+    })
+  }, [safeSetItem])
 
   const removeCustomCatalog = useCallback((id: string) => {
-    const next = customCatalogs.filter((c) => c.id !== id)
-    setCustomCatalogs(next)
-  }, [customCatalogs, setCustomCatalogs])
+    setCustomCatalogsState((prev) => {
+      const next = prev.filter((c) => c.id !== id)
+      safeSetItem("posterium_custom_catalogs", JSON.stringify(next))
+      return next
+    })
+  }, [safeSetItem])
 
   const toggleCustomCatalog = useCallback((id: string) => {
     setCustomCatalogsState((prev) => {

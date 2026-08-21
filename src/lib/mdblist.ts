@@ -41,19 +41,32 @@ export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MD
     // In produzione MDBLIST_API_URL è assente e si usa l'endpoint reale
     // (con key se disponibile).
     const explicitUrl = process.env.MDBLIST_API_URL
-    const baseUrl = explicitUrl
-      ? `${explicitUrl}/lists/snoak/${slug}`
-      : key
-        ? `https://api.mdblist.com/lists/snoak/${slug}/items?apikey=${encodeURIComponent(key)}&limit=20`
-        : `${MDBLIST_API_URL}/lists/snoak/${slug}`
-    const res = await fetch(baseUrl, { signal: AbortSignal.timeout(10000) })
-    if (!res.ok) return []
+    let res: Response | null = null
+
+    if (explicitUrl) {
+      res = await fetch(`${explicitUrl}/lists/snoak/${slug}`, { signal: AbortSignal.timeout(10000) }).catch(() => null)
+    } else if (key) {
+      res = await fetch(`https://api.mdblist.com/lists/snoak/${slug}/items?apikey=${encodeURIComponent(key)}&limit=20`, {
+        headers: { "User-Agent": "Mozilla/5.0 Posterium" },
+        signal: AbortSignal.timeout(10000),
+      }).catch(() => null)
+    }
+
+    if (!res || !res.ok) {
+      // Fallback endpoint pubblico JSON diretto
+      res = await fetch(`https://mdblist.com/lists/snoak/${slug}/json`, {
+        headers: { "User-Agent": "Mozilla/5.0 Posterium" },
+        signal: AbortSignal.timeout(10000),
+      }).catch(() => null)
+    }
+
+    if (!res || !res.ok) return []
     const data = await res.json()
-    const payload = key && !explicitUrl ? (data?.data || data) : data
-    const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
+    const payload = Array.isArray(data) ? data : (data?.data || data)
+    const rawItems = Array.isArray(payload) ? payload : (payload?.items || payload?.shows || payload?.movies || [])
     const items = rawItems.slice(0, 20).map((item: { imdb_id?: string; imdb?: string; title?: string; year?: number; tmdb_id?: number | string; tmdb?: number | string; ids?: { tmdb?: number | string }; id?: number | string }) => ({
-      imdb: item.imdb_id || item.imdb || '',
-      title: item.title || '',
+      imdb: item.imdb_id || item.imdb || "",
+      title: item.title || "",
       year: item.year || 0,
       tmdb: item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id || undefined,
     }))
@@ -65,8 +78,10 @@ export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MD
 }
 
 export function parseMDBListTarget(input: string): { user?: string; slug?: string; id?: string } | null {
-  const trimmed = input.trim()
+  let trimmed = input.trim()
   if (!trimmed) return null
+  // Rimuove eventuali /json, /items, query params e trailing slash
+  trimmed = trimmed.replace(/\/json\/?$/i, "").replace(/\/items\/?$/i, "").replace(/\?.*$/, "").replace(/\/+$/, "")
   const urlMatch = trimmed.match(/(?:https?:\/\/)?(?:api\.)?mdblist\.com\/lists\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)/i)
   if (urlMatch) {
     return { user: urlMatch[1], slug: urlMatch[2] }
@@ -98,33 +113,49 @@ export async function fetchCustomMDBList(urlOrSlug: string, apiKey?: string, lim
 
   try {
     const explicitUrl = process.env.MDBLIST_API_URL
-    let baseUrl = ""
+    let res: Response | null = null
+
     if (explicitUrl) {
       const slug = target.slug || target.id || "custom"
-      baseUrl = `${explicitUrl}/lists/custom/${slug}`
+      res = await fetch(`${explicitUrl}/lists/custom/${slug}`, { signal: AbortSignal.timeout(10000) }).catch(() => null)
     } else if (key) {
+      let keyUrl = ""
       if (target.id) {
-        baseUrl = `https://api.mdblist.com/lists/${target.id}/items?apikey=${encodeURIComponent(key)}&limit=${limit}`
+        keyUrl = `https://api.mdblist.com/lists/${target.id}/items?apikey=${encodeURIComponent(key)}&limit=${limit}`
       } else if (target.user && target.slug) {
-        baseUrl = `https://api.mdblist.com/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}/items?apikey=${encodeURIComponent(key)}&limit=${limit}`
+        keyUrl = `https://api.mdblist.com/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}/items?apikey=${encodeURIComponent(key)}&limit=${limit}`
       }
-    } else {
-      if (target.id) {
-        baseUrl = `https://mdblist.com/api/lists/${target.id}`
-      } else if (target.user && target.slug) {
-        baseUrl = `https://mdblist.com/api/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}`
+      if (keyUrl) {
+        res = await fetch(keyUrl, {
+          headers: { "User-Agent": "Mozilla/5.0 Posterium" },
+          signal: AbortSignal.timeout(10000),
+        }).catch(() => null)
       }
     }
-    if (!baseUrl) return []
 
-    const res = await fetch(baseUrl, { signal: AbortSignal.timeout(10000) })
-    if (!res.ok) return []
+    // Se la chiamata con chiave è fallita o non c'è chiave, usa l'endpoint pubblico JSON
+    if (!res || !res.ok) {
+      let publicUrl = ""
+      if (target.user && target.slug) {
+        publicUrl = `https://mdblist.com/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}/json`
+      } else if (target.id) {
+        publicUrl = `https://mdblist.com/lists/${encodeURIComponent(target.id)}/json`
+      }
+      if (publicUrl) {
+        res = await fetch(publicUrl, {
+          headers: { "User-Agent": "Mozilla/5.0 Posterium" },
+          signal: AbortSignal.timeout(10000),
+        }).catch(() => null)
+      }
+    }
+
+    if (!res || !res.ok) return []
     const data = await res.json()
-    const payload = key && !explicitUrl ? (data?.data || data) : data
-    const rawItems = payload?.items || payload?.shows || payload?.movies || (Array.isArray(payload) ? payload : [])
+    const payload = Array.isArray(data) ? data : (data?.data || data)
+    const rawItems = Array.isArray(payload) ? payload : (payload?.items || payload?.shows || payload?.movies || [])
     const items = rawItems.slice(0, limit).map((item: { imdb_id?: string; imdb?: string; title?: string; name?: string; year?: number; release_year?: number; tmdb_id?: number | string; tmdb?: number | string; ids?: { tmdb?: number | string }; id?: number | string; mediatype?: "movie" | "show" | "anime" | "tv"; media_type?: "movie" | "show" | "anime" | "tv"; type?: "movie" | "show" | "anime" | "tv" }) => ({
-      imdb: item.imdb_id || item.imdb || '',
-      title: item.title || item.name || '',
+      imdb: item.imdb_id || item.imdb || "",
+      title: item.title || item.name || "",
       year: item.year || item.release_year || 0,
       tmdb: item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id || undefined,
       mediatype: item.mediatype || item.media_type || item.type,

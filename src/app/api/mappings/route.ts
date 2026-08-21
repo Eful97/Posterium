@@ -8,7 +8,6 @@ import { getWarmupCatalogs } from "@/lib/catalog-definitions"
 import { getServerDefaults } from "@/lib/server-defaults"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { resolveRequestApiKey } from "@/lib/tmdb"
-import { getFullProfileData, createOrUpdateProfile, verifyProfilePassword } from "@/lib/profile-store"
 import { createLogger } from "@/lib/logger"
 import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/read-body"
 
@@ -65,46 +64,6 @@ export async function POST(req: NextRequest) {
   }
 
   await upsert(newMapping)
-
-  // Il mapping si salva anche nel profilo, se la richiesta lo indica (un utente
-  // con profilo attivo). profileId sta nel body raw: mappingSchema scarta i campi
-  // sconosciuti ma non li rifiuta.
-  const rawBody = body as Record<string, unknown>
-  const profileId = typeof rawBody.profileId === "string" && rawBody.profileId.length > 0 ? rawBody.profileId : null
-  if (profileId) {
-    const fullProfile = await getFullProfileData(profileId)
-    if (fullProfile) {
-      // Fix H7: il write-back nel profilo richiede la password del profilo
-      // (o un admin token valido). Prima chiunque conoscesse l'UUID — esposto
-      // nelle URL poster pubbliche — poteva sovrascrivere i mapping salvati
-      // della vittima su istanze pubbliche. Profilo protetto senza password
-      // fornita → 401; password errata → 401. Il mapping globale è già stato
-      // salvato sopra: si rifiuta solo la parte profilo.
-      const password = typeof rawBody.password === "string" ? rawBody.password : ""
-      const adminOverride = requireAdminToken(req)
-      if (fullProfile.passwordHash && fullProfile.salt) {
-        if (!adminOverride && (!password || !(await verifyProfilePassword(profileId, password)))) {
-          return Response.json({ error: "Invalid profile password" }, { status: 401 })
-        }
-      } else if (!adminOverride) {
-        // Profilo legacy senza password: come in /api/profile (finding 1) il
-        // write-back da non-admin è rifiutato, altrimenti l'UUID pubblico
-        // basta a sovrascrivere i mapping altrui.
-        return Response.json({ error: "Profile password required" }, { status: 401 })
-      }
-      const updatedMappings = {
-        ...(fullProfile.mappings || {}),
-        [`${newMapping.mediaType}:${newMapping.tmdbId}`]: newMapping,
-      }
-      await createOrUpdateProfile(
-        fullProfile.config,
-        profileId,
-        undefined,
-        fullProfile.apiKeys,
-        updatedMappings,
-      )
-    }
-  }
 
   // Invalidazione mirata al mapping salvato, non globale (i default impattano
   // tutto, un singolo mapping solo il suo poster/badge).

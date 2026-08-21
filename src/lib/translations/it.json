@@ -419,7 +419,10 @@
     "ui.aiomLinkTitle":  "Link per AIOMetadata & Stremio:",
     "ui.existingProfileUuid":  "UUID Profilo Esistente",
     "ui.profileYourPassword":  "La tua password",
-    "ui.loadAndAccess":  "Accedi & Carica Profilo"
-,
-    "ui.statusTmdbUnavailable":  "Servizio TMDB non disponibile — alcuni dati potrebbero essere incompleti"
+    "ui.loadAndAccess":  "Accedi & Carica Profilo",
+    "ui.statusTmdbUnavailable":  "Servizio TMDB non disponibile — alcuni dati potrebbero essere incompleti",
+    "ui.tvdbKey": "Chiave API TheTVDB",
+    "ui.tvdbKeyPlaceholder": "Inserisci chiave API TheTVDB...",
+    "ui.episodeMetadataSource": "Fonte Metadati Episodi",
+    "ui.episodeMetadataSourceHint": "Usa TheTVDB o TMDB per le copertine (screenshot) e le trame degli episodi."
 }

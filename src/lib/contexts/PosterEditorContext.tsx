@@ -38,12 +38,16 @@ export interface PosterEditorCtx {
   setNetworkLogo: (v: boolean | ((prev: boolean) => boolean)) => void
   ribbonSide: "left" | "right"
   setRibbonSide: (v: "left" | "right" | ((prev: "left" | "right") => "left" | "right")) => void
+  episodeMetadataSource: "tmdb" | "tvdb"
+  setEpisodeMetadataSource: (v: "tmdb" | "tvdb" | ((prev: "tmdb" | "tvdb") => "tmdb" | "tvdb")) => void
 
   // ---- Defaults ----
   defaultBadgeStyle: BadgeStyle
   setDefaultBadgeStyle: (v: BadgeStyle | ((prev: BadgeStyle) => BadgeStyle)) => void
   defaultRankingBadgeStyle: RankingBadgeStyle
   setDefaultRankingBadgeStyle: (v: RankingBadgeStyle | ((prev: RankingBadgeStyle) => RankingBadgeStyle)) => void
+  defaultEpisodeMetadataSource: "tmdb" | "tvdb"
+  setDefaultEpisodeMetadataSource: (v: "tmdb" | "tvdb" | ((prev: "tmdb" | "tvdb") => "tmdb" | "tvdb")) => void
   defaultBlurEnabled: boolean
   setDefaultBlurEnabled: (v: boolean | ((prev: boolean) => boolean)) => void
   defaultBlurIntensity: number
@@ -179,6 +183,7 @@ export function PosterEditorProvider({
     defaultGradientHeight, defaultGlobalBadges, defaultRankingBadges,
     defaultBadgeGenre, defaultBadgeYear, defaultBadgeRating, defaultRatingSources,
     defaultAutoRotateClean, defaultLogoFitEnabled, defaultNetworkLogo, defaultRibbonSide,
+    episodeMetadataSource, defaultEpisodeMetadataSource,
     loadDefaultsToState, update,
   } = defaults
 
@@ -343,6 +348,16 @@ export function PosterEditorProvider({
       const next = typeof v === "function" ? v(defaultRibbonSide) : v
       update({ defaultRibbonSide: next, ribbonSide: next })
     }, [defaultRibbonSide, update])
+  const setEpisodeMetadataSource = useCallback(
+    (v: "tmdb" | "tvdb" | ((prev: "tmdb" | "tvdb") => "tmdb" | "tvdb")) => {
+      const next = typeof v === "function" ? v(episodeMetadataSource) : v
+      update({ episodeMetadataSource: next, defaultEpisodeMetadataSource: next })
+    }, [episodeMetadataSource, update])
+  const setDefaultEpisodeMetadataSource = useCallback(
+    (v: "tmdb" | "tvdb" | ((prev: "tmdb" | "tvdb") => "tmdb" | "tvdb")) => {
+      const next = typeof v === "function" ? v(defaultEpisodeMetadataSource) : v
+      update({ defaultEpisodeMetadataSource: next, episodeMetadataSource: next })
+    }, [defaultEpisodeMetadataSource, update])
 
   const editorCtx = useMemo<PosterEditorCtx>(
     () => ({
@@ -369,12 +384,16 @@ export function PosterEditorProvider({
       setNetworkLogo,
       ribbonSide,
       setRibbonSide,
+      episodeMetadataSource,
+      setEpisodeMetadataSource,
 
       // Defaults
       defaultBadgeStyle,
       setDefaultBadgeStyle,
       defaultRankingBadgeStyle,
       setDefaultRankingBadgeStyle,
+      defaultEpisodeMetadataSource,
+      setDefaultEpisodeMetadataSource,
       defaultBlurEnabled,
       setDefaultBlurEnabled,
       defaultBlurIntensity,
@@ -468,10 +487,12 @@ export function PosterEditorProvider({
       customBadge, setCustomBadge,
       networkLogo, setNetworkLogo,
       ribbonSide, setRibbonSide,
+      episodeMetadataSource, setEpisodeMetadataSource,
 
       // Defaults
       defaultBadgeStyle, setDefaultBadgeStyle,
       defaultRankingBadgeStyle, setDefaultRankingBadgeStyle,
+      defaultEpisodeMetadataSource, setDefaultEpisodeMetadataSource,
       defaultBlurEnabled, setDefaultBlurEnabled,
       defaultBlurIntensity, setDefaultBlurIntensity,
       defaultBlurFade, setDefaultBlurFade,

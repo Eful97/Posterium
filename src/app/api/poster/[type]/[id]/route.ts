@@ -54,7 +54,6 @@ import { resolveImdbToTmdb } from "@/lib/imdb-resolver"
 import { decodeConfig } from "@/lib/config-token"
 import { createLogger } from "@/lib/logger"
 import { resolvePosterRenderConfig } from "@/lib/poster-config"
-import { getFullProfileData } from "@/lib/profile-store"
 import { selectBestLogo, logoBestLogoFallbackReason } from "@/lib/logo-selection"
 
 // Vercel: limite massimo di esecuzione della funzione. Il render poster ha un
@@ -121,25 +120,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
 
   // Decode optional stateless config token (stile AIOMetadata / RPDB)
   const configToken = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c")
-  let configOverride = configToken ? decodeConfig(configToken) : null
-
-  // UUID-based profile override (stile RPDB / ElfHosted / AIOMetadata): il
-  // profilo (config + chiavi + mapping per-titolo) vince sul config token.
-  // Caricato PRIMA del resolve IMDb→TMDB: il pattern poster `{imdb_id}`
-  // (AIOMetadata) arriva come tt..., e senza la chiave del profilo il resolve
-  // fallisce (nessuna chiave d'istanza di fallback).
-  const profileId = req.nextUrl.searchParams.get("u") || req.nextUrl.searchParams.get("user") || null
-  let profileData: Awaited<ReturnType<typeof getFullProfileData>> = null
-  if (profileId) {
-    profileData = await getFullProfileData(profileId)
-  }
-  const profileTmdbKey = profileData?.apiKeys?.tmdbKey || null
-  const profileMdbListKey = profileData?.apiKeys?.mdblistApiKey || null
+  const configOverride = configToken ? decodeConfig(configToken) : null
 
   let tmdbId = Number(id)
   if (isNaN(tmdbId) || tmdbId <= 0) {
     if (typeof id === "string" && id.startsWith("tt")) {
-      const resolved = await resolveImdbToTmdb(id, mediaType, profileTmdbKey || resolveRequestApiKey(req))
+      const resolved = await resolveImdbToTmdb(id, mediaType, resolveRequestApiKey(req))
       if (resolved) tmdbId = resolved
     }
   }
@@ -151,14 +137,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   // 1. Get mapping + server defaults (no network)
   let mapping = await getById(mediaType, tmdbId)
   const sd = getServerDefaults()
-
-  if (profileData) {
-    configOverride = profileData.config
-    const userMapping = profileData.mappings?.[`${mediaType}:${tmdbId}`]
-    if (userMapping) {
-      mapping = userMapping
-    }
-  }
 
   // Auto-rotate clean poster
   const rotationState = getEffectiveRotationState(mapping)
@@ -187,8 +165,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const rotateKey = isRotating ? `:ci${mapping?.cleanPosterIndex ?? "x"}` : ""
   const mapVersion = mapping?.updatedAt ? `:mu${mapping.updatedAt}` : ""
   const configHash = configOverride ? hashKey(JSON.stringify(configOverride)) : ""
-  const userKey = profileId ? `:u${profileId}` : ""
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}${userKey}`
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}`
   const etagBase = hashKey(`v${RENDER_VERSION}:${type}:${id}:sd${sdHash}:${cacheParams.toString()}${configHash ? `:${configHash}` : ""}`)
   const currentMappingVersion = mappingVersionParam(mapping)
   const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams, {
@@ -395,7 +372,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     }
   } else {
     const preferredLanguage = req.nextUrl.searchParams.get("lang") || "it"
-    const apiKey = profileTmdbKey || resolveRequestApiKey(req)
+    const apiKey = resolveRequestApiKey(req)
     try {
       // F6: session cache editor — i tick di preview sullo stesso titolo
       // non-mappato riusano details/images/externalIds senza rifare la rete.
@@ -435,7 +412,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       // A1: fetch deferito — la media TMDB+IMDb parte subito ma non blocca.
       ratingAbort = imdbId ? new AbortController() : null
       aggregatedRating = imdbId
-        ? fetchAggregatedRating(imdbId, profileMdbListKey || req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || undefined, ratingAbort!.signal).catch(() => null)
+        ? fetchAggregatedRating(imdbId, req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || undefined, ratingAbort!.signal).catch(() => null)
         : Promise.resolve(null)
       genreName = details.genres[0]?.name || null
       voteAverage = details.vote_average ?? 0
@@ -624,7 +601,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         (rankingEnabledEarly && mediaType === "tv")
           ? (Number.isFinite(qAnimeRank) && qAnimeRank > 0
               ? Promise.resolve(qAnimeRank)
-              : fetchMDBList("mdblistAnime", req.nextUrl.searchParams.get("mdblist_key") || profileMdbListKey || process.env.POSTERIUM_MDBLIST_KEY || undefined)
+              : fetchMDBList("mdblistAnime", req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || undefined)
                   .then((entries) => {
                     if (!Array.isArray(entries)) return null
                     const idx = entries.findIndex((e) => {
@@ -657,14 +634,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
           return result
         })(),
         rankingEnabledEarly
-          ? getKeywords(mediaType, tmdbId, (profileTmdbKey || resolveRequestApiKey(req)), renderAbort.signal).catch(() => [])
+          ? getKeywords(mediaType, tmdbId, resolveRequestApiKey(req), renderAbort.signal).catch(() => [])
           : Promise.resolve([]),
         (async () => {
           if (!rankingEnabledEarly) return false
           if (!imdbId) {
             // F6: externalIds già in session cache (ramo non-mappato) → niente rete.
             const extIds = getTMDBSessionCache(mediaType, tmdbId)?.externalIds
-              ?? (await getExternalIds(mediaType, tmdbId, (profileTmdbKey || resolveRequestApiKey(req)), renderAbort.signal).catch(() => null))
+              ?? (await getExternalIds(mediaType, tmdbId, resolveRequestApiKey(req), renderAbort.signal).catch(() => null))
             if (extIds?.imdb_id) imdbId = extIds.imdb_id
           }
           if (!imdbId) return false
@@ -728,7 +705,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       })(),
       (tmdbNetworks.length === 0 && productionCompanies.length === 0)
         ? (async () => {
-    const apiKey = profileTmdbKey || resolveRequestApiKey(req)
+            const apiKey = resolveRequestApiKey(req)
             const preferredLang = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
             // F6: anche il refetch dei dettagli TV riusa la session cache.
             const details = getTMDBSessionCache(mediaType, tmdbId)?.details
