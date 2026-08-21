@@ -44,6 +44,7 @@ export interface StremioTrailer {
 
 export interface StremioMetaDetail {
   id: string
+  imdb_id?: string
   type: "movie" | "series"
   name: string
   genres: string[]
@@ -269,7 +270,7 @@ export async function posteriumMeta(
           const seasonNumber = grp.order || gIdx + 1
           for (let epIdx = 0; epIdx < (grp.episodes || []).length; epIdx++) {
             const ep = grp.episodes[epIdx]
-            const episodeNumber = ep.episode_number || epIdx + 1
+            const episodeNumber = typeof ep.order === "number" ? ep.order + 1 : epIdx + 1
             videos.push({
               id: `${primaryId}:${seasonNumber}:${episodeNumber}`,
               name: ep.name || `Episodio ${episodeNumber}`,
@@ -312,7 +313,8 @@ export async function posteriumMeta(
     }
 
     const meta: StremioMetaDetail = {
-      id: primaryId,
+      id: cleanId,
+      imdb_id: imdbId || undefined,
       type: stType,
       name: details.title || details.name || "",
       genres: (details.genres || []).map((g) => g.name),

@@ -142,7 +142,8 @@ describe("GET /meta/[type]/[id]", () => {
 
     expect(res.status).toBe(200)
     expect(body.meta).toMatchObject({
-      id: "tt11198330",
+      id: "tmdb:94997",
+      imdb_id: "tt11198330",
       type: "series",
       name: "House of the Dragon",
       releaseInfo: "2022",

@@ -276,6 +276,7 @@ export interface TMDBEpisode {
   still_path: string | null
   air_date: string
   vote_average?: number
+  order?: number
 }
 
 export interface TMDBSeasonDetails {
