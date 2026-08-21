@@ -95,7 +95,7 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
   const manifestCatalogs = [
     ...catalogs.map((c) => ({
       ...c,
-      extra: [{ name: "search", isRequired: false }, { name: "skip", isRequired: false }],
+      extra: [{ name: "skip", isRequired: false }],
     })),
     {
       id: "posterium-search-movies",
