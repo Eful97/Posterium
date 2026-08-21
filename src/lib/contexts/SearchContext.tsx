@@ -23,6 +23,7 @@ export interface SearchCtx {
   searchPage: number
   recentSearches: string[]
   removeRecentSearch: (search: string) => void
+  clearRecentSearches: () => void
   doSearch: (q?: string, page?: number) => Promise<void>
   loadMore: () => Promise<void>
   trending: (SearchResult & { rank: number })[]
@@ -60,6 +61,7 @@ export function SearchProvider({
       searchPage: value.searchPage,
       recentSearches: value.recentSearches,
       removeRecentSearch: value.removeRecentSearch,
+      clearRecentSearches: value.clearRecentSearches,
       doSearch: value.doSearch,
       loadMore: value.loadMore,
       trending: value.trending,
@@ -72,7 +74,7 @@ export function SearchProvider({
       value.query, value.setQuery,
       value.results, value.searching, value.error, value.setError,
       value.totalResults, value.totalPages, value.searchPage,
-      value.recentSearches, value.removeRecentSearch,
+      value.recentSearches, value.removeRecentSearch, value.clearRecentSearches,
       value.doSearch, value.loadMore,
       value.trending, value.streamingCharts, value.mdblistAnimeList,
       value.refreshLists, value.STREAMING_PLATFORMS,

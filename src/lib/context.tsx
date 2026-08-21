@@ -20,6 +20,7 @@ import { defaultGradientHeightForPoster } from "./gradient-defaults"
 import { computeLogoOffsetBounds } from "./logo-layout"
 import { useOutsideDismiss } from "./useOutsideDismiss"
 import type { PosteriumUserConfig } from "./config-token"
+import { calculateAverageRating, type AggregatedRatings } from "./ratings"
 import { SearchProvider } from "./contexts/SearchContext"
 import { SettingsProvider } from "./contexts/SettingsContext"
 import { TranslationProvider } from "./contexts/TranslationContext"
@@ -30,6 +31,7 @@ export type ViewType = "search" | "myposters" | "edit" | "cataloghi"
 export interface MetaInfo {
   genres: { id: number; name: string }[]
   voteAverage: number
+  aggregatedRatings?: AggregatedRatings | null
   type?: string
   status?: string
   release_date?: string
@@ -112,6 +114,7 @@ export interface PosteriumCtx {
   searchPage: number
   recentSearches: string[]
   removeRecentSearch: (search: string) => void
+  clearRecentSearches: () => void
   mappings: Mapping[]
   settingsRef: React.RefObject<HTMLDivElement | null>
   langRef: React.RefObject<HTMLDivElement | null>
@@ -155,6 +158,7 @@ export interface PosteriumCtx {
   /** Vero se il modale di first-visit è stato soppresso nella sessione. */
   profileModalSuppressed: boolean
   accentColor: string | null
+  autoAccentColor: string | null
   setAccentColor: (v: string | null) => void
   topEdgeColor: string | null
   autoSaveExcludedPosters: (nextExcluded: string[], nextRotationPosters?: string[], nextPreviewPoster?: TMDBImage) => Promise<void>
@@ -303,6 +307,7 @@ export function usePosterium(): PosteriumCtx {
     badgeGenre, setBadgeGenre,
     badgeYear, setBadgeYear,
     badgeRating, setBadgeRating,
+    ratingSources,
     badgeStyle, setBadgeStyle,
     rankingBadgeStyle, setRankingBadgeStyle,
     customBadge, setCustomBadge,
@@ -387,6 +392,7 @@ export function usePosterium(): PosteriumCtx {
   const [previewUrl, setPreviewUrl] = useState("")
   const [imdbTop250, setImdbTop250] = useState(false)
   const [accentColor, setAccentColor] = useState<string | null>(null)
+  const [autoAccentColor, setAutoAccentColor] = useState<string | null>(null)
   // Accent adattivo: espone il colore dominante del poster come
   // --color-accent su <html>. Con uiAccent attivo, tutte le regole
   // .ui-accent (glow di pagina, slider, toggle, tab chip, podio)
@@ -404,7 +410,6 @@ export function usePosterium(): PosteriumCtx {
   const langRef = useRef<HTMLDivElement>(null)
   const posterScrollRef = useRef<HTMLDivElement>(null)
   const [posterScrollInfo, setPosterScrollInfo] = useState({ top: 0, height: 100 })
-  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 
   // Appearance state (logo, backdrop, editing — owned by PosterEditorProvider via usePosterEditor())
@@ -849,11 +854,11 @@ export function usePosterium(): PosteriumCtx {
   useEffect(() => {
     setUrlPattern(buildUrlPattern({
       globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
-      badgeGenre, badgeYear, badgeRating,
+      badgeGenre, badgeYear, badgeRating, ratingSources,
       customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide,
       tmdbKey, lang, profileId: profileStateless ? null : profileId, mdblistApiKey, configToken: profileStateless ? profileConfigToken : null,
     }))
-  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, networkLogo, ribbonSide, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang, profileId, mdblistApiKey, profileStateless, profileConfigToken]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, ratingSources, networkLogo, ribbonSide, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang, profileId, mdblistApiKey, profileStateless, profileConfigToken]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
 
   // Auto-sync profile configuration when profileId is active
   const lastSyncRef = useRef<string>("")
@@ -866,6 +871,7 @@ export function usePosterium(): PosteriumCtx {
       badgeGenre: badgeGenre === false ? false : undefined,
       badgeYear: badgeYear === false ? false : undefined,
       badgeRating: badgeRating === false ? false : undefined,
+      ratingSources: ratingSources.length > 0 ? ratingSources : undefined,
       blurEnabled, blurIntensity, blurFade, blurDarkness,
       gradientHeight, networkLogo, ribbonSide, autoRotateClean, logoFitEnabled: defaultLogoFitEnabled,
       customBadge: customBadge || undefined,
@@ -902,7 +908,7 @@ export function usePosterium(): PosteriumCtx {
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [profileId, profilePassword, profileStateless, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames, tmdbKey, mdblistApiKey])
+  }, [profileId, profilePassword, profileStateless, globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, ratingSources, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames, tmdbKey, mdblistApiKey])
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -917,27 +923,21 @@ export function usePosterium(): PosteriumCtx {
         metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
         topEdgeColor, accentColor, lang, tmdbKey,
       },
-      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide }
+      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, ratingSources, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide }
     )
     setPreviewUrl(url)
   }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, selectedBackdrop,
     logoScale, logoOffsetX, logoOffsetY, backdropScale, backdropOffsetX, backdropOffsetY,
     metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, accentColor, lang, tmdbKey,
-    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide])
+    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, ratingSources, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide])
 
   useEffect(() => {
     if (!navigation.selected) { setPreviewUrl(""); return }
-    if (previewTimerRef.current) clearTimeout(previewTimerRef.current)
-    previewTimerRef.current = setTimeout(buildPreviewUrlCb, 200)
-    return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current) }
+    buildPreviewUrlCb()
   }, [navigation.selected, buildPreviewUrlCb])
 
-  useEffect(() => {
-    return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current) }
-  }, [])
-
   // --- Color detection ---
-  useRootColors(navigation.previewPoster, metaInfo.genres[0]?.name, posterUrl, { setAccentColor, setTopEdgeColor })
+  useRootColors(navigation.previewPoster, metaInfo.genres[0]?.name, posterUrl, { setAccentColor, setAutoAccentColor, setTopEdgeColor })
 
   // --- Caricamento dati item corrente (M16) ---
   // Condiviso tra openPosterBrowser e l'effetto cambio lingua: ricarica
@@ -948,9 +948,10 @@ export function usePosterium(): PosteriumCtx {
     const itemId = item.id
     const itemType = item.media_type
     const mdblistParam = mdblistApiKey ? "&mdblist_key=" + encodeURIComponent(mdblistApiKey) : ""
-    const detailsUrl = `/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistParam}`
+    const rsrcParam = ratingSources && ratingSources.length > 0 ? "&rsrc=" + encodeURIComponent(ratingSources.join(",")) : ""
+    const detailsUrl = `/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistParam}${rsrcParam}`
     const [details, rankData, awardData] = await Promise.all([
-      http<{ genres: { id: number; name: string }[]; voteAverage: number; voteCount: number; status: string | null; type: string | null; release_date: string | null; first_air_date: string | null; last_air_date: string | null; next_episode_to_air: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons: number | null; number_of_episodes: number | null; title: string | null; name: string | null; imdb_id: string | null; networks: { name: string }[]; production_companies: { name: string }[]; original_language: string }>(detailsUrl, { timeout: 30000 }).catch((e) => { console.error("[posterium] Details fetch failed:", e); setServiceErrors((prev) => ({ ...prev, tmdb: true })); return { genres: [] as { id: number; name: string }[], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null, networks: [] as { name: string }[], production_companies: [] as { name: string }[], original_language: "en" } }),
+      http<{ genres: { id: number; name: string }[]; voteAverage: number; voteCount: number; status: string | null; type: string | null; release_date: string | null; first_air_date: string | null; last_air_date: string | null; next_episode_to_air: { air_date: string; episode_number: number; season_number: number } | null; number_of_seasons: number | null; number_of_episodes: number | null; title: string | null; name: string | null; imdb_id: string | null; networks: { name: string }[]; production_companies: { name: string }[]; original_language: string; aggregatedRatings?: AggregatedRatings | null }>(detailsUrl, { timeout: 30000 }).catch((e) => { console.error("[posterium] Details fetch failed:", e); setServiceErrors((prev) => ({ ...prev, tmdb: true })); return { genres: [] as { id: number; name: string }[], voteAverage: 0, voteCount: 0, status: null, type: null, release_date: null, first_air_date: null, last_air_date: null, next_episode_to_air: null, number_of_seasons: null, number_of_episodes: null, title: null, name: null, imdb_id: null, networks: [] as { name: string }[], production_companies: [] as { name: string }[], original_language: "en", aggregatedRatings: null } }),
       http<{ rank: number | null }>(`/api/trending/rank?type=${itemType}&id=${itemId}&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 15000 }).catch(() => ({ rank: null })),
       http<{ awards: string[]; nominations: string[]; studios: string[]; director: string | null; keywords: string[] }>(`/api/awards/${itemType}/${itemId}?api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 15000 }).catch(() => ({ awards: [] as string[], nominations: [] as string[], studios: [] as string[], director: null, keywords: [] as string[] })),
     ])
@@ -965,7 +966,7 @@ export function usePosterium(): PosteriumCtx {
     if (details.title) navigation.setSelected((prev) => ({ ...prev!, title: details.title! }))
     if (details.name) navigation.setSelected((prev) => ({ ...prev!, name: details.name! }))
     const tmdbNetworks = itemType === "tv" ? (details.networks || []).map((n: { name: string }) => n.name) : (details.production_companies || []).map((c: { name: string }) => c.name)
-    setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, imdb_id: details.imdb_id ?? undefined, type: details.type ?? undefined, status: details.status ?? undefined, release_date: details.release_date ?? undefined, first_air_date: details.first_air_date ?? undefined, last_air_date: details.last_air_date ?? undefined, next_episode_to_air: details.next_episode_to_air ?? undefined, number_of_seasons: details.number_of_seasons ?? undefined, number_of_episodes: details.number_of_episodes ?? undefined, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks).length ? matchTMDBStudios(tmdbNetworks) : (awardData?.studios || []), director: awardData?.director || null, keywords: awardData?.keywords || [] })
+    setMetaInfo({ genres: details.genres || [], voteAverage: details.voteAverage || 0, aggregatedRatings: details.aggregatedRatings ?? null, imdb_id: details.imdb_id ?? undefined, type: details.type ?? undefined, status: details.status ?? undefined, release_date: details.release_date ?? undefined, first_air_date: details.first_air_date ?? undefined, last_air_date: details.last_air_date ?? undefined, next_episode_to_air: details.next_episode_to_air ?? undefined, number_of_seasons: details.number_of_seasons ?? undefined, number_of_episodes: details.number_of_episodes ?? undefined, awards: awardData?.awards || [], nominations: awardData?.nominations || [], studios: matchTMDBStudios(tmdbNetworks).length ? matchTMDBStudios(tmdbNetworks) : (awardData?.studios || []), director: awardData?.director || null, keywords: awardData?.keywords || [] })
     setTrendRank(rankData.rank || null)
     const extImdbId = item.imdb_id || details.imdb_id
     if (extImdbId) {
@@ -981,6 +982,32 @@ export function usePosterium(): PosteriumCtx {
     }
     return { details, data, itemId, itemType }
   }
+
+  // --- Aggiornamento reattivo voto medio quando cambia ratingSources ---
+  useEffect(() => {
+    if (metaInfo.aggregatedRatings) {
+      const calculated = calculateAverageRating(metaInfo.aggregatedRatings, ratingSources)
+      if (typeof calculated === "number" && calculated > 0) {
+        setMetaInfo((prev) => ({ ...prev, voteAverage: calculated }))
+        return
+      }
+    }
+    if (!navigation.selected || !tmdbKey) return
+    const itemId = navigation.selected.id
+    const itemType = navigation.selected.media_type
+    const mdblistParam = mdblistApiKey ? "&mdblist_key=" + encodeURIComponent(mdblistApiKey) : ""
+    const rsrcParam = ratingSources && ratingSources.length > 0 ? "&rsrc=" + encodeURIComponent(ratingSources.join(",")) : ""
+    const detailsUrl = `/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistParam}${rsrcParam}`
+    http<{ voteAverage: number; aggregatedRatings?: AggregatedRatings | null }>(detailsUrl, { timeout: 15000 }).then((d) => {
+      if (typeof d?.voteAverage === "number" && d.voteAverage > 0) {
+        setMetaInfo((prev) => ({
+          ...prev,
+          voteAverage: d.voteAverage,
+          aggregatedRatings: d.aggregatedRatings ?? prev.aggregatedRatings,
+        }))
+      }
+    }).catch(() => {})
+  }, [ratingSources]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Poster image refresh ---
   useEffect(() => {
@@ -1204,6 +1231,7 @@ export function usePosterium(): PosteriumCtx {
       badgeGenre: badgeGenre === false ? false : undefined,
       badgeYear: badgeYear === false ? false : undefined,
       badgeRating: badgeRating === false ? false : undefined,
+      ratingSources: ratingSources.length > 0 ? ratingSources : undefined,
       badgeStyle: badgeStyle as PosteriumUserConfig["badgeStyle"],
       rankingBadgeStyle: rankingBadgeStyle as PosteriumUserConfig["rankingBadgeStyle"],
       blurEnabled,
@@ -1256,7 +1284,7 @@ export function usePosterium(): PosteriumCtx {
       console.error("[posterium] Failed to save profile:", e)
       import("sonner").then(({ toast }) => toast.error("Errore nel salvare il profilo"))
     }
-  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames, profileId, profilePassword, safeSetItem])
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, ratingSources, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames, profileId, profilePassword, safeSetItem])
 
   const posterActivePath = navigation.previewPoster?.file_path
 
@@ -1323,12 +1351,12 @@ export function usePosterium(): PosteriumCtx {
     tmdbKeyInput, setTmdbKeyInput,
     showKey, setShowKey, setTmdbKey,
     mdblistApiKey, setMdblistApiKey: setMdblistApiKeyFn,
-    exportData, importData, removeRecentSearch: search.removeRecentSearch,
+    exportData, importData, removeRecentSearch: search.removeRecentSearch, clearRecentSearches: search.clearRecentSearches,
     copyUrl, copied, saveAndCopyProfileUrl, profileCopied, profileId, setProfileId,
     profilePassword, setProfilePassword: setProfilePasswordPersist,
     profileStateless, setProfileStateless, profileConfigToken, setProfileConfigToken,
     profileLocked, profileLoadError, profileLoading, unlockProfile, dismissProfileLock, loadProfile, profileModalSuppressed,
-    accentColor, setAccentColor,
+    accentColor, autoAccentColor, setAccentColor,
     topEdgeColor,
     autoSaveExcludedPosters,
     theme, setTheme,
@@ -1347,13 +1375,13 @@ export function usePosterium(): PosteriumCtx {
     openSections, posterScrollInfo, logoBounds,
     trendRank, mdblistMatch, imdbTop250, metaInfo, navigation.previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
-    mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, mappings,
+    mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, search.clearRecentSearches, mappings,
     langOpen, settingsOpen, showLangPicker,
     tmdbKeyInput, showKey, copied, profileCopied, profileId, mdblistApiKey, profilePassword,
     profileStateless, setProfileStateless, profileConfigToken,
     profileLocked, profileLoadError, profileLoading,
     loadProfile, unlockProfile, dismissProfileLock, profileModalSuppressed,
-    accentColor, setAccentColor,
+    accentColor, autoAccentColor, setAccentColor,
     topEdgeColor, autoSaveExcludedPosters,
     trending.trending, trending.trendingError, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,

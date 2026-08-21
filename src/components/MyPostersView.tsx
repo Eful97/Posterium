@@ -6,7 +6,7 @@ import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult } from "@/lib/types"
 import { posterUrl } from "@/lib/utils"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
-import { Search, X, Square, Trash2, Calendar, ArrowUpAZ, ChevronDown, Clapperboard, Tv, Flag, Clipboard } from "lucide-react"
+import { Search, X, Square, CheckSquare, Trash2, Calendar, ArrowUpAZ, ChevronDown, Clapperboard, Tv, Sparkles, LayoutGrid } from "lucide-react"
 import { MoodBoardTile } from "@/components/MoodBoardTile"
 import { PosterLightbox } from "@/components/PosterLightbox"
 import { CollectionBar } from "@/components/CollectionBar"
@@ -19,7 +19,6 @@ export function MyPostersView() {
   const goHome = usePSelector((v) => v.goHome)
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const removeMapping = usePSelector((v) => v.removeMapping)
-  const urlPattern = usePSelector((v) => v.urlPattern)
   const lang = usePSelector((v) => v.lang)
   const { t } = useT()
   const posterCount = useCountUp(mappings.length)
@@ -34,9 +33,7 @@ export function MyPostersView() {
   const [confirmDeleteCollection, setConfirmDeleteCollection] = useState<string | null>(null)
   const [showDeleteSelected, setShowDeleteSelected] = useState(false)
   const [sortBy, setSortBy] = useState<"updated" | "alpha">("updated")
-  const [typeOpen, setTypeOpen] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
-  const [typeClosing, setTypeClosing] = useState(false)
   const [sortClosing, setSortClosing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [lightbox, setLightbox] = useState<{ mapping: Mapping; rect: DOMRect } | null>(null)
@@ -49,26 +46,16 @@ export function MyPostersView() {
     addToCollection,
     removeFromCollection,
   } = useCollections()
-  const typeRef = useRef<HTMLDivElement>(null)
   const sortRef = useRef<HTMLDivElement>(null)
-  const typeCloseTimer = useRef<ReturnType<typeof setTimeout>>(null)
   const sortCloseTimer = useRef<ReturnType<typeof setTimeout>>(null)
 
   // Cleanup dei timer di chiusura dropdown su unmount: evita setState su
   // componente smontato (warning React) e timer pendenti dopo la navigazione.
   useEffect(() => {
     return () => {
-      if (typeCloseTimer.current) clearTimeout(typeCloseTimer.current)
       if (sortCloseTimer.current) clearTimeout(sortCloseTimer.current)
     }
   }, [])
-
-  const closeTypeDropdown = useCallback(() => {
-    if (typeOpen) {
-      setTypeClosing(true)
-      typeCloseTimer.current = setTimeout(() => { setTypeOpen(false); setTypeClosing(false) }, 150)
-    }
-  }, [typeOpen])
 
   const closeSortDropdown = useCallback(() => {
     if (sortOpen) {
@@ -132,19 +119,6 @@ export function MyPostersView() {
     return acc
   }, [collections, mappings])
 
-  // Poster renderizzato dal server (WYSIWYG): l'URL del pattern con
-  // {type}/{imdb_id} sostituiti dal mapping salvato. Il placeholder
-  // "{imdb_id}" (convenzione Stremio) viene riempito con l'id TMDB: la route
-  // poster accetta sia numeri TMDB sia tt... (nota: se il profilo attivo è
-  // stato cancellato server-side, MoodBoardTile ripiega sul poster TMDB raw
-  // via onError). Fallback: TMDB raw.
-  const mappingImgUrl = useCallback((m: Mapping): string => {
-    if (urlPattern && urlPattern.includes("{type}")) {
-      return urlPattern.replace("{type}", m.mediaType).replace("{imdb_id}", String(m.tmdbId))
-    }
-    return posterUrl(m.posterPath, "w342")
-  }, [urlPattern])
-
   const filtered = useMemo(() => {
     return mappings
       .filter((m) => {
@@ -163,15 +137,6 @@ export function MyPostersView() {
       })
       .sort((a, b) => sortBy === "updated" ? b.updatedAt.localeCompare(a.updatedAt) : a.title.localeCompare(b.title))
   }, [mappings, filter, sortBy, typeFilter, activeCollection, collections])
-
-  useEffect(() => {
-    if (!typeOpen) return
-    const handler = (e: MouseEvent) => {
-      if (typeRef.current && !typeRef.current.contains(e.target as Node)) closeTypeDropdown()
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [typeOpen, closeTypeDropdown])
 
   useEffect(() => {
     if (!sortOpen) return
@@ -217,54 +182,167 @@ export function MyPostersView() {
           </div>
         </div>
       </section>
-      <div className="flex flex-wrap items-center gap-2 mb-4 px-4 max-w-7xl mx-auto">
-        <div role="search" className="search-shell flex items-center h-11 rounded-2xl transition-all duration-300 group w-full md:w-auto md:flex-1 max-w-none md:max-w-[340px]">
-          <span className="shrink-0 pl-2.5 md:pl-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors"><Search size={14} /></span>
-          <input ref={filterRef} value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("ui.filterPlaceholder")} aria-label={t("ui.filterPlaceholder")} className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted focus:placeholder:text-muted px-1.5 md:px-2 h-full transition-colors duration-200" />
-          {filter.length === 0 && (
-            <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 mr-1 text-[10px] font-mono font-medium text-zinc-500 bg-white/[0.06] border border-white/10 rounded-md pointer-events-none select-none">/</kbd>
-          )}
-          {filter.length > 0 && (
-            <button type="button" aria-label={t("ui.filterPlaceholder")} onClick={() => setFilter("")} className="shrink-0 w-8 h-8 mr-1 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full hover:bg-zinc-600 hover:shadow-lg active:scale-90 transition-all duration-200"><X className="w-4 h-4" /></button>
-          )}
+      {/* Barra di ricerca e controlli filtri/azioni */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 mb-4 px-4 max-w-7xl mx-auto">
+        {/* Ricerca e Filtri Tipo */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+          <div role="search" className="search-shell flex items-center h-10 rounded-xl transition-all duration-300 group w-full sm:w-64">
+            <span className="shrink-0 pl-3 text-zinc-500 group-focus-within:text-zinc-300 transition-colors">
+              <Search size={14} />
+            </span>
+            <input
+              ref={filterRef}
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder={t("ui.filterPlaceholder")}
+              aria-label={t("ui.filterPlaceholder")}
+              className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted focus:placeholder:text-muted px-2 h-full transition-colors duration-200"
+            />
+            {filter.length === 0 && (
+              <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 mr-1.5 text-[10px] font-mono font-medium text-zinc-500 bg-white/[0.06] border border-white/10 rounded-md pointer-events-none select-none">
+                /
+              </kbd>
+            )}
+            {filter.length > 0 && (
+              <button
+                type="button"
+                aria-label={t("ui.filterPlaceholder")}
+                onClick={() => setFilter("")}
+                className="shrink-0 w-6 h-6 mr-1.5 flex items-center justify-center bg-zinc-700/60 text-zinc-300 rounded-full hover:bg-zinc-600 active:scale-90 transition-all duration-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Segmented Type Control Chips */}
+          <div className="flex items-center p-1 bg-surface rounded-xl border border-surface2/60 gap-1 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setTypeFilter("all")}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
+                typeFilter === "all"
+                  ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/30 font-semibold shadow-sm"
+                  : "text-muted hover:text-zinc-200 hover:bg-white/5 border border-transparent"
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>{t("ui.all")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTypeFilter("movie")}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
+                typeFilter === "movie"
+                  ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/30 font-semibold shadow-sm"
+                  : "text-muted hover:text-zinc-200 hover:bg-white/5 border border-transparent"
+              }`}
+            >
+              <Clapperboard className="w-3.5 h-3.5" />
+              <span>{t("ui.filterMovie")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTypeFilter("tv")}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
+                typeFilter === "tv"
+                  ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/30 font-semibold shadow-sm"
+                  : "text-muted hover:text-zinc-200 hover:bg-white/5 border border-transparent"
+              }`}
+            >
+              <Tv className="w-3.5 h-3.5" />
+              <span>{t("ui.filterSeries")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTypeFilter("anime")}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
+                typeFilter === "anime"
+                  ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/30 font-semibold shadow-sm"
+                  : "text-muted hover:text-zinc-200 hover:bg-white/5 border border-transparent"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{t("ui.filterAnime")}</span>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1 md:gap-2 shrink-0 w-full md:w-auto md:ml-auto">
-          <button type="button" aria-label={selectMode ? t("ui.cancel") : t("ui.select")} onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }} className={`shrink-0 w-11 h-11 md:w-auto md:h-11 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-90 flex items-center justify-center gap-1 flex-1 md:flex-none ${selectMode ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-surface text-muted hover:bg-surface2 hover:text-blue-400"}`}><span className="shrink-0">{selectMode ? <X className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}</span><span className="hidden md:inline">{selectMode ? t("ui.cancel") : t("ui.select")}</span></button>
-          {mappings.length > 0 && (
-            <div className="relative">
-              <button type="button" aria-label={t("ui.deleteAll")} onClick={() => setShowDeleteAll((v) => !v)} className="shrink-0 w-11 h-11 md:w-auto md:h-11 md:px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-red-900/30 border border-red-900/50 text-danger hover:bg-red-900/50 hover:border-red-500 active:scale-[0.98] flex items-center justify-center press-scale flex-1 md:flex-none"><Trash2 className="w-4 h-4" /></button>
-              <ConfirmDialog open={showDeleteAll} title={t("ui.confirmDeleteAll")} message={t("ui.confirmDeleteAllMsg", { count: mappings.length })} confirmLabel={t("ui.deleteAll")} onConfirm={deleteAll} onCancel={() => setShowDeleteAll(false)} inline />
-            </div>
-          )}
+
+        {/* Azioni: Ordinamento, Selezione Multipla, Elimina Tutto */}
+        <div className="flex items-center gap-1.5 shrink-0 self-end md:self-auto">
           <div className="relative" ref={sortRef}>
-            <button type="button" aria-label={sortBy === "updated" ? t("ui.sortRecent") : t("ui.sortAZ")} onClick={() => { setSortOpen((o) => !o); setTypeOpen(false) }} className="flex items-center gap-1 h-11 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-muted hover:bg-surface2 transition-all duration-150 shrink-0 px-3 press-scale flex-1 md:flex-none justify-center">
-              <span className="shrink-0">{sortBy === "updated" ? <Calendar className="w-3.5 h-3.5" /> : <ArrowUpAZ className="w-3.5 h-3.5" />}</span>
-              <span className="hidden md:inline truncate">{sortBy === "updated" ? t("ui.recent") : t("ui.sortAZ")}</span>
-              <ChevronDown className="w-3 h-3 shrink-0" />
+            <button
+              type="button"
+              aria-label={sortBy === "updated" ? t("ui.sortRecent") : t("ui.sortAZ")}
+              onClick={() => setSortOpen((o) => !o)}
+              className="flex items-center gap-1.5 h-10 px-3 rounded-xl text-xs font-medium bg-surface border border-surface2/60 text-muted hover:text-zinc-200 hover:bg-surface2 transition-all duration-150 press-scale"
+            >
+              {sortBy === "updated" ? <Calendar className="w-3.5 h-3.5 text-amber-400" /> : <ArrowUpAZ className="w-3.5 h-3.5 text-sky-400" />}
+              <span className="truncate">{sortBy === "updated" ? t("ui.recent") : t("ui.sortAZ")}</span>
+              <ChevronDown className="w-3 h-3 text-zinc-400" />
             </button>
             {(sortOpen || sortClosing) && (
-              <div className={`absolute right-0 top-full mt-2 glass-panel rounded-2xl p-1.5 z-50 min-w-44 ${sortClosing ? "animate-fade-scale-out" : "animate-fade-scale-in"}`}>
-                <button type="button" onClick={() => { setSortBy("updated"); closeSortDropdown() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "updated" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-surface2"}`}>{t("ui.sortRecent")}</button>
-                <button type="button" onClick={() => { setSortBy("alpha"); closeSortDropdown() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${sortBy === "alpha" ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-surface2"}`}>{t("ui.sortAlpha")}</button>
+              <div className={`absolute right-0 top-full mt-1.5 bg-[#141418] border border-border/80 rounded-xl p-1.5 z-50 min-w-40 shadow-xl shadow-black/80 ${sortClosing ? "animate-fade-scale-out" : "animate-fade-scale-in"}`}>
+                <button
+                  type="button"
+                  onClick={() => { setSortBy("updated"); closeSortDropdown() }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left transition-all duration-150 ${
+                    sortBy === "updated" ? "bg-accent-orange/15 text-accent-orange font-semibold" : "text-zinc-300 hover:bg-surface2"
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  {t("ui.sortRecent")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSortBy("alpha"); closeSortDropdown() }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left transition-all duration-150 ${
+                    sortBy === "alpha" ? "bg-accent-orange/15 text-accent-orange font-semibold" : "text-zinc-300 hover:bg-surface2"
+                  }`}
+                >
+                  <ArrowUpAZ className="w-3.5 h-3.5" />
+                  {t("ui.sortAlpha")}
+                </button>
               </div>
             )}
           </div>
-          <div className="relative" ref={typeRef}>
-            <button type="button" aria-label={typeFilter === "all" ? t("ui.all") : typeFilter === "movie" ? t("ui.filterMovie") : typeFilter === "tv" ? t("ui.filterSeries") : t("ui.filterAnime")} onClick={() => { setTypeOpen((o) => !o); setSortOpen(false) }} className="flex items-center gap-1 h-11 md:px-3 md:gap-2 rounded-xl text-xs font-medium bg-surface text-muted hover:bg-surface2 transition-all duration-150 shrink-0 px-3 press-scale flex-1 md:flex-none justify-center">
-              <span className="shrink-0">{typeFilter === "movie" ? <Clapperboard className="w-3.5 h-3.5" /> : typeFilter === "tv" ? <Tv className="w-3.5 h-3.5" /> : typeFilter === "anime" ? <Flag className="w-3.5 h-3.5" /> : <Clipboard className="w-3.5 h-3.5" />}</span>
-              <span className="hidden md:inline truncate">{typeFilter === "all" ? t("ui.all") : typeFilter === "movie" ? t("ui.filterMovie") : typeFilter === "tv" ? t("ui.filterSeries") : t("ui.filterAnime")}</span>
-              <ChevronDown className="w-3 h-3 shrink-0" />
-            </button>
-            {(typeOpen || typeClosing) && (
-              <div className={`absolute right-0 top-full mt-2 glass-panel rounded-2xl p-1.5 z-50 min-w-44 ${typeClosing ? "animate-fade-scale-out" : "animate-fade-scale-in"}`}>
-                {(["all", "movie", "tv", "anime"] as const).map((typeKey) => (
-                  <button type="button" key={typeKey} onClick={() => { setTypeFilter(typeKey); closeTypeDropdown() }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${typeFilter === typeKey ? "bg-accent/10 text-accent font-medium" : "text-zinc-200 hover:bg-surface2"}`}>
-                    {typeKey === "all" ? t("ui.all") : typeKey === "movie" ? <><Clapperboard className="w-3.5 h-3.5" /> {t("ui.filterMovie")}</> : typeKey === "tv" ? <><Tv className="w-3.5 h-3.5" /> {t("ui.filterSeries")}</> : <><Flag className="w-3.5 h-3.5" /> {t("ui.filterAnime")}</>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+
+          <button
+            type="button"
+            aria-label={selectMode ? t("ui.cancel") : t("ui.select")}
+            onClick={() => { setSelectMode((v) => !v); setSelected(new Set()) }}
+            className={`h-10 px-3 rounded-xl text-xs font-medium transition-all duration-150 active:scale-95 flex items-center justify-center gap-1.5 border ${
+              selectMode
+                ? "bg-blue-500/20 text-blue-400 border-blue-500/40 shadow-sm"
+                : "bg-surface border-surface2/60 text-muted hover:bg-surface2 hover:text-zinc-200"
+            }`}
+          >
+            {selectMode ? <CheckSquare className="w-3.5 h-3.5 text-blue-400" /> : <Square className="w-3.5 h-3.5" />}
+            <span>{selectMode ? t("ui.cancel") : t("ui.select")}</span>
+          </button>
+
+          {mappings.length > 0 && (
+            <div className="relative">
+              <button
+                type="button"
+                aria-label={t("ui.deleteAll")}
+                onClick={() => setShowDeleteAll((v) => !v)}
+                className="h-10 px-3 rounded-xl text-xs font-medium transition-all duration-150 bg-rose-500/10 border border-rose-500/25 text-rose-300 hover:bg-rose-500/20 hover:text-rose-200 active:scale-95 flex items-center justify-center press-scale"
+                title={t("ui.deleteAll")}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+              <ConfirmDialog
+                open={showDeleteAll}
+                title={t("ui.confirmDeleteAll")}
+                message={t("ui.confirmDeleteAllMsg", { count: mappings.length })}
+                confirmLabel={t("ui.deleteAll")}
+                onConfirm={deleteAll}
+                onCancel={() => setShowDeleteAll(false)}
+                inline
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -285,12 +363,27 @@ export function MyPostersView() {
       )}
 
       {selected.size > 0 && (
-        <div className="flex items-center justify-between gap-3 mb-4 mx-auto max-w-7xl w-full px-4 animate-fade-scale-in">
-          <span className="text-sm font-semibold text-zinc-200 tabular-nums">{t("ui.selectedCount", { count: selected.size })}</span>
+        <div className="flex items-center justify-between gap-3 mb-4 mx-auto max-w-7xl w-full px-4 animate-fade-scale-in bg-surface/80 border border-surface2/80 rounded-2xl p-2.5">
+          <span className="text-xs font-semibold text-zinc-200 tabular-nums">
+            {t("ui.selectedCount", { count: selected.size })}
+          </span>
           <div className="flex items-center gap-2">
-            <button type="button" aria-label={t("ui.cancel")} onClick={() => { setSelectMode(false); setSelected(new Set()) }} className="text-xs text-muted hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-surface2 active:scale-95 transition-all duration-150">{t("ui.cancel")}</button>
+            <button
+              type="button"
+              aria-label={t("ui.cancel")}
+              onClick={() => { setSelectMode(false); setSelected(new Set()) }}
+              className="text-xs text-muted hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-surface2 active:scale-95 transition-all duration-150"
+            >
+              {t("ui.cancel")}
+            </button>
             <div className="relative">
-              <button type="button" aria-label={t("ui.delete")} disabled={deleting} onClick={() => setShowDeleteSelected(true)} className="flex items-center gap-1.5 text-xs font-semibold text-danger bg-red-900/25 border border-red-900/50 px-4 py-1.5 rounded-xl hover:bg-red-900/40 hover:border-red-500 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+              <button
+                type="button"
+                aria-label={t("ui.delete")}
+                disabled={deleting}
+                onClick={() => setShowDeleteSelected(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-rose-300 bg-rose-500/15 border border-rose-500/30 px-3.5 py-1.5 rounded-xl hover:bg-rose-500/25 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <Trash2 className="w-3.5 h-3.5" /> {deleting ? t("ui.deleting") : t("ui.delete")}
               </button>
               <ConfirmDialog
@@ -375,13 +468,13 @@ export function MyPostersView() {
             onSelect={() => toggleSelect(`${m.mediaType}:${m.tmdbId}`)}
             onOpen={() => navigateToPoster(toSearchResult({ id: m.tmdbId, media_type: m.mediaType, title: m.title, name: m.title, poster_path: m.posterPath }), "myposters")}
             onQuickView={(e) => {
-              const tileEl = (e.target as HTMLElement).closest("button")
-              const rect = tileEl?.getBoundingClientRect()
-              if (rect) setLightbox({ mapping: m, rect })
+              const target = e.currentTarget as HTMLElement
+              const tileEl = target.closest(".surface-card") || target.closest(".group") || target
+              const rect = tileEl ? tileEl.getBoundingClientRect() : new DOMRect(window.innerWidth / 2, window.innerHeight / 2, 0, 0)
+              setLightbox({ mapping: m, rect })
             }}
             onRemove={(e) => { e.stopPropagation(); setConfirmRemove(m) }}
             collectionCount={collections.filter((c) => c.posterIds.includes(`${m.mediaType}:${m.tmdbId}`)).length}
-            imgSrc={mappingImgUrl(m)}
             t={t}
           />
         ))}
@@ -394,7 +487,6 @@ export function MyPostersView() {
         collections={collections}
         onAddToCollection={addToCollection}
         onRemoveFromCollection={removeFromCollection}
-        imgSrc={lightbox ? mappingImgUrl(lightbox.mapping) : null}
         lang={lang}
         onOpenEditor={() => {
           if (!lightbox) return

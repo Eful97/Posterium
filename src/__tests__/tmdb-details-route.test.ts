@@ -10,9 +10,13 @@ vi.mock("@/lib/tmdb", () => ({
   getDetails: vi.fn(),
   getExternalIds: vi.fn(),
 }))
-vi.mock("@/lib/ratings", () => ({
-  fetchAggregatedRating: vi.fn(async () => null),
-}))
+vi.mock("@/lib/ratings", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/ratings")>()
+  return {
+    ...actual,
+    fetchAggregatedRating: vi.fn(async () => null),
+  }
+})
 
 const BASE_DETAILS = {
   title: "Test", name: null, genres: [], vote_average: 7.3, vote_count: 0, type: "movie",

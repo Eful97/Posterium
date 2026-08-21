@@ -21,6 +21,7 @@ export interface ServerDefaults {
   badgeGenre?: boolean
   badgeYear?: boolean
   badgeRating?: boolean
+  ratingSources?: string[]
   autoRotateClean?: boolean
   defaultLogoFitEnabled?: boolean
   networkLogo?: boolean
@@ -67,6 +68,8 @@ function defaultsFromEnv(): ServerDefaults {
   if (bg !== undefined) d.badgeGenre = bg
   if (by !== undefined) d.badgeYear = by
   if (br !== undefined) d.badgeRating = br
+  const rsrcEnv = process.env.POSTERIUM_RATING_SOURCES?.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
+  if (rsrcEnv && rsrcEnv.length > 0) d.ratingSources = rsrcEnv
   if (blurEn !== undefined) d.blurEnabled = blurEn
   if (netLogo !== undefined) d.networkLogo = netLogo
   if (autoRotate !== undefined) d.autoRotateClean = autoRotate

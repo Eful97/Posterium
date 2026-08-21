@@ -80,16 +80,23 @@ npm run dev
 * **Algoritmo Best-Fit Intelligente**: Analizza automaticamente la luminosità e lo spazio vuoto della locandina per posizionare e scalare il logo nel punto perfetto senza coprire i volti dei protagonisti.
 * **Sfocatura Sfondo Nativa (Sharp C++)**: Generazione di sfondi con effetto blur ultra-rapido (10–20ms) a bassissimo consumo di memoria.
 * **Rotazione Automatica 24h**: Possibilità di selezionare più poster per lo stesso titolo e vederli alternare automaticamente ogni giorno.
+* **Galleria "I Miei Poster" ad Alte Prestazioni**: Visualizzazione istantanea a latenza zero con compositing client-side (clean poster + logo overlay) e Quick-View Lightbox con zoom fluido.
 
 ### 🏷️ Badge, Rating & Premi Cinematografici
 * **6 Stili Badge Genere/Voto**: *Shadow, Pill, Bar, Colored, Bordo, Vetro* con colori accent adattivi calcolati in base alla palette cromatica del poster.
 * **5 Stili Badge Trend/Classifiche**: *Default, Bar, Colored, Pill, Nastro Netflix*.
+* **16 Fonti di Valutazione con Icone Vettoriali Lucide**: Supporto completo per IMDb, TMDB, Rotten Tomatoes (Critics & Audience), Metacritic, Letterboxd, MyAnimeList, AniList, FilmAffinity, Trakt e provider streaming.
 * **Nastro Verticale Netflix Top 10**: Il caratteristico nastro rosso laterale con posizione in classifica e logo della piattaforma (con supporto dedicato alle classifiche Anime).
 * **Fonti Metadati Dinamiche**:
   * **Classifiche in tempo reale**: Integrazione JustWatch (GraphQL), FlixPatrol Top 10 e liste MDBList.
   * **Premi & Registi Cult**: Riconoscimento automatico premi Oscar, Cannes, BAFTA, Emmy e festival internazionali tramite Wikidata.
   * **Badge "Absolute Cinema"**: Applicato automaticamente ai capolavori presenti nella IMDb Top 250.
   * **Rating Ponderato**: Calcolo del voto medio bilanciato combinando IMDb e TMDB.
+
+### 🔍 Ricerca & Interfaccia Utente
+* **Ricerca Cinematografica con Depth Sheen**: Schede titoli immersive con riflessi glass, indicatori tipologia media (*Film* / *Serie TV*), voto medio e badge per titoli già personalizzati.
+* **Cronologia Ricerche Rapida**: Salvataggio automatico delle ricerche recenti con pulsante di pulizia immediata in 1-click.
+* **Installazione & Condivisione Manifest Istantanea**: Copia rapida dell'URL del manifest per Stremio con feedback visivo contestuale.
 
 ### 🎭 Loghi Ufficiali Network & Piattaforme
 Riconoscimento automatico della rete di produzione o distribuzione con sovrapposizione del logo vettoriale in alta definizione:

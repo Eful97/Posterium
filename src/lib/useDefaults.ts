@@ -19,6 +19,7 @@ export interface DefaultsState {
   defaultBadgeGenre: boolean
   defaultBadgeYear: boolean
   defaultBadgeRating: boolean
+  defaultRatingSources: string[]
   defaultAutoRotateClean: boolean
   defaultLogoFitEnabled: boolean
   defaultNetworkLogo: boolean
@@ -29,6 +30,7 @@ export interface DefaultsState {
   badgeGenre: boolean
   badgeYear: boolean
   badgeRating: boolean
+  ratingSources: string[]
   networkLogo: boolean
   ribbonSide: RibbonSide
   gradientHeight: number
@@ -53,6 +55,7 @@ const DEFAULTS: DefaultsState = {
   defaultBadgeGenre: true,
   defaultBadgeYear: true,
   defaultBadgeRating: true,
+  defaultRatingSources: ["imdb", "tmdb"],
   defaultAutoRotateClean: false,
   defaultLogoFitEnabled: true,
   defaultNetworkLogo: true,
@@ -62,6 +65,7 @@ const DEFAULTS: DefaultsState = {
   badgeGenre: true,
   badgeYear: true,
   badgeRating: true,
+  ratingSources: ["imdb", "tmdb"],
   networkLogo: true,
   ribbonSide: "left",
   gradientHeight: 30,
@@ -99,6 +103,8 @@ interface StoredDefaults {
   defaultBadgeGenre?: boolean
   defaultBadgeYear?: boolean
   defaultBadgeRating?: boolean
+  defaultRatingSources?: string[]
+  ratingSources?: string[]
   defaultAutoRotateClean?: boolean
   defaultLogoFitEnabled?: boolean
   defaultNetworkLogo?: boolean
@@ -138,6 +144,7 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
     defaultBadgeGenre: d.defaultBadgeGenre ?? d.badgeGenre ?? true,
     defaultBadgeYear: d.defaultBadgeYear ?? d.badgeYear ?? true,
     defaultBadgeRating: d.defaultBadgeRating ?? d.badgeRating ?? true,
+    defaultRatingSources: d.defaultRatingSources ?? d.ratingSources ?? ["imdb", "tmdb"],
     defaultAutoRotateClean: d.defaultAutoRotateClean ?? d.autoRotateClean ?? false,
     defaultLogoFitEnabled: d.defaultLogoFitEnabled ?? true,
     defaultNetworkLogo: d.defaultNetworkLogo ?? d.networkLogo ?? true,
@@ -147,6 +154,7 @@ function buildFromStored(d: StoredDefaults | null): DefaultsState {
     badgeGenre: d.badgeGenre ?? d.defaultBadgeGenre ?? true,
     badgeYear: d.badgeYear ?? d.defaultBadgeYear ?? true,
     badgeRating: d.badgeRating ?? d.defaultBadgeRating ?? true,
+    ratingSources: d.ratingSources ?? d.defaultRatingSources ?? ["imdb", "tmdb"],
     networkLogo: d.networkLogo ?? d.defaultNetworkLogo ?? true,
     ribbonSide: d.ribbonSide ?? d.defaultRibbonSide ?? "left",
     gradientHeight: d.gradientHeight ?? d.defaultGradientHeight ?? 30,
@@ -179,6 +187,7 @@ function defaultsToPayload(d: DefaultsState): Record<string, unknown> {
     badgeGenre: d.defaultBadgeGenre,
     badgeYear: d.defaultBadgeYear,
     badgeRating: d.defaultBadgeRating,
+    ratingSources: d.defaultRatingSources,
     autoRotateClean: d.defaultAutoRotateClean,
     defaultLogoFitEnabled: d.defaultLogoFitEnabled,
     networkLogo: d.defaultNetworkLogo,

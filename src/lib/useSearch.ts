@@ -121,5 +121,9 @@ export function useSearch(tmdbKey: string, lang: string) {
     setRecentSearches((prev) => prev.filter((s) => s !== search))
   }, [])
 
-  return { query, setQuery, results, setResults, searching, error, setError, totalResults, totalPages, searchPage, recentSearches, doSearch, loadMore, removeRecentSearch }
+  const clearRecentSearches = useCallback(() => {
+    setRecentSearches([])
+  }, [])
+
+  return { query, setQuery, results, setResults, searching, error, setError, totalResults, totalPages, searchPage, recentSearches, doSearch, loadMore, removeRecentSearch, clearRecentSearches }
 }

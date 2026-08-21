@@ -15,8 +15,6 @@ interface PosterLightboxProps {
   collections?: PosterCollection[]
   onAddToCollection?: (collectionId: string, posterKey: string) => void
   onRemoveFromCollection?: (collectionId: string, posterKey: string) => void
-  /** Poster renderizzato dal server (WYSIWYG, /api/poster). Fallback: TMDB. */
-  imgSrc?: string | null
   lang?: string
   onOpenEditor?: () => void
 }
@@ -29,7 +27,6 @@ export function PosterLightbox({
   collections,
   onAddToCollection,
   onRemoveFromCollection,
-  imgSrc,
   lang,
   onOpenEditor,
 }: PosterLightboxProps) {
@@ -42,9 +39,9 @@ export function PosterLightbox({
   const mapping = lightbox?.mapping ?? null
   const rect = lightbox?.rect ?? null
   const posterKey = mapping ? `${mapping.mediaType}:${mapping.tmdbId}` : null
-  const mediaSrc = imgFailed || !imgSrc
-    ? (mapping?.posterPath ? posterUrlFn(mapping.posterPath, "w500") : null)
-    : imgSrc
+  const mediaSrc = imgFailed
+    ? null
+    : (mapping?.posterPath ? posterUrlFn(mapping.posterPath, "w500") : null)
 
   // Start animation on mount
   useEffect(() => {
@@ -170,15 +167,36 @@ export function PosterLightbox({
         <div className="aspect-[2/3] bg-surface relative overflow-hidden">
           {mediaSrc ? (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element -- server-rendered poster / TMDB dynamic URL */}
+              {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
               <img
                 src={mediaSrc}
                 alt={mapping.title}
                 className="w-full h-full object-cover"
-                onError={() => { if (imgSrc && !imgFailed) setImgFailed(true) }}
+                onError={() => { if (!imgFailed) setImgFailed(true) }}
               />
+              {/* Logo overlay */}
+              {mapping.logoPath && (
+                <div
+                  className="absolute inset-x-0 bottom-[16%] flex items-center justify-center pointer-events-none"
+                  style={{
+                    transform: `translate(${mapping.logoOffsetX ?? 0}%, ${-(mapping.logoOffsetY ?? 0)}%)`,
+                  }}
+                >
+                  <div style={{ width: `${mapping.logoScale ?? 75}%` }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
+                    <img
+                      src={posterUrlFn(mapping.logoPath, "w500")}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]"
+                      style={{ objectFit: "contain" }}
+                    />
+                  </div>
+                </div>
+              )}
               {/* Gradient overlay for text readability */}
-              <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/85 via-black/35 to-transparent pointer-events-none" />
             </>
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-surface">

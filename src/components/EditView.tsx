@@ -22,6 +22,7 @@ import { Check, Clock, ExternalLink, Save, Trash2, X } from "lucide-react"
 
 export default function EditView() {
   const accentColor = usePSelector((v) => v.accentColor)
+  const clearRecentSearches = usePSelector((v) => v.clearRecentSearches)
   const doSearch = usePSelector((v) => v.doSearch)
   const goHome = usePSelector((v) => v.goHome)
   const loadingImages = usePSelector((v) => v.loadingImages)
@@ -77,9 +78,23 @@ export default function EditView() {
       <SearchBar tmdbKey={tmdbKey} value={query} onChange={setQuery} onSearch={(q) => { setQuery(q); router.push("search"); doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} />
       {searchFocused && recentSearches.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl p-2 shadow-2xl shadow-black/50 z-50 animate-fade-scale-in">
-          <p className="text-xs text-muted font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
+          <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/[0.06] mb-1">
+            <p className="text-xs text-muted font-semibold">{t("ui.recentSearches")}</p>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => {
+                e.stopPropagation()
+                clearRecentSearches()
+              }}
+              className="text-[11px] text-zinc-400 hover:text-rose-400 font-medium flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded hover:bg-rose-500/10 cursor-pointer"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>{t("ui.clearRecentSearches")}</span>
+            </button>
+          </div>
           {recentSearches.map((s) => (
-            <button type="button" key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { setQuery(s); router.push("search"); doSearch(s); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
+            <button type="button" key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { setQuery(s); router.push("search"); doSearch(s); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
               <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
               <span className="flex-1 truncate">{s}</span>
               <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); removeRecentSearch(s) }} aria-label={t("ui.remove")} className="text-danger hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
@@ -118,12 +133,17 @@ export default function EditView() {
     <div>
       {selected && (
         <div className="flex flex-col items-center w-full">
-          {/* Header editor: solo logo centrato — la toolbar in alto a destra è quella globale di AppShell (come la home) */}
-          <header className="w-full px-4 md:px-6 -mt-1 md:-mt-8 mb-2">
-            <div className="flex items-center justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element -- logo locale */}
-              <img onClick={goHome} src="/posterium.png" alt="Posterium" decoding="async" className="header-logo h-12 md:h-16 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150" />
-            </div>
+          {/* Header editor: logo posterium con altezza home e sottotitolo */}
+          <header className="w-full px-4 md:px-6 -mt-1 md:-mt-4 mb-3 flex flex-col items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element -- logo locale */}
+            <img
+              onClick={goHome}
+              src="/posterium.png"
+              alt="Posterium"
+              decoding="async"
+              className="header-logo h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1"
+            />
+            <p className="header-tagline text-xs md:text-sm text-muted">{t("ui.homeTagline")}</p>
           </header>
           <div className="editor-workspace w-full px-4 md:px-6 lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
 
@@ -175,6 +195,10 @@ export default function EditView() {
                       }, {
                         globalBadges: ed.globalBadges,
                         rankingBadges: ed.rankingBadges,
+                        badgeGenre: ed.badgeGenre,
+                        badgeYear: ed.badgeYear,
+                        badgeRating: ed.badgeRating,
+                        ratingSources: ed.ratingSources,
                         badgeStyle: ed.badgeStyle,
                         rankingBadgeStyle: ed.rankingBadgeStyle,
                         customBadge: ed.customBadge,

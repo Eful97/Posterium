@@ -7,7 +7,8 @@ import { useSearchCtx } from "@/lib/contexts/SearchContext"
 import { posterUrl, titleOf, yearOf } from "@/lib/utils"
 import { SearchBar } from "@/components/SearchBar"
 import { PosterCardSkeleton } from "@/components/Skeleton"
-import { Clock, X, Check, ChevronDown } from "lucide-react"
+import { Clock, X, Check, ChevronDown, Clapperboard, Tv, Star, Trash2 } from "lucide-react"
+import { PosterDepthEdge } from "@/components/PosterDepthGlow"
 
 export function SearchView() {
   const { t } = useT()
@@ -63,9 +64,23 @@ export function SearchView() {
         <SearchBar tmdbKey={tmdbKey} value={s.query} onChange={handleQueryChange} onSearch={(q) => { s.setQuery(q); s.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} error={s.error} />
         {showRecent && (
           <div className="absolute top-full left-0 right-0 mt-2 glass-panel rounded-2xl p-2 z-50 animate-fade-scale-in">
-            <p className="text-xs text-muted font-semibold px-2 py-1.5">{t("ui.recentSearches")}</p>
+            <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/[0.06] mb-1">
+              <p className="text-xs text-muted font-semibold">{t("ui.recentSearches")}</p>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  s.clearRecentSearches()
+                }}
+                className="text-[11px] text-zinc-400 hover:text-rose-400 font-medium flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded hover:bg-rose-500/10 cursor-pointer"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>{t("ui.clearRecentSearches")}</span>
+              </button>
+            </div>
             {s.recentSearches.map((term) => (
-              <button type="button" key={term} onMouseDown={(e) => e.preventDefault()} onClick={() => { s.setQuery(term); s.doSearch(term); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
+              <button type="button" key={term} onMouseDown={(e) => e.preventDefault()} onClick={() => { s.setQuery(term); s.doSearch(term); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
                 <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
                 <span className="flex-1 truncate">{term}</span>
                 <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); s.removeRecentSearch(term) }} aria-label={t("ui.remove")} className="text-danger hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
@@ -76,8 +91,8 @@ export function SearchView() {
       </div>
 
       {s.searching && s.results.length === 0 && (
-        <div className="mx-auto grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] lg:grid-cols-5 gap-3 sm:gap-4 max-w-7xl justify-items-center">
-          {Array.from({ length: 10 }).map((_, i) => (
+        <div className="mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4 max-w-7xl">
+          {Array.from({ length: 12 }).map((_, i) => (
             <PosterCardSkeleton key={i} />
           ))}
         </div>
@@ -86,22 +101,93 @@ export function SearchView() {
       {s.results.length > 0 && (
         <div className="relative animate-fade-scale-in">
           {s.searching && <div className="absolute inset-0 bg-background/60 backdrop-blur-sm z-20 rounded-2xl flex items-center justify-center"><p className="text-sm text-muted animate-pulse">{t("ui.searching")}</p></div>}
-          <div className="mx-auto grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] lg:grid-cols-5 gap-3 sm:gap-4 max-w-7xl justify-items-center">
+          <div className="mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4 max-w-7xl">
           {s.results.map((r, idx) => {
             const mapping = mappingsMap.get(`${r.media_type}:${r.id}`)
+            const year = yearOf(r)
+            const title = titleOf(r)
             return (
-              <button type="button" key={`${r.media_type}:${r.id}`} onClick={() => navigateToPoster(r)} aria-label={titleOf(r)} className="surface-card group relative rounded-2xl overflow-hidden transition-all duration-200 ease-out w-full max-w-[250px] lg:max-w-none animate-stagger-in hover:-translate-y-0.5" style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
-                {r.poster_path && <div className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none" style={{ backgroundImage: `url(${posterUrl(r.poster_path, "w92")})`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(24px) saturate(1.4)", transform: "scale(1.3)" }} />}
-                <div className="aspect-[2/3] bg-surface/80 overflow-hidden flex items-center justify-center relative z-[1]">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
-                  {r.poster_path ? <img src={posterUrl(r.poster_path, "w342")} alt={titleOf(r)} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]" /> : <span className="text-3xl font-bold text-zinc-500">{titleOf(r).charAt(0)}</span>}
+              <button
+                type="button"
+                key={`${r.media_type}:${r.id}`}
+                onClick={() => navigateToPoster(r)}
+                aria-label={`${title} (${year})`}
+                className="surface-card group relative rounded-xl overflow-hidden transition-all duration-300 ease-out w-full border border-white/10 shadow-2xl hover:-translate-y-[3px] hover:scale-[1.015] hover:shadow-[0_22px_48px_rgba(0,0,0,0.48),0_0_22px_rgba(232,93,42,0.10)] hover:border-white/20 active:scale-[0.98] cursor-pointer animate-stagger-in text-left flex flex-col"
+                style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
+              >
+                {/* NuvioDesktop-style depth edge */}
+                <PosterDepthEdge edgeStrength={35} edgeCoverage={10} />
+                <div className="relative z-[1] w-full flex-1 flex flex-col">
+                  <div className="aspect-[2/3] bg-surface/80 overflow-hidden relative w-full">
+                    {/* Immagine Poster */}
+                    {r.poster_path ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL
+                      <img
+                        src={posterUrl(r.poster_path, "w342")}
+                        alt={title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover transition-transform duration-[400ms] ease-out group-hover:scale-[1.06]"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-zinc-800/50 to-zinc-900/80 gap-2">
+                        <svg className="w-8 h-8 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                          <polygon points="9.5 8 15.5 12 9.5 16 9.5 8" fill="currentColor" stroke="none"/>
+                        </svg>
+                        <span className="text-xl font-bold text-zinc-600">{title.charAt(0) || "?"}</span>
+                      </div>
+                    )}
+
+                    {/* Badge tipo media (Film / Serie TV) in alto a sinistra */}
+                    <div className="absolute top-2 left-2 z-10 pointer-events-none">
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-black/65 backdrop-blur-md border border-white/10 text-zinc-200 font-semibold shadow-md flex items-center gap-1">
+                        {r.media_type === "movie" ? <Clapperboard className="w-3 h-3 text-amber-400" /> : <Tv className="w-3 h-3 text-sky-400" />}
+                        <span>{r.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")}</span>
+                      </span>
+                    </div>
+
+                    {/* Badge se già personalizzato/salvato */}
+                    {mapping && (
+                      <div
+                        className="absolute top-2 right-2 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent-orange text-white text-[10px] font-bold shadow-lg shadow-accent-orange/40 pointer-events-none"
+                        title={t("ui.customPosterSet")}
+                      >
+                        <Check className="w-3 h-3 stroke-[2.5]" />
+                      </div>
+                    )}
+
+                    {/* Overlay informativo al passaggio del mouse */}
+                    <div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none flex flex-col justify-end p-3"
+                      style={{
+                        background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.25) 55%, transparent 100%)",
+                      }}
+                    >
+                      <p className="text-xs font-bold text-white truncate drop-shadow-md">{title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {year && <span className="text-xs text-zinc-300 font-medium">{year}</span>}
+                        {r.vote_average != null && r.vote_average > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300 font-semibold flex items-center gap-1">
+                            <Star className="w-2.5 h-2.5 fill-amber-300" />
+                            {r.vote_average.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card info strip sottostante (sempre leggibile) */}
+                  <div className="p-2.5 text-left bg-surface/50 border-t border-white/[0.04]">
+                    <p className="text-xs font-semibold text-zinc-100 truncate group-hover:text-accent-orange transition-colors duration-200">
+                      {title}
+                    </p>
+                    <div className="flex items-center justify-between text-[11px] text-muted mt-0.5">
+                      <span>{year || "—"}</span>
+                      <span className="capitalize text-zinc-400">{r.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="px-2 py-2.5 text-center">
-                  <p className="text-xs font-semibold text-zinc-200 truncate group-hover:text-accent transition-colors duration-200">{titleOf(r)}</p>
-                  <p className="text-xs text-muted mt-0.5">{yearOf(r)} {r.media_type === "tv" ? t("ui.mediaTv") : ""}</p>
-                </div>
-                {mapping && <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-accent-orange flex items-center justify-center shadow-lg shadow-accent-orange/30" title={t("ui.customPosterSet")}><Check className="w-3 h-3 text-black" /></div>}
-                {mapping && <div className="absolute inset-0 bg-accent-orange/10 border border-accent-orange/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl pointer-events-none" />}
               </button>
             )
           })}

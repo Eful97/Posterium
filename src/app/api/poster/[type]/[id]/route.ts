@@ -13,7 +13,7 @@ import { fetchAllWikidata, matchTMDBStudios } from "@/lib/awards"
 import { createT } from "@/lib/i18n"
 import type { EnrichedAnimeItem } from "@/lib/validation"
 import { fetchMDBList, type MDBListEntry } from "@/lib/mdblist"
-import { fetchAggregatedRating } from "@/lib/ratings"
+import { fetchAggregatedRating, calculateAverageRating } from "@/lib/ratings"
 import { isImdbTop250 } from "@/lib/imdb-top250"
 import { getEffectiveRotationState, tryRotatePoster } from "@/lib/poster-rotation"
 import { getTMDBSessionCache, setTMDBSessionCache } from "@/lib/tmdb-session-cache"
@@ -335,6 +335,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const queryBackdrop = req.nextUrl.searchParams.get("backdrop")
   const queryGenre = req.nextUrl.searchParams.get("genreName")
   const queryVote = req.nextUrl.searchParams.get("voteAverage")
+  const qRsrc = req.nextUrl.searchParams.get("rsrc")
+  const reqRatingSources = qRsrc !== null
+    ? qRsrc.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
+    : (configOverride?.ratingSources ?? undefined)
   const t = createT(req.nextUrl.searchParams.get("lang") || mapping?.language || "it")
 
   if (queryPoster) {
@@ -366,7 +370,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       else releaseDate = `${y}-01-01`
     }
     imdbId = req.nextUrl.searchParams.get("imdbId") || null
-    showBadges = true
+    showBadges = req.nextUrl.searchParams.get("badges") !== "0"
+    rankingBadges = req.nextUrl.searchParams.get("ranking") !== "0"
     etag = `"p${etagBase}"`
   } else if (mapping) {
     posterPath = mapping.posterPath
@@ -680,7 +685,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       })
       const aggregated = await Promise.race([aggregatedRating, ratingTimeout])
       if (ratingTimer) clearTimeout(ratingTimer)
-      if (aggregated?.average) voteAverage = aggregated.average
+      const avgVote = calculateAverageRating(aggregated, reqRatingSources)
+      if (typeof avgVote === "number" && avgVote > 0) voteAverage = avgVote
       ratingAbort?.abort()
     }
 

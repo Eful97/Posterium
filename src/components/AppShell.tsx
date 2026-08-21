@@ -9,7 +9,7 @@ import { LangPicker } from "@/components/LangPicker"
 import { ToastProvider } from "@/components/Toast"
 import { ProfileUnlock } from "@/components/ProfileUnlock"
 import { HomeStatusStrip } from "@/components/HomeStatusStrip"
-import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Download, User } from "lucide-react"
+import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Download, User, Check } from "lucide-react"
 
 // Code-splitting: viste/modali pesanti caricate on-demand per ridurre il JS iniziale.
 const SettingsPanel = dynamic(() => import("@/components/SettingsPanel").then((m) => m.SettingsPanel), { ssr: false })
@@ -105,12 +105,56 @@ export function AppShell() {
     return () => { document.body.style.overflow = "" }
   }, [settingsOpen])
 
+  const [manifestCopied, setManifestCopied] = useState(false)
+  const manifestCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (manifestCopiedTimerRef.current) clearTimeout(manifestCopiedTimerRef.current)
+    }
+  }, [])
+
+  const handleInstallCatalog = async () => {
+    const base = `${window.location.origin}/manifest.json`
+    const url = profileId && !profileStateless ? `${window.location.origin}/u/${profileId}/manifest.json` : base
+    await navigator.clipboard.writeText(url)
+    setManifestCopied(true)
+    if (manifestCopiedTimerRef.current) clearTimeout(manifestCopiedTimerRef.current)
+    manifestCopiedTimerRef.current = setTimeout(() => setManifestCopied(false), 2000)
+  }
+
   // Toolbar mobile (azioni rapide): riga centrata sotto il logo nella home,
   // in testa all'editor — identica in entrambi i casi (invariata alla home)
   const mobileToolbar = (
     <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
-      <button type="button" suppressHydrationWarning aria-label={copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { copyUrl() }} disabled={!urlPattern} className="top-action-button top-action-button-primary h-9 w-9 flex items-center justify-center bg-accent-orange text-white border border-accent-orange/50 shadow-lg shadow-accent-orange/25 disabled:opacity-40"><Copy className="w-4 h-4" /></button>
-      <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const base = `${window.location.origin}/manifest.json`; const url = profileId && !profileStateless ? `${window.location.origin}/u/${profileId}/manifest.json` : base; await navigator.clipboard.writeText(url) }} disabled={!urlPattern && !profileId} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><Download className="w-4 h-4" /></button>
+      <button
+        type="button"
+        suppressHydrationWarning
+        aria-label={copied ? t("ui.copied") : t("ui.copyUrl")}
+        onClick={() => { copyUrl() }}
+        disabled={!urlPattern}
+        className={`top-action-button h-9 w-9 flex items-center justify-center border transition-all duration-150 ${
+          copied
+            ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm"
+            : "top-action-button-primary bg-accent-orange text-white border-accent-orange/50 shadow-lg shadow-accent-orange/25"
+        } disabled:opacity-40`}
+      >
+        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+      </button>
+      <button
+        type="button"
+        suppressHydrationWarning
+        aria-label={manifestCopied ? t("ui.copied") : t("ui.installCatalog")}
+        onClick={handleInstallCatalog}
+        disabled={!urlPattern && !profileId}
+        className={`top-action-button h-9 w-9 flex items-center justify-center border transition-all duration-150 ${
+          manifestCopied
+            ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm"
+            : "bg-white/[0.06] border-white/10 text-muted hover:text-zinc-200"
+        }`}
+      >
+        {manifestCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Download className="w-4 h-4" />}
+      </button>
       <button type="button" aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-muted hover:text-zinc-200"><User className="w-4 h-4" /></button>
       <button type="button" aria-label={t("ui.addonProxy")} onClick={() => setProxyOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-accent-orange"><Sparkles className="w-4 h-4" /></button>
       <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="top-action-button h-9 px-2 text-xs font-semibold bg-white/[0.06] border border-white/10 text-zinc-200">{mappings.length}</button>
@@ -134,8 +178,34 @@ export function AppShell() {
       <div className="hidden md:flex absolute top-4 right-4 z-20">
         {settingsOpen && <div className="hidden md:block fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />}
         <div className="floating-group relative z-50">
-          <button type="button" suppressHydrationWarning aria-label={copied ? t("ui.copied") : t("ui.copyUrl")} onClick={() => { copyUrl() }} disabled={!urlPattern} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-accent-orange hover:bg-white/[0.08] press-scale"><Copy className="w-4 h-4" /></button>
-          <button type="button" suppressHydrationWarning aria-label={t("ui.installCatalog")} onClick={async () => { const base = `${window.location.origin}/manifest.json`; const url = profileId && !profileStateless ? `${window.location.origin}/u/${profileId}/manifest.json` : base; await navigator.clipboard.writeText(url) }} disabled={!urlPattern && !profileId} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 text-zinc-300 hover:bg-white/[0.08] press-scale"><Download className="w-4 h-4" /></button>
+          <button
+            type="button"
+            suppressHydrationWarning
+            aria-label={copied ? t("ui.copied") : t("ui.copyUrl")}
+            onClick={() => { copyUrl() }}
+            disabled={!urlPattern}
+            className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 press-scale ${
+              copied
+                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
+                : "text-accent-orange hover:bg-white/[0.08]"
+            }`}
+          >
+            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+          </button>
+          <button
+            type="button"
+            suppressHydrationWarning
+            aria-label={manifestCopied ? t("ui.copied") : t("ui.installCatalog")}
+            onClick={handleInstallCatalog}
+            disabled={!urlPattern && !profileId}
+            className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 press-scale ${
+              manifestCopied
+                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
+                : "text-zinc-300 hover:bg-white/[0.08]"
+            }`}
+          >
+            {manifestCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Download className="w-4 h-4" />}
+          </button>
           <button type="button" aria-label={t("ui.saveProfile")} onClick={() => setProfileModalOpen(true)} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale"><User className="w-4 h-4" /></button>
           <button type="button" aria-label={t("ui.addonProxy")} onClick={() => setProxyOpen(true)} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-accent-orange hover:bg-white/[0.08] press-scale"><Sparkles className="w-4 h-4" /></button>
           <div className="h-5 w-px bg-white/10 self-center" />

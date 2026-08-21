@@ -11,6 +11,7 @@ import { findAccentColor, topEdgeAverage } from "./accent-color"
 
 interface RootColorsSetters {
   setAccentColor: (v: string | null) => void
+  setAutoAccentColor?: (v: string | null) => void
   setTopEdgeColor: (v: string | null) => void
 }
 
@@ -18,7 +19,7 @@ export function useRootColors(
   previewPoster: TMDBImage | null,
   genreName: string | undefined,
   posterUrl: (path: string, size?: string) => string,
-  { setAccentColor, setTopEdgeColor }: RootColorsSetters,
+  { setAccentColor, setAutoAccentColor, setTopEdgeColor }: RootColorsSetters,
 ): void {
   useEffect(() => {
     const root = document.documentElement
@@ -30,7 +31,7 @@ export function useRootColors(
       root.style.setProperty("--color-edge-r", "85")
       root.style.setProperty("--color-edge-g", "85")
       root.style.setProperty("--color-edge-b", "85")
-      setAccentColor(null); setTopEdgeColor(null); return
+      setAccentColor(null); setAutoAccentColor?.(null); setTopEdgeColor(null); return
     }
     let cancelled = false
     const url = posterUrl(previewPoster.file_path, "w342") + `?cb=${Date.now()}`
@@ -48,6 +49,7 @@ export function useRootColors(
       root.style.setProperty("--color-edge-g", String(edgeG))
       root.style.setProperty("--color-edge-b", String(edgeB))
       setAccentColor(c)
+      setAutoAccentColor?.(c)
       setTopEdgeColor(edgeC)
     }
     img.onload = () => {

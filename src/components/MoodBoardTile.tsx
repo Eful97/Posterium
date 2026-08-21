@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { Check, Trash2, Maximize2, Folder } from "lucide-react"
 import { posterUrl } from "@/lib/utils"
 import type { Mapping } from "@/lib/types"
@@ -16,8 +16,6 @@ interface MoodBoardTileProps {
   onQuickView: (e: React.MouseEvent) => void
   onRemove: (e: React.MouseEvent) => void
   collectionCount?: number
-  /** Poster renderizzato dal server (WYSIWYG, /api/poster). Fallback: TMDB. */
-  imgSrc?: string | null
   t: (key: string, params?: Record<string, string | number>) => string
 }
 
@@ -31,7 +29,6 @@ export function MoodBoardTile({
   onQuickView,
   onRemove,
   collectionCount = 0,
-  imgSrc,
   t,
 }: MoodBoardTileProps) {
   const key = `${m.mediaType}:${m.tmdbId}`
@@ -42,11 +39,7 @@ export function MoodBoardTile({
     : (m.genreName || "").toLowerCase().includes("anim")
       ? t("ui.filterAnime")
       : t("ui.tvSeries")
-  const src = imgSrc ?? (m.posterPath ? posterUrl(m.posterPath, "w342") : null)
-  // Se il render server fallisce (es. senza chiave), ripiega sul poster TMDB.
-  const [imgError, setImgError] = useState(false)
-  const rawSrc = m.posterPath ? posterUrl(m.posterPath, "w342") : null
-  const displaySrc = imgError ? rawSrc : src
+  const displaySrc = m.posterPath ? posterUrl(m.posterPath, "w342") : null
 
   return (
     <div
@@ -78,9 +71,9 @@ export function MoodBoardTile({
         <div className="relative z-[1]">
 
       <div className="aspect-[2/3] bg-surface/80 overflow-hidden relative">
-        {/* Poster image — WYSIWYG: poster renderizzato dal server quando disponibile */}
+        {/* Poster image clean TMDB */}
         {displaySrc ? (
-          // eslint-disable-next-line @next/next/no-img-element -- server-rendered poster / TMDB dynamic URL
+          // eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL
           <img
             src={displaySrc}
             alt={m.title}
@@ -88,12 +81,8 @@ export function MoodBoardTile({
             decoding="async"
             className="w-full h-full object-cover transition-transform duration-[400ms] ease-out group-hover:scale-[1.06]"
             onError={(e) => {
-              if (imgSrc && !imgError) {
-                setImgError(true)
-              } else {
-                (e.target as HTMLImageElement).style.display = "none"
-                ;(e.target as HTMLImageElement).parentElement?.classList.add("show-fallback")
-              }
+              ;(e.target as HTMLImageElement).style.display = "none"
+              ;(e.target as HTMLImageElement).parentElement?.classList.add("show-fallback")
             }}
           />
         ) : (
@@ -106,13 +95,24 @@ export function MoodBoardTile({
           </div>
         )}
 
-        {/* Logo overlay — solo nel fallback TMDB grezzo: il render server (WYSIWYG)
-            cuoce già il logo nell'immagine, sovrapporlo di nuovo lo raddoppierebbe. */}
-        {m.logoPath && (!imgSrc || imgError) && (
-          <div className="absolute inset-x-0 bottom-[7.33%] flex items-center justify-center pointer-events-none">
+        {/* Logo overlay: posizionato sul poster clean con scala e offset */}
+        {m.logoPath && (
+          <div
+            className="absolute inset-x-0 bottom-[7.33%] flex items-center justify-center pointer-events-none"
+            style={{
+              transform: `translate(${m.logoOffsetX ?? 0}%, ${-(m.logoOffsetY ?? 0)}%)`,
+            }}
+          >
             <div style={{ width: `${m.logoScale ?? 75}%` }}>
               {/* eslint-disable-next-line @next/next/no-img-element -- TMDB dynamic URL */}
-              <img src={posterUrl(m.logoPath, "w154")} alt="" loading="lazy" decoding="async" className="w-full" style={{ objectFit: "contain" }} />
+              <img
+                src={posterUrl(m.logoPath, "w300")}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="w-full drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]"
+                style={{ objectFit: "contain" }}
+              />
             </div>
           </div>
         )}
@@ -137,32 +137,29 @@ export function MoodBoardTile({
 
         {/* Quick view button — appears top-right on hover */}
         {!selectMode && (
-          <div
+          <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); onQuickView(e) }}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onQuickView(e as unknown as React.MouseEvent) } }}
-            role="button"
-            tabIndex={0}
             aria-label={t("ui.quickView")}
-            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/70 hover:bg-black/70 hover:text-white transition-all duration-200 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 active:scale-90 cursor-pointer"
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:bg-black/85 hover:text-white transition-all duration-200 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 active:scale-90 cursor-pointer shadow-lg z-10"
           >
             <Maximize2 className="w-3.5 h-3.5" />
-          </div>
+          </button>
         )}
 
-        {/* Collection badge — sempre visibile in basso a destra */}
+        {/* Collection badge — bottom right */}
         {!selectMode && (
-          <div
+          <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); onQuickView(e) }}
-            role="button"
-            tabIndex={0}
             aria-label={t("ui.collections")}
-            className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-zinc-300 hover:text-white hover:bg-black/70 transition-all duration-200 active:scale-90 cursor-pointer"
+            className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-zinc-300 hover:text-white hover:bg-black/85 transition-all duration-200 active:scale-90 cursor-pointer z-10"
           >
             <Folder className="w-3 h-3" />
             {collectionCount > 0 && (
               <span className="text-[10px] font-semibold tabular-nums">{collectionCount}</span>
             )}
-          </div>
+          </button>
         )}
 
         {/* Delete button (always visible on hover) */}

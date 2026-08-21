@@ -52,9 +52,13 @@ vi.mock("@/lib/mdblist", () => ({
   fetchMDBList: vi.fn(async () => []),
 }))
 
-vi.mock("@/lib/ratings", () => ({
-  fetchAggregatedRating: vi.fn(async () => null),
-}))
+vi.mock("@/lib/ratings", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/ratings")>()
+  return {
+    ...actual,
+    fetchAggregatedRating: vi.fn(async () => null),
+  }
+})
 
 vi.mock("@/lib/tmdb", () => ({
   getDetails: vi.fn(async () => ({ id: 42, title: "Test", genres: [], vote_average: 0, vote_count: 0 })),

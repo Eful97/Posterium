@@ -354,9 +354,9 @@ describe("buildPreviewUrl", () => {
     expect(url).not.toContain("ac=")
   })
 
-  it("does not include badges=0 when globalBadges is true", () => {
+  it("includes badges=1 when globalBadges is true", () => {
     const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, globalBadges: true })
-    expect(url).not.toContain("badges=0")
+    expect(url).toContain("badges=1")
   })
 
   it("includes badges=0 when globalBadges is false", () => {
@@ -364,9 +364,21 @@ describe("buildPreviewUrl", () => {
     expect(url).toContain("badges=0")
   })
 
+  it("includes ranking=1 when rankingBadges is true", () => {
+    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, rankingBadges: true })
+    expect(url).toContain("ranking=1")
+  })
+
   it("includes ranking=0 when rankingBadges is false", () => {
     const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, rankingBadges: false })
     expect(url).toContain("ranking=0")
+  })
+
+  it("includes bg=1/bg=0, by=1/by=0, br=1/br=0 for sub-badges", () => {
+    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, badgeGenre: false, badgeYear: true, badgeRating: false })
+    expect(url).toContain("bg=0")
+    expect(url).toContain("by=1")
+    expect(url).toContain("br=0")
   })
 
   it("includes rv= render version param", () => {
@@ -378,5 +390,21 @@ describe("buildPreviewUrl", () => {
   it("includes customBadge as extra param", () => {
     const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, customBadge: "Custom Label" })
     expect(url).toContain("extra=Custom%20Label")
+  })
+
+  it("includes rsrc param in buildPreviewUrl and buildUrlPattern when ratingSources is set", () => {
+    const previewUrl = buildPreviewUrl(basePosterState, {
+      ...baseBadgeParams,
+      ratingSources: ["imdb", "tomatoes"],
+    })
+    expect(previewUrl).toContain("rsrc=imdb%2Ctomatoes")
+
+    const patternUrl = buildUrlPattern({
+      ...baseBadgeParams,
+      tmdbKey: "k",
+      lang: "it",
+      ratingSources: ["tomatoes", "metacritic"],
+    })
+    expect(patternUrl).toContain("rsrc=tomatoes%2Cmetacritic")
   })
 })

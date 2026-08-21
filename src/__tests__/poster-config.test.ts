@@ -248,4 +248,19 @@ describe("resolvePosterRenderConfig", () => {
     expect(r.badgeGenre).toBe(true)
     expect(r.badgeRating).toBe(true)
   })
+
+  it("ratingSources default is ['imdb', 'tmdb'] and query rsrc overrides it", () => {
+    const rDef = resolvePosterRenderConfig(baseInput())
+    expect(rDef.ratingSources).toEqual(["imdb", "tmdb"])
+
+    const rQuery = resolvePosterRenderConfig(baseInput({
+      searchParams: new URLSearchParams({ rsrc: "imdb,tomatoes,metacritic" }),
+    }))
+    expect(rQuery.ratingSources).toEqual(["imdb", "tomatoes", "metacritic"])
+
+    const rConfig = resolvePosterRenderConfig(baseInput({
+      configOverride: config({ ratingSources: ["letterboxd", "trakt"] }),
+    }))
+    expect(rConfig.ratingSources).toEqual(["letterboxd", "trakt"])
+  })
 })

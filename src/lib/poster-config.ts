@@ -9,6 +9,7 @@ import type { PosteriumUserConfig } from "./config-token"
 import type { Mapping } from "./types"
 import type { ServerDefaults } from "./server-defaults"
 import { resolveLabelFor } from "./i18n"
+import { SUPPORTED_RATING_SOURCES, DEFAULT_RATING_SOURCES } from "./ratings"
 import {
   isBadgeStyle,
   isRankingBadgeStyle,
@@ -53,6 +54,7 @@ export interface PosterRenderConfig {
   badgeGenre: boolean
   badgeYear: boolean
   badgeRating: boolean
+  ratingSources: string[]
   logoScale: number | null
   logoOffsetX: number | null
   logoOffsetY: number | null
@@ -112,6 +114,12 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
   const badgeYear = qBy !== null ? qBy !== "0" : (mapping?.badgeYear ?? configOverride?.badgeYear ?? sd.badgeYear ?? true)
   const badgeRating = qBr !== null ? qBr !== "0" : (mapping?.badgeRating ?? configOverride?.badgeRating ?? sd.badgeRating ?? true)
 
+  const qRsrc = q.get("rsrc")
+  const validSources = SUPPORTED_RATING_SOURCES as readonly string[]
+  const ratingSources: string[] = qRsrc !== null
+    ? qRsrc.split(",").map((s) => s.trim().toLowerCase()).filter((s) => validSources.includes(s))
+    : (configOverride?.ratingSources ?? [...DEFAULT_RATING_SOURCES])
+
   // Badge style — confinamento della query string al union type: valori non validi
   // cadono sul default (il renderer in passato li trattava come "shadow" nel ramo else).
   const rawBs = q.get("bs")
@@ -150,6 +158,7 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
     badgeGenre,
     badgeYear,
     badgeRating,
+    ratingSources,
     logoScale,
     logoOffsetX,
     logoOffsetY,

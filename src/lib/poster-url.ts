@@ -17,6 +17,7 @@ interface BadgeParams {
   badgeGenre?: boolean
   badgeYear?: boolean
   badgeRating?: boolean
+  ratingSources?: string[]
   customBadge: string | null
   gradientHeight: number
   blurIntensity: number
@@ -83,6 +84,7 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
       badgeGenre: bp.badgeGenre,
       badgeYear: bp.badgeYear,
       badgeRating: bp.badgeRating,
+      ratingSources: bp.ratingSources,
       badgeStyle: bp.badgeStyle,
       rankingBadgeStyle: bp.rankingBadgeStyle,
       gradientHeight: bp.gradientHeight,
@@ -113,6 +115,7 @@ export function buildUrlPattern(bp: BadgeParams & { tmdbKey: string; lang: strin
     badgeGenre: bp.badgeGenre,
     badgeYear: bp.badgeYear,
     badgeRating: bp.badgeRating,
+    ratingSources: bp.ratingSources,
     badgeStyle: bp.badgeStyle,
     rankingBadgeStyle: bp.rankingBadgeStyle,
     gradientHeight: bp.gradientHeight,
@@ -132,11 +135,12 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   if (!ps.selected) return ""
   const params: string[] = [`rv=${RENDER_VERSION}`]
   if (ps.tmdbKey) params.push(`api_key=${encodeURIComponent(ps.tmdbKey)}`)
-  if (!bp.globalBadges) params.push("badges=0")
-  if (!bp.rankingBadges) params.push("ranking=0")
-  if (bp.badgeGenre === false) params.push("bg=0")
-  if (bp.badgeYear === false) params.push("by=0")
-  if (bp.badgeRating === false) params.push("br=0")
+  params.push(`badges=${bp.globalBadges ? "1" : "0"}`)
+  params.push(`ranking=${bp.rankingBadges ? "1" : "0"}`)
+  params.push(`bg=${bp.badgeGenre !== false ? "1" : "0"}`)
+  params.push(`by=${bp.badgeYear !== false ? "1" : "0"}`)
+  params.push(`br=${bp.badgeRating !== false ? "1" : "0"}`)
+  if (bp.ratingSources && bp.ratingSources.length > 0) params.push(`rsrc=${encodeURIComponent(bp.ratingSources.join(","))}`)
   if (ps.previewPoster) {
     params.push(`poster=${encodeURIComponent(ps.previewPoster.file_path)}`)
     const genre = ps.metaInfo.genres[0]?.name
@@ -193,6 +197,9 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
       ? (ps.mdblistAnimeList.find((a) => a.id === selected.id)?.rank ?? null)
       : null
     if (animeRank) params.push(`animerank=${animeRank}`)
+  } else if (bp.customBadge) {
+    const badgeParams = computeBadgeParams(ps, bp)
+    params.push(...badgeParams)
   }
   params.push("preview=1")
   const qs = "?" + params.join("&")

@@ -8,10 +8,11 @@ export interface SearchResult {
   poster_path: string | null
   release_date?: string
   first_air_date?: string
+  vote_average?: number
   imdb_id?: string | null
 }
 
-export function toSearchResult(partial: { id?: number | null; media_type?: string; title?: string | null; name?: string | null; poster_path?: string | null; release_date?: string; first_air_date?: string; imdb_id?: string | null }): SearchResult {
+export function toSearchResult(partial: { id?: number | null; media_type?: string; title?: string | null; name?: string | null; poster_path?: string | null; release_date?: string; first_air_date?: string; vote_average?: number; imdb_id?: string | null }): SearchResult {
   return {
     id: partial.id ?? 0,
     media_type: partial.media_type === "tv" ? "tv" : "movie",
@@ -20,6 +21,7 @@ export function toSearchResult(partial: { id?: number | null; media_type?: strin
     poster_path: partial.poster_path ?? null,
     release_date: partial.release_date,
     first_air_date: partial.first_air_date,
+    vote_average: partial.vote_average,
     imdb_id: partial.imdb_id,
   }
 }
