@@ -10,17 +10,21 @@ export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url")
   if (!url) return Response.json({ items: [] })
 
-  const apiKey = resolveRequestApiKey(req)
-  const mdblistKey = req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || undefined
+  const apiKey = resolveRequestApiKey(req) || process.env.POSTERIUM_TMDB_KEY || process.env.TMDB_KEY || process.env.TMDB_API_KEY || undefined
+  const mdblistKey = req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || process.env.MDBLIST_KEY || process.env.MDBLIST_API_KEY || undefined
 
   try {
-    const rawItems = await fetchCustomMDBList(url, mdblistKey, 20)
+    const rawItems = await fetchCustomMDBList(url, mdblistKey, 30)
     const items = await Promise.all(
       rawItems.map(async (it) => {
         let tmdbId = Number(it.tmdb)
         const mediaType = (it.mediatype === "show" || it.mediatype === "tv" || it.mediatype === "anime") ? "tv" : "movie"
         if (!tmdbId && it.imdb && apiKey) {
-          tmdbId = (await tmdbFindByImdb(it.imdb, mediaType, apiKey)) || 0
+          try {
+            tmdbId = (await tmdbFindByImdb(it.imdb, mediaType, apiKey)) || 0
+          } catch {
+            tmdbId = 0
+          }
         }
         let posterPath: string | null = null
         if (tmdbId && apiKey) {

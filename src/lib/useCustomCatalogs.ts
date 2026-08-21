@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import type { CustomCatalogConfig } from "./types"
 import { POSTERIUM_CATALOGS } from "./catalog-definitions"
 
@@ -12,26 +12,89 @@ export function useCustomCatalogs(
   const [disabledCatalogIds, setDisabledCatalogIdsState] = useState<string[]>([])
   const [catalogOrder, setCatalogOrderState] = useState<string[]>([])
   const [catalogRenames, setCatalogRenamesState] = useState<Record<string, string>>({})
+  const lastSyncRef = useRef<string>("")
 
-  // Initial load
+  // Initial load: localStorage + fetch /api/defaults
   useEffect(() => {
+    let localCustom: CustomCatalogConfig[] = []
+    let localDisabled: string[] = []
+    let localOrder: string[] = []
+    let localRenames: Record<string, string> = {}
+
     const savedCustomCats = safeGetItem("posterium_custom_catalogs")
     if (savedCustomCats) {
-      try { setCustomCatalogsState(JSON.parse(savedCustomCats)) } catch {}
+      try { localCustom = JSON.parse(savedCustomCats); setCustomCatalogsState(localCustom) } catch {}
     }
     const savedDisabledCats = safeGetItem("posterium_disabled_catalogs")
     if (savedDisabledCats) {
-      try { setDisabledCatalogIdsState(JSON.parse(savedDisabledCats)) } catch {}
+      try { localDisabled = JSON.parse(savedDisabledCats); setDisabledCatalogIdsState(localDisabled) } catch {}
     }
     const savedOrder = safeGetItem("posterium_catalog_order")
     if (savedOrder) {
-      try { setCatalogOrderState(JSON.parse(savedOrder)) } catch {}
+      try { localOrder = JSON.parse(savedOrder); setCatalogOrderState(localOrder) } catch {}
     }
     const savedRenames = safeGetItem("posterium_catalog_renames")
     if (savedRenames) {
-      try { setCatalogRenamesState(JSON.parse(savedRenames)) } catch {}
+      try { localRenames = JSON.parse(savedRenames); setCatalogRenamesState(localRenames) } catch {}
     }
-  }, [safeGetItem])
+
+    lastSyncRef.current = JSON.stringify({
+      customCatalogs: localCustom,
+      disabledCatalogIds: localDisabled,
+      catalogOrder: localOrder,
+      catalogRenames: localRenames,
+    })
+
+    // Hydrate missing or server-configured defaults
+    fetch("/api/defaults")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return
+        if (Array.isArray(data.customCatalogs) && (!savedCustomCats || localCustom.length === 0)) {
+          setCustomCatalogsState(data.customCatalogs)
+          safeSetItem("posterium_custom_catalogs", JSON.stringify(data.customCatalogs))
+        }
+        if (Array.isArray(data.disabledCatalogIds) && (!savedDisabledCats || localDisabled.length === 0)) {
+          setDisabledCatalogIdsState(data.disabledCatalogIds)
+          safeSetItem("posterium_disabled_catalogs", JSON.stringify(data.disabledCatalogIds))
+        }
+        if (Array.isArray(data.catalogOrder) && (!savedOrder || localOrder.length === 0)) {
+          setCatalogOrderState(data.catalogOrder)
+          safeSetItem("posterium_catalog_order", JSON.stringify(data.catalogOrder))
+        }
+        if (data.catalogRenames && typeof data.catalogRenames === "object" && (!savedRenames || Object.keys(localRenames).length === 0)) {
+          setCatalogRenamesState(data.catalogRenames)
+          safeSetItem("posterium_catalog_renames", JSON.stringify(data.catalogRenames))
+        }
+      })
+      .catch(() => {})
+  }, [safeGetItem, safeSetItem])
+
+  // Auto-persist: sincronizza su server (/api/defaults) ad ogni modifica
+  useEffect(() => {
+    const payload = {
+      customCatalogs,
+      disabledCatalogIds,
+      catalogOrder,
+      catalogRenames,
+    }
+    const payloadStr = JSON.stringify(payload)
+    if (lastSyncRef.current === payloadStr) return
+    lastSyncRef.current = payloadStr
+
+    const timer = setTimeout(() => {
+      fetch("/api/defaults", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: payloadStr,
+      }).catch((e) => {
+        lastSyncRef.current = ""
+        console.warn("[catalogs] Auto-sync custom catalogs failed:", e)
+      })
+    }, 400)
+
+    return () => clearTimeout(timer)
+  }, [customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames])
 
   const setCustomCatalogs = useCallback((catalogs: CustomCatalogConfig[]) => {
     setCustomCatalogsState(catalogs)

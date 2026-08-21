@@ -12,7 +12,7 @@ interface CustomCatalogModalProps {
 }
 
 export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps) {
-  const { addCustomCatalog, mdblistApiKey } = usePosterium()
+  const { addCustomCatalog } = usePosterium()
   const [url, setUrl] = useState("")
   const [name, setName] = useState("")
   const [type, setType] = useState<CustomCatalogType>("movie")
@@ -67,37 +67,19 @@ export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps)
 
     setLoading(true)
     try {
-      let testEndpoint = ""
-      if (target.id) {
-        testEndpoint = mdblistApiKey
-          ? `https://api.mdblist.com/lists/${target.id}/items?apikey=${encodeURIComponent(mdblistApiKey)}&limit=3`
-          : `https://mdblist.com/lists/${encodeURIComponent(target.id)}/json`
-      } else if (target.user && target.slug) {
-        testEndpoint = mdblistApiKey
-          ? `https://api.mdblist.com/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}/items?apikey=${encodeURIComponent(mdblistApiKey)}&limit=3`
-          : `https://mdblist.com/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}/json`
-      }
+      const res = await fetch(`/api/mdblist/custom?url=${encodeURIComponent(trimmedUrl)}`, {
+        signal: AbortSignal.timeout(8000),
+      }).catch(() => null)
 
-      if (testEndpoint) {
-        let res = await fetch(testEndpoint, {
-          headers: { "User-Agent": "Mozilla/5.0 Posterium" },
-          signal: AbortSignal.timeout(6000),
-        }).catch(() => null)
-        if ((!res || !res.ok) && target.user && target.slug) {
-          res = await fetch(`https://mdblist.com/lists/${encodeURIComponent(target.user)}/${encodeURIComponent(target.slug)}/json`, {
-            headers: { "User-Agent": "Mozilla/5.0 Posterium" },
-            signal: AbortSignal.timeout(6000),
-          }).catch(() => null)
-        }
-        if (res && res.ok) {
-          const data = await res.json()
-          const payload = Array.isArray(data) ? data : (data?.data?.items || data?.items || data?.shows || data?.movies || [])
-          if (Array.isArray(payload) && payload.length > 0) {
-            setPreviewItems(payload.slice(0, 3).map((it: { title?: string; name?: string; year?: number; release_year?: number }) => ({
-              title: it.title || it.name || "Titolo",
-              year: it.year || it.release_year || 0,
-            })))
-          }
+      let previewCount = 0
+      if (res && res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data?.items) && data.items.length > 0) {
+          previewCount = data.items.length
+          setPreviewItems(data.items.slice(0, 3).map((it: { title?: string; name?: string; year?: number }) => ({
+            title: it.title || it.name || "Titolo",
+            year: it.year || 0,
+          })))
         }
       }
 
@@ -114,7 +96,7 @@ export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps)
         setPreviewItems(null)
         setLoading(false)
         onClose()
-      }, previewItems ? 700 : 150)
+      }, previewCount > 0 ? 700 : 150)
     } catch {
       addCustomCatalog({
         name: trimmedName,
