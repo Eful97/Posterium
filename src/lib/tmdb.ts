@@ -224,9 +224,14 @@ export interface TMDBDetails {
   id: number
   title?: string
   name?: string
+  overview?: string
+  tagline?: string | null
+  backdrop_path?: string | null
   genres: { id: number; name: string }[]
   vote_average: number
   vote_count: number
+  runtime?: number
+  episode_run_time?: number[]
   type?: string
   status?: string
   release_date?: string
@@ -239,12 +244,55 @@ export interface TMDBDetails {
   production_companies?: { id: number; name: string; logo_path: string | null; origin_country: string }[]
   original_language?: string
   poster_path?: string | null
-
+  seasons?: { id: number; season_number: number; name: string; episode_count: number; air_date?: string; poster_path?: string | null }[]
+  credits?: {
+    cast?: { id: number; name: string; character?: string; profile_path?: string | null }[]
+    crew?: { id: number; name: string; job: string; department?: string }[]
+  }
+  videos?: {
+    results?: { id: string; key: string; site: string; type: string; name: string }[]
+  }
+  external_ids?: {
+    imdb_id?: string | null
+  }
 }
 
 export async function getDetails(mediaType: "movie" | "tv", id: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBDetails> {
   const data = await tmdbFetch(`/${mediaType}/${id}?language=${language}`, apiKey, signal)
   return data as TMDBDetails
+}
+
+export async function getFullDetails(mediaType: "movie" | "tv", id: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBDetails> {
+  const data = await tmdbFetch(`/${mediaType}/${id}?language=${language}&append_to_response=credits,videos,external_ids`, apiKey, signal)
+  return data as TMDBDetails
+}
+
+export interface TMDBEpisode {
+  id: number
+  episode_number: number
+  season_number: number
+  name: string
+  overview: string
+  still_path: string | null
+  air_date: string
+  vote_average?: number
+}
+
+export interface TMDBSeasonDetails {
+  id: number
+  season_number: number
+  name: string
+  overview: string
+  episodes: TMDBEpisode[]
+}
+
+export async function getTVSeason(tvId: number, seasonNumber: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBSeasonDetails | null> {
+  try {
+    const data = await tmdbFetch(`/tv/${tvId}/season/${seasonNumber}?language=${language}`, apiKey, signal)
+    return data as TMDBSeasonDetails
+  } catch {
+    return null
+  }
 }
 
 export interface TMDBTrendingItem {

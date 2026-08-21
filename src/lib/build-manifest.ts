@@ -116,7 +116,15 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     version: APP_VERSION,
     name: safeUser ? `Posterium (${safeUser.slice(0, 8)})` : "Posterium",
     description: "Custom poster manager for Stremio — loghi, badge trend, premi e rating",
-    resources: ["catalog", "poster"],
+    resources: [
+      "catalog",
+      "poster",
+      {
+        name: "meta",
+        types: ["movie", "series"],
+        idPrefixes: ["tt", "tmdb:"],
+      },
+    ],
     types: ["movie", "series"],
     logo: `${domain}/App.png`,
     addonCatalogs: [],

@@ -100,8 +100,9 @@ npm run dev
 
 ### 📺 Cataloghi & Ricerca Globale Stremio Integrata
 * **Cataloghi Piattaforme & Trend in Tempo Reale**: Top 20 Italia (JustWatch GraphQL), Netflix, Prime Video, Disney+, Sky/NOW, Apple TV+, HBO Max, Paramount+, Top 20 Anime (MDBList) e liste MDBList personalizzate.
-* **Ricerca Globale Diretta in Stremio (Stile AIOMetadata)**: Cerca qualsiasi film o serie TV direttamente dalla barra di ricerca di Stremio (Smart TV, PC, smartphone); Posterium interroga TMDB e genera al volo i poster personalizzati per ogni risultato con i tuoi loghi, badge di rating, gradienti e stili di profilo.
-* **Compatibilità Universale Metadati**: Risoluzione automatica degli ID IMDb (`tt...`) e TMDB per integrarsi perfettamente con tutti gli addon di streaming (Torrentio, Cinemeta, ecc.).
+* **Ricerca Globale Diretta in Stremio**: Cerca qualsiasi film o serie TV direttamente dalla barra di ricerca di Stremio (Smart TV, PC, smartphone); Posterium interroga TMDB e genera al volo i poster personalizzati per ogni risultato con i tuoi loghi, badge di rating, gradienti e stili di profilo.
+* **Fornitore Metadati 100% Autonomo (`resource: meta`)**: Posterium fornisce direttamente a Stremio le schede dettagli complete (trame in italiano, cast, registi, loghi trasparenti, sfondi 4K, trailer YouTube e **tutte le stagioni ed episodi con titoli italiani, trame e thumbnail**). Nessun addon aggiuntivo o AIOMetadata richiesto: installi solo Posterium ed hai tutto pronto!
+* **Compatibilità Universale Streaming**: Generazione automatica degli ID compatibili (`tt...` e `tt...:S:E`) che si integrano immediatamente con Torrentio, Debrid e qualsiasi lettore Stremio.
 * **Ordinamento e Rinomina Cataloghi**: Personalizza l'ordine di visualizzazione, attiva o disattiva singoli cataloghi e rinominali a piacere direttamente dall'interfaccia web.
 
 ### 🎭 Loghi Ufficiali Network & Piattaforme
