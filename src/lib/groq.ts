@@ -7,8 +7,13 @@ import { createLogger } from "@/lib/logger"
 const log = createLogger("groq")
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-const PRIMARY_MODEL = "groq/compound"
-const FALLBACK_MODEL = "groq/compound-mini"
+
+// Modello configurable via env: la disponibilità dei modelli Groq varia per
+// account (alcuni hanno solo groq/compound, altri i production/preview open).
+// POSTERIUM_GROQ_MODEL (e _FALLBACK) permette di puntare a uno specifico senza
+// ricompilare. Default attestati dalla chiave attuale (solo compound).
+const PRIMARY_MODEL = process.env.POSTERIUM_GROQ_MODEL || "groq/compound"
+const FALLBACK_MODEL = process.env.POSTERIUM_GROQ_FALLBACK_MODEL || "groq/compound-mini"
 
 export interface GroqRecommendation {
   title: string
