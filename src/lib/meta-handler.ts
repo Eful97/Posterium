@@ -234,17 +234,20 @@ export async function posteriumMeta(
     if (stType === "series") {
       videos = []
 
-      // Controlla se esistono Episode Groups alternativi (es. Italian Part, Netflix Order, Digital, ecc.)
+      // Controlla se esistono Episode Groups alternativi (es. Italian Parts, Netflix Order, Digital, ecc.)
       const epGroups = await getTVEpisodeGroups(tmdbId, apiKey)
       const preferredGroup = epGroups.find((g) => {
         const n = g.name.toLowerCase()
-        return n.includes("italian") || n.includes("italia") || n.includes("italy")
+        return (n.includes("italian") || n.includes("italia") || n.includes("italy")) && g.group_count > 1
       }) || epGroups.find((g) => {
         const n = g.name.toLowerCase()
-        return n.includes("netflix")
+        return (n.includes("part") || n.includes("digital")) && g.group_count >= 4
       }) || epGroups.find((g) => {
         const n = g.name.toLowerCase()
-        return n.includes("digital") || n.includes("part") || n.includes("streaming") || (g.type === 1 && g.group_count > 1)
+        return n.includes("netflix") && !n.includes("seasons (edited")
+      }) || epGroups.find((g) => {
+        const n = g.name.toLowerCase()
+        return (n.includes("digital") || n.includes("part") || n.includes("streaming") || (g.type === 1 && g.group_count > 1))
       })
 
       if (preferredGroup) {
