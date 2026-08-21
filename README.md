@@ -246,8 +246,8 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | `POSTERIUM_PUBLIC_INSTANCE` | Imposta a `1` per sbloccare l'editor su istanze pubbliche (Vercel/HF) senza richiedere token admin. |
 | `POSTERIUM_TMDB_KEY` | Chiave TMDB d'istanza per generare le locandine e popolare i cataloghi. |
 | `POSTERIUM_GROQ_KEY` | Chiave [Groq Cloud](https://groq.com/) per la **Ricerca AI Semantica**. |
-| `POSTERIUM_GROQ_MODEL` | Modello Groq per la ricerca AI (default `groq/compound`). Sovrascrivi per puntare a un modello specifico della tua chiave (es. `llama-3.1-8b-instant`). |
-| `POSTERIUM_GROQ_FALLBACK_MODEL` | Modello di fallback se il primario fallisce (default `groq/compound-mini`). |
+| `POSTERIUM_GROQ_MODEL` | Modello Groq per la ricerca AI (default `openai/gpt-oss-20b`). Sovrascrivi per puntare a un modello della tua chiave. |
+| `POSTERIUM_GROQ_FALLBACK_MODEL` | Modello di fallback se il primario fallisce (default `groq/compound`). |
 | `POSTERIUM_MDBLIST_KEY` | Chiave MDBList per classifiche anime e liste personalizzate. |
 | `POSTERIUM_TVDB_API_KEY` | Chiave TheTVDB per thumbnail e trame degli episodi. |
 | `POSTERIUM_ADMIN_TOKEN` | Token segreto per proteggere le route amministrative private. |

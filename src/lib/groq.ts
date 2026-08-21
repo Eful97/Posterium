@@ -9,11 +9,13 @@ const log = createLogger("groq")
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 // Modello configurable via env: la disponibilità dei modelli Groq varia per
-// account (alcuni hanno solo groq/compound, altri i production/preview open).
-// POSTERIUM_GROQ_MODEL (e _FALLBACK) permette di puntare a uno specifico senza
-// ricompilare. Default attestati dalla chiave attuale (solo compound).
-const PRIMARY_MODEL = process.env.POSTERIUM_GROQ_MODEL || "groq/compound"
-const FALLBACK_MODEL = process.env.POSTERIUM_GROQ_FALLBACK_MODEL || "groq/compound-mini"
+// account. POSTERIUM_GROQ_MODEL (e _FALLBACK) permette di puntare a uno
+// specifico senza ricompilare. Default: gpt-oss-20b è un LLM testuale puro con
+// json_mode e ~1000 tps (disponibile su questa chiave), molto più veloce del
+// sistema agentico groq/compound per una ricerca Stremio sincrona. Fallback
+// groq/compound (qualità) se il primario fallisce.
+const PRIMARY_MODEL = process.env.POSTERIUM_GROQ_MODEL || "openai/gpt-oss-20b"
+const FALLBACK_MODEL = process.env.POSTERIUM_GROQ_FALLBACK_MODEL || "groq/compound"
 
 export interface GroqRecommendation {
   title: string
