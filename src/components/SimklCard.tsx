@@ -68,7 +68,7 @@ export function SimklCard({ items, title, totalCount, meta = [], onClick, onItem
 
           return (
             <div
-              key={tmdbId ?? idx}
+              key={`${mediaType}:${tmdbId ?? "item"}-${idx}`}
               className="relative isolate shrink-0 overflow-hidden cursor-pointer"
               role="button"
               tabIndex={0}

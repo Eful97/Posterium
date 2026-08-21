@@ -25,6 +25,8 @@ import { SearchProvider } from "./contexts/SearchContext"
 import { SettingsProvider } from "./contexts/SettingsContext"
 import { TranslationProvider } from "./contexts/TranslationContext"
 import { POSTERIUM_CATALOGS } from "./catalog-definitions"
+import { useCustomCatalogs } from "./useCustomCatalogs"
+import { useProfileAuth } from "./useProfileAuth"
 
 export type ViewType = "search" | "myposters" | "edit" | "cataloghi"
 
@@ -360,28 +362,7 @@ export function usePosterium(): PosteriumCtx {
 
   const [urlPattern, setUrlPattern] = useState("")
   const [copied, setCopied] = useState(false)
-  const [profileId, setProfileId] = useState<string | null>(null)
-  // Ri-autenticazione al rientro (stile AIOMetadata): se esiste un profilo
-  // salvato, all'avvio si chiede la password prima di usarlo/auto-sincronizzarlo.
-  const [profileLocked, setProfileLocked] = useState(false)
-  const [profileLoadError, setProfileLoadError] = useState<string>("")
-  const [profileLoading, setProfileLoading] = useState(false)
-  const savedProfileIdRef = useRef<string | null>(null)
-  // Sopprime il ProfileModal di first-visit per la sessione quando un profilo
-  // salvato risulta stale (o l'utente sceglie "continua senza profilo"):
-  // non ha senso il "crea un profilo" se ne aveva già uno.
-  const [profileModalSuppressed, setProfileModalSuppressed] = useState(false)
   const [profileCopied, setProfileCopied] = useState(false)
-  const [profilePassword, setProfilePassword] = useState<string>("")
-  const setProfilePasswordPersist = useCallback((v: string) => {
-    setProfilePassword(v)
-    safeSetItem("posterium_profile_password", v)
-  }, [safeSetItem])
-  // Profilo STATELESS (config token): attivo quando lo storage non è
-  // disponibile (es. Vercel senza KV). La config viaggia nel link `?config=`
-  // firmato; il client tiene id+config+token in localStorage per il rientro.
-  const [profileStateless, setProfileStateless] = useState(false)
-  const [profileConfigToken, setProfileConfigToken] = useState<string | null>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
   const [metaInfo, setMetaInfo] = useState<MetaInfo>({ genres: [], voteAverage: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -460,130 +441,27 @@ export function usePosterium(): PosteriumCtx {
     })
   }, [navigation.previewPoster, navigation.selectedLogo, logoScale, hasBadges])
 
-  const [customCatalogs, setCustomCatalogsState] = useState<CustomCatalogConfig[]>([])
-  const [disabledCatalogIds, setDisabledCatalogIdsState] = useState<string[]>([])
-  const [catalogOrder, setCatalogOrderState] = useState<string[]>([])
-  const [catalogRenames, setCatalogRenamesState] = useState<Record<string, string>>({})
+  // --- Custom Catalogs & Profile Auth Hooks ---
+  const {
+    customCatalogs,
+    setCustomCatalogs,
+    addCustomCatalog,
+    removeCustomCatalog,
+    toggleCustomCatalog,
+    disabledCatalogIds,
+    setDisabledCatalogIds,
+    toggleBuiltinCatalog,
+    catalogOrder,
+    setCatalogOrder,
+    moveCatalog,
+    catalogRenames,
+    setCatalogRenames,
+    renameCatalog,
+    resetCatalogNames,
+    resetCatalogOrder,
+  } = useCustomCatalogs(safeGetItem, safeSetItem)
 
-  const setCustomCatalogs = useCallback((catalogs: CustomCatalogConfig[]) => {
-    setCustomCatalogsState(catalogs)
-    safeSetItem("posterium_custom_catalogs", JSON.stringify(catalogs))
-  }, [safeSetItem])
-
-  const addCustomCatalog = useCallback((catalog: Omit<CustomCatalogConfig, "id">) => {
-    const slug = catalog.name.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 24) || "custom"
-    const newCat: CustomCatalogConfig = {
-      ...catalog,
-      id: `${slug}-${Date.now().toString(36)}`,
-      enabled: catalog.enabled ?? true,
-    }
-    setCustomCatalogsState((prev) => {
-      const next = [...prev, newCat]
-      safeSetItem("posterium_custom_catalogs", JSON.stringify(next))
-      return next
-    })
-  }, [safeSetItem])
-
-  const removeCustomCatalog = useCallback((id: string) => {
-    setCustomCatalogsState((prev) => {
-      const next = prev.filter((c) => c.id !== id)
-      safeSetItem("posterium_custom_catalogs", JSON.stringify(next))
-      return next
-    })
-  }, [safeSetItem])
-
-  const toggleCustomCatalog = useCallback((id: string) => {
-    setCustomCatalogsState((prev) => {
-      const next = prev.map((c) => (c.id === id ? { ...c, enabled: c.enabled === false ? true : false } : c))
-      safeSetItem("posterium_custom_catalogs", JSON.stringify(next))
-      return next
-    })
-  }, [safeSetItem])
-
-  const setDisabledCatalogIds = useCallback((ids: string[]) => {
-    setDisabledCatalogIdsState(ids)
-    safeSetItem("posterium_disabled_catalogs", JSON.stringify(ids))
-  }, [safeSetItem])
-
-  const toggleBuiltinCatalog = useCallback((id: string) => {
-    setDisabledCatalogIdsState((prev) => {
-      const next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-      safeSetItem("posterium_disabled_catalogs", JSON.stringify(next))
-      return next
-    })
-  }, [safeSetItem])
-
-  const setCatalogOrder = useCallback((order: string[]) => {
-    setCatalogOrderState(order)
-    safeSetItem("posterium_catalog_order", JSON.stringify(order))
-  }, [safeSetItem])
-
-  const moveCatalog = useCallback((id: string, direction: "up" | "down") => {
-    setCatalogOrderState((prev) => {
-      const allIds: string[] = []
-      const existing = new Set<string>()
-      prev.forEach((catId) => {
-        allIds.push(catId)
-        existing.add(catId)
-      })
-      POSTERIUM_CATALOGS.forEach((c) => {
-        if (!existing.has(c.id)) {
-          allIds.push(c.id)
-          existing.add(c.id)
-        }
-      })
-      customCatalogs.forEach((c) => {
-        if (c.type === "mixed") {
-          const mId = `posterium-custom-movie-${c.id}`
-          const sId = `posterium-custom-series-${c.id}`
-          if (!existing.has(mId)) { allIds.push(mId); existing.add(mId) }
-          if (!existing.has(sId)) { allIds.push(sId); existing.add(sId) }
-        } else {
-          const cId = `posterium-custom-${c.type}-${c.id}`
-          if (!existing.has(cId)) { allIds.push(cId); existing.add(cId) }
-        }
-      })
-
-      const idx = allIds.indexOf(id)
-      if (idx === -1) return prev
-      const targetIdx = direction === "up" ? idx - 1 : idx + 1
-      if (targetIdx < 0 || targetIdx >= allIds.length) return allIds
-
-      const next = [...allIds]
-      const [item] = next.splice(idx, 1)
-      next.splice(targetIdx, 0, item)
-      safeSetItem("posterium_catalog_order", JSON.stringify(next))
-      return next
-    })
-  }, [customCatalogs, safeSetItem])
-
-  const setCatalogRenames = useCallback((renames: Record<string, string>) => {
-    setCatalogRenamesState(renames)
-    safeSetItem("posterium_catalog_renames", JSON.stringify(renames))
-  }, [safeSetItem])
-
-  const renameCatalog = useCallback((id: string, newName: string) => {
-    setCatalogRenamesState((prev) => {
-      const next = { ...prev, [id]: newName }
-      if (!newName.trim()) delete next[id]
-      safeSetItem("posterium_catalog_renames", JSON.stringify(next))
-      return next
-    })
-  }, [safeSetItem])
-
-  const resetCatalogNames = useCallback(() => {
-    setCatalogRenamesState({})
-    try { localStorage.removeItem("posterium_catalog_renames") } catch {}
-  }, [])
-
-  const resetCatalogOrder = useCallback(() => {
-    setCatalogOrderState([])
-    try { localStorage.removeItem("posterium_catalog_order") } catch {}
-  }, [])
-
-  // --- Initialization ---
-  // Applica una PosteriumUserConfig ai setters dei default (condivisa tra
-  // loadProfile server-based e il ripristino del profilo stateless locale).
+  // --- Initialization & Profile Config Application ---
   const applyProfileConfig = useCallback((c: PosteriumUserConfig) => {
     if (typeof c.globalBadges === "boolean") setDefaultGlobalBadges(c.globalBadges)
     if (typeof c.rankingBadges === "boolean") setDefaultRankingBadges(c.rankingBadges)
@@ -605,120 +483,6 @@ export function usePosterium(): PosteriumCtx {
     if (c.catalogRenames && typeof c.catalogRenames === "object") setCatalogRenames(c.catalogRenames)
   }, [setDefaultGlobalBadges, setDefaultRankingBadges, setDefaultBadgeStyle, setDefaultRankingBadgeStyle, setBlurEnabled, setBlurIntensity, setBlurFade, setBlurDarkness, setGradientHeight, setNetworkLogo, setRibbonSide, setAutoRotateClean, setDefaultLogoFitEnabled, setCustomBadge, setCustomCatalogs, setDisabledCatalogIds, setCatalogOrder, setCatalogRenames])
 
-  useEffect(() => {
-    if (keyInit.current) return
-    keyInit.current = true
-    const saved = safeGetItem("tmdb_key") || ""
-    setTmdbKeyState(saved)
-    setTmdbKeyInput(saved)
-    const mdblistKey = safeGetItem("mdblist_key") || ""
-    setMdblistApiKey(mdblistKey)
-    const savedTheme = safeGetItem("posterium_theme")
-    if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme)
-    const savedProfileId = safeGetItem("posterium_profile_id")
-    const savedStateless = safeGetItem("posterium_profile_stateless") === "1"
-    const savedCustomCats = safeGetItem("posterium_custom_catalogs")
-    if (savedCustomCats) {
-      try { setCustomCatalogsState(JSON.parse(savedCustomCats)) } catch {}
-    }
-    const savedDisabledCats = safeGetItem("posterium_disabled_catalogs")
-    if (savedDisabledCats) {
-      try { setDisabledCatalogIdsState(JSON.parse(savedDisabledCats)) } catch {}
-    }
-    const savedOrder = safeGetItem("posterium_catalog_order")
-    if (savedOrder) {
-      try { setCatalogOrderState(JSON.parse(savedOrder)) } catch {}
-    }
-    const savedRenames = safeGetItem("posterium_catalog_renames")
-    if (savedRenames) {
-      try { setCatalogRenamesState(JSON.parse(savedRenames)) } catch {}
-    }
-    if (savedProfileId) {
-      // All'avvio interroghiamo il server per quel profilo: una risposta 200
-      // (profilo salvato server-side, es. KV/Upstash) → richiedi la password
-      // (locked, come sempre). Una 404 → il profilo non esiste sul server:
-      //   - se era stateless (browser-only) → attiva la modalità stateless per
-      //     riusare il link ?config=;
-      //   - altrimenti è uno stale → rimuovi l'id.
-      // Questo evita due bug: (a) un profilo stateless stantio bloccava il
-      // salvataggio anche dopo l'aggiunta di storage; (b) rimuovendo del tutto
-      // il profilo quando c'era storage, all'avvio non veniva più chiesta la
-      // password per un profilo server-side vero.
-      savedProfileIdRef.current = savedProfileId
-      setProfileLocked(true)
-      void (async () => {
-        try {
-          const res = await fetch(`/api/profile?u=${encodeURIComponent(savedProfileId)}`, { signal: AbortSignal.timeout(8000) })
-          if (res.ok) {
-            const data = await res.json()
-            if (data && data.hasPassword === true) {
-              // Profilo server-side con password: resta locked, l'utente la
-              // inserisce nel ProfileUnlock. Facciamo sparire l'eventuale flag
-              // stateless residuo (non è più tale).
-              try { localStorage.removeItem("posterium_profile_stateless") } catch {}
-              try { localStorage.removeItem("posterium_profile_config_token") } catch {}
-              return
-            }
-            // Profilo server-side senza password: niente da confermare.
-            savedProfileIdRef.current = null
-            setProfileLocked(false)
-            setProfileModalSuppressed(true)
-            setProfileId(null)
-            return
-          }
-          // 404: il profilo non è sul server.
-          if (savedStateless) {
-            // Stateless browser-only: attiva direttamente, senza lock.
-            savedProfileIdRef.current = null
-            setProfileLocked(false)
-            setProfileId(savedProfileId)
-            setProfileStateless(true)
-            const savedToken = safeGetItem("posterium_profile_config_token")
-            if (savedToken) setProfileConfigToken(savedToken)
-            const savedConfig = safeGetItem("posterium_profile_config")
-            if (savedConfig) {
-              try {
-                applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
-              } catch {
-                // Config corrotta: ignora, restano i default.
-              }
-            }
-          } else {
-            // Stale senza flag stateless: rimuovi l'id non più valido.
-            try { localStorage.removeItem("posterium_profile_id") } catch {}
-            savedProfileIdRef.current = null
-            setProfileLocked(false)
-            setProfileModalSuppressed(true)
-            setProfileId(null)
-          }
-        } catch {
-          // Errore di rete: non sappiamo se il profilo esiste sul server.
-          // Se era stateless, riusiamo la config locale (fallback sicuro).
-          if (savedStateless) {
-            savedProfileIdRef.current = null
-            setProfileLocked(false)
-            setProfileId(savedProfileId)
-            setProfileStateless(true)
-            const savedToken = safeGetItem("posterium_profile_config_token")
-            if (savedToken) setProfileConfigToken(savedToken)
-            const savedConfig = safeGetItem("posterium_profile_config")
-            if (savedConfig) {
-              try {
-                applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
-              } catch {
-                // ignora
-              }
-            }
-          }
-          // Se NON era stateless e la rete fallisce → resta locked (safe: si
-          // chiede comunque la password, come nel flusso originale).
-        }
-      })()
-    }
-    // Non caricare più la password salvata: la conferma è richiesta ogni volta.
-    try { localStorage.removeItem("posterium_profile_password") } catch {}
-  }, [safeGetItem, applyProfileConfig])
-
   const setTmdbKey = useCallback((val: string) => {
     setTmdbKeyState(val)
     setTmdbKeyInput(val)
@@ -730,82 +494,42 @@ export function usePosterium(): PosteriumCtx {
     safeSetItem("mdblist_key", val)
   }, [safeSetItem])
 
-  // Carica un profilo verificando la password (stile AIOMetadata): applica
-  // config + apiKeys all'editor e attiva il profilo. Usata sia dal modale
-  // profilo sia dallo sblocco automatico al rientro.
-  const loadProfile = useCallback(async (uuid: string, password: string): Promise<void> => {
-    // Profilo STATELESS salvato in localStorage (stesso browser): nessun server
-    // da interrogare — applica la config locale e attiva il profilo.
-    if (safeGetItem("posterium_profile_id") === uuid && safeGetItem("posterium_profile_stateless") === "1") {
-      const savedToken = safeGetItem("posterium_profile_config_token")
-      const savedConfig = safeGetItem("posterium_profile_config")
-      if (savedToken) setProfileConfigToken(savedToken)
-      setProfileStateless(true)
-      setProfileId(uuid)
-      if (savedConfig) {
-        try {
-          applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
-        } catch {
-          // Config corrotta: ignora, restano i default.
-        }
-      }
-      savedProfileIdRef.current = null
-      return
-    }
-    const res = await fetch("/api/profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "load", profileId: uuid, password }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      const err = data.error || (res.status === 401 ? "Password errata" : "Profilo non trovato")
-      throw new Error(err)
-    }
-    const loadedId = data.profileId as string
-    safeSetItem("posterium_profile_id", loadedId)
-    setProfileId(loadedId)
-    setProfilePassword(password)
-    safeSetItem("posterium_profile_password", password)
-    savedProfileIdRef.current = null
+  const {
+    profileId,
+    setProfileId,
+    profilePassword,
+    setProfilePassword,
+    profileStateless,
+    setProfileStateless,
+    profileConfigToken,
+    setProfileConfigToken,
+    profileLocked,
+    profileLoadError,
+    profileLoading,
+    profileModalSuppressed,
+    loadProfile,
+    unlockProfile,
+    dismissProfileLock,
+  } = useProfileAuth({
+    safeGetItem,
+    safeSetItem,
+    setTmdbKey,
+    setTmdbKeyInput,
+    setMdblistApiKey: setMdblistApiKeyFn,
+    applyProfileConfig,
+  })
 
-    if (data.config) {
-      applyProfileConfig(data.config as PosteriumUserConfig)
-    }
-    if (data.apiKeys?.tmdbKey) {
-      setTmdbKeyInput(data.apiKeys.tmdbKey)
-      setTmdbKey(data.apiKeys.tmdbKey)
-    }
-    if (data.apiKeys?.mdblistApiKey) setMdblistApiKey(data.apiKeys.mdblistApiKey)
-  }, [safeGetItem, safeSetItem, setTmdbKey, applyProfileConfig])
-
-  const unlockProfile = useCallback(async (password: string) => {
-    if (!savedProfileIdRef.current) return
-    setProfileLoading(true)
-    setProfileLoadError("")
-    try {
-      await loadProfile(savedProfileIdRef.current, password)
-      setProfileLocked(false)
-    } catch (error) {
-      setProfileLoadError(error instanceof Error ? error.message : "Errore")
-    } finally {
-      setProfileLoading(false)
-    }
-  }, [loadProfile])
-
-  const dismissProfileLock = useCallback(() => {
-    // Continua senza profilo: rimuove l'associazione salvata così non ri-chiede,
-    // e sopprime il modale di first-visit per la sessione.
-    try { localStorage.removeItem("posterium_profile_id") } catch {}
-    try { localStorage.removeItem("posterium_profile_stateless") } catch {}
-    try { localStorage.removeItem("posterium_profile_config_token") } catch {}
-    try { localStorage.removeItem("posterium_profile_config") } catch {}
-    savedProfileIdRef.current = null
-    setProfileStateless(false)
-    setProfileConfigToken(null)
-    setProfileLocked(false)
-    setProfileModalSuppressed(true)
-  }, [])
+  useEffect(() => {
+    if (keyInit.current) return
+    keyInit.current = true
+    const saved = safeGetItem("tmdb_key") || ""
+    setTmdbKeyState(saved)
+    setTmdbKeyInput(saved)
+    const mdblistKey = safeGetItem("mdblist_key") || ""
+    setMdblistApiKey(mdblistKey)
+    const savedTheme = safeGetItem("posterium_theme")
+    if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme)
+  }, [safeGetItem])
 
   useEffect(() => {
     document.documentElement.classList.toggle("light-mode", theme === "light")
@@ -1353,7 +1077,7 @@ export function usePosterium(): PosteriumCtx {
     mdblistApiKey, setMdblistApiKey: setMdblistApiKeyFn,
     exportData, importData, removeRecentSearch: search.removeRecentSearch, clearRecentSearches: search.clearRecentSearches,
     copyUrl, copied, saveAndCopyProfileUrl, profileCopied, profileId, setProfileId,
-    profilePassword, setProfilePassword: setProfilePasswordPersist,
+    profilePassword, setProfilePassword,
     profileStateless, setProfileStateless, profileConfigToken, setProfileConfigToken,
     profileLocked, profileLoadError, profileLoading, unlockProfile, dismissProfileLock, loadProfile, profileModalSuppressed,
     accentColor, autoAccentColor, setAccentColor,

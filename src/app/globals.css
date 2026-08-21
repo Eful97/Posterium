@@ -998,21 +998,21 @@ input[type="range"]::-moz-range-thumb {
 
 /* Focus ring for keyboard navigation */
 *:focus-visible {
-  outline: 2px solid var(--color-accent-orange);
+  outline: 2px solid var(--color-accent, var(--color-accent-orange));
   outline-offset: 2px;
   border-radius: 4px;
   box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.12);
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--color-accent-orange);
+  outline: 2px solid var(--color-accent, var(--color-accent-orange));
   outline-offset: 2px;
   box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.12);
 }
 input:focus-visible,
 select:focus-visible {
   outline: none;
-  border-color: var(--color-accent-orange);
+  border-color: var(--color-accent, var(--color-accent-orange));
   box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.14);
 }
 
@@ -1993,9 +1993,3 @@ select:focus-visible {
   }
 }
 
-/* Anello di focus visibile solo per navigazione da tastiera */
-:focus-visible {
-  outline: 2px solid var(--color-accent, var(--color-accent-orange, #e85d2a));
-  outline-offset: 2px;
-  border-radius: 4px;
-}

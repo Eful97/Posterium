@@ -451,7 +451,7 @@ export function CataloghiView() {
 
                 return (
                   <button type="button"
-                    key={`${item.mediaType}:${item.tmdbId ?? idx}`}
+                    key={`${item.mediaType}:${item.tmdbId ?? "item"}-${idx}`}
                     onClick={() => {
                       if (item.tmdbId) {
                         navigateToPoster(toSearchResult({
