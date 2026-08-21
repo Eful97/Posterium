@@ -17,6 +17,7 @@ import { PosterPreview } from "@/components/PosterPreview"
 import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 import { BadgeControls } from "@/components/BadgeControls"
 import { TransformControls } from "@/components/TransformControls"
+import { EpisodeGroupControls } from "@/components/EpisodeGroupControls"
 import { usePosterPreview } from "@/lib/usePosterPreview"
 import { Check, Clock, ExternalLink, Save, Trash2, X } from "lucide-react"
 
@@ -62,7 +63,7 @@ export default function EditView() {
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Fix L30: timer del "copied" ripulito su unmount (setState post-unmount).
   const urlCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [activeRightTab, setActiveRightTab] = useState<"logo" | "badge" | "transform">("logo")
+  const [activeRightTab, setActiveRightTab] = useState<"logo" | "badge" | "transform" | "stagioni">("logo")
   const [activePosterTab, setActivePosterTab] = useState("clean")
   const [testUrl, setTestUrl] = useState<string | null>(null)
   const [urlCopied, setUrlCopied] = useState(false)
@@ -127,6 +128,7 @@ export default function EditView() {
     { key: "logo", label: t("ui.logoSection") },
     ...(cleanPoster ? [{ key: "badge", label: t("ui.badgeSection") }] : []),
     ...(cleanPoster && selectedLogo ? [{ key: "transform", label: t("ui.transform") }] : []),
+    ...(selected?.media_type === "tv" ? [{ key: "stagioni", label: "📺 Stagioni" }] : []),
   ]
 
   return (
@@ -288,6 +290,7 @@ export default function EditView() {
               </>}
               {activeRightTab === "badge" && <BadgeControls />}
               {activeRightTab === "transform" && <TransformControls />}
+              {activeRightTab === "stagioni" && <EpisodeGroupControls />}
               </div>
             </EditorPanel>
 
