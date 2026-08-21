@@ -103,6 +103,8 @@ describe("GET /meta/[type]/[id]", () => {
       }))
       // /tv/94997/images
       .mockResolvedValueOnce(Response.json({ logos: [] }))
+      // /tv/94997/episode_groups
+      .mockResolvedValueOnce(Response.json({ results: [] }))
       // /tv/94997/season/1
       .mockResolvedValueOnce(Response.json({
         id: 1234,
@@ -162,6 +164,75 @@ describe("GET /meta/[type]/[id]", () => {
       episode: 2,
       name: "Il principe canaglia",
       thumbnail: expect.stringContaining("/ep2.jpg"),
+    })
+  })
+
+  it("supports alternative Netflix Episode Groups (e.g. 5 parts for La Casa de Papel)", async () => {
+    vi.spyOn(globalThis, "fetch")
+      // /find/tt6468322
+      .mockResolvedValueOnce(Response.json({
+        tv_results: [{ id: 71446 }],
+      }))
+      // /tv/71446 details
+      .mockResolvedValueOnce(Response.json({
+        id: 71446,
+        name: "La casa di carta",
+        overview: "Una banda di ladri...",
+        first_air_date: "2017-05-02",
+        vote_average: 8.2,
+        genres: [{ id: 80, name: "Crime" }, { id: 18, name: "Dramma" }],
+        external_ids: { imdb_id: "tt6468322" },
+        seasons: [{ season_number: 1 }, { season_number: 2 }],
+      }))
+      // /tv/71446/images
+      .mockResolvedValueOnce(Response.json({ logos: [] }))
+      // /tv/71446/episode_groups
+      .mockResolvedValueOnce(Response.json({
+        results: [
+          { id: "grp_netflix_5", name: "Netflix Order", type: 1, group_count: 5 },
+        ],
+      }))
+      // /tv/episode_group/grp_netflix_5
+      .mockResolvedValueOnce(Response.json({
+        id: "grp_netflix_5",
+        name: "Netflix Order",
+        groups: [
+          {
+            id: "part_1",
+            name: "Parte 1",
+            order: 1,
+            episodes: [{ id: 1, episode_number: 1, name: "Effetto Guggenheim", air_date: "2017-12-20" }],
+          },
+          {
+            id: "part_5",
+            name: "Parte 5",
+            order: 5,
+            episodes: [{ id: 50, episode_number: 1, name: "Fine della corsa", air_date: "2021-09-03" }],
+          },
+        ],
+      }))
+
+    const req = new NextRequest("http://localhost:3000/meta/series/tt6468322.json?api_key=settings-key")
+    const res = await GET(req, {
+      params: Promise.resolve({ type: "series", id: "tt6468322.json" }),
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.meta.videos).toHaveLength(2)
+    // Parte 1
+    expect(body.meta.videos[0]).toMatchObject({
+      id: "tt6468322:1:1",
+      season: 1,
+      episode: 1,
+      name: "Effetto Guggenheim",
+    })
+    // Parte 5
+    expect(body.meta.videos[1]).toMatchObject({
+      id: "tt6468322:5:1",
+      season: 5,
+      episode: 1,
+      name: "Fine della corsa",
     })
   })
 

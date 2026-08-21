@@ -295,6 +295,50 @@ export async function getTVSeason(tvId: number, seasonNumber: number, language =
   }
 }
 
+export interface TMDBEpisodeGroupItem {
+  id: string
+  name: string
+  order: number
+  description: string
+  type: number
+  group_count: number
+}
+
+export interface TMDBEpisodeGroupsResponse {
+  results: TMDBEpisodeGroupItem[]
+}
+
+export interface TMDBEpisodeGroupDetails {
+  id: string
+  name: string
+  description: string
+  group_count: number
+  groups: {
+    id: string
+    name: string
+    order: number
+    episodes: TMDBEpisode[]
+  }[]
+}
+
+export async function getTVEpisodeGroups(tvId: number, apiKey?: string, signal?: AbortSignal): Promise<TMDBEpisodeGroupItem[]> {
+  try {
+    const data = await tmdbFetch(`/tv/${tvId}/episode_groups`, apiKey, signal)
+    return (data as TMDBEpisodeGroupsResponse)?.results || []
+  } catch {
+    return []
+  }
+}
+
+export async function getTVEpisodeGroup(groupId: string, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBEpisodeGroupDetails | null> {
+  try {
+    const data = await tmdbFetch(`/tv/episode_group/${groupId}?language=${language}`, apiKey, signal)
+    return data as TMDBEpisodeGroupDetails
+  } catch {
+    return null
+  }
+}
+
 export interface TMDBTrendingItem {
   id: number
   media_type: string

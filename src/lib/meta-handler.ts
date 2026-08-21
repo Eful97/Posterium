@@ -12,6 +12,8 @@ import {
   getExternalIds,
   getImages,
   getTVSeason,
+  getTVEpisodeGroups,
+  getTVEpisodeGroup,
   posterUrl,
   posterUrlOriginal,
   resolveRequestApiKey,
@@ -229,28 +231,64 @@ export async function posteriumMeta(
 
     let videos: StremioVideo[] | undefined
 
-    if (stType === "series" && details.seasons && details.seasons.length > 0) {
-      const regularSeasons = details.seasons.filter((s) => s.season_number > 0)
-      const seasonsData = await Promise.all(
-        regularSeasons.map(async (s) => {
-          return getTVSeason(tmdbId, s.season_number, "it-IT", apiKey)
-        })
-      )
-
+    if (stType === "series") {
       videos = []
-      for (const sData of seasonsData) {
-        if (!sData || !sData.episodes) continue
-        for (const ep of sData.episodes) {
-          videos.push({
-            id: `${primaryId}:${ep.season_number}:${ep.episode_number}`,
-            name: ep.name || `Episodio ${ep.episode_number}`,
-            season: ep.season_number,
-            episode: ep.episode_number,
-            overview: ep.overview || undefined,
-            thumbnail: ep.still_path ? posterUrl(ep.still_path, "w500") : undefined,
-            released: ep.air_date ? `${ep.air_date}T00:00:00.000Z` : undefined,
-            rating: ep.vote_average ? ep.vote_average.toFixed(1) : undefined,
+
+      // Controlla se esistono Episode Groups alternativi (es. Netflix Order / Digital per La Casa di Carta, Lupin, ecc.)
+      const epGroups = await getTVEpisodeGroups(tmdbId, apiKey)
+      const preferredGroup = epGroups.find((g) => {
+        const n = g.name.toLowerCase()
+        return n.includes("netflix") || n.includes("digital") || (g.type === 1 && g.group_count > 1)
+      })
+
+      if (preferredGroup) {
+        const groupDetails = await getTVEpisodeGroup(preferredGroup.id, "it-IT", apiKey)
+        if (groupDetails?.groups && groupDetails.groups.length > 0) {
+          const sortedGroups = [...groupDetails.groups].sort((a, b) => a.order - b.order)
+          for (let gIdx = 0; gIdx < sortedGroups.length; gIdx++) {
+            const grp = sortedGroups[gIdx]
+            const seasonNumber = grp.order || gIdx + 1
+            for (let epIdx = 0; epIdx < (grp.episodes || []).length; epIdx++) {
+              const ep = grp.episodes[epIdx]
+              const episodeNumber = ep.episode_number || epIdx + 1
+              videos.push({
+                id: `${primaryId}:${seasonNumber}:${episodeNumber}`,
+                name: ep.name || `Episodio ${episodeNumber}`,
+                season: seasonNumber,
+                episode: episodeNumber,
+                overview: ep.overview || undefined,
+                thumbnail: ep.still_path ? posterUrl(ep.still_path, "w500") : undefined,
+                released: ep.air_date ? `${ep.air_date}T00:00:00.000Z` : undefined,
+                rating: ep.vote_average ? ep.vote_average.toFixed(1) : undefined,
+              })
+            }
+          }
+        }
+      }
+
+      // Fallback alle stagioni standard se non ci sono Episode Groups alternativi
+      if (videos.length === 0 && details.seasons && details.seasons.length > 0) {
+        const regularSeasons = details.seasons.filter((s) => s.season_number > 0)
+        const seasonsData = await Promise.all(
+          regularSeasons.map(async (s) => {
+            return getTVSeason(tmdbId, s.season_number, "it-IT", apiKey)
           })
+        )
+
+        for (const sData of seasonsData) {
+          if (!sData || !sData.episodes) continue
+          for (const ep of sData.episodes) {
+            videos.push({
+              id: `${primaryId}:${ep.season_number}:${ep.episode_number}`,
+              name: ep.name || `Episodio ${ep.episode_number}`,
+              season: ep.season_number,
+              episode: ep.episode_number,
+              overview: ep.overview || undefined,
+              thumbnail: ep.still_path ? posterUrl(ep.still_path, "w500") : undefined,
+              released: ep.air_date ? `${ep.air_date}T00:00:00.000Z` : undefined,
+              rating: ep.vote_average ? ep.vote_average.toFixed(1) : undefined,
+            })
+          }
         }
       }
     }
