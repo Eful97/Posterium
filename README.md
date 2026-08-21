@@ -98,6 +98,12 @@ npm run dev
 * **Cronologia Ricerche Rapida**: Salvataggio automatico delle ricerche recenti con pulsante di pulizia immediata in 1-click.
 * **Installazione & Condivisione Manifest Istantanea**: Copia rapida dell'URL del manifest per Stremio con feedback visivo contestuale.
 
+### 📺 Cataloghi & Ricerca Globale Stremio Integrata
+* **Cataloghi Piattaforme & Trend in Tempo Reale**: Top 20 Italia (JustWatch GraphQL), Netflix, Prime Video, Disney+, Sky/NOW, Apple TV+, HBO Max, Paramount+, Top 20 Anime (MDBList) e liste MDBList personalizzate.
+* **Ricerca Globale Diretta in Stremio (Stile AIOMetadata)**: Cerca qualsiasi film o serie TV direttamente dalla barra di ricerca di Stremio (Smart TV, PC, smartphone); Posterium interroga TMDB e genera al volo i poster personalizzati per ogni risultato con i tuoi loghi, badge di rating, gradienti e stili di profilo.
+* **Compatibilità Universale Metadati**: Risoluzione automatica degli ID IMDb (`tt...`) e TMDB per integrarsi perfettamente con tutti gli addon di streaming (Torrentio, Cinemeta, ecc.).
+* **Ordinamento e Rinomina Cataloghi**: Personalizza l'ordine di visualizzazione, attiva o disattiva singoli cataloghi e rinominali a piacere direttamente dall'interfaccia web.
+
 ### 🎭 Loghi Ufficiali Network & Piattaforme
 Riconoscimento automatico della rete di produzione o distribuzione con sovrapposizione del logo vettoriale in alta definizione:
 * **Piattaforme supportate**: Netflix, Prime Video, Disney+, HBO Max, Apple TV+, Paramount+, Sky (incluso NOW), Rai, Mediaset Infinity, Crunchyroll, Pluto TV, Tubi.
