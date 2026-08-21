@@ -14,6 +14,7 @@ import {
   getTVSeason,
   getTVEpisodeGroups,
   getTVEpisodeGroup,
+  type TMDBEpisodeGroupDetails,
   posterUrl,
   posterUrlOriginal,
   resolveRequestApiKey,
@@ -233,44 +234,52 @@ export async function posteriumMeta(
 
     if (stType === "series") {
       videos = []
+      const mapping = await getById("tv", tmdbId)
 
-      // Controlla se esistono Episode Groups alternativi (es. Italian Parts, Netflix Order, Digital, ecc.)
-      const epGroups = await getTVEpisodeGroups(tmdbId, apiKey)
-      const preferredGroup = epGroups.find((g) => {
-        const n = g.name.toLowerCase()
-        return (n.includes("italian") || n.includes("italia") || n.includes("italy")) && g.group_count > 1
-      }) || epGroups.find((g) => {
-        const n = g.name.toLowerCase()
-        return (n.includes("part") || n.includes("digital")) && g.group_count >= 4
-      }) || epGroups.find((g) => {
-        const n = g.name.toLowerCase()
-        return n.includes("netflix") && !n.includes("seasons (edited")
-      }) || epGroups.find((g) => {
-        const n = g.name.toLowerCase()
-        return (n.includes("digital") || n.includes("part") || n.includes("streaming") || (g.type === 1 && g.group_count > 1))
-      })
+      let groupDetails: TMDBEpisodeGroupDetails | null = null
 
-      if (preferredGroup) {
-        const groupDetails = await getTVEpisodeGroup(preferredGroup.id, "it-IT", apiKey)
-        if (groupDetails?.groups && groupDetails.groups.length > 0) {
-          const sortedGroups = [...groupDetails.groups].sort((a, b) => a.order - b.order)
-          for (let gIdx = 0; gIdx < sortedGroups.length; gIdx++) {
-            const grp = sortedGroups[gIdx]
-            const seasonNumber = grp.order || gIdx + 1
-            for (let epIdx = 0; epIdx < (grp.episodes || []).length; epIdx++) {
-              const ep = grp.episodes[epIdx]
-              const episodeNumber = ep.episode_number || epIdx + 1
-              videos.push({
-                id: `${primaryId}:${seasonNumber}:${episodeNumber}`,
-                name: ep.name || `Episodio ${episodeNumber}`,
-                season: seasonNumber,
-                episode: episodeNumber,
-                overview: ep.overview || undefined,
-                thumbnail: ep.still_path ? posterUrl(ep.still_path, "w500") : undefined,
-                released: ep.air_date ? `${ep.air_date}T00:00:00.000Z` : undefined,
-                rating: ep.vote_average ? ep.vote_average.toFixed(1) : undefined,
-              })
-            }
+      if (mapping?.episodeGroupId && mapping.episodeGroupId !== "standard") {
+        groupDetails = await getTVEpisodeGroup(mapping.episodeGroupId, "it-IT", apiKey)
+      } else if (!mapping?.episodeGroupId) {
+        // Controlla se esistono Episode Groups alternativi (es. Italian Parts, Netflix Order, Digital, ecc.)
+        const epGroups = await getTVEpisodeGroups(tmdbId, apiKey)
+        const preferredGroup = epGroups.find((g) => {
+          const n = g.name.toLowerCase()
+          return (n.includes("italian") || n.includes("italia") || n.includes("italy")) && g.group_count > 1
+        }) || epGroups.find((g) => {
+          const n = g.name.toLowerCase()
+          return (n.includes("part") || n.includes("digital")) && g.group_count >= 4
+        }) || epGroups.find((g) => {
+          const n = g.name.toLowerCase()
+          return n.includes("netflix") && !n.includes("seasons (edited")
+        }) || epGroups.find((g) => {
+          const n = g.name.toLowerCase()
+          return (n.includes("digital") || n.includes("part") || n.includes("streaming") || (g.type === 1 && g.group_count > 1))
+        })
+
+        if (preferredGroup) {
+          groupDetails = await getTVEpisodeGroup(preferredGroup.id, "it-IT", apiKey)
+        }
+      }
+
+      if (groupDetails?.groups && groupDetails.groups.length > 0) {
+        const sortedGroups = [...groupDetails.groups].sort((a, b) => a.order - b.order)
+        for (let gIdx = 0; gIdx < sortedGroups.length; gIdx++) {
+          const grp = sortedGroups[gIdx]
+          const seasonNumber = grp.order || gIdx + 1
+          for (let epIdx = 0; epIdx < (grp.episodes || []).length; epIdx++) {
+            const ep = grp.episodes[epIdx]
+            const episodeNumber = ep.episode_number || epIdx + 1
+            videos.push({
+              id: `${primaryId}:${seasonNumber}:${episodeNumber}`,
+              name: ep.name || `Episodio ${episodeNumber}`,
+              season: seasonNumber,
+              episode: episodeNumber,
+              overview: ep.overview || undefined,
+              thumbnail: ep.still_path ? posterUrl(ep.still_path, "w500") : undefined,
+              released: ep.air_date ? `${ep.air_date}T00:00:00.000Z` : undefined,
+              rating: ep.vote_average ? ep.vote_average.toFixed(1) : undefined,
+            })
           }
         }
       }

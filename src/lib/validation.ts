@@ -60,6 +60,7 @@ export const mappingSchema = z.object({
   ribbonSide: z.enum(["left", "right"]).nullable().optional(),
   defaultBadgeStyle: z.enum(BADGE_STYLES).nullable().optional(),
   defaultRankingBadgeStyle: z.enum(RANKING_BADGE_STYLES).nullable().optional(),
+  episodeGroupId: z.string().max(80).nullable().optional(),
 })
 
 export type MappingInput = z.infer<typeof mappingSchema>

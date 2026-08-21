@@ -118,6 +118,10 @@ export interface PosterEditorCtx {
   setAutoRotateClean: (v: boolean | ((prev: boolean) => boolean)) => void
   excludedPosters: string[]
   setExcludedPosters: (v: string[] | ((prev: string[]) => string[])) => void
+
+  // ---- Episode Group (TV Series parts/seasons order) ----
+  episodeGroupId: string | null
+  setEpisodeGroupId: (v: string | null | ((prev: string | null) => string | null)) => void
 }
 
 const Ctx = createContext<PosterEditorCtx | null>(null)
@@ -158,6 +162,9 @@ export function PosterEditorProvider({
   const [rotationPosters, setRotationPosters] = useState<string[]>([])
   const [autoRotateClean, setAutoRotateClean] = useState(false)
   const [excludedPosters, setExcludedPosters] = useState<string[]>([])
+
+  // ---- Episode Group state ----
+  const [episodeGroupId, setEpisodeGroupId] = useState<string | null>(null)
 
   // ---- Custom badge ----
   const [customBadge, setCustomBadge] = useState<string | null>(null)
@@ -443,6 +450,10 @@ export function PosterEditorProvider({
       setAutoRotateClean,
       excludedPosters,
       setExcludedPosters,
+
+      // Episode Group
+      episodeGroupId,
+      setEpisodeGroupId,
     }),
     [
       // Badges
@@ -504,6 +515,9 @@ export function PosterEditorProvider({
       rotationPosters, setRotationPosters,
       autoRotateClean, setAutoRotateClean,
       excludedPosters, setExcludedPosters,
+
+      // Episode Group
+      episodeGroupId, setEpisodeGroupId,
     ],
   )
 

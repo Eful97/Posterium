@@ -357,6 +357,8 @@ export function usePosterium(): PosteriumCtx {
     rotationPosters, setRotationPosters,
     autoRotateClean, setAutoRotateClean,
     excludedPosters, setExcludedPosters,
+    // Episode Group
+    episodeGroupId, setEpisodeGroupId,
   } = editorCtx
 
   const [urlPattern, setUrlPattern] = useState("")
@@ -886,9 +888,11 @@ export function usePosterium(): PosteriumCtx {
           setSelectedBackdrop(foundBackdrop || { file_path: existing.backdropPath, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
         }
         setNetworkLogo(existing.networkLogo ?? defaultNetworkLogo)
+        setEpisodeGroupId(existing.episodeGroupId ?? null)
       } else {
         setLogoDisabled(false)
         setNetworkLogo(defaultNetworkLogo)
+        setEpisodeGroupId(null)
         const clean = data.posters?.find((p: TMDBImage) => p.iso_639_1 === null)
         const langPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === lang)
         const firstPoster = data.posters?.[0]
@@ -1023,7 +1027,7 @@ export function usePosterium(): PosteriumCtx {
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     setGradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,
-    setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, ribbonSide, lang, profileId, profilePassword, profileStateless,
+    setLogoScale, setLogoOffsetX, setLogoOffsetY, networkLogo, ribbonSide, lang, episodeGroupId, profileId, profilePassword, profileStateless,
   })
 
   const saveConfig = useCallback(async () => {

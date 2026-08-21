@@ -104,6 +104,7 @@ export interface Mapping {
   logoDisabled?: boolean | null
   bestFitScore?: number | null
   bestFitReasons?: string[] | null
+  episodeGroupId?: string | null
 }
 
 export type CustomCatalogType = "movie" | "series" | "mixed"

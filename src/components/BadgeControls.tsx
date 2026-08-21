@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Check, XCircle, Ruler, Cloud, Minus, Circle, ChevronDown, Star, Trophy, Tv, Flame, Sparkles, Palette, Layers } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Check, XCircle, Ruler, Cloud, Minus, Circle, ChevronDown, Star, Trophy, Tv, Flame, Sparkles, Palette, Layers, ListOrdered } from "lucide-react"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
@@ -25,6 +25,7 @@ export function BadgeControls() {
   const mdblistAnimeList = usePSelector((v) => v.mdblistAnimeList)
   const trendRank = usePSelector((v) => v.trendRank)
   const imdbTop250 = usePSelector((v) => v.imdbTop250)
+  const tmdbKey = usePSelector((v) => v.tmdbKey)
   const setAccentColor = usePSelector((v) => v.setAccentColor)
   const previewPoster = usePSelector((v) => v.previewPoster)
   const { t, lang } = useT()
@@ -33,6 +34,26 @@ export function BadgeControls() {
   const [sourcesOpen, setSourcesOpen] = useState(false)
   const [editingValue, setEditingValue] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
+  const [epGroups, setEpGroups] = useState<{ id: string; name: string; group_count: number; episode_count: number }[]>([])
+
+  useEffect(() => {
+    if (!selected || selected.media_type !== "tv") {
+      setEpGroups([])
+      return
+    }
+    let active = true
+    fetch(`/api/tmdb/${selected.id}/episode_groups`, {
+      headers: tmdbKey ? { "x-api-key": tmdbKey } : undefined,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (active) setEpGroups(data.results || [])
+      })
+      .catch(() => {
+        if (active) setEpGroups([])
+      })
+    return () => { active = false }
+  }, [selected, tmdbKey])
 
   if (!selected) return null
 
@@ -362,6 +383,81 @@ export function BadgeControls() {
           )}
         </div>
       </div>
+
+      {/* CARD TV: Ordinamento Parti & Stagioni (Solo Serie TV con gruppi disponibili) */}
+      {selected.media_type === "tv" && epGroups.length > 0 && (
+        <div className="bg-surface/50 border border-surface2/60 rounded-xl p-3 space-y-2.5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-zinc-200 flex items-center gap-1.5">
+              <ListOrdered className="w-3.5 h-3.5 text-accent-orange" />
+              <span>Ordinamento Parti & Stagioni</span>
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-accent-orange/15 text-accent-orange border border-accent-orange/30">
+              {epGroups.length} gruppi
+            </span>
+          </div>
+
+          <p className="text-[11px] text-zinc-400">
+            Scegli come organizzare le stagioni e le parti della serie in Stremio:
+          </p>
+
+          <div className="space-y-1.5">
+            <button
+              type="button"
+              onClick={() => ed.setEpisodeGroupId(null)}
+              className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between cursor-pointer ${
+                !ed.episodeGroupId
+                  ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
+                  : "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
+              }`}
+            >
+              <div className="flex flex-col">
+                <span>🪄 Automatico (Italian Parts / Netflix)</span>
+                <span className="text-[10px] text-zinc-400">Rileva l&apos;ordinamento streaming italiano consigliato</span>
+              </div>
+              {!ed.episodeGroupId && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => ed.setEpisodeGroupId("standard")}
+              className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between cursor-pointer ${
+                ed.episodeGroupId === "standard"
+                  ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
+                  : "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
+              }`}
+            >
+              <div className="flex flex-col">
+                <span>📺 Stagioni Standard TMDB</span>
+                <span className="text-[10px] text-zinc-400">Ordinamento originale per data di messa in onda</span>
+              </div>
+              {ed.episodeGroupId === "standard" && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
+            </button>
+
+            {epGroups.map((g) => {
+              const isSelected = ed.episodeGroupId === g.id
+              return (
+                <button
+                  type="button"
+                  key={g.id}
+                  onClick={() => ed.setEpisodeGroupId(g.id)}
+                  className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between cursor-pointer ${
+                    isSelected
+                      ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
+                      : "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
+                  }`}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">{g.name}</span>
+                    <span className="text-[10px] text-zinc-400">{g.group_count} parti · {g.episode_count} episodi</span>
+                  </div>
+                  {isSelected && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* CARD 4: Sfumatura & Blur di Sfondo */}
       <div className="bg-surface/50 border border-surface2/60 rounded-xl p-3 space-y-2.5 shadow-sm">

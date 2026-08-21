@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
     firstAirDate: parsed.data.firstAirDate ?? undefined,
     backdropPath: parsed.data.backdropPath ?? null,
     logoDisabled: parsed.data.logoDisabled ?? undefined,
+    episodeGroupId: parsed.data.episodeGroupId ?? undefined,
     updatedAt: new Date().toISOString(),
   }
 
