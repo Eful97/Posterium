@@ -69,7 +69,7 @@ pinned: false
 * **Premi Cinematografici & Cult**: Riconoscimento automatico Oscar, Cannes, BAFTA, Emmy e badge *"Absolute Cinema"* per i titoli della IMDb Top 250.
 
 ### 🔍 Ricerca Tradizionale & ✨ Ricerca AI Groq
-* **Ricerca Semantica & Linguaggio Naturale (Groq AI)**: Trova film e serie TV descrivendo trame, ambientazioni, stili, epoche o similitudini (es. *"film sci-fi con buchi neri"*, *"thriller psicologici tipo Mindhunter"*). Groq interpreta la query con `llama-3.3-70b-versatile` e Posterium arricchisce i risultati con poster ufficiali TMDB.
+* **Ricerca Semantica & Linguaggio Naturale (Groq AI)**: Trova film e serie TV descrivendo trame, ambientazioni, stili, epoche o similitudini (es. *"film sci-fi con buchi neri"*, *"thriller psicologici tipo Mindhunter"*). Groq interpreta la query con `groq/compound` (fallback `groq/compound-mini`) e Posterium arricchisce i risultati con poster ufficiali TMDB.
 * **Cronologia Ricerche & Suggerimenti Rapidi**: Salvataggio automatico delle ricerche recenti e pill di suggerimento per ispirare nuove scoperte cinematografiche.
 
 ### 📺 Cataloghi Stremio & Gestione Avanzata
@@ -245,7 +245,7 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 |---|---|
 | `POSTERIUM_PUBLIC_INSTANCE` | Imposta a `1` per sbloccare l'editor su istanze pubbliche (Vercel/HF) senza richiedere token admin. |
 | `POSTERIUM_TMDB_KEY` | Chiave TMDB d'istanza per generare le locandine e popolare i cataloghi. |
-| `POSTERIUM_GROQ_KEY` | Chiave [Groq Cloud](https://groq.com/) per la **Ricerca AI Semantica** (modello `llama-3.3-70b-versatile`). |
+| `POSTERIUM_GROQ_KEY` | Chiave [Groq Cloud](https://groq.com/) per la **Ricerca AI Semantica** (modello `groq/compound`, fallback `groq/compound-mini`). |
 | `POSTERIUM_MDBLIST_KEY` | Chiave MDBList per classifiche anime e liste personalizzate. |
 | `POSTERIUM_TVDB_API_KEY` | Chiave TheTVDB per thumbnail e trame degli episodi. |
 | `POSTERIUM_ADMIN_TOKEN` | Token segreto per proteggere le route amministrative private. |

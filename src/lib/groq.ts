@@ -7,8 +7,8 @@ import { createLogger } from "@/lib/logger"
 const log = createLogger("groq")
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-const PRIMARY_MODEL = "llama-3.3-70b-versatile"
-const FALLBACK_MODEL = "llama-3.1-8b-instant"
+const PRIMARY_MODEL = "groq/compound"
+const FALLBACK_MODEL = "groq/compound-mini"
 
 export interface GroqRecommendation {
   title: string
@@ -36,6 +36,34 @@ function getGroqApiKey(): string {
 
 function hashKey(value: string): string {
   return crypto.createHash("sha1").update(value).digest("hex").slice(0, 12)
+}
+
+/**
+ * Estrae il JSON dalla risposta del modello. Alcuni modelli Groq (es.
+ * `groq/compound`) possono ignorare `response_format: json_object` e
+ * incapsulare il JSON in fenced block (```json ... ```) o aggiungere testo.
+ * Prima tenta un parse diretto; se fallisce, estrae il primo oggetto/array
+ * JSON racchiuso tra { } (o [ ]) e riprova.
+ */
+function extractJsonObject(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    // rimuovi eventuali fenced code block (```json ... ```)
+    const stripped = text.replace(/```(?:json)?/gi, "").trim()
+    // trova il primo { e l'ultimo } come oggetto JSON più esterno
+    const firstBrace = stripped.indexOf("{")
+    const lastBrace = stripped.lastIndexOf("}")
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      const candidate = stripped.slice(firstBrace, lastBrace + 1)
+      try {
+        return JSON.parse(candidate)
+      } catch {
+        return null
+      }
+    }
+    return null
+  }
 }
 
 /**
@@ -202,11 +230,9 @@ export async function searchAi(
       }
     }
 
-    // 2. Parsa il JSON restituito da Groq
-    let parsed: GroqAiResponse
-    try {
-      parsed = JSON.parse(completion.text)
-    } catch {
+    // 2. Parsa il JSON restituito da Groq (tollerante a fenced block / testo extra)
+    const parsedRaw = extractJsonObject(completion.text)
+    if (parsedRaw === null || typeof parsedRaw !== "object") {
       log.warn("Failed to parse Groq JSON response:", { sample: completion.text.slice(0, 200) })
       return {
         results: [],
@@ -216,6 +242,7 @@ export async function searchAi(
         error: "invalid_response",
       }
     }
+    const parsed = parsedRaw as GroqAiResponse
 
     const recommendations = Array.isArray(parsed?.recommendations) ? parsed.recommendations : []
     const explanation = parsed?.thought || ""

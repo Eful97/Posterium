@@ -292,7 +292,7 @@ describe("GET /catalog/[type]/[id]", () => {
       ],
       explanation: "Film sci-fi sui buchi neri",
       query: "film sci-fi con buchi neri",
-      model: "llama-3.3-70b-versatile",
+      model: "groq/compound",
     })
 
     const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-search-movies/search=film%20sci-fi%20con%20buchi%20neri.json?api_key=settings-key")
@@ -357,7 +357,7 @@ describe("GET /catalog/[type]/[id]", () => {
       ],
       explanation: "Serie investigative psicologiche",
       query: "thriller psicologici tipo Mindhunter",
-      model: "llama-3.3-70b-versatile",
+      model: "groq/compound",
     })
 
     const req = new NextRequest("http://localhost:3000/catalog/series/posterium-search-series/search=thriller%20psicologici.json?api_key=settings-key")
