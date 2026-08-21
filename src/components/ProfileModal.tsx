@@ -24,11 +24,12 @@ export function ProfileModal({ isOpen, onClose }: Props) {
   const setProfileConfigToken = usePSelector((v) => v.setProfileConfigToken)
   const profileStateless = usePSelector((v) => v.profileStateless)
   const profileConfigToken = usePSelector((v) => v.profileConfigToken)
+  const profilePassword = usePSelector((v) => v.profilePassword)
   const loadProfile = usePSelector((v) => v.loadProfile)
   const { t } = useT()
   const ed = usePosterEditor()
   const [tab, setTab] = useState<"save" | "load">("save")
-  const [password, setPassword] = useState("")
+  const [password, setPassword] = useState(() => profilePassword || "")
   const [loadUuid, setLoadUuid] = useState("")
   const [loadPassword, setLoadPassword] = useState("")
   const [saving, setSaving] = useState(false)
@@ -47,6 +48,14 @@ export function ProfileModal({ isOpen, onClose }: Props) {
       try { setGeneratedUuid(crypto.randomUUID()) } catch {}
     }
   }, [profileId, generatedUuid])
+
+  // Quando il modal viene riaperto, reimposta il campo password con quello
+  // già noto (salvato al login precedente) così l'utente non deve ritiparlo.
+  React.useEffect(() => {
+    if (isOpen && profilePassword && !password) {
+      setPassword(profilePassword)
+    }
+  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps -- solo sull'apertura
 
   const activeUuid = profileId || generatedUuid
 
