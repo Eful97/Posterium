@@ -82,7 +82,7 @@ describe("GET /catalog/[type]/[id]", () => {
 
     expect(res.status).toBe(200)
     expect(body.metas[0]).toMatchObject({
-      id: "tt11198330",
+      id: "tmdb:94997",
       type: "series",
       name: "House of the Dragon",
       poster: expect.stringContaining("/api/poster/series/94997"),
@@ -177,7 +177,7 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(res.status).toBe(200)
     expect(mockedGetTop10).toHaveBeenCalledWith("netflix", "italy", "settings-key", { enrich: false })
     expect(body.metas[0]).toMatchObject({
-      id: "tt1715492",
+      id: "tmdb:1715492",
       type: "movie",
       name: "Costa Concordia: incubo in mare",
       poster: expect.stringContaining("/api/poster/movie/1715492"),
@@ -198,7 +198,7 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(res.status).toBe(200)
     expect(body.metas).toHaveLength(1)
     expect(body.metas[0]).toMatchObject({
-      id: "tt12042730",
+      id: "tmdb:687163",
       type: "movie",
       name: "House of the Dragon",
       poster: expect.stringContaining("/api/poster/movie/687163"),
@@ -217,7 +217,7 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(res.status).toBe(200)
     expect(body.metas).toHaveLength(1)
     expect(body.metas[0]).toMatchObject({
-      id: "tt0848228",
+      id: "tmdb:8282",
       type: "movie",
       name: "House of the Dragon",
       poster: expect.stringContaining("/api/poster/movie/8282"),
@@ -240,7 +240,7 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(mockedGetFullProfileData).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000")
     expect(res.status).toBe(200)
     expect(body.metas).toHaveLength(1)
-    expect(body.metas[0]).toMatchObject({ id: "tt0848228", type: "movie" })
+    expect(body.metas[0]).toMatchObject({ id: "tmdb:8282", type: "movie" })
   })
 
   it("uses the profile MDBList key for anime catalogs", async () => {
@@ -258,7 +258,7 @@ describe("GET /catalog/[type]/[id]", () => {
 
     expect(res.status).toBe(200)
     expect(body.metas).toHaveLength(1)
-    expect(body.metas[0]).toMatchObject({ id: "tt1068680", type: "series", name: "Cowboy Bebop" })
+    expect(body.metas[0]).toMatchObject({ id: "tmdb:3026", type: "series", name: "Cowboy Bebop" })
     // Il catalogo conosce la posizione in lista: la incorpora nell'URL poster
     // come animerank, così il rank appare su Stremio senza dipendere da chiavi.
     expect(body.metas[0].poster).toContain("animerank=1")
@@ -309,7 +309,7 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(res.status).toBe(200)
     expect(body.metas).toHaveLength(1)
     expect(body.metas[0]).toMatchObject({
-      id: "tt0137523",
+      id: "tmdb:550",
       type: "movie",
       name: "Fight Club",
       releaseInfo: "1999",

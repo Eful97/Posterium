@@ -168,11 +168,13 @@ async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number, apiKey?:
   }
 }
 
-/** Ultima risorsa per l'id del catalogo: se manca l'imdbId, esporre un id
- *  provider (`tmdb:<id>`) che AIOMetadata sa risolvere — mai un numero nudo
- *  (che darebbe "no metadata" al click). */
-function catalogMetaId(imdbId: string | null | undefined, tmdbId: number): string {
-  return imdbId || `tmdb:${tmdbId}`
+/**
+ * ID del catalogo Stremio: esponendo l'id provider (`tmdb:<id>`), Stremio
+ * interroga direttamente Posterium per la risorsa `meta` invece di delegare a Cinemeta,
+ * permettendo la gestione autonoma di loghi, trame e ordinamento parti/stagioni.
+ */
+function catalogMetaId(_imdbId: string | null | undefined, tmdbId: number): string {
+  return `tmdb:${tmdbId}`
 }
 
 /**
