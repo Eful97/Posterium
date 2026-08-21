@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import { useT } from "@/lib/contexts/TranslationContext"
-import { Search, ArrowRight, AlertCircle } from "lucide-react"
+import { Search, ArrowRight, AlertCircle, Sparkles } from "lucide-react"
 
 interface Props {
   tmdbKey: string
@@ -13,9 +13,22 @@ interface Props {
   onFocus?: () => void
   onBlur?: () => void
   error?: string | null
+  isAiSearch?: boolean
+  onToggleAi?: () => void
 }
 
-export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, onBlur, error }: Props) {
+export function SearchBar({
+  tmdbKey,
+  onSearch,
+  large,
+  value,
+  onChange,
+  onFocus,
+  onBlur,
+  error,
+  isAiSearch,
+  onToggleAi,
+}: Props) {
   const { t } = useT()
   const [text, setText] = useState(value || "")
   const [focused, setFocused] = useState(false)
@@ -41,34 +54,101 @@ export function SearchBar({ tmdbKey, onSearch, large, value, onChange, onFocus, 
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [])
 
+  const placeholder = isAiSearch
+    ? "✨ Chiedi all'AI (es. film sci-fi con buchi neri, thriller con colpi di scena...)"
+    : large
+    ? t("ui.searchPlaceholderLarge")
+    : t("ui.searchPlaceholder")
+
   return (
-    <div role="search" className={`search-shell flex items-center ${h} ${focused ? "search-shell-active" : ""} rounded-2xl transition-all duration-300 group ${error ? "ring-1 ring-red-500/50" : ""}`}>
-      <span className="shrink-0 pl-3.5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" aria-hidden="true"><Search className="w-4 h-4" /></span>
+    <div
+      role="search"
+      className={`search-shell flex items-center ${h} ${
+        focused ? "search-shell-active" : ""
+      } ${
+        isAiSearch ? "ring-1 ring-purple-500/40 bg-purple-950/20 shadow-lg shadow-purple-900/10" : ""
+      } rounded-2xl transition-all duration-300 group ${error ? "ring-1 ring-red-500/50" : ""}`}
+    >
+      <span
+        className={`shrink-0 pl-3.5 transition-colors ${
+          isAiSearch ? "text-purple-400" : "text-zinc-500 group-focus-within:text-zinc-300"
+        }`}
+        aria-hidden="true"
+      >
+        {isAiSearch ? <Sparkles className="w-4 h-4 animate-pulse" /> : <Search className="w-4 h-4" />}
+      </span>
       <input
         suppressHydrationWarning
         ref={inputRef}
         value={text}
         aria-label={large ? t("ui.searchAriaLabelLarge") : t("ui.searchAriaLabel")}
-        onChange={(e) => { setText(e.target.value); onChange?.(e.target.value) }}
-        onFocus={() => { setFocused(true); onFocus?.() }}
-        onBlur={() => { setFocused(false); onBlur?.() }}
-        onKeyDown={(e) => { if (e.key === "Enter" && text.length >= 2 && tmdbKey) { onSearch(text) } }}
-        placeholder={large ? t("ui.searchPlaceholderLarge") : t("ui.searchPlaceholder")}
-        className="flex-1 bg-transparent text-xs md:text-sm outline-none placeholder:text-zinc-500 focus:placeholder:text-muted px-2 h-full transition-colors duration-200"
+        onChange={(e) => {
+          setText(e.target.value)
+          onChange?.(e.target.value)
+        }}
+        onFocus={() => {
+          setFocused(true)
+          onFocus?.()
+        }}
+        onBlur={() => {
+          setFocused(false)
+          onBlur?.()
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && text.length >= 2 && tmdbKey) {
+            onSearch(text)
+          }
+        }}
+        placeholder={placeholder}
+        className={`flex-1 bg-transparent text-xs md:text-sm outline-none px-2 h-full transition-colors duration-200 ${
+          isAiSearch
+            ? "placeholder:text-purple-400/50 text-purple-100 focus:placeholder:text-purple-300/70"
+            : "placeholder:text-zinc-500 focus:placeholder:text-muted"
+        }`}
       />
-      {!focused && text.length === 0 && (
-        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 mr-3 text-[10px] font-mono font-medium text-zinc-500 bg-white/[0.06] border border-white/10 rounded-md pointer-events-none select-none">⌘K</kbd>
+
+      {/* AI Search Toggle Button */}
+      {onToggleAi && (
+        <button
+          type="button"
+          onClick={onToggleAi}
+          title={isAiSearch ? "Disattiva Ricerca AI (passa a ricerca standard TMDB)" : "Attiva Ricerca AI Semantica con Groq"}
+          className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold shrink-0 transition-all duration-200 mr-2 ${
+            isAiSearch
+              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/25 scale-100"
+              : "bg-white/5 hover:bg-purple-500/15 text-zinc-400 hover:text-purple-300 border border-white/10 hover:border-purple-500/30"
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-purple-300" />
+          <span className="text-[11px] font-medium hidden sm:inline">AI Groq</span>
+        </button>
+      )}
+
+      {!focused && text.length === 0 && !isAiSearch && (
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 mr-3 text-[10px] font-mono font-medium text-zinc-500 bg-white/[0.06] border border-white/10 rounded-md pointer-events-none select-none">
+          ⌘K
+        </kbd>
       )}
       {error && (
-        <span className="shrink-0 pr-1.5" aria-hidden="true"><AlertCircle className="w-4 h-4 text-danger" /></span>
+        <span className="shrink-0 pr-1.5" aria-hidden="true">
+          <AlertCircle className="w-4 h-4 text-danger" />
+        </span>
       )}
       {text.length > 0 && (
         <button
           type="button"
           aria-label={t("ui.searchButton")}
-          onClick={() => { if (text.length >= 2 && tmdbKey) { onSearch(text) } }}
+          onClick={() => {
+            if (text.length >= 2 && tmdbKey) {
+              onSearch(text)
+            }
+          }}
           disabled={!tmdbKey}
-          className="shrink-0 w-10 h-10 mr-1.5 flex items-center justify-center bg-accent-orange text-white rounded-full hover:shadow-lg hover:shadow-accent-orange/30 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-200"
+          className={`shrink-0 w-10 h-10 mr-1.5 flex items-center justify-center text-white rounded-full active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-200 ${
+            isAiSearch
+              ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-lg hover:shadow-purple-500/30"
+              : "bg-accent-orange hover:shadow-lg hover:shadow-accent-orange/30"
+          }`}
         >
           <ArrowRight className="w-4 h-4" />
         </button>

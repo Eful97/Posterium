@@ -114,6 +114,11 @@ export interface PosteriumCtx {
   recentSearches: string[]
   removeRecentSearch: (search: string) => void
   clearRecentSearches: () => void
+  isAiSearch: boolean
+  setIsAiSearch: (v: boolean) => void
+  toggleAiSearch: () => void
+  aiExplanation: string | null
+  aiModel: string | null
   mappings: Mapping[]
   settingsRef: React.RefObject<HTMLDivElement | null>
   langRef: React.RefObject<HTMLDivElement | null>
@@ -928,6 +933,7 @@ export function usePosterium(): PosteriumCtx {
     trending: trending.trending, trendingError: trending.trendingError, streamingCharts: trending.streamingCharts, mdblistAnimeList: trending.mdblistAnimeList,
     STREAMING_PLATFORMS, loadMappings,
     query: search.query, results: search.results, searching: search.searching, error: search.error, setError: search.setError, totalResults: search.totalResults, totalPages: search.totalPages, searchPage: search.searchPage, recentSearches: search.recentSearches, mappings,
+    isAiSearch: search.isAiSearch, setIsAiSearch: search.setIsAiSearch, toggleAiSearch: search.toggleAiSearch, aiExplanation: search.aiExplanation, aiModel: search.aiModel,
     settingsRef, langRef,
     setLangOpen, langOpen, pickLang,
     settingsOpen, setSettingsOpen,
@@ -958,7 +964,8 @@ export function usePosterium(): PosteriumCtx {
     openSections, posterScrollInfo, logoBounds,
     trendRank, mdblistMatch, imdbTop250, metaInfo, navigation.previewId,
     selectPoster, selectLogo, saveConfig, removeLogo,
-    mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, search.clearRecentSearches, mappings,
+    mappingsMap, tmdbKey, search.query, search.results, search.searching, search.totalResults, search.totalPages, search.searchPage, search.recentSearches, search.clearRecentSearches,
+    search.isAiSearch, search.aiExplanation, search.aiModel, mappings,
     langOpen, settingsOpen, showLangPicker,
     tmdbKeyInput, showKey, copied, mdblistApiKey, tvdbApiKey,
     accentColor, autoAccentColor, setAccentColor,

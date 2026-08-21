@@ -68,6 +68,10 @@ pinned: false
 * **Nastro Verticale Netflix Top 10**: Il caratteristico nastro rosso laterale con posizione in classifica e logo della piattaforma (con supporto dedicato anche per gli Anime).
 * **Premi Cinematografici & Cult**: Riconoscimento automatico Oscar, Cannes, BAFTA, Emmy e badge *"Absolute Cinema"* per i titoli della IMDb Top 250.
 
+### 🔍 Ricerca Tradizionale & ✨ Ricerca AI Groq
+* **Ricerca Semantica & Linguaggio Naturale (Groq AI)**: Trova film e serie TV descrivendo trame, ambientazioni, stili, epoche o similitudini (es. *"film sci-fi con buchi neri"*, *"thriller psicologici tipo Mindhunter"*). Groq interpreta la query con `llama-3.3-70b-versatile` e Posterium arricchisce i risultati con poster ufficiali TMDB.
+* **Cronologia Ricerche & Suggerimenti Rapidi**: Salvataggio automatico delle ricerche recenti e pill di suggerimento per ispirare nuove scoperte cinematografiche.
+
 ### 📺 Cataloghi Stremio & Gestione Avanzata
 * **Cataloghi Piattaforme & Trend**: Top 20 Italia (JustWatch GraphQL), Netflix, Prime Video, Disney+, Sky/NOW, Apple TV+, HBO Max, Paramount+, Top 20 Film & Serie Anime (MDBList) e liste personalizzate MDBList.
 * **Gestione Priorità, Nomi & Visibilità**:
@@ -241,6 +245,7 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 |---|---|
 | `POSTERIUM_PUBLIC_INSTANCE` | Imposta a `1` per sbloccare l'editor su istanze pubbliche (Vercel/HF) senza richiedere token admin. |
 | `POSTERIUM_TMDB_KEY` | Chiave TMDB d'istanza per generare le locandine e popolare i cataloghi. |
+| `POSTERIUM_GROQ_KEY` | Chiave [Groq Cloud](https://groq.com/) per la **Ricerca AI Semantica** (modello `llama-3.3-70b-versatile`). |
 | `POSTERIUM_MDBLIST_KEY` | Chiave MDBList per classifiche anime e liste personalizzate. |
 | `POSTERIUM_TVDB_API_KEY` | Chiave TheTVDB per thumbnail e trame degli episodi. |
 | `POSTERIUM_ADMIN_TOKEN` | Token segreto per proteggere le route amministrative private. |

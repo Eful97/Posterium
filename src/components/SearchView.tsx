@@ -7,7 +7,7 @@ import { useSearchCtx } from "@/lib/contexts/SearchContext"
 import { posterUrl, titleOf, yearOf } from "@/lib/utils"
 import { SearchBar } from "@/components/SearchBar"
 import { PosterCardSkeleton } from "@/components/Skeleton"
-import { Clock, X, Check, ChevronDown, Clapperboard, Tv, Star, Trash2 } from "lucide-react"
+import { Clock, X, Check, ChevronDown, Clapperboard, Tv, Star, Trash2, Sparkles } from "lucide-react"
 import { PosterDepthEdge } from "@/components/PosterDepthGlow"
 
 export function SearchView() {
@@ -60,8 +60,24 @@ export function SearchView() {
 
   return (
     <div>
-      <div className="max-w-lg mx-auto relative z-[100] isolate mb-8">
-        <SearchBar tmdbKey={tmdbKey} value={s.query} onChange={handleQueryChange} onSearch={(q) => { s.setQuery(q); s.doSearch(q) }} large onFocus={() => setSearchFocused(true)} onBlur={() => { blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200) }} error={s.error} />
+      <div className="max-w-lg mx-auto relative z-[100] isolate mb-6">
+        <SearchBar
+          tmdbKey={tmdbKey}
+          value={s.query}
+          onChange={handleQueryChange}
+          onSearch={(q) => {
+            s.setQuery(q)
+            s.doSearch(q)
+          }}
+          large
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => {
+            blurTimerRef.current = setTimeout(() => setSearchFocused(false), 200)
+          }}
+          error={s.error}
+          isAiSearch={s.isAiSearch}
+          onToggleAi={s.toggleAiSearch}
+        />
         {showRecent && (
           <div className="absolute top-full left-0 right-0 mt-2 glass-panel rounded-2xl p-2 z-50 animate-fade-scale-in">
             <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/[0.06] mb-1">
@@ -80,15 +96,90 @@ export function SearchView() {
               </button>
             </div>
             {s.recentSearches.map((term) => (
-              <button type="button" key={term} onMouseDown={(e) => e.preventDefault()} onClick={() => { s.setQuery(term); s.doSearch(term); setSearchFocused(false) }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left">
+              <button
+                type="button"
+                key={term}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  s.setQuery(term)
+                  s.doSearch(term)
+                  setSearchFocused(false)
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent-orange/10 text-sm text-zinc-300 hover:text-accent transition-all duration-150 text-left"
+              >
                 <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
                 <span className="flex-1 truncate">{term}</span>
-                <span onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }} onClick={(e) => { e.stopPropagation(); s.removeRecentSearch(term) }} aria-label={t("ui.remove")} className="text-danger hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"><X className="w-3.5 h-3.5" /></span>
+                <span
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    s.removeRecentSearch(term)
+                  }}
+                  aria-label={t("ui.remove")}
+                  className="text-danger hover:text-red-300 transition-all duration-150 text-sm px-2 shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </span>
               </button>
             ))}
           </div>
         )}
       </div>
+
+      {/* AI Suggestion Pills */}
+      {s.isAiSearch && s.results.length === 0 && !s.searching && (
+        <div className="max-w-2xl mx-auto mb-8 text-center animate-fade-scale-in">
+          <p className="text-xs text-purple-300/80 mb-3 font-medium flex items-center justify-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            Suggerimenti per la Ricerca AI in linguaggio naturale:
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {[
+              "🪐 Sci-Fi con buchi neri e viaggi nel tempo",
+              "🔪 Thriller psicologici con colpi di scena",
+              "❄️ Commedie romantiche a New York",
+              "⛩️ Anime cyberpunk anni 90 con mecha",
+              "🏆 Capolavori vincitori di Oscar",
+              "🕵️‍♂️ Serie investigative tipo True Detective",
+            ].map((pill) => (
+              <button
+                key={pill}
+                type="button"
+                onClick={() => {
+                  s.setQuery(pill)
+                  s.doSearch(pill)
+                }}
+                className="px-3 py-1.5 rounded-full text-xs bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border border-purple-500/30 hover:border-purple-400/60 transition-all duration-200 shadow-sm active:scale-95 cursor-pointer"
+              >
+                {pill}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Insight Banner when results are present */}
+      {s.isAiSearch && s.aiExplanation && (
+        <div className="max-w-7xl mx-auto mb-6 p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-purple-900/20 to-indigo-950/40 border border-purple-500/30 backdrop-blur-md shadow-lg shadow-purple-950/30 flex items-start gap-3 animate-fade-scale-in">
+          <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+            <Sparkles className="w-5 h-5 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-xs font-bold text-purple-200 uppercase tracking-wider">Insight AI Groq</h3>
+              {s.aiModel && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">
+                  {s.aiModel}
+                </span>
+              )}
+            </div>
+            <p className="text-xs sm:text-sm text-purple-100/90 leading-relaxed">{s.aiExplanation}</p>
+          </div>
+        </div>
+      )}
 
       {s.searching && s.results.length === 0 && (
         <div className="mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4 max-w-7xl">
