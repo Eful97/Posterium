@@ -46,7 +46,12 @@ const defaultsSchema = z.object({
 
 export async function GET() {
   const d = getServerDefaults()
-  return Response.json(d)
+  const serverKeys = {
+    tmdbKey: process.env.POSTERIUM_TMDB_KEY || process.env.TMDB_API_KEY || "",
+    mdblistApiKey: process.env.POSTERIUM_MDBLIST_KEY || process.env.MDBLIST_API_KEY || "",
+    tvdbApiKey: process.env.POSTERIUM_TVDB_API_KEY || process.env.TVDB_API_KEY || "",
+  }
+  return Response.json({ ...d, serverKeys })
 }
 
 export async function PUT(req: NextRequest) {

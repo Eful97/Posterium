@@ -459,16 +459,41 @@ export function usePosterium(): PosteriumCtx {
   useEffect(() => {
     if (keyInit.current) return
     keyInit.current = true
-    const saved = safeGetItem("tmdb_key") || ""
-    setTmdbKeyState(saved)
-    setTmdbKeyInput(saved)
-    const mdblistKey = safeGetItem("mdblist_key") || ""
-    setMdblistApiKey(mdblistKey)
-    const tvdbKey = safeGetItem("tvdb_key") || ""
-    setTvdbApiKey(tvdbKey)
+    const savedTmdb = safeGetItem("tmdb_key") || ""
+    setTmdbKeyState(savedTmdb)
+    setTmdbKeyInput(savedTmdb)
+    const savedMdblist = safeGetItem("mdblist_key") || ""
+    setMdblistApiKey(savedMdblist)
+    const savedTvdb = safeGetItem("tvdb_key") || ""
+    setTvdbApiKey(savedTvdb)
     const savedTheme = safeGetItem("posterium_theme")
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme)
-  }, [safeGetItem])
+
+    // Se sul dispositivo corrente alcune chiavi sono vuote, interroga /api/defaults
+    // per prelevare le chiavi configurate sul server e pre-popolare il client
+    fetch("/api/defaults")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data?.serverKeys) return
+        const { tmdbKey, mdblistApiKey: mdblistKey, tvdbApiKey: tvdbKey } = data.serverKeys
+        if (!savedTmdb && tmdbKey) {
+          setTmdbKeyState(tmdbKey)
+          setTmdbKeyInput(tmdbKey)
+          safeSetItem("tmdb_key", tmdbKey)
+        }
+        if (!savedMdblist && mdblistKey) {
+          setMdblistApiKey(mdblistKey)
+          safeSetItem("mdblist_key", mdblistKey)
+        }
+        if (!savedTvdb && tvdbKey) {
+          setTvdbApiKey(tvdbKey)
+          safeSetItem("tvdb_key", tvdbKey)
+        }
+      })
+      .catch(() => {
+        /* ignore network errors on init */
+      })
+  }, [safeGetItem, safeSetItem])
 
   useEffect(() => {
     document.documentElement.classList.toggle("light-mode", theme === "light")
