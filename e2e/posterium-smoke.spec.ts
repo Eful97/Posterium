@@ -1,6 +1,14 @@
 import { expect, test } from "@playwright/test"
 
 test("home loads and exposes main actions", async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("posterium_profile_id", "e2e-smoke-profile")
+      localStorage.setItem("posterium_profile_stateless", "1")
+      localStorage.setItem("posterium_onboarding_done", "true")
+      localStorage.setItem("preferred_lang", "it")
+    } catch {}
+  })
   await page.goto("/")
 
   const logo = page.getByAltText("Posterium")
@@ -16,6 +24,14 @@ test("home loads and exposes main actions", async ({ page }) => {
 
 test("home works on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("posterium_profile_id", "e2e-smoke-profile")
+      localStorage.setItem("posterium_profile_stateless", "1")
+      localStorage.setItem("posterium_onboarding_done", "true")
+      localStorage.setItem("preferred_lang", "it")
+    } catch {}
+  })
   await page.goto("/")
 
   // Il logo vive in AppShell (SSR): verificarlo PRIMA della search bar dà al
@@ -43,6 +59,7 @@ test("can open an editor from search", async ({ page }) => {
     localStorage.setItem("posterium_onboarding_done", "true")
     localStorage.setItem("preferred_lang", "it")
     localStorage.setItem("posterium_profile_id", "e2e-smoke-profile")
+    localStorage.setItem("posterium_profile_stateless", "1")
   })
 
   await page.goto("/")

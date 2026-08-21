@@ -42,7 +42,7 @@ async function renderPoster(page: Page, posterUrl: string) {
 //
 
 test("home — full page", async ({ page }) => {
-  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
+  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_profile_stateless", "1"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
   // Cold start di Next dev in CI: al primo hit la route viene compilata on
   // demand e il contenuto sotto il fold può tardare a montare. Attendi che la
@@ -56,7 +56,7 @@ test("home — full page", async ({ page }) => {
 })
 
 test("home — hero viewport", async ({ page }) => {
-  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
+  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_profile_stateless", "1"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page).toHaveScreenshot("home-viewport.png", {
@@ -66,7 +66,7 @@ test("home — hero viewport", async ({ page }) => {
 
 test("home — mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
+  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_profile_stateless", "1"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page).toHaveScreenshot("home-mobile.png", {
@@ -81,6 +81,7 @@ test("home with key — hero podium and status strip", async ({ page }) => {
       // Yates su Math.random) → stub costante per screenshot deterministici.
       Math.random = () => 0
       localStorage.setItem("posterium_profile_id", "e2e")
+      localStorage.setItem("posterium_profile_stateless", "1")
       localStorage.setItem("posterium_onboarding_done", "true")
       localStorage.setItem("preferred_lang", "it")
       localStorage.setItem("tmdb_key", "e2e-key")

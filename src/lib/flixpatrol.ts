@@ -133,18 +133,18 @@ function loadCache(country: string): CacheData {
 
 function saveCache(country: string, data: CacheData) {
   const file = cacheFile(country)
-  // Fix H10: la scrittura è asincrona e fire-and-forget — prima era
-  // writeFileSync/renameSync nel request path: un JSON da 2-10 MB su un
-  // cold fetch bloccava l'event loop dell'intera istanza. L'ordine resta
-  // tmp + rename (atomico): se il processo muore a metà scrittura il file
-  // principale resta intatto.
   void (async () => {
     try {
       const dir = path.dirname(file)
       await fsp.mkdir(dir, { recursive: true })
-      const tmp = `${file}.tmp`
+      const tmp = `${file}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`
       await fsp.writeFile(tmp, JSON.stringify(data), "utf-8")
-      await fsp.rename(tmp, file)
+      try {
+        await fsp.rename(tmp, file)
+      } catch {
+        await fsp.copyFile(tmp, file)
+        await fsp.unlink(tmp).catch(() => {})
+      }
     } catch (e) {
       log.error("Failed to save cache", { error: e instanceof Error ? e.message : String(e), country })
     }

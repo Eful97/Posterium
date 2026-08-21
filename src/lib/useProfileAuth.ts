@@ -30,77 +30,6 @@ export function useProfileAuth({
   const [profileModalSuppressed, setProfileModalSuppressed] = useState(false)
   const savedProfileIdRef = useRef<string | null>(null)
 
-  // Initialize and check saved profile on mount
-  useEffect(() => {
-    const savedProfileId = safeGetItem("posterium_profile_id")
-    const savedStateless = safeGetItem("posterium_profile_stateless") === "1"
-
-    if (savedProfileId) {
-      savedProfileIdRef.current = savedProfileId
-      setProfileLocked(true)
-      void (async () => {
-        try {
-          const res = await fetch(`/api/profile?u=${encodeURIComponent(savedProfileId)}`, {
-            signal: AbortSignal.timeout(8000),
-          })
-          if (res.ok) {
-            const data = await res.json()
-            if (data && data.hasPassword === true) {
-              try { localStorage.removeItem("posterium_profile_stateless") } catch {}
-              try { localStorage.removeItem("posterium_profile_config_token") } catch {}
-              return
-            }
-            savedProfileIdRef.current = null
-            setProfileLocked(false)
-            setProfileModalSuppressed(true)
-            setProfileId(null)
-            return
-          }
-          if (savedStateless) {
-            savedProfileIdRef.current = null
-            setProfileLocked(false)
-            setProfileId(savedProfileId)
-            setProfileStateless(true)
-            const savedToken = safeGetItem("posterium_profile_config_token")
-            if (savedToken) setProfileConfigToken(savedToken)
-            const savedConfig = safeGetItem("posterium_profile_config")
-            if (savedConfig) {
-              try {
-                applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
-              } catch {
-                // Config corrotta
-              }
-            }
-          } else {
-            try { localStorage.removeItem("posterium_profile_id") } catch {}
-            savedProfileIdRef.current = null
-            setProfileLocked(false)
-            setProfileModalSuppressed(true)
-            setProfileId(null)
-          }
-        } catch {
-          if (savedStateless) {
-            savedProfileIdRef.current = null
-            setProfileLocked(false)
-            setProfileId(savedProfileId)
-            setProfileStateless(true)
-            const savedToken = safeGetItem("posterium_profile_config_token")
-            if (savedToken) setProfileConfigToken(savedToken)
-            const savedConfig = safeGetItem("posterium_profile_config")
-            if (savedConfig) {
-              try {
-                applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
-              } catch {
-                // ignora
-              }
-            }
-          }
-        }
-      })()
-    }
-    try { localStorage.removeItem("posterium_profile_password") } catch {}
-  }, [safeGetItem, applyProfileConfig])
-
   const loadProfile = useCallback(async (uuid: string, password: string): Promise<void> => {
     if (safeGetItem("posterium_profile_id") === uuid && safeGetItem("posterium_profile_stateless") === "1") {
       const savedToken = safeGetItem("posterium_profile_config_token")
@@ -144,6 +73,89 @@ export function useProfileAuth({
     }
     if (data.apiKeys?.mdblistApiKey) setMdblistApiKey(data.apiKeys.mdblistApiKey)
   }, [safeGetItem, safeSetItem, setTmdbKey, setTmdbKeyInput, setMdblistApiKey, applyProfileConfig])
+
+  // Initialize and check saved profile on mount
+  useEffect(() => {
+    const savedProfileId = safeGetItem("posterium_profile_id")
+    const savedStateless = safeGetItem("posterium_profile_stateless") === "1"
+    const savedPassword = safeGetItem("posterium_profile_password")
+
+    if (savedProfileId) {
+      savedProfileIdRef.current = savedProfileId
+      void (async () => {
+        // Se abbiamo la password salvata, tentiamo il login automatico immediato
+        if (savedPassword) {
+          try {
+            await loadProfile(savedProfileId, savedPassword)
+            setProfileLocked(false)
+            return
+          } catch {
+            // Password non valida o cambiata sul server
+          }
+        }
+
+        setProfileLocked(true)
+        try {
+          const res = await fetch(`/api/profile?u=${encodeURIComponent(savedProfileId)}`, {
+            signal: AbortSignal.timeout(8000),
+          })
+          if (res.ok) {
+            const data = await res.json()
+            if (data && data.hasPassword === true) {
+              try { localStorage.removeItem("posterium_profile_stateless") } catch {}
+              try { localStorage.removeItem("posterium_profile_config_token") } catch {}
+              return
+            }
+            savedProfileIdRef.current = null
+            setProfileLocked(false)
+            setProfileModalSuppressed(true)
+            setProfileId(null)
+            return
+          }
+          if (savedStateless) {
+            savedProfileIdRef.current = null
+            setProfileLocked(false)
+            setProfileId(savedProfileId)
+            setProfileStateless(true)
+            const savedToken = safeGetItem("posterium_profile_config_token")
+            if (savedToken) setProfileConfigToken(savedToken)
+            const savedConfig = safeGetItem("posterium_profile_config")
+            if (savedConfig) {
+              try {
+                applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
+              } catch {
+                // Config corrotta
+              }
+            }
+          } else {
+            try { localStorage.removeItem("posterium_profile_id") } catch {}
+            try { localStorage.removeItem("posterium_profile_password") } catch {}
+            savedProfileIdRef.current = null
+            setProfileLocked(false)
+            setProfileModalSuppressed(true)
+            setProfileId(null)
+          }
+        } catch {
+          if (savedStateless) {
+            savedProfileIdRef.current = null
+            setProfileLocked(false)
+            setProfileId(savedProfileId)
+            setProfileStateless(true)
+            const savedToken = safeGetItem("posterium_profile_config_token")
+            if (savedToken) setProfileConfigToken(savedToken)
+            const savedConfig = safeGetItem("posterium_profile_config")
+            if (savedConfig) {
+              try {
+                applyProfileConfig(JSON.parse(savedConfig) as PosteriumUserConfig)
+              } catch {
+                // ignora
+              }
+            }
+          }
+        }
+      })()
+    }
+  }, [safeGetItem, applyProfileConfig, loadProfile])
 
   const unlockProfile = useCallback(async (password: string) => {
     if (!savedProfileIdRef.current) return
