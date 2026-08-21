@@ -379,13 +379,17 @@ export async function posteriumCatalog(
             item.tmdbId ? [{ ...item, tmdbId: item.tmdbId }] : []
           ))
           metas = await Promise.all(itemsWithTmdb.map(async (item) => {
-            const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", item.tmdbId, apiKey)
+            const [imdbId, details] = await Promise.all([
+              resolveImdbId(stType === "movie" ? "movie" : "tv", item.tmdbId, apiKey),
+              getDetails(stType === "movie" ? "movie" : "tv", item.tmdbId, "it-IT", apiKey).catch(() => null),
+            ])
+            const italianTitle = details?.title || details?.name || item.title
             return {
               id: catalogMetaId(imdbId, item.tmdbId),
               type: stType,
-              name: item.title,
+              name: italianTitle,
               poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam, mdblistKeyParam),
-              releaseInfo: item.releaseDate?.slice(0, 4) || undefined,
+              releaseInfo: (details?.release_date || details?.first_air_date || item.releaseDate)?.slice(0, 4) || undefined,
             }
           }))
         }

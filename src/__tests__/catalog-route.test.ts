@@ -150,9 +150,9 @@ describe("GET /catalog/[type]/[id]", () => {
   })
 
   it("builds Posterium poster URLs for platform catalogs even when source posterPath is missing", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      Response.json({ id: 1715492, imdb_id: "tt1715492" }),
-    )
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({ id: 1715492, imdb_id: "tt1715492" }))
+      .mockResolvedValueOnce(Response.json({ id: 1715492, title: "Costa Concordia: incubo in mare", release_date: "2026-01-01" }))
     mockedGetTop10.mockResolvedValueOnce({
       platform: "netflix",
       platformName: "Netflix",
