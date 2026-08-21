@@ -13,6 +13,7 @@ import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { getJWRankings, type JWRankEntry } from "@/lib/justwatch"
 import { createLogger } from "@/lib/logger"
+import { searchAi } from "@/lib/groq"
 
 const log = createLogger("catalog")
 
@@ -177,6 +178,48 @@ function catalogMetaId(_imdbId: string | null | undefined, tmdbId: number): stri
 }
 
 /**
+ * Fallback AI (Groq) per la ricerca Stremio: quando la ricerca testuale TMDB
+ * restituisce zero risultati per il tipo richiesto, interpreta la query in
+ * linguaggio naturale via `searchAi` e mappa i consigli risolti su TMDB
+ * negli stessi `StremioMeta` del percorso primario. I risultati Groq sono
+ * di tipo misto: si filtrano per il tipo del catalogo richiesto (movie/series).
+ * Non lancia mai — un fallimento AI produce semplicemente metas vuote.
+ */
+async function aiSearchFallback(
+  req: NextRequest,
+  stType: StremioCatalogType,
+  query: string,
+  apiKey: string,
+  userParam: string | null,
+  configParam: string | null,
+  mdblistKeyParam?: string,
+): Promise<StremioMeta[]> {
+  try {
+    const ai = await searchAi(query, "it-IT", apiKey)
+    if (!ai?.results?.length) return []
+
+    const wanted = stType === "movie" ? "movie" : "tv"
+    const filtered = ai.results.filter((r) => r.media_type === wanted)
+
+    const rows: (StremioMeta | null)[] = await Promise.all(filtered.map(async (item) => {
+      if (!item.id) return null
+      const mediaType = stType === "movie" ? "movie" : "tv"
+      const imdbId = item.imdb_id || await resolveImdbId(mediaType, item.id, apiKey)
+      return {
+        id: catalogMetaId(imdbId, item.id),
+        type: stType,
+        name: item.title || item.name || "",
+        poster: await posteriumPosterUrl(req, stType, item.id, configParam, userParam, mdblistKeyParam),
+        releaseInfo: (item.release_date || item.first_air_date || "").slice(0, 4) || undefined,
+      }
+    }))
+    return rows.filter((m): m is StremioMeta => m !== null)
+  } catch {
+    return []
+  }
+}
+
+/**
  * Risposta catalogo Stremio. Il profilo arriva da query (`?u=`) o dal path
  * (`/u/<uuid>/catalog/...`): il parametro è esplicito così entrambi i route
  * condividono la stessa logica.
@@ -231,6 +274,19 @@ export async function posteriumCatalog(
         : await searchTV(extra.search, "it-IT", apiKey, page)
 
       const items = (searchRes?.results || []).slice(0, 20)
+
+      // --- Fallback AI (Groq): solo se TMDB non trova nulla per questo tipo ---
+      if (items.length === 0) {
+        const aiCacheKey = `stremio:search-ai:${stType}:${hashFragment(extra.search)}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+        const cachedAi = cacheGet<{ metas: StremioMeta[] }>(aiCacheKey)
+        const aiMetas = cachedAi?.metas ?? await aiSearchFallback(req, stType, extra.search, apiKey, userParam, configParam, mdblistKeyParam)
+        if (aiMetas.length > 0) {
+          cacheSet(aiCacheKey, { metas: aiMetas }, ["stremio", "search"], 60 * 60 * 1000)
+          return catalogResponse({ metas: aiMetas })
+        }
+        // Nessun risultato AI → si ricade nel blocco sottostante (metas vuote = comportamento attuale)
+      }
+
       const results: (StremioMeta | null)[] = await Promise.all(items.map(async (item) => {
         if (!item.id) return null
         const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", item.id, apiKey)
