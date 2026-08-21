@@ -24,7 +24,6 @@ import { calculateAverageRating, type AggregatedRatings } from "./ratings"
 import { SearchProvider } from "./contexts/SearchContext"
 import { SettingsProvider } from "./contexts/SettingsContext"
 import { TranslationProvider } from "./contexts/TranslationContext"
-import { POSTERIUM_CATALOGS } from "./catalog-definitions"
 import { useCustomCatalogs } from "./useCustomCatalogs"
 import { useProfileAuth } from "./useProfileAuth"
 
@@ -1008,7 +1007,7 @@ export function usePosterium(): PosteriumCtx {
       console.error("[posterium] Failed to save profile:", e)
       import("sonner").then(({ toast }) => toast.error("Errore nel salvare il profilo"))
     }
-  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, ratingSources, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames, profileId, profilePassword, safeSetItem])
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, ratingSources, badgeStyle, rankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight, networkLogo, ribbonSide, autoRotateClean, defaultLogoFitEnabled, customBadge, customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames, profileId, profilePassword, setProfileId, setProfileStateless, setProfileConfigToken, safeSetItem])
 
   const posterActivePath = navigation.previewPoster?.file_path
 

@@ -26,6 +26,24 @@ export const POSTERIUM_CATALOGS = [
   { id: "posterium-anime", name: "⛩️ Top 20 Anime", type: "series" },
 ] as const satisfies readonly PosteriumCatalogDefinition[]
 
+export type StremioCatalogExtra = {
+  readonly name: string
+  readonly isRequired?: boolean
+  readonly options?: readonly string[]
+}
+
+export type PosteriumManifestCatalog = {
+  id: string
+  name: string
+  type: PosteriumCatalogType
+  extra?: readonly StremioCatalogExtra[]
+}
+
+export const POSTERIUM_SEARCH_CATALOGS = [
+  { id: "posterium-search-movies", name: "🔍 Posterium — Cerca Film", type: "movie" },
+  { id: "posterium-search-series", name: "🔍 Posterium — Cerca Serie TV", type: "series" },
+] as const satisfies readonly PosteriumCatalogDefinition[]
+
 export const WARMUP_CATALOG_IDS = [
   "posterium-jw-movies",
   "posterium-jw-series",

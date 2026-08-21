@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { NextRequest } from "next/server"
 import { GET } from "@/app/catalog/[type]/[id]/route"
+import { GET as GET_EXTRA } from "@/app/catalog/[type]/[id]/[...extra]/route"
 import { cacheClear } from "@/lib/cache"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getTop10 } from "@/lib/flixpatrol"
@@ -281,5 +282,52 @@ describe("GET /catalog/[type]/[id]", () => {
       name: "House of the Dragon",
       poster: expect.stringContaining("/api/poster/movie/67890"),
     })
+  })
+
+  it("handles Stremio search query in movie search catalog", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({
+        page: 1,
+        results: [
+          { id: 550, title: "Fight Club", release_date: "1999-10-15" },
+        ],
+        total_pages: 1,
+        total_results: 1,
+      }))
+      .mockResolvedValueOnce(Response.json({ id: 550, imdb_id: "tt0137523" }))
+
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-search-movies/search=fight%20club.json?api_key=settings-key")
+    const res = await GET_EXTRA(req, {
+      params: Promise.resolve({
+        type: "movie",
+        id: "posterium-search-movies",
+        extra: ["search=fight%20club.json"],
+      }),
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.metas).toHaveLength(1)
+    expect(body.metas[0]).toMatchObject({
+      id: "tt0137523",
+      type: "movie",
+      name: "Fight Club",
+      releaseInfo: "1999",
+      poster: expect.stringContaining("/api/poster/movie/550"),
+    })
+  })
+
+  it("returns empty metas when dedicated search catalog is called without a search query", async () => {
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-search-movies.json?api_key=settings-key")
+    const res = await GET(req, {
+      params: Promise.resolve({
+        type: "movie",
+        id: "posterium-search-movies.json",
+      }),
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.metas).toEqual([])
   })
 })

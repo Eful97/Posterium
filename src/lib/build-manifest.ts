@@ -92,6 +92,25 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     })
   }
 
+  const manifestCatalogs = [
+    ...catalogs.map((c) => ({
+      ...c,
+      extra: [{ name: "search", isRequired: false }, { name: "skip", isRequired: false }],
+    })),
+    {
+      id: "posterium-search-movies",
+      name: "🔍 Posterium — Cerca Film",
+      type: "movie" as const,
+      extra: [{ name: "search", isRequired: true }, { name: "skip", isRequired: false }],
+    },
+    {
+      id: "posterium-search-series",
+      name: "🔍 Posterium — Cerca Serie TV",
+      type: "series" as const,
+      extra: [{ name: "search", isRequired: true }, { name: "skip", isRequired: false }],
+    },
+  ]
+
   return Response.json({
     id: addonId,
     version: APP_VERSION,
@@ -103,7 +122,7 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     addonCatalogs: [],
     manifestVersion: 1,
     behaviorHints: { adult: false },
-    catalogs,
+    catalogs: manifestCatalogs,
   }, {
     headers: {
       "Access-Control-Allow-Origin": "*",

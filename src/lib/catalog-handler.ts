@@ -8,7 +8,7 @@ import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
 import { getFullProfileData } from "@/lib/profile-store"
 import { decodeConfig } from "@/lib/config-token"
-import { getDetails, getExternalIds, resolveRequestApiKey, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
+import { getDetails, getExternalIds, resolveRequestApiKey, searchMovies, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
 import { fetchCustomMDBList, fetchMDBList } from "@/lib/mdblist"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
@@ -23,6 +23,65 @@ interface StremioMeta {
   name: string
   poster: string | null
   releaseInfo?: string
+}
+
+export interface CatalogExtraParams {
+  search?: string
+  skip?: number
+  genre?: string
+}
+
+/**
+ * Estrae parametri extra da Stremio (sia da segmenti di path es. `search=Avatar&skip=0.json`
+ * sia da query string `?search=Avatar`).
+ */
+export function parseCatalogExtra(
+  extraSegments?: string[] | string | null,
+  searchParams?: URLSearchParams | null,
+): CatalogExtraParams {
+  const result: CatalogExtraParams = {}
+
+  if (searchParams) {
+    const s = searchParams.get("search")
+    if (s && s.trim()) result.search = s.trim()
+    const sk = searchParams.get("skip")
+    if (sk) {
+      const parsed = parseInt(sk, 10)
+      if (!Number.isNaN(parsed) && parsed >= 0) result.skip = parsed
+    }
+    const g = searchParams.get("genre")
+    if (g && g.trim()) result.genre = g.trim()
+  }
+
+  if (extraSegments) {
+    const rawList = Array.isArray(extraSegments) ? extraSegments : [extraSegments]
+    for (const seg of rawList) {
+      if (!seg) continue
+      const cleaned = seg.replace(/\.json$/, "")
+      const pairs = cleaned.split("&")
+      for (const pair of pairs) {
+        const eqIdx = pair.indexOf("=")
+        if (eqIdx !== -1) {
+          try {
+            const key = decodeURIComponent(pair.slice(0, eqIdx))
+            const val = decodeURIComponent(pair.slice(eqIdx + 1))
+            if (key === "search" && val.trim()) {
+              result.search = val.trim()
+            } else if (key === "skip") {
+              const parsed = parseInt(val, 10)
+              if (!Number.isNaN(parsed) && parsed >= 0) result.skip = parsed
+            } else if (key === "genre" && val.trim()) {
+              result.genre = val.trim()
+            }
+          } catch {
+            // Ignora frammenti non decodificabili
+          }
+        }
+      }
+    }
+  }
+
+  return result
 }
 
 /** Riutilizza getJWRankings (cache condivisa 30 min + mock server nei test).
@@ -127,6 +186,7 @@ export async function posteriumCatalog(
   rawId: string,
   userParam: string | null,
   configParam: string | null,
+  extraSegments?: string[] | string | null,
 ): Promise<Response> {
   const rl = rateLimit(rateLimitKey(req), "catalog")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
@@ -134,6 +194,7 @@ export async function posteriumCatalog(
   const catalogId = rawId.replace(/\.json$/, "")
   if (catalogId.length > 80) return catalogResponse({ metas: [] })
   const stType = normalizeCatalogType(mediaType)
+  const extra = parseCatalogExtra(extraSegments, req.nextUrl.searchParams)
   const mdblistKeyParam = req.nextUrl.searchParams.get("mdblist_key") || undefined
   // Chiave TMDB della richiesta: parte del cache key così un catalogo vuoto
   // servito a una richiesta senza chiave non avvelena quelle keyed (D3).
@@ -150,6 +211,48 @@ export async function posteriumCatalog(
   }
   if (!userConfig && configParam) {
     userConfig = decodeConfig(configParam)
+  }
+
+  // --- Gestione Ricerca Stremio (sia via barra di ricerca che catalogo dedicato) ---
+  if (extra.search) {
+    if (!apiKey) return catalogResponse({ metas: [] })
+    const page = Math.floor((extra.skip || 0) / 20) + 1
+    const searchCacheKey = `stremio:search:${stType}:${hashFragment(extra.search)}:p${page}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+    const cachedSearch = cacheGet<{ metas: StremioMeta[] }>(searchCacheKey)
+    if (cachedSearch) return catalogResponse(cachedSearch)
+
+    try {
+      const searchRes = stType === "movie"
+        ? await searchMovies(extra.search, "it-IT", apiKey, page)
+        : await searchTV(extra.search, "it-IT", apiKey, page)
+
+      const items = (searchRes?.results || []).slice(0, 20)
+      const results: (StremioMeta | null)[] = await Promise.all(items.map(async (item) => {
+        if (!item.id) return null
+        const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", item.id, apiKey)
+        const poster = await posteriumPosterUrl(req, stType, item.id, configParam, userParam, mdblistKeyParam)
+        const releaseInfo = (item.release_date || item.first_air_date || "").slice(0, 4) || undefined
+        return {
+          id: catalogMetaId(imdbId, item.id),
+          type: stType,
+          name: item.title || item.name || "",
+          poster,
+          releaseInfo,
+        }
+      }))
+      const metas = results.filter((m): m is StremioMeta => m !== null)
+      const body = { metas }
+      cacheSet(searchCacheKey, body, ["stremio", "search"], 10 * 60 * 1000)
+      return catalogResponse(body)
+    } catch (e) {
+      log.error("Search failed", { error: e instanceof Error ? e.message : String(e) })
+      return catalogResponse({ metas: [] })
+    }
+  }
+
+  // Se è un catalogo di ricerca dedicato ma non è stata passata alcuna query
+  if (catalogId.startsWith("posterium-search-")) {
+    return catalogResponse({ metas: [] })
   }
 
   const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`

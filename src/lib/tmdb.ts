@@ -154,6 +154,24 @@ export async function searchMulti(query: string, language = "it-IT", apiKey?: st
   return data as TMDBSearchResponse
 }
 
+export async function searchMovies(query: string, language = "it-IT", apiKey?: string, page = 1): Promise<TMDBSearchResponse> {
+  const data = await tmdbFetch(`/search/movie?query=${encodeURIComponent(query)}&language=${language}&page=${page}`, apiKey)
+  const res = data as TMDBSearchResponse
+  if (res?.results) {
+    res.results = res.results.map((r) => ({ ...r, media_type: "movie" }))
+  }
+  return res
+}
+
+export async function searchTV(query: string, language = "it-IT", apiKey?: string, page = 1): Promise<TMDBSearchResponse> {
+  const data = await tmdbFetch(`/search/tv?query=${encodeURIComponent(query)}&language=${language}&page=${page}`, apiKey)
+  const res = data as TMDBSearchResponse
+  if (res?.results) {
+    res.results = res.results.map((r) => ({ ...r, media_type: "tv" }))
+  }
+  return res
+}
+
 export async function getPopularMovies(page = 1, language = "it-IT", apiKey?: string): Promise<TMDBSearchResponse> {
   const data = await tmdbFetch(`/movie/popular?language=${language}&page=${page}&region=IT`, apiKey)
   return data as TMDBSearchResponse
