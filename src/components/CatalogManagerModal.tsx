@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react"
 import {
   X,
+  Home,
   ArrowUp,
   ArrowDown,
   ChevronsUp,
@@ -35,6 +36,7 @@ interface CatalogEntryItem {
   isCustom: boolean
   customBaseId?: string
   enabled: boolean
+  showInHome: boolean
 }
 
 export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProps) {
@@ -44,6 +46,8 @@ export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProp
     removeCustomCatalog,
     disabledCatalogIds,
     toggleBuiltinCatalog,
+    homeDisabledCatalogIds,
+    toggleCatalogHome,
     catalogOrder,
     setCatalogOrder,
     moveCatalog,
@@ -97,11 +101,13 @@ export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProp
         type: c.type,
         isCustom: false,
         enabled: !disabledCatalogIds.includes(c.id),
+        showInHome: !homeDisabledCatalogIds.includes(c.id),
       })
     }
 
     // Custom catalogs
     for (const cc of customCatalogs) {
+      const isCustomHomeDisabled = homeDisabledCatalogIds.includes(cc.id)
       if (cc.type === "mixed") {
         const mId = `posterium-custom-movie-${cc.id}`
         const sId = `posterium-custom-series-${cc.id}`
@@ -113,6 +119,7 @@ export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProp
           isCustom: true,
           customBaseId: cc.id,
           enabled: cc.enabled !== false,
+          showInHome: !isCustomHomeDisabled && !homeDisabledCatalogIds.includes(mId),
         })
         list.push({
           id: sId,
@@ -122,6 +129,7 @@ export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProp
           isCustom: true,
           customBaseId: cc.id,
           enabled: cc.enabled !== false,
+          showInHome: !isCustomHomeDisabled && !homeDisabledCatalogIds.includes(sId),
         })
       } else {
         const cId = `posterium-custom-${cc.type}-${cc.id}`
@@ -133,6 +141,7 @@ export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProp
           isCustom: true,
           customBaseId: cc.id,
           enabled: cc.enabled !== false,
+          showInHome: !isCustomHomeDisabled && !homeDisabledCatalogIds.includes(cId),
         })
       }
     }
@@ -149,7 +158,7 @@ export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProp
     }
 
     return list
-  }, [customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames])
+  }, [customCatalogs, disabledCatalogIds, homeDisabledCatalogIds, catalogOrder, catalogRenames])
 
   if (!isOpen) return null
 
@@ -581,6 +590,22 @@ export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProp
 
               {/* Right: Actions */}
               <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => toggleCatalogHome(item.id)}
+                  title={
+                    item.showInHome
+                      ? "Visibile nella Home di Stremio (clicca per nascondere dalla Home)"
+                      : "Nascosto dalla Home di Stremio (visibile solo in Esplora — clicca per mostrare nella Home)"
+                  }
+                  className={`p-1.5 rounded-xl border transition-colors ${
+                    item.showInHome
+                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
+                      : "bg-white/5 border-white/5 text-muted hover:text-white"
+                  }`}
+                >
+                  <Home className="w-3.5 h-3.5" />
+                </button>
                 <button
                   type="button"
                   onClick={() => handleToggle(item)}

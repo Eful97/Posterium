@@ -184,6 +184,41 @@ describe("Custom Catalogs & MDBList Parsing", () => {
       // The third catalog should be posterium-jw-movies
       expect(data.catalogs[2].id).toBe("posterium-jw-movies")
     })
+
+    it("sets extra isRequired: true on catalogs hidden from home", async () => {
+      const token = encodeConfig({
+        globalBadges: true,
+        rankingBadges: true,
+        badgeStyle: "pill",
+        rankingBadgeStyle: "default",
+        blurEnabled: true,
+        blurIntensity: 50,
+        blurFade: 30,
+        blurDarkness: 40,
+        gradientHeight: 35,
+        networkLogo: true,
+        autoRotateClean: true,
+        homeDisabledCatalogIds: ["posterium-netflix-movies"],
+      })
+
+      const req = new NextRequest(`https://posterium.test/manifest.json?config=${token}`)
+      const res = await buildManifestResponse(req, null, token)
+      const data = await res.json()
+
+      const netflixMovie = data.catalogs.find((c: { id: string }) => c.id === "posterium-netflix-movies")
+      const jwMovie = data.catalogs.find((c: { id: string }) => c.id === "posterium-jw-movies")
+
+      expect(netflixMovie).toBeDefined()
+      expect(netflixMovie.extra).toEqual([
+        { name: "genre", isRequired: true, options: ["Tutti"] },
+        { name: "skip", isRequired: false },
+      ])
+
+      expect(jwMovie).toBeDefined()
+      expect(jwMovie.extra).toEqual([
+        { name: "skip", isRequired: false },
+      ])
+    })
   })
 })
 

@@ -27,13 +27,14 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     const serverDefaults = getServerDefaults()
     userConfig = {
       disabledCatalogIds: serverDefaults.disabledCatalogIds,
+      homeDisabledCatalogIds: serverDefaults.homeDisabledCatalogIds,
       customCatalogs: serverDefaults.customCatalogs,
       catalogRenames: serverDefaults.catalogRenames,
       catalogOrder: serverDefaults.catalogOrder,
     }
   }
 
-  let catalogs: Array<{ id: string; name: string; type: "movie" | "series" }> = [...POSTERIUM_CATALOGS]
+  let catalogs: Array<{ id: string; name: string; type: "movie" | "series"; customBaseId?: string }> = [...POSTERIUM_CATALOGS]
   if (userConfig?.disabledCatalogIds && userConfig.disabledCatalogIds.length > 0) {
     const disabledSet = new Set(userConfig.disabledCatalogIds)
     catalogs = catalogs.filter(c => !disabledSet.has(c.id))
@@ -46,17 +47,20 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
             id: `posterium-custom-movie-${cc.id}`,
             name: `${cc.name} — Film`,
             type: "movie",
+            customBaseId: cc.id,
           })
           catalogs.push({
             id: `posterium-custom-series-${cc.id}`,
             name: `${cc.name} — Serie TV`,
             type: "series",
+            customBaseId: cc.id,
           })
         } else {
           catalogs.push({
             id: `posterium-custom-${cc.type}-${cc.id}`,
             name: cc.name,
             type: cc.type,
+            customBaseId: cc.id,
           })
         }
       }
@@ -85,11 +89,20 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     })
   }
 
+  const homeDisabledSet = new Set(userConfig?.homeDisabledCatalogIds || [])
+
   const manifestCatalogs = [
-    ...catalogs.map((c) => ({
-      ...c,
-      extra: [{ name: "skip", isRequired: false }],
-    })),
+    ...catalogs.map((c) => {
+      const isHomeHidden = homeDisabledSet.has(c.id) || (c.customBaseId ? homeDisabledSet.has(c.customBaseId) : false)
+      return {
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        extra: isHomeHidden
+          ? [{ name: "genre", isRequired: true, options: ["Tutti"] }, { name: "skip", isRequired: false }]
+          : [{ name: "skip", isRequired: false }],
+      }
+    }),
     {
       id: "posterium-search-movies",
       name: "🔍 Posterium — Cerca Film",

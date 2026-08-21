@@ -10,6 +10,7 @@ export function useCustomCatalogs(
 ) {
   const [customCatalogs, setCustomCatalogsState] = useState<CustomCatalogConfig[]>([])
   const [disabledCatalogIds, setDisabledCatalogIdsState] = useState<string[]>([])
+  const [homeDisabledCatalogIds, setHomeDisabledCatalogIdsState] = useState<string[]>([])
   const [catalogOrder, setCatalogOrderState] = useState<string[]>([])
   const [catalogRenames, setCatalogRenamesState] = useState<Record<string, string>>({})
   const lastSyncRef = useRef<string>("")
@@ -18,6 +19,7 @@ export function useCustomCatalogs(
   useEffect(() => {
     let localCustom: CustomCatalogConfig[] = []
     let localDisabled: string[] = []
+    let localHomeDisabled: string[] = []
     let localOrder: string[] = []
     let localRenames: Record<string, string> = {}
 
@@ -28,6 +30,10 @@ export function useCustomCatalogs(
     const savedDisabledCats = safeGetItem("posterium_disabled_catalogs")
     if (savedDisabledCats) {
       try { localDisabled = JSON.parse(savedDisabledCats); setDisabledCatalogIdsState(localDisabled) } catch {}
+    }
+    const savedHomeDisabledCats = safeGetItem("posterium_home_disabled_catalogs")
+    if (savedHomeDisabledCats) {
+      try { localHomeDisabled = JSON.parse(savedHomeDisabledCats); setHomeDisabledCatalogIdsState(localHomeDisabled) } catch {}
     }
     const savedOrder = safeGetItem("posterium_catalog_order")
     if (savedOrder) {
@@ -41,6 +47,7 @@ export function useCustomCatalogs(
     lastSyncRef.current = JSON.stringify({
       customCatalogs: localCustom,
       disabledCatalogIds: localDisabled,
+      homeDisabledCatalogIds: localHomeDisabled,
       catalogOrder: localOrder,
       catalogRenames: localRenames,
     })
@@ -57,6 +64,10 @@ export function useCustomCatalogs(
         if (Array.isArray(data.disabledCatalogIds) && (!savedDisabledCats || localDisabled.length === 0)) {
           setDisabledCatalogIdsState(data.disabledCatalogIds)
           safeSetItem("posterium_disabled_catalogs", JSON.stringify(data.disabledCatalogIds))
+        }
+        if (Array.isArray(data.homeDisabledCatalogIds) && (!savedHomeDisabledCats || localHomeDisabled.length === 0)) {
+          setHomeDisabledCatalogIdsState(data.homeDisabledCatalogIds)
+          safeSetItem("posterium_home_disabled_catalogs", JSON.stringify(data.homeDisabledCatalogIds))
         }
         if (Array.isArray(data.catalogOrder) && (!savedOrder || localOrder.length === 0)) {
           setCatalogOrderState(data.catalogOrder)
@@ -75,6 +86,7 @@ export function useCustomCatalogs(
     const payload = {
       customCatalogs,
       disabledCatalogIds,
+      homeDisabledCatalogIds,
       catalogOrder,
       catalogRenames,
     }
@@ -94,7 +106,7 @@ export function useCustomCatalogs(
     }, 400)
 
     return () => clearTimeout(timer)
-  }, [customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames])
+  }, [customCatalogs, disabledCatalogIds, homeDisabledCatalogIds, catalogOrder, catalogRenames])
 
   const setCustomCatalogs = useCallback((catalogs: CustomCatalogConfig[]) => {
     setCustomCatalogsState(catalogs)
@@ -135,6 +147,19 @@ export function useCustomCatalogs(
     setDisabledCatalogIdsState((prev) => {
       const next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
       safeSetItem("posterium_disabled_catalogs", JSON.stringify(next))
+      return next
+    })
+  }, [safeSetItem])
+
+  const setHomeDisabledCatalogIds = useCallback((ids: string[]) => {
+    setHomeDisabledCatalogIdsState(ids)
+    safeSetItem("posterium_home_disabled_catalogs", JSON.stringify(ids))
+  }, [safeSetItem])
+
+  const toggleCatalogHome = useCallback((id: string) => {
+    setHomeDisabledCatalogIdsState((prev) => {
+      const next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      safeSetItem("posterium_home_disabled_catalogs", JSON.stringify(next))
       return next
     })
   }, [safeSetItem])
@@ -216,6 +241,9 @@ export function useCustomCatalogs(
     disabledCatalogIds,
     setDisabledCatalogIds,
     toggleBuiltinCatalog,
+    homeDisabledCatalogIds,
+    setHomeDisabledCatalogIds,
+    toggleCatalogHome,
     catalogOrder,
     setCatalogOrder,
     moveCatalog,

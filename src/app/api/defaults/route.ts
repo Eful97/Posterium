@@ -40,6 +40,7 @@ const defaultsSchema = z.object({
   episodeMetadataSource: z.enum(["tmdb", "tvdb"]).optional(),
   customCatalogs: z.array(customCatalogSchema).optional(),
   disabledCatalogIds: z.array(z.string().max(80)).optional(),
+  homeDisabledCatalogIds: z.array(z.string().max(80)).optional(),
   catalogOrder: z.array(z.string().max(80)).optional(),
   catalogRenames: z.record(z.string().max(80), z.string().max(100)).optional(),
 })

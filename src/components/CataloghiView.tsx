@@ -10,7 +10,7 @@ import { SimklCard, type SimklCardItem } from "@/components/SimklCard"
 import { CustomCatalogModal } from "@/components/CustomCatalogModal"
 import { CatalogManagerModal } from "@/components/CatalogManagerModal"
 import { posterUrl } from "@/lib/utils"
-import { X, Check, ListPlus, Trash2, Film, Tv, Shuffle, Power, SlidersHorizontal } from "lucide-react"
+import { X, Check, ListPlus, Trash2, Film, Tv, Shuffle, Power, SlidersHorizontal, Home } from "lucide-react"
 
 interface GridViewItem {
   tmdbId: number | null
@@ -92,6 +92,8 @@ function CustomCatalogEntry({
   savedKeys,
   toggleCustomCatalog,
   removeCustomCatalog,
+  homeDisabledCatalogIds,
+  toggleCatalogHome,
   tmdbKey,
   mdblistApiKey,
 }: {
@@ -101,12 +103,15 @@ function CustomCatalogEntry({
   savedKeys: Set<string>
   toggleCustomCatalog: (id: string) => void
   removeCustomCatalog: (id: string) => void
+  homeDisabledCatalogIds: string[]
+  toggleCatalogHome: (id: string) => void
   tmdbKey: string
   mdblistApiKey: string
 }) {
   const [items, setItems] = useState<SimklCardItem[]>([])
   const [loading, setLoading] = useState(true)
   const isEnabled = cat.enabled !== false
+  const isHomeVisible = !homeDisabledCatalogIds.includes(cat.id)
   const isMixed = cat.type === "mixed"
   const isMovie = cat.type === "movie"
 
@@ -156,6 +161,22 @@ function CustomCatalogEntry({
           <h3 className="text-base font-bold text-white line-clamp-1">{cat.name}</h3>
         </div>
         <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => toggleCatalogHome(cat.id)}
+            title={
+              isHomeVisible
+                ? "Visibile nella Home di Stremio (clicca per nascondere dalla Home)"
+                : "Nascosto dalla Home di Stremio (visibile solo in Esplora — clicca per mostrare nella Home)"
+            }
+            className={`p-1.5 rounded-lg border transition-colors ${
+              isHomeVisible
+                ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
+                : "bg-white/5 border-white/5 text-muted hover:text-white"
+            }`}
+          >
+            <Home className="w-3.5 h-3.5" />
+          </button>
           <button
             type="button"
             onClick={() => toggleCustomCatalog(cat.id)}
@@ -262,6 +283,8 @@ export function CataloghiView() {
   const customCatalogs = usePSelector((v) => v.customCatalogs)
   const removeCustomCatalog = usePSelector((v) => v.removeCustomCatalog)
   const toggleCustomCatalog = usePSelector((v) => v.toggleCustomCatalog)
+  const homeDisabledCatalogIds = usePSelector((v) => v.homeDisabledCatalogIds)
+  const toggleCatalogHome = usePSelector((v) => v.toggleCatalogHome)
   const tmdbKey = usePSelector((v) => v.tmdbKey)
   const mdblistApiKey = usePSelector((v) => v.mdblistApiKey)
   const { t } = useT()
@@ -422,6 +445,8 @@ export function CataloghiView() {
                   savedKeys={savedKeys}
                   toggleCustomCatalog={toggleCustomCatalog}
                   removeCustomCatalog={removeCustomCatalog}
+                  homeDisabledCatalogIds={homeDisabledCatalogIds}
+                  toggleCatalogHome={toggleCatalogHome}
                   tmdbKey={tmdbKey}
                   mdblistApiKey={mdblistApiKey}
                 />

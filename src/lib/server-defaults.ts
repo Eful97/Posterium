@@ -29,6 +29,7 @@ export interface ServerDefaults {
   episodeMetadataSource?: "tmdb" | "tvdb"
   customCatalogs?: import("@/lib/types").CustomCatalogConfig[]
   disabledCatalogIds?: string[]
+  homeDisabledCatalogIds?: string[]
   catalogOrder?: string[]
   catalogRenames?: Record<string, string>
 }

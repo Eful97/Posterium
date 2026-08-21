@@ -158,6 +158,9 @@ export interface PosteriumCtx {
   disabledCatalogIds: string[]
   setDisabledCatalogIds: (ids: string[]) => void
   toggleBuiltinCatalog: (id: string) => void
+  homeDisabledCatalogIds: string[]
+  setHomeDisabledCatalogIds: (ids: string[]) => void
+  toggleCatalogHome: (id: string) => void
   catalogOrder: string[]
   setCatalogOrder: (order: string[]) => void
   moveCatalog: (id: string, direction: "up" | "down") => void
@@ -430,6 +433,9 @@ export function usePosterium(): PosteriumCtx {
     disabledCatalogIds,
     setDisabledCatalogIds,
     toggleBuiltinCatalog,
+    homeDisabledCatalogIds,
+    setHomeDisabledCatalogIds,
+    toggleCatalogHome,
     catalogOrder,
     setCatalogOrder,
     moveCatalog,
@@ -941,6 +947,7 @@ export function usePosterium(): PosteriumCtx {
     hasNetflixRank,
     customCatalogs, setCustomCatalogs, addCustomCatalog, removeCustomCatalog, toggleCustomCatalog,
     disabledCatalogIds, setDisabledCatalogIds, toggleBuiltinCatalog,
+    homeDisabledCatalogIds, setHomeDisabledCatalogIds, toggleCatalogHome,
     catalogOrder, setCatalogOrder, moveCatalog,
     catalogRenames, setCatalogRenames, renameCatalog, resetCatalogNames, resetCatalogOrder,
     t,
@@ -959,6 +966,6 @@ export function usePosterium(): PosteriumCtx {
     trending.trending, trending.trendingError, trending.streamingCharts, trending.mdblistAnimeList,
     trending.refreshLists,
     theme, uiAccent, serviceErrors, hasNetflixRank,
-    customCatalogs, disabledCatalogIds, catalogOrder, catalogRenames,
+    customCatalogs, disabledCatalogIds, homeDisabledCatalogIds, catalogOrder, catalogRenames,
   ])
 }
