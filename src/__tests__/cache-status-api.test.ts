@@ -31,6 +31,22 @@ describe("GET /api/cache/status", () => {
       maxBytes: expect.any(Number),
       maxEntries: expect.any(Number),
       posterErrors: { writes: 0, hits: 0 },
+      poster: expect.objectContaining({
+        requests: expect.any(Number),
+        hits: expect.any(Number),
+        renders: expect.any(Number),
+        hitRate: expect.any(String),
+      }),
+      tmdb: expect.objectContaining({
+        totalCalls: expect.any(Number),
+        cacheHits: expect.any(Number),
+        networkCalls: expect.any(Number),
+      }),
+      system: expect.objectContaining({
+        sharp: expect.any(Object),
+        memory: expect.any(Object),
+        uptimeSeconds: expect.any(Number),
+      }),
     })
   })
 
@@ -59,6 +75,9 @@ describe("GET /api/cache/status", () => {
       maxBytes: expect.any(Number),
       maxEntries: expect.any(Number),
       posterErrors: { writes: 0, hits: 0 },
+      poster: expect.any(Object),
+      tmdb: expect.any(Object),
+      system: expect.any(Object),
     })
   })
 })

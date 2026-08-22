@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest"
 import { cacheClear } from "@/lib/cache"
-import { isImmutablePosterRequest, posterHeaders, posterNotModifiedHeaders, readPosterError, writePosterError } from "@/lib/poster-runtime-cache"
+import {
+  isImmutablePosterRequest,
+  posterHeaders,
+  posterNotModifiedHeaders,
+  readPosterError,
+  resolveImageFormat,
+  writePosterError,
+} from "@/lib/poster-runtime-cache"
 
 describe("poster CDN headers", () => {
   it("adds long-lived CDN headers for versioned poster URLs", () => {
@@ -96,5 +103,34 @@ describe("poster negative cache (F3)", () => {
     writePosterError(key, 503)
     // La payload cache usa la stessa key base senza suffisso: nessun conflitto.
     expect(readPosterError(`${key}:headers`)).toBeNull()
+  })
+})
+
+describe("poster image format negotiation (WebP / AVIF)", () => {
+  it("resolves output format from Accept header correctly", () => {
+    expect(resolveImageFormat(null)).toBe("jpeg")
+    expect(resolveImageFormat("image/jpeg,image/png")).toBe("jpeg")
+    expect(resolveImageFormat("image/webp,image/apng,*/*")).toBe("webp")
+    expect(resolveImageFormat("image/avif,image/webp,image/apng,*/*")).toBe("avif")
+  })
+
+  it("prioritizes query param fmt over Accept header", () => {
+    expect(resolveImageFormat("image/avif", "webp")).toBe("webp")
+    expect(resolveImageFormat("image/webp", "jpeg")).toBe("jpeg")
+    expect(resolveImageFormat("image/webp", "jpg")).toBe("jpeg")
+  })
+
+  it("sets correct Content-Type and Vary headers according to format", () => {
+    const jpegHeaders = posterHeaders("\"etag\"", false, false, false, "jpeg")
+    expect(jpegHeaders["Content-Type"]).toBe("image/jpeg")
+    expect(jpegHeaders.Vary).toBe("Accept")
+
+    const webpHeaders = posterHeaders("\"etag\"", false, false, false, "webp")
+    expect(webpHeaders["Content-Type"]).toBe("image/webp")
+    expect(webpHeaders.Vary).toBe("Accept")
+
+    const avifHeaders = posterHeaders("\"etag\"", false, false, false, "avif")
+    expect(avifHeaders["Content-Type"]).toBe("image/avif")
+    expect(avifHeaders.Vary).toBe("Accept")
   })
 })

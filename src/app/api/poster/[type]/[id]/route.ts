@@ -35,6 +35,9 @@ import {
   schedulePosterRefresh,
   writeCachedPoster,
   writePosterError,
+  recordPosterRequest,
+  recordPosterError,
+  resolveImageFormat,
   type PosterCachePayload,
   type PosterErrorStatus,
 } from "@/lib/poster-runtime-cache"
@@ -165,8 +168,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const rotateKey = isRotating ? `:ci${mapping?.cleanPosterIndex ?? "x"}` : ""
   const mapVersion = mapping?.updatedAt ? `:mu${mapping.updatedAt}` : ""
   const configHash = configOverride ? hashKey(JSON.stringify(configOverride)) : ""
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}`
-  const etagBase = hashKey(`v${RENDER_VERSION}:${type}:${id}:sd${sdHash}:${cacheParams.toString()}${configHash ? `:${configHash}` : ""}`)
+  const outputFormat = resolveImageFormat(req.headers.get("accept"), req.nextUrl.searchParams.get("fmt") || req.nextUrl.searchParams.get("format"))
+  const formatKey = outputFormat !== "jpeg" ? `:fmt${outputFormat}` : ""
+  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}${formatKey}`
+  const etagBase = hashKey(`v${RENDER_VERSION}:${type}:${id}:sd${sdHash}:${cacheParams.toString()}${configHash ? `:${configHash}` : ""}:${outputFormat}`)
   const currentMappingVersion = mappingVersionParam(mapping)
   const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams, {
     hasMapping: !!mapping,
@@ -183,18 +188,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   // 3. Memory cache check
   const cachedPoster = readCachedPoster(cacheKey)
   if (cachedPoster.payload) {
+    recordPosterRequest(true, outputFormat)
     if (!isPreview && req.headers.get("If-None-Match") === cachedPoster.payload.etag) {
       log.debug("Poster cache: 304", { mediaType, tmdbId, ms: Date.now() - startTime })
       return new Response(null, { status: 304, headers: posterNotModifiedHeaders(cachedPoster.payload.etag, immutablePoster, dynamicPoster) })
     }
     if (!cachedPoster.stale) {
       log.debug("Poster cache: fresh hit", { mediaType, tmdbId, ms: Date.now() - startTime })
-      return posterResponse(cachedPoster.payload, immutablePoster, isPreview, dynamicPoster)
+      return posterResponse(cachedPoster.payload, immutablePoster, isPreview, dynamicPoster, outputFormat)
     }
     if (!refreshRequest) {
       schedulePosterRefresh(req, isPreview)
       log.debug("Poster cache: stale hit (refresh scheduled)", { mediaType, tmdbId, ms: Date.now() - startTime })
-      return posterResponse(cachedPoster.payload, immutablePoster, isPreview, dynamicPoster)
+      return posterResponse(cachedPoster.payload, immutablePoster, isPreview, dynamicPoster, outputFormat)
     }
   }
 
@@ -872,6 +878,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       posterSrc: posterPath,
       logoSrc: logoPath,
       backdropSrc: backdropPath,
+      format: outputFormat,
     }
     const composited = await generatePosterBuffer(genInput)
 
@@ -885,10 +892,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const mappingTag = mapping ? `poster:${mediaType}:${tmdbId}` : undefined
     writeCachedPoster(cacheKey, payload, mappingTag)
     completePosterRender(payload)
-    log.info("Poster rendered", { mediaType, tmdbId, ms: Date.now() - startTime, bytes: composited.byteLength, cached: !!mappingTag })
-    return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster, isPreview, dynamicPoster) })
+    recordPosterRequest(false, outputFormat)
+    log.info("Poster rendered", { mediaType, tmdbId, ms: Date.now() - startTime, bytes: composited.byteLength, cached: !!mappingTag, format: outputFormat })
+    return new Response(new Uint8Array(composited), { headers: posterHeaders(etag, immutablePoster, isPreview, dynamicPoster, outputFormat) })
   } catch (e) {
     completePosterRender(null)
+    recordPosterError()
     // Deadline sforato: il render è stato abbandonato dal watchdog perché
     // troppo lento → 503 (con negative cache) invece di un 500 generico.
     if (deadlineFired) {

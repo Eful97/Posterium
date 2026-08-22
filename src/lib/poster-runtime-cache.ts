@@ -61,17 +61,41 @@ export function isImmutablePosterRequest(searchParams: URLSearchParams, state: I
   return state.hasMapping === true && state.mappingVersionMatches === true
 }
 
+export type PosterImageFormat = "jpeg" | "webp" | "avif"
+
+const FORMAT_MIME_TYPES: Record<PosterImageFormat, string> = {
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  avif: "image/avif",
+}
+
+export function resolveImageFormat(acceptHeader?: string | null, queryFmt?: string | null): PosterImageFormat {
+  if (queryFmt) {
+    const q = queryFmt.toLowerCase()
+    if (q === "webp") return "webp"
+    if (q === "avif") return "avif"
+    if (q === "jpeg" || q === "jpg") return "jpeg"
+  }
+  if (!acceptHeader) return "jpeg"
+  const accept = acceptHeader.toLowerCase()
+  if (accept.includes("image/avif")) return "avif"
+  if (accept.includes("image/webp")) return "webp"
+  return "jpeg"
+}
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "*",
   "Access-Control-Expose-Headers": "ETag, Cache-Control",
+  "Vary": "Accept",
 }
 
-export function posterHeaders(etag: string, immutable: boolean, isPreview: boolean = false, dynamic: boolean = false): PosterHeaders {
+export function posterHeaders(etag: string, immutable: boolean, isPreview: boolean = false, dynamic: boolean = false, format: PosterImageFormat = "jpeg"): PosterHeaders {
+  const contentType = FORMAT_MIME_TYPES[format] || "image/jpeg"
   if (isPreview) {
     return {
       ...CORS_HEADERS,
-      "Content-Type": "image/jpeg",
+      "Content-Type": contentType,
       "Cache-Control": PREVIEW_CACHE_CONTROL,
       "Pragma": "no-cache",
       "Expires": "0",
@@ -83,7 +107,7 @@ export function posterHeaders(etag: string, immutable: boolean, isPreview: boole
   const surrogate = immutable ? "max-age=31536000" : dynamic ? "max-age=21600, stale-while-revalidate=86400" : "max-age=86400, stale-while-revalidate=604800"
   return {
     ...CORS_HEADERS,
-    "Content-Type": "image/jpeg",
+    "Content-Type": contentType,
     "Cache-Control": cacheControl,
     "CDN-Cache-Control": cdnCacheControl,
     "Surrogate-Control": surrogate,
@@ -104,8 +128,8 @@ export function posterNotModifiedHeaders(etag: string, immutable: boolean, dynam
   }
 }
 
-export function posterResponse(payload: PosterCachePayload, immutable: boolean, isPreview: boolean = false, dynamic: boolean = false): Response {
-  return new Response(new Uint8Array(payload.buffer), { headers: posterHeaders(payload.etag, immutable, isPreview, dynamic) })
+export function posterResponse(payload: PosterCachePayload, immutable: boolean, isPreview: boolean = false, dynamic: boolean = false, format: PosterImageFormat = "jpeg"): Response {
+  return new Response(new Uint8Array(payload.buffer), { headers: posterHeaders(payload.etag, immutable, isPreview, dynamic, format) })
 }
 
 export function readCachedPoster(cacheKey: string): { readonly payload: PosterCachePayload | null; readonly stale: boolean } {
@@ -301,4 +325,64 @@ export async function acquirePosterRenderSlot(): Promise<(() => void) | null> {
 export function __resetPosterRenderLimiter(): void {
   activeRenders = 0
   renderWaiters.length = 0
+}
+
+// ---------------------------------------------------------------------------
+// Poster metrics & telemetry
+// ---------------------------------------------------------------------------
+
+interface PosterStats {
+  requests: number
+  hits: number
+  renders: number
+  errors: number
+  formats: {
+    jpeg: number
+    webp: number
+    avif: number
+  }
+}
+
+const posterMetrics: PosterStats = {
+  requests: 0,
+  hits: 0,
+  renders: 0,
+  errors: 0,
+  formats: {
+    jpeg: 0,
+    webp: 0,
+    avif: 0,
+  },
+}
+
+export function recordPosterRequest(hit: boolean, format: PosterImageFormat = "jpeg"): void {
+  posterMetrics.requests++
+  if (hit) {
+    posterMetrics.hits++
+  } else {
+    posterMetrics.renders++
+  }
+  posterMetrics.formats[format] = (posterMetrics.formats[format] || 0) + 1
+}
+
+export function recordPosterError(): void {
+  posterMetrics.errors++
+}
+
+export function getPosterStats() {
+  const hitRate = posterMetrics.requests > 0
+    ? Math.round((posterMetrics.hits / posterMetrics.requests) * 1000) / 10
+    : 0
+  return {
+    requests: posterMetrics.requests,
+    hits: posterMetrics.hits,
+    renders: posterMetrics.renders,
+    errors: posterMetrics.errors,
+    hitRate: `${hitRate}%`,
+    hitRateNum: hitRate,
+    formats: { ...posterMetrics.formats },
+    activeRenders,
+    queuedRenders: renderWaiters.length,
+    maxConcurrent: MAX_CONCURRENT_RENDERS,
+  }
 }

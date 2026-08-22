@@ -42,6 +42,51 @@ interface CacheStatusData {
   totalEntries: number
   taggedEntries: CacheTagEntry[]
   untaggedEntries: number
+  poster?: {
+    requests: number
+    hits: number
+    renders: number
+    errors: number
+    hitRate: string
+    hitRateNum: number
+    formats: {
+      jpeg: number
+      webp: number
+      avif: number
+    }
+    activeRenders: number
+    queuedRenders: number
+    maxConcurrent: number
+  }
+  tmdb?: {
+    totalCalls: number
+    cacheHits: number
+    networkCalls: number
+    cacheHitRate: string
+    lastCallTime: string | null
+  }
+  system?: {
+    sharp: {
+      memory: {
+        current: number
+        high: number
+        max: number
+      }
+      counters: {
+        queue: number
+        process: number
+      }
+      concurrency: number
+      simd: boolean
+    }
+    memory: {
+      rssMb: number
+      heapUsedMb: number
+      heapTotalMb: number
+      externalMb: number
+    }
+    uptimeSeconds: number
+  }
 }
 
 function StatusBadge({ ok }: { ok: boolean | null }) {
@@ -58,7 +103,7 @@ function StatusRow({ label, ok, extra }: { label: string; ok: boolean | null; ex
     <div className="flex items-center gap-2 py-2 px-3 even:bg-white/[0.03] rounded-lg text-sm">
       <StatusBadge ok={ok} />
       <span className="text-zinc-300">{label}</span>
-      {extra && <span className="text-xs text-zinc-400 ml-auto">{extra}</span>}
+      {extra && <span className="text-xs text-zinc-400 ml-auto font-medium">{extra}</span>}
     </div>
   )
 }
@@ -149,6 +194,74 @@ export default function StatusPage() {
                 <StatusRow label={t("ui.statusOverall")} ok={data.tmdb.apiKey ? data.status === "healthy" : null} extra={data.tmdb.apiKey ? (data.status === "healthy" ? t("ui.statusHealthy") : t("ui.statusDegraded")) : t("ui.statusTmdbKeyMissing")} />
               </div>
             </div>
+
+            {/* TMDB Quota & Telemetria */}
+            {cacheStatus?.tmdb && (
+              <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
+                <h2 className="text-base font-semibold mb-3 flex items-center justify-between">
+                  <span>Quota & Telemetria TMDb</span>
+                  <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                    Hit rate: {cacheStatus.tmdb.cacheHitRate}
+                  </span>
+                </h2>
+                <div className="space-y-1">
+                  <StatusRow label="Chiamate API Totali" ok extra={cacheStatus.tmdb.totalCalls} />
+                  <StatusRow label="Cache Hit (in-memory 5m)" ok extra={<>{cacheStatus.tmdb.cacheHits} ({cacheStatus.tmdb.cacheHitRate})</>} />
+                  <StatusRow label="Richieste di Rete Effettive" ok extra={cacheStatus.tmdb.networkCalls} />
+                  {cacheStatus.tmdb.lastCallTime && (
+                    <StatusRow label="Ultima Chiamata" ok extra={new Date(cacheStatus.tmdb.lastCallTime).toLocaleTimeString(getLang())} />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Poster Cache Hit Rate & Pipeline */}
+            {cacheStatus?.poster && (
+              <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-semibold">Locandine & Cache Hit Rate</h2>
+                  <span className="text-xs px-2 py-0.5 rounded-md bg-accent-orange/15 text-accent-orange border border-accent-orange/30 font-semibold">
+                    Hit rate: {cacheStatus.poster.hitRate}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <StatusRow label="Richieste Poster Totali" ok extra={cacheStatus.poster.requests} />
+                  <StatusRow label="Serviti da Cache (Istantanei)" ok extra={<>{cacheStatus.poster.hits} ({cacheStatus.poster.hitRate})</>} />
+                  <StatusRow label="Renderizzati da zero (Sharp)" ok extra={cacheStatus.poster.renders} />
+                  <StatusRow label="Slot Concorrenza Attivi" ok extra={<>{cacheStatus.poster.activeRenders} / {cacheStatus.poster.maxConcurrent} (in coda: {cacheStatus.poster.queuedRenders})</>} />
+                  
+                  {/* Formati erogati */}
+                  <div className="pt-2">
+                    <span className="text-xs text-zinc-400 block mb-1.5">Distribuzione Formati Immagine:</span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
+                        WebP: <span className="text-accent-orange font-semibold">{cacheStatus.poster.formats.webp}</span>
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
+                        AVIF: <span className="text-emerald-400 font-semibold">{cacheStatus.poster.formats.avif}</span>
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
+                        JPEG: <span className="text-zinc-400 font-semibold">{cacheStatus.poster.formats.jpeg}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Memoria & Sharp Engine */}
+            {cacheStatus?.system && (
+              <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
+                <h2 className="text-base font-semibold mb-3">Memoria RAM & Engine Sharp</h2>
+                <div className="space-y-1">
+                  <StatusRow label="RAM Processo (RSS)" ok extra={`${cacheStatus.system.memory.rssMb} MB`} />
+                  <StatusRow label="Heap Node.js Utilizzato" ok extra={`${cacheStatus.system.memory.heapUsedMb} / ${cacheStatus.system.memory.heapTotalMb} MB`} />
+                  <StatusRow label="Buffer Cache Sharp / libvips" ok extra={`${(cacheStatus.system.sharp.memory.current / 1024 / 1024).toFixed(1)} MB (max: ${(cacheStatus.system.sharp.memory.max / 1024 / 1024).toFixed(0)} MB)`} />
+                  <StatusRow label="Sharp Concurrency & SIMD" ok extra={`Thread: ${cacheStatus.system.sharp.concurrency} | SIMD: ${cacheStatus.system.sharp.simd ? "Attivo" : "No"}`} />
+                  <StatusRow label="Uptime Server" ok extra={`${Math.floor(cacheStatus.system.uptimeSeconds / 60)} min (${cacheStatus.system.uptimeSeconds}s)`} />
+                </div>
+              </div>
+            )}
 
             <div className="bg-white/[0.03] border border-zinc-800 rounded-xl p-4">
               <h2 className="text-base font-semibold mb-3">{t("ui.statusCache")}</h2>

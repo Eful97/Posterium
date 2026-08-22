@@ -19,6 +19,7 @@ import type { ServerDefaults } from "./server-defaults"
 import type { WikidataResult } from "./awards"
 import type { BadgeT } from "./poster-badge"
 import type { BadgeStyle, RankingBadgeStyle } from "./badge-styles"
+import type { PosterImageFormat } from "@/lib/poster-runtime-cache"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,6 +98,8 @@ export interface GenerationInput {
   imdbTop250?: boolean
   /** Path sorgente del poster (cache image-level). Assente → niente cache. */
   posterSrc?: string | null
+  /** Formato di output negoziazione Accept (jpeg | webp | avif). Default: jpeg. */
+  format?: PosterImageFormat
   /** Path sorgente del logo (cache image-level). Assente → niente cache. */
   logoSrc?: string | null
   /** Path sorgente del backdrop (cache image-level). Assente → niente cache. */
@@ -492,9 +495,15 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     ? [{ input: blurOverlay.overlay, raw: { width: STD_W, height: blurOverlay.height, channels: 4 }, top: blurOverlay.top, left: 0 }, ...safeComposites]
     : safeComposites
 
-  return await sharp(posterBuf)
+  const pipeline = sharp(posterBuf)
     .modulate({ brightness: 1.01, saturation: 1.06 })
     .composite(layers)
-    .jpeg({ quality: 70 })
-    .toBuffer()
+
+  if (input.format === "avif") {
+    return await pipeline.avif({ quality: 75, effort: 2 }).toBuffer()
+  }
+  if (input.format === "webp") {
+    return await pipeline.webp({ quality: 80, effort: 2 }).toBuffer()
+  }
+  return await pipeline.jpeg({ quality: 70 }).toBuffer()
 }

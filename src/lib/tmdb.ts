@@ -32,18 +32,35 @@ export function resolveRequestApiKey(req: { headers: Headers | { get: (name: str
 
 const inflight = new Map<string, Promise<unknown>>()
 
+interface TMDBStats {
+  totalCalls: number
+  cacheHits: number
+  networkCalls: number
+  lastCallTime: string | null
+}
+
+const tmdbStats: TMDBStats = {
+  totalCalls: 0,
+  cacheHits: 0,
+  networkCalls: 0,
+  lastCallTime: null,
+}
+
+export function getTMDBStats() {
+  const cacheHitRate = tmdbStats.totalCalls > 0
+    ? Math.round((tmdbStats.cacheHits / tmdbStats.totalCalls) * 1000) / 10
+    : 0
+  return {
+    totalCalls: tmdbStats.totalCalls,
+    cacheHits: tmdbStats.cacheHits,
+    networkCalls: tmdbStats.networkCalls,
+    cacheHitRate: `${cacheHitRate}%`,
+    lastCallTime: tmdbStats.lastCallTime,
+  }
+}
+
 async function tmdbFetch(path: string, apiKey?: string, signal?: AbortSignal): Promise<unknown> {
-  // In modalità mock (TMDB_BASE_URL impostato) non serve una chiave reale:
-  // il mock server ignora il parametro api_key. In produzione il comportamento
-  // è invariato (chiave obbligatoria).
-  //
-  // S9: la chiave va in query nell'URL outbound perché la v3 di TMDB la
-  // richiede così (api_key è un parametro query, non un header). Non è
-  // spostabile in un header senza rompere l'auth. Mitigazioni già attive:
-  //   - la cacheKey è l'URL SENZA chiave → mai in Map key (memoria sicura);
-  //   - gli errori non includono l'URL → mai in log/app insights;
-  //   - la risoluzione della chiave vive solo qui (e in checkTmdbEndpoint),
-  //     mai interpellata/sparsa nei chiamanti.
+  tmdbStats.totalCalls++
   const key = apiKey || (process.env.TMDB_BASE_URL ? "mock-key" : undefined)
   if (!key) throw new Error("TMDB API key is missing")
 
@@ -56,6 +73,7 @@ async function tmdbFetch(path: string, apiKey?: string, signal?: AbortSignal): P
   // In-memory cache (5 min) — promote on hit for LRU eviction
   const cached = fetchCache.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    tmdbStats.cacheHits++
     // Move to end of Map (= most-recently-used position)
     fetchCache.delete(cacheKey)
     fetchCache.set(cacheKey, cached)
@@ -74,6 +92,8 @@ async function tmdbFetch(path: string, apiKey?: string, signal?: AbortSignal): P
   // stessa URL — il signal vale solo per la PRIMA richiesta (quella che esegue
   // il fetch). È corretto: il deadline del render è il bound, non il signal.
   const promise = (async () => {
+    tmdbStats.networkCalls++
+    tmdbStats.lastCallTime = new Date().toISOString()
     const res = await fetch(fetchUrl.toString(), { signal: signal ?? AbortSignal.timeout(30000) })
     if (!res.ok) throw new Error(`TMDB fetch failed: ${res.status}`)
     const data = await res.json()

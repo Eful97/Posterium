@@ -8,7 +8,7 @@ import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
 import { ToastProvider } from "@/components/Toast"
 import { HomeStatusStrip } from "@/components/HomeStatusStrip"
-import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Download, Check } from "lucide-react"
+import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Check, QrCode, Palette } from "lucide-react"
 
 // Code-splitting: viste/modali pesanti caricate on-demand per ridurre il JS iniziale.
 const SettingsPanel = dynamic(() => import("@/components/SettingsPanel").then((m) => m.SettingsPanel), { ssr: false })
@@ -17,6 +17,7 @@ const MyPostersView = dynamic(() => import("@/components/MyPostersView").then((m
 const CataloghiView = dynamic(() => import("@/components/CataloghiView").then((m) => m.CataloghiView), { ssr: false })
 const EditView = dynamic(() => import("@/components/EditView"), { ssr: false, loading: () => <div className="h-64 flex items-center justify-center text-xs text-zinc-500 animate-pulse">…</div> })
 const ProxyModal = dynamic(() => import("@/components/ProxyModal").then((m) => m.ProxyModal), { ssr: false })
+const InstallModal = dynamic(() => import("@/components/InstallModal").then((m) => m.InstallModal), { ssr: false })
 const OnboardingTour = dynamic(() => import("@/components/OnboardingTour").then((m) => m.OnboardingTour), { ssr: false })
 
 export function AppShell() {
@@ -81,57 +82,50 @@ export function AppShell() {
     return () => { document.body.style.overflow = "" }
   }, [settingsOpen])
 
-  const [manifestCopied, setManifestCopied] = useState(false)
-  const manifestCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [installOpen, setInstallOpen] = useState(false)
 
-  useEffect(() => {
-    return () => {
-      if (manifestCopiedTimerRef.current) clearTimeout(manifestCopiedTimerRef.current)
-    }
-  }, [])
-
-  const handleInstallCatalog = async () => {
-    const url = `${window.location.origin}/manifest.json`
-    await navigator.clipboard.writeText(url)
-    setManifestCopied(true)
-    if (manifestCopiedTimerRef.current) clearTimeout(manifestCopiedTimerRef.current)
-    manifestCopiedTimerRef.current = setTimeout(() => setManifestCopied(false), 2000)
+  const handleInstallCatalog = () => {
+    setInstallOpen(true)
   }
 
   // Toolbar mobile (azioni rapide): riga centrata sotto il logo nella home,
+  // Toolbar mobile (azioni rapide): riga centrata sotto il logo nella home,
   // in testa all'editor — identica in entrambi i casi (invariata alla home)
   const mobileToolbar = (
-    <div className="flex md:hidden items-center gap-2 flex-wrap justify-center">
+    <div className="flex md:hidden items-center gap-1.5 flex-wrap justify-center p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-xl">
+      <button
+        type="button"
+        onClick={handleInstallCatalog}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-accent-orange to-amber-500 text-white font-semibold text-xs shadow-md shadow-accent-orange/20 active:scale-95 transition-all"
+      >
+        <QrCode className="w-3.5 h-3.5" />
+        <span>Installa Hub</span>
+      </button>
+      <button
+        type="button"
+        aria-label={t("ui.myPostersBtn")}
+        onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-200 bg-white/[0.06] border border-white/10 active:scale-95 transition-all"
+      >
+        <Palette className="w-3.5 h-3.5 text-accent-orange" />
+        <span>{mappings.length}</span>
+      </button>
       <button
         type="button"
         suppressHydrationWarning
         aria-label={copied ? t("ui.copied") : t("ui.copyUrl")}
         onClick={() => { copyUrl() }}
         disabled={!urlPattern}
-        className={`top-action-button h-9 w-9 flex items-center justify-center border transition-all duration-150 ${
+        className={`p-2 rounded-xl border transition-all duration-150 active:scale-90 ${
           copied
             ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm"
-            : "top-action-button-primary bg-accent-orange text-white border-accent-orange/50 shadow-lg shadow-accent-orange/25"
+            : "bg-white/[0.06] border-white/10 text-zinc-300 hover:text-white"
         } disabled:opacity-40`}
       >
-        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+        {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
       </button>
-      <button
-        type="button"
-        suppressHydrationWarning
-        aria-label={manifestCopied ? t("ui.copied") : t("ui.installCatalog")}
-        onClick={handleInstallCatalog}
-        className={`top-action-button h-9 w-9 flex items-center justify-center border transition-all duration-150 ${
-          manifestCopied
-            ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm"
-            : "bg-white/[0.06] border-white/10 text-muted hover:text-zinc-200"
-        }`}
-      >
-        {manifestCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Download className="w-4 h-4" />}
-      </button>
-      <button type="button" aria-label={t("ui.addonProxy")} onClick={() => setProxyOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-accent-orange"><Sparkles className="w-4 h-4" /></button>
-      <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="top-action-button h-9 px-2 text-xs font-semibold bg-white/[0.06] border border-white/10 text-zinc-200">{mappings.length}</button>
-      <button type="button" aria-label={t("ui.settings")} onClick={() => setSettingsOpen(true)} className="top-action-button h-9 w-9 flex items-center justify-center bg-white/[0.06] border border-white/10 text-zinc-200 press-scale"><Settings className="w-4 h-4" /></button>
+      <button type="button" aria-label={t("ui.addonProxy")} onClick={() => setProxyOpen(true)} className="p-2 rounded-xl bg-white/[0.06] border border-white/10 text-accent-orange active:scale-90 transition-all"><Sparkles className="w-3.5 h-3.5" /></button>
+      <button type="button" aria-label={t("ui.settings")} onClick={() => setSettingsOpen(true)} className="p-2 rounded-xl bg-white/[0.06] border border-white/10 text-zinc-200 active:scale-90 transition-all"><Settings className="w-3.5 h-3.5" /></button>
     </div>
   )
 
@@ -149,40 +143,79 @@ export function AppShell() {
       {/* desktop toolbar — floating island (sempre visibile, anche nell'editor: come la home) */}
       <div className="hidden md:flex absolute top-4 right-4 z-20">
         {settingsOpen && <div className="hidden md:block fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />}
-        <div className="floating-group relative z-50">
+        <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 relative z-50">
+          {/* Installa Posterium Hub Pill Button */}
+          <button
+            type="button"
+            onClick={handleInstallCatalog}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-accent-orange to-amber-500 hover:from-accent-orange/90 hover:to-amber-500/90 text-white font-semibold text-xs shadow-md shadow-accent-orange/20 hover:shadow-accent-orange/35 hover:scale-[1.02] active:scale-[0.97] transition-all duration-150 border border-white/20 cursor-pointer"
+          >
+            <QrCode className="w-3.5 h-3.5 text-white" />
+            <span>Installa Hub</span>
+          </button>
+
+          <div className="h-4 w-px bg-white/10 mx-0.5" />
+
+          {/* I Miei Poster Badge */}
+          <button
+            type="button"
+            aria-label={t("ui.myPostersBtn")}
+            title={t("ui.myPostersBtn")}
+            onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 active:scale-[0.95] cursor-pointer ${
+              view === "myposters"
+                ? "bg-white/15 text-white font-semibold border border-white/20"
+                : "text-zinc-300 hover:text-white hover:bg-white/[0.08]"
+            }`}
+          >
+            <Palette className="w-3.5 h-3.5 text-accent-orange" />
+            <span>{mappings.length}</span>
+          </button>
+
+          <div className="h-4 w-px bg-white/10 mx-0.5" />
+
+          {/* Copy URL */}
           <button
             type="button"
             suppressHydrationWarning
             aria-label={copied ? t("ui.copied") : t("ui.copyUrl")}
+            title={t("ui.copyUrl")}
             onClick={() => { copyUrl() }}
             disabled={!urlPattern}
-            className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 disabled:opacity-30 press-scale ${
-              copied
-                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
-                : "text-accent-orange hover:bg-white/[0.08]"
+            className={`p-2 rounded-xl text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] active:scale-90 transition-all duration-150 disabled:opacity-30 cursor-pointer ${
+              copied ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40" : ""
             }`}
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
           </button>
+
+          {/* Proxy Modal */}
           <button
             type="button"
-            suppressHydrationWarning
-            aria-label={manifestCopied ? t("ui.copied") : t("ui.installCatalog")}
-            onClick={handleInstallCatalog}
-            className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 press-scale ${
-              manifestCopied
-                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
-                : "text-zinc-300 hover:bg-white/[0.08]"
-            }`}
+            aria-label={t("ui.addonProxy")}
+            title={t("ui.addonProxy")}
+            onClick={() => setProxyOpen(true)}
+            className="p-2 rounded-xl text-zinc-400 hover:text-accent-orange hover:bg-white/[0.08] active:scale-90 transition-all duration-150 cursor-pointer"
           >
-            {manifestCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Download className="w-4 h-4" />}
+            <Sparkles className="w-4 h-4" />
           </button>
-          <button type="button" aria-label={t("ui.addonProxy")} onClick={() => setProxyOpen(true)} className="h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-accent-orange hover:bg-white/[0.08] press-scale"><Sparkles className="w-4 h-4" /></button>
-          <div className="h-5 w-px bg-white/10 self-center" />
-          <button type="button" aria-label={t("ui.myPostersBtn")} onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }} className="h-9 w-9 flex items-center justify-center rounded-lg text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] active:scale-[0.93] transition-all duration-150 press-scale">{mappings.length}</button>
+
+          {/* Settings Button & Dropdown */}
           <div className="relative">
-            <button type="button" aria-label={t("ui.settings")} onClick={(e) => { e.stopPropagation(); setSettingsOpen((o) => !o) }} className={`h-9 w-9 flex items-center justify-center rounded-lg active:scale-90 transition-all duration-150 text-zinc-300 hover:bg-white/[0.08] press-scale ${settingsOpen ? "dropdown-open" : ""}`}><Settings className="w-4 h-4" /></button>
-            <div className="hidden md:block">{settingsOpen && <SettingsPanel setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} />}</div>
+            <button
+              type="button"
+              aria-label={t("ui.settings")}
+              title={t("ui.settings")}
+              onClick={(e) => { e.stopPropagation(); setSettingsOpen((o) => !o) }}
+              className={`p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.08] active:scale-90 transition-all duration-150 cursor-pointer ${
+                settingsOpen ? "bg-white/10 text-white" : ""
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <div className="hidden md:block">
+              {settingsOpen && <SettingsPanel setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} />}
+            </div>
           </div>
         </div>
       </div>
@@ -205,6 +238,7 @@ export function AppShell() {
         )}
 
         <ProxyModal isOpen={proxyOpen} onClose={() => setProxyOpen(false)} />
+        <InstallModal isOpen={installOpen} onClose={() => setInstallOpen(false)} />
         <div key={view} className="animate-view-enter">
           {view === "search" ? <SearchView /> : view === "myposters" ? <MyPostersView /> : view === "cataloghi" ? <CataloghiView /> : <EditView />}
         </div>
