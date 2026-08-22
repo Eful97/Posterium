@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react"
 import { X, Plus, ListPlus, Film, Tv, Shuffle, Check, AlertCircle } from "lucide-react"
 import { usePosterium } from "@/lib/context"
 import { parseMDBListTarget } from "@/lib/mdblist"
+import { EmojiPicker } from "@/components/ui"
 import type { CustomCatalogType } from "@/lib/types"
 
 interface CustomCatalogModalProps {
@@ -150,27 +151,16 @@ export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps)
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-[11px] font-semibold text-zinc-300">
-              Nome Catalogo
-            </label>
-            <span className="text-[10px] text-muted">Scegli un&apos;emoji:</span>
-          </div>
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-1 mb-1.5">
-            {["🍿", "🎬", "📺", "⛩️", "☁️", "🍎", "🏔️", "🏰", "🔴", "📦", "🟣", "🌶️", "🏆", "🔥", "⭐", "🎭"].map((em) => (
-              <button
-                key={em}
-                type="button"
-                onClick={() => {
-                  const cleaned = name.replace(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic}|\p{Emoji})\s*/u, "")
-                  setName(`${em} ${cleaned}`)
-                }}
-                className="shrink-0 p-1 text-xs hover:scale-125 transition-transform rounded-lg hover:bg-white/10"
-              >
-                {em}
-              </button>
-            ))}
-          </div>
+          <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+            Nome Catalogo
+          </label>
+          <EmojiPicker
+            currentName={name}
+            onSelectEmoji={(em) => {
+              const cleaned = name.replace(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic}|\p{Emoji})\s*/u, "")
+              setName(`${em} ${cleaned}`)
+            }}
+          />
           <input
             type="text"
             placeholder="es. ☁️ Sky & NOW — Top 10"

@@ -18,7 +18,7 @@ const itDict: Record<string, string> = {
   "badge.anime": "Anime",
   "badge.today": "Oggi",
   "badge.movie": "Film",
-  "badge.series": "Serie tv",
+  "badge.series": "Serie",
   "badge.week": "Settimana",
   "badge.topRated": "Absolute Cinema",
   "badge.miniseries": "Miniserie",

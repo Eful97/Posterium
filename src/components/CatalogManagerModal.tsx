@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { usePosterium } from "@/lib/context"
 import { POSTERIUM_CATALOGS } from "@/lib/catalog-definitions"
+import { EmojiPicker } from "@/components/ui"
 
 interface CatalogManagerModalProps {
   isOpen: boolean
@@ -497,22 +498,14 @@ export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProp
               {/* Center: Title & inline edit */}
               <div className="flex-1 min-w-0">
                 {isEditing ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-1">
-                      {["🍿", "🎬", "📺", "⛩️", "☁️", "🍎", "🏔️", "🏰", "🔴", "📦", "🟣", "🌶️", "🏆", "🔥", "⭐", "🎭"].map((em) => (
-                        <button
-                          key={em}
-                          type="button"
-                          onClick={() => {
-                            const cleaned = editName.replace(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic}|\p{Emoji})\s*/u, "")
-                            setEditName(`${em} ${cleaned}`)
-                          }}
-                          className="shrink-0 p-1 text-xs hover:scale-125 transition-transform rounded hover:bg-white/10"
-                        >
-                          {em}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="space-y-1.5">
+                    <EmojiPicker
+                      currentName={editName}
+                      onSelectEmoji={(em) => {
+                        const cleaned = editName.replace(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic}|\p{Emoji})\s*/u, "")
+                        setEditName(`${em} ${cleaned}`)
+                      }}
+                    />
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
