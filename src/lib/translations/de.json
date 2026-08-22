@@ -239,7 +239,7 @@
     "ui.mappingRemoved":  "Entfernt",
     "ui.importSuccess":  "{count} Poster importiert",
     "ui.importError":  "Ungültige JSON-Datei",
-    "ui.refreshRateLimit":  "Aktualisierung alle 10 Minuten möglich",
+    "ui.refreshRateLimit":  "Listen gerade aktualisiert — in wenigen Sekunden erneut versuchen",
     "ui.listsRefreshed":  "Listen aktualisiert",
     "ui.mediaTv":  "TV",
     "ui.group":  "Gruppe",

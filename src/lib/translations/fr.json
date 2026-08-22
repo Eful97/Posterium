@@ -235,7 +235,7 @@
     "ui.mappingRemoved":  "Supprimé",
     "ui.importSuccess":  "{count} posters importés",
     "ui.importError":  "Fichier JSON invalide",
-    "ui.refreshRateLimit":  "Mise à jour disponible toutes les 10 minutes",
+    "ui.refreshRateLimit":  "Listes mises à jour à l'instant — réessayez dans quelques secondes",
     "ui.listsRefreshed":  "Listes mises à jour",
     "ui.mediaTv":  "TV",
     "ui.group":  "Groupe",
