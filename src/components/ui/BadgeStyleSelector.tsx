@@ -16,6 +16,8 @@ function BadgePreview({ style, accentColor }: { style: string; accentColor?: str
       return <span className={`${base} text-white`} style={{ border: "1px solid rgba(255,255,255,0.5)", borderRadius: 3, background: "transparent" }}>Aa</span>
     case "vetro":
       return <span className={`${base} text-white`} style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.15)" }}>Aa</span>
+    case "netflix":
+      return <span className={`${base} text-white font-black`} style={{ background: "rgba(255,255,255,0.25)", borderRadius: "2px 2px 0 0" }}>TOP</span>
     case "default":
       return <span className={`${base} text-white/70`}>Aa</span>
     default:

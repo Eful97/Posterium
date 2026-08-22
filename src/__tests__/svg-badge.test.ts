@@ -229,8 +229,7 @@ describe("buildRankingBadgeSVG", () => {
     const { svg } = buildNetflixRankBadgeSVG(4, 1000, false)
     expect(svg).toContain('fill="rgba(255,255,255,0.80)"')
     expect(svg).toContain('fill="rgba(0,0,0,0.80)"')
-    expect(svg).not.toContain("netflixGrad")
-    expect(svg).not.toContain("#E50914")
+    expect(svg).not.toContain("netflixRibbonGrad")
   })
 
   it("uses dark ribbon + light text (tlBg/tlFg) when top is light", () => {

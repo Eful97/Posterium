@@ -252,28 +252,28 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
   const hasSub = subLabel.length > 0
   const h = Math.round(w * (hasSub ? 1.55 : 1.35))
   const slant = Math.round(w * 0.12)
-  const topFs = Math.round(w * 0.28)
-  const rankFs = Math.round(w * 0.54)
+  const topFs = Math.round(w * 0.26)
+  const isDoubleDigit = rank >= 10
+  const rankFs = Math.round(w * (isDoubleDigit ? 0.48 : 0.54))
+  const rankLetterSpacing = isDoubleDigit ? "-1" : "0"
   const padRight = Math.round(fs * 0.4)
   const padBottom = Math.round(fs * 0.4)
   const totalW = w + padRight
   const totalH = h + padBottom
+
   // Sottotitolo sotto il numero: font proporzionale al nastro, auto-fit se
-  // l'etichetta è più larga del nastro (es. traduzioni lunghe). "anime" a
-  // w*0.20 rientra sempre → output anime byte-identico al passato.
+  // l'etichetta è più larga del nastro (es. traduzioni lunghe).
   let subFs = Math.round(w * 0.20)
   if (hasSub) {
-    const maxSubW = Math.round(w * 0.92)
+    const maxSubW = Math.round(w * 0.90)
     const subW = estimateTextWidth(subLabel, subFs)
     if (subW > maxSubW) subFs = Math.max(Math.round(subFs * maxSubW / subW), 8)
   }
   const subPadBottom = hasSub ? Math.round(subFs * 0.6) : 0
   const totalHSub = totalH + subPadBottom
+
   // TOP, numero e sottotitolo impilati con la stessa distanza visiva.
-  // Il gap è proporzionale al font più piccolo (topFs/subFs), così la
-  // spaziatura resta uniforme a ogni scala. Senza sottotitolo: posizioni
-  // invariate (compatto).
-  const topY = hasSub ? Math.round(h * 0.22) : Math.round(h * 0.28)
+  const topY = hasSub ? Math.round(h * 0.22) : Math.round(h * 0.26)
   const textGap = hasSub ? Math.round(Math.min(topFs, subFs) * 0.2) : 0
   const rankY = hasSub
     ? topY + Math.round(topFs / 2) + textGap + Math.round(rankFs / 2)
@@ -303,12 +303,10 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
   const textX = isRight ? totalW - ribbonMidX : ribbonMidX
   const shadowDx = isRight ? -3 : 3
 
-  // Fix M4: la label va escapata (come negli altri stili via escSvg): una
-  // subLabel con "&" o "<" produceva XML malformato → resvg falliva → il
-  // badge spariva silenziosamente (.catch(() => null)).
   const subEl = hasSub
-    ? `<text x="${textX}" y="${subY}" fill="${textColor}" font-family="Inter" font-weight="600" font-size="${subFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">${escSvg(subLabel)}</text>`
+    ? `<text x="${textX}" y="${subY}" fill="${textColor}" font-family="Inter" font-weight="700" font-size="${subFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.6" filter="url(#textShadow)">${escSvg(subLabel)}</text>`
     : ""
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalHSub}" viewBox="0 0 ${totalW} ${totalHSub}">
     <defs>
       <filter id="shadow3D" x="-20%" y="-20%" width="180%" height="180%">
@@ -320,8 +318,8 @@ export function buildNetflixRankBadgeSVG(rank: number, pw: number, topLight: boo
     </defs>
     <path d="${pathD}" fill="${fill}" filter="url(#shadow3D)"/>
     <line x1="${highlightX1}" y1="1" x2="${highlightX2}" y2="1" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
-    <text x="${textX}" y="${topY}" fill="${textColor}" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5" filter="url(#textShadow)">TOP</text>
-    <text x="${textX}" y="${rankY}" fill="${textColor}" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" filter="url(#textShadow)">${rank}</text>
+    <text x="${textX}" y="${topY}" fill="${textColor}" font-family="Inter" font-weight="800" font-size="${topFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="1" filter="url(#textShadow)">TOP</text>
+    <text x="${textX}" y="${rankY}" fill="${textColor}" font-family="Inter" font-weight="900" font-size="${rankFs}" text-anchor="middle" dominant-baseline="central" letter-spacing="${rankLetterSpacing}" filter="url(#textShadow)">${rank}</text>
     ${subEl}
   </svg>`
   return { svg, w: totalW, h: totalHSub }
