@@ -52,6 +52,16 @@ export default defineConfig({
         TMDB_BASE_URL: `${mockUrl}/3`,
         TMDB_IMG_URL: `${mockUrl}/t/p`,
         NEXT_PUBLIC_TMDB_IMG_URL: `${mockUrl}/t/p`,
+        // Chiavi server VUOTE: un .env.local locale (TMDB_API_KEY ecc.) farebbe
+        // restituire serverKeys da /api/defaults e il client adotterebbe la
+        // chiave (context.tsx), cambiando il layout home (welcome panel vs
+        // hero+podio). Gli snapshot "no key" devono valere ovunque, CI inclusa.
+        TMDB_API_KEY: "",
+        POSTERIUM_TMDB_KEY: "",
+        MDBLIST_API_KEY: "",
+        POSTERIUM_MDBLIST_KEY: "",
+        TVDB_API_KEY: "",
+        POSTERIUM_TVDB_API_KEY: "",
         JUSTWATCH_API_URL: `${mockUrl}/graphql`,
         WIKIDATA_SPARQL_URL: `${mockUrl}/sparql`,
         IMDB_CHART_URL: `${mockUrl}/chart/top`,
