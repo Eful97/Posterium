@@ -81,7 +81,8 @@ function hashFragment(value: string): string {
 }
 
 function normalizeMediaType(type: string): "movie" | "series" {
-  return type === "movie" ? "movie" : "series"
+  const t = type.toLowerCase()
+  return (t === "movie" || t === "anime.movie") ? "movie" : "series"
 }
 
 async function posteriumPosterUrl(
@@ -177,6 +178,9 @@ export async function posteriumMeta(
     tmdbId = await tmdbFindByImdb(cleanId, tmdbMediaType, apiKey)
   } else if (cleanId.startsWith("tmdb:")) {
     const parsed = parseInt(cleanId.slice(5), 10)
+    if (!Number.isNaN(parsed) && parsed > 0) tmdbId = parsed
+  } else if (cleanId.startsWith("kitsu:")) {
+    const parsed = parseInt(cleanId.slice(6), 10)
     if (!Number.isNaN(parsed) && parsed > 0) tmdbId = parsed
   } else {
     const parsed = parseInt(cleanId, 10)

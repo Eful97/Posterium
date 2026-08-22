@@ -117,6 +117,25 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     },
   ]
 
+  const ID_PREFIXES = [
+    "tmdb:",
+    "tt",
+    "tvdb:",
+    "mal:",
+    "tvmaze:",
+    "kitsu:",
+    "anidb:",
+    "anilist:",
+    "tvdbc:",
+    "upnext_",
+    "unwatched_",
+    "mdblist_upnext_",
+    "pmdb_resume_",
+    "simkl_upnext_",
+  ]
+
+  const TYPES = ["movie", "series", "anime.movie", "anime.series", "anime", "Trakt", "collection"]
+
   return Response.json({
     id: addonId,
     version: APP_VERSION,
@@ -127,15 +146,20 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
       "poster",
       {
         name: "meta",
-        types: ["movie", "series"],
-        idPrefixes: ["tt", "tmdb:"],
+        types: TYPES,
+        idPrefixes: ID_PREFIXES,
       },
     ],
-    types: ["movie", "series"],
+    types: TYPES,
+    idPrefixes: ID_PREFIXES,
     logo: `${domain}/App.png`,
     addonCatalogs: [],
     manifestVersion: 1,
-    behaviorHints: { adult: false },
+    behaviorHints: {
+      adult: false,
+      configurable: true,
+      configurationRequired: false,
+    },
     catalogs: manifestCatalogs,
   }, {
     headers: {

@@ -87,9 +87,14 @@ export function parseCatalogExtra(
 /** Riutilizza getJWRankings (cache condivisa 30 min + mock server nei test).
  *  Ritorna le righe complete: JustWatch fornisce già l'imdbId, così il
  *  catalogo non deve rifare una chiamata extra a TMDB per ogni titolo. */
-async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<JWRankEntry[]> {
+async function getJustWatchRankings(
+  type: "MOVIE" | "SHOW",
+  country = "IT",
+  first = 20,
+  packages?: readonly string[] | string[],
+): Promise<JWRankEntry[]> {
   try {
-    return await getJWRankings(type, "IT", 20)
+    return await getJWRankings(type, country, first, packages)
   } catch {
     return []
   }
@@ -98,6 +103,16 @@ async function getJustWatchRankings(type: "MOVIE" | "SHOW"): Promise<JWRankEntry
 /** Hash breve e stabile di una chiave per i cache key — mai il frammento grezzo. */
 function hashFragment(value: string): string {
   return crypto.createHash("sha1").update(value).digest("hex").slice(0, 8)
+}
+
+const PLATFORM_JW_PACKAGES: Record<string, string[]> = {
+  netflix: ["nfx"],
+  prime: ["prv"],
+  disney: ["dnp"],
+  now: ["ntv", "skg"],
+  apple: ["atp"],
+  hbo: ["mxx"],
+  paramount: ["pmp"],
 }
 
 const PLATFORM_SLUGS: Record<string, string> = {
@@ -118,7 +133,8 @@ function catalogResponse(body: { metas: StremioMeta[] }): Response {
 }
 
 function normalizeCatalogType(type: string): StremioCatalogType {
-  return type === "movie" ? "movie" : "series"
+  const t = type.toLowerCase()
+  return (t === "movie" || t === "anime.movie") ? "movie" : "series"
 }
 
 async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id: number, configParam?: string | null, userParam?: string | null, mdblistKeyParam?: string | null, animeRankParam?: number | null): Promise<string> {
@@ -318,7 +334,7 @@ export async function posteriumCatalog(
     return catalogResponse({ metas: [] })
   }
 
-  const cacheKey = `stremio:catalog:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+  const cacheKey = `stremio:catalog:v2:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
 
@@ -341,13 +357,24 @@ export async function posteriumCatalog(
             items = items.filter((it) => it.mediatype !== "movie")
           }
         }
-        items = items.slice(0, 20)
 
-        const results = await Promise.all(items.map(async (item, idx) => {
+        const seenTmdb = new Set<number>()
+        const validItems: typeof items = []
+        for (const item of items) {
           let tmdbId = Number(item.tmdb)
-          if (!tmdbId && item.imdb) {
+          if (!tmdbId && item.imdb && apiKey) {
             tmdbId = await tmdbFindByImdb(item.imdb, stType === "movie" ? "movie" : "tv", apiKey) || 0
+            item.tmdb = tmdbId
           }
+          if (tmdbId && !seenTmdb.has(tmdbId)) {
+            seenTmdb.add(tmdbId)
+            validItems.push(item)
+          }
+          if (validItems.length >= 20) break
+        }
+
+        const results = await Promise.all(validItems.map(async (item, idx) => {
+          const tmdbId = Number(item.tmdb)
           if (!tmdbId) return null
           let details: TMDBDetails | null = null
           if (apiKey) {
@@ -380,12 +407,17 @@ export async function posteriumCatalog(
         }))
       }
     } else if (catalogId.startsWith("posterium-jw")) {
-      // Fix L12: la chiave si controlla PRIMA del fetch JustWatch — prima i
-      // 15s del fetch JW venivano sprecati su ogni cache-miss senza chiave
-      // (risultato comunque vuoto).
+      // Fix L12: la chiave si controlla PRIMA del fetch JustWatch
       if (!apiKey) return catalogResponse({ metas: [] })
-      const rows = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW")
-      const results = await Promise.all(rows.slice(0, 20).map(async (row) => {
+      const rows = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW", "IT", 20)
+      const seenTmdb = new Set<number>()
+      const uniqueRows = rows.filter((r) => {
+        if (!r.tmdbId || seenTmdb.has(r.tmdbId)) return false
+        seenTmdb.add(r.tmdbId)
+        return true
+      }).slice(0, 20)
+
+      const results = await Promise.all(uniqueRows.map(async (row) => {
         try {
           const d = await getDetails(stType === "movie" ? "movie" : "tv", row.tmdbId, "it-IT", apiKey)
           if (!d?.id) return null
@@ -401,73 +433,135 @@ export async function posteriumCatalog(
           id: catalogMetaId(imdbId, r.tmdbId),
           type: stType,
           name: r.d.title || r.d.name || "",
-          // La chiave MDBList esplicita (query) va nell'URL poster: un titolo
-          // anime dentro un catalogo non-anime deve poter risolvere il proprio
-          // rank su Stremio (precedenza animerank > fetch live > mapping).
           poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam),
           releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
         }
       }))
     } else if (catalogId.startsWith("posterium-anime")) {
-      const key = mdblistKey
-      if (key) {
-        const isMovie = catalogId === "posterium-anime-movies" || stType === "movie"
-        const listKey = isMovie ? "mdblistAnimeMovie" : "mdblistAnime"
-        const mediaType = isMovie ? "movie" : "tv"
-        const items = await fetchMDBList(listKey, key)
-        const results = await Promise.all(items.map(async (item, idx) => {
-          const tmdbId = Number(item.tmdb)
-          if (!tmdbId) return null
+      const isMovie = catalogId === "posterium-anime-movies" || stType === "movie"
+      const listKey = isMovie ? "mdblistAnimeMovie" : "mdblistAnime"
+      const mediaType = isMovie ? "movie" : "tv"
+      const items = await fetchMDBList(listKey, mdblistKey)
+
+      const seenTmdb = new Set<number>()
+      const results = await Promise.all(items.map(async (item, idx) => {
+        let tmdbId = Number(item.tmdb)
+        if (!tmdbId && item.imdb && apiKey) {
+          tmdbId = await tmdbFindByImdb(item.imdb, mediaType, apiKey) || 0
+        }
+        if (!tmdbId || seenTmdb.has(tmdbId)) return null
+        seenTmdb.add(tmdbId)
+
+        let d: TMDBDetails | null = null
+        if (apiKey) {
           try {
-            const d = await getDetails(mediaType, tmdbId, "it-IT", apiKey)
-            if (!d?.id) return null
-            return { d, tmdbId, imdb: item.imdb, rank: idx + 1 }
+            d = await getDetails(mediaType, tmdbId, "it-IT", apiKey)
           } catch {
-            return null
+            d = null
           }
-        }))
-        const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdb: string; rank: number } => r !== null)
-        metas = await Promise.all(validResults.map(async (r) => {
-          const imdbId = r.imdb || await resolveImdbId(mediaType, r.tmdbId, apiKey)
-          return {
-            id: catalogMetaId(imdbId, r.tmdbId),
-            type: stType,
-            name: r.d.title || r.d.name || "",
-            poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
-            releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
-          }
-        }))
-      }
+        }
+        const name = d?.title || d?.name || item.title || "Anime"
+        const releaseInfo = (d?.release_date || d?.first_air_date || (item.year ? String(item.year) : "")).slice(0, 4) || undefined
+        return {
+          tmdbId,
+          imdb: item.imdb,
+          name,
+          releaseInfo,
+          rank: idx + 1,
+        }
+      }))
+      const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null).slice(0, 20)
+      metas = await Promise.all(validResults.map(async (r) => {
+        const imdbId = r.imdb || await resolveImdbId(mediaType, r.tmdbId, apiKey)
+        return {
+          id: catalogMetaId(imdbId, r.tmdbId),
+          type: stType,
+          name: r.name,
+          poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
+          releaseInfo: r.releaseInfo,
+        }
+      }))
     } else {
+      let platformKey = ""
       let slug = ""
       for (const [k, v] of Object.entries(PLATFORM_SLUGS)) {
-        if (catalogId.includes(k)) { slug = v; break }
+        if (catalogId.includes(k)) {
+          platformKey = k
+          slug = v
+          break
+        }
       }
-      if (slug) {
-        // C6: enrich:false — il catalogo non usa né posterPath né il titolo
-        // TMDB it-IT (il poster lo costruisce posteriumPosterUrl): evitiamo i
-        // ~2 fetch TMDB per titolo dell'enrichment, tenendo solo external_ids
-        // per l'imdbId. Il nome resta quello del catalogo flixpatrol.
-        const data = apiKey ? await getTop10(slug, "italy", apiKey, { enrich: false }).catch(() => null) : null
-        if (data) {
-          const items = stType === "movie" ? data.movies : data.tv
-          const itemsWithTmdb = items.slice(0, 10).flatMap((item) => (
-            item.tmdbId ? [{ ...item, tmdbId: item.tmdbId }] : []
-          ))
-          metas = await Promise.all(itemsWithTmdb.map(async (item) => {
-            const [imdbId, details] = await Promise.all([
-              resolveImdbId(stType === "movie" ? "movie" : "tv", item.tmdbId, apiKey),
-              getDetails(stType === "movie" ? "movie" : "tv", item.tmdbId, "it-IT", apiKey).catch(() => null),
-            ])
-            const italianTitle = details?.title || details?.name || item.title
+      if (platformKey) {
+        // Fonte primaria: JustWatch streaming charts con filtro package (es. Netflix nfx, Prime prv, ecc.)
+        const pkgs = PLATFORM_JW_PACKAGES[platformKey]
+        const jwRows = pkgs ? await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW", "IT", 10, pkgs) : []
+
+        if (jwRows.length > 0) {
+          const seenTmdb = new Set<number>()
+          const uniqueJwRows = jwRows.filter((r) => {
+            if (!r.tmdbId || seenTmdb.has(r.tmdbId)) return false
+            seenTmdb.add(r.tmdbId)
+            return true
+          }).slice(0, 10)
+
+          const results = await Promise.all(uniqueJwRows.map(async (row) => {
+            let details: TMDBDetails | null = null
+            if (apiKey) {
+              try {
+                details = await getDetails(stType === "movie" ? "movie" : "tv", row.tmdbId, "it-IT", apiKey)
+              } catch {
+                details = null
+              }
+            }
+            const title = details?.title || details?.name || row.title || ""
             return {
-              id: catalogMetaId(imdbId, item.tmdbId),
-              type: stType,
-              name: italianTitle,
-              poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam, mdblistKeyParam),
-              releaseInfo: (details?.release_date || details?.first_air_date || item.releaseDate)?.slice(0, 4) || undefined,
+              tmdbId: row.tmdbId,
+              imdbId: row.imdbId,
+              title,
+              releaseInfo: (details?.release_date || details?.first_air_date || "").slice(0, 4) || undefined,
             }
           }))
+          const validResults = results.filter((r) => r.title.length > 0)
+          metas = await Promise.all(validResults.map(async (r) => {
+            const imdbId = r.imdbId || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
+            return {
+              id: catalogMetaId(imdbId, r.tmdbId),
+              type: stType,
+              name: r.title,
+              poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam),
+              releaseInfo: r.releaseInfo,
+            }
+          }))
+        } else if (slug && apiKey) {
+          // Fallback secondario: FlixPatrol Top 10
+          const data = await getTop10(slug, "italy", apiKey, { enrich: false }).catch(() => null)
+          if (data) {
+            const items = stType === "movie" ? data.movies : data.tv
+            const seenTmdb = new Set<number>()
+            const itemsWithTmdb: Array<(typeof items)[number] & { tmdbId: number }> = []
+            for (const item of items) {
+              if (item.tmdbId && !seenTmdb.has(item.tmdbId)) {
+                seenTmdb.add(item.tmdbId)
+                itemsWithTmdb.push({ ...item, tmdbId: item.tmdbId })
+              }
+              if (itemsWithTmdb.length >= 10) break
+            }
+
+            metas = await Promise.all(itemsWithTmdb.map(async (item) => {
+              const [imdbId, details] = await Promise.all([
+                resolveImdbId(stType === "movie" ? "movie" : "tv", item.tmdbId, apiKey),
+                getDetails(stType === "movie" ? "movie" : "tv", item.tmdbId, "it-IT", apiKey).catch(() => null),
+              ])
+              const italianTitle = details?.title || details?.name || item.title
+              return {
+                id: catalogMetaId(imdbId, item.tmdbId),
+                type: stType,
+                name: italianTitle,
+                poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam, mdblistKeyParam),
+                releaseInfo: (details?.release_date || details?.first_air_date || item.releaseDate)?.slice(0, 4) || undefined,
+              }
+            }))
+          }
         }
       }
     }

@@ -30,10 +30,10 @@ Mai emettere un id numerico nudo come `id` del meta.
 | Prefix catalogo | Fonte | Tipo | Richiede |
 |---|---|---|---|
 | `posterium-jw-movies` / `posterium-jw-series` | JustWatch StreamingCharts (GraphQL) | movie/series | Chiave TMDB |
-| `posterium-netflix/prime/disney/apple/hbo/paramount-*` | FlixPatrol Top 10 | movie/series | Chiave TMDB |
-| `posterium-anime` | MDBList `mdblistAnime` | series | Chiave MDBList |
+| `posterium-netflix/prime/disney/now/apple/hbo/paramount-*` | JustWatch StreamingCharts (pacchetti) + fallback FlixPatrol | movie/series | Chiave TMDB |
+| `posterium-anime-movies` / `posterium-anime` | MDBList `mdblistAnimeMovie` / `mdblistAnime` | movie/series | Opzionale (fallback pubblico) |
 
-Warmup automatico: `posterium-jw-movies`, `posterium-jw-series`, `posterium-anime`
+Warmup automatico: `posterium-jw-movies`, `posterium-jw-series`, `posterium-anime-movies`, `posterium-anime`
 (`WARMUP_CATALOG_IDS`).
 
 ## Flusso per catalogo
@@ -48,14 +48,16 @@ Warmup automatico: `posterium-jw-movies`, `posterium-jw-series`, `posterium-anim
 3. Id del meta: `row.imdbId` → fallback `resolveImdbId(...)` → fallback `tmdb:<id>`.
 4. Poster: `/api/poster/{type}/{tmdbId}?rv=...` (+ `mv` se esiste un mapping salvato).
 
-### Piattaforme FlixPatrol
-`getTop10(slug, "italy", apiKey)` → top 10 film/serie → stessa risoluzione id via
-TMDB `external_ids` → `tmdb:<id>` se manca. La fonte non fornisce `imdbId`: qui il
-catalogo dipende interamente da `resolveImdbId`.
+### Piattaforme Streaming (`posterium-netflix-*`, `posterium-prime-*`, ecc.)
+1. `getJustWatchRankings(type, "IT", 10, packages)` con i pacchetti della piattaforma
+   (`nfx`, `prv`, `dnp`, `ntv`/`skg`, `atp`, `mxx`, `pmp`).
+2. Se JustWatch non restituisce righe, fallback trasparente su FlixPatrol `getTop10(slug, "italy", apiKey)`.
+3. Deduplicazione rigorosa per `tmdbId` (nessun doppione nei primi 10).
 
-### Anime (MDBList)
-`fetchMDBList("mdblistAnime", key)` — la riga MDBList può già contenere `imdb`; se
-manca, `resolveImdbId("tv", tmdbId)` → fallback `tmdb:<id>`.
+### Anime (`posterium-anime-movies`, `posterium-anime`)
+`fetchMDBList(listKey, key)` — usa `mdblistAnimeMovie` per i film anime e `mdblistAnime`
+per le serie. Funziona sia con chiave MDBList sia con endpoint pubblico JSON di fallback.
+Risolve i dettagli TMDB e deduplica per `tmdbId`.
 
 ## Chiavi API
 

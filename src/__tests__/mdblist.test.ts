@@ -46,12 +46,40 @@ describe("fetchMDBList", () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(items).toEqual([
-      { imdb: "tt20782190", title: "English Teacher", year: 0, tmdb: 258902 },
-      { imdb: "tt13649112", title: "Baby Reindeer", year: 0, tmdb: 241259 },
+      { imdb: "tt20782190", title: "English Teacher", year: 2024, tmdb: 258902 },
+      { imdb: "tt13649112", title: "Baby Reindeer", year: 2024, tmdb: 241259 },
     ])
     // Il matching della poster route: Number(entry.tmdb) === tmdbId
     const idx = items.findIndex((e) => Number(e.tmdb) === 241259)
     expect(idx).toBe(1)
+  })
+
+  it("parses mdblistAnimeMovie correctly when API returns movies with empty shows array", async () => {
+    fetchSpy.mockResolvedValueOnce(Response.json({
+      movies: [
+        {
+          id: 1311031,
+          rank: 1,
+          title: "Demon Slayer: Kimetsu no Yaiba Infinity Castle",
+          imdb_id: "tt32820897",
+          ids: { tmdb: 1311031, imdb: "tt32820897" },
+          release_year: 2025,
+        },
+      ],
+      shows: [],
+    }))
+
+    const items = await fetchMDBList("mdblistAnimeMovie", "test-key")
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(items).toEqual([
+      {
+        imdb: "tt32820897",
+        title: "Demon Slayer: Kimetsu no Yaiba Infinity Castle",
+        year: 2025,
+        tmdb: 1311031,
+      },
+    ])
   })
 
   it("parses the normalized { items } shape used by the e2e mock server", async () => {

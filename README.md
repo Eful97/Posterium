@@ -73,7 +73,9 @@ pinned: false
 * **Cronologia Ricerche & Suggerimenti Rapidi**: Salvataggio automatico delle ricerche recenti e pill di suggerimento per ispirare nuove scoperte cinematografiche.
 
 ### 📺 Cataloghi Stremio & Gestione Avanzata
-* **Cataloghi Piattaforme & Trend**: Top 20 Italia (JustWatch GraphQL), Netflix, Prime Video, Disney+, Sky/NOW, Apple TV+, HBO Max, Paramount+, Top 20 Film & Serie Anime (MDBList) e liste personalizzate MDBList.
+* **Cataloghi Piattaforme & Trend in Tempo Reale (JustWatch GraphQL)**: Classifiche ufficiali e sempre aggiornate per Top 20 Italia, Netflix, Prime Video, Disney+, Sky/NOW, Apple TV+, HBO Max, Paramount+, con deduplicazione automatica e zero doppioni.
+* **Top 20 Film & Serie Anime (MDBList)**: Classifiche dedicate all'animazione giapponese (`posterium-anime-movies` e `posterium-anime`) disponibili nativamente sia con chiave personale MDBList che senza chiave (fallback JSON pubblico).
+* **Compatibilità Totale Manifest & AIOMetadata**: Supporto speculare ad AIOMetadata con tutti i prefissi ID (`tmdb:`, `tt`, `kitsu:`, `tvdb:`, `mal:`, `anilist:`, `anidb:`) e tipologie (`movie`, `series`, `anime`, `anime.movie`, `anime.series`, `collection`).
 * **Gestione Priorità, Nomi & Visibilità**:
   * 🔀 **Ordinamento & Drag & Drop**: Cambia l'ordine dei cataloghi per decidere quali mostrare prima su Stremio.
   * ✏️ **Rinomina**: Assegna nomi personalizzati ed emoji a qualsiasi catalogo.

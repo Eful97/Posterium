@@ -16,9 +16,6 @@ export const MDBLISTS = [
   { key: 'mdblistAnimeMovie', label: 'Film anime di tendenza', url: 'https://mdblist.com/lists/snoak/trending-anime-movies' },
 ] as const
 
-// Override nei test E2E: punta al mock server locale (vedi playwright.config.ts).
-const MDBLIST_API_URL = process.env.MDBLIST_API_URL || "https://mdblist.com/api"
-
 // A2: TTL cache liste. Solo risultati NON vuoti vengono cachati: un errore di
 // rete (catch → []) non deve congelare la lista per 30min, si ritenta al
 // prossimo accesso.
@@ -64,13 +61,38 @@ export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MD
     if (!res || !res.ok) return []
     const data = await res.json()
     const payload = Array.isArray(data) ? data : (data?.data || data)
-    const rawItems = Array.isArray(payload) ? payload : (payload?.items || payload?.shows || payload?.movies || [])
-    const items = rawItems.slice(0, 20).map((item: { imdb_id?: string; imdb?: string; title?: string; year?: number; tmdb_id?: number | string; tmdb?: number | string; ids?: { tmdb?: number | string }; id?: number | string }) => ({
-      imdb: item.imdb_id || item.imdb || "",
-      title: item.title || "",
-      year: item.year || 0,
-      tmdb: item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id || undefined,
-    }))
+    const isMovie = listKey === "mdblistMovie" || listKey === "mdblistAnimeMovie"
+    let rawItems: Array<{ imdb_id?: string; imdb?: string; title?: string; year?: number | string; release_year?: number | string; tmdb_id?: number | string; tmdb?: number | string; ids?: { tmdb?: number | string }; id?: number | string }> = []
+    if (Array.isArray(payload)) {
+      rawItems = payload
+    } else if (Array.isArray(payload?.items) && payload.items.length > 0) {
+      rawItems = payload.items
+    } else if (isMovie && Array.isArray(payload?.movies) && payload.movies.length > 0) {
+      rawItems = payload.movies
+    } else if (!isMovie && Array.isArray(payload?.shows) && payload.shows.length > 0) {
+      rawItems = payload.shows
+    } else if (Array.isArray(payload?.movies) && payload.movies.length > 0) {
+      rawItems = payload.movies
+    } else if (Array.isArray(payload?.shows) && payload.shows.length > 0) {
+      rawItems = payload.shows
+    } else if (Array.isArray(payload?.items)) {
+      rawItems = payload.items
+    }
+
+    const seenIds = new Set<string>()
+    const items: MDBListEntry[] = []
+    for (const item of rawItems) {
+      const imdb = item.imdb_id || item.imdb || ""
+      const title = item.title || ""
+      const year = Number(item.year || item.release_year) || 0
+      const rawTmdb = item.tmdb_id || item.tmdb || item.ids?.tmdb || item.id || undefined
+      const tmdb = rawTmdb !== undefined && Number.isFinite(Number(rawTmdb)) ? Number(rawTmdb) : undefined
+      const dedupeKey = tmdb ? `tmdb:${tmdb}` : (imdb ? `imdb:${imdb}` : `title:${title}:${year}`)
+      if (seenIds.has(dedupeKey)) continue
+      seenIds.add(dedupeKey)
+      items.push({ imdb, title, year, tmdb })
+      if (items.length >= 20) break
+    }
     if (items.length > 0) cacheSet(cacheKey, items, ["mdblist"], CACHE_TTL_MS)
     return items
   } catch {
@@ -196,13 +218,20 @@ export async function fetchCustomMDBList(urlOrSlug: string, apiKey?: string, lim
       rawItems = [...(payload.movies || []), ...(payload.shows || [])]
     }
 
-    const items = rawItems.slice(0, limit).map((item) => ({
-      imdb: item.imdb_id || item.imdb || item.ids?.imdb || "",
-      title: item.title || item.name || "",
-      year: Number(item.year || item.release_year) || 0,
-      tmdb: item.tmdb_id ? Number(item.tmdb_id) : item.tmdb ? Number(item.tmdb) : item.ids?.tmdb ? Number(item.ids.tmdb) : (item.id && Number.isFinite(Number(item.id)) ? Number(item.id) : undefined),
-      mediatype: item.mediatype || item.media_type || item.type || (item.show ? "show" : undefined),
-    }))
+    const seenCustom = new Set<string>()
+    const items: MDBListEntry[] = []
+    for (const item of rawItems) {
+      const imdb = item.imdb_id || item.imdb || item.ids?.imdb || ""
+      const title = item.title || item.name || ""
+      const year = Number(item.year || item.release_year) || 0
+      const tmdb = item.tmdb_id ? Number(item.tmdb_id) : item.tmdb ? Number(item.tmdb) : item.ids?.tmdb ? Number(item.ids.tmdb) : (item.id && Number.isFinite(Number(item.id)) ? Number(item.id) : undefined)
+      const mediatype = item.mediatype || item.media_type || item.type || (item.show ? "show" : undefined)
+      const dedupeKey = tmdb ? `tmdb:${tmdb}` : (imdb ? `imdb:${imdb}` : `title:${title}:${year}`)
+      if (seenCustom.has(dedupeKey)) continue
+      seenCustom.add(dedupeKey)
+      items.push({ imdb, title, year, tmdb, mediatype })
+      if (items.length >= limit) break
+    }
     if (items.length > 0) cacheSet(cacheKey, items, ["mdblist"], CACHE_TTL_MS)
     return items
   } catch {

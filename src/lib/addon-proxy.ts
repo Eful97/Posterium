@@ -37,7 +37,7 @@ export function rewriteMetasPosters(metas: StremioItemMeta[], domain: string, us
     if (!item || !item.id) return item
     const posterId = rewritablePosterId(item.id)
     if (!posterId) return item // provider non risolvibile → poster originale
-    const mediaType = (item.type === "series" || item.type === "tv" || item.type === "show") ? "series" : "movie"
+    const mediaType = (item.type === "movie" || item.type === "anime.movie") ? "movie" : "series"
     return {
       ...item,
       poster: posterUrlFor(domain, mediaType, posterId, user),
@@ -49,7 +49,7 @@ export function rewriteSingleMetaPoster(meta: StremioItemMeta, domain: string, u
   if (!meta || !meta.id) return meta
   const posterId = rewritablePosterId(meta.id)
   if (!posterId) return meta
-  const mediaType = (meta.type === "series" || meta.type === "tv" || meta.type === "show") ? "series" : "movie"
+  const mediaType = (meta.type === "movie" || meta.type === "anime.movie") ? "movie" : "series"
   return {
     ...meta,
     poster: posterUrlFor(domain, mediaType, posterId, user),

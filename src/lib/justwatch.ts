@@ -8,6 +8,7 @@ const QUERY = `query GetStreamingChartInfo($country: Country!, $language: Langua
       node {
         ... on MovieOrShowOrSeason {
           content(country: $country, language: $language) {
+            title
             externalIds { tmdbId imdbId }
           }
         }
@@ -21,17 +22,48 @@ export interface JWRankEntry {
   /** IMDb id restituito da JustWatch stesso — evita la chiamata extra a TMDB. */
   imdbId: string | null
   rank: number
+  title?: string | null
+}
+
+export const PLATFORM_JW_PACKAGES: Record<string, string[]> = {
+  netflix: ["nfx"],
+  "amazon-prime": ["prv"],
+  prime: ["prv"],
+  disney: ["dnp"],
+  "disney-plus": ["dnp"],
+  now: ["ntv", "skg"],
+  "now-tv": ["ntv", "skg"],
+  "apple-tv": ["atp"],
+  apple: ["atp"],
+  "hbo-max": ["mxx"],
+  hbo: ["mxx"],
+  "paramount-plus": ["pmp"],
+  paramount: ["pmp"],
 }
 
 const rankingsCache = new Map<string, { data: JWRankEntry[]; timestamp: number }>()
 const CACHE_TTL = 30 * 60 * 1000
 const CACHE_MAX = 100
 
-export async function getJWRankings(objectType: "MOVIE" | "SHOW", country = "IT", first = 20): Promise<JWRankEntry[]> {
-  const cacheKey = `${objectType}:${country}:${first}`
+export async function getJWRankings(
+  objectType: "MOVIE" | "SHOW",
+  country = "IT",
+  first = 20,
+  packages?: readonly string[] | string[],
+): Promise<JWRankEntry[]> {
+  const pkgKey = packages && packages.length > 0 ? packages.join(",") : "all"
+  const cacheKey = `${objectType}:${country}:${first}:${pkgKey}`
   const cached = rankingsCache.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return cached.data
+  }
+
+  const filter: Record<string, unknown> = {
+    objectType,
+    category: "DAILY_POPULARITY_SAME_CONTENT_TYPE",
+  }
+  if (packages && packages.length > 0) {
+    filter.packages = packages
   }
 
   const res = await fetch(JW_API, {
@@ -44,23 +76,27 @@ export async function getJWRankings(objectType: "MOVIE" | "SHOW", country = "IT"
       variables: {
         country,
         language: "it-IT",
-        filter: { objectType, category: "DAILY_POPULARITY_SAME_CONTENT_TYPE" },
-        first,
+        filter,
+        first: Math.max(first * 2, 20),
       },
     }),
   })
   if (!res.ok) throw new Error(`JustWatch ${objectType} failed: ${res.status}`)
   const json = await res.json()
   const edges = json?.data?.streamingCharts?.edges || []
-  const result = edges
-    .map((e: { node?: { content?: { externalIds?: { tmdbId?: number | string; imdbId?: string | null } } }; streamingChartInfo?: { rank?: number } }) => {
-      const tmdbId = Number(e?.node?.content?.externalIds?.tmdbId)
-      const imdbId = e?.node?.content?.externalIds?.imdbId || null
-      const rank = e?.streamingChartInfo?.rank
-      if (!tmdbId || !rank) return null
-      return { tmdbId, imdbId, rank }
-    })
-    .filter(Boolean) as JWRankEntry[]
+  const seenTmdb = new Set<number>()
+  const result: JWRankEntry[] = []
+
+  for (const e of edges) {
+    const tmdbId = Number(e?.node?.content?.externalIds?.tmdbId)
+    const imdbId = e?.node?.content?.externalIds?.imdbId || null
+    const title = e?.node?.content?.title || null
+    const rank = e?.streamingChartInfo?.rank
+    if (!tmdbId || !rank || seenTmdb.has(tmdbId)) continue
+    seenTmdb.add(tmdbId)
+    result.push({ tmdbId, imdbId, rank, title })
+    if (result.length >= first) break
+  }
 
   if (rankingsCache.size >= CACHE_MAX) rankingsCache.delete(rankingsCache.keys().next().value!)
   rankingsCache.set(cacheKey, { data: result, timestamp: Date.now() })

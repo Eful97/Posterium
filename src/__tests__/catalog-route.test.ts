@@ -395,4 +395,79 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(res.status).toBe(200)
     expect(body.metas).toEqual([])
   })
+
+  it("handles posterium-anime-movies and builds movie poster URLs even without an explicit MDBList key", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({
+        items: [
+          { imdb: "tt32820897", title: "Demon Slayer: Kimetsu no Yaiba Infinity Castle", year: 2025, tmdb: 1311031 },
+        ],
+      }))
+      .mockResolvedValueOnce(Response.json({
+        id: 1311031,
+        title: "Demon Slayer: Il castello dell'Infinito",
+        release_date: "2025-07-01",
+      }))
+
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-anime-movies.json?api_key=settings-key")
+    const res = await GET(req, {
+      params: Promise.resolve({
+        type: "movie",
+        id: "posterium-anime-movies.json",
+      }),
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.metas).toHaveLength(1)
+    expect(body.metas[0]).toMatchObject({
+      id: "tmdb:1311031",
+      type: "movie",
+      name: "Demon Slayer: Il castello dell'Infinito",
+      releaseInfo: "2025",
+      poster: expect.stringContaining("/api/poster/movie/1311031"),
+    })
+  })
+
+  it("uses JustWatch with platform packages for Netflix movie catalog and deduplicates items", async () => {
+    // JustWatch edge con duplicate tmdbId (simula risposte grezze con stagioni o duplicati)
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({
+        data: {
+          streamingCharts: {
+            edges: [
+              {
+                streamingChartInfo: { rank: 1 },
+                node: { content: { externalIds: { tmdbId: 866398, imdbId: "tt15314262" } } },
+              },
+              {
+                streamingChartInfo: { rank: 2 },
+                node: { content: { externalIds: { tmdbId: 866398, imdbId: "tt15314262" } } },
+              },
+              {
+                streamingChartInfo: { rank: 3 },
+                node: { content: { externalIds: { tmdbId: 1588838, imdbId: "tt31234567" } } },
+              },
+            ],
+          },
+        },
+      }))
+      .mockResolvedValueOnce(Response.json({ id: 866398, title: "The Beekeeper", release_date: "2024-01-08" }))
+      .mockResolvedValueOnce(Response.json({ id: 1588838, title: "To the Max", release_date: "2026-02-06" }))
+
+    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-netflix-movies.json?api_key=settings-key")
+    const res = await GET(req, {
+      params: Promise.resolve({
+        type: "movie",
+        id: "posterium-netflix-movies.json",
+      }),
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    // Solo i 2 unici devono essere presenti, il duplicato 866398 al rank 2 è scartato
+    expect(body.metas).toHaveLength(2)
+    expect(body.metas[0].id).toBe("tmdb:866398")
+    expect(body.metas[1].id).toBe("tmdb:1588838")
+  })
 })

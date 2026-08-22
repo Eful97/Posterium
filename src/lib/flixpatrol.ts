@@ -4,6 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { DATA_DIR } from "@/lib/data-dir"
 import { createLogger } from "@/lib/logger"
+import { getJWRankings, PLATFORM_JW_PACKAGES, type JWRankEntry } from "@/lib/justwatch"
 
 const log = createLogger("flixpatrol")
 
@@ -183,13 +184,13 @@ async function tmdbCachedFetch(url: string): Promise<unknown | null> {
 // rate limit TMDB. Con mapLimit il burst resta sotto controllo.
 const ENRICH_CONCURRENCY = 6
 
-async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, index: number) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length)
   let next = 0
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
     while (next < items.length) {
       const i = next++
-      results[i] = await fn(items[i])
+      results[i] = await fn(items[i], i)
     }
   })
   await Promise.all(workers)
@@ -223,6 +224,55 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
   // costruisce il poster via posteriumPosterUrl e non usa né posterPath né il
   // titolo italiano: restituire la voce grezza taglia ~2 fetch TMDB × titolo).
   const enrich = options?.enrich ?? true
+
+  const pkgs = PLATFORM_JW_PACKAGES[platformSlug]
+  if (country === "italy" && pkgs) {
+    try {
+      const [jwMovies, jwShows] = await Promise.all([
+        getJWRankings("MOVIE", "IT", 10, pkgs),
+        getJWRankings("SHOW", "IT", 10, pkgs),
+      ])
+      if (jwMovies.length > 0 || jwShows.length > 0) {
+        const toJwItem = async (entry: JWRankEntry, type: "movie" | "tv", idx: number): Promise<FlixPatrolEnrichedItem> => {
+          const tmdbId = entry.tmdbId
+          let title = entry.title || ""
+          let posterPath: string | null = null
+          let releaseDate: string | null = null
+
+          if (tmdbId && apiKey && enrich) {
+            const detailsUrl = `${TMDB_BASE}/${type}/${tmdbId}?api_key=${apiKey}&language=it-IT`
+            const [fetchedPoster, details] = await Promise.all([
+              fetchPosterPath(tmdbId, type, apiKey),
+              tmdbCachedFetch(detailsUrl) as Promise<{ title?: string; name?: string; release_date?: string; first_air_date?: string } | null>,
+            ])
+            posterPath = fetchedPoster
+            if (details) {
+              title = details.title || details.name || title
+              releaseDate = details.release_date || details.first_air_date || releaseDate
+            }
+          }
+
+          return {
+            rank: idx + 1,
+            title: title || (type === "movie" ? "Film" : "Serie TV"),
+            tmdbId,
+            mediaType: type,
+            posterPath,
+            releaseDate,
+          }
+        }
+
+        const [movies, tv] = await Promise.all([
+          mapLimit<JWRankEntry, FlixPatrolEnrichedItem>(jwMovies.slice(0, 10), ENRICH_CONCURRENCY, (e, idx) => toJwItem(e, "movie", idx)),
+          mapLimit<JWRankEntry, FlixPatrolEnrichedItem>(jwShows.slice(0, 10), ENRICH_CONCURRENCY, (e, idx) => toJwItem(e, "tv", idx)),
+        ])
+
+        return { platform: platformSlug, platformName, country, movies, tv }
+      }
+    } catch (e) {
+      log.error("JustWatch platform fetch failed, falling back to disk catalog", { error: e instanceof Error ? e.message : String(e), platform: platformSlug })
+    }
+  }
 
   const now = Date.now()
   const FOUR_HOURS = 4 * 60 * 60 * 1000
@@ -285,9 +335,21 @@ export async function getTop10(platformSlug: string, country = "italy", apiKey?:
     }
   }
 
+  const dedupeEntries = (entries: CatalogEntry[]): CatalogEntry[] => {
+    const seen = new Set<string>()
+    const unique: CatalogEntry[] = []
+    for (const e of entries) {
+      const key = e.tmdb?.id ? `tmdb:${e.tmdb.id}` : `title:${e.title.toLowerCase().trim()}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      unique.push(e)
+    }
+    return unique
+  }
+
   const [movies, tv] = await Promise.all([
-    mapLimit(movieChart?.entries ?? [], ENRICH_CONCURRENCY, (e) => toItem(e, "movie")),
-    mapLimit(tvChart?.entries ?? [], ENRICH_CONCURRENCY, (e) => toItem(e, "tv")),
+    mapLimit(dedupeEntries(movieChart?.entries ?? []).slice(0, 10), ENRICH_CONCURRENCY, (e) => toItem(e, "movie")),
+    mapLimit(dedupeEntries(tvChart?.entries ?? []).slice(0, 10), ENRICH_CONCURRENCY, (e) => toItem(e, "tv")),
   ])
 
   return { platform: platformSlug, platformName, country, movies, tv }

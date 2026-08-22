@@ -62,4 +62,37 @@ describe("flixpatrol country support (D7)", () => {
     const { getTop10 } = await import("@/lib/flixpatrol")
     await expect(getTop10("netflix", "atlantis")).rejects.toThrow("Unsupported country: atlantis")
   })
+
+  it("uses JustWatch as primary source returning full 10 movies and 10 shows", async () => {
+    vi.resetModules()
+    process.env.POSTERIUM_DATA_DIR = tmpDir
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request) => {
+      const u = String(url)
+      if (u.includes("justwatch.com/graphql")) {
+        return new Response(JSON.stringify({
+          data: {
+            streamingCharts: {
+              edges: Array.from({ length: 10 }, (_, i) => ({
+                streamingChartInfo: { rank: i + 1 },
+                node: {
+                  content: {
+                    title: `JW Title ${i + 1}`,
+                    externalIds: { tmdbId: 100 + i, imdbId: `tt0000${i + 1}` },
+                  },
+                },
+              })),
+            },
+          },
+        }))
+      }
+      return new Response("not found", { status: 404 })
+    }))
+
+    const { getTop10 } = await import("@/lib/flixpatrol")
+    const data = await getTop10("netflix", "italy", undefined, { enrich: false })
+    expect(data.movies).toHaveLength(10)
+    expect(data.tv).toHaveLength(10)
+    expect(data.movies[0].title).toBe("JW Title 1")
+    expect(data.movies[9].title).toBe("JW Title 10")
+  })
 })
