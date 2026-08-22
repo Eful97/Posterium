@@ -44,10 +44,10 @@ async function renderPoster(page: Page, posterUrl: string) {
 test("home — full page", async ({ page }) => {
   await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_profile_stateless", "1"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
-  // Cold start di Next dev in CI: al primo hit la route viene compilata on
-  // demand e il contenuto sotto il fold può tardare a montare. Attendi che la
-  // pagina superi il viewport prima dello screenshot full-page, altrimenti
-  // l'immagine cattura solo il viewport (720px) e non i 947px dello snapshot.
+  const logo = page.getByAltText("Posterium")
+  const logoFallback = page.getByText("Posterium")
+  await expect(logo.or(logoFallback).first()).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByPlaceholder(/cerca/i)).toBeVisible({ timeout: 30_000 })
   await page.waitForFunction(() => document.body.scrollHeight > window.innerHeight, { timeout: 30_000 })
   await expect(page).toHaveScreenshot("home-fullpage.png", {
     fullPage: true,
@@ -58,6 +58,10 @@ test("home — full page", async ({ page }) => {
 test("home — hero viewport", async ({ page }) => {
   await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_profile_stateless", "1"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
+  const logo = page.getByAltText("Posterium")
+  const logoFallback = page.getByText("Posterium")
+  await expect(logo.or(logoFallback).first()).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByPlaceholder(/cerca/i)).toBeVisible({ timeout: 30_000 })
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page).toHaveScreenshot("home-viewport.png", {
     maxDiffPixelRatio: 0.03,
@@ -68,6 +72,10 @@ test("home — mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_profile_stateless", "1"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
   await page.goto("/")
+  const logo = page.getByAltText("Posterium")
+  const logoFallback = page.getByText("Posterium")
+  await expect(logo.or(logoFallback).first()).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByPlaceholder(/cerca/i)).toBeVisible({ timeout: 30_000 })
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page).toHaveScreenshot("home-mobile.png", {
     maxDiffPixelRatio: 0.03,
