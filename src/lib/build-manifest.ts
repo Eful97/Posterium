@@ -15,10 +15,6 @@ function safeSuffix(value: string | null | undefined): string | null {
 export async function buildManifestResponse(req: NextRequest, user?: string | null, config?: string | null): Promise<Response> {
   const domain = getOriginFromRequest(req)
 
-  const safeConfig = safeSuffix(config)
-  const suffix = safeConfig ? `.${safeConfig.slice(0, 8)}` : ""
-  const addonId = `org.posterium${suffix}`
-
   let userConfig: Partial<PosteriumUserConfig> | null = null
   if (config) {
     userConfig = decodeConfig(config)
@@ -89,20 +85,31 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     })
   }
 
+  const rawMode = req.nextUrl.searchParams.get("mode")
+  const hubMode: "all" | "catalogs" | "search" = (rawMode === "search" || rawMode === "catalogs" || rawMode === "all")
+    ? rawMode
+    : (userConfig?.hubMode || "all")
+
+  const safeConfig = safeSuffix(config)
+  const suffix = safeConfig ? `.${safeConfig.slice(0, 8)}` : ""
+  const modeSuffix = hubMode === "all" ? "" : `.${hubMode}`
+  const addonId = `org.posterium${suffix}${modeSuffix}`
+
   const homeDisabledSet = new Set(userConfig?.homeDisabledCatalogIds || [])
 
-  const manifestCatalogs = [
-    ...catalogs.map((c) => {
-      const isHomeHidden = homeDisabledSet.has(c.id) || (c.customBaseId ? homeDisabledSet.has(c.customBaseId) : false)
-      return {
-        id: c.id,
-        name: c.name,
-        type: c.type,
-        extra: isHomeHidden
-          ? [{ name: "genre", isRequired: true, options: ["Tutti"] }, { name: "skip", isRequired: false }]
-          : [{ name: "skip", isRequired: false }],
-      }
-    }),
+  const contentCatalogs = catalogs.map((c) => {
+    const isHomeHidden = homeDisabledSet.has(c.id) || (c.customBaseId ? homeDisabledSet.has(c.customBaseId) : false)
+    return {
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      extra: isHomeHidden
+        ? [{ name: "genre", isRequired: true, options: ["Tutti"] }, { name: "skip", isRequired: false }]
+        : [{ name: "skip", isRequired: false }],
+    }
+  })
+
+  const searchCatalogs = [
     {
       id: "posterium-search-movies",
       name: "🔍 Posterium — Cerca Film",
@@ -116,6 +123,15 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
       extra: [{ name: "search", isRequired: true }, { name: "skip", isRequired: false }],
     },
   ]
+
+  let manifestCatalogs: typeof contentCatalogs = []
+  if (hubMode === "search") {
+    manifestCatalogs = searchCatalogs
+  } else if (hubMode === "catalogs") {
+    manifestCatalogs = contentCatalogs
+  } else {
+    manifestCatalogs = [...contentCatalogs, ...searchCatalogs]
+  }
 
   const ID_PREFIXES = [
     "tmdb:",
@@ -136,10 +152,17 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
 
   const TYPES = ["movie", "series", "anime.movie", "anime.series", "anime", "Trakt", "collection"]
 
+  let manifestName = safeConfig ? `Posterium (${safeConfig.slice(0, 8)})` : "Posterium"
+  if (hubMode === "search") {
+    manifestName += " (Ricerca)"
+  } else if (hubMode === "catalogs") {
+    manifestName += " (Cataloghi)"
+  }
+
   return Response.json({
     id: addonId,
     version: APP_VERSION,
-    name: safeConfig ? `Posterium (${safeConfig.slice(0, 8)})` : "Posterium",
+    name: manifestName,
     description: "Custom poster manager for Stremio — loghi, badge trend, premi e rating",
     resources: [
       "catalog",

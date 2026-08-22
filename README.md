@@ -73,7 +73,7 @@ pinned: false
 * **Cronologia Ricerche & Suggerimenti Rapidi**: Salvataggio automatico delle ricerche recenti e pill di suggerimento per ispirare nuove scoperte cinematografiche.
 
 ### 📺 Cataloghi Stremio, Posterium Hub & Gestione Avanzata
-* **📱 Posterium Hub All-in-One**: Un unico punto di installazione per Stremio con supporto QR Code per Smart TV, link diretto e configurazione sicura.
+* **📱 Posterium Hub All-in-One**: Un unico punto di installazione per Stremio con supporto QR Code per Smart TV, link diretto e **selettore a 3 modalità** (*Tutto: Cataloghi + Ricerca*, *Solo Cataloghi*, *Solo Ricerca*).
 * **🌐 Import Universale Cataloghi Personalizzati (fino a 500 titoli)**:
   * **Letterboxd**: Liste pubbliche e watchlist utenti (es. saghe MCU, cinefili, filmografia registi) con estrazione automatica header e mapping completo ID.
   * **Trakt**: Liste pubbliche, watchlist e collezioni utente.
