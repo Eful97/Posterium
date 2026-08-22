@@ -159,6 +159,7 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
       adult: false,
       configurable: true,
       configurationRequired: false,
+      configurationUrl: user ? `${domain}/u/${encodeURIComponent(user)}/configure` : (config ? `${domain}/c/${encodeURIComponent(config)}/configure` : `${domain}/configure`),
     },
     catalogs: manifestCatalogs,
   }, {
