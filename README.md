@@ -72,7 +72,15 @@ pinned: false
 * **Ricerca Semantica & Linguaggio Naturale (Groq AI)**: Trova film e serie TV descrivendo trame, ambientazioni, stili, epoche o similitudini (es. *"film sci-fi con buchi neri"*, *"thriller psicologici tipo Mindhunter"*). Groq interpreta la query con `groq/compound` (fallback `groq/compound-mini`) e Posterium arricchisce i risultati con poster ufficiali TMDB.
 * **Cronologia Ricerche & Suggerimenti Rapidi**: Salvataggio automatico delle ricerche recenti e pill di suggerimento per ispirare nuove scoperte cinematografiche.
 
-### 📺 Cataloghi Stremio & Gestione Avanzata
+### 📺 Cataloghi Stremio, Posterium Hub & Gestione Avanzata
+* **📱 Posterium Hub All-in-One**: Un unico punto di installazione per Stremio con supporto QR Code per Smart TV, link diretto e configurazione sicura.
+* **🌐 Import Universale Cataloghi Personalizzati (fino a 500 titoli)**:
+  * **Letterboxd**: Liste pubbliche e watchlist utenti (es. saghe MCU, cinefili, filmografia registi) con estrazione automatica header e mapping completo ID.
+  * **Trakt**: Liste pubbliche, watchlist e collezioni utente.
+  * **TMDb Collezioni & Saghe**: Importa intere saghe (es. *The Avengers Collection*, *Star Wars Saga*) o liste tematiche direttamente da TMDb.
+  * **TheTVDB & IMDb**: Liste tematiche e classifiche personalizzate.
+  * **MDBList**: Liste dinamiche, filtri per voto e popolarità.
+  * *Funzionalità avanzate*: Riconoscimento automatico nome lista, suddivisione automatica Film/Serie TV (*modalità Misto*) e paginazione continua `skip` su Stremio.
 * **Cataloghi Piattaforme & Trend in Tempo Reale (JustWatch GraphQL)**: Classifiche ufficiali e sempre aggiornate per Top 20 Italia, Netflix, Prime Video, Disney+, Sky/NOW, Apple TV+, HBO Max, Paramount+, con deduplicazione automatica e zero doppioni.
 * **Top 20 Film & Serie Anime (MDBList)**: Classifiche dedicate all'animazione giapponese (`posterium-anime-movies` e `posterium-anime`) disponibili nativamente sia con chiave personale MDBList che senza chiave (fallback JSON pubblico).
 * **Compatibilità Totale Manifest & AIOMetadata**: Supporto speculare ad AIOMetadata con tutti i prefissi ID (`tmdb:`, `tt`, `kitsu:`, `tvdb:`, `mal:`, `anilist:`, `anidb:`) e tipologie (`movie`, `series`, `anime`, `anime.movie`, `anime.series`, `collection`).

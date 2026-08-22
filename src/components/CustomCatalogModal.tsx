@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import { X, Plus, ListPlus, Film, Tv, Shuffle, Check, AlertCircle } from "lucide-react"
-import { usePosterium } from "@/lib/context"
-import { parseMDBListTarget } from "@/lib/mdblist"
+import { usePSelector } from "@/lib/context"
+import { detectCatalogProvider } from "@/lib/custom-catalog-providers"
 import { EmojiPicker } from "@/components/ui"
 import type { CustomCatalogType } from "@/lib/types"
 
@@ -13,7 +13,7 @@ interface CustomCatalogModalProps {
 }
 
 export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps) {
-  const { addCustomCatalog } = usePosterium()
+  const addCustomCatalog = usePSelector((v) => v.addCustomCatalog)
   const [url, setUrl] = useState("")
   const [name, setName] = useState("")
   const [type, setType] = useState<CustomCatalogType>("movie")
@@ -21,6 +21,22 @@ export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps)
   const [error, setError] = useState<string | null>(null)
   const [previewItems, setPreviewItems] = useState<Array<{ title: string; year: number }> | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+
+  const handleUrlChange = (newUrl: string) => {
+    setUrl(newUrl)
+    const trimmed = newUrl.trim()
+    if (trimmed) {
+      const detection = detectCatalogProvider(trimmed)
+      if (detection) {
+        if (!name && detection.nameSuggestion) {
+          setName(detection.nameSuggestion)
+        }
+        if (detection.defaultType) {
+          setType(detection.defaultType)
+        }
+      }
+    }
+  }
 
   useEffect(() => {
     if (!isOpen) return
@@ -60,9 +76,9 @@ export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps)
       return
     }
 
-    const target = parseMDBListTarget(trimmedUrl)
-    if (!target) {
-      setError("URL non valido (supportati: MDBList, Trakt, IMDb...).")
+    const detection = detectCatalogProvider(trimmedUrl)
+    if (!detection) {
+      setError("URL non valido (supportati: Letterboxd, Trakt, TMDb, MDBList, IMDb, TVDB).")
       return
     }
 
@@ -136,18 +152,31 @@ export function CustomCatalogModal({ isOpen, onClose }: CustomCatalogModalProps)
       {/* Body */}
       <form onSubmit={handleTestAndSave} className="p-4 space-y-3">
         <div>
-          <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
-            URL o ID Lista (MDBList / Trakt / IMDb)
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-[11px] font-semibold text-zinc-300">
+              URL Lista o Collezione
+            </label>
+            <span className="text-[10px] text-zinc-400 font-normal">
+              Letterboxd, Trakt, TMDb, MDBList
+            </span>
+          </div>
           <input
             type="text"
-            placeholder="https://mdblist.com/lists/user/slug"
+            placeholder="es. https://letterboxd.com/... o trakt/mdblist"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={(e) => handleUrlChange(e.target.value)}
             className="w-full px-3 py-2 bg-surface2 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-accent-orange transition-colors"
             required
             autoFocus
           />
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400">Letterboxd</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400">Trakt</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400">TMDb Saga</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400">MDBList</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400">TheTVDB</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400">IMDb</span>
+          </div>
         </div>
 
         <div>

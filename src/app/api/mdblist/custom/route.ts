@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { fetchCustomMDBList } from "@/lib/mdblist"
+import { fetchUnifiedCatalogItems, detectCatalogProvider } from "@/lib/custom-catalog-providers"
 import { getDetails, resolveRequestApiKey, tmdbFindByImdb } from "@/lib/tmdb"
 
 export async function GET(req: NextRequest) {
@@ -14,7 +14,9 @@ export async function GET(req: NextRequest) {
   const mdblistKey = req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || process.env.MDBLIST_KEY || process.env.MDBLIST_API_KEY || undefined
 
   try {
-    const rawItems = await fetchCustomMDBList(url, mdblistKey, 30)
+    const detection = detectCatalogProvider(url)
+    const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get("limit") || "500", 10) || 500, 1), 1000)
+    const rawItems = await fetchUnifiedCatalogItems(url, { apiKey, mdblistKey, limit })
     const items = await Promise.all(
       rawItems.map(async (it) => {
         let tmdbId = Number(it.tmdb)
@@ -46,7 +48,12 @@ export async function GET(req: NextRequest) {
         }
       })
     )
-    return Response.json({ items })
+    return Response.json({
+      items,
+      provider: detection?.provider,
+      suggestedName: detection?.nameSuggestion,
+      defaultType: detection?.defaultType,
+    })
   } catch {
     return Response.json({ items: [] })
   }

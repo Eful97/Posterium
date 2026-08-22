@@ -20,7 +20,7 @@ import {
   CheckSquare,
   Square,
 } from "lucide-react"
-import { usePosterium } from "@/lib/context"
+import { usePSelector } from "@/lib/context"
 import { POSTERIUM_CATALOGS } from "@/lib/catalog-definitions"
 import { EmojiPicker } from "@/components/ui"
 
@@ -41,22 +41,20 @@ interface CatalogEntryItem {
 }
 
 export function CatalogManagerModal({ isOpen, onClose }: CatalogManagerModalProps) {
-  const {
-    customCatalogs,
-    toggleCustomCatalog,
-    removeCustomCatalog,
-    disabledCatalogIds,
-    toggleBuiltinCatalog,
-    homeDisabledCatalogIds,
-    toggleCatalogHome,
-    catalogOrder,
-    setCatalogOrder,
-    moveCatalog,
-    catalogRenames,
-    renameCatalog,
-    resetCatalogNames,
-    resetCatalogOrder,
-  } = usePosterium()
+  const customCatalogs = usePSelector((v) => v.customCatalogs)
+  const toggleCustomCatalog = usePSelector((v) => v.toggleCustomCatalog)
+  const removeCustomCatalog = usePSelector((v) => v.removeCustomCatalog)
+  const disabledCatalogIds = usePSelector((v) => v.disabledCatalogIds)
+  const toggleBuiltinCatalog = usePSelector((v) => v.toggleBuiltinCatalog)
+  const homeDisabledCatalogIds = usePSelector((v) => v.homeDisabledCatalogIds)
+  const toggleCatalogHome = usePSelector((v) => v.toggleCatalogHome)
+  const catalogOrder = usePSelector((v) => v.catalogOrder)
+  const setCatalogOrder = usePSelector((v) => v.setCatalogOrder)
+  const moveCatalog = usePSelector((v) => v.moveCatalog)
+  const catalogRenames = usePSelector((v) => v.catalogRenames)
+  const renameCatalog = usePSelector((v) => v.renameCatalog)
+  const resetCatalogNames = usePSelector((v) => v.resetCatalogNames)
+  const resetCatalogOrder = usePSelector((v) => v.resetCatalogOrder)
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState("")

@@ -137,7 +137,7 @@ export function parseMDBListTarget(input: string): { user?: string; slug?: strin
   return null
 }
 
-export async function fetchCustomMDBList(urlOrSlug: string, apiKey?: string, limit: number = 20): Promise<MDBListEntry[]> {
+export async function fetchCustomMDBList(urlOrSlug: string, apiKey?: string, limit: number = 500): Promise<MDBListEntry[]> {
   const target = parseMDBListTarget(urlOrSlug)
   if (!target) return []
 

@@ -8,7 +8,8 @@ import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
 import { getDetails, getExternalIds, resolveRequestApiKey, searchMovies, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
-import { fetchCustomMDBList, fetchMDBList } from "@/lib/mdblist"
+import { fetchMDBList } from "@/lib/mdblist"
+import { fetchUnifiedCatalogItems } from "@/lib/custom-catalog-providers"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { getJWRankings, type JWRankEntry } from "@/lib/justwatch"
@@ -350,7 +351,7 @@ export async function posteriumCatalog(
 
       const customCat = userConfig?.customCatalogs?.find((c: { id: string }) => c.id === customId)
       if (customCat && customCat.enabled !== false) {
-        let items = await fetchCustomMDBList(customCat.url, mdblistKey, 40)
+        let items = await fetchUnifiedCatalogItems(customCat.url, { apiKey, mdblistKey, limit: 500 })
         // Se la lista è mista o contiene mediatype, filtra in base al tipo di catalogo richiesto
         if (customCat.type === "mixed") {
           if (stType === "movie") {
@@ -372,10 +373,12 @@ export async function posteriumCatalog(
             seenTmdb.add(tmdbId)
             validItems.push(item)
           }
-          if (validItems.length >= 20) break
         }
 
-        const results = await Promise.all(validItems.map(async (item, idx) => {
+        const skip = extra.skip || 0
+        const pagedItems = validItems.slice(skip, skip + 100)
+
+        const results = await Promise.all(pagedItems.map(async (item, idx) => {
           const tmdbId = Number(item.tmdb)
           if (!tmdbId) return null
           let details: TMDBDetails | null = null

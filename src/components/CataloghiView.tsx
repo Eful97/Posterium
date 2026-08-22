@@ -121,6 +121,7 @@ function CustomCatalogEntry({
       url: cat.url,
       api_key: tmdbKey || "",
       mdblist_key: mdblistApiKey || "",
+      limit: "500",
     })
     fetch(`/api/mdblist/custom?${params.toString()}`)
       .then((res) => res.json())
