@@ -90,13 +90,15 @@ export async function POST(req: NextRequest) {
     })
     // Warm catalog cache — ricostruisci cataloghi principali in background.
     // Fix M11: la chiave TMDB della richiesta viene inoltrata — senza, i
-    // cataloghi keyed (JW) venivano cacchettati vuoti per 60s sotto la cache
-    // key `aknone` che nessuna richiesta reale riusa.
+    // cataloghi keyed (JW) venivano cachati vuoti per 60s sotto la cache
+    // key `aknone` che nessuna richiesta reale riusa. La chiave viaggia
+    // nell'header x-api-key (policy di tmdb.ts) e non nella query string,
+    // anche se il self-fetch è su loopback: così l'URL resta pulito nei log.
     const requestApiKey = resolveRequestApiKey(req)
+    const warmHeaders: HeadersInit | undefined = requestApiKey ? { "x-api-key": requestApiKey } : undefined
     for (const catalog of getWarmupCatalogs()) {
-      const keyParam = requestApiKey ? `?api_key=${encodeURIComponent(requestApiKey)}` : ""
-      const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json${keyParam}`
-      void fetch(catalogUrl, { signal: AbortSignal.timeout(15000) }).catch((error: unknown) => {
+      const catalogUrl = `${internalOrigin}/catalog/${catalog.type}/${catalog.id}.json`
+      void fetch(catalogUrl, { signal: AbortSignal.timeout(15000), headers: warmHeaders }).catch((error: unknown) => {
         const message = error instanceof Error ? error.message : String(error)
         log.warn("Catalog warmup failed", { catalog: catalog.id, error: message })
       })

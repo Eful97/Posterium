@@ -9,7 +9,7 @@ import type { EnrichedAnimeItem } from "./validation"
 import { http } from "./http"
 import { useRootColors } from "./useRootColors"
 import { buildUrlPattern, buildPreviewUrl } from "./poster-url"
-import { selectBestLogo, logoBestLogoFallbackReason } from "./logo-selection"
+import { selectBestLogo, autoLogoSelection, logoDefaultScale } from "./logo-selection"
 import { useTrending } from "./useTrending"
 import { useSearch } from "./useSearch"
 import { useNavigation } from "./useNavigation"
@@ -792,18 +792,11 @@ export function usePosterium(): PosteriumCtx {
           foundLogo = (data.logos || []).find((l: TMDBImage) => l.file_path === existing.logoPath)
           navigation.setSelectedLogo(foundLogo ? { file_path: foundLogo.file_path, iso_639_1: existing.language, vote_average: 0, width: foundLogo.width, height: foundLogo.height } : { file_path: existing.logoPath, iso_639_1: existing.language, vote_average: 0, width: 0, height: 0 })
         } else if (!existing.logoDisabled) {
-          const autoLogo = selectBestLogo(data.logos || [], lang, details.original_language)
-          const reason = logoBestLogoFallbackReason(autoLogo, lang, details.original_language)
-          if (reason === "origLang") console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
-          else if (reason === "any") console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
-          else if (reason === "none") console.warn(`[posterium] No logo available for ${itemType}/${itemId}`)
+          const autoLogo = autoLogoSelection(data.logos || [], lang, details.original_language, `${itemType}/${itemId}`)
           if (autoLogo) {
             navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
-            if (autoLogo.width && autoLogo.height) {
-              const maxH = Math.round(1500 * 0.25)
-              const effW = Math.round(maxH * autoLogo.width / autoLogo.height)
-              setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
-            }
+            const scale = logoDefaultScale(autoLogo)
+            if (scale !== null) setLogoScale(scale)
           }
         }
         setLogoScale(existing.logoScale ?? 75)
@@ -822,22 +815,13 @@ export function usePosterium(): PosteriumCtx {
         const firstPoster = data.posters?.[0]
         let chosenPoster: TMDBImage | null = null
         if (clean) {
-          const autoLogo = selectBestLogo(data.logos || [], lang, details.original_language)
-          const reason = logoBestLogoFallbackReason(autoLogo, lang, details.original_language)
-          if (reason === "origLang") console.warn(`[posterium] Logo fallback to original_language "${details.original_language}" for ${itemType}/${itemId}`)
-          else if (reason === "any") console.warn(`[posterium] Logo fallback to any (first available) for ${itemType}/${itemId}`)
-          else if (reason === "none") console.warn(`[posterium] No logo available for ${itemType}/${itemId}`)
+          const autoLogo = autoLogoSelection(data.logos || [], lang, details.original_language, `${itemType}/${itemId}`)
           if (autoLogo) {
             chosenPoster = clean
             navigation.setPreviewPoster({ file_path: clean.file_path, iso_639_1: null, vote_average: 0, width: 0, height: 0 })
             navigation.setSelectedLogo({ file_path: autoLogo.file_path, iso_639_1: autoLogo.iso_639_1, vote_average: 0, width: autoLogo.width, height: autoLogo.height })
-            if (autoLogo.width && autoLogo.height) {
-              const alw = autoLogo.width
-              const alh = autoLogo.height
-              const maxH = Math.round(1500 * 0.25)
-              const effW = Math.round(maxH * alw / alh)
-              setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
-            }
+            const scale = logoDefaultScale(autoLogo)
+            if (scale !== null) setLogoScale(scale)
           } else {
             const itPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "it")
             const enPoster = data.posters?.find((p: TMDBImage) => p.iso_639_1 === "en")

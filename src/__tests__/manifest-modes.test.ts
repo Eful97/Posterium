@@ -10,7 +10,7 @@ describe("buildManifestResponse with hubMode options", () => {
 
     expect(json.id).toBe("org.posterium")
     expect(json.name).toBe("Posterium")
-    const catalogIds = json.catalogs.map((c: any) => c.id)
+    const catalogIds = json.catalogs.map((c: { id: string }) => c.id)
     expect(catalogIds).toContain("posterium-search-movies")
     expect(catalogIds).toContain("posterium-search-series")
     expect(catalogIds.length).toBeGreaterThan(2)
@@ -23,7 +23,7 @@ describe("buildManifestResponse with hubMode options", () => {
 
     expect(json.id).toBe("org.posterium.catalogs")
     expect(json.name).toContain("(Cataloghi)")
-    const catalogIds = json.catalogs.map((c: any) => c.id)
+    const catalogIds = json.catalogs.map((c: { id: string }) => c.id)
     expect(catalogIds).not.toContain("posterium-search-movies")
     expect(catalogIds).not.toContain("posterium-search-series")
     expect(catalogIds.length).toBeGreaterThan(0)
@@ -36,7 +36,7 @@ describe("buildManifestResponse with hubMode options", () => {
 
     expect(json.id).toBe("org.posterium.search")
     expect(json.name).toContain("(Ricerca)")
-    const catalogIds = json.catalogs.map((c: any) => c.id)
+    const catalogIds = json.catalogs.map((c: { id: string }) => c.id)
     expect(catalogIds).toContain("posterium-search-movies")
     expect(catalogIds).toContain("posterium-search-series")
     expect(catalogIds.length).toBe(2)

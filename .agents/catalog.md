@@ -6,16 +6,18 @@
 ## Vista d'insieme
 
 Posterium espone cataloghi Stremio **solo per generare i poster**. La risoluzione dei
-**metadati** (nome, trama, locandina originale) NON avviene qui: alla click su un
-elemento, Stremio chiede `/meta/{type}/{id}` agli addon esterni (tipicamente
-AIOMetadata). Per questo l'`id` esposto nel catalogo DEVE essere un id che quegli
-addon sanno risolvere.
+**metadati** (nome, trama, locandina originale) avviene tramite il proprio endpoint
+`/meta/{type}/{id}` (`src/lib/meta-handler.ts`, dichiarato come risorsa `meta` nel
+manifest): alla click su un elemento, Stremio chiede i metadati direttamente a
+Posterium, che è 100% standalone e non dipende da addon esterni come AIOMetadata.
+Per questo l'`id` esposto nel catalogo DEVE essere un id che il resolver di Posterium
+sa risolvere.
 
 ### REGOLA D'ORO — id metadati risolvibili
 
-AIOMetadata e gli altri addon risolvono i metadati **solo** da id `tt...` (IMDb) o
-`provider:id` (es. `tmdb:12345`). Un **numero nudo** (`12345`) NON è risolvibile →
-"no metadata" al click.
+Il resolver `/meta` di Posterium risolve gli id **solo** da `tt...` (IMDb) o
+`provider:id` (es. `tmdb:12345`). Un **numero nudo** viene trattato solo come
+fallback TMDB ed è un id non portabile → evitare sempre.
 
 Risoluzione dell'id (helper `catalogMetaId` in `catalog-handler.ts`):
 1. `imdbId` fornito dalla fonte (JustWatch lo restituisce già nella query GraphQL);

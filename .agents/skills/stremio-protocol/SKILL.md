@@ -2,38 +2,57 @@
 name: stremio-protocol
 description: >
   Stremio addon contract for Posterium: manifest (manifest.json, /u/<uuid>/
-  path variant for AIOMetadata), addonId scheme, resources (catalog, poster),
-  catalog routes and their query params (u=, config=, skip=), poster endpoint
-  contract, resolvable metadata IDs (tt... / provider:id — never bare numbers),
-  headers (Cache-Control, CORS), maxDuration. Trigger: "manifest", "addon",
+  path variant for AIOMetadata), addonId scheme, resources (catalog, poster,
+  meta), /meta/{type}/{id} resolution and idPrefixes, catalog routes and their
+  query params (u=, config=, skip=), poster endpoint contract, resolvable
+  metadata IDs (tt... / provider:id — never bare numbers), headers
+  (Cache-Control, CORS), maxDuration. Trigger: "manifest", "addon",
   "stremio", "catalogo", "catalog route", "AIOMetadata", "meta id", "id risolvibile",
   "poster url", "addonId".
 ---
 
-Posterium is a Stremio addon whose purpose is ONLY serving posters and catalogs:
-it does NOT resolve `/meta/{type}/{id}` (Stremio asks external addons like
-AIOMetadata for that). Therefore catalog `id` values MUST be resolvable by those
-addons.
+Posterium is a Stremio addon serving posters, catalogs and full metadata cards:
+it DOES resolve `/meta/{type}/{id}` via `src/lib/meta-handler.ts` (see below), so
+catalog `id` values are resolvable by Posterium itself — without relying on
+external addons like AIOMetadata.
+
+## Meta resource (`/meta/{type}/{id}`)
+
+- Route `src/app/meta/[type]/[id]/route.ts`, delegating to `posteriumMeta` in
+  `src/lib/meta-handler.ts`. Also reachable at `/c/[config]/meta/[type]/[id]` and
+  `/u/[user]/meta/[type]/[id]`.
+- Resolvable id prefixes: `tt...` (IMDb), `tmdb:<id>`, `tvdb:<id>`, `tvdbc:<id>`,
+  `kitsu:<id>`, `mal:<id>`, `anilist:<id>`, `anidb:<id>`; a bare numeric id is
+  treated as a TMDB id (fallback). Unresolvable id → `{ meta: null }` (200),
+  never a 404/cancel.
+- Resolution flow: TMDB id via `tmdbFindByImdb` / `tmdbFindByTvdb` or direct
+  parse; full details via `getFullDetails` (+ credits/videos/external_ids);
+  logo via `getImages`; poster via `buildStremioPosterUrl` (standalone poster
+  embedded); episode list via episode groups (`getTVEpisodeGroups`) or standard
+  seasons (`getTVSeason`), optionally enriched with TVDB (`enrichVideosWithTvdb`).
+- The manifest declares the `meta` resource with `types` and `idPrefixes`
+  (see `src/lib/build-manifest.ts`).
 
 ## Golden rule — resolvable metadata IDs
 
-AIOMetadata resolves metadata only from `tt...` (IMDb) or `provider:id` (e.g.
-`tmdb:12345`) IDs. A bare number (`12345`) is NOT resolvable → "no metadata" on
-click. Resolution order (helper `catalogMetaId` in `src/lib/catalog-handler.ts`):
+Catalog `id` values are emitted so they resolve (now via Posterium's own `/meta`,
+previously only via AIOMetadata). A bare number (`12345`) is NOT a portable id:
+use `tt...` (IMDb) or `provider:id` (e.g. `tmdb:12345`). Resolution order (helper
+`catalogMetaId` in `src/lib/catalog-handler.ts`):
 1. `imdbId` provided by the source (JustWatch already returns it);
 2. else TMDB `/{type}/{id}/external_ids` (`resolveImdbId`, passes the request key);
 3. else fallback `tmdb:<id>`.
 
-Never emit a bare numeric `id` as the meta id.
+Never emit a bare numeric `id` as the catalog meta id.
 
 ## Manifest (`src/lib/build-manifest.ts`)
 
 - URL: classic `manifest.json?u=...` OR path `/u/<uuid>/manifest.json` for
   AIOMetadata imports (they reject/break URLs with query strings).
 - `addonId`: `org.posterium` + `.` + first 8 chars of user UUID (or config token).
-- Fields: `resources: ["catalog", "poster"]`, `types: ["movie", "series"]`,
-  `manifestVersion: 1`, `catalogs` from `POSTERIUM_CATALOGS` each with
-  `extra: [{ name: "skip" }]`, `version: APP_VERSION` (generated).
+- Fields: `resources: ["catalog", "poster", { name: "meta", types, idPrefixes }]`,
+  `types`, `idPrefixes`, `manifestVersion: 1`, `catalogs` from `POSTERIUM_CATALOGS`
+  each with `extra: [{ name: "skip" }]`, `version: APP_VERSION` (generated).
 - Headers: `Access-Control-Allow-Origin: *`, `Content-Type: application/json`,
   `Cache-Control: no-cache, max-age=0, must-revalidate`.
 
@@ -69,7 +88,8 @@ Warmup: `posterium-jw-movies`, `posterium-jw-series`, `posterium-anime`
 - Do NOT hardcode new catalogs in the route: add them to `POSTERIUM_CATALOGS`
   (and `WARMUP_CATALOG_IDS` if they must be pre-warmed).
 - Do NOT change route/param names or response formats (public contracts).
-- Do NOT add a `/meta` resource to the manifest.
+- Do NOT add new id prefixes to `/meta`: the resolver (`meta-handler.ts`) fixes
+  the supported set — align the manifest with it, not the other way round.
 
 ## Files
 

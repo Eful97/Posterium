@@ -33,7 +33,7 @@ describe("Groq AI Search", () => {
     process.env.POSTERIUM_GROQ_KEY = "gsk_test123"
 
     // Mock global fetch for Groq API and TMDB
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url, _init) => {
       const urlStr = url.toString()
 
       // Groq endpoint mock
@@ -97,7 +97,7 @@ describe("Groq AI Search", () => {
     // incapsulare il JSON in ```json ... ```. Il parser tollerante deve estrarlo.
     process.env.POSTERIUM_GROQ_KEY = "gsk_test123"
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url, _init) => {
       const urlStr = url.toString()
       if (urlStr.includes("api.groq.com")) {
         return new Response(

@@ -41,3 +41,38 @@ export function logoBestLogoFallbackReason(
   if (selected.iso_639_1 === "it" || selected.iso_639_1 === "en") return null
   return "any"
 }
+
+/**
+ * Seleziona il miglior logo e, quando il match non è esatto, emette un warning
+ * tramite `warn`. Unisce selectBestLogo + logoBestLogoFallbackReason + i
+ * tre rami di warn che prima erano duplicati nei due rami di openPosterBrowser
+ * (mapping esistente vs item nuovo).
+ */
+export function autoLogoSelection(
+  logos: TMDBImage[] | undefined,
+  lang: string,
+  origLang: string | null | undefined,
+  itemLabel: string,
+  warn: (msg: string) => void = (msg) => console.warn(`[posterium] ${msg}`),
+): TMDBImage | undefined {
+  const autoLogo = selectBestLogo(logos || [], lang, origLang)
+  const reason = logoBestLogoFallbackReason(autoLogo, lang, origLang)
+  if (reason === "origLang") warn(`Logo fallback to original_language "${origLang}" for ${itemLabel}`)
+  else if (reason === "any") warn(`Logo fallback to any (first available) for ${itemLabel}`)
+  else if (reason === "none") warn(`No logo available for ${itemLabel}`)
+  return autoLogo
+}
+
+/**
+ * Scala di default del logo (in %) data la sua proporzione: altezza target =
+ * 25% dell'altezza poster nominale (1500px), scala finale asintotica a 75%.
+ * Ritorna null quando il logo non ha dimensioni (nessuna scala calcolabile);
+ * i call site usano `?? 75` come default. Deduplica la formula che ricorreva
+ * in context.tsx (2×), TransformControls e usePosterSave.
+ */
+export function logoDefaultScale(logo: TMDBImage): number | null {
+  if (!logo.width || !logo.height) return null
+  const maxH = Math.round(1500 * 0.25)
+  const effW = Math.round(maxH * logo.width / logo.height)
+  return Math.min(Math.round(effW / 1000 * 100), 75)
+}

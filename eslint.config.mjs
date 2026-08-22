@@ -7,12 +7,23 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
+      // L'estensione eslint-plugin-react-compiler NON e' installata: l'entry
+      // "react-compiler/react-compiler": "off" era un'opzione fantasma che non
+      // controllava nulla. Il React Compiler e' comunque attivo a build-time
+      // via `reactCompiler: true` in next.config.ts.
+      //
+      // react-hooks/refs e set-state-in-effect restano disattivate volontariamente:
+      // riabilitarle oggi produce 33 violazioni in 17 file (per lo piu' setState
+      // in effect con pattern di trottling/fetch legittimi e ref usati come cache
+      // di stato non serializzabile). E' una scelta documentata, non un default silenzioso.
+      // Prima di attivarle servirebbe un refactor mirato file-per-file.
       "react-hooks/refs": "off",
       "react-hooks/set-state-in-effect": "off",
-      "react-compiler/react-compiler": "off",
       "@next/next/no-img-element": "warn",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+      // Schema esterno non validato runtime (TMDB/Trakt): i cast `as X` residui
+      // andrebbero coperti da zod. Error i due sotto ora che sono puliti.
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     },
   },
   // Override default ignores of eslint-config-next.

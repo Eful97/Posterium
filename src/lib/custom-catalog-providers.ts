@@ -22,6 +22,41 @@ export interface ProviderDetectionResult {
   identifier?: string
 }
 
+/** Item di lista Letterboxd via StremThru (solo i campi che leggiamo). */
+interface StremThruListItem {
+  title?: string
+  name?: string
+  year?: string | number
+  type?: string
+  id_map?: { imdb?: string; tmdb?: string | number }
+  imdb_id?: string
+  tmdb_id?: string | number
+}
+
+/** Item di lista Trakt via StremThru (solo i campi che leggiamo). */
+interface TraktListItem {
+  type?: string
+  id_map?: { imdb?: string; tmdb?: string | number }
+  movie?: { ids?: { imdb?: string; tmdb?: number }; title?: string; name?: string; year?: number }
+  show?: { ids?: { imdb?: string; tmdb?: number }; title?: string; name?: string; year?: number }
+  // Variante "flat" (item senza movie/show, letta direttamente): il branch
+  // `it.movie || it.show || it` in fetchTraktList deve poterli leggere anche qui.
+  ids?: { imdb?: string; tmdb?: number }
+  title?: string
+  name?: string
+  year?: number
+}
+
+/** Film della TMDb Collection / List (solo i campi che leggiamo). */
+interface TmdbListPart {
+  id?: number
+  title?: string
+  name?: string
+  release_date?: string
+  first_air_date?: string
+  media_type?: string
+}
+
 /**
  * Riconosce il provider e suggerisce nome e tipo in base all'URL inserito.
  */
@@ -165,7 +200,7 @@ async function fetchLetterboxdList(url: string, limit: number = 500): Promise<MD
     }
 
     const json = await res.json()
-    const rawItems: any[] = json?.data?.items || json?.items || []
+    const rawItems: StremThruListItem[] = json?.data?.items || json?.items || []
     const items: MDBListEntry[] = []
 
     for (const item of rawItems) {
@@ -211,7 +246,7 @@ async function fetchTraktList(url: string, limit: number = 500): Promise<MDBList
 
       if (res && res.ok) {
         const json = await res.json()
-        const rawItems: any[] = json?.data?.items || json?.items || []
+        const rawItems: TraktListItem[] = json?.data?.items || json?.items || []
         if (rawItems.length > 0) {
           return rawItems.slice(0, limit).map((it) => {
             const idMap = it.id_map || {}
@@ -262,7 +297,7 @@ async function fetchTmdbCollectionOrList(
     if (!res || !res.ok) return []
 
     const data = await res.json()
-    const rawParts: any[] = data?.parts || data?.items || []
+    const rawParts: TmdbListPart[] = data?.parts || data?.items || []
 
     return rawParts.slice(0, limit).map((p) => ({
       imdb: "",

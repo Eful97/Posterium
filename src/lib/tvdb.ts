@@ -65,6 +65,7 @@ interface TvdbSearchResponse {
     objectID?: string
     name?: string
     type?: string
+    series?: { id?: number | string }
   }>
 }
 
@@ -152,7 +153,7 @@ export async function getTvdbSeriesId(remoteId: string, apiKey: string): Promise
 
     // Estrae il primo ID serie valido
     for (const item of results) {
-      const rawId = (item as any)?.series?.id ?? item.tvdb_id ?? item.id
+      const rawId = item?.series?.id ?? item.tvdb_id ?? item.id
       if (rawId) {
         const numId = typeof rawId === "number" ? rawId : parseInt(String(rawId), 10)
         if (Number.isFinite(numId) && numId > 0) {

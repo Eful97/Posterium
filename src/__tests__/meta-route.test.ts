@@ -53,6 +53,7 @@ describe("GET /meta/[type]/[id]", () => {
       }))
       // /movie/550/images for logo
       .mockResolvedValueOnce(Response.json({
+        id: 550,
         logos: [{ file_path: "/fight-club-logo.png", iso_639_1: "it" }],
       }))
 
@@ -273,6 +274,10 @@ describe("GET /meta/[type]/[id]", () => {
       .mockResolvedValueOnce(Response.json({ results: [] }))
       // /tv/1396/season/1
       .mockResolvedValueOnce(Response.json({
+        id: 1396,
+        season_number: 1,
+        name: "Season 1",
+        overview: "",
         episodes: [{ id: 101, season_number: 1, episode_number: 1, name: "Pilot" }],
       }))
 

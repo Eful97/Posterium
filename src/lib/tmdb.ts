@@ -1,3 +1,184 @@
+import { z } from "zod"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("tmdb")
+
+// ── Validazione runtime delle risposte TMDB ─────────────────────────────
+// TMDB v3 è un contratto stabile ma NON viziato: i cast `data as X` ciechi
+// fanno sì che un cambio di forma della risposta propaghi undefined/garbage
+// in silenzio. Questi schemi validano SOLO i campi strutturali usati dal
+// codice (quelli che, se mancanti/cambiati di tipo, romperebbero la logica)
+// e passano attraverso tutto il resto (passthrough): l'intera risposta viene
+// preservata, ma un cambio di contratto reale emerge come errore descrittivo
+// nei percorsi try/catch già previsti — non più spazzatura silenziosa.
+//
+// Il catching dei campi è intenzionalmente permissivo: TMDB omette campi
+// a seconda del tipo (`title` solo sui film, `name` solo sulle serie, nessun
+// `media_type` su /popular e /trending, ecc.). Gli schemi devono accettare
+// BOTH la forma reale E quella del mock server e2e (e2e/mock-server.mjs).
+
+const tmdbMediaItemSchema = z.object({
+  id: z.number().int().positive(),
+  media_type: z.string().optional(),
+  title: z.string().optional(),
+  name: z.string().optional(),
+  poster_path: z.string().nullable().optional(),
+  release_date: z.string().nullable().optional(),
+  first_air_date: z.string().nullable().optional(),
+}).passthrough()
+
+const tmdbSearchResponseSchema = z.object({
+  results: z.array(tmdbMediaItemSchema).default([]),
+  page: z.number().optional(),
+  total_pages: z.number().optional(),
+  total_results: z.number().optional(),
+}).passthrough()
+
+const tmdbTrendingResponseSchema = z.object({
+  results: z.array(tmdbMediaItemSchema).default([]),
+  page: z.number().optional(),
+  total_pages: z.number().optional(),
+  total_results: z.number().optional(),
+}).passthrough()
+
+const tmdbImageSchema = z.object({
+  file_path: z.string(),
+  aspect_ratio: z.number().optional(),
+  height: z.number().optional(),
+  width: z.number().optional(),
+  iso_639_1: z.string().nullable().optional(),
+  vote_average: z.number().optional(),
+  vote_count: z.number().optional(),
+}).passthrough()
+
+const tmdbImagesResponseSchema = z.object({
+  id: z.number().int().positive(),
+  backdrops: z.array(tmdbImageSchema).default([]),
+  posters: z.array(tmdbImageSchema).default([]),
+  logos: z.array(tmdbImageSchema).default([]),
+}).passthrough()
+
+const tmdbExternalIdsSchema = z.object({
+  id: z.number().int().positive(),
+  imdb_id: z.string().nullable().optional(),
+}).passthrough()
+
+const tmdbKeywordItemSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+}).passthrough()
+
+const tmdbKeywordsResponseSchema = z.object({
+  id: z.number().int().positive().optional(),
+  keywords: z.array(tmdbKeywordItemSchema).default([]),
+  results: z.array(tmdbKeywordItemSchema).optional(),
+}).passthrough()
+
+const tmdbCompanySchema = z.object({
+  id: z.number().int().optional(),
+  name: z.string().optional(),
+  logo_path: z.string().nullable().optional(),
+  origin_country: z.string().optional(),
+}).passthrough()
+
+const tmdbGenreSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+}).passthrough()
+
+const tmdbEpisodeSchema = z.object({
+  id: z.number().int(),
+  episode_number: z.number().optional(),
+  season_number: z.number().optional(),
+  name: z.string().nullable().optional(),
+  overview: z.string().nullable().optional(),
+  still_path: z.string().nullable().optional(),
+  air_date: z.string().nullable().optional(),
+}).passthrough()
+
+const tmdbSeasonDetailsSchema = z.object({
+  id: z.number().int().positive(),
+  season_number: z.number().optional(),
+  name: z.string().optional(),
+  overview: z.string().nullable().optional(),
+  episodes: z.array(tmdbEpisodeSchema).default([]),
+}).passthrough()
+
+const tmdbEpisodeGroupItemSchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  order: z.number().optional(),
+  description: z.string().optional(),
+}).passthrough()
+
+const tmdbEpisodeGroupsResponseSchema = z.object({
+  results: z.array(tmdbEpisodeGroupItemSchema).default([]),
+}).passthrough()
+
+// I dettagli sono il payload più ricco: la maggior parte dei campi è opzionale
+// e varia per tipo di contenuto (film vs serie). `id` resta l'ancora
+// obbligatoria; tutto il resto passa attraverso.
+const tmdbDetailsSchema = z.object({
+  id: z.number().int().positive(),
+  title: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
+  overview: z.string().nullable().optional(),
+  tagline: z.string().nullable().optional(),
+  backdrop_path: z.string().nullable().optional(),
+  poster_path: z.string().nullable().optional(),
+  genres: z.array(tmdbGenreSchema).optional(),
+  vote_average: z.number().optional(),
+  vote_count: z.number().optional(),
+  runtime: z.number().optional(),
+  episode_run_time: z.array(z.number()).optional(),
+  type: z.string().optional(),
+  status: z.string().optional(),
+  release_date: z.string().nullable().optional(),
+  first_air_date: z.string().nullable().optional(),
+  last_air_date: z.string().nullable().optional(),
+  original_language: z.string().optional(),
+  networks: z.array(tmdbCompanySchema).optional(),
+  production_companies: z.array(tmdbCompanySchema).optional(),
+}).passthrough()
+
+// Stessa cosa per i gruppi di episodi: struttura annidata, tutto opzionale
+// tranne l'ancora `id`.
+const tmdbEpisodeGroupDetailsSchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  group_count: z.number().optional(),
+  groups: z.array(z.object({
+    id: z.string(),
+    name: z.string().optional(),
+    order: z.number().optional(),
+    episodes: z.array(tmdbEpisodeSchema).default([]),
+  }).passthrough()).default([]),
+}).passthrough()
+
+const tmdbFindResponseSchema = z.object({
+  movie_results: z.array(z.object({ id: z.number().int().positive() }).passthrough()).default([]),
+  tv_results: z.array(z.object({ id: z.number().int().positive() }).passthrough()).default([]),
+}).passthrough()
+
+/**
+ * Valida una risposta TMDB con lo schema dato. Su successo restituisce la
+ * risposta (i campi conosciuti tipizzati, il resto passthrough). Su fallimento
+ * logga un warning COL nome dell'endpoint e i path dei problemi (mai dati o
+ * chiavi API) e lancia un errore descrittivo: i chiamanti hanno già try/catch
+ * o `.catch()` per gli errori TMDB, quindi degradano con grazia — ma il cambio
+ * di contratto non passa più inosservato.
+ */
+function parseTmdb<T>(endpoint: string, schema: z.ZodType<unknown>, data: unknown): T {
+  const parsed = schema.safeParse(data)
+  if (!parsed.success) {
+    const problems = parsed.error.issues.slice(0, 5).map((i) => i.path.join(".") || "(root)").join(", ")
+    log.warn(`TMDB ${endpoint}: risposta non conforme allo schema — contratto cambiato?`, { problems })
+    throw new Error(`TMDB ${endpoint}: risposta inattesa dal provider (${problems})`)
+  }
+  return parsed.data as T
+}
+
 // Base URL sovrascrivibili via env: usate dai test E2E per puntare al mock
 // server locale (e2e/mock-server.mjs) senza chiave TMDB reale.
 // Esportata (finding 14): imdb-resolver.ts la usa invece di hardcodare la URL.
@@ -171,12 +352,12 @@ export interface TMDBSearchResponse {
 
 export async function searchMulti(query: string, language = "it-IT", apiKey?: string, page = 1): Promise<TMDBSearchResponse> {
   const data = await tmdbFetch(`/search/multi?query=${encodeURIComponent(query)}&language=${language}&page=${page}`, apiKey)
-  return data as TMDBSearchResponse
+  return parseTmdb<TMDBSearchResponse>("search/multi", tmdbSearchResponseSchema, data)
 }
 
 export async function searchMovies(query: string, language = "it-IT", apiKey?: string, page = 1): Promise<TMDBSearchResponse> {
   const data = await tmdbFetch(`/search/movie?query=${encodeURIComponent(query)}&language=${language}&page=${page}`, apiKey)
-  const res = data as TMDBSearchResponse
+  const res = parseTmdb<TMDBSearchResponse>("search/movie", tmdbSearchResponseSchema, data)
   if (res?.results) {
     res.results = res.results.map((r) => ({ ...r, media_type: "movie" }))
   }
@@ -185,7 +366,7 @@ export async function searchMovies(query: string, language = "it-IT", apiKey?: s
 
 export async function searchTV(query: string, language = "it-IT", apiKey?: string, page = 1): Promise<TMDBSearchResponse> {
   const data = await tmdbFetch(`/search/tv?query=${encodeURIComponent(query)}&language=${language}&page=${page}`, apiKey)
-  const res = data as TMDBSearchResponse
+  const res = parseTmdb<TMDBSearchResponse>("search/tv", tmdbSearchResponseSchema, data)
   if (res?.results) {
     res.results = res.results.map((r) => ({ ...r, media_type: "tv" }))
   }
@@ -194,17 +375,17 @@ export async function searchTV(query: string, language = "it-IT", apiKey?: strin
 
 export async function getPopularMovies(page = 1, language = "it-IT", apiKey?: string): Promise<TMDBSearchResponse> {
   const data = await tmdbFetch(`/movie/popular?language=${language}&page=${page}&region=IT`, apiKey)
-  return data as TMDBSearchResponse
+  return parseTmdb<TMDBSearchResponse>("movie/popular", tmdbSearchResponseSchema, data)
 }
 
 export async function getPopularTV(page = 1, language = "it-IT", apiKey?: string): Promise<TMDBSearchResponse> {
   const data = await tmdbFetch(`/tv/popular?language=${language}&page=${page}&region=IT`, apiKey)
-  return data as TMDBSearchResponse
+  return parseTmdb<TMDBSearchResponse>("tv/popular", tmdbSearchResponseSchema, data)
 }
 
 export async function getImages(mediaType: "movie" | "tv", id: number, languages = "en,null", apiKey?: string, signal?: AbortSignal): Promise<TMDBImagesResponse> {
   const data = await tmdbFetch(`/${mediaType}/${id}/images?include_image_language=${encodeURIComponent(languages)}`, apiKey, signal)
-  return data as TMDBImagesResponse
+  return parseTmdb<TMDBImagesResponse>("images", tmdbImagesResponseSchema, data)
 }
 
 export function posterUrl(path: string, size = "w500"): string {
@@ -221,7 +402,7 @@ export interface TMDBExternalIds {
 
 export async function getExternalIds(mediaType: "movie" | "tv", id: number, apiKey?: string, signal?: AbortSignal): Promise<TMDBExternalIds> {
   const data = await tmdbFetch(`/${mediaType}/${id}/external_ids`, apiKey, signal)
-  return data as TMDBExternalIds
+  return parseTmdb<TMDBExternalIds>("external_ids", tmdbExternalIdsSchema, data)
 }
 
 export interface TMDBKeywordsResponse {
@@ -232,7 +413,7 @@ export interface TMDBKeywordsResponse {
 
 export async function getKeywords(mediaType: "movie" | "tv", id: number, apiKey?: string, signal?: AbortSignal): Promise<string[]> {
   try {
-    const data = (await tmdbFetch(`/${mediaType}/${id}/keywords`, apiKey, signal)) as TMDBKeywordsResponse
+    const data = parseTmdb<TMDBKeywordsResponse>("keywords", tmdbKeywordsResponseSchema, await tmdbFetch(`/${mediaType}/${id}/keywords`, apiKey, signal))
     const list = data.keywords || data.results || []
     return list.map((k) => k.name)
   } catch {
@@ -279,12 +460,12 @@ export interface TMDBDetails {
 
 export async function getDetails(mediaType: "movie" | "tv", id: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBDetails> {
   const data = await tmdbFetch(`/${mediaType}/${id}?language=${language}`, apiKey, signal)
-  return data as TMDBDetails
+  return parseTmdb<TMDBDetails>("details", tmdbDetailsSchema, data)
 }
 
 export async function getFullDetails(mediaType: "movie" | "tv", id: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBDetails> {
   const data = await tmdbFetch(`/${mediaType}/${id}?language=${language}&append_to_response=credits,videos,external_ids`, apiKey, signal)
-  return data as TMDBDetails
+  return parseTmdb<TMDBDetails>("full_details", tmdbDetailsSchema, data)
 }
 
 export interface TMDBEpisode {
@@ -310,7 +491,7 @@ export interface TMDBSeasonDetails {
 export async function getTVSeason(tvId: number, seasonNumber: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBSeasonDetails | null> {
   try {
     const data = await tmdbFetch(`/tv/${tvId}/season/${seasonNumber}?language=${language}`, apiKey, signal)
-    return data as TMDBSeasonDetails
+    return parseTmdb<TMDBSeasonDetails>("season", tmdbSeasonDetailsSchema, data)
   } catch {
     return null
   }
@@ -345,7 +526,7 @@ export interface TMDBEpisodeGroupDetails {
 export async function getTVEpisodeGroups(tvId: number, apiKey?: string, signal?: AbortSignal): Promise<TMDBEpisodeGroupItem[]> {
   try {
     const data = await tmdbFetch(`/tv/${tvId}/episode_groups`, apiKey, signal)
-    return (data as TMDBEpisodeGroupsResponse)?.results || []
+    return parseTmdb<TMDBEpisodeGroupsResponse>("episode_groups", tmdbEpisodeGroupsResponseSchema, data)?.results || []
   } catch {
     return []
   }
@@ -354,7 +535,7 @@ export async function getTVEpisodeGroups(tvId: number, apiKey?: string, signal?:
 export async function getTVEpisodeGroup(groupId: string, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBEpisodeGroupDetails | null> {
   try {
     const data = await tmdbFetch(`/tv/episode_group/${groupId}?language=${language}`, apiKey, signal)
-    return data as TMDBEpisodeGroupDetails
+    return parseTmdb<TMDBEpisodeGroupDetails>("episode_group", tmdbEpisodeGroupDetailsSchema, data)
   } catch {
     return null
   }
@@ -375,7 +556,7 @@ export interface TMDBTrendingResponse {
 
 export async function getTrending(mediaType: "movie" | "tv", timeWindow: "day" | "week" = "day", apiKey?: string, page = 1): Promise<TMDBTrendingResponse> {
   const data = await tmdbFetch(`/trending/${mediaType}/${timeWindow}?language=it-IT&page=${page}`, apiKey)
-  return data as TMDBTrendingResponse
+  return parseTmdb<TMDBTrendingResponse>("trending", tmdbTrendingResponseSchema, data)
 }
 
 /** Fix L26: svuota la cache TMDB condivisa (per /api/cache/clear). */
@@ -389,21 +570,27 @@ export function __clearTMDBCache(): void {
  * invece di un fetch dedicato come faceva imdb-resolver.
  */
 export async function tmdbFindByImdb(imdbId: string, mediaType: "movie" | "tv", apiKey?: string, signal?: AbortSignal): Promise<number | null> {
-  const data = await tmdbFetch(`/find/${encodeURIComponent(imdbId)}?external_source=imdb_id`, apiKey, signal) as {
-    movie_results?: { id?: number }[]
-    tv_results?: { id?: number }[]
-  }
-  const id = mediaType === "movie"
-    ? data.movie_results?.[0]?.id
-    : (data.tv_results?.[0]?.id ?? data.movie_results?.[0]?.id)
-  return typeof id === "number" && id > 0 ? id : null
+  const data = await tmdbFetch(`/find/${encodeURIComponent(imdbId)}?external_source=imdb_id`, apiKey, signal)
+  return resolveFindId(parseTmdbFind("find/imdb_id", data), mediaType)
 }
 
 export async function tmdbFindByTvdb(tvdbId: string | number, mediaType: "movie" | "tv", apiKey?: string, signal?: AbortSignal): Promise<number | null> {
-  const data = await tmdbFetch(`/find/${encodeURIComponent(String(tvdbId))}?external_source=tvdb_id`, apiKey, signal) as {
-    movie_results?: { id?: number }[]
-    tv_results?: { id?: number }[]
+  const data = await tmdbFetch(`/find/${encodeURIComponent(String(tvdbId))}?external_source=tvdb_id`, apiKey, signal)
+  return resolveFindId(parseTmdbFind("find/tvdb_id", data), mediaType)
+}
+
+// Il find degrada a null (id non risolvibile) anche su un contratto rotto, esattamente
+// come farebbe su una risposta di rete vuota: un id "non trovato" non deve mai 500are il meta.
+function parseTmdbFind(endpoint: string, data: unknown): { movie_results?: { id?: number }[]; tv_results?: { id?: number }[] } | null {
+  try {
+    return parseTmdb<{ movie_results?: { id?: number }[]; tv_results?: { id?: number }[] }>(endpoint, tmdbFindResponseSchema, data)
+  } catch {
+    return null
   }
+}
+
+function resolveFindId(data: { movie_results?: { id?: number }[]; tv_results?: { id?: number }[] } | null, mediaType: "movie" | "tv"): number | null {
+  if (!data) return null
   const id = mediaType === "movie"
     ? data.movie_results?.[0]?.id
     : (data.tv_results?.[0]?.id ?? data.movie_results?.[0]?.id)

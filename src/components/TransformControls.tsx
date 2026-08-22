@@ -5,6 +5,7 @@ import { Search, ArrowLeftRight, ArrowUpDown } from "lucide-react"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
+import { logoDefaultScale } from "@/lib/logo-selection"
 import { SliderRow } from "@/components/SliderRow"
 
 export function TransformControls() {
@@ -19,12 +20,8 @@ export function TransformControls() {
 
   const defaultLogoScale = () => {
     const l = selectedLogo
-    if (!l || !l.width || !l.height) { ed.setLogoScale(75); return }
-    const lw = l.width
-    const lh = l.height
-    const maxH = Math.round(1500 * 0.25)
-    const effW = Math.round(maxH * lw / lh)
-    ed.setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
+    if (!l) { ed.setLogoScale(75); return }
+    ed.setLogoScale(logoDefaultScale(l) ?? 75)
   }
 
   return (

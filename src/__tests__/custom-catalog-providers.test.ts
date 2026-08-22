@@ -117,7 +117,7 @@ describe("fetchUnifiedCatalogItems", () => {
         })
       }
       return Promise.resolve({ ok: false, status: 404 })
-    }) as any
+    }) as unknown as typeof fetch
 
     const items = await fetchUnifiedCatalogItems("https://letterboxd.com/arinbicer/list/mcu/")
     expect(items.length).toBe(2)

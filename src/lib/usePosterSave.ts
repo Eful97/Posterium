@@ -5,6 +5,7 @@ import type { SearchResult, TMDBImage, Mapping } from "./types"
 import { titleOf } from "./utils"
 import { computeTopBadge, type BadgeInput } from "./poster-badge"
 import { defaultGradientHeightForPoster } from "./gradient-defaults"
+import { logoDefaultScale } from "./logo-selection"
 import { t } from "./i18n"
 import type { EnrichedAnimeItem } from "./validation"
 import { http } from "./http"
@@ -99,13 +100,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
   const selectLogo = useCallback(async (logo: TMDBImage) => {
     setSelectedLogo(logo)
     setLogoDisabled(false)
-    if (logo.width && logo.height) {
-      const maxH = Math.round(1500 * 0.25)
-      const effW = Math.round(maxH * logo.width / logo.height)
-      setLogoScale(Math.min(Math.round(effW / 1000 * 100), 75))
-    } else {
-      setLogoScale(75)
-    }
+    setLogoScale(logoDefaultScale(logo) ?? 75)
     setLogoOffsetX(0)
     setLogoOffsetY(0)
     if (!previewPoster && selected) {
