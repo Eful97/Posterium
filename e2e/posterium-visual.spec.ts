@@ -42,7 +42,16 @@ async function renderPoster(page: Page, posterUrl: string) {
 //
 
 test("home — full page", async ({ page }) => {
-  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_profile_stateless", "1"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
+  await page.addInitScript(() => {
+    try {
+      localStorage.clear()
+      localStorage.setItem("posterium_profile_id", "e2e")
+      localStorage.setItem("posterium_profile_stateless", "1")
+      localStorage.setItem("posterium_onboarding_done", "true")
+      localStorage.setItem("preferred_lang", "it")
+      localStorage.setItem("tmdb_key", "")
+    } catch {}
+  })
   await page.goto("/")
   const logo = page.getByAltText("Posterium")
   const logoFallback = page.getByText("Posterium")
@@ -56,7 +65,16 @@ test("home — full page", async ({ page }) => {
 })
 
 test("home — hero viewport", async ({ page }) => {
-  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_profile_stateless", "1"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
+  await page.addInitScript(() => {
+    try {
+      localStorage.clear()
+      localStorage.setItem("posterium_profile_id", "e2e")
+      localStorage.setItem("posterium_profile_stateless", "1")
+      localStorage.setItem("posterium_onboarding_done", "true")
+      localStorage.setItem("preferred_lang", "it")
+      localStorage.setItem("tmdb_key", "")
+    } catch {}
+  })
   await page.goto("/")
   const logo = page.getByAltText("Posterium")
   const logoFallback = page.getByText("Posterium")
@@ -70,7 +88,16 @@ test("home — hero viewport", async ({ page }) => {
 
 test("home — mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.addInitScript(() => { try { localStorage.setItem("posterium_profile_id", "e2e"); localStorage.setItem("posterium_profile_stateless", "1"); localStorage.setItem("posterium_onboarding_done", "true") } catch {} })
+  await page.addInitScript(() => {
+    try {
+      localStorage.clear()
+      localStorage.setItem("posterium_profile_id", "e2e")
+      localStorage.setItem("posterium_profile_stateless", "1")
+      localStorage.setItem("posterium_onboarding_done", "true")
+      localStorage.setItem("preferred_lang", "it")
+      localStorage.setItem("tmdb_key", "")
+    } catch {}
+  })
   await page.goto("/")
   const logo = page.getByAltText("Posterium")
   const logoFallback = page.getByText("Posterium")
