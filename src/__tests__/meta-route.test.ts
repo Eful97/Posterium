@@ -249,4 +249,42 @@ describe("GET /meta/[type]/[id]", () => {
     expect(res.status).toBe(200)
     expect(body.meta).toBeNull()
   })
+
+  it("resolves tvdb: IDs via /find?external_source=tvdb_id", async () => {
+    vi.spyOn(globalThis, "fetch")
+      // /find/81189?external_source=tvdb_id
+      .mockResolvedValueOnce(Response.json({
+        tv_results: [{ id: 1396, name: "Breaking Bad" }],
+      }))
+      // /tv/1396 details
+      .mockResolvedValueOnce(Response.json({
+        id: 1396,
+        name: "Breaking Bad",
+        overview: "Un professore di chimica...",
+        first_air_date: "2008-01-20",
+        vote_average: 8.9,
+        genres: [{ id: 18, name: "Dramma" }],
+        external_ids: { imdb_id: "tt0903747" },
+        seasons: [{ season_number: 1, episode_count: 7 }],
+      }))
+      // /tv/1396/images
+      .mockResolvedValueOnce(Response.json({ logos: [] }))
+      // /tv/1396/episode_groups
+      .mockResolvedValueOnce(Response.json({ results: [] }))
+      // /tv/1396/season/1
+      .mockResolvedValueOnce(Response.json({
+        episodes: [{ id: 101, season_number: 1, episode_number: 1, name: "Pilot" }],
+      }))
+
+    const req = new NextRequest("http://localhost:3000/meta/series/tvdb:81189.json?api_key=settings-key")
+    const res = await GET(req, {
+      params: Promise.resolve({ type: "series", id: "tvdb:81189.json" }),
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.meta).not.toBeNull()
+    expect(body.meta.name).toBe("Breaking Bad")
+    expect(body.meta.videos[0].id).toBe("tt0903747:1:1")
+  })
 })

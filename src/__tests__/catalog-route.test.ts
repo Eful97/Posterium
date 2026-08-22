@@ -470,4 +470,24 @@ describe("GET /catalog/[type]/[id]", () => {
     expect(body.metas[0].id).toBe("tmdb:866398")
     expect(body.metas[1].id).toBe("tmdb:1588838")
   })
+
+  it("serves catalog from /c/[config]/catalog/[type]/[id] route", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(justWatchResponse(999, "tt0999999"))
+      .mockResolvedValueOnce(tmdbShowResponse(999))
+
+    const { GET: cGET } = await import("@/app/c/[config]/catalog/[type]/[id]/route")
+    const req = new NextRequest("http://localhost:3000/c/testcfg/catalog/movie/posterium-jw-movies.json?api_key=settings-key")
+    const res = await cGET(req, {
+      params: Promise.resolve({
+        config: "testcfg",
+        type: "movie",
+        id: "posterium-jw-movies.json",
+      }),
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.metas).toHaveLength(1)
+  })
 })

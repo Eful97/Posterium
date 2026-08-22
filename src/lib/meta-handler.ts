@@ -18,6 +18,7 @@ import {
   posterUrlOriginal,
   resolveRequestApiKey,
   tmdbFindByImdb,
+  tmdbFindByTvdb,
 } from "@/lib/tmdb"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
@@ -179,8 +180,15 @@ export async function posteriumMeta(
   } else if (cleanId.startsWith("tmdb:")) {
     const parsed = parseInt(cleanId.slice(5), 10)
     if (!Number.isNaN(parsed) && parsed > 0) tmdbId = parsed
-  } else if (cleanId.startsWith("kitsu:")) {
-    const parsed = parseInt(cleanId.slice(6), 10)
+  } else if (cleanId.startsWith("tvdb:")) {
+    const tvdbRaw = cleanId.slice(5)
+    tmdbId = await tmdbFindByTvdb(tvdbRaw, tmdbMediaType, apiKey)
+  } else if (cleanId.startsWith("tvdbc:")) {
+    const tvdbRaw = cleanId.slice(6)
+    tmdbId = await tmdbFindByTvdb(tvdbRaw, tmdbMediaType, apiKey)
+  } else if (cleanId.startsWith("kitsu:") || cleanId.startsWith("mal:") || cleanId.startsWith("anilist:") || cleanId.startsWith("anidb:")) {
+    const colonIdx = cleanId.indexOf(":")
+    const parsed = parseInt(cleanId.slice(colonIdx + 1), 10)
     if (!Number.isNaN(parsed) && parsed > 0) tmdbId = parsed
   } else {
     const parsed = parseInt(cleanId, 10)

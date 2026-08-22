@@ -378,3 +378,14 @@ export async function tmdbFindByImdb(imdbId: string, mediaType: "movie" | "tv", 
     : (data.tv_results?.[0]?.id ?? data.movie_results?.[0]?.id)
   return typeof id === "number" && id > 0 ? id : null
 }
+
+export async function tmdbFindByTvdb(tvdbId: string | number, mediaType: "movie" | "tv", apiKey?: string, signal?: AbortSignal): Promise<number | null> {
+  const data = await tmdbFetch(`/find/${encodeURIComponent(String(tvdbId))}?external_source=tvdb_id`, apiKey, signal) as {
+    movie_results?: { id?: number }[]
+    tv_results?: { id?: number }[]
+  }
+  const id = mediaType === "movie"
+    ? data.movie_results?.[0]?.id
+    : (data.tv_results?.[0]?.id ?? data.movie_results?.[0]?.id)
+  return typeof id === "number" && id > 0 ? id : null
+}

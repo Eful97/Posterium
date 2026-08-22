@@ -23,6 +23,8 @@ interface StremioMeta {
   name: string
   poster: string | null
   releaseInfo?: string
+  genres?: string[]
+  description?: string
 }
 
 export interface CatalogExtraParams {
@@ -564,6 +566,18 @@ export async function posteriumCatalog(
           }
         }
       }
+    }
+
+    if (extra.genre && extra.genre !== "Tutti" && metas.length > 0) {
+      const gLower = extra.genre.toLowerCase()
+      metas = metas.filter((m) => {
+        if (!m.genres || m.genres.length === 0) return true
+        return m.genres.some((g) => g.toLowerCase().includes(gLower) || gLower.includes(g.toLowerCase()))
+      })
+    }
+
+    if (typeof extra.skip === "number" && extra.skip > 0) {
+      metas = metas.slice(extra.skip)
     }
 
     const body = { metas }
