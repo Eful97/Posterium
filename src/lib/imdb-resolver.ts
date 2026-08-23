@@ -27,7 +27,7 @@ export async function resolveImdbToTmdb(imdbId: string, mediaType: "movie" | "tv
     const tmdbId = await tmdbFindByImdb(cleanId, mediaType, apiKey)
 
     if (tmdbId) {
-      cacheSet(cacheKey, tmdbId, ["tmdb", "imdb"], 86400 * 7)
+      cacheSet(cacheKey, tmdbId, ["tmdb", "imdb"], 86400 * 7 * 1000)
       return tmdbId
     }
     // No-match confermato (risposta 200 senza risultati): cache breve — un

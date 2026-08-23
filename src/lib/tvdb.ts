@@ -5,6 +5,7 @@
  * degli episodi delle serie TV con trame localizzate in italiano.
  */
 
+import crypto from "node:crypto"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("tvdb")
@@ -24,6 +25,22 @@ const episodesCache = new Map<string, { episodes: TvdbEpisode[]; expiry: number 
 
 const CACHE_TTL_REMOTE = 24 * 60 * 60 * 1000 // 24 ore
 const CACHE_TTL_EPISODES = 6 * 60 * 60 * 1000 // 6 ore
+
+const MAX_TOKEN_ENTRIES = 50
+const MAX_REMOTE_ENTRIES = 1000
+const MAX_EPISODE_ENTRIES = 200
+
+function setBounded<K, V>(map: Map<K, V>, key: K, value: V, maxEntries: number): void {
+  if (map.size >= maxEntries) {
+    const oldest = map.keys().next().value
+    if (oldest !== undefined) map.delete(oldest)
+  }
+  map.set(key, value)
+}
+
+function hashKey(key: string): string {
+  return crypto.createHash("sha256").update(key).digest("hex").slice(0, 16)
+}
 
 /** Pulisce le cache in-memory TVDB (utile per test o reload manuale) */
 export function clearTvdbCache(): void {
@@ -75,13 +92,14 @@ interface TvdbSearchResponse {
 export async function getTvdbToken(apiKey: string): Promise<string | null> {
   const cleanKey = apiKey.trim()
   if (!cleanKey) return null
+  const tokenKey = hashKey(cleanKey)
 
-  const cached = tokenCache.get(cleanKey)
+  const cached = tokenCache.get(tokenKey)
   if (cached && Date.now() < cached.expiry) {
     return cached.token
   }
 
-  const existingInflight = inflightTokens.get(cleanKey)
+  const existingInflight = inflightTokens.get(tokenKey)
   if (existingInflight) return existingInflight
 
   const fetchPromise = (async () => {
@@ -102,7 +120,7 @@ export async function getTvdbToken(apiKey: string): Promise<string | null> {
       const token = json?.data?.token
       if (typeof token === "string" && token.length > 0) {
         // Cache per 25 giorni
-        tokenCache.set(cleanKey, { token, expiry: Date.now() + 25 * 24 * 60 * 60 * 1000 })
+        setBounded(tokenCache, tokenKey, { token, expiry: Date.now() + 25 * 24 * 60 * 60 * 1000 }, MAX_TOKEN_ENTRIES)
         return token
       }
       return null
@@ -110,11 +128,11 @@ export async function getTvdbToken(apiKey: string): Promise<string | null> {
       log.error("TVDB login exception", { error: e instanceof Error ? e.message : String(e) })
       return null
     } finally {
-      inflightTokens.delete(cleanKey)
+      inflightTokens.delete(tokenKey)
     }
   })()
 
-  inflightTokens.set(cleanKey, fetchPromise)
+  inflightTokens.set(tokenKey, fetchPromise)
   return fetchPromise
 }
 
@@ -157,7 +175,7 @@ export async function getTvdbSeriesId(remoteId: string, apiKey: string): Promise
       if (rawId) {
         const numId = typeof rawId === "number" ? rawId : parseInt(String(rawId), 10)
         if (Number.isFinite(numId) && numId > 0) {
-          remoteIdCache.set(cleanRemoteId, { tvdbId: numId, expiry: Date.now() + CACHE_TTL_REMOTE })
+          setBounded(remoteIdCache, cleanRemoteId, { tvdbId: numId, expiry: Date.now() + CACHE_TTL_REMOTE }, MAX_REMOTE_ENTRIES)
           return numId
         }
       }
@@ -235,7 +253,7 @@ export async function getTvdbEpisodes(tvdbSeriesId: number, language = "ita", ap
     }
 
     if (allEpisodes.length > 0) {
-      episodesCache.set(cacheKey, { episodes: allEpisodes, expiry: Date.now() + CACHE_TTL_EPISODES })
+      setBounded(episodesCache, cacheKey, { episodes: allEpisodes, expiry: Date.now() + CACHE_TTL_EPISODES }, MAX_EPISODE_ENTRIES)
     }
 
     return allEpisodes

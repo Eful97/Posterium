@@ -25,8 +25,6 @@ export async function http<T = unknown>(path: string, opts: ApiOptions = {}): Pr
 
     try {
       const res = await fetch(path, { ...fetchOpts, signal: combinedSignal })
-      clearTimeout(timer)
-      signalPair?.cleanup()
 
       if (!res.ok) {
         // Fix L21: retry anche per i 5xx (il server può essere in riavvio o
@@ -51,8 +49,6 @@ export async function http<T = unknown>(path: string, opts: ApiOptions = {}): Pr
       if (!text) return null as T
       return JSON.parse(text) as T
     } catch (err) {
-      clearTimeout(timer)
-      signalPair?.cleanup()
       if (err instanceof ApiError) throw err
       if (isAbortError(err)) throw err
       if (attempt < retries) {
@@ -60,6 +56,9 @@ export async function http<T = unknown>(path: string, opts: ApiOptions = {}): Pr
         continue
       }
       throw err
+    } finally {
+      clearTimeout(timer)
+      signalPair?.cleanup()
     }
   }
   throw new Error("Unreachable")
@@ -105,5 +104,7 @@ function parseRetryAfter(header: string | null): number {
 }
 
 function isAbortError(err: unknown): boolean {
-  return err instanceof DOMException && err.name === "AbortError"
+  if (!err || typeof err !== "object") return false
+  const name = (err as { name?: string }).name
+  return name === "AbortError" || name === "TimeoutError"
 }

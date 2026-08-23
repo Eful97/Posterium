@@ -179,7 +179,7 @@ async function readFromMem(): Promise<Record<string, Mapping>> {
 
 async function persist(data: Record<string, Mapping>) {
   await ensureDataDir()
-  const tmp = `${DATA_FILE}.tmp`
+  const tmp = `${DATA_FILE}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}.tmp`
   try {
     await fsp.writeFile(tmp, JSON.stringify(data, null, 2))
     await fsp.rename(tmp, DATA_FILE)

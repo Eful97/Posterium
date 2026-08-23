@@ -1,4 +1,4 @@
-﻿import crypto from "node:crypto"
+import crypto from "node:crypto"
 import { cacheGet, cacheSet } from "@/lib/cache"
 import { searchMulti, searchMovies, searchTV, type TMDBMediaResult } from "@/lib/tmdb"
 import { toSearchResult, type SearchResult } from "@/lib/types"
@@ -303,7 +303,7 @@ export async function searchAi(
     }
 
     // Cache per 1 ora
-    cacheSet(cacheKey, payload, ["ai", "groq", "search"], 3600)
+    cacheSet(cacheKey, payload, ["ai", "groq", "search"], 60 * 60 * 1000)
     return payload
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)

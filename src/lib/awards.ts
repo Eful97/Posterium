@@ -110,8 +110,8 @@ function release(): void {
 
 // ---- SPARQL helper ----
 
-async function sparqlQuery(query: string): Promise<Record<string, { value: string; type: string }>[]> {
-  if (isBreakerOpen()) return []
+async function sparqlQuery(query: string): Promise<Record<string, { value: string; type: string }>[] | null> {
+  if (isBreakerOpen()) return null
 
   await acquire()
   try {
@@ -128,7 +128,7 @@ async function sparqlQuery(query: string): Promise<Record<string, { value: strin
           signal: AbortSignal.timeout(timeout),
         })
         if (res.status === 429) {
-          // Rate limited — backoff with jitter
+          recordFailure()
           const retryAfter = res.headers.get("Retry-After")
           const wait = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000
           await new Promise((r) => setTimeout(r, wait + Math.round(Math.random() * 1000)))
@@ -137,7 +137,7 @@ async function sparqlQuery(query: string): Promise<Record<string, { value: strin
         if (!res.ok) {
           if (attempt === 0) continue // retry
           recordFailure()
-          return []
+          return null
         }
         recordSuccess()
         const json = await res.json()
@@ -145,13 +145,13 @@ async function sparqlQuery(query: string): Promise<Record<string, { value: strin
       } catch {
         if (attempt === 1) {
           recordFailure()
-          return []
+          return null
         }
         // Small jitter before retry
         await new Promise((r) => setTimeout(r, 500 + Math.round(Math.random() * 500)))
       }
     }
-    return []
+    return null
   } finally {
     release()
   }
@@ -271,6 +271,10 @@ export async function fetchAllWikidata(tmdbId: number, mediaType: "movie" | "tv"
 
   try {
     const bindings = await sparqlQuery(query)
+    if (bindings === null) {
+      // Fallimento transitorio (breaker, timeout, 5xx): non inquinare la cache 24h
+      return { awards: [], nominations: [], studios: [], director: null }
+    }
 
     const awardLabels = new Set<string>()
     const nominationLabels = new Set<string>()

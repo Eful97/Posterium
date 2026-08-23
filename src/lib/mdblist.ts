@@ -93,9 +93,14 @@ export async function fetchMDBList(listKey: string, apiKey?: string): Promise<MD
       items.push({ imdb, title, year, tmdb })
       if (items.length >= 20) break
     }
-    if (items.length > 0) cacheSet(cacheKey, items, ["mdblist"], CACHE_TTL_MS)
+    if (items.length > 0) {
+      cacheSet(cacheKey, items, ["mdblist"], CACHE_TTL_MS)
+    } else {
+      cacheSet(cacheKey, [], ["mdblist"], 60_000)
+    }
     return items
   } catch {
+    cacheSet(cacheKey, [], ["mdblist"], 60_000)
     return []
   }
 }
@@ -232,9 +237,14 @@ export async function fetchCustomMDBList(urlOrSlug: string, apiKey?: string, lim
       items.push({ imdb, title, year, tmdb, mediatype })
       if (items.length >= limit) break
     }
-    if (items.length > 0) cacheSet(cacheKey, items, ["mdblist"], CACHE_TTL_MS)
+    if (items.length > 0) {
+      cacheSet(cacheKey, items, ["mdblist"], CACHE_TTL_MS)
+    } else {
+      cacheSet(cacheKey, [], ["mdblist"], 60_000)
+    }
     return items
   } catch {
+    cacheSet(cacheKey, [], ["mdblist"], 60_000)
     return []
   }
 }

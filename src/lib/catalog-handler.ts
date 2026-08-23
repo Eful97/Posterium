@@ -286,7 +286,7 @@ export async function posteriumCatalog(
   if (extra.search) {
     if (!apiKey) return catalogResponse({ metas: [] })
     const page = Math.floor((extra.skip || 0) / 20) + 1
-    const searchCacheKey = `stremio:search:${stType}:${hashFragment(extra.search)}:p${page}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+    const searchCacheKey = `stremio:search:${stType}:${hashFragment(extra.search)}:p${page}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
     const cachedSearch = cacheGet<{ metas: StremioMeta[] }>(searchCacheKey)
     if (cachedSearch) return catalogResponse(cachedSearch)
 
@@ -299,7 +299,7 @@ export async function posteriumCatalog(
 
       // --- Fallback AI (Groq): solo se TMDB non trova nulla per questo tipo ---
       if (items.length === 0) {
-        const aiCacheKey = `stremio:search-ai:${stType}:${hashFragment(extra.search)}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+        const aiCacheKey = `stremio:search-ai:${stType}:${hashFragment(extra.search)}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
         const cachedAi = cacheGet<{ metas: StremioMeta[] }>(aiCacheKey)
         const aiMetas = cachedAi?.metas ?? await aiSearchFallback(req, stType, extra.search, apiKey, userParam, configParam, mdblistKeyParam)
         if (aiMetas.length > 0) {
@@ -337,7 +337,7 @@ export async function posteriumCatalog(
     return catalogResponse({ metas: [] })
   }
 
-  const cacheKey = `stremio:catalog:v2:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+  const cacheKey = `stremio:catalog:v2:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
 
@@ -375,8 +375,7 @@ export async function posteriumCatalog(
           }
         }
 
-        const skip = extra.skip || 0
-        const pagedItems = validItems.slice(skip, skip + 100)
+        const pagedItems = validItems.slice(0, 100)
 
         const results = await Promise.all(pagedItems.map(async (item, idx) => {
           const tmdbId = Number(item.tmdb)
@@ -397,6 +396,7 @@ export async function posteriumCatalog(
             title,
             releaseInfo,
             rank: idx + 1,
+            genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
           }
         }))
         const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null)
@@ -408,6 +408,7 @@ export async function posteriumCatalog(
             name: r.title,
             poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
             releaseInfo: r.releaseInfo,
+            genres: r.genres,
           }
         }))
       }
@@ -440,6 +441,7 @@ export async function posteriumCatalog(
           name: r.d.title || r.d.name || "",
           poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam),
           releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
+          genres: (r.d.genres || []).map((g) => g.name).filter(Boolean),
         }
       }))
     } else if (catalogId.startsWith("posterium-anime")) {
@@ -473,6 +475,7 @@ export async function posteriumCatalog(
           name,
           releaseInfo,
           rank: idx + 1,
+          genres: (d?.genres || []).map((g) => g.name).filter(Boolean),
         }
       }))
       const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null).slice(0, 20)
@@ -484,6 +487,7 @@ export async function posteriumCatalog(
           name: r.name,
           poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
           releaseInfo: r.releaseInfo,
+          genres: r.genres,
         }
       }))
     } else {
@@ -524,6 +528,7 @@ export async function posteriumCatalog(
               imdbId: row.imdbId,
               title,
               releaseInfo: (details?.release_date || details?.first_air_date || "").slice(0, 4) || undefined,
+              genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
             }
           }))
           const validResults = results.filter((r) => r.title.length > 0)
@@ -535,6 +540,7 @@ export async function posteriumCatalog(
               name: r.title,
               poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam),
               releaseInfo: r.releaseInfo,
+              genres: r.genres,
             }
           }))
         } else if (slug && apiKey) {
@@ -564,6 +570,7 @@ export async function posteriumCatalog(
                 name: italianTitle,
                 poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam, mdblistKeyParam),
                 releaseInfo: (details?.release_date || details?.first_air_date || item.releaseDate)?.slice(0, 4) || undefined,
+                genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
               }
             }))
           }

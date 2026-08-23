@@ -98,8 +98,10 @@ export async function getJWRankings(
     if (result.length >= first) break
   }
 
-  if (rankingsCache.size >= CACHE_MAX) rankingsCache.delete(rankingsCache.keys().next().value!)
-  rankingsCache.set(cacheKey, { data: result, timestamp: Date.now() })
+  if (result.length > 0) {
+    if (rankingsCache.size >= CACHE_MAX) rankingsCache.delete(rankingsCache.keys().next().value!)
+    rankingsCache.set(cacheKey, { data: result, timestamp: Date.now() })
+  }
   return result
 }
 

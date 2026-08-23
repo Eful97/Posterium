@@ -27,9 +27,9 @@ export async function GET(req: NextRequest) {
   try {
     let url: string
     if (origLang) {
-      url = `${TMDB_BASE}/discover/tv?api_key=${apiKey}&with_original_language=${encodeURIComponent(origLang)}&sort_by=popularity.desc&language=it-IT`
+      url = `${TMDB_BASE}/discover/tv?api_key=${encodeURIComponent(apiKey)}&with_original_language=${encodeURIComponent(origLang)}&sort_by=popularity.desc&language=it-IT`
     } else {
-      url = `${TMDB_BASE}/trending/tv/week?api_key=${apiKey}&language=it-IT`
+      url = `${TMDB_BASE}/trending/tv/week?api_key=${encodeURIComponent(apiKey)}&language=it-IT`
     }
 
     const res = await fetch(url, { signal: AbortSignal.timeout(15000) })

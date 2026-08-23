@@ -186,11 +186,7 @@ export async function posteriumMeta(
   } else if (cleanId.startsWith("tvdbc:")) {
     const tvdbRaw = cleanId.slice(6)
     tmdbId = await tmdbFindByTvdb(tvdbRaw, tmdbMediaType, apiKey)
-  } else if (cleanId.startsWith("kitsu:") || cleanId.startsWith("mal:") || cleanId.startsWith("anilist:") || cleanId.startsWith("anidb:")) {
-    const colonIdx = cleanId.indexOf(":")
-    const parsed = parseInt(cleanId.slice(colonIdx + 1), 10)
-    if (!Number.isNaN(parsed) && parsed > 0) tmdbId = parsed
-  } else {
+  } else if (/^\d+$/.test(cleanId)) {
     const parsed = parseInt(cleanId, 10)
     if (!Number.isNaN(parsed) && parsed > 0) tmdbId = parsed
   }
@@ -199,7 +195,7 @@ export async function posteriumMeta(
     return metaResponse({ meta: null })
   }
 
-  const cacheKey = `stremio:meta:${stType}:${cleanId}:pv${POSTER_URL_VERSION}${userParam ? `:u${userParam}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${tvdbApiKey ? `:tk${hashFragment(tvdbApiKey)}` : ""}:es${episodeMetadataSource}`
+  const cacheKey = `stremio:meta:${stType}:${cleanId}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${tvdbApiKey ? `:tk${hashFragment(tvdbApiKey)}` : ""}:es${episodeMetadataSource}`
   const cached = cacheGet<{ meta: StremioMetaDetail }>(cacheKey)
   if (cached) return metaResponse(cached)
 

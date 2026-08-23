@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { importMappings } from "@/lib/store"
+import type { Mapping } from "@/lib/types"
 import { mappingSchema } from "@/lib/validation"
 import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
@@ -45,12 +46,15 @@ export async function POST(req: NextRequest) {
   if (raw.length > MAX_MAPPINGS) {
     return Response.json({ error: `Too many mappings (max ${MAX_MAPPINGS})` }, { status: 413 })
   }
-  const valid: typeof raw = []
+  const valid: Mapping[] = []
   const errors: Record<number, unknown> = {}
   raw.forEach((item: unknown, i: number) => {
     const parsed = mappingSchema.safeParse(item)
     if (parsed.success) {
-      valid.push(item)
+      valid.push({
+        ...parsed.data,
+        updatedAt: (parsed.data as { updatedAt?: string }).updatedAt || new Date().toISOString(),
+      } as Mapping)
     } else {
       errors[i] = parsed.error.flatten()
     }
