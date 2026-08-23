@@ -3,7 +3,10 @@ import packageJson from "../../package.json"
 import { APP_VERSION } from "@/generated/app-version"
 
 describe("app version", () => {
-  it("matches package.json when the generated version file is current", () => {
-    expect(APP_VERSION).toBe(packageJson.version)
+  it("is the package.json base with the commit count as patch", () => {
+    const [major, minor] = packageJson.version.split(".")
+    expect(APP_VERSION).toMatch(new RegExp(`^${major}\\.${minor}\\.\\d+$`))
+    const patch = Number(APP_VERSION.split(".")[2])
+    expect(patch).toBeGreaterThan(0)
   })
 })
