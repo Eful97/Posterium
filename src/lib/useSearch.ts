@@ -8,7 +8,8 @@ import { useToast } from "@/components/Toast"
 function readRecentSearches(): string[] {
   if (typeof window === "undefined" || !window.localStorage) return []
   try {
-    return JSON.parse(window.localStorage.getItem("recent_searches") || "[]")
+    const raw = JSON.parse(window.localStorage.getItem("recent_searches") || "[]")
+    return Array.isArray(raw) ? raw.filter((s): s is string => typeof s === "string") : []
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     console.warn(`[search] Failed to read recent searches: ${message}`)

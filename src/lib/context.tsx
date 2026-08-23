@@ -350,6 +350,12 @@ export function usePosterium(): PosteriumCtx {
 
   const [urlPattern, setUrlPattern] = useState("")
   const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    }
+  }, [])
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
   const [metaInfo, setMetaInfo] = useState<MetaInfo>({ genres: [], voteAverage: 0 })
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -620,10 +626,12 @@ export function usePosterium(): PosteriumCtx {
     const extImdbId = item.imdb_id || details.imdb_id
     if (extImdbId) {
       http<{ match?: { key: string; rank: number } }>(`/api/mdblist?imdb=${extImdbId}&api_key=${mdblistApiKey}`, { timeout: 15000 }).then((d) => {
-        if (d?.match) {
-          setMdblistMatch(d.match)
+        if (navigation.fetchIdRef.current === fetchId) {
+          setMdblistMatch(d?.match || null)
         }
       }).catch((e) => { console.error("[posterium] MDBList lookup failed:", e) })
+    } else {
+      setMdblistMatch(null)
     }
     if (!item.poster_path && data.posters?.length > 0) {
       const first = data.posters.find((p: TMDBImage) => p.iso_639_1) || data.posters[0]
@@ -647,7 +655,9 @@ export function usePosterium(): PosteriumCtx {
     const mdblistParam = mdblistApiKey ? "&mdblist_key=" + encodeURIComponent(mdblistApiKey) : ""
     const rsrcParam = ratingSources && ratingSources.length > 0 ? "&rsrc=" + encodeURIComponent(ratingSources.join(",")) : ""
     const detailsUrl = `/api/tmdb/${itemId}/details?type=${itemType}&language=${lang}&api_key=${tmdbKey}${mdblistParam}${rsrcParam}`
+    let active = true
     http<{ voteAverage: number; aggregatedRatings?: AggregatedRatings | null }>(detailsUrl, { timeout: 15000 }).then((d) => {
+      if (!active) return
       if (typeof d?.voteAverage === "number" && d.voteAverage > 0) {
         setMetaInfo((prev) => ({
           ...prev,
@@ -656,6 +666,9 @@ export function usePosterium(): PosteriumCtx {
         }))
       }
     }).catch(() => {})
+    return () => {
+      active = false
+    }
   }, [ratingSources]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Poster image refresh ---
@@ -716,6 +729,8 @@ export function usePosterium(): PosteriumCtx {
     navigation.setSelectedLogo(null)
     setSelectedBackdrop(null)
     navigation.setPreviewPoster(null)
+    setTrendRank(null)
+    setMdblistMatch(null)
     setMetaInfo({ genres: [], voteAverage: 0 })
     setLoadingImages(true)
     setOpenSections({})
@@ -856,7 +871,8 @@ export function usePosterium(): PosteriumCtx {
   const copyUrl = async () => {
     await navigator.clipboard.writeText(urlPattern)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
   }
 
   const posterActivePath = navigation.previewPoster?.file_path

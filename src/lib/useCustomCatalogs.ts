@@ -25,23 +25,53 @@ export function useCustomCatalogs(
 
     const savedCustomCats = safeGetItem("posterium_custom_catalogs")
     if (savedCustomCats) {
-      try { localCustom = JSON.parse(savedCustomCats); setCustomCatalogsState(localCustom) } catch {}
+      try {
+        const parsed = JSON.parse(savedCustomCats)
+        if (Array.isArray(parsed)) {
+          localCustom = parsed
+          setCustomCatalogsState(localCustom)
+        }
+      } catch {}
     }
     const savedDisabledCats = safeGetItem("posterium_disabled_catalogs")
     if (savedDisabledCats) {
-      try { localDisabled = JSON.parse(savedDisabledCats); setDisabledCatalogIdsState(localDisabled) } catch {}
+      try {
+        const parsed = JSON.parse(savedDisabledCats)
+        if (Array.isArray(parsed)) {
+          localDisabled = parsed
+          setDisabledCatalogIdsState(localDisabled)
+        }
+      } catch {}
     }
     const savedHomeDisabledCats = safeGetItem("posterium_home_disabled_catalogs")
     if (savedHomeDisabledCats) {
-      try { localHomeDisabled = JSON.parse(savedHomeDisabledCats); setHomeDisabledCatalogIdsState(localHomeDisabled) } catch {}
+      try {
+        const parsed = JSON.parse(savedHomeDisabledCats)
+        if (Array.isArray(parsed)) {
+          localHomeDisabled = parsed
+          setHomeDisabledCatalogIdsState(localHomeDisabled)
+        }
+      } catch {}
     }
     const savedOrder = safeGetItem("posterium_catalog_order")
     if (savedOrder) {
-      try { localOrder = JSON.parse(savedOrder); setCatalogOrderState(localOrder) } catch {}
+      try {
+        const parsed = JSON.parse(savedOrder)
+        if (Array.isArray(parsed)) {
+          localOrder = parsed
+          setCatalogOrderState(localOrder)
+        }
+      } catch {}
     }
     const savedRenames = safeGetItem("posterium_catalog_renames")
     if (savedRenames) {
-      try { localRenames = JSON.parse(savedRenames); setCatalogRenamesState(localRenames) } catch {}
+      try {
+        const parsed = JSON.parse(savedRenames)
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          localRenames = parsed
+          setCatalogRenamesState(localRenames)
+        }
+      } catch {}
     }
 
     lastSyncRef.current = JSON.stringify({
@@ -58,24 +88,49 @@ export function useCustomCatalogs(
       .then((data) => {
         if (!data) return
         if (Array.isArray(data.customCatalogs) && (!savedCustomCats || localCustom.length === 0)) {
-          setCustomCatalogsState(data.customCatalogs)
-          safeSetItem("posterium_custom_catalogs", JSON.stringify(data.customCatalogs))
+          setCustomCatalogsState((prev) => {
+            if (prev.length === 0) {
+              safeSetItem("posterium_custom_catalogs", JSON.stringify(data.customCatalogs))
+              return data.customCatalogs
+            }
+            return prev
+          })
         }
         if (Array.isArray(data.disabledCatalogIds) && (!savedDisabledCats || localDisabled.length === 0)) {
-          setDisabledCatalogIdsState(data.disabledCatalogIds)
-          safeSetItem("posterium_disabled_catalogs", JSON.stringify(data.disabledCatalogIds))
+          setDisabledCatalogIdsState((prev) => {
+            if (prev.length === 0) {
+              safeSetItem("posterium_disabled_catalogs", JSON.stringify(data.disabledCatalogIds))
+              return data.disabledCatalogIds
+            }
+            return prev
+          })
         }
         if (Array.isArray(data.homeDisabledCatalogIds) && (!savedHomeDisabledCats || localHomeDisabled.length === 0)) {
-          setHomeDisabledCatalogIdsState(data.homeDisabledCatalogIds)
-          safeSetItem("posterium_home_disabled_catalogs", JSON.stringify(data.homeDisabledCatalogIds))
+          setHomeDisabledCatalogIdsState((prev) => {
+            if (prev.length === 0) {
+              safeSetItem("posterium_home_disabled_catalogs", JSON.stringify(data.homeDisabledCatalogIds))
+              return data.homeDisabledCatalogIds
+            }
+            return prev
+          })
         }
         if (Array.isArray(data.catalogOrder) && (!savedOrder || localOrder.length === 0)) {
-          setCatalogOrderState(data.catalogOrder)
-          safeSetItem("posterium_catalog_order", JSON.stringify(data.catalogOrder))
+          setCatalogOrderState((prev) => {
+            if (prev.length === 0) {
+              safeSetItem("posterium_catalog_order", JSON.stringify(data.catalogOrder))
+              return data.catalogOrder
+            }
+            return prev
+          })
         }
-        if (data.catalogRenames && typeof data.catalogRenames === "object" && (!savedRenames || Object.keys(localRenames).length === 0)) {
-          setCatalogRenamesState(data.catalogRenames)
-          safeSetItem("posterium_catalog_renames", JSON.stringify(data.catalogRenames))
+        if (data.catalogRenames && typeof data.catalogRenames === "object" && !Array.isArray(data.catalogRenames) && (!savedRenames || Object.keys(localRenames).length === 0)) {
+          setCatalogRenamesState((prev) => {
+            if (Object.keys(prev).length === 0) {
+              safeSetItem("posterium_catalog_renames", JSON.stringify(data.catalogRenames))
+              return data.catalogRenames
+            }
+            return prev
+          })
         }
       })
       .catch(() => {})

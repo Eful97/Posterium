@@ -16,7 +16,8 @@ function load(): PosterCollection[] {
   try {
     if (typeof window === "undefined" || typeof localStorage === "undefined" || !window?.localStorage) return []
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
   } catch {
     return []
   }

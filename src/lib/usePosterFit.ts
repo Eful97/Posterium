@@ -169,10 +169,12 @@ export function usePosterFit(input: UsePosterFitInput): UsePosterFitResult {
         setResults(data.ranked)
         setBestFitPath(data.bestPosterPath)
       } catch (err) {
-        if ((err as Error)?.name === "AbortError") return
+        if ((err as Error)?.name === "AbortError" || controller.signal.aborted) return
         setError("Errore di rete durante l'analisi best-fit")
       } finally {
-        setLoading(false)
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
       }
     }, 300)
 
