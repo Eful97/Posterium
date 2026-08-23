@@ -32,6 +32,7 @@ import {
   posterResponse,
   readCachedPoster,
   readPosterError,
+  recordZombieRenderStart,
   schedulePosterRefresh,
   writeCachedPoster,
   writePosterError,
@@ -260,6 +261,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const renderAbort = new AbortController()
   let releaseRender: (() => void) | null = null
   let slotReleased = false
+  let endZombieRender: (() => void) | null = null
   const releaseSlotOnce = (): void => {
     if (releaseRender && !slotReleased) {
       slotReleased = true
@@ -270,6 +272,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     deadlineFired = true
     renderAbort.abort()
     completePosterRender(null)
+    endZombieRender = recordZombieRenderStart()
     releaseSlotOnce()
   }, RENDER_TIMEOUT_MS)
   if (typeof renderDeadline.unref === "function") renderDeadline.unref()
@@ -916,5 +919,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   } finally {
     clearTimeout(renderDeadline)
     releaseSlotOnce()
+    const cleanupZombie = endZombieRender as (() => void) | null
+    if (cleanupZombie) {
+      cleanupZombie()
+      endZombieRender = null
+    }
   }
 }

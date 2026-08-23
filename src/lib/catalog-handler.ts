@@ -158,14 +158,18 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
 }
 
 /** Cache locale per la risoluzione IMDb ID — evita chiamate duplicate a TMDB */
-const imdbIdCache = new Map<string, string | null>()
+interface ImdbCacheEntry {
+  value: string | null
+  expiry: number
+}
+const imdbIdCache = new Map<string, ImdbCacheEntry>()
 const IMDB_ID_CACHE_MAX = 2000
-function imdbIdCacheSet(key: string, value: string | null) {
+function imdbIdCacheSet(key: string, value: string | null, ttlMs: number) {
   if (imdbIdCache.size >= IMDB_ID_CACHE_MAX) {
     const oldest = imdbIdCache.keys().next().value
     if (oldest !== undefined) imdbIdCache.delete(oldest)
   }
-  imdbIdCache.set(key, value)
+  imdbIdCache.set(key, { value, expiry: Date.now() + ttlMs })
 }
 
 /** TMDB /tv/{id} non include imdb_id — serve chiamata extra a external_ids.
@@ -177,12 +181,14 @@ function imdbIdCacheSet(key: string, value: string | null) {
 async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number, apiKey?: string): Promise<string | null> {
   const cacheKey = `${mediaType}:${tmdbId}`
   const cached = imdbIdCache.get(cacheKey)
-  if (cached !== undefined) return cached
+  if (cached && Date.now() < cached.expiry) return cached.value
   try {
     const result = await getExternalIds(mediaType, tmdbId, apiKey).then(r => r.imdb_id ?? null)
-    imdbIdCacheSet(cacheKey, result)
+    const ttl = result !== null ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
+    imdbIdCacheSet(cacheKey, result, ttl)
     return result
   } catch {
+    imdbIdCacheSet(cacheKey, null, 60_000)
     return null
   }
 }
@@ -337,9 +343,13 @@ export async function posteriumCatalog(
     return catalogResponse({ metas: [] })
   }
 
-  const cacheKey = `stremio:catalog:v2:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+  const skipFragment = typeof extra.skip === "number" && extra.skip > 0 ? `:s${extra.skip}` : ""
+  const genreFragment = extra.genre && extra.genre !== "Tutti" ? `:g${hashFragment(extra.genre)}` : ""
+  const cacheKey = `stremio:catalog:v2:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${genreFragment}${skipFragment}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
+
+  let isCustomGenreFiltered = false
 
   try {
     let metas: StremioMeta[] = []
@@ -375,7 +385,11 @@ export async function posteriumCatalog(
           }
         }
 
-        const pagedItems = validItems.slice(0, 100)
+        const skip = typeof extra.skip === "number" && extra.skip > 0 ? extra.skip : 0
+        isCustomGenreFiltered = !!(extra.genre && extra.genre !== "Tutti")
+        // Ottimizzazione I/O: se non c'è filtro genere, arricchisce solo la finestra richiesta (20 item)
+        const pagedItems = isCustomGenreFiltered ? validItems.slice(0, 100) : validItems.slice(skip, skip + 20)
+        const rankOffset = isCustomGenreFiltered ? 0 : skip
 
         const results = await Promise.all(pagedItems.map(async (item, idx) => {
           const tmdbId = Number(item.tmdb)
@@ -395,7 +409,7 @@ export async function posteriumCatalog(
             imdb: item.imdb,
             title,
             releaseInfo,
-            rank: idx + 1,
+            rank: rankOffset + idx + 1,
             genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
           }
         }))
@@ -586,7 +600,7 @@ export async function posteriumCatalog(
       })
     }
 
-    if (typeof extra.skip === "number" && extra.skip > 0) {
+    if (typeof extra.skip === "number" && extra.skip > 0 && (!catalogId.startsWith("posterium-custom-") || isCustomGenreFiltered)) {
       metas = metas.slice(extra.skip)
     }
 

@@ -291,17 +291,33 @@ const RENDER_QUEUE_LIMIT = (() => {
 })()
 
 let activeRenders = 0
+let zombieRenders = 0
 const renderWaiters: Array<() => void> = []
+
+function pumpWaiters(): void {
+  while (renderWaiters.length > 0 && activeRenders + zombieRenders < MAX_CONCURRENT_RENDERS) {
+    const next = renderWaiters.shift()
+    if (next) next()
+  }
+}
 
 function releaseRenderSlot(): void {
   activeRenders = Math.max(0, activeRenders - 1)
-  const next = renderWaiters.shift()
-  if (next) next()
+  pumpWaiters()
+}
+
+/** Notifica al limiter che un render è stato abbandonato dalla deadline ma continua in background */
+export function recordZombieRenderStart(): () => void {
+  zombieRenders++
+  return () => {
+    zombieRenders = Math.max(0, zombieRenders - 1)
+    pumpWaiters()
+  }
 }
 
 /** Acquisisce un posto di render. Risolve con la release function, o null se il timeout scade. */
 export async function acquirePosterRenderSlot(): Promise<(() => void) | null> {
-  if (activeRenders < MAX_CONCURRENT_RENDERS) {
+  if (activeRenders + zombieRenders < MAX_CONCURRENT_RENDERS) {
     activeRenders++
     return releaseRenderSlot
   }
@@ -321,6 +337,7 @@ export async function acquirePosterRenderSlot(): Promise<(() => void) | null> {
       if (settled) return
       settled = true
       clearTimeout(timer)
+      activeRenders++
       resolve(releaseRenderSlot)
     }
     renderWaiters.push(handoff)
@@ -330,6 +347,7 @@ export async function acquirePosterRenderSlot(): Promise<(() => void) | null> {
 /** Solo per i test: svuota lo stato del limiter. */
 export function __resetPosterRenderLimiter(): void {
   activeRenders = 0
+  zombieRenders = 0
   renderWaiters.length = 0
 }
 

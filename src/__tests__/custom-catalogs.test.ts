@@ -209,15 +209,18 @@ describe("Custom Catalogs & MDBList Parsing", () => {
       const jwMovie = data.catalogs.find((c: { id: string }) => c.id === "posterium-jw-movies")
 
       expect(netflixMovie).toBeDefined()
-      expect(netflixMovie.extra).toEqual([
-        { name: "genre", isRequired: true, options: ["Tutti"] },
-        { name: "skip", isRequired: false },
-      ])
+      const netflixGenre = netflixMovie.extra.find((e: { name: string }) => e.name === "genre")
+      expect(netflixGenre).toBeDefined()
+      expect(netflixGenre.isRequired).toBe(true)
+      expect(netflixGenre.options).toContain("Tutti")
+      expect(netflixGenre.options).toContain("Azione")
 
       expect(jwMovie).toBeDefined()
-      expect(jwMovie.extra).toEqual([
-        { name: "skip", isRequired: false },
-      ])
+      const jwGenre = jwMovie.extra.find((e: { name: string }) => e.name === "genre")
+      expect(jwGenre).toBeDefined()
+      expect(jwGenre.isRequired).toBe(false)
+      expect(jwGenre.options).toContain("Tutti")
+      expect(jwGenre.options).toContain("Azione")
     })
   })
 })

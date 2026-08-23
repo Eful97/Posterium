@@ -6,6 +6,29 @@ import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
 import { getServerDefaults } from "@/lib/server-defaults"
 
+const MOVIE_GENRES = [
+  "Tutti", "Azione", "Avventura", "Animazione", "Commedia", "Crime",
+  "Documentario", "Dramma", "Famiglia", "Fantascienza", "Fantasy",
+  "Guerra", "Horror", "Mistero", "Musica", "Romance", "Storia",
+  "Thriller", "Western",
+]
+
+const SERIES_GENRES = [
+  "Tutti", "Action & Adventure", "Animazione", "Commedia", "Crime",
+  "Documentario", "Dramma", "Famiglia", "Kids", "Mistero", "News",
+  "Reality", "Sci-Fi & Fantasy", "Soap", "Talk", "War & Politics", "Western",
+]
+
+const ANIME_GENRES = [
+  "Tutti", "Azione", "Avventura", "Commedia", "Dramma", "Fantasy",
+  "Fantascienza", "Mistero", "Romance", "Slice of Life", "Soprannaturale", "Thriller",
+]
+
+function getCatalogGenreOptions(type: "movie" | "series", catalogId: string): string[] {
+  if (catalogId.includes("anime")) return ANIME_GENRES
+  return type === "movie" ? MOVIE_GENRES : SERIES_GENRES
+}
+
 function safeSuffix(value: string | null | undefined): string | null {
   if (!value) return null
   return crypto.createHash("sha256").update(value).digest("base64url").slice(0, 8)
@@ -98,13 +121,14 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
 
   const contentCatalogs = catalogs.map((c) => {
     const isHomeHidden = homeDisabledSet.has(c.id) || (c.customBaseId ? homeDisabledSet.has(c.customBaseId) : false)
+    const genreOptions = getCatalogGenreOptions(c.type, c.id)
     return {
       id: c.id,
       name: c.name,
       type: c.type,
       extra: isHomeHidden
-        ? [{ name: "genre", isRequired: true, options: ["Tutti"] }, { name: "skip", isRequired: false }]
-        : [{ name: "skip", isRequired: false }],
+        ? [{ name: "genre", isRequired: true, options: genreOptions }, { name: "skip", isRequired: false }]
+        : [{ name: "genre", isRequired: false, options: genreOptions }, { name: "skip", isRequired: false }],
     }
   })
 

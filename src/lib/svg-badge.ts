@@ -31,10 +31,9 @@ export function warmFonts(): void {
   try {
     fontRegular(); fontBold(); fontBlack(); fontSymbols()
     fontStyle()
+    _fontsWarmed = true
   } catch (e) {
     console.warn("[posterium] Font warming failed:", e instanceof Error ? e.message : String(e))
-  } finally {
-    _fontsWarmed = true
   }
 }
 
