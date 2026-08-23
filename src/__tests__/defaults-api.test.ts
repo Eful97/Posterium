@@ -77,7 +77,8 @@ describe("PUT /api/defaults", () => {
     const res = await PUT(mockPutRequest({ gradientHeight: 55 }) as unknown as NextRequest)
     expect(res.status).toBe(200)
 
-    const body = (await (await GET()).json()) as Record<string, unknown>
+    const resGet = await GET(new Request("http://localhost:3000/api/defaults") as unknown as NextRequest)
+    const body = (await resGet.json()) as Record<string, unknown>
     expect(body.badgeStyle).toBe("bar")
     expect(body.gradientHeight).toBe(55)
   })

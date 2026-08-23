@@ -66,7 +66,7 @@ export function detectCatalogProvider(input: string): ProviderDetectionResult | 
 
   // 1. Letterboxd
   // es. https://letterboxd.com/arinbicer/list/mcu/ o https://letterboxd.com/user/watchlist/
-  const letterboxdMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?letterboxd\.com\/([a-zA-Z0-9_.-]+)\/(?:list\/([a-zA-Z0-9_.-]+)|watchlist)/i)
+  const letterboxdMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?letterboxd\.com\/([a-zA-Z0-9_.-]+)\/(?:list\/([a-zA-Z0-9_.-]+)|watchlist)\/?(?:[?#].*)?$/i)
   if (letterboxdMatch) {
     const user = letterboxdMatch[1]
     const slug = letterboxdMatch[2]
@@ -81,7 +81,7 @@ export function detectCatalogProvider(input: string): ProviderDetectionResult | 
 
   // 2. Trakt
   // es. https://trakt.tv/users/donxy/lists/marvel-cinematic-universe o https://trakt.tv/lists/12345
-  const traktMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?trakt\.tv\/(?:users\/([a-zA-Z0-9_.-]+)\/(?:lists\/([a-zA-Z0-9_.-]+)|watchlist)|lists\/([a-zA-Z0-9_.-]+))/i)
+  const traktMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?trakt\.tv\/(?:users\/([a-zA-Z0-9_.-]+)\/(?:lists\/([a-zA-Z0-9_.-]+)|watchlist)|lists\/([a-zA-Z0-9_.-]+))\/?(?:[?#].*)?$/i)
   if (traktMatch) {
     const user = traktMatch[1]
     const slug = traktMatch[2] || traktMatch[3]
@@ -96,7 +96,7 @@ export function detectCatalogProvider(input: string): ProviderDetectionResult | 
 
   // 3. TMDb Collection
   // es. https://www.themoviedb.org/collection/86311-the-avengers-collection
-  const tmdbColMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?themoviedb\.org\/collection\/([0-9]+)(?:-[a-zA-Z0-9_-]+)?/i)
+  const tmdbColMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?themoviedb\.org\/collection\/([0-9]+)(?:-[a-zA-Z0-9_-]+)?\/?(?:[?#].*)?$/i)
   if (tmdbColMatch) {
     return {
       provider: "tmdb_collection",
@@ -107,7 +107,7 @@ export function detectCatalogProvider(input: string): ProviderDetectionResult | 
 
   // 4. TMDb List
   // es. https://www.themoviedb.org/list/8249673
-  const tmdbListMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?themoviedb\.org\/list\/([0-9]+)/i)
+  const tmdbListMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?themoviedb\.org\/list\/([0-9]+)\/?(?:[?#].*)?$/i)
   if (tmdbListMatch) {
     return {
       provider: "tmdb_list",
@@ -118,7 +118,7 @@ export function detectCatalogProvider(input: string): ProviderDetectionResult | 
 
   // 5. TheTVDB List
   // es. https://thetvdb.com/lists/mcu
-  const tvdbMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?thetvdb\.com\/lists\/([a-zA-Z0-9_.-]+)/i)
+  const tvdbMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?thetvdb\.com\/lists\/([a-zA-Z0-9_.-]+)\/?(?:[?#].*)?$/i)
   if (tvdbMatch) {
     const slug = tvdbMatch[1]
     return {
@@ -131,7 +131,7 @@ export function detectCatalogProvider(input: string): ProviderDetectionResult | 
 
   // 6. IMDb List
   // es. https://www.imdb.com/list/ls000000000/
-  const imdbMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?imdb\.com\/list\/(ls[0-9]+)/i)
+  const imdbMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?imdb\.com\/list\/(ls[0-9]+)\/?(?:[?#].*)?$/i)
   if (imdbMatch) {
     return {
       provider: "imdb",
@@ -153,17 +153,25 @@ export function detectCatalogProvider(input: string): ProviderDetectionResult | 
  */
 async function fetchLetterboxdList(url: string, limit: number = 500): Promise<MDBListEntry[]> {
   try {
-    let requestUrl = url.trim()
-    const isWatchlist = requestUrl.includes("/watchlist")
+    const trimmed = url.trim()
+    const urlObj = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`)
+    if (urlObj.hostname !== "letterboxd.com" && urlObj.hostname !== "www.letterboxd.com") {
+      log.warn("Invalid Letterboxd hostname", { hostname: urlObj.hostname })
+      return []
+    }
+    const isWatchlist = urlObj.pathname.includes("/watchlist")
+    let requestUrl: string
     if (isWatchlist) {
-      const urlObj = new URL(requestUrl.startsWith("http") ? requestUrl : `https://${requestUrl}`)
       const pathParts = urlObj.pathname.split("/").filter(Boolean)
       if (pathParts.length >= 1) {
         requestUrl = `https://letterboxd.com/${pathParts[0]}/`
+      } else {
+        requestUrl = `https://letterboxd.com${urlObj.pathname}`
       }
+    } else {
+      requestUrl = `https://letterboxd.com${urlObj.pathname}`
     }
     if (!requestUrl.endsWith("/")) requestUrl += "/"
-    if (!requestUrl.startsWith("http")) requestUrl = `https://${requestUrl}`
 
     // 1. Richiesta HEAD per estrarre l'identificativo Letterboxd univoco
     const headRes = await fetch(requestUrl, {
@@ -230,7 +238,7 @@ async function fetchLetterboxdList(url: string, limit: number = 500): Promise<MD
 async function fetchTraktList(url: string, limit: number = 500): Promise<MDBListEntry[]> {
   try {
     const trimmed = url.trim()
-    const traktMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?trakt\.tv\/(?:users\/([a-zA-Z0-9_.-]+)\/(?:lists\/([a-zA-Z0-9_.-]+)|watchlist)|lists\/([a-zA-Z0-9_.-]+))/i)
+    const traktMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?trakt\.tv\/(?:users\/([a-zA-Z0-9_.-]+)\/(?:lists\/([a-zA-Z0-9_.-]+)|watchlist)|lists\/([a-zA-Z0-9_.-]+))\/?(?:[?#].*)?$/i)
     if (!traktMatch) return []
 
     const user = traktMatch[1]

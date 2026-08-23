@@ -1,3 +1,4 @@
+import crypto from "node:crypto"
 import { NextRequest } from "next/server"
 import { APP_VERSION } from "@/generated/app-version"
 import { POSTERIUM_CATALOGS } from "@/lib/catalog-definitions"
@@ -7,9 +8,7 @@ import { getServerDefaults } from "@/lib/server-defaults"
 
 function safeSuffix(value: string | null | undefined): string | null {
   if (!value) return null
-  if (value.length > 64) return null
-  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null
-  return value
+  return crypto.createHash("sha256").update(value).digest("base64url").slice(0, 8)
 }
 
 export async function buildManifestResponse(req: NextRequest, user?: string | null, config?: string | null): Promise<Response> {
@@ -90,8 +89,8 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     ? rawMode
     : (userConfig?.hubMode || "all")
 
-  const safeConfig = safeSuffix(config)
-  const suffix = safeConfig ? `.${safeConfig.slice(0, 8)}` : ""
+  const safeConfig = safeSuffix(config || user)
+  const suffix = safeConfig ? `.${safeConfig}` : ""
   const modeSuffix = hubMode === "all" ? "" : `.${hubMode}`
   const addonId = `org.posterium${suffix}${modeSuffix}`
 
@@ -137,22 +136,12 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     "tmdb:",
     "tt",
     "tvdb:",
-    "mal:",
-    "tvmaze:",
-    "kitsu:",
-    "anidb:",
-    "anilist:",
     "tvdbc:",
-    "upnext_",
-    "unwatched_",
-    "mdblist_upnext_",
-    "pmdb_resume_",
-    "simkl_upnext_",
   ]
 
   const TYPES = ["movie", "series", "anime.movie", "anime.series", "anime", "Trakt", "collection"]
 
-  let manifestName = safeConfig ? `Posterium (${safeConfig.slice(0, 8)})` : "Posterium"
+  let manifestName = safeConfig ? `Posterium (${safeConfig})` : "Posterium"
   if (hubMode === "search") {
     manifestName += " (Ricerca)"
   } else if (hubMode === "catalogs") {

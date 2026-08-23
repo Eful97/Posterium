@@ -30,6 +30,18 @@ function corsHeaders() {
   }
 }
 
+function redactUrlForLog(urlStr: string): string {
+  try {
+    const u = new URL(urlStr)
+    if (u.searchParams.has("api_key")) u.searchParams.set("api_key", "[REDACTED]")
+    if (u.searchParams.has("apikey")) u.searchParams.set("apikey", "[REDACTED]")
+    if (u.searchParams.has("key")) u.searchParams.set("key", "[REDACTED]")
+    return u.toString()
+  } catch {
+    return urlStr
+  }
+}
+
 /** Un hostname è un letterale IPv4 (es. 10.0.0.1) e non un nome DNS. */
 export function isIpv4Literal(hostname: string): boolean {
   return /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)
@@ -202,7 +214,7 @@ async function safeFetch(url: string, options: RequestInit & { signal: AbortSign
   const MAX_REDIRECTS = 5
   while (redirectCount <= MAX_REDIRECTS) {
     if (!isAllowedByAllowlist(new URL(currentUrl))) {
-      log.warn("Blocked by proxy allowlist", { target: currentUrl })
+      log.warn("Blocked by proxy allowlist", { target: redactUrlForLog(currentUrl) })
       return Response.json({ error: "Target domain not allowed" }, { status: 403, headers: corsHeaders() })
     }
     // La fetch globale di Node (undici) accetta `dispatcher`; il lib DOM di
@@ -216,7 +228,7 @@ async function safeFetch(url: string, options: RequestInit & { signal: AbortSign
     if (!location) return res
     const targetUrl = new URL(location, currentUrl).href
     if (await resolveAndCheckBlocked(targetUrl)) {
-      log.warn("Blocked SSRF redirect", { from: currentUrl, to: targetUrl })
+      log.warn("Blocked SSRF redirect", { from: redactUrlForLog(currentUrl), to: redactUrlForLog(targetUrl) })
       return new Response(JSON.stringify({ error: "Redirect to blocked target" }), {
         status: 400,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
@@ -251,7 +263,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
   }
 
   if (await resolveAndCheckBlocked(targetUrl)) {
-    log.warn("Blocked SSRF attempt", { target: targetUrl })
+    log.warn("Blocked SSRF attempt", { target: redactUrlForLog(targetUrl) })
     return Response.json({ error: "Invalid target URL" }, { status: 400, headers: corsHeaders() })
   }
 

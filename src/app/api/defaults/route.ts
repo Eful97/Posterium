@@ -45,14 +45,17 @@ const defaultsSchema = z.object({
   catalogRenames: z.record(z.string().max(80), z.string().max(100)).optional(),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const d = getServerDefaults()
-  const serverKeys = {
-    tmdbKey: process.env.POSTERIUM_TMDB_KEY || process.env.TMDB_API_KEY || "",
-    mdblistApiKey: process.env.POSTERIUM_MDBLIST_KEY || process.env.MDBLIST_API_KEY || "",
-    tvdbApiKey: process.env.POSTERIUM_TVDB_API_KEY || process.env.TVDB_API_KEY || "",
+  if (checkAdminToken(req)) {
+    const serverKeys = {
+      tmdbKey: process.env.POSTERIUM_TMDB_KEY || process.env.TMDB_API_KEY || "",
+      mdblistApiKey: process.env.POSTERIUM_MDBLIST_KEY || process.env.MDBLIST_API_KEY || "",
+      tvdbApiKey: process.env.POSTERIUM_TVDB_API_KEY || process.env.TVDB_API_KEY || "",
+    }
+    return Response.json({ ...d, serverKeys })
   }
-  return Response.json({ ...d, serverKeys })
+  return Response.json({ ...d })
 }
 
 export async function PUT(req: NextRequest) {

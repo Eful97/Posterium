@@ -41,4 +41,21 @@ describe("buildManifestResponse with hubMode options", () => {
     expect(catalogIds).toContain("posterium-search-series")
     expect(catalogIds.length).toBe(2)
   })
+
+  it("generates distinct deterministic addonId for different config tokens", async () => {
+    const configA = "eyJnbG9iYWxCYWRnZXMiOnRydWUsInJhbmtpbmdCYWRnZXMiOmZhbHNlLCJibHVySW50ZW5zaXR5IjoxMH0.sigA"
+    const configB = "eyJnbG9iYWxCYWRnZXMiOnRydWUsInJhbmtpbmdCYWRnZXMiOnRydWUsImJsdXJJbnRlbnNpdHkiOjk5fQ.sigB"
+
+    const reqA = new NextRequest("http://localhost:3000/manifest.json")
+    const resA = await buildManifestResponse(reqA, null, configA)
+    const jsonA = await resA.json()
+
+    const reqB = new NextRequest("http://localhost:3000/manifest.json")
+    const resB = await buildManifestResponse(reqB, null, configB)
+    const jsonB = await resB.json()
+
+    expect(jsonA.id).toMatch(/^org\.posterium\.[A-Za-z0-9_-]{8}$/)
+    expect(jsonB.id).toMatch(/^org\.posterium\.[A-Za-z0-9_-]{8}$/)
+    expect(jsonA.id).not.toBe(jsonB.id)
+  })
 })
