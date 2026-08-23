@@ -170,8 +170,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const configHash = configOverride ? hashKey(JSON.stringify(configOverride)) : ""
   const outputFormat = resolveImageFormat(req.headers.get("accept"), req.nextUrl.searchParams.get("fmt") || req.nextUrl.searchParams.get("format"))
   const formatKey = outputFormat !== "jpeg" ? `:fmt${outputFormat}` : ""
-  const cacheKey = `poster:v${RENDER_VERSION}:${type}:${id}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}${formatKey}`
-  const etagBase = hashKey(`v${RENDER_VERSION}:${type}:${id}:sd${sdHash}:${cacheParams.toString()}${configHash ? `:${configHash}` : ""}:${outputFormat}`)
+  const cacheKey = `poster:v${RENDER_VERSION}:${mediaType}:${tmdbId}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${rotateKey}${mapVersion}${configHash ? `:cfg${configHash}` : ""}${formatKey}`
+  const etagBase = hashKey(`v${RENDER_VERSION}:${mediaType}:${tmdbId}:r${cachedRank ?? "x"}:sd${sdHash}:${cacheParams.toString()}${configHash ? `:${configHash}` : ""}:${outputFormat}`)
   const currentMappingVersion = mappingVersionParam(mapping)
   const immutablePoster = isImmutablePosterRequest(req.nextUrl.searchParams, {
     hasMapping: !!mapping,
@@ -218,9 +218,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     if (coalesceTimer) clearTimeout(coalesceTimer)
     if (payload) {
       log.debug("Poster cache: coalesced with in-flight render", { mediaType, tmdbId, ms: Date.now() - startTime })
+      recordPosterRequest(true, outputFormat)
       // Finding 5: il waiter della preview deve ricevere gli header no-store
       // anche quando si coalesce con un render in flight (era hardcoded false).
-      return posterResponse(payload, immutablePoster, isPreview, dynamicPoster)
+      return posterResponse(payload, immutablePoster, isPreview, dynamicPoster, outputFormat)
     }
     // Coalesce scaduto: o il render è fallito (negative cache) o è ancora in
     // corso — mai duplicare il render, rispondere 503 con backoff esplicito.
@@ -694,7 +695,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     const rankingRank = rankingResult ?? mapping?.badgeRank ?? mapping?.trendRank ?? null
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
-    const finalRank = qRank ? Number(qRank) || rankingRank : rankingRank
+    const finalRank = qRank !== null ? (parseInt(qRank, 10) >= 0 ? parseInt(qRank, 10) : rankingRank) : rankingRank
 
     // 6. Resize poster + compute luminance
     const posterBuf = await sharp(originalBuf).resize(STD_W, STD_H, { fit: 'cover', position: 'centre' }).toBuffer()
@@ -709,7 +710,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     // Luminance + optional TV details fetch (parallel, independent)
     const [topLum] = await Promise.all([
       (async (): Promise<number | null> => {
-        if (qTopLight !== null) return null
+        if (qTopLight === "1" || qTopLight === "0" || qTopLight === "true" || qTopLight === "false") return null
         return await topLuminance(posterBuf)
       })(),
       (tmdbNetworks.length === 0 && productionCompanies.length === 0)
@@ -731,7 +732,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         : Promise.resolve(),
     ])
 
-    const topLight = qTopLight !== null ? qTopLight === "1" : (topLum ?? 0.5) > 0.60
+    const topLight = (qTopLight === "1" || qTopLight === "true") ? true : (qTopLight === "0" || qTopLight === "false") ? false : (topLum ?? 0.5) > 0.60
 
     // 7. Parse blur / badge / logo config from query
     const renderConfig = resolvePosterRenderConfig({
@@ -879,6 +880,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       logoSrc: logoPath,
       backdropSrc: backdropPath,
       format: outputFormat,
+    }
+    if (renderAbort.signal.aborted) {
+      throw new Error("Render deadline exceeded before poster compositing")
     }
     const composited = await generatePosterBuffer(genInput)
 

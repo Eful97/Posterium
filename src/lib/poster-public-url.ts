@@ -47,7 +47,8 @@ export function getOriginFromRequest(req: NextRequest): string {
     const xfhHost = hostnameOf(forwardedHost)
     const host = hostnameOf(req.headers.get("host") || "")
     if (xfhHost && (host === xfhHost || isAllowedHostname(xfhHost))) {
-      return `${forwardedProto}://${forwardedHost}`
+      const firstHost = forwardedHost.split(",")[0].trim()
+      return `${forwardedProto}://${firstHost}`
     }
     // XFH non fidato → fallback all'origin derivato dall'URL della richiesta.
     return req.nextUrl.origin

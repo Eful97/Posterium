@@ -131,7 +131,7 @@ function makeSpace(count: number, incomingBytes: number = 0): void {
   if (store.size + count < MAX_ENTRIES && totalBytes + incomingBytes < MAX_BYTES) return
   // Map preserves insertion order; delete+set on read promotes accessed entries to end.
   // First keys are the least recently used. Evict in batches.
-  const byteTarget = Math.floor(MAX_BYTES * 0.9) - incomingBytes
+  const byteTarget = Math.max(0, Math.floor(MAX_BYTES * 0.9) - incomingBytes)
   for (const key of store.keys()) {
     // Stop solo quando ENTRAMBI i target sono soddisfatti: entry count sotto il
     // limite E byte sotto il target. Il vecchio blocco su entryLimit lasciava

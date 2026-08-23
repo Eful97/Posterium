@@ -28,9 +28,14 @@ let _fontsWarmed = false
 
 export function warmFonts(): void {
   if (_fontsWarmed) return
-  fontRegular(); fontBold(); fontBlack(); fontSymbols()
-  fontStyle()
-  _fontsWarmed = true
+  try {
+    fontRegular(); fontBold(); fontBlack(); fontSymbols()
+    fontStyle()
+  } catch (e) {
+    console.warn("[posterium] Font warming failed:", e instanceof Error ? e.message : String(e))
+  } finally {
+    _fontsWarmed = true
+  }
 }
 
 function fontRegular(): Buffer {

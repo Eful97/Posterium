@@ -388,8 +388,8 @@ export async function scorePosterLogoFit(input: PosterFitInput): Promise<PosterF
     // Edge grid hotspot check: penalize if logo covers high-detail regions
     if (analysis.grid.length > 0) {
       const cellSize = 4
-      const logoStartCol = Math.floor((analysisBox.left + cellSize) / cellSize)
-      const logoStartRow = Math.floor((analysisBox.top + cellSize) / cellSize)
+      const logoStartCol = Math.floor(Math.max(0, baseLayout.left - analysisBox.left) / cellSize)
+      const logoStartRow = Math.floor(Math.max(0, baseLayout.top - analysisBox.top) / cellSize)
       const logoCols = Math.ceil(baseLayout.width / cellSize)
       const logoRows = Math.ceil(baseLayout.height / cellSize)
 

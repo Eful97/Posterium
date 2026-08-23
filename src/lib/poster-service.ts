@@ -137,11 +137,18 @@ const BADGE_INFLIGHT_TIMEOUT_MS = 20_000
 function coalesceBadgeRender<T>(key: string, run: () => Promise<T>): Promise<T | null> {
   const existing = badgeInflight.get(key) as Promise<T | null> | undefined
   if (existing) return existing
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), BADGE_INFLIGHT_TIMEOUT_MS)
+    if (typeof timer.unref === "function") timer.unref()
+  })
   const promise: Promise<T | null> = Promise.race([
     run().catch(() => null),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), BADGE_INFLIGHT_TIMEOUT_MS)),
-  ])
-  promise.finally(() => { badgeInflight.delete(key) })
+    timeoutPromise,
+  ]).finally(() => {
+    if (timer) clearTimeout(timer)
+    if (badgeInflight.get(key) === promise) badgeInflight.delete(key)
+  })
   badgeInflight.set(key, promise)
   return promise
 }

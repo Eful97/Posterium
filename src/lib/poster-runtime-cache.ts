@@ -211,14 +211,14 @@ export function beginPosterRender(cacheKey: string): (payload: PosterCachePayloa
   })
   const timer = setTimeout(() => {
     resolveRender(null)
-    inflight.delete(cacheKey)
+    if (inflight.get(cacheKey) === promise) inflight.delete(cacheKey)
   }, INFLIGHT_TIMEOUT_MS)
   if (typeof timer.unref === "function") timer.unref()
   inflight.set(cacheKey, promise)
   return (payload) => {
     clearTimeout(timer)
     resolveRender(payload)
-    inflight.delete(cacheKey)
+    if (inflight.get(cacheKey) === promise) inflight.delete(cacheKey)
   }
 }
 
@@ -226,9 +226,12 @@ export function schedulePosterRefresh(req: NextRequest, isPreview: boolean = fal
   // Le preview (`preview=1`) non vengono servite alle CDN: rigenerarle in
   // background è inutile. Il refresh serve solo per riscaldare la cache edge.
   if (isPreview) return
-  const url = new URL(req.url)
-  url.searchParams.set(POSTER_REFRESH_PARAM, "1")
-  const key = url.toString()
+  if (process.env.VERCEL) return // Serverless: nessun self-fetch in background
+  const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
+  const searchParams = new URLSearchParams(req.nextUrl.searchParams)
+  searchParams.set(POSTER_REFRESH_PARAM, "1")
+  const refreshUrl = `${internalOrigin}${req.nextUrl.pathname}?${searchParams.toString()}`
+  const key = `${req.nextUrl.pathname}?${searchParams.toString()}`
   // Dedup: non avviare due refresh concorrenti per la stessa URL.
   if (refreshInFlight.has(key)) return
   // Min-interval: evita che un titolo sotto attacco (o una catena di stale hit)
@@ -240,8 +243,11 @@ export function schedulePosterRefresh(req: NextRequest, isPreview: boolean = fal
   if (lastRefreshAt.size >= MAX_REFRESH_TRACKED) lastRefreshAt.delete(lastRefreshAt.keys().next().value!)
   lastRefreshAt.set(key, now)
   refreshInFlight.add(key)
-  void fetch(url, { signal: AbortSignal.timeout(60_000) })
-    .then((res) => res.arrayBuffer())
+  void fetch(refreshUrl, { signal: AbortSignal.timeout(60_000) })
+    .then(async (res) => {
+      // Consuma/cancella il body per evitare memory leak senza allocare buffer enormi
+      await res.body?.cancel().catch(() => {})
+    })
     .catch((error: unknown) => {
       const msg = error instanceof Error ? error.message : String(error)
       log.warn("Background refresh failed", { error: msg })
@@ -366,6 +372,7 @@ export function recordPosterRequest(hit: boolean, format: PosterImageFormat = "j
 }
 
 export function recordPosterError(): void {
+  posterMetrics.requests++
   posterMetrics.errors++
 }
 
