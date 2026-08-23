@@ -594,9 +594,19 @@ export async function posteriumCatalog(
 
     if (extra.genre && extra.genre !== "Tutti" && metas.length > 0) {
       const gLower = extra.genre.toLowerCase()
+      const isFamily = gLower === "famiglia" || gLower === "family"
+      const isSciFi = gLower === "fantascienza" || gLower.includes("sci-fi")
+      const isAction = gLower === "azione" || gLower.includes("action")
       metas = metas.filter((m) => {
         if (!m.genres || m.genres.length === 0) return true
-        return m.genres.some((g) => g.toLowerCase().includes(gLower) || gLower.includes(g.toLowerCase()))
+        return m.genres.some((g) => {
+          const gn = g.toLowerCase()
+          if (gn.includes(gLower) || gLower.includes(gn)) return true
+          if (isFamily && (gn.includes("famiglia") || gn.includes("family"))) return true
+          if (isSciFi && (gn.includes("fantascienza") || gn.includes("sci-fi"))) return true
+          if (isAction && (gn.includes("azione") || gn.includes("action"))) return true
+          return false
+        })
       })
     }
 

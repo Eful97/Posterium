@@ -15,13 +15,14 @@ const MOVIE_GENRES = [
 
 const SERIES_GENRES = [
   "Tutti", "Action & Adventure", "Animazione", "Commedia", "Crime",
-  "Documentario", "Dramma", "Famiglia", "Kids", "Mistero", "News",
+  "Documentario", "Dramma", "Family", "Kids", "Mistero", "News",
   "Reality", "Sci-Fi & Fantasy", "Soap", "Talk", "War & Politics", "Western",
 ]
 
 const ANIME_GENRES = [
-  "Tutti", "Azione", "Avventura", "Commedia", "Dramma", "Fantasy",
-  "Fantascienza", "Mistero", "Romance", "Slice of Life", "Soprannaturale", "Thriller",
+  "Tutti", "Animazione", "Azione", "Action & Adventure", "Avventura",
+  "Commedia", "Dramma", "Fantascienza", "Sci-Fi & Fantasy", "Fantasy",
+  "Mistero", "Romance", "Thriller",
 ]
 
 function getCatalogGenreOptions(type: "movie" | "series", catalogId: string): string[] {
