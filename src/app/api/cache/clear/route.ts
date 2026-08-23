@@ -5,6 +5,8 @@ import { __clearTMDBCache } from "@/lib/tmdb"
 import { __clearFlixpatrolCache } from "@/lib/flixpatrol"
 import { __resetTMDBSessionCache } from "@/lib/tmdb-session-cache"
 import { clearRegionStatsCache } from "@/lib/image-utils"
+import { clearTvdbCache } from "@/lib/tvdb"
+import { __resetNetworkLogoCache } from "@/lib/network-svgs"
 import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
@@ -13,9 +15,10 @@ export async function POST(req: Request) {
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
   if (!isSameOrigin(req)) return originMismatchResponse()
-  // Fix L26: il clear ora copre anche le cache module-level (TMDB, JustWatch,
-  // FlixPatrol, region-stats, session cache) — prima "svuotava" solo la cache
-  // condivisa di cache.ts e i dati stale restavano serviti dalle altre.
+  // Il clear copre l'intero store condiviso di cache.ts (poster renderizzati,
+  // badge, image-level, cataloghi) più le cache module-level con store proprio
+  // (TMDB, JustWatch, FlixPatrol, TVDB, region-stats, session cache,
+  // auto-fit, logo network).
   cacheClear()
   clearAutoFitCache()
   __resetJWRankingsCache()
@@ -23,5 +26,7 @@ export async function POST(req: Request) {
   __clearFlixpatrolCache()
   __resetTMDBSessionCache()
   clearRegionStatsCache()
+  clearTvdbCache()
+  __resetNetworkLogoCache()
   return Response.json({ ok: true, message: "Cache svuotata" })
 }

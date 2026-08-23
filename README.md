@@ -48,7 +48,7 @@ pinned: false
 * 🎯 **Motore di Rendering Unificato (WYSIWYG)**: Un unico endpoint grafico (`/api/poster/{type}/{id}`) basato su Sharp C++ ed SVG serve sia l'anteprima web in tempo reale sia le locandine consegnate a Stremio.
 * 📦 **Fornitore Metadati & Addon 100% Autonomo (`meta` + `catalog` + `poster`)**: Non richiede addon terzi o configurazioni complesse. Fornisce direttamente a Stremio schede dettagliate, trame in italiano, loghi trasparenti, sfondi 4K, trailer YouTube e **tutte le stagioni ed episodi con thumbnail e titoli italiani**.
 * ⚡ **Compatibilità Streaming Universale**: Genera identificatori standard (`tt...` e `tt...:S:E`) perfettamente compatibili con Torrentio, Debrid e qualsiasi lettore Stremio/Nuvio.
-* 🔄 **Cache Intelligente & Versioning Deterministico**: Ogni render incorpora una `RENDER_VERSION` calcolata automaticamente dal codice grafico: modifiche agli stili aggiornano istantaneamente le immagini su Stremio senza conflitti di cache.
+* 🔄 **Cache Intelligente & Versioning Deterministico**: Ogni render incorpora una `RENDER_VERSION` calcolata automaticamente dal codice grafico: modifiche agli stili aggiornano istantaneamente le immagini su Stremio senza conflitti di cache. Anche `APP_VERSION` è automatica (`<major>.<minor>.<numero di commit>`): ogni nuovo commit produce una versione nuova senza bump manuali. Il pulsante **«Svuota cache»** nelle impostazioni azzera l'intera cache dell'istanza (poster renderizzati, badge, metadati TMDB/TVDB, classifiche JustWatch/FlixPatrol, loghi network e altro).
 
 ---
 
@@ -59,7 +59,7 @@ pinned: false
 * **Algoritmo Best-Fit Intelligente**: Analizza automaticamente la luminosità e gli spazi vuoti del poster per posizionare e scalare il logo evitando di coprire i volti dei protagonisti.
 * **Sfocatura Sfondo Nativa (Sharp C++)**: Generazione di sfondi con effetto blur ultra-rapido (10–20ms) a bassissimo consumo di memoria.
 * **Rotazione Automatica 24h**: Seleziona più poster per lo stesso titolo e falli alternare automaticamente ogni giorno.
-* **Loghi Network Ufficiali**: Riconoscimento automatico e sovrapposizione loghi per Netflix, Prime Video, Disney+, Apple TV+, HBO Max, Paramount+, Sky/NOW, Crunchyroll, Rai, Mediaset Infinity, ecc.
+* **Loghi Network Ufficiali in Vettoriale (SVG)**: Riconoscimento automatico e sovrapposizione loghi per Netflix, Prime Video, Disney+, Apple TV+, HBO Max, Paramount+, Sky/NOW, Crunchyroll, Rai, Mediaset Infinity, Tubi, Pluto TV, AMC, ABC, CBS, FX/FXX, Hulu, National Geographic, NBC e Showtime. Gli SVG vengono rasterizzati alla risoluzione esatta del poster (densità adattiva per viewBox piccoli): bordi sempre nitidi a qualsiasi dimensione.
 
 ### 🏷️ Badge, Rating & Classifiche
 * **6 Stili Badge Genere/Voto**: *Shadow, Pill, Bar, Colored, Bordo, Vetro* con colori accent adattivi calcolati in base alla palette del poster.

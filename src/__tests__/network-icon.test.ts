@@ -38,14 +38,31 @@ describe("network-svgs", () => {
   })
 
   it("returns null for removed/unknown network", () => {
-    const hulu = getNetworkSvgResult("Hulu", 500)
-    expect(hulu).toBeNull()
-
     const peacock = getNetworkSvgResult("Peacock", 500)
     expect(peacock).toBeNull()
 
     const res = getNetworkSvgResult("Unknown Indie Studio", 500)
     expect(res).toBeNull()
+  })
+
+  it("matches newly added networks", () => {
+    expect(getNetworkSvgResult("AMC")?.networkKey).toBe("amc")
+    expect(getNetworkSvgResult("AMC+")?.networkKey).toBe("amc")
+    expect(getNetworkSvgResult("American Broadcasting Company")?.networkKey).toBe("abc")
+    expect(getNetworkSvgResult("CBS")?.networkKey).toBe("cbs")
+    expect(getNetworkSvgResult("FX")?.networkKey).toBe("fx")
+    expect(getNetworkSvgResult("FXX")?.networkKey).toBe("fx")
+    expect(getNetworkSvgResult("Hulu")?.networkKey).toBe("hulu")
+    expect(getNetworkSvgResult("National Geographic")?.networkKey).toBe("natgeo")
+    expect(getNetworkSvgResult("Nat Geo Wild")?.networkKey).toBe("natgeo")
+    expect(getNetworkSvgResult("NBC")?.networkKey).toBe("nbc")
+    expect(getNetworkSvgResult("Showtime")?.networkKey).toBe("showtime")
+    expect(getNetworkSvgResult("Showtime 2")?.networkKey).toBe("showtime")
+  })
+
+  it("does NOT match word-boundary collisions for new networks", () => {
+    expect(getNetworkSvgResult("Camcord Documentary")).toBeNull()
+    expect(getNetworkSvgResult("X-Files Chronicles")).toBeNull()
   })
 
   it("matches Sky networks", () => {
@@ -92,6 +109,10 @@ describe("network-svgs", () => {
       ["Mediaset", "mediaset"],
       ["Tubi", "tubi"],
       ["Pluto TV", "pluto"],
+      ["Hulu", "hulu"],
+      ["AMC", "amc"],
+      ["NBC", "nbc"],
+      ["Showtime", "showtime"],
     ]
     for (const [name, key] of cases) {
       const res = await renderNetworkLogoBadge(name, 500)

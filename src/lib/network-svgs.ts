@@ -24,20 +24,34 @@ export interface NetworkPngResult {
 
 const NETWORKS_DIR = path.join(process.cwd(), "public", "networks")
 
+/** Svuota la cache dei logo pre-renderizzati (per /api/cache/clear e test). */
+export function __resetNetworkLogoCache(): void {
+  networkLogoCache.clear()
+}
+
 // Map networkKey → filename in public/networks/
 const NETWORK_FILES: Record<string, string> = {
-  netflix: "Netflix_2016_N_logo.png",
-  hbo: "HBO_Max_(2025).png",
-  disney: "Disney+_logo.png",
-  prime: "Amazon_Prime_Video_logo.png",
-  apple: "Apple_TV_logo.png",
-  paramount: "Paramount_Plus.png",
-  rai: "Logo_of_RAI_(2016).png",
-  crunchyroll: "Crunchyroll_Logo.png",
-  sky: "Sky_Group_logo_2020.png",
-  mediaset: "Mediaset_Infinity_logo.png",
-  tubi: "Tubi logo.png",
-  pluto: "Pluto_TV_logo_2024.png",
+  netflix: "Netflix_2016_N_logo.svg",
+  hbo: "HBO_Max_(2025).svg",
+  disney: "Disney+_logo.svg",
+  prime: "Amazon_Prime_Video_logo_(2024).svg",
+  apple: "Apple_TV_logo.svg",
+  paramount: "Paramount_Plus.svg",
+  rai: "Logo_of_RAI_(2016).svg",
+  crunchyroll: "Crunchyroll_Logo.svg",
+  // Il logo NOW ha sostituito il vecchio Sky Group: entrambi i nomi usano lo stesso file.
+  sky: "Now_logo.svg",
+  mediaset: "Mediaset_Infinity_logo.svg",
+  tubi: "Tubi logo.svg",
+  pluto: "Pluto_TV_logo_2024.svg",
+  amc: "Amc_logo.svg",
+  abc: "American_Broadcasting_Company_Logo.svg",
+  cbs: "CBS_logo_(2020).svg",
+  fx: "FX_International_logo.svg",
+  hulu: "Hulu_logo_(2018).svg",
+  natgeo: "National-Geographic-Logo.svg",
+  nbc: "NBC_logo.svg",
+  showtime: "Showtime_logo.svg",
 }
 
 // Target rendered widths (at pw=380) — height is proportional via sharp
@@ -54,6 +68,14 @@ const NETWORK_TARGET_W: Record<string, number> = {
   mediaset: 64,
   tubi: 90,
   pluto: 64,
+  amc: 48,
+  abc: 44,
+  cbs: 56,
+  fx: 36,
+  hulu: 52,
+  natgeo: 64,
+  nbc: 52,
+  showtime: 56,
 }
 
 function getNetworkKey(networkName: string): string | null {
@@ -74,6 +96,16 @@ function getNetworkKey(networkName: string): string | null {
   // NOW matchato solo quando il nome inizia con "now" (NOW / Now TV), non la parola ovunque
   // (evita falsi positivi tipo "Don't Look Now").
   if (/\bsky\b/.test(lower) || lower === "now" || lower.startsWith("now ")) return "sky"
+  // Word boundary per evitare falsi positivi: "amc" dentro parole composte,
+  // "abc" in sigle/parole, "fx" in titoli tipo "The X-Files" spin-off ecc.
+  if (/\bamc\+?\b/.test(lower)) return "amc"
+  if (/\babc\b/.test(lower) || lower.includes("american broadcasting")) return "abc"
+  if (/\bcbs\b/.test(lower)) return "cbs"
+  if (/\bfxx?\b/.test(lower)) return "fx"
+  if (lower.includes("hulu")) return "hulu"
+  if (lower.includes("national geographic") || /\bnat\s?geo\b/.test(lower)) return "natgeo"
+  if (/\bnbc\b/.test(lower)) return "nbc"
+  if (/\bshowtime\b/.test(lower)) return "showtime"
   return null
 }
 
@@ -89,7 +121,18 @@ async function loadNetworkPng(networkKey: string, pw: number): Promise<{ png: Bu
   try {
     const sharp = (await import("sharp")).default
     const targetW = Math.round((NETWORK_TARGET_W[networkKey] ?? 60) * pw / 380)
-    const { data, info } = await sharp(filePath)
+    // Gli SVG senza width/height intrinseci vengono rasterizzati da libvips a
+    // 72dpi sulla base del viewBox: per logo con viewBox piccolo (es. Apple TV
+    // 53px) servirebbe un upscale del raster già sfocato. Calcoliamo quindi la
+    // densità in modo che il rendering vettoriale copra la larghezza target.
+    let density = 72
+    try {
+      const meta = await sharp(filePath).metadata()
+      if (meta.width && meta.width > 0 && meta.width < targetW) {
+        density = Math.min(Math.ceil((72 * targetW) / meta.width), 2400)
+      }
+    } catch {}
+    const { data, info } = await sharp(filePath, { density })
       .resize(targetW, undefined, { fit: "inside", withoutEnlargement: false })
       .png()
       .toBuffer({ resolveWithObject: true })
