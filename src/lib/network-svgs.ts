@@ -52,6 +52,19 @@ const NETWORK_FILES: Record<string, string> = {
   natgeo: "National-Geographic-Logo.svg",
   nbc: "NBC_logo.svg", // peacock colors updated 2026-08-28
   showtime: "Showtime_logo.svg",
+  warner: "Warner_Bros_logo.svg",
+  universal: "Universal_Pictures_logo.svg",
+  century: "20th_Century_Studios_(2020) [Recuperato].svg",
+  columbia: "Columbia_Pictures.svg",
+  sony: "Sony_logo.svg",
+  disney_pictures: "Walt_Disney_Pictures_text_logo.svg",
+  marvel: "Marvel_Studios_2016_logo.svg",
+  a24: "A24_logo.svg",
+  legendary: "Legendary_Entertainment_logo.svg",
+  lionsgate: "Lionsgate_Logo.svg",
+  fandango: "Fandango_2014.svg",
+  medusa: "Medusa_Film_-_logo_(Italy,_2017-).svg",
+  ghibli: "Studio_Ghibli.svg",
 }
 
 // Target rendered widths (at pw=380) — height is proportional via sharp
@@ -76,12 +89,27 @@ const NETWORK_TARGET_W: Record<string, number> = {
   natgeo: 64,
   nbc: 52,
   showtime: 56,
+  warner: 64,
+  universal: 64,
+  century: 64,
+  columbia: 64,
+  sony: 52,
+  disney_pictures: 72,
+  marvel: 72,
+  a24: 52,
+  legendary: 56,
+  lionsgate: 56,
+  fandango: 48,
+  medusa: 64,
+  ghibli: 56,
 }
 
 function getNetworkKey(networkName: string): string | null {
   const lower = networkName.toLowerCase().trim()
   if (lower.includes("netflix")) return "netflix"
   if (lower.includes("hbo") || lower === "max") return "hbo"
+  // Walt Disney Pictures va prima di Disney generico per non clashare con Disney+
+  if (lower.includes("walt disney")) return "disney_pictures"
   if (lower.includes("disney")) return "disney"
   if (lower.includes("prime") || lower.includes("amazon")) return "prime"
   if (lower.includes("apple")) return "apple"
@@ -106,6 +134,18 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("national geographic") || /\bnat\s?geo\b/.test(lower)) return "natgeo"
   if (/\bnbc\b/.test(lower)) return "nbc"
   if (/\bshowtime\b/.test(lower)) return "showtime"
+  if (lower.includes("warner")) return "warner"
+  if (lower.includes("universal")) return "universal"
+  if (lower.includes("20th century") || lower.includes("20th century studios") || lower.includes("century studios")) return "century"
+  if (lower.includes("columbia")) return "columbia"
+  if (lower.includes("marvel")) return "marvel"
+  if (/\bsony\b/.test(lower)) return "sony"
+  if (lower === "a24" || lower.includes("a24")) return "a24"
+  if (lower.includes("legendary")) return "legendary"
+  if (lower.includes("lionsgate")) return "lionsgate"
+  if (lower.includes("fandango")) return "fandango"
+  if (lower.includes("medusa")) return "medusa"
+  if (lower.includes("ghibli") || lower.includes("studio ghibli")) return "ghibli"
   return null
 }
 
