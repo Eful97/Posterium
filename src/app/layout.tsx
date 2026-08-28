@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -17,7 +17,6 @@ export const metadata: Metadata = {
   title: "Posterium — Generatore di poster per Stremio",
   description: "Generatore dinamico di poster cinematografici per Stremio: locandine pulite, loghi vettoriali, rating e badge trend composti in tempo reale.",
   manifest: "/site.webmanifest",
-  themeColor: "#e85d2a",
   openGraph: {
     title: "Posterium",
     description: "Generatore di poster cinematografici per Stremio",
@@ -25,6 +24,10 @@ export const metadata: Metadata = {
     type: "website",
   },
   robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#e85d2a",
 };
 
 export default function RootLayout({
