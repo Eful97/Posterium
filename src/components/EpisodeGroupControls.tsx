@@ -5,6 +5,7 @@ import { ListOrdered, Check, Save } from "lucide-react"
 import { usePSelector } from "@/lib/context"
 import { usePosterEditor } from "@/lib/contexts/PosterEditorContext"
 import { http } from "@/lib/http"
+import { EpisodePreview } from "@/components/EpisodePreview"
 
 export function EpisodeGroupControls() {
   const selected = usePSelector((v) => v.selected)
@@ -189,6 +190,8 @@ export function EpisodeGroupControls() {
           )}
         </button>
       </div>
+
+      <EpisodePreview />
     </div>
   )
 }

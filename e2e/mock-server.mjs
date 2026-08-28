@@ -50,7 +50,20 @@ function posterItem() {
 
 function detailFor(type) {
   if (type === "tv") {
-    return { ...MOVIE, name: "Avatar", title: undefined, first_air_date: "2009-12-10", release_date: null }
+    return {
+      ...MOVIE,
+      name: "Avatar",
+      title: undefined,
+      first_air_date: "2009-12-10",
+      release_date: null,
+      number_of_seasons: 2,
+      number_of_episodes: 4,
+      seasons: [
+        { id: 1, season_number: 0, name: "Specials", episode_count: 1, air_date: "2009-12-01", poster_path: null },
+        { id: 2, season_number: 1, name: "Stagione 1", episode_count: 2, air_date: "2009-12-10", poster_path: null },
+        { id: 3, season_number: 2, name: "Stagione 2", episode_count: 2, air_date: "2010-01-10", poster_path: null },
+      ],
+    }
   }
   return { ...MOVIE, title: "Avatar", name: "Avatar", release_date: "2009-12-10", first_air_date: null }
 }
@@ -148,6 +161,65 @@ const server = http.createServer(async (req, res) => {
     const kwMatch = pathname.match(/^\/3\/(movie|tv)\/(\d+)\/keywords$/)
     if (kwMatch) {
       return json(res, 200, { id: Number(kwMatch[2]), keywords: [] })
+    }
+    // TV seasons
+    const seasonMatch = pathname.match(/^\/3\/tv\/(\d+)\/season\/(\d+)$/)
+    if (seasonMatch) {
+      const seasonNum = Number(seasonMatch[2])
+      const episodesBySeason = {
+        0: [{ id: 900, season_number: 0, episode_number: 1, name: "Speciale Pilota", overview: "Episodio speciale", still_path: MOCKED_POSTER_PATH, air_date: "2009-12-01", vote_average: 7.5 }],
+        1: [
+          { id: 901, season_number: 1, episode_number: 1, name: "Episodio 1 — L'inizio", overview: "Inizio della storia", still_path: MOCKED_POSTER_PATH, air_date: "2009-12-10", vote_average: 8.1 },
+          { id: 902, season_number: 1, episode_number: 2, name: "Episodio 2 — Il ritorno", overview: "Continuazione", still_path: MOCKED_POSTER_PATH, air_date: "2009-12-17", vote_average: 8.3 },
+        ],
+        2: [
+          { id: 903, season_number: 2, episode_number: 1, name: "Episodio 1 — Nuova stagione", overview: "Nuovi personaggi", still_path: MOCKED_POSTER_PATH, air_date: "2010-01-10", vote_average: 8.0 },
+          { id: 904, season_number: 2, episode_number: 2, name: "Episodio 2 — Finale", overview: "Chiusura", still_path: MOCKED_POSTER_PATH, air_date: "2010-01-17", vote_average: 8.5 },
+        ],
+      }
+      const eps = episodesBySeason[seasonNum] || []
+      return json(res, 200, { id: Number(seasonMatch[1]) * 100 + seasonNum, season_number: seasonNum, name: seasonNum === 0 ? "Specials" : `Stagione ${seasonNum}`, episodes: eps })
+    }
+    // TMDB Episode Groups
+    const epGroupsMatch = pathname.match(/^\/3\/tv\/(\d+)\/episode_groups$/)
+    if (epGroupsMatch) {
+      return json(res, 200, {
+        results: [
+          { id: "mock_group_italian", name: "Italian Order", type: 6, group_count: 2, episode_count: 4, order: 0 },
+          { id: "mock_group_netflix", name: "Netflix Order", type: 1, group_count: 2, episode_count: 4, order: 1 },
+        ],
+      })
+    }
+    const epGroupMatch = pathname.match(/^\/3\/tv\/episode_group\/([^/]+)$/)
+    if (epGroupMatch) {
+      const groupId = decodeURIComponent(epGroupMatch[1])
+      const name = groupId.includes("netflix") ? "Netflix Order" : "Italian Order"
+      return json(res, 200, {
+        id: groupId,
+        name,
+        description: `Mock ${name}`,
+        group_count: 2,
+        groups: [
+          {
+            id: `${groupId}_g1`,
+            name: "Parte 1",
+            order: groupId.includes("netflix") ? 1 : 0,
+            episodes: [
+              { id: 901, episode_number: 1, name: "Episodio 1 — L'inizio", overview: "Inizio", still_path: MOCKED_POSTER_PATH, air_date: "2009-12-10", vote_average: 8.1, order: 0 },
+              { id: 902, episode_number: 2, name: "Episodio 2 — Il ritorno", overview: "Continuazione", still_path: MOCKED_POSTER_PATH, air_date: "2009-12-17", vote_average: 8.3, order: 1 },
+            ],
+          },
+          {
+            id: `${groupId}_g2`,
+            name: "Parte 2",
+            order: groupId.includes("netflix") ? 2 : 1,
+            episodes: [
+              { id: 903, episode_number: 1, name: "Episodio 1 — Nuova stagione", overview: "Nuovi", still_path: MOCKED_POSTER_PATH, air_date: "2010-01-10", vote_average: 8.0, order: 0 },
+              { id: 904, episode_number: 2, name: "Episodio 2 — Finale", overview: "Chiusura", still_path: MOCKED_POSTER_PATH, air_date: "2010-01-17", vote_average: 8.5, order: 1 },
+            ],
+          },
+        ],
+      })
     }
 
     // JustWatch GraphQL: classifiche giornaliere deterministiche. La home
