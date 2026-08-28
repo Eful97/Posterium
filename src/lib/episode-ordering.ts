@@ -72,6 +72,24 @@ export function buildVideosFromGroups(
 }
 
 /**
+ * Esegue una mappatura concorrente limitata (default 5) per evitare burst TMDB
+ * su serie con molte stagioni (es. One Piece 20+ stagioni).
+ */
+export async function concurrentMap<T, R>(items: T[], fn: (item: T, idx: number) => Promise<R>, limit = 5): Promise<R[]> {
+  const results: R[] = new Array(items.length) as R[]
+  let next = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const i = next++
+      if (i >= items.length) break
+      results[i] = await fn(items[i], i)
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
+/**
  * Costruisce i video da TheTVDB (ordinamento Aired).
  */
 export async function buildVideosFromTvdb(

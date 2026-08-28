@@ -22,7 +22,7 @@ import {
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { enrichVideosWithTvdb } from "@/lib/tvdb"
-import { buildVideosFromGroups, buildVideosFromTvdb } from "@/lib/episode-ordering"
+import { buildVideosFromGroups, buildVideosFromTvdb, concurrentMap } from "@/lib/episode-ordering"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("meta")
@@ -293,11 +293,7 @@ export async function posteriumMeta(
       // Fallback alle stagioni standard se non ci sono Episode Groups alternativi
       if (videos.length === 0 && details.seasons && details.seasons.length > 0) {
         const regularSeasons = details.seasons.filter((s) => s.season_number > 0)
-        const seasonsData = await Promise.all(
-          regularSeasons.map(async (s) => {
-            return getTVSeason(tmdbId, s.season_number, "it-IT", apiKey)
-          })
-        )
+        const seasonsData = await concurrentMap(regularSeasons, (s) => getTVSeason(tmdbId, s.season_number!, "it-IT", apiKey), 5)
 
         for (const sData of seasonsData) {
           if (!sData || !sData.episodes) continue

@@ -162,6 +162,10 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     "tt",
     "tvdb:",
     "tvdbc:",
+    "kitsu:",
+    "mal:",
+    "anilist:",
+    "anidb:",
   ]
 
   const TYPES = ["movie", "series", "anime.movie", "anime.series", "anime", "Trakt", "collection"]

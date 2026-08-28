@@ -11,7 +11,7 @@ import {
   resolveRequestApiKey,
 } from "@/lib/tmdb"
 import { enrichVideosWithTvdb } from "@/lib/tvdb"
-import { buildVideosFromGroups, buildVideosFromTvdb, resolveSeasonNumbers, seasonNumberForGroup } from "@/lib/episode-ordering"
+import { buildVideosFromGroups, buildVideosFromTvdb, concurrentMap, resolveSeasonNumbers, seasonNumberForGroup } from "@/lib/episode-ordering"
 
 interface PreviewVideo {
   id: string
@@ -98,12 +98,10 @@ export async function GET(req: NextRequest) {
       videos.push(...(buildVideosFromGroups(groupDetails, primaryId) as unknown as PreviewVideo[]))
     }
 
-    // Fallback standard
+    // Fallback standard — limitato a 5 richieste parallele per evitare burst TMDB
     if (videos.length === 0 && details.seasons && details.seasons.length > 0) {
       const regularSeasons = details.seasons.filter((s) => s.season_number > 0)
-      const seasonsData = await Promise.all(
-        regularSeasons.map(async (s) => getTVSeason(tmdbId, s.season_number!, language, apiKey))
-      )
+      const seasonsData = await concurrentMap(regularSeasons, (s) => getTVSeason(tmdbId, s.season_number!, language, apiKey), 5)
       for (const sData of seasonsData) {
         if (!sData || !sData.episodes) continue
         for (const ep of sData.episodes) {
