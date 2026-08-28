@@ -20,7 +20,7 @@ import { TransformControls } from "@/components/TransformControls"
 import { EpisodeGroupControls } from "@/components/EpisodeGroupControls"
 import { JwRankBadge } from "@/components/JwRankBadge"
 import { usePosterPreview } from "@/lib/usePosterPreview"
-import { Check, Clock, ExternalLink, Save, Trash2, X } from "lucide-react"
+import { Check, Clock, ExternalLink, Save, Trash2, X, ChevronLeft } from "lucide-react"
 
 export default function EditView() {
   const accentColor = usePSelector((v) => v.accentColor)
@@ -169,18 +169,45 @@ export default function EditView() {
     <div>
       {selected && (
         <div className="flex flex-col items-center w-full">
-          {/* Header editor */}
-          <header className="w-full px-2 sm:px-4 md:px-6 -mt-1 md:-mt-4 mb-3 flex flex-col items-center">
+          {/* Desktop Header */}
+          <header className="hidden lg:flex w-full px-4 md:px-6 -mt-1 md:-mt-4 mb-3 flex-col items-center">
             {/* eslint-disable-next-line @next/next/no-img-element -- logo locale */}
             <img
               onClick={goHome}
               src="/posterium.png"
               alt="Posterium"
               decoding="async"
-              className="header-logo h-14 sm:h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1"
+              className="header-logo h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1"
             />
             <p className="header-tagline text-xs md:text-sm text-muted">{t("ui.homeTagline")}</p>
           </header>
+
+          {/* Mobile Top Bar: Back / Title / Quick Save */}
+          <div className="flex lg:hidden items-center justify-between w-full px-2 mb-3 gap-2">
+            <button
+              type="button"
+              onClick={() => { setSelected(null); setPreviewPoster(null); setSelectedLogo(null); setPreviewId(null) }}
+              className="flex items-center gap-1 px-3 py-2 rounded-xl bg-surface border border-white/10 text-xs font-semibold text-zinc-300 hover:text-white active:scale-95 transition-all shrink-0 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>{t("ui.back")}</span>
+            </button>
+            <div className="flex-1 min-w-0 text-center px-1">
+              <p className="text-xs font-bold text-zinc-100 truncate">{titleOf(selected)}</p>
+              <p className="text-[10px] text-zinc-400 font-mono">{yearOf(selected)} · {selected.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")}</p>
+            </div>
+            {previewPoster && (
+              <button
+                type="button"
+                aria-label={t("ui.savePoster")}
+                onClick={handleSave}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-accent-orange to-amber-500 text-white font-semibold text-xs shadow-md shadow-accent-orange/20 active:scale-95 transition-all shrink-0 cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Salva</span>
+              </button>
+            )}
+          </div>
 
           {/* Mobile Segmented Switcher (Scegli Poster / Anteprima / Modifica) */}
           <div className="flex lg:hidden items-center justify-center p-1 bg-surface/90 backdrop-blur-md rounded-2xl border border-white/[0.08] mb-4 w-full max-w-md mx-auto shadow-lg shadow-black/20">
@@ -193,7 +220,7 @@ export default function EditView() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              <span>Poster</span>
+              <span>🖼️ Poster</span>
               <span className="text-[10px] opacity-75 font-mono">({posters.length})</span>
             </button>
             <button
@@ -205,7 +232,7 @@ export default function EditView() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              <span>Anteprima</span>
+              <span>👁️ Anteprima</span>
             </button>
             <button
               type="button"
@@ -216,7 +243,7 @@ export default function EditView() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              <span>Personalizza</span>
+              <span>🎨 Personalizza</span>
             </button>
           </div>
 
@@ -392,11 +419,12 @@ export default function EditView() {
               </button>
               <button
                 type="button"
+                aria-label={t("ui.savePoster")}
                 onClick={handleSave}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-accent-orange to-amber-500 text-white font-semibold text-xs shadow-md shadow-accent-orange/25 active:scale-95 transition-all"
               >
                 <Save className="w-3.5 h-3.5" />
-                <span>{t("ui.savePoster")}</span>
+                <span>Salva</span>
               </button>
             </div>
           )}

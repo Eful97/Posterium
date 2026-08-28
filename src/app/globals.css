@@ -115,7 +115,7 @@ input[type="range"] {
   appearance: none;
   background: transparent;
   cursor: pointer;
-  height: 20px;
+  height: 32px;
   display: flex;
   align-items: center;
 }
@@ -138,6 +138,13 @@ input[type="range"]::-webkit-slider-thumb {
   border: 2px solid var(--color-background);
   box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.5);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+@media (max-width: 768px) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    margin-top: -8px;
+  }
 }
 .ui-accent input[type="range"]::-webkit-slider-thumb {
   background: var(--color-accent, var(--color-accent-orange));
@@ -170,6 +177,12 @@ input[type="range"]::-moz-range-thumb {
   background: rgb(var(--accent-rgb));
   border: 2px solid var(--color-background);
   box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.5);
+}
+@media (max-width: 768px) {
+  input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+  }
 }
 .ui-accent input[type="range"]::-moz-range-thumb {
   background: var(--color-accent, var(--color-accent-orange));
@@ -632,8 +645,7 @@ input[type="range"]::-moz-range-thumb {
   will-change: transform, opacity;
 }
 
-/* Workspace editor (da prototipo personalizza-poster): 3 colonne con la
-   preview che sale in cima sotto 1180px e colonna singola sotto 920px. */
+/* Workspace editor: 3 colonne su desktop, colonna singola fluida sotto 1024px */
 .editor-workspace {
   display: grid;
   grid-template-columns: minmax(300px, 1fr) minmax(400px, 540px) minmax(300px, 1fr);
@@ -642,32 +654,16 @@ input[type="range"]::-moz-range-thumb {
   width: 100%;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1180px) and (min-width: 1025px) {
   .editor-workspace {
     grid-template-columns: 1fr 1fr;
   }
-
-  .editor-workspace > .editor-panel:nth-child(2) {
-    grid-column: 1 / -1;
-    order: -1;
-  }
-
-  .editor-workspace > .editor-panel:nth-child(1) {
-    order: 1;
-  }
-
-  .editor-workspace > .editor-panel:nth-child(3) {
-    order: 2;
-  }
 }
 
-@media (max-width: 920px) {
+@media (max-width: 1024px) {
   .editor-workspace {
-    grid-template-columns: 1fr;
-  }
-
-  .editor-workspace > .editor-panel:nth-child(2) {
-    grid-column: auto;
+    display: block;
+    width: 100%;
   }
 }
 

@@ -66,6 +66,7 @@ export function SearchBar({
         suppressHydrationWarning
         ref={inputRef}
         value={text}
+        enterKeyHint="search"
         aria-label={large ? t("ui.searchAriaLabelLarge") : t("ui.searchAriaLabel")}
         onChange={(e) => {
           setText(e.target.value)
@@ -108,7 +109,7 @@ export function SearchBar({
             }
           }}
           disabled={!tmdbKey}
-          className="shrink-0 w-10 h-10 mr-1.5 flex items-center justify-center text-white rounded-full active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-200 bg-accent-orange hover:shadow-lg hover:shadow-accent-orange/30"
+          className="shrink-0 w-8 sm:w-10 h-8 sm:h-10 mr-1.5 flex items-center justify-center text-white rounded-full active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-200 bg-accent-orange hover:shadow-lg hover:shadow-accent-orange/30 cursor-pointer"
         >
           <ArrowRight className="w-4 h-4" />
         </button>

@@ -38,7 +38,7 @@ describe("EditView", () => {
 
   it("shows title when item selected", () => {
     renderWithCtx(<EditView />, { selected: mockSelected })
-    expect(screen.getByText("Fight Club")).toBeInTheDocument()
+    expect(screen.getAllByText("Fight Club")[0]).toBeInTheDocument()
   })
 
   it("shows save poster button when item selected with previewPoster", () => {

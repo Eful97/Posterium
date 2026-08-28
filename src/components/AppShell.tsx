@@ -275,9 +275,6 @@ export function AppShell() {
           </>
         </div>
         )}
-        {view === "edit" && selected && (
-          <div className="pb-3">{mobileToolbar}</div>
-        )}
 
         <ProxyModal isOpen={proxyOpen} onClose={() => setProxyOpen(false)} />
         <InstallModal isOpen={installOpen} onClose={() => setInstallOpen(false)} />
@@ -318,7 +315,9 @@ export function AppShell() {
       {/* Mobile Bottom Navigation Bar (iOS / Android Style) */}
       <nav
         aria-label="Navigazione principale"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/85 backdrop-blur-2xl border-t border-white/[0.08] shadow-[0_-10px_30px_rgba(0,0,0,0.5)] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-2xl border-t border-white/[0.08] shadow-[0_-10px_30px_rgba(0,0,0,0.5)] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-all duration-200 ${
+          view === "edit" && selected ? "translate-y-full pointer-events-none opacity-0" : "translate-y-0 opacity-100"
+        }`}
       >
         <div className="grid grid-cols-5 items-center justify-around max-w-md mx-auto">
           {/* Cerca / Home */}
