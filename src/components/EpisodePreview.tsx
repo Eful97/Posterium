@@ -39,7 +39,7 @@ export function EpisodePreview() {
   const [data, setData] = useState<PreviewPayload | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState<Set<number>>(new Set([1]))
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
   const episodeGroupId = ed.episodeGroupId
 
@@ -75,13 +75,7 @@ export function EpisodePreview() {
       .then((json) => {
         if (!active) return
         setData(json)
-        // auto-expand first season if not set
-        if (json.seasons?.length > 0) {
-          setExpanded((prev) => {
-            if (prev.size > 0) return prev
-            return new Set([json.seasons[0].season])
-          })
-        }
+        setExpanded(new Set())
       })
       .catch((e) => {
         if (!active) return
