@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { getById, remove, upsert } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheInvalidatePosterDataFor } from "@/lib/cache"
+import { cacheInvalidate, cacheInvalidatePosterDataFor } from "@/lib/cache"
 import { mappingUpdateSchema } from "@/lib/validation"
 import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/read-body"
@@ -77,11 +77,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<RouteP
     releaseDate: parsed.data.releaseDate ?? existing.releaseDate,
     firstAirDate: parsed.data.firstAirDate ?? existing.firstAirDate,
     logoDisabled: parsed.data.logoDisabled ?? existing.logoDisabled,
+    episodeGroupId: hasField("episodeGroupId") ? (parsed.data.episodeGroupId ?? null) : existing.episodeGroupId,
     tmdbId: existing.tmdbId,
     mediaType: existing.mediaType,
     updatedAt: new Date().toISOString(),
   })
   cacheInvalidatePosterDataFor(type, tmdbId)
+  cacheInvalidate("stremio")
   return Response.json({ ok: true })
 }
 
@@ -99,5 +101,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Rou
   }
   await remove(type as "movie" | "tv", tmdbId)
   cacheInvalidatePosterDataFor(type as "movie" | "tv", tmdbId)
+  cacheInvalidate("stremio")
   return Response.json({ ok: true })
 }

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { getAll, getById, upsert, removeAll } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
-import { cacheInvalidatePosterData, cacheInvalidatePosterDataFor } from "@/lib/cache"
+import { cacheInvalidate, cacheInvalidatePosterData, cacheInvalidatePosterDataFor } from "@/lib/cache"
 import { mappingSchema } from "@/lib/validation"
 import { checkAdminToken, requireAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
@@ -68,6 +68,10 @@ export async function POST(req: NextRequest) {
   // Invalidazione mirata al mapping salvato, non globale (i default impattano
   // tutto, un singolo mapping solo il suo poster/badge).
   cacheInvalidatePosterDataFor(parsed.data.mediaType, parsed.data.tmdbId)
+  // Il meta videos (Stremio) dipende da episodeGroupId: invalidare anche i
+  // meta cache (tags stremio/meta) altrimenti dopo un cambio ordinamento
+  // si serve lo stale 12h e l'utente vede ancora le stagioni vecchie.
+  cacheInvalidate("stremio")
   // Warm poster cache — impopola cache TMDB + poster prima che Stremio/utenti richiedano.
   // Guardia VERCEL (fix M11): il self-fetch su 127.0.0.1 non esiste su Vercel
   // serverless; prima il warmup falliva sempre e loggava warning ingannevoli.

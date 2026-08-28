@@ -201,7 +201,18 @@ export async function posteriumMeta(
     return metaResponse({ meta: null })
   }
 
-  const cacheKey = `stremio:meta:${stType}:${cleanId}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${tvdbApiKey ? `:tk${hashFragment(tvdbApiKey)}` : ""}:es${episodeMetadataSource}`
+  // Per le serie, il meta videos dipende dal mapping episodeGroupId: includilo nella
+  // cache key (fetch pre-cache) altrimenti dopo un cambio ordinamento si serve lo
+  // stale per 12h. Il lookup è cached (memCache/KV 500ms) quindi costo minimo.
+  let preMappingForCache: { episodeGroupId?: string | null; updatedAt?: string } | null = null
+  if (stType === "series") {
+    try {
+      const pre = await getById("tv", tmdbId)
+      if (pre) preMappingForCache = { episodeGroupId: pre.episodeGroupId ?? null, updatedAt: pre.updatedAt }
+    } catch { /* ignore — fallback a auto */ }
+  }
+  const egKey = preMappingForCache ? `${preMappingForCache.episodeGroupId ?? "auto"}:${preMappingForCache.updatedAt ?? ""}` : "auto"
+  const cacheKey = `stremio:meta:${stType}:${cleanId}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${tvdbApiKey ? `:tk${hashFragment(tvdbApiKey)}` : ""}:es${episodeMetadataSource}:eg${hashFragment(egKey)}`
   const cached = cacheGet<{ meta: StremioMetaDetail }>(cacheKey)
   if (cached) return metaResponse(cached)
 
@@ -279,12 +290,17 @@ export async function posteriumMeta(
       }
 
       if (groupDetails?.groups && groupDetails.groups.length > 0) {
-        const sortedGroups = [...groupDetails.groups].sort((a, b) => a.order - b.order)
+        const sortedGroups = [...groupDetails.groups].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
+        // TMDB gruppi hanno order 1-indexed in molti casi (es. Netflix Collections 1..6) ma
+        // 0-indexed in altri (es. 0..4). Rileva in base alla presenza di uno 0: se c'è
+        // uno 0, tutti i valori sono 0-based e va aggiunto +1, altrimenti sono già 1-based.
+        const hasZeroGroupOrder = sortedGroups.some((g) => g.order === 0)
         for (let gIdx = 0; gIdx < sortedGroups.length; gIdx++) {
           const grp = sortedGroups[gIdx]
-          const seasonNumber = grp.order || gIdx + 1
-          for (let epIdx = 0; epIdx < (grp.episodes || []).length; epIdx++) {
-            const ep = grp.episodes[epIdx]
+          const seasonNumber = typeof grp.order === "number" ? grp.order + (hasZeroGroupOrder ? 1 : 0) : gIdx + 1
+          const sortedEpisodes = [...(grp.episodes || [])].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
+          for (let epIdx = 0; epIdx < sortedEpisodes.length; epIdx++) {
+            const ep = sortedEpisodes[epIdx]
             const episodeNumber = typeof ep.order === "number" ? ep.order + 1 : epIdx + 1
             videos.push({
               id: `${primaryId}:${seasonNumber}:${episodeNumber}`,
