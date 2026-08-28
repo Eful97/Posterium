@@ -54,13 +54,6 @@ const SUB_GENRES: SubGenreRule[] = [
     labels: { it: "Paranormale", en: "Paranormal", fr: "Paranormal", de: "Paranormal", es: "Paranormal" },
   },
   {
-    key: "superhero",
-    // NOTE: "vigilante" removed — it triggered false positives on non-superhero
-    // revenge thrillers (Death Wish, The Equalizer, Taxi Driver).
-    keywords: ["superhero", "marvel comics", "dc comics", "comic book"],
-    labels: { it: "Supereroi", en: "Superhero", fr: "Super-héros", de: "Superhelden", es: "Superhéroes" },
-  },
-  {
     key: "kaiju",
     keywords: ["kaiju", "giant monster", "godzilla", "king kong"],
     labels: { it: "Kaiju & Mostri", en: "Kaiju & Monsters", fr: "Kaiju", de: "Kaiju", es: "Kaiju" },

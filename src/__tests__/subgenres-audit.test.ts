@@ -14,7 +14,6 @@ describe("identity — each rule matches its core keyword", () => {
     { key: "zombie",            keyword: "zombie",               expected: "Film di Zombie" },
     { key: "vampire",           keyword: "vampire",              expected: "Vampiri" },
     { key: "paranormal",        keyword: "haunted house",        expected: "Paranormale" },
-    { key: "superhero",         keyword: "superhero",            expected: "Supereroi" },
     { key: "kaiju",             keyword: "kaiju",                expected: "Kaiju & Mostri" },
     { key: "postapocalyptic",   keyword: "post-apocalyptic",     expected: "Post-Apocalittico" },
     { key: "foundfootage",      keyword: "found footage",        expected: "Found Footage" },

@@ -15,9 +15,15 @@ describe("network-svgs", () => {
   })
 
   it("matches Disney+ and returns networkKey=disney", () => {
-    const res = getNetworkSvgResult("Walt Disney Pictures", 500)
+    const res = getNetworkSvgResult("Disney+", 500)
     expect(res).not.toBeNull()
     expect(res!.networkKey).toBe("disney")
+  })
+
+  it("matches Walt Disney Pictures and returns networkKey=disney_pictures", () => {
+    const res = getNetworkSvgResult("Walt Disney Pictures", 500)
+    expect(res).not.toBeNull()
+    expect(res!.networkKey).toBe("disney_pictures")
   })
 
   it("matches Prime Video and returns networkKey=prime", () => {
