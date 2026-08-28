@@ -89,6 +89,91 @@ export async function concurrentMap<T, R>(items: T[], fn: (item: T, idx: number)
   return results
 }
 
+const ANIZIP_CACHE = new Map<string, { value: unknown; expiry: number }>()
+const ANIZIP_TTL_MS = 6 * 60 * 60 * 1000
+const ANIZIP_MAX = 200
+
+function anizipCacheGet(key: string): unknown | undefined {
+  const e = ANIZIP_CACHE.get(key)
+  if (!e || Date.now() > e.expiry) {
+    if (e) ANIZIP_CACHE.delete(key)
+    return undefined
+  }
+  return e.value
+}
+function anizipCacheSet(key: string, value: unknown) {
+  if (ANIZIP_CACHE.size >= ANIZIP_MAX) {
+    const oldest = ANIZIP_CACHE.keys().next().value as string | undefined
+    if (oldest) ANIZIP_CACHE.delete(oldest)
+  }
+  ANIZIP_CACHE.set(key, { value, expiry: Date.now() + ANIZIP_TTL_MS })
+}
+
+interface AnizipEpisode {
+  tvdbShowId?: number
+  seasonNumber?: number
+  episodeNumber?: number
+  absoluteEpisodeNumber?: number
+  title?: Record<string, string>
+  overview?: string
+  summary?: string
+  image?: string
+  airDate?: string
+  rating?: string | number
+}
+
+interface AnizipPayload {
+  episodes?: Record<string, AnizipEpisode>
+  mappings?: Record<string, unknown>
+}
+
+async function fetchAnizip(tmdbId: number): Promise<AnizipPayload | null> {
+  const key = `tmdb:${tmdbId}`
+  const cached = anizipCacheGet(key) as AnizipPayload | undefined
+  if (cached) return cached
+  const controller = new AbortController()
+  const t = setTimeout(() => controller.abort(), 5000)
+  try {
+    const res = await fetch(`https://api.ani.zip/mappings?themoviedb_id=${tmdbId}`, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as AnizipPayload
+    if (!data || !data.episodes) return null
+    anizipCacheSet(key, data)
+    return data
+  } catch {
+    return null
+  } finally {
+    clearTimeout(t)
+  }
+}
+
+export async function buildVideosFromAnizip(tmdbId: number, primaryId: string): Promise<PreviewVideo[]> {
+  const payload = await fetchAnizip(tmdbId)
+  if (!payload?.episodes) return []
+  const eps = Object.values(payload.episodes)
+  // filtra S* specials, ordina per assoluto o stagione/episodio
+  const regular = eps.filter((e) => typeof e.seasonNumber === "number" && typeof e.episodeNumber === "number" && e.seasonNumber !== 0)
+  const sorted = regular.sort((a, b) => (a.seasonNumber! - b.seasonNumber!) || (a.episodeNumber! - b.episodeNumber!))
+  const videos: PreviewVideo[] = []
+  for (const ep of sorted) {
+    const title = ep.title?.en || ep.title?.["x-jat"] || ep.title?.ja || `Episodio ${ep.episodeNumber}`
+    videos.push({
+      id: `${primaryId}:${ep.seasonNumber}:${ep.episodeNumber}`,
+      name: title,
+      season: ep.seasonNumber!,
+      episode: ep.episodeNumber!,
+      overview: ep.overview || ep.summary || undefined,
+      thumbnail: ep.image || undefined,
+      released: ep.airDate ? `${ep.airDate}T00:00:00.000Z` : undefined,
+      rating: ep.rating ? String(ep.rating) : undefined,
+    })
+  }
+  return videos
+}
+
 /**
  * Costruisce i video da TheTVDB (ordinamento Aired).
  */

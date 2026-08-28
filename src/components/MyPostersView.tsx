@@ -427,6 +427,15 @@ export function MyPostersView() {
               >
                 TVDB
               </button>
+              <button
+                type="button"
+                disabled={bulkSaving}
+                onClick={() => bulkSetOrdering("anizip")}
+                className="text-xs px-2.5 py-1 rounded-lg bg-surface2/60 text-zinc-200 hover:bg-surface2 border border-white/10 disabled:opacity-50"
+                title="Imposta AniZip (anime)"
+              >
+                AniZip
+              </button>
             </div>
             <button
               type="button"

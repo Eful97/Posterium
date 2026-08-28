@@ -18,6 +18,7 @@ import { PosterDepthEdge, PosterDepthSheen } from "@/components/PosterDepthGlow"
 import { BadgeControls } from "@/components/BadgeControls"
 import { TransformControls } from "@/components/TransformControls"
 import { EpisodeGroupControls } from "@/components/EpisodeGroupControls"
+import { JwRankBadge } from "@/components/JwRankBadge"
 import { usePosterPreview } from "@/lib/usePosterPreview"
 import { Check, Clock, ExternalLink, Save, Trash2, X } from "lucide-react"
 
@@ -280,6 +281,7 @@ export default function EditView() {
                         </span>
                       )
                     })()}
+                    <JwRankBadge tmdbId={selected.id} type={selected.media_type === "movie" ? "movie" : "tv"} />
                   </div>
                 </div>
               )}

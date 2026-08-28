@@ -178,6 +178,22 @@ export function EpisodeGroupControls() {
             {ed.episodeGroupId === "tvdb" && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
           </button>
 
+          <button
+            type="button"
+            onClick={() => ed.setEpisodeGroupId("anizip")}
+            className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between cursor-pointer ${
+              ed.episodeGroupId === "anizip"
+                ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
+                : "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
+            }`}
+          >
+            <div className="flex flex-col">
+              <span>🌀 AniZip (AniList/AniDB) — Anime</span>
+              <span className="text-[10px] text-zinc-400">Ordinamento anime absolute via AniZip, senza chiave</span>
+            </div>
+            {ed.episodeGroupId === "anizip" && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
+          </button>
+
           {epGroups.map((g) => {
             const isSelected = ed.episodeGroupId === g.id
             return (

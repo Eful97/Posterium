@@ -22,7 +22,7 @@ import {
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { enrichVideosWithTvdb } from "@/lib/tvdb"
-import { buildVideosFromGroups, buildVideosFromTvdb, concurrentMap } from "@/lib/episode-ordering"
+import { buildVideosFromAnizip, buildVideosFromGroups, buildVideosFromTvdb, concurrentMap } from "@/lib/episode-ordering"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("meta")
@@ -276,13 +276,20 @@ export async function posteriumMeta(
         } catch (e) {
           log.warn("TVDB ordering failed, fallback to standard", { error: e instanceof Error ? e.message : String(e) })
         }
+      } else if (mapping?.episodeGroupId === "anizip") {
+        try {
+          const anizipVideos = await buildVideosFromAnizip(tmdbId, primaryId)
+          if (anizipVideos.length > 0) videos.push(...(anizipVideos as StremioVideo[]))
+        } catch (e) {
+          log.warn("AniZip ordering failed, fallback to standard", { error: e instanceof Error ? e.message : String(e) })
+        }
       }
 
       let groupDetails: TMDBEpisodeGroupDetails | null = null
 
       // Default: stagioni standard TMDB. Si usa un Episode Group solo se
-      // l'utente ha salvato esplicitamente un episodeGroupId diverso da "standard" e diverso da "tvdb".
-      if (videos.length === 0 && mapping?.episodeGroupId && mapping.episodeGroupId !== "standard" && mapping.episodeGroupId !== "tvdb") {
+      // l'utente ha salvato esplicitamente un episodeGroupId diverso da "standard", "tvdb" e "anizip".
+      if (videos.length === 0 && mapping?.episodeGroupId && mapping.episodeGroupId !== "standard" && mapping.episodeGroupId !== "tvdb" && mapping.episodeGroupId !== "anizip") {
         groupDetails = await getTVEpisodeGroup(mapping.episodeGroupId, "it-IT", apiKey)
       }
 

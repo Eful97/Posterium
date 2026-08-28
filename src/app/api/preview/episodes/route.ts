@@ -11,7 +11,7 @@ import {
   resolveRequestApiKey,
 } from "@/lib/tmdb"
 import { enrichVideosWithTvdb } from "@/lib/tvdb"
-import { buildVideosFromGroups, buildVideosFromTvdb, concurrentMap, resolveSeasonNumbers, seasonNumberForGroup } from "@/lib/episode-ordering"
+import { buildVideosFromAnizip, buildVideosFromGroups, buildVideosFromTvdb, concurrentMap, resolveSeasonNumbers, seasonNumberForGroup } from "@/lib/episode-ordering"
 
 interface PreviewVideo {
   id: string
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
     const videos: PreviewVideo[] = []
     let groupDetails: TMDBEpisodeGroupDetails | null = null
 
-    // TVDB ordering sentinel (shared helper) — fallback silenzioso a standard
+    // TVDB / AniZip ordering sentinel (shared helper) — fallback silenzioso a standard
     if (episodeGroupId === "tvdb") {
       try {
         const tvdbVideos = await buildVideosFromTvdb(imdbId, tmdbId, primaryId, tvdbApiKey || "")
@@ -88,9 +88,16 @@ export async function GET(req: NextRequest) {
       } catch {
         // fallback silenzioso a TMDB standard
       }
+    } else if (episodeGroupId === "anizip") {
+      try {
+        const anizipVideos = await buildVideosFromAnizip(tmdbId, primaryId)
+        if (anizipVideos.length > 0) videos.push(...(anizipVideos as unknown as PreviewVideo[]))
+      } catch {
+        // fallback silenzioso a TMDB standard
+      }
     }
 
-    if (videos.length === 0 && episodeGroupId && episodeGroupId !== "standard" && episodeGroupId !== "tvdb") {
+    if (videos.length === 0 && episodeGroupId && episodeGroupId !== "standard" && episodeGroupId !== "tvdb" && episodeGroupId !== "anizip") {
       groupDetails = await getTVEpisodeGroup(episodeGroupId, language, apiKey)
     }
 
