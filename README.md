@@ -62,6 +62,7 @@ pinned: false
 * **Loghi Network Ufficiali in Vettoriale (SVG)**: Riconoscimento automatico e sovrapposizione loghi per Netflix, Prime Video, Disney+, Apple TV+, HBO Max, Paramount+, Sky/NOW, Crunchyroll, Rai, Mediaset Infinity, Tubi, Pluto TV, AMC, ABC, CBS, FX/FXX, Hulu, National Geographic, NBC e Showtime. Gli SVG vengono rasterizzati alla risoluzione esatta del poster (densità adattiva per viewBox piccoli): bordi sempre nitidi a qualsiasi dimensione.
 
 ### 🏷️ Badge, Rating & Classifiche
+* **✨ Badge Qualità Streaming (4K / 1080p / 720p / SD)**: Visualizza in alto a destra la risoluzione video massima disponibile rilevata in tempo reale dai flussi Stremio (Torrentio/Scraper) con fallback automatico su JustWatch. Presenta uno schema cromatico adattivo dinamico (*contrasto chiaro/scuro invertito in base alla luminosità del poster*).
 * **6 Stili Badge Genere/Voto**: *Shadow, Pill, Bar, Colored, Bordo, Vetro* con colori accent adattivi calcolati in base alla palette del poster.
 * **5 Stili Badge Trend/Classifiche**: *Default, Bar, Colored, Pill, Nastro Netflix*.
 * **16 Fonti di Valutazione**: Supporto completo per IMDb, TMDB, Rotten Tomatoes (Critics & Audience), Metacritic, Letterboxd, MyAnimeList, AniList, FilmAffinity, Trakt e provider streaming.
@@ -284,7 +285,7 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | `POSTERIUM_AUTO_FIT_FETCH_TIMEOUT_MS` | `5000` | Tetto fetch logo/candidati best-fit (1s–15s). |
 | `POSTERIUM_RATELIMIT_POSTER_MAX` | `200` | Burst max bucket poster (10–10000). |
 | `POSTERIUM_PROXY_ALLOW_DOMAINS` | *(vuoto)* | Allowlist domini per addon proxy (vuoto=aperto). |
-| `POSTERIUM_ALLOWED_HOSTS` | *(vuoto)* | Host fidati per X-Forwarded-Host / Origin check. |
+| `POSTERIUM_TORRENTIO_URL` | `https://torrentio.strem.fun` | Endpoint provider per lo scraping real-time della qualità stream. |
 | `POSTERIUM_LOG_LEVEL` | `info` | Livello logger (`debug`/`info`/`warn`/`error`). |
 | `POSTERIUM_LOG_FORMAT` | `human` | Formato logger (`human`/`json` — `json` per log aggregation). |
 | `POSTERIUM_SELF_WARMUP` | `1` | Preriscaldamento automatico dei cataloghi all'avvio (`0` per disattivare). |
@@ -298,6 +299,7 @@ I poster dei cataloghi Stremio utilizzano i valori di default dell'istanza. Su i
 |---|---|---|
 | `POSTERIUM_GLOBAL_BADGES` | `1` / `0` | Mostra/nasconde globalmente i badge genere e voto. |
 | `POSTERIUM_RANKING_BADGES` | `1` / `0` | Mostra/nasconde i badge delle classifiche. |
+| `POSTERIUM_BADGE_QUALITY` | `1` / `0` | Mostra/nasconde il badge con la massima qualità streaming (4K/1080p). |
 | `POSTERIUM_BADGE_GENRE` | `1` / `0` | Mostra/nasconde l'etichetta del genere. |
 | `POSTERIUM_BADGE_YEAR` | `1` / `0` | Mostra/nasconde l'anno di uscita. |
 | `POSTERIUM_BADGE_RATING` | `1` / `0` | Mostra/nasconde la stella con il voto. |
