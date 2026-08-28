@@ -298,9 +298,7 @@ export default function EditView() {
                   <h3 className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">{t("ui.details")}</h3>
                   <p className="text-sm font-bold tracking-tight text-zinc-50 truncate">{titleOf(selected)}</p>
                   <p className="text-[11px] font-mono text-zinc-500 mt-1">{yearOf(selected)} · {selected.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")} · TMDB <a href={`https://www.themoviedb.org/${selected.media_type}/${selected.id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{selected.id}</a>{selected.imdb_id ? <> · IMDB <a href={`https://www.imdb.com/title/${selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{selected.imdb_id}</a></> : ""}{tvdbId ? <> · <a href={`https://thetvdb.com/?tab=series&id=${tvdbId}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">TVDB {tvdbId}</a></> : ""}</p>
-                  {selected.media_type === "tv" && tvdbId && (
-                    <p className="text-[10px] font-mono text-zinc-600 mt-1">codice: <code className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/10 text-accent-orange">tvdb:{tvdbId}</code> {ed.episodeGroupId?.startsWith("tvdb:") && <><span className="text-zinc-500">→</span> <code className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">{ed.episodeGroupId}</code></>}</p>
-                  )}
+
                   <div className="flex items-center gap-2 flex-wrap mt-2">
                     {cleanPoster && (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-muted uppercase tracking-wide">{t("ui.clean")}</span>
@@ -328,22 +326,7 @@ export default function EditView() {
               {activeRightTab === "transform" && <TransformControls />}
               {activeRightTab === "stagioni" && <EpisodeGroupControls />}
               </div>
-              {selected?.media_type === "tv" && tvdbId && (
-                <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1.5">
-                  <p className="text-[10px] font-semibold text-muted uppercase tracking-wider">Codice TVDB</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <a href={`https://thetvdb.com/?tab=series&id=${tvdbId}`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-2 py-1 rounded-md bg-white/[0.06] border border-white/10 text-zinc-300 hover:text-white hover:bg-white/[0.10] transition-colors">
-                      TVDB {tvdbId} ↗
-                    </a>
-                    <code className="text-[11px] font-mono px-2 py-1 rounded-md bg-accent-orange/10 border border-accent-orange/20 text-accent-orange">tvdb:{tvdbId}</code>
-                    {ed.episodeGroupId?.startsWith("tvdb:") && (
-                      <code className="text-[11px] font-mono px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">{ed.episodeGroupId}</code>
-                    )}
-                    <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(`tvdb:${tvdbId}`); const { toast } = await import("sonner"); toast("Codice TVDB copiato") } catch {} }} className="text-[10px] px-2 py-1 rounded-md bg-surface2 hover:bg-zinc-700 text-zinc-300 transition-colors">Copia</button>
-                  </div>
-                  <p className="text-[10px] text-zinc-500">Usa questo ID per verificare su TheTVDB o come riferimento per ordinamenti.</p>
-                </div>
-              )}
+
             </EditorPanel>
 
           </div>
