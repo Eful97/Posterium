@@ -28,7 +28,14 @@ export function EpisodeGroupControls() {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (active) setEpGroups(data.results || [])
+        if (active) {
+          const raw: { id: string; name: string; group_count: number; episode_count: number }[] = data.results || []
+          // Nasconde gruppi vuoti (Re:ZERO ne ha 2 con 0 episodi: Director's Cut, Orden en Crunchyroll)
+          // che altrimenti appaiono selezionabili ma producono fallback a stagioni standard
+          // e danno l'impressione che "cambiando ordinamento non cambia nulla".
+          const filtered = raw.filter((g) => g.episode_count > 0 && g.group_count > 0)
+          setEpGroups(filtered.length > 0 ? filtered : raw)
+        }
       })
       .catch(() => {
         if (active) setEpGroups([])

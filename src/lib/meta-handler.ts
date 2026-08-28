@@ -71,7 +71,12 @@ export interface StremioMetaDetail {
 function metaResponse(body: { meta: StremioMetaDetail | null }): Response {
   return Response.json(body, {
     headers: {
-      "Cache-Control": "public, max-age=43200, stale-while-revalidate=86400",
+      // Stremio Web usa CDN con cache lunga: 12h rendeva invisibile il cambio
+      // ordinamento (Re:ZERO: funzionava su Nuvio/bypass, non su Stremio web).
+      // 5 min + SWR breve è sufficiente per le performance e permette al
+      // cambio episodeGroupId di propagarsi velocemente. Il server invalida
+      // comunque la cache interna su PUT/POST mapping.
+      "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
       "Access-Control-Allow-Origin": "*",
     },
   })
@@ -270,19 +275,32 @@ export async function posteriumMeta(
       } else if (!mapping?.episodeGroupId) {
         // Controlla se esistono Episode Groups alternativi (es. Italian Parts, Netflix Order, Digital, ecc.)
         const epGroups = await getTVEpisodeGroups(tmdbId, apiKey)
-        const preferredGroup = epGroups.find((g) => {
+        // Filtra gruppi vuoti (episode_count 0 => selezione inutile, Re:ZERO ne ha 2)
+        const validGroups = epGroups.filter((g) => g.episode_count > 0 && g.group_count > 0)
+        const candidatePool = validGroups.length > 0 ? validGroups : epGroups
+        const preferredGroup = candidatePool.find((g) => {
           const n = g.name.toLowerCase()
           return (n.includes("italian") || n.includes("italia") || n.includes("italy")) && g.group_count > 1
-        }) || epGroups.find((g) => {
+        }) || candidatePool.find((g) => {
           const n = g.name.toLowerCase()
           return (n.includes("part") || n.includes("digital")) && g.group_count >= 4
-        }) || epGroups.find((g) => {
+        }) || candidatePool.find((g) => {
           const n = g.name.toLowerCase()
           return n.includes("netflix") && !n.includes("seasons (edited")
-        }) || epGroups.find((g) => {
+        }) || candidatePool.find((g) => {
           const n = g.name.toLowerCase()
           return (n.includes("digital") || n.includes("part") || n.includes("streaming") || (g.type === 1 && g.group_count > 1))
-        })
+        }) || (() => {
+          // Fallback per anime/titoli senza match euristici (Re:ZERO: 8 gruppi,
+          // nessuno matcha sopra → prima fallback a standard 1 stagione con 85 ep.
+          // Scegli il gruppo valido con più episodi e più parti, preferendo
+          // type 6 (Production/Seasons) che di solito è l'ordinamento a stagioni.
+          const sortedByEpisodes = [...candidatePool].sort((a, b) => b.episode_count - a.episode_count)
+          const prodSeasons = sortedByEpisodes.find((g) => g.type === 6 && g.group_count > 1)
+          if (prodSeasons) return prodSeasons
+          // altrimenti il più popolato con almeno 2 parti
+          return sortedByEpisodes.find((g) => g.group_count > 1) || null
+        })()
 
         if (preferredGroup) {
           groupDetails = await getTVEpisodeGroup(preferredGroup.id, "it-IT", apiKey)
@@ -290,14 +308,31 @@ export async function posteriumMeta(
       }
 
       if (groupDetails?.groups && groupDetails.groups.length > 0) {
-        const sortedGroups = [...groupDetails.groups].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
+        // Filtra gruppi vuoti (es. Chapter Arc con 3 parti vuote su 6) per non creare stagioni vuote
+        const nonEmptyGroups = groupDetails.groups.filter((g) => g.episodes && g.episodes.length > 0)
+        const groupsForMeta = nonEmptyGroups.length > 0 ? nonEmptyGroups : groupDetails.groups
+        const sortedGroups = [...groupsForMeta].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
         // TMDB gruppi hanno order 1-indexed in molti casi (es. Netflix Collections 1..6) ma
         // 0-indexed in altri (es. 0..4). Rileva in base alla presenza di uno 0: se c'è
         // uno 0, tutti i valori sono 0-based e va aggiunto +1, altrimenti sono già 1-based.
+        // Eccezione: se c'è un gruppo "Specials" a order 0, quello va mappato a stagione 0
+        // (Stremio season 0 = Specials), non a 1 — altrimenti Re:ZERO shifta tutto di 1.
         const hasZeroGroupOrder = sortedGroups.some((g) => g.order === 0)
+        const hasSpecialsGroup = sortedGroups.some((g) => g.name?.toLowerCase().includes("special"))
         for (let gIdx = 0; gIdx < sortedGroups.length; gIdx++) {
           const grp = sortedGroups[gIdx]
-          const seasonNumber = typeof grp.order === "number" ? grp.order + (hasZeroGroupOrder ? 1 : 0) : gIdx + 1
+          let seasonNumber: number
+          if (typeof grp.order === "number") {
+            if (hasSpecialsGroup && grp.name?.toLowerCase().includes("special") && grp.order === 0) {
+              seasonNumber = 0
+            } else if (hasZeroGroupOrder) {
+              seasonNumber = hasSpecialsGroup ? grp.order : grp.order + 1
+            } else {
+              seasonNumber = grp.order
+            }
+          } else {
+            seasonNumber = gIdx + 1
+          }
           const sortedEpisodes = [...(grp.episodes || [])].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
           for (let epIdx = 0; epIdx < sortedEpisodes.length; epIdx++) {
             const ep = sortedEpisodes[epIdx]
