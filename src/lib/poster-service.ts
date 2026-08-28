@@ -107,12 +107,12 @@ export interface GenerationInput {
 }
 
 // ---- Vignette SVG cache (constant, render once) ----
-let _vignettePng: Buffer | null = null
+let _vignettePromise: Promise<Buffer> | null = null
 async function getVignette(): Promise<Buffer> {
-  if (!_vignettePng) {
-    _vignettePng = await sharp(Buffer.from(cinematicVignetteSVG(STD_W, STD_H))).png().toBuffer()
+  if (!_vignettePromise) {
+    _vignettePromise = sharp(Buffer.from(cinematicVignetteSVG(STD_W, STD_H))).png().toBuffer()
   }
-  return _vignettePng
+  return _vignettePromise
 }
 
 // ---------------------------------------------------------------------------
@@ -138,13 +138,13 @@ function coalesceBadgeRender<T>(key: string, run: () => Promise<T>): Promise<T |
   const existing = badgeInflight.get(key) as Promise<T | null> | undefined
   if (existing) return existing
   let timer: ReturnType<typeof setTimeout> | undefined
-  const timeoutPromise = new Promise<null>((resolve) => {
-    timer = setTimeout(() => resolve(null), BADGE_INFLIGHT_TIMEOUT_MS)
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`badge render timeout: ${key}`)), BADGE_INFLIGHT_TIMEOUT_MS)
     if (typeof timer.unref === "function") timer.unref()
   })
   const promise: Promise<T | null> = Promise.race([
     run().catch(() => null),
-    timeoutPromise,
+    timeoutPromise.catch(() => null),
   ]).finally(() => {
     if (timer) clearTimeout(timer)
     if (badgeInflight.get(key) === promise) badgeInflight.delete(key)

@@ -180,11 +180,16 @@ const NETWORKS = [
   "Studio Ghibli", "Sony Pictures",
 ]
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
 /** Match network name with word boundaries to avoid false positives (e.g. "rai" in "raindrop") */
 function nameMatchesNetwork(name: string, network: string): boolean {
   if (name === network) return true
   // Use word boundary: matches "rai cinema" but not "raindrop" or "tutorial"
-  return new RegExp(`\\b${network}\\b`).test(name)
+  // Escape network for RegExp (e.g. "Apple TV+", "Paramount+" contain +)
+  return new RegExp(`\\b${escapeRegExp(network)}\\b`).test(name)
 }
 
 export function matchTMDBStudios(names: string[]): string[] {

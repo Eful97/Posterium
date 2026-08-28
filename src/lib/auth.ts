@@ -8,10 +8,10 @@ function resolveAdminToken(): string | undefined {
 }
 
 /** Istanza in modalità pubblica: le route admin restano aperte senza
- *  ADMIN_TOKEN. O esplicita via POSTERIUM_PUBLIC_INSTANCE=1 (HF Spaces
- *  multi-utente), o ambiente di sviluppo locale (NODE_ENV=development,
- *  `next dev`), dove l'operatore è comunque l'admin. In produzione
- *  (build/Vercel) senza flag e senza token resta fail-closed. */
+ *  ADMIN_TOKEN quando esplicitamente configurata via
+ *  POSTERIUM_PUBLIC_INSTANCE=1 (HF Spaces multi-utente) o in dev locale
+ *  (`next dev`, NODE_ENV=development) dove l'operatore è l'admin. In
+ *  produzione senza flag resta fail-closed. */
 function isPublicInstance(): boolean {
   return process.env.POSTERIUM_PUBLIC_INSTANCE === "1" || process.env.NODE_ENV === "development"
 }

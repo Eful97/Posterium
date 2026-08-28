@@ -14,7 +14,7 @@ import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { getJWRankings, type JWRankEntry } from "@/lib/justwatch"
 import { createLogger } from "@/lib/logger"
-import { searchAi } from "@/lib/groq"
+import { concurrentMap } from "@/lib/episode-ordering"
 
 const log = createLogger("catalog")
 
@@ -203,51 +203,6 @@ function catalogMetaId(_imdbId: string | null | undefined, tmdbId: number): stri
 }
 
 /**
- * Fallback AI (Groq) per la ricerca Stremio: quando la ricerca testuale TMDB
- * restituisce zero risultati per il tipo richiesto, interpreta la query in
- * linguaggio naturale via `searchAi` e mappa i consigli risolti su TMDB
- * negli stessi `StremioMeta` del percorso primario. I risultati Groq sono
- * di tipo misto: si filtrano per il tipo del catalogo richiesto (movie/series).
- * Non lancia mai — un fallimento AI produce semplicemente metas vuote.
- */
-async function aiSearchFallback(
-  req: NextRequest,
-  stType: StremioCatalogType,
-  query: string,
-  apiKey: string,
-  userParam: string | null,
-  configParam: string | null,
-  mdblistKeyParam?: string,
-): Promise<StremioMeta[]> {
-  try {
-    const ai = await searchAi(query, "it-IT", apiKey)
-    if (!ai?.results?.length) return []
-
-    const wanted = stType === "movie" ? "movie" : "tv"
-    // Un catalogo Stremio mostra 20 titoli per pagina, ma la pagina AI è già il
-    // risultato intero: inutile mappare tutte le raccomandazioni del modello.
-    // Limitiamo a 8 per evitare troppe fetch TMDB/poster sincrone sulla richiesta.
-    const filtered = ai.results.filter((r) => r.media_type === wanted).slice(0, 8)
-
-    const rows: (StremioMeta | null)[] = await Promise.all(filtered.map(async (item) => {
-      if (!item.id) return null
-      return {
-        // catalogMetaId ignora l'imdb: l'id è sempre `tmdb:<id>`, quindi la
-        // risoluzione external_ids (resolveImdbId) qui sarebbe lavoro morto.
-        id: catalogMetaId(item.imdb_id, item.id),
-        type: stType,
-        name: item.title || item.name || "",
-        poster: await posteriumPosterUrl(req, stType, item.id, configParam, userParam, mdblistKeyParam),
-        releaseInfo: (item.release_date || item.first_air_date || "").slice(0, 4) || undefined,
-      }
-    }))
-    return rows.filter((m): m is StremioMeta => m !== null)
-  } catch {
-    return []
-  }
-}
-
-/**
  * Risposta catalogo Stremio. Il profilo arriva da query (`?u=`) o dal path
  * (`/u/<uuid>/catalog/...`): il parametro è esplicito così entrambi i route
  * condividono la stessa logica.
@@ -303,19 +258,7 @@ export async function posteriumCatalog(
 
       const items = (searchRes?.results || []).slice(0, 20)
 
-      // --- Fallback AI (Groq): solo se TMDB non trova nulla per questo tipo ---
-      if (items.length === 0) {
-        const aiCacheKey = `stremio:search-ai:${stType}:${hashFragment(extra.search)}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
-        const cachedAi = cacheGet<{ metas: StremioMeta[] }>(aiCacheKey)
-        const aiMetas = cachedAi?.metas ?? await aiSearchFallback(req, stType, extra.search, apiKey, userParam, configParam, mdblistKeyParam)
-        if (aiMetas.length > 0) {
-          cacheSet(aiCacheKey, { metas: aiMetas }, ["stremio", "search"], 60 * 60 * 1000)
-          return catalogResponse({ metas: aiMetas })
-        }
-        // Nessun risultato AI → si ricade nel blocco sottostante (metas vuote = comportamento attuale)
-      }
-
-      const results: (StremioMeta | null)[] = await Promise.all(items.map(async (item) => {
+      const results: (StremioMeta | null)[] = await concurrentMap(items, async (item) => {
         if (!item.id) return null
         const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", item.id, apiKey)
         const poster = await posteriumPosterUrl(req, stType, item.id, configParam, userParam, mdblistKeyParam)
@@ -327,7 +270,7 @@ export async function posteriumCatalog(
           poster,
           releaseInfo,
         }
-      }))
+      }, 5)
       const metas = results.filter((m): m is StremioMeta => m !== null)
       const body = { metas }
       cacheSet(searchCacheKey, body, ["stremio", "search"], 10 * 60 * 1000)
@@ -391,7 +334,7 @@ export async function posteriumCatalog(
         const pagedItems = isCustomGenreFiltered ? validItems.slice(0, 100) : validItems.slice(skip, skip + 20)
         const rankOffset = isCustomGenreFiltered ? 0 : skip
 
-        const results = await Promise.all(pagedItems.map(async (item, idx) => {
+        const results = await concurrentMap(pagedItems, async (item, idx) => {
           const tmdbId = Number(item.tmdb)
           if (!tmdbId) return null
           let details: TMDBDetails | null = null
@@ -412,9 +355,9 @@ export async function posteriumCatalog(
             rank: rankOffset + idx + 1,
             genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
           }
-        }))
+        }, 5)
         const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null)
-        metas = await Promise.all(validResults.map(async (r) => {
+        metas = await concurrentMap(validResults, async (r) => {
           const imdbId = r.imdb || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
           return {
             id: catalogMetaId(imdbId, r.tmdbId),
@@ -424,7 +367,7 @@ export async function posteriumCatalog(
             releaseInfo: r.releaseInfo,
             genres: r.genres,
           }
-        }))
+        }, 5)
       }
     } else if (catalogId.startsWith("posterium-jw")) {
       // Fix L12: la chiave si controlla PRIMA del fetch JustWatch
@@ -437,7 +380,7 @@ export async function posteriumCatalog(
         return true
       }).slice(0, 20)
 
-      const results = await Promise.all(uniqueRows.map(async (row) => {
+      const results = await concurrentMap(uniqueRows, async (row) => {
         try {
           const d = await getDetails(stType === "movie" ? "movie" : "tv", row.tmdbId, "it-IT", apiKey)
           if (!d?.id) return null
@@ -445,9 +388,9 @@ export async function posteriumCatalog(
         } catch {
           return null
         }
-      }))
+      }, 5)
       const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdbId: string | null } => r !== null)
-      metas = await Promise.all(validResults.map(async (r) => {
+      metas = await concurrentMap(validResults, async (r) => {
         const imdbId = r.imdbId || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
         return {
           id: catalogMetaId(imdbId, r.tmdbId),
@@ -457,7 +400,7 @@ export async function posteriumCatalog(
           releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
           genres: (r.d.genres || []).map((g) => g.name).filter(Boolean),
         }
-      }))
+      }, 5)
     } else if (catalogId.startsWith("posterium-anime")) {
       const isMovie = catalogId === "posterium-anime-movies" || stType === "movie"
       const listKey = isMovie ? "mdblistAnimeMovie" : "mdblistAnime"
@@ -465,7 +408,7 @@ export async function posteriumCatalog(
       const items = await fetchMDBList(listKey, mdblistKey)
 
       const seenTmdb = new Set<number>()
-      const results = await Promise.all(items.map(async (item, idx) => {
+      const results = await concurrentMap(items, async (item, idx) => {
         let tmdbId = Number(item.tmdb)
         if (!tmdbId && item.imdb && apiKey) {
           tmdbId = await tmdbFindByImdb(item.imdb, mediaType, apiKey) || 0
@@ -491,9 +434,9 @@ export async function posteriumCatalog(
           rank: idx + 1,
           genres: (d?.genres || []).map((g) => g.name).filter(Boolean),
         }
-      }))
+      }, 5)
       const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null).slice(0, 20)
-      metas = await Promise.all(validResults.map(async (r) => {
+      metas = await concurrentMap(validResults, async (r) => {
         const imdbId = r.imdb || await resolveImdbId(mediaType, r.tmdbId, apiKey)
         return {
           id: catalogMetaId(imdbId, r.tmdbId),
@@ -503,7 +446,7 @@ export async function posteriumCatalog(
           releaseInfo: r.releaseInfo,
           genres: r.genres,
         }
-      }))
+      }, 5)
     } else {
       let platformKey = ""
       let slug = ""
@@ -527,7 +470,7 @@ export async function posteriumCatalog(
             return true
           }).slice(0, 10)
 
-          const results = await Promise.all(uniqueJwRows.map(async (row) => {
+          const results = await concurrentMap(uniqueJwRows, async (row) => {
             let details: TMDBDetails | null = null
             if (apiKey) {
               try {
@@ -544,9 +487,9 @@ export async function posteriumCatalog(
               releaseInfo: (details?.release_date || details?.first_air_date || "").slice(0, 4) || undefined,
               genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
             }
-          }))
+          }, 5)
           const validResults = results.filter((r) => r.title.length > 0)
-          metas = await Promise.all(validResults.map(async (r) => {
+          metas = await concurrentMap(validResults, async (r) => {
             const imdbId = r.imdbId || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
             return {
               id: catalogMetaId(imdbId, r.tmdbId),
@@ -556,7 +499,7 @@ export async function posteriumCatalog(
               releaseInfo: r.releaseInfo,
               genres: r.genres,
             }
-          }))
+          }, 5)
         } else if (slug && apiKey) {
           // Fallback secondario: FlixPatrol Top 10
           const data = await getTop10(slug, "italy", apiKey, { enrich: false }).catch(() => null)
@@ -572,7 +515,7 @@ export async function posteriumCatalog(
               if (itemsWithTmdb.length >= 10) break
             }
 
-            metas = await Promise.all(itemsWithTmdb.map(async (item) => {
+            metas = await concurrentMap(itemsWithTmdb, async (item) => {
               const [imdbId, details] = await Promise.all([
                 resolveImdbId(stType === "movie" ? "movie" : "tv", item.tmdbId, apiKey),
                 getDetails(stType === "movie" ? "movie" : "tv", item.tmdbId, "it-IT", apiKey).catch(() => null),
@@ -586,7 +529,7 @@ export async function posteriumCatalog(
                 releaseInfo: (details?.release_date || details?.first_air_date || item.releaseDate)?.slice(0, 4) || undefined,
                 genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
               }
-            }))
+            }, 5)
           }
         }
       }

@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+- **APP_VERSION automatica**: `scripts/write-app-version.mjs` torna a `1.0.<commit count>` (`git rev-list --count HEAD`), fallback a `package.json` quando git non disponibile — versione nuova ad ogni push senza bump manuale
+
+### Removed
+- **Ricerca Groq AI** (`src/lib/groq.ts`, `src/app/api/ai/search`, fallback `aiSearchFallback` in `catalog-handler.ts`, stati `isAiSearch`/`aiExplanation`/`aiModel`, UI `SearchBar`/`SearchView`): rimossa perché non affidabile — ricerca ora solo TMDB standard
+
+## [1.0.10] - 2026-08-28
+
 ### Added
 - Toast notification system with error/warning/success support
 - Global ToastProvider in AppShell

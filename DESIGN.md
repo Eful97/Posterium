@@ -93,18 +93,17 @@ AppShell
 ## Hook Architecture
 
 - `useNavigation` — view state, history, poster browser
-- `useTrending` — trending/anime/streaming data
-- `useSearch` — query, results, error, pagination
-- `useMappingsStore` — mappings CRUD, localStorage
+- `useTrending` — trending/anime/streaming data (FlixPatrol lazy: batch 2 ogni 300ms, defer 2s)
+- `useSearch` — query, results, error, pagination (solo TMDB, Groq rimosso)
+- `useMappingsStore` — mappings CRUD, persistenza file/KV
 - `useDefaults` — server-side default settings
 - `usePosterSave` — poster save/preview logic
-- `useAppState` — settings/lang/preview UI state
-- `useBadgeState` — badge style, ranking style e default
-- `usePosterState` — logo/backdrop state del poster
-- `usePosterFit` — best-fit poster selection
-- `usePosterPreview` — preview reload (slice) + toast
+- `usePosterEditor` (`contexts/PosterEditorContext`) — stato editor (badge/blur/logo/backdrop/rotation)
+- `usePosterFit` — best-fit poster selection (`concurrentMap` limit 5, `withTimeout` unref)
+- `usePosterPreview` — preview reload (XHR blob URL) + toast
 - `useRootColors` — estrazione accent/top-edge color dal poster
 - `useCollections` — poster collections (localStorage)
+- `useCustomCatalogs` — cataloghi personalizzati (customCatalogs, catalogOrder, renames)
 - `useOutsideDismiss` — chiusura dropdown al click esterno
 
 ## i18n

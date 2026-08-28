@@ -1,5 +1,6 @@
 import sharp from "sharp"
 import { rankPostersByFit } from "@/lib/poster-fit-score"
+import { concurrentMap } from "@/lib/episode-ordering"
 import {
   adjustFitResults,
   selectAcceptedPosterPath,
@@ -100,6 +101,7 @@ function withTimeout<T>(promise: Promise<T>, fallback: T, ms: number): Promise<T
     const timer = setTimeout(() => {
       if (!settled) { settled = true; resolve(fallback) }
     }, ms)
+    if (typeof timer.unref === "function") timer.unref()
     promise.then((val) => {
       if (!settled) { settled = true; clearTimeout(timer); resolve(val) }
     }).catch(() => {
@@ -182,8 +184,9 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
   }
 
   const fetchPoster = input.fetchCandidateImage ?? input.fetchImage
-  const posterBuffersRaw = await Promise.all(
-    candidates.map(async (poster): Promise<PosterBufferEntry | null> => {
+  const posterBuffersRaw = await concurrentMap(
+    candidates,
+    async (poster): Promise<PosterBufferEntry | null> => {
       try {
         const buf = await withTimeout(
           fetchPoster(poster.file_path),
@@ -195,7 +198,8 @@ export async function selectBestLogoFitPosterPath(input: SelectBestLogoFitPoster
       } catch {
         return null
       }
-    }),
+    },
+    5,
   )
 
   const usablePosters = posterBuffersRaw.filter((entry): entry is PosterBufferEntry => entry !== null)

@@ -14,6 +14,12 @@ export default defineConfig({
       "test-results/**",
       "playwright-report/**",
     ],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      include: ["src/lib/**/*.ts", "src/components/**/*.tsx"],
+      exclude: ["src/generated/**", "src/lib/render-version.ts", "src/**/__tests__/**"],
+    },
   },
   resolve: {
     alias: {

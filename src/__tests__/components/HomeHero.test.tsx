@@ -34,8 +34,8 @@ describe("HomeHero", () => {
     expect(title.textContent).toContain("ui.heroTitleTail")
     expect(screen.getByText("ui.heroSubtitle")).toBeInTheDocument()
     expect(screen.getByText("ui.heroPillLogos")).toBeInTheDocument()
-    // "AI best-fit" compare sia nella pill della copia sia nel chip flottante
-    expect(screen.getAllByText("ui.heroPillAi").length).toBeGreaterThanOrEqual(1)
+    // "Best-fit" compare sia nella pill della copia sia nel chip flottante
+    expect(screen.getAllByText("ui.heroPillBestFit").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("ui.heroPillLangs")).toBeInTheDocument()
   })
 

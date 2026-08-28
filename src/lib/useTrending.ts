@@ -63,18 +63,30 @@ export function useTrending(tmdbKey: string, mdblistApiKey: string) {
     return () => { ctrl.abort() }
   }, [tmdbKey, mdblistApiKey])
 
+  // FlixPatrol: defer + limit concurrency (evita burst di 8 fetch al mount)
   useEffect(() => {
     if (!tmdbKey) return
-    const controllers: AbortController[] = []
-    for (const p of STREAMING_PLATFORMS) {
-      const ctrl = new AbortController()
-      const signal = ctrl.signal
-      http<FlixPatrolChart>(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 30000, signal })
-        .then((data) => { if (signal.aborted) return; setStreamingCharts((prev) => ({ ...prev, [p.slug]: data })) })
-        .catch((e) => { if (signal.aborted) return; console.error("[posterium] FlixPatrol fetch failed for", p.slug, e) })
-      controllers.push(ctrl)
-    }
-    return () => { for (const c of controllers) c.abort() }
+    const ctrl = new AbortController()
+    const signal = ctrl.signal
+    // Defer di 2s per non intasare il burst iniziale trending+anime
+    const timer = setTimeout(() => {
+      let idx = 0
+      const runNext = () => {
+        if (signal.aborted || idx >= STREAMING_PLATFORMS.length) return
+        // batch di 2 alla volta
+        const batch = STREAMING_PLATFORMS.slice(idx, idx + 2)
+        idx += 2
+        Promise.all(batch.map((p) =>
+          http<FlixPatrolChart>(`/api/flixpatrol/top10?platform=${p.slug}&country=italy&api_key=${encodeURIComponent(tmdbKey)}`, { timeout: 30000, signal })
+            .then((data) => { if (!signal.aborted) setStreamingCharts((prev) => ({ ...prev, [p.slug]: data })) })
+            .catch((e) => { if (!signal.aborted) console.error("[posterium] FlixPatrol fetch failed for", p.slug, e) })
+        )).finally(() => {
+          if (!signal.aborted) setTimeout(runNext, 300)
+        })
+      }
+      runNext()
+    }, 2000)
+    return () => { clearTimeout(timer); ctrl.abort() }
   }, [tmdbKey])
 
   const refreshLists = useCallback(async () => {

@@ -8,8 +8,6 @@ import { STREAMING_PLATFORMS } from "@/lib/utils"
 
 /**
  * SearchCtx — subset di PosteriumCtx per search + trending.
- * Deriva dal padre via memo: cambia solo quando cambiano query/risultati/trending,
- * non quando cambiano badge/settings/nav.
  */
 export interface SearchCtx {
   query: string
@@ -24,11 +22,6 @@ export interface SearchCtx {
   recentSearches: string[]
   removeRecentSearch: (search: string) => void
   clearRecentSearches: () => void
-  isAiSearch: boolean
-  setIsAiSearch: (v: boolean) => void
-  toggleAiSearch: () => void
-  aiExplanation: string | null
-  aiModel: string | null
   doSearch: (q?: string, page?: number) => Promise<void>
   loadMore: () => Promise<void>
   trending: (SearchResult & { rank: number })[]
@@ -67,11 +60,6 @@ export function SearchProvider({
       recentSearches: value.recentSearches,
       removeRecentSearch: value.removeRecentSearch,
       clearRecentSearches: value.clearRecentSearches,
-      isAiSearch: value.isAiSearch,
-      setIsAiSearch: value.setIsAiSearch,
-      toggleAiSearch: value.toggleAiSearch,
-      aiExplanation: value.aiExplanation,
-      aiModel: value.aiModel,
       doSearch: value.doSearch,
       loadMore: value.loadMore,
       trending: value.trending,
@@ -85,7 +73,6 @@ export function SearchProvider({
       value.results, value.searching, value.error, value.setError,
       value.totalResults, value.totalPages, value.searchPage,
       value.recentSearches, value.removeRecentSearch, value.clearRecentSearches,
-      value.isAiSearch, value.setIsAiSearch, value.toggleAiSearch, value.aiExplanation, value.aiModel,
       value.doSearch, value.loadMore,
       value.trending, value.streamingCharts, value.mdblistAnimeList,
       value.refreshLists, value.STREAMING_PLATFORMS,

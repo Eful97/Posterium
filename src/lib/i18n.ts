@@ -58,7 +58,7 @@ export function t(key: string, params?: Record<string, string | number>): string
   let val = lookup(_currentLang, key) ?? key
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      val = val.replace(`{${k}}`, String(v))
+      val = val.replaceAll(`{${k}}`, String(v))
     }
   }
   return val
@@ -69,7 +69,7 @@ export function createT(lang: string) {
     let val = lookup(lang, key) ?? key
     if (params) {
       for (const [k, v] of Object.entries(params)) {
-        val = val.replace(`{${k}}`, String(v))
+        val = val.replaceAll(`{${k}}`, String(v))
       }
     }
     return val

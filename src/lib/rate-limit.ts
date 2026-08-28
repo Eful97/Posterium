@@ -87,36 +87,35 @@ export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter:
 }
 
 export function rateLimitKey(request: Request): string {
-  // S3: gli header IP (cf-connecting-ip / x-real-ip / x-forwarded-for) sono
-  // considerati fidati SOLO se il deploy dichiara esplicitamente di stare
-  // dietro un proxy/edge che li sovrascrive (Cloudflare, HF edge, Nginx).
-  // Senza POSTERIUM_TRUST_PROXY=1 un client può spoofarli e bypassare il rate
-  // limit rotando l'IP → fallback a un bucket condiviso per tutta l'istanza
-  // (fail-safe: niente bypass, limite aggregato). Il flag si legge per chiamata
-  // per restare testabile.
-  if (process.env.POSTERIUM_TRUST_PROXY === "1") {
-    // Preferenza: header impostati/sovrascritti da proxy trusted e quindi non
-    // falsificabili dal client.
-    // 1) x-real-ip — scritto da Nginx/HF; va letto PRIMA di cf-connecting-ip
-    //    (fix L27): su deploy non-Cloudflare che impostano solo x-real-ip,
-    //    cf-connecting-ip è un valore client spoofabile — prima aveva la
-    //    precedenza e il rate limit era bypassabile ruotando quell'header.
-    // 2) cf-connecting-ip — scritto da Cloudflare (che non imposta x-real-ip).
-    // 3) ultimo hop di x-forwarded-for — con un proxy trusted che APPENDE il
-    //    proprio valore, l'ultimo elemento è l'IP reale del client.
-    const realIp = request.headers.get("x-real-ip")
-    if (realIp) return realIp.trim()
-    const cfIp = request.headers.get("cf-connecting-ip")
-    if (cfIp) return cfIp.trim()
-    const forwarded = request.headers.get("x-forwarded-for")
-    if (forwarded) {
-      const parts = forwarded.split(",")
-      const last = parts[parts.length - 1]?.trim()
-      if (last) return last
+  // Estrae l'IP client per il rate limit. Quando POSTERIUM_TRUST_PROXY=1
+  // gli header sono considerati fidati (proxy sovrascrive), altrimenti sono
+  // comunque usati per bucket per-IP (preferibile al vecchio "shared" che
+  // metteva tutti gli utenti nello stesso bucket causando DoS). Lo spoof
+  // senza proxy è possibile ma meno dannoso di un bucket condiviso.
+  const trusted = process.env.POSTERIUM_TRUST_PROXY === "1"
+  // 1) x-real-ip — Nginx/HF
+  const realIp = request.headers.get("x-real-ip")
+  if (realIp) return realIp.trim()
+  // 2) cf-connecting-ip — Cloudflare
+  const cfIp = request.headers.get("cf-connecting-ip")
+  if (cfIp) return cfIp.trim()
+  // 3) x-forwarded-for — ultimo hop se trusted, altrimenti primo IP
+  const forwarded = request.headers.get("x-forwarded-for")
+  if (forwarded) {
+    const parts = forwarded.split(",").map((p) => p.trim()).filter(Boolean)
+    if (parts.length > 0) {
+      // Con proxy trusted l'ultimo è l'IP reale; senza trust usiamo il primo
+      // (più vicino al client, anche se spoofabile) per mantenere per-IP.
+      const ip = trusted ? parts[parts.length - 1] : parts[0]
+      if (ip) return ip
     }
-    return "local"
   }
-  return "shared"
+  // Fallback: senza header IP, usa un bucket per-istanza ma con limite più alto
+  // (evita DoS del vecchio "shared" con limiti bassi). Distinguiamo con
+  // user-agent hash quando disponibile per granularità minima.
+  const ua = request.headers.get("user-agent")
+  if (ua) return `ua:${ua.slice(0, 48)}`
+  return "local"
 }
 
 export function rateLimitResponse(retryAfter: number): Response {

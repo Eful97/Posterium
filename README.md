@@ -68,9 +68,9 @@ pinned: false
 * **Nastro Verticale Netflix Top 10**: Il caratteristico nastro rosso laterale con posizione in classifica e logo della piattaforma (con supporto dedicato anche per gli Anime).
 * **Premi Cinematografici & Cult**: Riconoscimento automatico Oscar, Cannes, BAFTA, Emmy e badge *"Absolute Cinema"* per i titoli della IMDb Top 250.
 
-### 🔍 Ricerca Tradizionale & ✨ Ricerca AI Groq
-* **Ricerca Semantica & Linguaggio Naturale (Groq AI)**: Trova film e serie TV descrivendo trame, ambientazioni, stili, epoche o similitudini (es. *"film sci-fi con buchi neri"*, *"thriller psicologici tipo Mindhunter"*). Groq interpreta la query con `groq/compound` (fallback `groq/compound-mini`) e Posterium arricchisce i risultati con poster ufficiali TMDB.
-* **Cronologia Ricerche & Suggerimenti Rapidi**: Salvataggio automatico delle ricerche recenti e pill di suggerimento per ispirare nuove scoperte cinematografiche.
+### 🔍 Ricerca
+* **Ricerca TMDB**: Trova film e serie TV per titolo con risultati in italiano e poster ufficiali.
+* **Cronologia Ricerche**: Salvataggio automatico delle ricerche recenti.
 
 ### 📺 Cataloghi Stremio, Posterium Hub & Gestione Avanzata
 * **📱 Posterium Hub All-in-One**: Un unico punto di installazione per Stremio con supporto QR Code per Smart TV, link diretto e **selettore a 3 modalità** (*Tutto: Cataloghi + Ricerca*, *Solo Cataloghi*, *Solo Ricerca*).
@@ -256,9 +256,6 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 |---|---|
 | `POSTERIUM_PUBLIC_INSTANCE` | Imposta a `1` per sbloccare l'editor su istanze pubbliche (Vercel/HF) senza richiedere token admin. |
 | `POSTERIUM_TMDB_KEY` | Chiave TMDB d'istanza per generare le locandine e popolare i cataloghi. |
-| `POSTERIUM_GROQ_KEY` | Chiave [Groq Cloud](https://groq.com/) per la **Ricerca AI Semantica**. |
-| `POSTERIUM_GROQ_MODEL` | Modello Groq per la ricerca AI (default `openai/gpt-oss-20b`). Sovrascrivi per puntare a un modello della tua chiave. |
-| `POSTERIUM_GROQ_FALLBACK_MODEL` | Modello di fallback se il primario fallisce (default `groq/compound`). |
 | `POSTERIUM_MDBLIST_KEY` | Chiave MDBList per classifiche anime e liste personalizzate. |
 | `POSTERIUM_TVDB_API_KEY` | Chiave TheTVDB per thumbnail e trame degli episodi. |
 | `POSTERIUM_ADMIN_TOKEN` | Token segreto per proteggere le route amministrative private. |
@@ -277,7 +274,18 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | `POSTERIUM_MAX_CONCURRENT_RENDERS` | `4` | Numero massimo di render eseguiti in parallelo (protezione memoria). |
 | `POSTERIUM_RENDER_TIMEOUT_MS` | `30000` | Timeout massimo per il completamento di un render (ms). |
 | `POSTERIUM_RENDER_SLOT_WAIT_MS` | `15000` | Tempo massimo di attesa in coda per uno slot di render libero. |
+| `POSTERIUM_RENDER_QUEUE` | `0` | Coda bounded: `0`=illimitata fino a timeout, `>0`= 503 immediato oltre N waiter. |
 | `POSTERIUM_CACHE_MAX_MB` | `150` | Memoria RAM massima per la cache dei poster in memoria (MB). |
+| `POSTERIUM_CACHE_MAX` | `2000` | Numero massimo di entry in cache (oltre FIFO eviction). |
+| `POSTERIUM_CACHE_REFRESH_HOUR` | `3` | Ora UTC del refresh schedulato giornaliero per poster/cataloghi. |
+| `POSTERIUM_NEGATIVE_CACHE_TTL_MS` | `5000` | TTL negative cache per errori poster 500/503/404 (1s–60s). |
+| `POSTERIUM_RATING_WAIT_MS` | `1500` | Tetto attesa rating MDBList prima di fallback TMDB. |
+| `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | `1200` | Tetto scoring best-fit CPU (300–10000ms). |
+| `POSTERIUM_AUTO_FIT_FETCH_TIMEOUT_MS` | `5000` | Tetto fetch logo/candidati best-fit (1s–15s). |
+| `POSTERIUM_RATELIMIT_POSTER_MAX` | `200` | Burst max bucket poster (10–10000). |
+| `POSTERIUM_PROXY_ALLOW_DOMAINS` | *(vuoto)* | Allowlist domini per addon proxy (vuoto=aperto). |
+| `POSTERIUM_ALLOWED_HOSTS` | *(vuoto)* | Host fidati per X-Forwarded-Host / Origin check. |
+| `POSTERIUM_LOG_LEVEL` | `info` | Livello logger (`debug`/`info`/`warn`/`error`). |
 | `POSTERIUM_SELF_WARMUP` | `1` | Preriscaldamento automatico dei cataloghi all'avvio (`0` per disattivare). |
 | `POSTERIUM_BEST_FIT_ENABLED` | *Auto* | Forza attivazione (`1`) o disattivazione (`0`) globale di Best-Fit. |
 | `POSTERIUM_TRUST_PROXY` | `0` | Imposta a `1` se dietro Cloudflare/HF/Nginx per sbloccare `x-forwarded-for`/`cf-connecting-ip` nel rate-limit (evita throttle condiviso su istanze pubbliche). |

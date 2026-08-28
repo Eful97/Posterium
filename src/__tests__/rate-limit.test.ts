@@ -45,10 +45,10 @@ describe("rateLimitKey con POSTERIUM_TRUST_PROXY=1 (deploy dietro proxy fidato)"
   })
 })
 
-describe("rateLimitKey senza flag (default fail-safe — S3)", () => {
+describe("rateLimitKey senza flag (per-IP anche senza trust — fix P0.5 evita bucket shared)", () => {
   afterEach(() => { delete process.env.POSTERIUM_TRUST_PROXY })
 
-  it("ignora gli header IP spoofati dal client → bucket condiviso 'shared'", () => {
+  it("usa per-IP anche senza flag (evita DoS del bucket shared)", () => {
     const req = new NextRequest("http://localhost:3000/", {
       headers: {
         "cf-connecting-ip": "1.2.3.4",
@@ -56,16 +56,16 @@ describe("rateLimitKey senza flag (default fail-safe — S3)", () => {
         "x-forwarded-for": "9.9.9.9, 10.10.10.10",
       },
     })
-    expect(rateLimitKey(req)).toBe("shared")
-    expect(rateLimitKey(new NextRequest("http://localhost:3000/"))).toBe("shared")
+    expect(rateLimitKey(req)).toBe("5.6.7.8")
+    expect(rateLimitKey(new NextRequest("http://localhost:3000/"))).toBe("local")
   })
 
-  it("il flag con valore non '1' non abilita la fiducia negli header", () => {
+  it("il flag con valore non '1' non abilita trust ma resta per-IP", () => {
     process.env.POSTERIUM_TRUST_PROXY = "true"
     const req = new NextRequest("http://localhost:3000/", {
       headers: { "x-real-ip": "5.6.7.8" },
     })
-    expect(rateLimitKey(req)).toBe("shared")
+    expect(rateLimitKey(req)).toBe("5.6.7.8")
   })
 })
 

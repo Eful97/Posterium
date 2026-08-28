@@ -158,7 +158,7 @@ export function HomeHero() {
           </span>
           <span className="stat-pill">
             <Sparkles className="w-3.5 h-3.5" />
-            {t("ui.heroPillAi")}
+            {t("ui.heroPillBestFit")}
           </span>
           <span className="stat-pill">
             <Globe className="w-3.5 h-3.5" />
@@ -198,7 +198,7 @@ export function HomeHero() {
         </div>
         <div className="float-chip fc-ai" aria-hidden="true">
           <Sparkles className="w-3.5 h-3.5" />
-          {t("ui.heroPillAi")}
+          {t("ui.heroPillBestFit")}
         </div>
         <div className="float-chip fc-saved" aria-hidden="true">
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">

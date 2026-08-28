@@ -7,8 +7,6 @@ import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getTop10 } from "@/lib/flixpatrol"
 import { getById } from "@/lib/store"
 import { __resetJWRankingsCache } from "@/lib/justwatch"
-import { searchAi } from "@/lib/groq"
-
 vi.mock("@/lib/flixpatrol", () => ({
   getTop10: vi.fn(),
 }))
@@ -21,13 +19,8 @@ vi.mock("@/lib/server-defaults", () => ({
   getServerDefaults: vi.fn(() => ({})),
 }))
 
-vi.mock("@/lib/groq", () => ({
-  searchAi: vi.fn(),
-}))
-
 const mockedGetTop10 = vi.mocked(getTop10)
 const mockedGetById = vi.mocked(getById)
-const mockedSearchAi = vi.mocked(searchAi)
 
 function justWatchResponse(tmdbId: number, imdbId?: string): Response {
   return Response.json({
@@ -66,7 +59,6 @@ describe("GET /catalog/[type]/[id]", () => {
     vi.restoreAllMocks()
     mockedGetTop10.mockReset()
     mockedGetById.mockReset()
-    mockedSearchAi.mockReset()
     __resetJWRankingsCache()
     cacheClear()
   })
@@ -274,111 +266,6 @@ describe("GET /catalog/[type]/[id]", () => {
       name: "Fight Club",
       releaseInfo: "1999",
       poster: expect.stringContaining("/api/poster/movie/550"),
-    })
-  })
-
-  it("falls back to Groq AI when TMDB search returns zero results (movie catalog)", async () => {
-    // TMDB esatta restituisce zero risultati → scatta il fallback AI.
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      Response.json({ page: 1, results: [], total_pages: 1, total_results: 0 })
-    )
-
-    // searchAi restituisce un mix movie + tv: solo la movie deve sopravvivere
-    // al filtro per tipo del catalogo. imdb_id già presente → niente external_ids.
-    mockedSearchAi.mockResolvedValueOnce({
-      results: [
-        { id: 157336, media_type: "movie", title: "Interstellar", release_date: "2014-11-05", poster_path: "/g.jpg", imdb_id: "tt0816692" },
-        { id: 999, media_type: "tv", name: "Dark", first_air_date: "2017-12-01", poster_path: "/d.jpg" },
-      ],
-      explanation: "Film sci-fi sui buchi neri",
-      query: "film sci-fi con buchi neri",
-      model: "groq/compound",
-    })
-
-    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-search-movies/search=film%20sci-fi%20con%20buchi%20neri.json?api_key=settings-key")
-    const res = await GET_EXTRA(req, {
-      params: Promise.resolve({
-        type: "movie",
-        id: "posterium-search-movies",
-        extra: ["search=film%20sci-fi%20con%20buchi%20neri.json"],
-      }),
-    })
-    const body = await res.json()
-
-    expect(res.status).toBe(200)
-    expect(mockedSearchAi).toHaveBeenCalledTimes(1)
-    expect(body.metas).toHaveLength(1)
-    expect(body.metas[0]).toMatchObject({
-      id: "tmdb:157336",
-      type: "movie",
-      name: "Interstellar",
-      releaseInfo: "2014",
-      poster: expect.stringContaining("/api/poster/movie/157336"),
-    })
-  })
-
-  it("returns empty metas when AI returns no results (e.g. no Groq key)", async () => {
-    // Simula il fallback AI senza risultati (come se POSTERIUM_GROQ_KEY mancasse).
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      Response.json({ page: 1, results: [], total_pages: 1, total_results: 0 })
-    )
-    mockedSearchAi.mockResolvedValueOnce({
-      results: [],
-      explanation: "",
-      query: "query stravagante",
-      model: "",
-      error: "missing_api_key",
-    })
-
-    const req = new NextRequest("http://localhost:3000/catalog/movie/posterium-search-movies/search=query%20stravagante.json?api_key=settings-key")
-    const res = await GET_EXTRA(req, {
-      params: Promise.resolve({
-        type: "movie",
-        id: "posterium-search-movies",
-        extra: ["search=query%20stravagante.json"],
-      }),
-    })
-    const body = await res.json()
-
-    expect(res.status).toBe(200)
-    expect(mockedSearchAi).toHaveBeenCalledTimes(1)
-    expect(body.metas).toEqual([])
-  })
-
-  it("filters mixed-type AI results to the requested catalog type (series catalog)", async () => {
-    // TMDB /search/tv restituisce zero → fallback AI con mix movie+tv.
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      Response.json({ page: 1, results: [], total_pages: 1, total_results: 0 })
-    )
-    mockedSearchAi.mockResolvedValueOnce({
-      results: [
-        { id: 157336, media_type: "movie", title: "Interstellar", release_date: "2014-11-05", poster_path: "/g.jpg", imdb_id: "tt0816692" },
-        { id: 71446, media_type: "tv", name: "True Detective", first_air_date: "2014-01-12", poster_path: "/t.jpg", imdb_id: "tt2356777" },
-      ],
-      explanation: "Serie investigative psicologiche",
-      query: "thriller psicologici tipo Mindhunter",
-      model: "groq/compound",
-    })
-
-    const req = new NextRequest("http://localhost:3000/catalog/series/posterium-search-series/search=thriller%20psicologici.json?api_key=settings-key")
-    const res = await GET_EXTRA(req, {
-      params: Promise.resolve({
-        type: "series",
-        id: "posterium-search-series",
-        extra: ["search=thriller%20psicologici.json"],
-      }),
-    })
-    const body = await res.json()
-
-    expect(res.status).toBe(200)
-    expect(mockedSearchAi).toHaveBeenCalledTimes(1)
-    expect(body.metas).toHaveLength(1)
-    expect(body.metas[0]).toMatchObject({
-      id: "tmdb:71446",
-      type: "series",
-      name: "True Detective",
-      releaseInfo: "2014",
-      poster: expect.stringContaining("/api/poster/series/71446"),
     })
   })
 
