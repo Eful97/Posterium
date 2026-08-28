@@ -6,7 +6,8 @@ import { useT } from "@/lib/contexts/TranslationContext"
 import { toSearchResult } from "@/lib/types"
 import { posterUrl } from "@/lib/utils"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
-import { Search, X, Square, CheckSquare, Trash2, Calendar, ArrowUpAZ, ChevronDown, Clapperboard, Tv, Sparkles, LayoutGrid } from "lucide-react"
+import { Search, X, Square, CheckSquare, Trash2, Calendar, ArrowUpAZ, ChevronDown, Clapperboard, Tv, Sparkles, LayoutGrid, ListOrdered } from "lucide-react"
+import { http } from "@/lib/http"
 import { MoodBoardTile } from "@/components/MoodBoardTile"
 import { PosterLightbox } from "@/components/PosterLightbox"
 import { CollectionBar } from "@/components/CollectionBar"
@@ -19,6 +20,8 @@ export function MyPostersView() {
   const goHome = usePSelector((v) => v.goHome)
   const navigateToPoster = usePSelector((v) => v.navigateToPoster)
   const removeMapping = usePSelector((v) => v.removeMapping)
+  const loadMappings = usePSelector((v) => v.loadMappings)
+  const tvdbApiKey = usePSelector((v) => v.tvdbApiKey)
   const lang = usePSelector((v) => v.lang)
   const { t } = useT()
   const posterCount = useCountUp(mappings.length)
@@ -36,6 +39,7 @@ export function MyPostersView() {
   const [sortOpen, setSortOpen] = useState(false)
   const [sortClosing, setSortClosing] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [bulkSaving, setBulkSaving] = useState(false)
   const [lightbox, setLightbox] = useState<{ mapping: Mapping; rect: DOMRect } | null>(null)
   const [activeCollection, setActiveCollection] = useState<string | null>(null)
   const {
@@ -108,6 +112,41 @@ export function MyPostersView() {
       }
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const bulkSetOrdering = async (groupId: string | null) => {
+    const toUpdate = mappings.filter((m) => selected.has(`${m.mediaType}:${m.tmdbId}`) && m.mediaType === "tv")
+    if (toUpdate.length === 0) {
+      import("sonner").then(({ toast }) => toast.error("Seleziona almeno una serie TV"))
+      return
+    }
+    if (groupId === "tvdb" && !tvdbApiKey) {
+      import("sonner").then(({ toast }) => toast.error("Chiave TVDB mancante — impostala in Impostazioni"))
+      return
+    }
+    setBulkSaving(true)
+    try {
+      const results = await Promise.allSettled(
+        toUpdate.map((m) =>
+          http(`/api/mappings/${m.mediaType}:${m.tmdbId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...m, episodeGroupId: groupId }),
+          })
+        )
+      )
+      const failed = results.filter((r) => r.status === "rejected").length
+      if (failed > 0) {
+        import("sonner").then(({ toast }) => toast.error(`Errore su ${failed} poster`))
+      } else {
+        import("sonner").then(({ toast }) => toast.success(`Ordinamento aggiornato per ${toUpdate.length} serie`))
+        setSelected(new Set())
+        setSelectMode(false)
+        await loadMappings()
+      }
+    } finally {
+      setBulkSaving(false)
     }
   }
 
@@ -363,11 +402,32 @@ export function MyPostersView() {
       )}
 
       {selected.size > 0 && (
-        <div className="flex items-center justify-between gap-3 mb-4 mx-auto max-w-7xl w-full px-4 animate-fade-scale-in bg-surface/80 border border-surface2/80 rounded-2xl p-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 mx-auto max-w-7xl w-full px-4 animate-fade-scale-in bg-surface/80 border border-surface2/80 rounded-2xl p-2.5">
           <span className="text-xs font-semibold text-zinc-200 tabular-nums">
             {t("ui.selectedCount", { count: selected.size })}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            <div className="flex items-center gap-1.5 bg-black/20 rounded-xl p-1 border border-white/5">
+              <span className="text-[11px] text-zinc-400 px-1.5 hidden sm:inline-flex items-center gap-1"><ListOrdered className="w-3 h-3" /> Ordinamento</span>
+              <button
+                type="button"
+                disabled={bulkSaving}
+                onClick={() => bulkSetOrdering("standard")}
+                className="text-xs px-2.5 py-1 rounded-lg bg-surface2/60 text-zinc-200 hover:bg-surface2 border border-white/10 disabled:opacity-50"
+                title="Imposta Standard TMDB"
+              >
+                Standard
+              </button>
+              <button
+                type="button"
+                disabled={bulkSaving || !tvdbApiKey}
+                onClick={() => bulkSetOrdering("tvdb")}
+                className={`text-xs px-2.5 py-1 rounded-lg border disabled:opacity-50 ${!tvdbApiKey ? "bg-surface2/20 text-zinc-500 border-white/5 cursor-not-allowed" : "bg-surface2/60 text-zinc-200 hover:bg-surface2 border-white/10"}`}
+                title={tvdbApiKey ? "Imposta TheTVDB" : "Richiede chiave TVDB"}
+              >
+                TVDB
+              </button>
+            </div>
             <button
               type="button"
               aria-label={t("ui.cancel")}
