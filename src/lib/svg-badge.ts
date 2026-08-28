@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 import { textColorForBg } from "./accent-color"
-import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg, escSvg } from "./badge-svg-shared"
+import { estimateTextWidth, genreBadgeSafePad, genreBadgeSvgDims, genrePillMaxW, buildGenreBarSvg, buildGenrePillSvg, buildGenreTextSvg, buildGenreBorderedSvg, buildGenreGlassSvg, buildRankingBarSvg, buildRankingDefaultSvg, buildRankingPillSvg, buildExtraBarSvg, buildExtraDefaultSvg, buildExtraPillSvg, buildExtraGlassSvg, buildQualityBadgeSvg, escSvg } from "./badge-svg-shared"
 import type { GenreParts } from "./badge-svg-shared"
 import type { BadgeStyle, RankingBadgeStyle, ExtraBadgeStyle } from "./badge-styles"
 
@@ -391,3 +391,17 @@ export async function renderExtraBadge(
   if (r) return r
   throw new Error(`SVG extra badge failed: ${label}`)
 }
+
+export async function renderQualityBadge(
+  quality: string,
+  pw: number,
+  topLight?: boolean,
+): Promise<{ png: Buffer; w: number; h: number }> {
+  const fs = Math.round(Math.max(18 * pw / 380, 12))
+  const bg = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
+  const fg = topLight ? "rgba(255,255,255,0.80)" : "rgba(0,0,0,0.80)"
+  const result = buildQualityBadgeSvg(quality, fs, fg, bg, !!topLight)
+  const png = await renderSVG(wrapSvg(result.svg), result.w)
+  return { png, w: result.w, h: result.h }
+}
+

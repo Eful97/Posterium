@@ -232,14 +232,58 @@ const server = http.createServer(async (req, res) => {
       })
     }
 
-    // JustWatch GraphQL: classifiche giornaliere deterministiche. La home
-    // mostra i primi 2 film + la prima serie (podio) → serviamo 2 film e 1 serie.
+    // Torrentio / Stream scraper: streams per movie e series
+    const streamMatch = pathname.match(/^\/stream\/(movie|series)\/([^/]+)\.json$/)
+    if (streamMatch) {
+      return json(res, 200, {
+        streams: [
+          {
+            name: "Torrentio\n4k",
+            title: "Mock.Movie.2160p.UHD.BluRay.x265",
+            behaviorHints: { filename: "Mock.Movie.2160p.UHD.mkv", bingeGroup: "torrentio|4k|BluRay" },
+          },
+          {
+            name: "Torrentio\n1080p",
+            title: "Mock.Movie.1080p.BluRay.x264",
+            behaviorHints: { filename: "Mock.Movie.1080p.BluRay.mkv", bingeGroup: "torrentio|1080p|BluRay" },
+          },
+        ],
+      })
+    }
+
+    // JustWatch GraphQL: classifiche giornaliere deterministiche + offerte qualità.
     if (pathname === "/graphql" && method === "POST") {
+      let opName = ""
       let objectType = "SHOW"
       try {
         const body = JSON.parse(await readBody(req))
-        objectType = body?.variables?.filter?.objectType || "SHOW"
+        opName = body?.operationName || ""
+        objectType = body?.variables?.filter?.objectType || body?.variables?.filter?.objectTypes?.[0] || "SHOW"
       } catch {}
+
+      if (opName === "GetTitleOffers") {
+        return json(res, 200, {
+          data: {
+            popularTitles: {
+              edges: [
+                {
+                  node: {
+                    content: { title: "Avatar", externalIds: { tmdbId: 19995 } },
+                    offers: [{ presentationType: "4K" }, { presentationType: "HD" }],
+                  },
+                },
+                {
+                  node: {
+                    content: { title: "Interstellar", externalIds: { tmdbId: 157336 } },
+                    offers: [{ presentationType: "4K" }],
+                  },
+                },
+              ],
+            },
+          },
+        })
+      }
+
       const movieEdges = [
         { streamingChartInfo: { rank: 1 }, node: { content: { externalIds: { tmdbId: 19995 } } } },
         { streamingChartInfo: { rank: 2 }, node: { content: { externalIds: { tmdbId: 157336 } } } },

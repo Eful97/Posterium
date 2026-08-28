@@ -35,10 +35,16 @@ vi.mock("@/lib/svg-badge", () => ({
   renderGenreBadge: vi.fn(async () => null),
   renderRankingBadge: vi.fn(async () => null),
   renderExtraBadge: vi.fn(async () => null),
+  renderQualityBadge: vi.fn(async () => null),
 }))
 
 vi.mock("@/lib/justwatch", () => ({
   getJWRankings: vi.fn(async () => []),
+  getJWTitleQuality: vi.fn(async () => null),
+}))
+
+vi.mock("@/lib/stream-quality", () => ({
+  resolveStreamQuality: vi.fn(async () => null),
 }))
 
 vi.mock("@/lib/awards", () => ({

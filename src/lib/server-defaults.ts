@@ -21,6 +21,7 @@ export interface ServerDefaults {
   badgeGenre?: boolean
   badgeYear?: boolean
   badgeRating?: boolean
+  badgeQuality?: boolean
   ratingSources?: string[]
   autoRotateClean?: boolean
   defaultLogoFitEnabled?: boolean
@@ -65,6 +66,7 @@ function defaultsFromEnv(): ServerDefaults {
   const bg = envBool("POSTERIUM_BADGE_GENRE")
   const by = envBool("POSTERIUM_BADGE_YEAR")
   const br = envBool("POSTERIUM_BADGE_RATING")
+  const bq = envBool("POSTERIUM_BADGE_QUALITY")
   const blurEn = envBool("POSTERIUM_BLUR_ENABLED")
   const netLogo = envBool("POSTERIUM_NETWORK_LOGO")
   const autoRotate = envBool("POSTERIUM_AUTO_ROTATE_CLEAN")
@@ -74,6 +76,7 @@ function defaultsFromEnv(): ServerDefaults {
   if (bg !== undefined) d.badgeGenre = bg
   if (by !== undefined) d.badgeYear = by
   if (br !== undefined) d.badgeRating = br
+  if (bq !== undefined) d.badgeQuality = bq
   const rsrcEnv = process.env.POSTERIUM_RATING_SOURCES?.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
   if (rsrcEnv && rsrcEnv.length > 0) d.ratingSources = rsrcEnv
   if (blurEn !== undefined) d.blurEnabled = blurEn

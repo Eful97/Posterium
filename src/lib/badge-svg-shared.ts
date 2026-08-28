@@ -390,3 +390,19 @@ export function buildNetflixRankSvg(rank: number, pw: number) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><defs><clipPath id="nf"><path d="${pathD}"/></clipPath></defs><g clip-path="url(#nf)"><rect width="${w}" height="${h}" rx="2" fill="#E50914"/></g>${textEl}</svg>`
   return { svg, w, h }
 }
+
+export function buildQualityBadgeSvg(quality: string, fs: number, textColor: string, bg: string, topLight: boolean = false) {
+  const px = Math.round(fs * 0.75)
+  const pt = Math.round(fs * 0.35)
+  const pb = pt
+  const textW = Math.max(estimateTextWidth(quality, fs), fs)
+  const totalW = textW + px * 2
+  const svgH = fs + pt + pb
+  const r = Math.round(svgH * 0.35)
+  const renderW = totalW
+  const stroke = topLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)"
+  const textEl = `<text x="${renderW / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(quality)}</text>`
+  const bgEl = `<rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" fill="${bg}" stroke="${stroke}" stroke-width="1"/>`
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${svgH}">${bgEl}${textEl}</svg>`, w: renderW, h: svgH }
+}
+

@@ -54,6 +54,7 @@ export interface PosterRenderConfig {
   badgeGenre: boolean
   badgeYear: boolean
   badgeRating: boolean
+  badgeQuality: boolean
   ratingSources: string[]
   logoScale: number | null
   logoOffsetX: number | null
@@ -110,9 +111,11 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
   const qBg = q.get("bg")
   const qBy = q.get("by")
   const qBr = q.get("br")
+  const qBq = q.get("bq")
   const badgeGenre = qBg !== null ? qBg !== "0" : (mapping?.badgeGenre ?? configOverride?.badgeGenre ?? sd.badgeGenre ?? true)
   const badgeYear = qBy !== null ? qBy !== "0" : (mapping?.badgeYear ?? configOverride?.badgeYear ?? sd.badgeYear ?? true)
   const badgeRating = qBr !== null ? qBr !== "0" : (mapping?.badgeRating ?? configOverride?.badgeRating ?? sd.badgeRating ?? true)
+  const badgeQuality = qBq !== null ? qBq !== "0" : (mapping?.badgeQuality ?? configOverride?.badgeQuality ?? sd.badgeQuality ?? true)
 
   const qRsrc = q.get("rsrc")
   const validSources = SUPPORTED_RATING_SOURCES as readonly string[]
@@ -158,6 +161,7 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
     badgeGenre,
     badgeYear,
     badgeRating,
+    badgeQuality,
     ratingSources,
     logoScale,
     logoOffsetX,
@@ -167,3 +171,4 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
     ribbonSide,
   }
 }
+

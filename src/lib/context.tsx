@@ -298,6 +298,7 @@ export function usePosterium(): PosteriumCtx {
     badgeGenre, setBadgeGenre,
     badgeYear, setBadgeYear,
     badgeRating, setBadgeRating,
+    badgeQuality, setBadgeQuality,
     ratingSources,
     badgeStyle, setBadgeStyle,
     rankingBadgeStyle, setRankingBadgeStyle,
@@ -312,6 +313,7 @@ export function usePosterium(): PosteriumCtx {
     defaultBadgeGenre,
     defaultBadgeYear,
     defaultBadgeRating,
+    defaultBadgeQuality,
     defaultRibbonSide,
     setRibbonSide,
     defaultBlurEnabled,
@@ -560,11 +562,11 @@ export function usePosterium(): PosteriumCtx {
   useEffect(() => {
     setUrlPattern(buildUrlPattern({
       globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle,
-      badgeGenre, badgeYear, badgeRating, ratingSources,
+      badgeGenre, badgeYear, badgeRating, badgeQuality, ratingSources,
       customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide,
       tmdbKey, lang, mdblistApiKey,
     }))
-  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, ratingSources, networkLogo, ribbonSide, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang, mdblistApiKey]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
+  }, [globalBadges, rankingBadges, badgeGenre, badgeYear, badgeRating, badgeQuality, ratingSources, networkLogo, ribbonSide, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, badgeStyle, rankingBadgeStyle, tmdbKey, lang, mdblistApiKey]) // eslint-disable-line react-hooks/exhaustive-deps -- customBadge intentionally excluded to avoid loop
 
   // --- Preview URL ---
   const buildPreviewUrlCb = useCallback(() => {
@@ -579,13 +581,13 @@ export function usePosterium(): PosteriumCtx {
         metaInfo, trendRank, mdblistAnimeList: trending.mdblistAnimeList,
         topEdgeColor, accentColor, lang, tmdbKey,
       },
-      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, ratingSources, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide }
+      { globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, badgeQuality, ratingSources, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide }
     )
     setPreviewUrl(url)
   }, [navigation.selected, navigation.previewPoster, navigation.selectedLogo, selectedBackdrop,
     logoScale, logoOffsetX, logoOffsetY, backdropScale, backdropOffsetX, backdropOffsetY,
     metaInfo, trendRank, trending.mdblistAnimeList, topEdgeColor, accentColor, lang, tmdbKey,
-    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, ratingSources, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide])
+    globalBadges, rankingBadges, badgeStyle, rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, badgeQuality, ratingSources, customBadge, gradientHeight, blurIntensity, blurFade, blurDarkness, blurEnabled, networkLogo, ribbonSide])
 
   useEffect(() => {
     if (!navigation.selected) { setPreviewUrl(""); return }
@@ -750,6 +752,7 @@ export function usePosterium(): PosteriumCtx {
       setBadgeGenre(existing.badgeGenre ?? defaultBadgeGenre)
       setBadgeYear(existing.badgeYear ?? defaultBadgeYear)
       setBadgeRating(existing.badgeRating ?? defaultBadgeRating)
+      setBadgeQuality(existing.badgeQuality ?? defaultBadgeQuality)
       setNetworkLogo(existing.networkLogo ?? defaultNetworkLogo)
       setRibbonSide(existing.ribbonSide ?? defaultRibbonSide)
       setGradientHeight(existing.gradientHeight ?? defaultGradientHeight)
@@ -775,6 +778,7 @@ export function usePosterium(): PosteriumCtx {
       setBadgeGenre(defaultBadgeGenre)
       setBadgeYear(defaultBadgeYear)
       setBadgeRating(defaultBadgeRating)
+      setBadgeQuality(defaultBadgeQuality)
       setGradientHeight(defaultGradientHeight)
       setBlurIntensity(defaultBlurIntensity)
       setBlurFade(defaultBlurFade)
@@ -886,7 +890,7 @@ export function usePosterium(): PosteriumCtx {
     selectedBackdrop, setSelectedBackdrop: setSelectedBackdrop, backdropScale, backdropOffsetX, backdropOffsetY,
     setBackdropScale, setBackdropOffsetX, setBackdropOffsetY,
     globalBadges, rankingBadges, customBadge, badgeStyle, rankingBadgeStyle,
-    badgeGenre, badgeYear, badgeRating,
+    badgeGenre, badgeYear, badgeRating, badgeQuality,
     defaultBadgeStyle, defaultRankingBadgeStyle, blurEnabled, blurIntensity, blurFade, blurDarkness, gradientHeight,
     setGradientHeight,
     rotationPosters, autoRotateClean, defaultAutoRotateClean, excludedPosters, accentColor, logoDisabled, setLogoDisabled,

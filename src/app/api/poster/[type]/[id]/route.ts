@@ -59,6 +59,7 @@ import { decodeConfig } from "@/lib/config-token"
 import { createLogger } from "@/lib/logger"
 import { resolvePosterRenderConfig } from "@/lib/poster-config"
 import { selectBestLogo, logoBestLogoFallbackReason } from "@/lib/logo-selection"
+import { resolveStreamQuality } from "@/lib/stream-quality"
 
 // Vercel: limite massimo di esecuzione della funzione. Il render poster ha un
 // deadline interno di 30s (POSTERIUM_RENDER_TIMEOUT_MS) → 40s copre il caso
@@ -566,28 +567,33 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       }
     }
 
+    const qBadgesEarly = req.nextUrl.searchParams.get("badges")
     const qRankingEarly = req.nextUrl.searchParams.get("ranking")
+    const qBqEarly = req.nextUrl.searchParams.get("bq")
+    const qQualityParam = req.nextUrl.searchParams.get("quality")
     // hasQuery: true se lo stile è specificato esplicitamente — via poster/mapping
-    // espliciti O via config token (\`?config=\`). Senza, i flag query (ranking=
-    // badges= bg/by/br) verrebbero ignorati e il server applicherebbe i default
+    // espliciti O via config token (`?config=`). Senza, i flag query (ranking=
+    // badges= bg/by/br/bq) verrebbero ignorati e il server applicherebbe i default
     // (tutti ON), così un link ?config= con "ranking=0" mostrava comunque il badge
     // trend. Con un config token la personalizzazione è esplicita → i flag off
     // devono valere.
     const hasQueryEarly = !!queryPoster || !!mapping || !!configToken
+    const badgesEnabledEarly = hasQueryEarly ? (qBadgesEarly !== null ? qBadgesEarly !== "0" : showBadges) : true
     const rankingEnabledEarly = hasQueryEarly ? (qRankingEarly !== null ? qRankingEarly !== "0" : rankingBadges) : true
+    const badgeQualityEarly = qBqEarly !== null ? qBqEarly !== "0" : (mapping?.badgeQuality ?? configOverride?.badgeQuality ?? sd.badgeQuality ?? true)
     // Rank anime inviato dal client nella preview WYSIWYG (override del fetch).
     const qAnimeRankParam = req.nextUrl.searchParams.get("animerank")
     const qAnimeRank = qAnimeRankParam ? Number(qAnimeRankParam) : NaN
 
-    // 5. Fetch all data in parallel: images + rankings + wikidata + keywords + imdbTop250
+    // 5. Fetch all data in parallel: images + rankings + quality + wikidata + keywords + imdbTop250
     //    All dependencies are available before this point — no Block B depends on Block A
     const emptyWikidata = { awards: [], nominations: [], studios: [], director: null }
     const WIKIDATA_TIMEOUT = Number(process.env.WIKIDATA_TIMEOUT) || 2500
     const [
-      [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult],
+      [originalBuf, logoFetch, backdropFetch, rankingResult, animeRankResult, liveQualityResult],
       [wikidataResult, tmdbKeywords, imdbTop250],
     ] = await Promise.all([
-      // Block A: images + ranking data
+      // Block A: images + ranking data + quality
       Promise.all([
         posterPathBuffer
           ? Promise.resolve(posterPathBuffer)
@@ -626,6 +632,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                   })
                   .then((liveRank) => liveRank ?? mapping?.animeRank ?? null)
                   .catch(() => mapping?.animeRank ?? null))
+          : Promise.resolve(null),
+        (badgesEnabledEarly && badgeQualityEarly)
+          ? (qQualityParam
+              ? Promise.resolve(qQualityParam)
+              : resolveStreamQuality(
+                  mediaType === "movie" ? "movie" : "series",
+                  imdbId,
+                  tmdbId,
+                  mapping?.title || req.nextUrl.searchParams.get("title") || null,
+                  renderAbort.signal,
+                ).catch(() => null))
           : Promise.resolve(null),
       ]),
       // Block B: badge data (independent of Block A — runs concurrently)
@@ -756,10 +773,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       badgeStyle, rankingBadgeStyle,
       blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
       badgesEnabled, rankingEnabled,
-      badgeGenre, badgeYear, badgeRating,
+      badgeGenre, badgeYear, badgeRating, badgeQuality,
       logoScale, logoOffsetX, logoOffsetY,
       queryExtra, qNetLogo, ribbonSide,
     } = renderConfig
+
+    const finalQuality = qQualityParam || liveQualityResult || null
 
     const locale = req.nextUrl.searchParams.get("lang") || mapping?.language || "it"
     const targetCenter = Math.round(30 * STD_H / 570)
@@ -792,7 +811,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         imdbTop250: !!imdbTop250,
       }
       const badgeComputed = computeTopBadge(badgeInput, t, locale)
-      log.info("Debug mode", { mediaType, tmdbId, imdbId, imdbTop250: !!imdbTop250, badge: badgeComputed.badge?.label ?? "null", vote: voteAverage, genre: genreName })
+      log.info("Debug mode", { mediaType, tmdbId, imdbId, imdbTop250: !!imdbTop250, badge: badgeComputed.badge?.label ?? "null", vote: voteAverage, genre: genreName, quality: finalQuality })
       completePosterRender(null)
       return Response.json({
         meta: {
@@ -810,6 +829,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         },
         genre: { name: genreName, year: releaseDate?.slice(0, 4) },
         vote: { average: voteAverage },
+        quality: finalQuality,
         rankings: {
           justwatch: rankingResult,
           anime: animeRankResult,
@@ -841,6 +861,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             badgeGenre,
             badgeYear,
             badgeRating,
+            badgeQuality,
             customBadge: queryExtra,
           },
         },
@@ -869,7 +890,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       backdropScale, backdropOffsetX, backdropOffsetY,
       blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
       badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
-      rankingBadgeStyle, badgeGenre, badgeYear, badgeRating,
+      rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, badgeQuality,
+      quality: finalQuality,
       topLight, targetCenter, ribbonSide,
       logoScale, logoOffsetX, logoOffsetY,
       mediaType: mediaType as "movie" | "tv",

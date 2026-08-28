@@ -229,22 +229,24 @@ describe("resolvePosterRenderConfig", () => {
     expect(r.badgeRating).toBe(false)
   })
 
-  it("mapping badgeGenre/badgeYear/badgeRating wins over config token", () => {
+  it("mapping badgeGenre/badgeYear/badgeRating/badgeQuality wins over config token", () => {
     const r = resolvePosterRenderConfig(baseInput({
-      mapping: mapping({ badgeGenre: false, badgeRating: false }),
-      configOverride: config({ badgeGenre: true, badgeRating: true }),
+      mapping: mapping({ badgeGenre: false, badgeRating: false, badgeQuality: false }),
+      configOverride: config({ badgeGenre: true, badgeRating: true, badgeQuality: true }),
     }))
     expect(r.badgeGenre).toBe(false)
     expect(r.badgeYear).toBe(true)
     expect(r.badgeRating).toBe(false)
+    expect(r.badgeQuality).toBe(false)
   })
 
-  it("config token badgeGenre/badgeYear/badgeRating wins over server defaults", () => {
+  it("config token badgeGenre/badgeYear/badgeRating/badgeQuality wins over server defaults", () => {
     const r = resolvePosterRenderConfig(baseInput({
-      configOverride: config({ badgeYear: false }),
-      sd: { badgeYear: true },
+      configOverride: config({ badgeYear: false, badgeQuality: false }),
+      sd: { badgeYear: true, badgeQuality: true },
     }))
     expect(r.badgeYear).toBe(false)
+    expect(r.badgeQuality).toBe(false)
     expect(r.badgeGenre).toBe(true)
     expect(r.badgeRating).toBe(true)
   })

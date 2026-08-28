@@ -10,7 +10,7 @@ import {
   isValidHex,
   PosterComposite,
 } from "./poster-render-helpers"
-import { renderGenreBadge, renderRankingBadge, renderExtraBadge } from "./svg-badge"
+import { renderGenreBadge, renderRankingBadge, renderExtraBadge, renderQualityBadge } from "./svg-badge"
 import { renderFirstMatchingNetworkLogoBadge } from "./network-svgs"
 import { computeLogoLayout } from "./logo-layout"
 import { computeTopBadge, isNetworkStudio, type BadgeInput } from "./poster-badge"
@@ -62,6 +62,8 @@ export interface GenerationInput {
   badgeGenre: boolean
   badgeYear: boolean
   badgeRating: boolean
+  badgeQuality?: boolean
+  quality?: string | null
   topLight: boolean
   targetCenter: number
   /** Modalità layout nastro Netflix + logo network: "left" (Nuvio, default) o "right" (Stremio). */
@@ -254,7 +256,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     backdropScale, backdropOffsetX, backdropOffsetY,
     blurEnabled, blurHeight, blurIntensity, blurFade, blurDarkness,
     badgesEnabled, rankingEnabled, genreName, voteAverage, badgeStyle,
-    rankingBadgeStyle, badgeGenre, badgeYear, badgeRating,
+    rankingBadgeStyle, badgeGenre, badgeYear, badgeRating, badgeQuality, quality,
     topLight, targetCenter, ribbonSide,
     logoScale, logoOffsetX, logoOffsetY,
     mediaType, finalRank, animeRankResult,
@@ -407,8 +409,12 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   const rankBadgeKey = topBadge
     ? badgeCacheKey("rank", topBadge.type === "extra" ? topBadge.label : `${topBadge.rank}:${topBadge.label}`, STD_W, topLight, rankingBadgeStyle, accentColorRank, ribbonSide, isAnimeRank)
     : null
+  const hasQualityBadge = badgesEnabled && badgeQuality !== false && !!quality
+  const qualityBadgeKey = hasQualityBadge
+    ? badgeCacheKey("quality", quality, STD_W, topLight)
+    : null
 
-  const [genreBadgeResult, rankBadgeResult] = await Promise.all([
+  const [genreBadgeResult, rankBadgeResult, qualityBadgeResult] = await Promise.all([
     genreBadgeKey
       ? (cacheGet<{ png: Buffer; w: number; h: number }>(genreBadgeKey)
           || coalesceBadgeRender(genreBadgeKey, () =>
@@ -427,14 +433,22 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
                 .then((r) => { const v = { ...r, isRank: true }; cacheSet(rankBadgeKey, v, ["badge"], BADGE_CACHE_TTL); return v })
             }))
       : Promise.resolve(null),
+    qualityBadgeKey
+      ? (cacheGet<{ png: Buffer; w: number; h: number }>(qualityBadgeKey)
+          || coalesceBadgeRender(qualityBadgeKey, () =>
+              renderQualityBadge(quality!, STD_W, topLight)
+                .then((r) => { if (r) cacheSet(qualityBadgeKey, r, ["badge"], BADGE_CACHE_TTL); return r })
+            ))
+      : Promise.resolve(null),
   ])
 
   // -----------------------------------------------------------------------
   // 6. Position badges + network logo
   // -----------------------------------------------------------------------
-  const [safeGenreBadgeResult, safeRankBadgeResult] = await Promise.all([
+  const [safeGenreBadgeResult, safeRankBadgeResult, safeQualityBadgeResult] = await Promise.all([
     genreBadgeResult ? fitBadgeToCanvas(genreBadgeResult, STD_W, STD_H) : Promise.resolve(null),
     rankBadgeResult ? fitBadgeToCanvas(rankBadgeResult, STD_W, STD_H) : Promise.resolve(null),
+    qualityBadgeResult ? fitBadgeToCanvas(qualityBadgeResult, STD_W, STD_H) : Promise.resolve(null),
   ])
 
   if (safeGenreBadgeResult) {
@@ -540,6 +554,20 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
       left,
     })
   }
+
+  if (safeQualityBadgeResult) {
+    const isNetflixRight = rankingBadgeStyle === "netflix" && ribbonSide === "right" && topBadge?.type === "rank"
+    if (!isNetflixRight) {
+      const top = Math.round(18 * STD_H / 570)
+      const left = STD_W - safeQualityBadgeResult.w - Math.round(18 * STD_W / 380)
+      composites.push({
+        input: safeQualityBadgeResult.png,
+        top,
+        left,
+      })
+    }
+  }
+
 
   // -----------------------------------------------------------------------
   // 7. Final composite

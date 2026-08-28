@@ -299,11 +299,12 @@ describe("buildPreviewUrl", () => {
     expect(url).toContain("ranking=0")
   })
 
-  it("includes bg=1/bg=0, by=1/by=0, br=1/br=0 for sub-badges", () => {
-    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, badgeGenre: false, badgeYear: true, badgeRating: false })
+  it("includes bg=1/bg=0, by=1/by=0, br=1/br=0, bq=1/bq=0 for sub-badges", () => {
+    const url = buildPreviewUrl(basePosterState, { ...baseBadgeParams, badgeGenre: false, badgeYear: true, badgeRating: false, badgeQuality: false })
     expect(url).toContain("bg=0")
     expect(url).toContain("by=1")
     expect(url).toContain("br=0")
+    expect(url).toContain("bq=0")
   })
 
   it("includes rv= render version param", () => {

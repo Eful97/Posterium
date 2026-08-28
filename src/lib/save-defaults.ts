@@ -12,6 +12,7 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
     badgeGenre: ed.defaultBadgeGenre,
     badgeYear: ed.defaultBadgeYear,
     badgeRating: ed.defaultBadgeRating,
+    badgeQuality: ed.defaultBadgeQuality,
     ratingSources: ed.defaultRatingSources,
     badgeStyle: ed.defaultBadgeStyle,
     rankingBadgeStyle: ed.defaultRankingBadgeStyle,
@@ -44,6 +45,7 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
   ed.setBadgeGenre(d.badgeGenre)
   ed.setBadgeYear(d.badgeYear)
   ed.setBadgeRating(d.badgeRating)
+  ed.setBadgeQuality(d.badgeQuality)
   ed.setNetworkLogo(d.networkLogo)
   ed.setRibbonSide(d.ribbonSide)
   ed.setBlurEnabled(d.blurEnabled)

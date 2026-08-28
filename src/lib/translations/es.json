@@ -61,6 +61,7 @@
     "ui.badgeGenre":  "Género",
     "ui.badgeYear":  "Año",
     "ui.badgeRating":  "Puntuación",
+    "ui.badgeQuality": "Calidad streaming",
     "ui.ratingSources":  "Proveedores de puntuación",
     "ui.ratingSourcesHint":  "Calcula el promedio de todos los proveedores activos seleccionados abajo.",
     "ui.enableAll":  "Habilitar todos",

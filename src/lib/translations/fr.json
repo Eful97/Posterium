@@ -61,6 +61,7 @@
     "ui.badgeGenre":  "Genre",
     "ui.badgeYear":  "Année",
     "ui.badgeRating":  "Note",
+    "ui.badgeQuality": "Qualité streaming",
     "ui.ratingSources":  "Fournisseurs de notes",
     "ui.ratingSourcesHint":  "Calcule la moyenne de tous les fournisseurs actifs sélectionnés ci-dessous.",
     "ui.enableAll":  "Tout activer",
