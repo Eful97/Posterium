@@ -59,6 +59,9 @@ describe("network-svgs", () => {
     expect(getNetworkSvgResult("FX")?.networkKey).toBe("fx")
     expect(getNetworkSvgResult("FXX")?.networkKey).toBe("fx")
     expect(getNetworkSvgResult("Hulu")?.networkKey).toBe("hulu")
+    expect(getNetworkSvgResult("FOX")?.networkKey).toBe("fox")
+    expect(getNetworkSvgResult("Fox Broadcasting Company")?.networkKey).toBe("fox")
+    expect(getNetworkSvgResult("Fox Network")?.networkKey).toBe("fox")
     expect(getNetworkSvgResult("National Geographic")?.networkKey).toBe("natgeo")
     expect(getNetworkSvgResult("Nat Geo Wild")?.networkKey).toBe("natgeo")
     expect(getNetworkSvgResult("NBC")?.networkKey).toBe("nbc")
@@ -69,6 +72,7 @@ describe("network-svgs", () => {
   it("does NOT match word-boundary collisions for new networks", () => {
     expect(getNetworkSvgResult("Camcord Documentary")).toBeNull()
     expect(getNetworkSvgResult("X-Files Chronicles")).toBeNull()
+    expect(getNetworkSvgResult("Firefox Browser")).toBeNull()
   })
 
   it("matches Sky networks", () => {
@@ -115,6 +119,7 @@ describe("network-svgs", () => {
       ["Mediaset", "mediaset"],
       ["Tubi", "tubi"],
       ["Pluto TV", "pluto"],
+      ["FOX", "fox"],
       ["Hulu", "hulu"],
       ["AMC", "amc"],
       ["NBC", "nbc"],
@@ -149,18 +154,22 @@ describe("network-svgs", () => {
     expect(light!.h).toBe(dark!.h)
   })
 
-  it("keeps Netflix invariant (rosso brand) across topLight", async () => {
+  it("adapts Netflix across topLight (monochrome wordmark)", async () => {
     const light = await renderNetworkLogoBadge("Netflix", 500, true)
     const dark = await renderNetworkLogoBadge("Netflix", 500, false)
-    expect(light!.png.equals(dark!.png)).toBe(true)
+    expect(light!.png.equals(dark!.png)).toBe(false)
   })
 
-  it("keeps Marvel and 20th Century invariant across topLight", async () => {
-    for (const name of ["Marvel", "20th Century Studios"]) {
-      const light = await renderNetworkLogoBadge(name, 500, true)
-      const dark = await renderNetworkLogoBadge(name, 500, false)
-      expect(light!.png.equals(dark!.png), name).toBe(true)
-    }
+  it("adapts Marvel pill background across topLight", async () => {
+    const light = await renderNetworkLogoBadge("Marvel", 500, true)
+    const dark = await renderNetworkLogoBadge("Marvel", 500, false)
+    expect(light!.png.equals(dark!.png)).toBe(false)
+  })
+
+  it("adapts 20th Century Studios across topLight (monochrome logo)", async () => {
+    const light = await renderNetworkLogoBadge("20th Century Studios", 500, true)
+    const dark = await renderNetworkLogoBadge("20th Century Studios", 500, false)
+    expect(light!.png.equals(dark!.png)).toBe(false)
   })
 
   it("caches per topLight (cache key includes topLight)", async () => {

@@ -52,7 +52,6 @@ export default function EditView() {
   const setSelected = usePSelector((v) => v.setSelected)
   const setSelectedLogo = usePSelector((v) => v.setSelectedLogo)
   const setSettingsOpen = usePSelector((v) => v.setSettingsOpen)
-  const setShowLangPicker = usePSelector((v) => v.setShowLangPicker)
   const titleOf = usePSelector((v) => v.titleOf)
   const tmdbKey = usePSelector((v) => v.tmdbKey)
   const tvdbApiKey = usePSelector((v) => v.tvdbApiKey)
@@ -66,6 +65,7 @@ export default function EditView() {
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Fix L30: timer del "copied" ripulito su unmount (setState post-unmount).
   const urlCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [mobileSection, setMobileSection] = useState<"poster" | "preview" | "customize">("preview")
   const [activeRightTab, setActiveRightTab] = useState<"logo" | "badge" | "transform" | "stagioni">("logo")
   const [activePosterTab, setActivePosterTab] = useState("clean")
   const [testUrl, setTestUrl] = useState<string | null>(null)
@@ -118,12 +118,14 @@ export default function EditView() {
 
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setSettingsOpen(false); setShowLangPicker(false) }
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); handleSave() }
+      if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        handleSave()
+      }
     }
-    addEventListener("keydown", fn)
-    return () => removeEventListener("keydown", fn)
-  }, [setSettingsOpen, setShowLangPicker, handleSave])
+    window.addEventListener("keydown", fn)
+    return () => window.removeEventListener("keydown", fn)
+  }, [handleSave])
 
   // TVDB id per i dettagli titolo (usa TMDB external_ids via seasonTypes route con tmdbKey)
   useEffect(() => {
@@ -167,33 +169,75 @@ export default function EditView() {
     <div>
       {selected && (
         <div className="flex flex-col items-center w-full">
-          {/* Header editor: logo posterium con altezza home e sottotitolo */}
-          <header className="w-full px-4 md:px-6 -mt-1 md:-mt-4 mb-3 flex flex-col items-center">
+          {/* Header editor */}
+          <header className="w-full px-2 sm:px-4 md:px-6 -mt-1 md:-mt-4 mb-3 flex flex-col items-center">
             {/* eslint-disable-next-line @next/next/no-img-element -- logo locale */}
             <img
               onClick={goHome}
               src="/posterium.png"
               alt="Posterium"
               decoding="async"
-              className="header-logo h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1"
+              className="header-logo h-14 sm:h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1"
             />
             <p className="header-tagline text-xs md:text-sm text-muted">{t("ui.homeTagline")}</p>
           </header>
-          <div className="editor-workspace w-full px-4 md:px-6 lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
+
+          {/* Mobile Segmented Switcher (Scegli Poster / Anteprima / Modifica) */}
+          <div className="flex lg:hidden items-center justify-center p-1 bg-surface/90 backdrop-blur-md rounded-2xl border border-white/[0.08] mb-4 w-full max-w-md mx-auto shadow-lg shadow-black/20">
+            <button
+              type="button"
+              onClick={() => setMobileSection("poster")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                mobileSection === "poster"
+                  ? "bg-accent-orange text-white shadow-md shadow-accent-orange/20"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <span>Poster</span>
+              <span className="text-[10px] opacity-75 font-mono">({posters.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileSection("preview")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                mobileSection === "preview"
+                  ? "bg-accent-orange text-white shadow-md shadow-accent-orange/20"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <span>Anteprima</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileSection("customize")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                mobileSection === "customize"
+                  ? "bg-accent-orange text-white shadow-md shadow-accent-orange/20"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <span>Personalizza</span>
+            </button>
+          </div>
+
+          <div className="editor-workspace w-full px-2 sm:px-4 md:px-6 lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
 
             {/* LEFT: Poster */}
-            <EditorPanel className="animate-fade-scale-in-panel-left" aria-label={`${selected?.title || ""} — Poster selection`} title={t("ui.posterAvailable")} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10 tabular-nums">{posters.length}</span>}>
-              {loadingImages ? (
-                <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div>
-              ) : (
-                <PosterOptions posters={posters} posterActivePath={posterActivePath} lang={lang} selectPoster={selectPoster} activeGroup={activePosterTab} onActiveGroupChange={setActivePosterTab} showTabs />
-              )}
-            </EditorPanel>
+            <div className={mobileSection === "poster" ? "block w-full" : "hidden lg:block h-full"}>
+              <EditorPanel className="animate-fade-scale-in-panel-left h-full" aria-label={`${selected?.title || ""} — Poster selection`} title={t("ui.posterAvailable")} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10 tabular-nums">{posters.length}</span>}>
+                {loadingImages ? (
+                  <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div>
+                ) : (
+                  <PosterOptions posters={posters} posterActivePath={posterActivePath} lang={lang} selectPoster={selectPoster} activeGroup={activePosterTab} onActiveGroupChange={setActivePosterTab} showTabs />
+                )}
+              </EditorPanel>
+            </div>
 
             {/* CENTER: Preview */}
-            <EditorPanel className="animate-fade-scale-in" title={<><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 align-middle shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />{t("ui.previewLive")}</>} footer={
-              previewPoster && selected ? (
-<div className="flex flex-wrap items-center justify-center gap-2">
+            <div className={mobileSection === "preview" ? "block w-full" : "hidden lg:block h-full"}>
+              <EditorPanel className="animate-fade-scale-in h-full" title={<><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 align-middle shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />{t("ui.previewLive")}</>} footer={
+                previewPoster && selected ? (
+                  <div className="flex flex-wrap items-center justify-center gap-2">
                     {(() => {
                       if (!selected) return null
                       const key = `${selected.media_type}:${selected.id}`
@@ -291,46 +335,71 @@ export default function EditView() {
                 <p className="text-[11px] text-zinc-500 text-center mt-3 shrink-0">{selectedLogo ? t("ui.logoSelected") : previewPoster?.iso_639_1 === null ? `${t("ui.clean")} ${t("ui.selected").toLowerCase()}` : previewPoster ? t("ui.logoHint") : t("ui.noPosterSelected")}</p>
               </div>
             </EditorPanel>
+            </div>
 
             {/* RIGHT: Edit */}
-            <EditorPanel className="animate-fade-scale-in-panel-right" title={t("ui.customize")} tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
-              {selected && (
-                <div className="mb-3 pb-3 border-b border-white/[0.08]">
-                  <h3 className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">{t("ui.details")}</h3>
-                  <p className="text-sm font-bold tracking-tight text-zinc-50 truncate">{titleOf(selected)}</p>
-                  <p className="text-[11px] font-mono text-zinc-500 mt-1">{yearOf(selected)} · {selected.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")} · TMDB <a href={`https://www.themoviedb.org/${selected.media_type}/${selected.id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{selected.id}</a>{selected.imdb_id ? <> · IMDB <a href={`https://www.imdb.com/title/${selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{selected.imdb_id}</a></> : ""}{tvdbId ? <> · TVDB <a href={`https://thetvdb.com/?tab=series&id=${tvdbId}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{tvdbId}</a></> : ""}</p>
+            <div className={mobileSection === "customize" ? "block w-full" : "hidden lg:block h-full"}>
+              <EditorPanel className="animate-fade-scale-in-panel-right h-full" title={t("ui.customize")} tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
+                {selected && (
+                  <div className="mb-3 pb-3 border-b border-white/[0.08]">
+                    <h3 className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">{t("ui.details")}</h3>
+                    <p className="text-sm font-bold tracking-tight text-zinc-50 truncate">{titleOf(selected)}</p>
+                    <p className="text-[11px] font-mono text-zinc-500 mt-1">{yearOf(selected)} · {selected.media_type === "movie" ? t("ui.movie") : t("ui.tvSeries")} · TMDB <a href={`https://www.themoviedb.org/${selected.media_type}/${selected.id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{selected.id}</a>{selected.imdb_id ? <> · IMDB <a href={`https://www.imdb.com/title/${selected.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{selected.imdb_id}</a></> : ""}{tvdbId ? <> · TVDB <a href={`https://thetvdb.com/?tab=series&id=${tvdbId}`} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white underline underline-offset-2">{tvdbId}</a></> : ""}</p>
 
-                  <div className="flex items-center gap-2 flex-wrap mt-2">
-                    {cleanPoster && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-muted uppercase tracking-wide">{t("ui.clean")}</span>
-                    )}
-                    {(() => {
-                      const key = `${selected.media_type}:${selected.id}`
-                      if (!mappingsMap.get(key)) return null
-                      return (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                          {t("ui.savedShort")}
-                        </span>
-                      )
-                    })()}
-                    <JwRankBadge tmdbId={selected.id} type={selected.media_type === "movie" ? "movie" : "tv"} />
+                    <div className="flex items-center gap-2 flex-wrap mt-2">
+                      {cleanPoster && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-muted uppercase tracking-wide">{t("ui.clean")}</span>
+                      )}
+                      {(() => {
+                        const key = `${selected.media_type}:${selected.id}`
+                        if (!mappingsMap.get(key)) return null
+                        return (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                            {t("ui.savedShort")}
+                          </span>
+                        )
+                      })()}
+                      <JwRankBadge tmdbId={selected.id} type={selected.media_type === "movie" ? "movie" : "tv"} />
+                    </div>
                   </div>
+                )}
+                <div key={activeRightTab} className="animate-tab-fade-in space-y-3">
+                {activeRightTab === "logo" && <>
+                  <LogoOptions logos={logos} selectedLogo={selectedLogo} lang={lang} selectLogo={selectLogo} removeLogo={removeLogo} disabled={!cleanPoster} />
+                  {!cleanPoster && <p className="text-xs text-zinc-500 text-center mt-2 px-1">{t("ui.logoHint")}</p>}
+                </>}
+                {activeRightTab === "badge" && <BadgeControls />}
+                {activeRightTab === "transform" && <TransformControls />}
+                {activeRightTab === "stagioni" && <EpisodeGroupControls />}
                 </div>
-              )}
-              <div key={activeRightTab} className="animate-tab-fade-in space-y-3">
-              {activeRightTab === "logo" && <>
-                <LogoOptions logos={logos} selectedLogo={selectedLogo} lang={lang} selectLogo={selectLogo} removeLogo={removeLogo} disabled={!cleanPoster} />
-                {!cleanPoster && <p className="text-xs text-zinc-500 text-center mt-2 px-1">{t("ui.logoHint")}</p>}
-              </>}
-              {activeRightTab === "badge" && <BadgeControls />}
-              {activeRightTab === "transform" && <TransformControls />}
-              {activeRightTab === "stagioni" && <EpisodeGroupControls />}
-              </div>
 
-            </EditorPanel>
+              </EditorPanel>
+            </div>
 
           </div>
+
+          {/* Mobile Floating Quick Actions Bar (quando non in Anteprima) */}
+          {mobileSection !== "preview" && (
+            <div className="lg:hidden fixed bottom-16 left-4 right-4 z-30 flex items-center justify-between p-2 rounded-2xl bg-zinc-950/90 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/80 animate-fade-scale-in">
+              <button
+                type="button"
+                onClick={() => setMobileSection("preview")}
+                className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-zinc-200 hover:text-white"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Vedi Anteprima</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-accent-orange to-amber-500 text-white font-semibold text-xs shadow-md shadow-accent-orange/25 active:scale-95 transition-all"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{t("ui.savePoster")}</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
       {!selected && (

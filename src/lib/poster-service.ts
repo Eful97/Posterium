@@ -479,46 +479,80 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     } else {
       left = Math.round((STD_W - safeRankBadgeResult.w) / 2)
     }
-    // Se badge extra + logo network si toccano, rimpicciolisci il badge finché non si toccano più
-    if (networkLogoResult && topBadge?.type === "extra" && !isBar) {
-      const logoLeft = isRightRibbon
-        ? Math.round(STD_W - 23 - networkLogoResult.w)
-        : 23
-      const logoRight = logoLeft + networkLogoResult.w
-      const logoTop = 15
-      const logoBottom = logoTop + networkLogoResult.h
+    // Se il badge superiore (extra o ranking centrato) si tocca con logo network o badge qualità,
+    // rimpicciolisci progressivamente il badge finché non si sovrappone più
+    if ((networkLogoResult || safeQualityBadgeResult) && !isBar && !isNetflixRibbon) {
+      const netPadX = Math.round(18 * STD_W / 380)
+      const netPadY = Math.round(18 * STD_H / 570)
+
+      const obstacles: { left: number; right: number; top: number; bottom: number }[] = []
+
+      if (networkLogoResult) {
+        const logoLeft = isRightRibbon
+          ? Math.round(STD_W - netPadX - networkLogoResult.w)
+          : netPadX
+        obstacles.push({
+          left: logoLeft,
+          right: logoLeft + networkLogoResult.w,
+          top: netPadY,
+          bottom: netPadY + networkLogoResult.h,
+        })
+      }
+
+      if (safeQualityBadgeResult) {
+        const isNetflixRight = rankingBadgeStyle === "netflix" && ribbonSide === "right" && topBadge?.type === "rank"
+        if (!isNetflixRight) {
+          const qLeft = Math.round(STD_W - safeQualityBadgeResult.w - netPadX)
+          obstacles.push({
+            left: qLeft,
+            right: qLeft + safeQualityBadgeResult.w,
+            top: netPadY,
+            bottom: netPadY + safeQualityBadgeResult.h,
+          })
+        }
+      }
+
+      const checkOverlap = (bLeft: number, bRight: number, bTop: number, bBottom: number) => {
+        return obstacles.some((obs) => {
+          const overlapX = bLeft < obs.right + 6 && bRight > obs.left - 6
+          const overlapY = bTop < obs.bottom + 4 && bBottom > obs.top - 4
+          return overlapX && overlapY
+        })
+      }
+
       let curW = safeRankBadgeResult.w
       let curH = safeRankBadgeResult.h
       let curLeft = left
       let curPng = safeRankBadgeResult.png
       const minScale = 0.6
-      // bounding box badge: top 0
       const badgeTop = 0
-      const badgeBottom = curH
       let scale = 1
+
       while (scale > minScale) {
         const badgeLeft = curLeft
         const badgeRight = curLeft + curW
-        const overlapX = badgeLeft < logoRight + 6 && badgeRight > logoLeft - 6
-        const overlapY = badgeTop < logoBottom + 4 && badgeBottom > logoTop - 4
-        if (!overlapX || !overlapY) break
+        const badgeBottom = curH
+        if (!checkOverlap(badgeLeft, badgeRight, badgeTop, badgeBottom)) break
+
         scale -= 0.07
         if (scale < minScale) scale = minScale
         const newW = Math.max(1, Math.round(safeRankBadgeResult.w * scale))
         const newH = Math.max(1, Math.round(safeRankBadgeResult.h * scale))
-        // evita loop infinito se dimensioni non cambiano
         if (newW === curW && newH === curH) break
         curW = newW
         curH = newH
         curPng = await sharp(safeRankBadgeResult.png).resize(newW, newH).toBuffer()
         curLeft = Math.round((STD_W - curW) / 2)
-        // se ancora overlap ma già a scala minima, sposta a destra invece di stringere oltre
+
         if (scale <= minScale) {
-          const badgeLeft2 = curLeft
-          const badgeRight2 = curLeft + curW
-          const stillOverlapX = badgeLeft2 < logoRight + 6 && badgeRight2 > logoLeft - 6
-          if (stillOverlapX) {
-            curLeft = isRightRibbon ? 23 : Math.round(STD_W - curW - 23)
+          // Se a scala minima c'è un solo ostacolo, prova a traslare leggermente per evitare l'overlap
+          if (obstacles.length === 1) {
+            const obs = obstacles[0]
+            if (obs.left > STD_W / 2) {
+              curLeft = Math.min(curLeft, Math.max(10, obs.left - curW - 6))
+            } else {
+              curLeft = Math.max(curLeft, Math.min(STD_W - curW - 10, obs.right + 6))
+            }
           }
           break
         }
@@ -539,18 +573,20 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   }
   if (networkLogoResult) {
     const isNetflixRank = finalRankBadge && rankingBadgeStyle === "netflix" && topBadge?.type === "rank"
+    const netPadX = Math.round(18 * STD_W / 380)
+    const netPadY = Math.round(18 * STD_H / 570)
     let left: number
     if (isRightRibbon) {
       // Stremio: logo network ancorato a destra, a sinistra del nastro quando presente
       left = isNetflixRank
         ? Math.round(STD_W - finalRankBadge!.w - 10 - networkLogoResult.w)
-        : Math.round(STD_W - 23 - networkLogoResult.w)
+        : Math.round(STD_W - netPadX - networkLogoResult.w)
     } else {
-      left = isNetflixRank ? Math.round(finalRankBadge!.w + 10) : 23
+      left = isNetflixRank ? Math.round(finalRankBadge!.w + 10) : netPadX
     }
     composites.push({
       input: networkLogoResult.png,
-      top: 15,
+      top: netPadY,
       left,
     })
   }

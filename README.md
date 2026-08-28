@@ -95,6 +95,11 @@ pinned: false
 * **Ricerca Globale Stremio**: Cerca qualsiasi titolo direttamente dalla barra di ricerca di Stremio su Smart TV, PC e smartphone: Posterium genererà al volo i poster personalizzati per ogni risultato.
 * **Addon Proxy Stremio**: Incolla il link `manifest.json` di qualsiasi altro addon Stremio per arricchire istantaneamente tutti i suoi poster con il tuo stile grafico.
 
+### 📱 Interfaccia Mobile & Touch Ergonomics
+* **Bottom Navigation Bar Mobile**: Barra inferiore in frosted glass stile iOS/Android con accesso istantaneo a Ricerca, Cataloghi, Hub di Installazione, I Miei Poster e Impostazioni.
+* **Editor Poster Mobile a Tab Dedicati**: Selettore rapido (*Poster, Anteprima, Personalizza*) e barra flottante di salvataggio rapido per creare e modificare locandine da smartphone con il massimo comfort.
+* **Touch Optimization**: Supporto per safe-area su schermi moderni (`env(safe-area-inset-bottom)`), touch targets ampi (> 44px) e rimozione del tap-delay per un'esperienza fluida come un'app nativa.
+
 ---
 
 ## ⚡ Deploy Rapido

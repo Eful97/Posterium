@@ -7,7 +7,7 @@ import { useSearchCtx } from "@/lib/contexts/SearchContext"
 import { posterUrl, titleOf, yearOf } from "@/lib/utils"
 import { SearchBar } from "@/components/SearchBar"
 import { PosterCardSkeleton } from "@/components/Skeleton"
-import { Clock, X, Check, ChevronDown, Clapperboard, Tv, Star, Trash2 } from "lucide-react"
+import { Clock, X, Check, ChevronDown, Clapperboard, Tv, Star, Trash2, Loader2 } from "lucide-react"
 import { PosterDepthEdge } from "@/components/PosterDepthGlow"
 
 export function SearchView() {
@@ -231,10 +231,35 @@ export function SearchView() {
           })}
           </div>
           {s.searchPage < s.totalPages && (
-            <div className="flex justify-center mt-6">
-              <button type="button" aria-label={t("ui.showMore")} disabled={loadingMore || s.searching} onClick={handleLoadMore} className="px-6 py-3 rounded-xl text-sm font-medium bg-surface2 border border-border hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
-                {loadingMore ? t("ui.loading") : <><ChevronDown className="w-4 h-4" /> {t("ui.showMore")}</>}
+            <div className="flex flex-col items-center justify-center mt-10 mb-4 gap-2">
+              <button
+                type="button"
+                aria-label={t("ui.showMore")}
+                disabled={loadingMore || s.searching}
+                onClick={handleLoadMore}
+                className="group relative inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl text-sm font-medium text-zinc-200 bg-surface/90 hover:bg-surface2/90 border border-white/[0.08] hover:border-accent-orange/40 shadow-lg shadow-black/25 hover:shadow-accent-orange/10 backdrop-blur-md transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer overflow-hidden"
+              >
+                {/* Subtle gradient hover highlight */}
+                <div className="absolute inset-0 bg-gradient-to-r from-accent-orange/0 via-accent-orange/10 to-accent-orange/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="w-4 h-4 text-accent-orange animate-spin" />
+                    <span>{t("ui.loading")}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{t("ui.showMore")}</span>
+                    <ChevronDown className="w-4 h-4 text-accent-orange/80 group-hover:text-accent-orange group-hover:translate-y-0.5 transition-all duration-200" />
+                  </>
+                )}
               </button>
+
+              {s.totalPages > 1 && (
+                <span className="text-[11px] text-zinc-500 font-mono tracking-wider">
+                  {s.searchPage} / {s.totalPages}
+                </span>
+              )}
             </div>
           )}
         </div>

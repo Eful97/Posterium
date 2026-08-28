@@ -48,7 +48,17 @@ When you modify a visual render parameter in one file, update its server counter
 | Overflow protection | Stessa formula con `pw - 20`, fattori `3.55` (ranking, include shadow) e `3.2` (extra) |
 | Posizione | Composito a `top: 0, left: round((pw - w) / 2)` (default/bar/pill/colored); nastro Netflix a `left: 0` (Nuvio) o `left: STD_W - w` specchiato (Stremio, `side=right`); logo network segue a destra del nastro (`w + 10`) o a sinistra (`STD_W - w - 10 - logoW`) |
 
-> **Nastro Netflix — etichetta sotto il numero** (`buildNetflixRankBadgeSVG`): il nastro mostra il testo del rank sotto il numero grande, con lo stesso sistema del badge anime esteso a film/serie. Etichetta = parametro `label` (client `rankLabel`/`label`/`qLabel`); per gli anime è "anime", per film/serie è il **media type** (`badge.movie` = "Film" / `badge.series` = "Serie tv", calcolato in `badge-priority.ts` — non più il periodo "Oggi"). Con etichetta il nastro è esteso (`h × 1.55`) e TOP/numero/etichetta sono impilati con gap proporzionale al font minore (`round(min(topFs, subFs) * 0.2)`); senza etichetta resta compatto (`h × 1.35`). Font etichetta `subFs = round(w * 0.20)` con auto-fit se più larga del nastro (`maxSubW = round(w * 0.92)`, min 8) — l'output anime è invariato rispetto al passato.
+## Pill Network Logo
+
+| Parametro | Server (`network-svgs.ts:loadNetworkPng` & `poster-service.ts`) |
+|---|---|
+| Sfondo | `topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"` |
+| Bordo | `topLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)"` stroke-width 1px |
+| Padding | `px = round(fs * 0.65)`, `pt = pb = round(fs * 0.32)` dove `fs = round(max(18 * pw / 380, 12))` |
+| Raggio | `r = round(pillH * 0.35)` (squircle, identico al badge qualità) |
+| Posizione | `top = round(18 * STD_H / 570)`, `left = round(18 * STD_W / 380)` (allineato simmetricamente al badge qualità) |
+| Logo interno | `topLight ? rgba(255,255,255,0.85) : rgba(18,18,22,0.88)` (eccetto Marvel a colori brand) |
+| Ombra | Nessuna ombra esterna (pill piatta, contrasto garantito dallo sfondo della pill) |
 
 ## Gradiente fondo poster
 

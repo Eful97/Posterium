@@ -1980,6 +1980,24 @@ select:focus-visible {
   border-color: rgba(251,191,36,0.30);
 }
 
+/* Mobile touch & ergonomic enhancements */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, a, input, select {
+    touch-action: manipulation;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Rispetta la preferenza utente per il moto ridotto: disattiva animazioni,
    transizioni e scroll-behavior smooth. */
 @media (prefers-reduced-motion: reduce) {

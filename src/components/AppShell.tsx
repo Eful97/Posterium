@@ -8,7 +8,7 @@ import { LANG_FLAGS, LANG_NAMES } from "@/lib/utils"
 import { LangPicker } from "@/components/LangPicker"
 import { ToastProvider } from "@/components/Toast"
 import { HomeStatusStrip } from "@/components/HomeStatusStrip"
-import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Check, QrCode, Palette } from "lucide-react"
+import { RefreshCw, Settings, Globe, HeartPulse, Sparkles, Copy, Check, QrCode, Palette, Search, Layers } from "lucide-react"
 
 // Code-splitting: viste/modali pesanti caricate on-demand per ridurre il JS iniziale.
 const SettingsPanel = dynamic(() => import("@/components/SettingsPanel").then((m) => m.SettingsPanel), { ssr: false })
@@ -88,44 +88,61 @@ export function AppShell() {
     setInstallOpen(true)
   }
 
-  // Toolbar mobile (azioni rapide): riga centrata sotto il logo nella home,
-  // Toolbar mobile (azioni rapide): riga centrata sotto il logo nella home,
-  // in testa all'editor — identica in entrambi i casi (invariata alla home)
+  // Toolbar rapida mobile: compatto e raffinato
   const mobileToolbar = (
-    <div className="flex md:hidden items-center gap-1.5 flex-wrap justify-center p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-xl">
+    <div className="flex md:hidden items-center gap-2 justify-center p-1.5 px-3 rounded-2xl bg-surface/80 backdrop-blur-xl border border-white/10 shadow-lg shadow-black/20">
       <button
         type="button"
-        onClick={handleInstallCatalog}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-accent-orange to-amber-500 text-white font-semibold text-xs shadow-md shadow-accent-orange/20 active:scale-95 transition-all"
+        aria-label={t("ui.chooseLanguage")}
+        onClick={() => setLangOpen((o) => !o)}
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium text-zinc-300 bg-white/[0.05] border border-white/10 active:scale-95 transition-all"
+        title={LANG_NAMES[lang]}
       >
-        <QrCode className="w-3.5 h-3.5" />
-        <span>Installa Hub</span>
+        <span>{LANG_FLAGS[lang] || <Globe className="w-3.5 h-3.5" />}</span>
+        <span className="text-[11px] uppercase tracking-wider">{lang}</span>
       </button>
-      <button
-        type="button"
-        aria-label={t("ui.myPostersBtn")}
-        onClick={() => { if (view === "myposters") { router.back() } else { router.replace("myposters") } }}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-200 bg-white/[0.06] border border-white/10 active:scale-95 transition-all"
-      >
-        <Palette className="w-3.5 h-3.5 text-accent-orange" />
-        <span>{mappings.length}</span>
-      </button>
+
       <button
         type="button"
         suppressHydrationWarning
         aria-label={copied ? t("ui.copied") : t("ui.copyUrl")}
         onClick={() => { copyUrl() }}
         disabled={!urlPattern}
-        className={`p-2 rounded-xl border transition-all duration-150 active:scale-90 ${
+        className={`p-1.5 rounded-xl border transition-all duration-150 active:scale-90 ${
           copied
             ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm"
-            : "bg-white/[0.06] border-white/10 text-zinc-300 hover:text-white"
+            : "bg-white/[0.05] border-white/10 text-zinc-300 hover:text-white"
         } disabled:opacity-40`}
       >
         {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
       </button>
-      <button type="button" aria-label={t("ui.addonProxy")} onClick={() => setProxyOpen(true)} className="p-2 rounded-xl bg-white/[0.06] border border-white/10 text-accent-orange active:scale-90 transition-all"><Sparkles className="w-3.5 h-3.5" /></button>
-      <button type="button" aria-label={t("ui.settings")} onClick={() => setSettingsOpen(true)} className="p-2 rounded-xl bg-white/[0.06] border border-white/10 text-zinc-200 active:scale-90 transition-all"><Settings className="w-3.5 h-3.5" /></button>
+
+      <button
+        type="button"
+        aria-label={t("ui.refreshLists")}
+        onClick={async () => { setRefreshing(true); await refreshLists(); setRefreshing(false) }}
+        disabled={refreshing}
+        className="p-1.5 rounded-xl bg-white/[0.05] border border-white/10 text-zinc-300 active:scale-90 transition-all"
+      >
+        <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+      </button>
+
+      <a
+        href="/status"
+        aria-label={t("ui.statusTitle")}
+        className="p-1.5 rounded-xl bg-white/[0.05] border border-white/10 text-zinc-300 active:scale-90 transition-all"
+      >
+        <HeartPulse className="w-3.5 h-3.5" />
+      </a>
+
+      <button
+        type="button"
+        aria-label={t("ui.addonProxy")}
+        onClick={() => setProxyOpen(true)}
+        className="p-1.5 rounded-xl bg-white/[0.05] border border-white/10 text-accent-orange active:scale-90 transition-all"
+      >
+        <Sparkles className="w-3.5 h-3.5" />
+      </button>
     </div>
   )
 
@@ -133,14 +150,14 @@ export function AppShell() {
     <>
     <ToastProvider>
     <div className="app-shell text-foreground relative overflow-x-hidden" style={{ "--bg-accent": accentColor ?? undefined } as CSSProperties}>
-      {/* Home: la versione è già nella strip di stato in basso → badge in alto rimosso */}
       {serviceErrors.tmdb && (
         <div className="mx-auto max-w-lg mt-2 mb-0 px-4 py-2 bg-red-900/40 border border-red-800/50 rounded-xl text-xs text-red-300 text-center">
           {t("ui.statusTmdbUnavailable")}
         </div>
       )}
       {showLangPicker && <LangPicker onPick={pickLang} />}
-      {/* desktop toolbar — floating island (sempre visibile, anche nell'editor: come la home) */}
+
+      {/* Desktop Toolbar — Floating Island */}
       <div className="hidden md:flex absolute top-4 right-4 z-20">
         {settingsOpen && <div className="hidden md:block fixed inset-0 z-40" onClick={() => setSettingsOpen(false)} />}
         <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 relative z-50">
@@ -152,6 +169,22 @@ export function AppShell() {
           >
             <QrCode className="w-3.5 h-3.5 text-white" />
             <span>Installa Hub</span>
+          </button>
+
+          <div className="h-4 w-px bg-white/10 mx-0.5" />
+
+          {/* Cataloghi Button */}
+          <button
+            type="button"
+            onClick={() => { if (view === "cataloghi") { router.back() } else { router.replace("cataloghi") } }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 active:scale-[0.95] cursor-pointer ${
+              view === "cataloghi"
+                ? "bg-white/15 text-white font-semibold border border-white/20"
+                : "text-zinc-300 hover:text-white hover:bg-white/[0.08]"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-accent-orange" />
+            <span>{t("ui.catalogs") || "Cataloghi"}</span>
           </button>
 
           <div className="h-4 w-px bg-white/10 mx-0.5" />
@@ -219,12 +252,11 @@ export function AppShell() {
           </div>
         </div>
       </div>
-      <div className="relative z-10 max-w-[1680px] mx-auto px-4 pt-5 md:pt-[68px] pb-20 md:pb-6 pb-[max(5rem,env(safe-area-inset-bottom)+4rem)]">
-        {/* Header globale (logo + tagline + toolbar mobile): nell'editor logo e
-            tagline sono nascosti (li sostituisce l'header dell'editor) ma la
-            toolbar mobile resta identica alla home */}
+
+      <div className="relative z-10 max-w-[1680px] mx-auto px-3 sm:px-4 pt-3 sm:pt-5 md:pt-[68px] pb-24 md:pb-6">
+        {/* Header globale (logo + tagline + toolbar mobile) */}
         {!(view === "edit" && selected) && (
-        <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
+        <div className="flex flex-col items-center pb-3 sm:pb-4 animate-fade-scale-in relative">
           <>
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
           <img
@@ -236,9 +268,9 @@ export function AppShell() {
             src="/posterium.png"
             alt="Posterium"
             decoding="async"
-            className="header-logo h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1 md:mb-2"
+            className="header-logo h-14 sm:h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1 md:mb-2"
           />
-          <p className="header-tagline mb-5 md:mb-6">{t("ui.homeTagline")}</p>
+          <p className="header-tagline text-xs sm:text-sm mb-3.5 sm:mb-5 md:mb-6">{t("ui.homeTagline")}</p>
           {mobileToolbar}
           </>
         </div>
@@ -256,7 +288,8 @@ export function AppShell() {
         <HomeStatusStrip />
       </div>
 
-      <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 floating-group">
+      {/* Desktop Bottom-Right Utility Cluster */}
+      <div className="hidden md:flex fixed bottom-5 right-5 z-50 items-center gap-2 floating-group">
         <button type="button"
           aria-label={t("ui.refreshLists")}
           onClick={async () => { setRefreshing(true); await refreshLists(); setRefreshing(false) }}
@@ -282,14 +315,108 @@ export function AppShell() {
         </div>
       </div>
 
+      {/* Mobile Bottom Navigation Bar (iOS / Android Style) */}
+      <nav
+        aria-label="Navigazione principale"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/85 backdrop-blur-2xl border-t border-white/[0.08] shadow-[0_-10px_30px_rgba(0,0,0,0.5)] px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      >
+        <div className="grid grid-cols-5 items-center justify-around max-w-md mx-auto">
+          {/* Cerca / Home */}
+          <button
+            type="button"
+            onClick={goHome}
+            className={`flex flex-col items-center justify-center gap-1 py-1 px-1 rounded-xl transition-all duration-150 active:scale-90 cursor-pointer ${
+              view === "search" && !selected
+                ? "text-accent-orange font-semibold"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Search className="w-5 h-5" />
+            <span className="text-[10px] tracking-tight truncate">{t("ui.search") || "Cerca"}</span>
+          </button>
+
+          {/* Cataloghi */}
+          <button
+            type="button"
+            onClick={() => router.replace("cataloghi")}
+            className={`flex flex-col items-center justify-center gap-1 py-1 px-1 rounded-xl transition-all duration-150 active:scale-90 cursor-pointer ${
+              view === "cataloghi"
+                ? "text-accent-orange font-semibold"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Layers className="w-5 h-5" />
+            <span className="text-[10px] tracking-tight truncate">{t("ui.catalogs") || "Cataloghi"}</span>
+          </button>
+
+          {/* Installa Hub (Featured Central Pill) */}
+          <button
+            type="button"
+            onClick={handleInstallCatalog}
+            className="flex flex-col items-center justify-center gap-1 py-1 px-1 rounded-xl transition-all duration-150 active:scale-90 cursor-pointer text-zinc-300 hover:text-white"
+          >
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-accent-orange to-amber-500 flex items-center justify-center text-white shadow-md shadow-accent-orange/30 -mt-2">
+              <QrCode className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-semibold text-white tracking-tight truncate">Installa</span>
+          </button>
+
+          {/* I Miei Poster */}
+          <button
+            type="button"
+            onClick={() => router.replace("myposters")}
+            className={`flex flex-col items-center justify-center gap-1 py-1 px-1 rounded-xl transition-all duration-150 active:scale-90 cursor-pointer relative ${
+              view === "myposters"
+                ? "text-accent-orange font-semibold"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <div className="relative">
+              <Palette className="w-5 h-5" />
+              {mappings.length > 0 && (
+                <span className="absolute -top-1 -right-2 px-1 min-w-3.5 h-3.5 bg-accent-orange text-[9px] font-bold text-white rounded-full flex items-center justify-center leading-none">
+                  {mappings.length}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] tracking-tight truncate">{t("ui.myPostersBtn") || "I Miei"}</span>
+          </button>
+
+          {/* Impostazioni */}
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className={`flex flex-col items-center justify-center gap-1 py-1 px-1 rounded-xl transition-all duration-150 active:scale-90 cursor-pointer ${
+              settingsOpen
+                ? "text-accent-orange font-semibold"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            <span className="text-[10px] tracking-tight truncate">{t("ui.settingsTitle") || "Opzioni"}</span>
+          </button>
+        </div>
+      </nav>
+
       {(settingsOpen || closingSettings) && (
         <div role="dialog" aria-modal="true" aria-label={t("ui.settingsTitle")} className={`fixed inset-0 z-[70] bg-background md:hidden overflow-y-auto ${closingSettings ? "animate-fade-out" : "animate-fade-scale-in"}`}>
           <div className="fixed inset-0 z-[-1]" onClick={() => closeSettings()} />
-          <div className="flex items-center gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-b border-surface2">
-            <button type="button" autoFocus aria-label={t("ui.back")} onClick={() => closeSettings()} className="text-sm text-zinc-300 hover:text-white active:scale-90 transition-all duration-150 press-scale">{t("ui.back")}</button>
-            <h2 className="text-sm font-semibold text-zinc-200">{t("ui.settingsTitle")}</h2>
+          <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-2xl flex items-center justify-between px-4 py-3.5 border-b border-white/10 shadow-lg shadow-black/20">
+            <h2 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
+              <Settings className="w-4 h-4 text-accent-orange" />
+              <span>{t("ui.settingsTitle")}</span>
+            </h2>
+            <button
+              type="button"
+              autoFocus
+              aria-label={t("ui.back")}
+              onClick={() => closeSettings()}
+              className="px-3.5 py-1.5 rounded-xl bg-white/[0.08] border border-white/10 text-xs font-semibold text-zinc-200 hover:text-white active:scale-90 transition-all duration-150 press-scale"
+            >
+              {t("ui.back")}
+            </button>
           </div>
-          <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="p-4 pb-[max(6rem,env(safe-area-inset-bottom)+4rem)] max-w-lg mx-auto">
             <SettingsPanel mobile setSettingsOpen={setSettingsOpen} exportData={exportData} importData={importData} />
           </div>
         </div>
