@@ -10,6 +10,7 @@ import { EpisodePreview } from "@/components/EpisodePreview"
 export function EpisodeGroupControls() {
   const selected = usePSelector((v) => v.selected)
   const tmdbKey = usePSelector((v) => v.tmdbKey)
+  const tvdbApiKey = usePSelector((v) => v.tvdbApiKey)
   const mappingsMap = usePSelector((v) => v.mappingsMap)
   const loadMappings = usePSelector((v) => v.loadMappings)
   const ed = usePosterEditor()
@@ -135,6 +136,28 @@ export function EpisodeGroupControls() {
               <span className="text-[10px] text-zinc-400">Ordinamento originale per data di messa in onda (default)</span>
             </div>
             {(!ed.episodeGroupId || ed.episodeGroupId === "standard") && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => tvdbApiKey && ed.setEpisodeGroupId("tvdb")}
+            disabled={!tvdbApiKey}
+            title={!tvdbApiKey ? "Richiede chiave TVDB nelle Impostazioni" : undefined}
+            className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between ${
+              !tvdbApiKey ? "opacity-50 cursor-not-allowed bg-surface2/20 text-zinc-500 border-white/5" : "cursor-pointer"
+            } ${
+              ed.episodeGroupId === "tvdb"
+                ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
+                : tvdbApiKey
+                  ? "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
+                  : ""
+            }`}
+          >
+            <div className="flex flex-col">
+              <span>🗄️ TheTVDB (Aired Order)</span>
+              <span className="text-[10px] text-zinc-400">{tvdbApiKey ? "Ordinamento TVDB con thumbnail TVDB" : "Richiede chiave TVDB nelle impostazioni"}</span>
+            </div>
+            {ed.episodeGroupId === "tvdb" && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
           </button>
 
           {epGroups.map((g) => {

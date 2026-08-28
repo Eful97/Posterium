@@ -33,6 +33,7 @@ interface PreviewPayload {
 export function EpisodePreview() {
   const selected = usePSelector((v) => v.selected)
   const tmdbKey = usePSelector((v) => v.tmdbKey)
+  const tvdbApiKey = usePSelector((v) => v.tvdbApiKey)
   const ed = usePosterEditor()
 
   const [data, setData] = useState<PreviewPayload | null>(null)
@@ -60,6 +61,9 @@ export function EpisodePreview() {
     } else {
       params.set("episodeGroupId", "standard")
     }
+    if (tvdbApiKey) params.set("tvdb_key", tvdbApiKey)
+    // per l'anteprima TVDB mostra sempre thumbnail TVDB se disponibile
+    if (episodeGroupId === "tvdb") params.set("source", "tvdb")
 
     fetch(`/api/preview/episodes?${params.toString()}`, {
       headers: tmdbKey ? { "x-api-key": tmdbKey } : undefined,
@@ -91,7 +95,7 @@ export function EpisodePreview() {
       active = false
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- selected is object identity, we want id+type
-  }, [selected?.id, selected?.media_type, episodeGroupId, tmdbKey])
+  }, [selected?.id, selected?.media_type, episodeGroupId, tmdbKey, tvdbApiKey])
 
   if (!selected || selected.media_type !== "tv") return null
 
@@ -123,7 +127,7 @@ export function EpisodePreview() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-12 rounded-lg skeleton-shimmer" />
           ))}
-          <p className="text-[11px] text-zinc-500 text-center py-1">Carico episodi da TMDB…</p>
+          <p className="text-[11px] text-zinc-500 text-center py-1">Carico episodi da {episodeGroupId === "tvdb" ? "TheTVDB" : "TMDB"}…</p>
         </div>
       )}
 
@@ -134,7 +138,9 @@ export function EpisodePreview() {
       )}
 
       {!loading && !error && data && data.seasons.length === 0 && (
-        <p className="text-[11px] text-zinc-500 text-center py-4 italic">Nessun episodio disponibile per questa configurazione.</p>
+        <p className="text-[11px] text-zinc-500 text-center py-4 italic">
+          {episodeGroupId === "tvdb" && !tvdbApiKey ? "Chiave TVDB mancante — inseriscila in Impostazioni per usare l'ordinamento TVDB." : "Nessun episodio disponibile per questa configurazione."}
+        </p>
       )}
 
       {!loading && !error && data && data.seasons.length > 0 && (

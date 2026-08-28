@@ -21,7 +21,7 @@ import {
 } from "@/lib/tmdb"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
-import { enrichVideosWithTvdb } from "@/lib/tvdb"
+import { enrichVideosWithTvdb, getTvdbEpisodes, getTvdbSeriesId, formatTvdbImageUrl } from "@/lib/tvdb"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("meta")
@@ -267,11 +267,40 @@ export async function posteriumMeta(
       videos = []
       const mapping = await getById("tv", tmdbId)
 
+      // TVDB ordering sentinel: costruisce i video direttamente da TheTVDB
+      if (mapping?.episodeGroupId === "tvdb") {
+        if (tvdbApiKey) {
+          try {
+            let tvdbSeriesId: number | null = null
+            if (imdbId) tvdbSeriesId = await getTvdbSeriesId(imdbId, tvdbApiKey)
+            if (!tvdbSeriesId && tmdbId) tvdbSeriesId = await getTvdbSeriesId(String(tmdbId), tvdbApiKey)
+            if (tvdbSeriesId) {
+              const tvdbEps = await getTvdbEpisodes(tvdbSeriesId, "ita", tvdbApiKey)
+              const sortedTvdb = [...tvdbEps].sort((a, b) => a.seasonNumber - b.seasonNumber || a.number - b.number)
+              for (const ep of sortedTvdb) {
+                if (typeof ep.seasonNumber !== "number" || typeof ep.number !== "number") continue
+                videos.push({
+                  id: `${primaryId}:${ep.seasonNumber}:${ep.number}`,
+                  name: ep.name || `Episodio ${ep.number}`,
+                  season: ep.seasonNumber,
+                  episode: ep.number,
+                  overview: ep.overview || undefined,
+                  thumbnail: formatTvdbImageUrl(ep.image) || undefined,
+                  released: ep.aired ? `${ep.aired}T00:00:00.000Z` : undefined,
+                })
+              }
+            }
+          } catch (e) {
+            log.warn("TVDB ordering failed, fallback to standard", { error: e instanceof Error ? e.message : String(e) })
+          }
+        }
+      }
+
       let groupDetails: TMDBEpisodeGroupDetails | null = null
 
       // Default: stagioni standard TMDB. Si usa un Episode Group solo se
-      // l'utente ha salvato esplicitamente un episodeGroupId diverso da "standard".
-      if (mapping?.episodeGroupId && mapping.episodeGroupId !== "standard") {
+      // l'utente ha salvato esplicitamente un episodeGroupId diverso da "standard" e diverso da "tvdb".
+      if (videos.length === 0 && mapping?.episodeGroupId && mapping.episodeGroupId !== "standard" && mapping.episodeGroupId !== "tvdb") {
         groupDetails = await getTVEpisodeGroup(mapping.episodeGroupId, "it-IT", apiKey)
       }
 
@@ -346,7 +375,8 @@ export async function posteriumMeta(
       }
 
       // Se la fonte metadati episodi è TVDB ed è presente una chiave TVDB, arricchisci con copertine e trame TVDB
-      if (videos.length > 0 && episodeMetadataSource === "tvdb" && tvdbApiKey) {
+      // Skip se già ordinato via TVDB (dati già TVDB nativi)
+      if (videos.length > 0 && episodeMetadataSource === "tvdb" && tvdbApiKey && mapping?.episodeGroupId !== "tvdb") {
         await enrichVideosWithTvdb(videos, imdbId, tmdbId, tvdbApiKey, "ita")
       }
     }

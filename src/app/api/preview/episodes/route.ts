@@ -10,7 +10,7 @@ import {
   posterUrl,
   resolveRequestApiKey,
 } from "@/lib/tmdb"
-import { enrichVideosWithTvdb } from "@/lib/tvdb"
+import { enrichVideosWithTvdb, getTvdbEpisodes, getTvdbSeriesId, formatTvdbImageUrl } from "@/lib/tvdb"
 
 interface PreviewVideo {
   id: string
@@ -79,7 +79,36 @@ export async function GET(req: NextRequest) {
     const videos: PreviewVideo[] = []
     let groupDetails: TMDBEpisodeGroupDetails | null = null
 
-    if (episodeGroupId && episodeGroupId !== "standard") {
+    // TVDB ordering sentinel
+    if (episodeGroupId === "tvdb") {
+      if (tvdbApiKey) {
+        try {
+          let tvdbSeriesId: number | null = null
+          if (imdbId) tvdbSeriesId = await getTvdbSeriesId(imdbId, tvdbApiKey)
+          if (!tvdbSeriesId && tmdbId) tvdbSeriesId = await getTvdbSeriesId(String(tmdbId), tvdbApiKey)
+          if (tvdbSeriesId) {
+            const tvdbEps = await getTvdbEpisodes(tvdbSeriesId, "ita", tvdbApiKey)
+            const sortedTvdb = [...tvdbEps].sort((a, b) => a.seasonNumber - b.seasonNumber || a.number - b.number)
+            for (const ep of sortedTvdb) {
+              if (typeof ep.seasonNumber !== "number" || typeof ep.number !== "number") continue
+              videos.push({
+                id: `${primaryId}:${ep.seasonNumber}:${ep.number}`,
+                name: ep.name || `Episodio ${ep.number}`,
+                season: ep.seasonNumber,
+                episode: ep.number,
+                overview: ep.overview || undefined,
+                thumbnail: formatTvdbImageUrl(ep.image) || undefined,
+                released: ep.aired ? `${ep.aired}T00:00:00.000Z` : undefined,
+              })
+            }
+          }
+        } catch {
+          // fallback silenzioso a TMDB standard
+        }
+      }
+    }
+
+    if (videos.length === 0 && episodeGroupId && episodeGroupId !== "standard" && episodeGroupId !== "tvdb") {
       groupDetails = await getTVEpisodeGroup(episodeGroupId, language, apiKey)
     }
 
@@ -144,7 +173,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (videos.length > 0 && episodeMetadataSource === "tvdb" && tvdbApiKey) {
+    if (videos.length > 0 && episodeMetadataSource === "tvdb" && tvdbApiKey && episodeGroupId !== "tvdb") {
       await enrichVideosWithTvdb(videos as unknown as import("@/lib/meta-handler").StremioVideo[], imdbId, tmdbId, tvdbApiKey, "ita")
     }
 
