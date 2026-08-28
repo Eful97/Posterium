@@ -13,6 +13,9 @@ export function EpisodeGroupControls() {
   const tvdbApiKey = usePSelector((v) => v.tvdbApiKey)
   const mappingsMap = usePSelector((v) => v.mappingsMap)
   const loadMappings = usePSelector((v) => v.loadMappings)
+  const previewPoster = usePSelector((v) => v.previewPoster)
+  const posters = usePSelector((v) => v.posters)
+  const saveConfig = usePSelector((v) => v.saveConfig)
   const ed = usePosterEditor()
 
   const [epGroups, setEpGroups] = useState<{ id: string; name: string; group_count: number; episode_count: number }[]>([])
@@ -63,7 +66,7 @@ export function EpisodeGroupControls() {
       const existing = mappingsMap.get(key)
 
       if (existing) {
-        // Aggiorna solo episodeGroupId sul mapping esistente
+        // Aggiorna solo episodeGroupId sul mapping esistente (mantiene poster clean + logo)
         await http(`/api/mappings/${key}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -72,25 +75,35 @@ export function EpisodeGroupControls() {
             episodeGroupId: ed.episodeGroupId || null,
           }),
         })
+        await loadMappings()
       } else {
-        // Crea un mapping minimale solo per l'episodeGroupId
-        await http("/api/mappings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tmdbId: selected.id,
-            mediaType: selected.media_type,
-            title: selected.name || selected.title || "",
-            posterPath: selected.poster_path || null,
-            logoPath: null,
-            originalPosterPath: selected.poster_path || null,
-            language: null,
-            episodeGroupId: ed.episodeGroupId || null,
-          }),
-        })
+        // Nessun mapping precedente: usa il flusso completo di saveConfig
+        // per preservare copertina clean + auto-logo best-fit (evita bug "non clean senza logo")
+        if (previewPoster) {
+          await saveConfig()
+        } else {
+          // Fallback se previewPoster non è ancora pronto: scegli il miglior clean
+          const cleanPoster = posters.find((p) => p.iso_639_1 === null) || posters[0]
+          const fallbackPath = cleanPoster?.file_path || selected.poster_path || null
+          const fallbackLang = (cleanPoster?.iso_639_1 as string | null) ?? null
+          await http("/api/mappings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tmdbId: selected.id,
+              mediaType: selected.media_type,
+              title: selected.name || selected.title || "",
+              posterPath: fallbackPath,
+              logoPath: null,
+              originalPosterPath: selected.poster_path || null,
+              language: fallbackLang,
+              episodeGroupId: ed.episodeGroupId || null,
+            }),
+          })
+          await loadMappings()
+        }
       }
 
-      await loadMappings()
       setSaved(true)
       const { toast } = await import("sonner")
       toast("Ordinamento stagioni salvato ✓")
