@@ -7,7 +7,8 @@ import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
-import { getDetails, getExternalIds, resolveRequestApiKey, searchMovies, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
+import { getDetails, resolveRequestApiKey, searchMovies, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
+import { resolveImdbId } from "@/lib/imdb-cache"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchUnifiedCatalogItems } from "@/lib/custom-catalog-providers"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
@@ -157,41 +158,7 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
   }).toString()
 }
 
-/** Cache locale per la risoluzione IMDb ID — evita chiamate duplicate a TMDB */
-interface ImdbCacheEntry {
-  value: string | null
-  expiry: number
-}
-const imdbIdCache = new Map<string, ImdbCacheEntry>()
-const IMDB_ID_CACHE_MAX = 2000
-function imdbIdCacheSet(key: string, value: string | null, ttlMs: number) {
-  if (imdbIdCache.size >= IMDB_ID_CACHE_MAX) {
-    const oldest = imdbIdCache.keys().next().value
-    if (oldest !== undefined) imdbIdCache.delete(oldest)
-  }
-  imdbIdCache.set(key, { value, expiry: Date.now() + ttlMs })
-}
 
-/** TMDB /tv/{id} non include imdb_id — serve chiamata extra a external_ids.
- *  Anche i film devono esporre id IMDb (tt...) nei cataloghi: AIOMetadata e
- *  gli altri addon risolvono i metadati solo da id tt/provider:id, non da id
- *  numerici TMDB (altrimenti "no metadata").
- *  `apiKey` è la chiave della richiesta (header/query): senza, la chiamata
- *  external_ids cade (non esiste più una chiave d'istanza di fallback). */
-async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number, apiKey?: string): Promise<string | null> {
-  const cacheKey = `${mediaType}:${tmdbId}`
-  const cached = imdbIdCache.get(cacheKey)
-  if (cached && Date.now() < cached.expiry) return cached.value
-  try {
-    const result = await getExternalIds(mediaType, tmdbId, apiKey).then(r => r.imdb_id ?? null)
-    const ttl = result !== null ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
-    imdbIdCacheSet(cacheKey, result, ttl)
-    return result
-  } catch {
-    imdbIdCacheSet(cacheKey, null, 60_000)
-    return null
-  }
-}
 
 /**
  * ID del catalogo Stremio: esponendo l'id provider (`tmdb:<id>`), Stremio
@@ -372,13 +339,15 @@ export async function posteriumCatalog(
     } else if (catalogId.startsWith("posterium-jw")) {
       // Fix L12: la chiave si controlla PRIMA del fetch JustWatch
       if (!apiKey) return catalogResponse({ metas: [] })
-      const rows = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW", "IT", 20)
+      const jwSkip = typeof extra.skip === "number" && extra.skip > 0 ? extra.skip : 0
+      const jwFirst = Math.min(60, 20 + jwSkip)
+      const rows = await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW", "IT", jwFirst)
       const seenTmdb = new Set<number>()
       const uniqueRows = rows.filter((r) => {
         if (!r.tmdbId || seenTmdb.has(r.tmdbId)) return false
         seenTmdb.add(r.tmdbId)
         return true
-      }).slice(0, 20)
+      }).slice(jwSkip, jwSkip + 20)
 
       const results = await concurrentMap(uniqueRows, async (row) => {
         try {
@@ -460,7 +429,9 @@ export async function posteriumCatalog(
       if (platformKey) {
         // Fonte primaria: JustWatch streaming charts con filtro package (es. Netflix nfx, Prime prv, ecc.)
         const pkgs = PLATFORM_JW_PACKAGES[platformKey]
-        const jwRows = pkgs ? await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW", "IT", 10, pkgs) : []
+        const skipForPlatform = typeof extra.skip === "number" && extra.skip > 0 ? extra.skip : 0
+        const jwFirst = Math.min(50, 10 + skipForPlatform)
+        const jwRows = pkgs ? await getJustWatchRankings(stType === "movie" ? "MOVIE" : "SHOW", "IT", jwFirst, pkgs) : []
 
         if (jwRows.length > 0) {
           const seenTmdb = new Set<number>()
@@ -468,7 +439,7 @@ export async function posteriumCatalog(
             if (!r.tmdbId || seenTmdb.has(r.tmdbId)) return false
             seenTmdb.add(r.tmdbId)
             return true
-          }).slice(0, 10)
+          }).slice(skipForPlatform, skipForPlatform + 10)
 
           const results = await concurrentMap(uniqueJwRows, async (row) => {
             let details: TMDBDetails | null = null
@@ -506,14 +477,14 @@ export async function posteriumCatalog(
           if (data) {
             const items = stType === "movie" ? data.movies : data.tv
             const seenTmdb = new Set<number>()
-            const itemsWithTmdb: Array<(typeof items)[number] & { tmdbId: number }> = []
+            const allWithTmdb: Array<(typeof items)[number] & { tmdbId: number }> = []
             for (const item of items) {
               if (item.tmdbId && !seenTmdb.has(item.tmdbId)) {
                 seenTmdb.add(item.tmdbId)
-                itemsWithTmdb.push({ ...item, tmdbId: item.tmdbId })
+                allWithTmdb.push({ ...item, tmdbId: item.tmdbId })
               }
-              if (itemsWithTmdb.length >= 10) break
             }
+            const itemsWithTmdb = allWithTmdb.slice(skipForPlatform, skipForPlatform + 10)
 
             metas = await concurrentMap(itemsWithTmdb, async (item) => {
               const [imdbId, details] = await Promise.all([
@@ -553,7 +524,8 @@ export async function posteriumCatalog(
       })
     }
 
-    if (typeof extra.skip === "number" && extra.skip > 0 && (!catalogId.startsWith("posterium-custom-") || isCustomGenreFiltered)) {
+    const isPlatformOrJw = catalogId.startsWith("posterium-jw") || catalogId.includes("netflix") || catalogId.includes("prime") || catalogId.includes("disney") || catalogId.includes("-now-") || catalogId.includes("apple") || catalogId.includes("hbo") || catalogId.includes("paramount")
+    if (typeof extra.skip === "number" && extra.skip > 0 && (!catalogId.startsWith("posterium-custom-") || isCustomGenreFiltered) && !isPlatformOrJw) {
       metas = metas.slice(extra.skip)
     }
 

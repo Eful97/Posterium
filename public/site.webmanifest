@@ -1,0 +1,12 @@
+{
+  "name": "Posterium",
+  "short_name": "Posterium",
+  "description": "Generatore di poster cinematografici per Stremio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#e85d2a",
+  "icons": [
+    { "src": "/App.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

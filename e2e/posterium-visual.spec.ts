@@ -247,6 +247,38 @@ test.describe("poster API — functional", () => {
     expect(buffer.length).toBeGreaterThan(1000)
   })
 
+  test("badge style: bordo — valid image", async ({ request }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "bordo", badges: "1", ranking: "0" })
+    const res = await request.get(url)
+    expect(res.ok()).toBeTruthy()
+    const buffer = await res.body()
+    expect(buffer.length).toBeGreaterThan(1000)
+  })
+
+  test("badge style: vetro — valid image", async ({ request }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "vetro", badges: "1", ranking: "0" })
+    const res = await request.get(url)
+    expect(res.ok()).toBeTruthy()
+    const buffer = await res.body()
+    expect(buffer.length).toBeGreaterThan(1000)
+  })
+
+  test("ranking style: pill — valid image", async ({ request }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "2", label: "Top 2", rs: "pill" })
+    const res = await request.get(url)
+    expect(res.ok()).toBeTruthy()
+    const buffer = await res.body()
+    expect(buffer.length).toBeGreaterThan(1000)
+  })
+
+  test("ranking style: colored — valid image", async ({ request }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "2", label: "Top 2", rs: "colored" })
+    const res = await request.get(url)
+    expect(res.ok()).toBeTruthy()
+    const buffer = await res.body()
+    expect(buffer.length).toBeGreaterThan(1000)
+  })
+
   test("ranking badge (bar) + label — valid image", async ({ request }) => {
     const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", label: "Top 3", rs: "bar" })
     const res = await request.get(url)
@@ -329,6 +361,36 @@ test.describe("poster API — visual regression", () => {
     const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "colored", badges: "1", ranking: "0" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-colored.png", { maxDiffPixelRatio: 0.10 })
+  })
+
+  test("bordo badge — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "bordo", badges: "1", ranking: "0" })
+    const poster = await renderPoster(page, url)
+    await expect(poster).toHaveScreenshot("poster-bordo.png", { maxDiffPixelRatio: 0.10 })
+  })
+
+  test("vetro badge — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", bs: "vetro", badges: "1", ranking: "0" })
+    const poster = await renderPoster(page, url)
+    await expect(poster).toHaveScreenshot("poster-vetro.png", { maxDiffPixelRatio: 0.10 })
+  })
+
+  test("ranking pill — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", label: "Top 3", rs: "pill" })
+    const poster = await renderPoster(page, url)
+    await expect(poster).toHaveScreenshot("poster-ranking-pill.png", { maxDiffPixelRatio: 0.10 })
+  })
+
+  test("ranking colored — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", label: "Top 3", rs: "colored" })
+    const poster = await renderPoster(page, url)
+    await expect(poster).toHaveScreenshot("poster-ranking-colored.png", { maxDiffPixelRatio: 0.10 })
+  })
+
+  test("ranking default — screenshot", async ({ page }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", label: "Top 3", rs: "default" })
+    const poster = await renderPoster(page, url)
+    await expect(poster).toHaveScreenshot("poster-ranking-default.png", { maxDiffPixelRatio: 0.10 })
   })
 
   test("ranking badge + label — screenshot", async ({ page }) => {

@@ -48,6 +48,10 @@ export const POSTERIUM_SEARCH_CATALOGS = [
 export const WARMUP_CATALOG_IDS = [
   "posterium-jw-movies",
   "posterium-jw-series",
+  "posterium-netflix-movies",
+  "posterium-netflix-series",
+  "posterium-prime-movies",
+  "posterium-prime-series",
   "posterium-anime-movies",
   "posterium-anime",
 ] as const

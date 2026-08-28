@@ -227,7 +227,17 @@ export function AppShell() {
         <div className="flex flex-col items-center pb-4 animate-fade-scale-in relative">
           <>
           {/* eslint-disable-next-line @next/next/no-img-element -- local SVG asset */}
-          <img onClick={goHome} src="/posterium.png" alt="Posterium" decoding="async" className="header-logo h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1 md:mb-2" />
+          <img
+            onClick={goHome}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome() } }}
+            role="button"
+            tabIndex={0}
+            aria-label={t("ui.home")}
+            src="/posterium.png"
+            alt="Posterium"
+            decoding="async"
+            className="header-logo h-16 md:h-20 w-auto cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-150 mb-1 md:mb-2"
+          />
           <p className="header-tagline mb-5 md:mb-6">{t("ui.homeTagline")}</p>
           {mobileToolbar}
           </>

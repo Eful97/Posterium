@@ -9,6 +9,9 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 // questi cambia, RENDER_VERSION cambia da sola: la cache server e le URL
 // Stremio vengono invalidate senza dover bumpare nulla a mano.
 // NB: NON includere `render-version.ts` (è l'output dello script).
+// File esclusi intenzionalmente: poster-runtime-cache.ts, cache.ts,
+// justwatch.ts, flixpatrol.ts, ratings.ts — influenzano ranking/cache ma
+// non il rendering visivo byte-level; non devono invalidare rv.
 const RENDER_FILES = [
   "src/app/api/poster/[type]/[id]/route.ts",
   "src/lib/accent-color.ts",

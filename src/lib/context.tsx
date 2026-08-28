@@ -23,6 +23,8 @@ import { calculateAverageRating, type AggregatedRatings } from "./ratings"
 import { SearchProvider } from "./contexts/SearchContext"
 import { SettingsProvider } from "./contexts/SettingsContext"
 import { TranslationProvider } from "./contexts/TranslationContext"
+import { MetaInfoProvider } from "./contexts/MetaInfoContext"
+import { MappingsProvider } from "./contexts/MappingsContext"
 import { useCustomCatalogs } from "./useCustomCatalogs"
 
 export type ViewType = "search" | "myposters" | "edit" | "cataloghi"
@@ -223,7 +225,11 @@ export function PosteriumProvider({ value, children }: { value: PosteriumCtx; ch
       <TranslationProvider value={value}>
         <SettingsProvider value={value}>
           <SearchProvider value={value}>
-            <Ctx.Provider value={value}>{children}</Ctx.Provider>
+            <MetaInfoProvider value={value.metaInfo}>
+              <MappingsProvider value={value.mappings} mapValue={value.mappingsMap}>
+                <Ctx.Provider value={value}>{children}</Ctx.Provider>
+              </MappingsProvider>
+            </MetaInfoProvider>
           </SearchProvider>
         </SettingsProvider>
       </TranslationProvider>

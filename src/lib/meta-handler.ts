@@ -8,7 +8,6 @@ import { getById } from "@/lib/store"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
 import {
   getFullDetails,
-  getExternalIds,
   getImages,
   getTVSeason,
   getTVEpisodeGroup,
@@ -19,6 +18,7 @@ import {
   tmdbFindByImdb,
   tmdbFindByTvdb,
 } from "@/lib/tmdb"
+import { resolveImdbId } from "@/lib/imdb-cache"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { enrichVideosWithTvdb } from "@/lib/tvdb"
@@ -114,35 +114,7 @@ async function posteriumPosterUrl(
   }).toString()
 }
 
-/** Cache locale per la risoluzione IMDb ID */
-interface ImdbCacheEntry {
-  value: string | null
-  expiry: number
-}
-const imdbIdCache = new Map<string, ImdbCacheEntry>()
-const IMDB_ID_CACHE_MAX = 2000
-function imdbIdCacheSet(key: string, value: string | null, ttlMs: number) {
-  if (imdbIdCache.size >= IMDB_ID_CACHE_MAX) {
-    const oldest = imdbIdCache.keys().next().value
-    if (oldest !== undefined) imdbIdCache.delete(oldest)
-  }
-  imdbIdCache.set(key, { value, expiry: Date.now() + ttlMs })
-}
 
-async function resolveImdbId(mediaType: "movie" | "tv", tmdbId: number, apiKey?: string): Promise<string | null> {
-  const cacheKey = `${mediaType}:${tmdbId}`
-  const cached = imdbIdCache.get(cacheKey)
-  if (cached && Date.now() < cached.expiry) return cached.value
-  try {
-    const result = await getExternalIds(mediaType, tmdbId, apiKey).then((r) => r.imdb_id ?? null)
-    const ttl = result !== null ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
-    imdbIdCacheSet(cacheKey, result, ttl)
-    return result
-  } catch {
-    imdbIdCacheSet(cacheKey, null, 60_000)
-    return null
-  }
-}
 
 /**
  * Gestore principale della risorsa `meta` di Stremio.

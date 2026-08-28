@@ -49,9 +49,15 @@ function posterItem() {
 }
 
 function detailFor(type) {
+  const base = {
+    credits: { cast: [{ id: 1, name: "Actor One" }], crew: [{ id: 2, name: "Director One", job: "Director" }] },
+    videos: { results: [{ id: "v1", key: "abc123", site: "YouTube", type: "Trailer", name: "Trailer" }] },
+    external_ids: { imdb_id: "tt1234567" },
+  }
   if (type === "tv") {
     return {
       ...MOVIE,
+      ...base,
       name: "Avatar",
       title: undefined,
       first_air_date: "2009-12-10",
@@ -65,7 +71,7 @@ function detailFor(type) {
       ],
     }
   }
-  return { ...MOVIE, title: "Avatar", name: "Avatar", release_date: "2009-12-10", first_air_date: null }
+  return { ...MOVIE, ...base, title: "Avatar", name: "Avatar", release_date: "2009-12-10", first_air_date: null }
 }
 
 // ---- Poster di esempio: gradiente verticale deterministico ----
@@ -130,13 +136,17 @@ const server = http.createServer(async (req, res) => {
     }
 
     // TMDB API
-    if (pathname === "/3/search/multi") {
+    if (pathname === "/3/search/multi" || pathname === "/3/search/movie" || pathname === "/3/search/tv") {
+      const isTV = pathname === "/3/search/tv"
       return json(res, 200, {
         page: 1,
         total_pages: 1,
         total_results: 1,
-        results: [{ ...MOVIE, media_type: "movie", poster_path: MOCKED_POSTER_PATH, popularity: 100 }],
+        results: [{ ...MOVIE, media_type: isTV ? "tv" : "movie", poster_path: MOCKED_POSTER_PATH, popularity: 100 }],
       })
+    }
+    if (pathname === "/3/find/tt1234567" || pathname.startsWith("/3/find/")) {
+      return json(res, 200, { movie_results: [{ id: 19995 }], tv_results: [{ id: 19995 }] })
     }
     if (
       pathname === "/3/movie/popular" ||

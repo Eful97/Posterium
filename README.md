@@ -255,9 +255,9 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | Variabile | Descrizione |
 |---|---|
 | `POSTERIUM_PUBLIC_INSTANCE` | Imposta a `1` per sbloccare l'editor su istanze pubbliche (Vercel/HF) senza richiedere token admin. |
-| `POSTERIUM_TMDB_KEY` | Chiave TMDB d'istanza per generare le locandine e popolare i cataloghi. |
-| `POSTERIUM_MDBLIST_KEY` | Chiave MDBList per classifiche anime e liste personalizzate. |
-| `POSTERIUM_TVDB_API_KEY` | Chiave TheTVDB per thumbnail e trame degli episodi. |
+| `POSTERIUM_TMDB_KEY` | Fallback d'istanza **opt-in** per deploy personali single-user (NON usare su istanze pubbliche multi-utente — la chiave viaggia via header/query/profilo). |
+| `POSTERIUM_MDBLIST_KEY` | Fallback d'istanza **opt-in** per liste MDBList personali (come sopra). |
+| `POSTERIUM_TVDB_API_KEY` | Fallback d'istanza **opt-in** per TheTVDB (come sopra). |
 | `POSTERIUM_ADMIN_TOKEN` | Token segreto per proteggere le route amministrative private. |
 | `CONFIG_HMAC_SECRET` | Chiave segreta per la firma crittografica dei profili stateless. |
 
@@ -286,6 +286,7 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | `POSTERIUM_PROXY_ALLOW_DOMAINS` | *(vuoto)* | Allowlist domini per addon proxy (vuoto=aperto). |
 | `POSTERIUM_ALLOWED_HOSTS` | *(vuoto)* | Host fidati per X-Forwarded-Host / Origin check. |
 | `POSTERIUM_LOG_LEVEL` | `info` | Livello logger (`debug`/`info`/`warn`/`error`). |
+| `POSTERIUM_LOG_FORMAT` | `human` | Formato logger (`human`/`json` — `json` per log aggregation). |
 | `POSTERIUM_SELF_WARMUP` | `1` | Preriscaldamento automatico dei cataloghi all'avvio (`0` per disattivare). |
 | `POSTERIUM_BEST_FIT_ENABLED` | *Auto* | Forza attivazione (`1`) o disattivazione (`0`) globale di Best-Fit. |
 | `POSTERIUM_TRUST_PROXY` | `0` | Imposta a `1` se dietro Cloudflare/HF/Nginx per sbloccare `x-forwarded-for`/`cf-connecting-ip` nel rate-limit (evita throttle condiviso su istanze pubbliche). |

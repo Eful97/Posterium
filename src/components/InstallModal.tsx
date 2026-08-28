@@ -203,6 +203,8 @@ export function InstallModal({ isOpen, onClose, manifestUrl: propManifestUrl }: 
             {qrSvg ? (
               <div
                 className="bg-white p-2 rounded-xl shadow-lg"
+                role="img"
+                aria-label="QR code per installare Posterium Hub"
                 dangerouslySetInnerHTML={{ __html: qrSvg }}
               />
             ) : (

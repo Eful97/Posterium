@@ -101,6 +101,7 @@ export function OnboardingTour() {
                 key={i}
                 onClick={() => setStep(i)}
                 aria-label={t("ui.slide", { n: i + 1 })}
+                aria-current={i === step ? "step" : undefined}
                 className="w-8 h-8 rounded-full flex items-center justify-center"
               >
                 <span className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${i === step ? "w-6 bg-accent-orange" : "w-1.5 bg-zinc-600 hover:bg-zinc-500"}`} />

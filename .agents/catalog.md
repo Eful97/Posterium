@@ -20,11 +20,9 @@ Il resolver `/meta` di Posterium risolve gli id **solo** da `tt...` (IMDb) o
 fallback TMDB ed è un id non portabile → evitare sempre.
 
 Risoluzione dell'id (helper `catalogMetaId` in `catalog-handler.ts`):
-1. `imdbId` fornito dalla fonte (JustWatch lo restituisce già nella query GraphQL);
-2. altrimenti TMDB `/{type}/{id}/external_ids` (`resolveImdbId`, che passa la chiave
-   della richiesta);
-3. altrimenti fallback provider `tmdb:<id>`.
-
+oggi sempre `tmdb:<id>` (il resolver `/meta` di Posterium risolve `tmdb:` nativamente;
+storicamente `imdbId` → `resolveImdbId` → `tmdb:` — ora il parametro `_imdbId` è
+ignorato per mantenere Posterium 100% standalone senza dipendenza da Cinemeta/AIOMetadata).
 Mai emettere un id numerico nudo come `id` del meta.
 
 ## Cataloghi supportati (`POSTERIUM_CATALOGS` in `catalog-definitions.ts`)
@@ -34,9 +32,10 @@ Mai emettere un id numerico nudo come `id` del meta.
 | `posterium-jw-movies` / `posterium-jw-series` | JustWatch StreamingCharts (GraphQL) | movie/series | Chiave TMDB |
 | `posterium-netflix/prime/disney/now/apple/hbo/paramount-*` | JustWatch StreamingCharts (pacchetti) + fallback FlixPatrol | movie/series | Chiave TMDB |
 | `posterium-anime-movies` / `posterium-anime` | MDBList `mdblistAnimeMovie` / `mdblistAnime` | movie/series | Opzionale (fallback pubblico) |
+| `posterium-search-movies` / `posterium-search-series` | TMDB search diretto (`searchMovies`/`searchTV`) | movie/series | Chiave TMDB |
 
-Warmup automatico: `posterium-jw-movies`, `posterium-jw-series`, `posterium-anime-movies`, `posterium-anime`
-(`WARMUP_CATALOG_IDS`).
+Warmup automatico: `posterium-jw-movies`, `posterium-jw-series`, `posterium-netflix-movies/series`, `posterium-prime-movies/series`, `posterium-anime-movies`, `posterium-anime`
+(`WARMUP_CATALOG_IDS` — 8 cataloghi). I restanti 10 platform restano cold ma beneficiano della cache JustWatch 30 min condivisa.
 
 ## Flusso per catalogo
 
@@ -89,7 +88,7 @@ chiave d'istanza condivisa) resta valida per quel caso.
 - `metas: []` = catalogo non riconosciuto, chiave mancante o errore. Rate limit →
   429 con `Retry-After`.
 - Header risposta: `Cache-Control: no-cache`, CORS `*`.
-- Route con `maxDuration = 60`: un catalogo freddo fa ~20 `getDetails` + ranking.
+- Route con `maxDuration = 60` per cataloghi (`catalog/[type]/[id]/route.ts`), `40` per poster (`api/poster/[type]/[id]/route.ts`): un catalogo freddo fa ~20 `getDetails` + ranking.
 
 ## Cosa NON fare
 

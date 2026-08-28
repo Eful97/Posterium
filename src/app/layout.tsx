@@ -14,8 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Posterium - Stremio Poster Manager",
-  description: "Custom poster manager for Stremio via AIOmetadata",
+  title: "Posterium — Generatore di poster per Stremio",
+  description: "Generatore dinamico di poster cinematografici per Stremio: locandine pulite, loghi vettoriali, rating e badge trend composti in tempo reale.",
+  manifest: "/site.webmanifest",
+  themeColor: "#e85d2a",
+  openGraph: {
+    title: "Posterium",
+    description: "Generatore di poster cinematografici per Stremio",
+    images: ["/posterium.png"],
+    type: "website",
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
@@ -24,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="it" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" />
         <link rel="preconnect" href="https://api.themoviedb.org" />

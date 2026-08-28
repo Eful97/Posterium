@@ -44,6 +44,9 @@ export function isRankKey(val: string | null): string | null {
 
 export function setLang(lang: string) {
   _currentLang = lang
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = lang
+  }
 }
 
 export function getLang(): string {
