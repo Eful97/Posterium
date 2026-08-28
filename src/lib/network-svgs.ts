@@ -138,6 +138,8 @@ function getNetworkKey(networkName: string): string | null {
   if (/\babc\b/.test(lower) || lower.includes("american broadcasting")) return "abc"
   if (/\bcbs\b/.test(lower)) return "cbs"
   if (lower.includes("20th century") || lower.includes("century studios")) return "century"
+  // Filtro anime: White Fox (studio di Re:Zero) contiene "fox" ma non è FOX network USA.
+  if (lower.includes("white fox")) return null
   if (/\bfox\b/.test(lower) || lower === "fox network" || lower.startsWith("fox ")) return "fox"
   if (/\bfxx?\b/.test(lower)) return "fx"
   if (lower.includes("hulu")) return "hulu"

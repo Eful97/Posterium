@@ -128,12 +128,17 @@ describe("network-svgs", () => {
     // SKY PerfecTV! (sat giapponese) ≠ Sky EU
     expect(getNetworkSvgResult("SKY PerfecTV!")).toBeNull()
     expect(getNetworkSvgResult("SKY PerfecTV")).toBeNull()
+    // White Fox (studio Re:Zero TMDB 65942) ≠ FOX USA
+    expect(getNetworkSvgResult("White Fox")).toBeNull()
+    expect(getNetworkSvgResult("WHITE FOX")).toBeNull()
+    expect(getNetworkSvgResult("White Fox Studio")).toBeNull()
     // Legittimi restano mappati
     expect(getNetworkSvgResult("Warner Bros.")?.networkKey).toBe("warner")
     expect(getNetworkSvgResult("Warner Bros. Japan")?.networkKey).toBe("warner")
     expect(getNetworkSvgResult("Universal Pictures")?.networkKey).toBe("universal")
     expect(getNetworkSvgResult("Columbia Pictures")?.networkKey).toBe("columbia")
     expect(getNetworkSvgResult("Columbia Pictures Corporation")?.networkKey).toBe("columbia")
+    expect(getNetworkSvgResult("FOX")?.networkKey).toBe("fox")
   })
 
   it("renders PNG buffers for the imported network logos", async () => {
