@@ -50,7 +50,7 @@ const NETWORK_FILES: Record<string, string> = {
   fx: "FX_International_logo.svg",
   hulu: "Hulu_logo_(2018).svg",
   natgeo: "National-Geographic-Logo.svg",
-  nbc: "NBC_logo.svg",
+  nbc: "NBC_logo.svg", // peacock colors updated 2026-08-28
   showtime: "Showtime_logo.svg",
 }
 
