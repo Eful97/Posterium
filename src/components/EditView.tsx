@@ -162,7 +162,7 @@ export default function EditView() {
     { key: "logo", label: t("ui.logoSection") },
     ...(cleanPoster ? [{ key: "badge", label: t("ui.badgeSection") }] : []),
     ...(cleanPoster && selectedLogo ? [{ key: "transform", label: t("ui.transform") }] : []),
-    ...(selected?.media_type === "tv" ? [{ key: "stagioni", label: "📺 Stagioni" }] : []),
+    ...(selected?.media_type === "tv" ? [{ key: "stagioni", label: t("ui.seasons") || "Stagioni" }] : []),
   ]
 
   return (
@@ -220,7 +220,7 @@ export default function EditView() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              <span>🖼️ Poster</span>
+              <span>Poster</span>
               <span className="text-[10px] opacity-75 font-mono">({posters.length})</span>
             </button>
             <button
@@ -232,7 +232,7 @@ export default function EditView() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              <span>👁️ Anteprima</span>
+              <span>Anteprima</span>
             </button>
             <button
               type="button"
@@ -243,7 +243,7 @@ export default function EditView() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              <span>🎨 Personalizza</span>
+              <span>Personalizza</span>
             </button>
           </div>
 
@@ -405,29 +405,6 @@ export default function EditView() {
             </div>
 
           </div>
-
-          {/* Mobile Floating Quick Actions Bar (quando non in Anteprima) */}
-          {mobileSection !== "preview" && (
-            <div className="lg:hidden fixed bottom-16 left-4 right-4 z-30 flex items-center justify-between p-2 rounded-2xl bg-zinc-950/90 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/80 animate-fade-scale-in">
-              <button
-                type="button"
-                onClick={() => setMobileSection("preview")}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-zinc-200 hover:text-white"
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Vedi Anteprima</span>
-              </button>
-              <button
-                type="button"
-                aria-label={t("ui.savePoster")}
-                onClick={handleSave}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-accent-orange to-amber-500 text-white font-semibold text-xs shadow-md shadow-accent-orange/25 active:scale-95 transition-all"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>Salva</span>
-              </button>
-            </div>
-          )}
         </div>
       )}
       {!selected && (

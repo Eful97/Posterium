@@ -198,7 +198,7 @@ export function EpisodeGroupControls() {
             }`}
           >
             <div className="flex flex-col">
-              <span>📺 Stagioni Standard TMDB</span>
+              <span>Stagioni Standard TMDB</span>
               <span className="text-[10px] text-zinc-400">Ordinamento originale per data di messa in onda (default)</span>
             </div>
             {(!ed.episodeGroupId || ed.episodeGroupId === "standard") && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
@@ -212,7 +212,7 @@ export function EpisodeGroupControls() {
               className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] border bg-surface2/20 text-zinc-500 border-white/5 opacity-50 cursor-not-allowed flex items-center justify-between"
             >
               <div className="flex flex-col">
-                <span>🗄️ TheTVDB</span>
+                <span>TheTVDB</span>
                 <span className="text-[10px] text-zinc-400">Richiede chiave TVDB nelle impostazioni</span>
               </div>
             </button>
@@ -223,7 +223,7 @@ export function EpisodeGroupControls() {
               className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] border bg-surface2/40 text-zinc-400 border-surface2 flex items-center justify-between cursor-wait"
             >
               <div className="flex flex-col">
-                <span>🗄️ TheTVDB</span>
+                <span>TheTVDB</span>
                 <span className="text-[10px] text-zinc-400">Caricamento tipi TVDB…</span>
               </div>
               <span className="w-3.5 h-3.5 border-2 border-zinc-500 border-t-transparent rounded-full animate-spin shrink-0" />
@@ -231,7 +231,7 @@ export function EpisodeGroupControls() {
           ) : tvdbSeasonTypes.length === 0 ? (
             <div className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] border bg-surface2/20 text-zinc-400 border-white/5">
               <div className="flex flex-col">
-                <span>🗄️ TheTVDB — nessun tipo trovato</span>
+                <span>TheTVDB — nessun tipo trovato</span>
                 <span className="text-[10px] text-zinc-500">{tvdbError ? `Errore: ${tvdbError}` : "Nessun ordinamento alternativo per questa serie. Prova con un'altra serie o verifica la chiave TVDB."}</span>
               </div>
             </div>
@@ -256,7 +256,7 @@ export function EpisodeGroupControls() {
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span>🗄️ TheTVDB — {label}</span>
+                    <span>TheTVDB — {label}</span>
                     <span className="text-[10px] text-zinc-400">Ordinamento TVDB {st.type}</span>
                   </div>
                   {isSelected && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
@@ -275,7 +275,7 @@ export function EpisodeGroupControls() {
             }`}
           >
             <div className="flex flex-col">
-              <span>🌀 AniZip (AniList/AniDB) — Anime</span>
+              <span>AniZip (AniList/AniDB) — Anime</span>
               <span className="text-[10px] text-zinc-400">Ordinamento anime absolute via AniZip, senza chiave</span>
             </div>
             {ed.episodeGroupId === "anizip" && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}

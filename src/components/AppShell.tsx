@@ -90,17 +90,34 @@ export function AppShell() {
 
   // Toolbar rapida mobile: compatto e raffinato
   const mobileToolbar = (
-    <div className="flex md:hidden items-center gap-2 justify-center p-1.5 px-3 rounded-2xl bg-surface/80 backdrop-blur-xl border border-white/10 shadow-lg shadow-black/20">
-      <button
-        type="button"
-        aria-label={t("ui.chooseLanguage")}
-        onClick={() => setLangOpen((o) => !o)}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium text-zinc-300 bg-white/[0.05] border border-white/10 active:scale-95 transition-all"
-        title={LANG_NAMES[lang]}
-      >
-        <span>{LANG_FLAGS[lang] || <Globe className="w-3.5 h-3.5" />}</span>
-        <span className="text-[11px] uppercase tracking-wider">{lang}</span>
-      </button>
+    <div className="flex md:hidden items-center gap-2 justify-center p-1.5 px-3 rounded-2xl bg-surface/80 backdrop-blur-xl border border-white/10 shadow-lg shadow-black/20 relative z-30">
+      <div className="relative">
+        <button
+          type="button"
+          aria-label={t("ui.chooseLanguage")}
+          onClick={() => setLangOpen((o) => !o)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium text-zinc-300 bg-white/[0.05] border border-white/10 active:scale-95 transition-all"
+          title={LANG_NAMES[lang]}
+        >
+          <span>{LANG_FLAGS[lang] || <Globe className="w-3.5 h-3.5" />}</span>
+          <span className="text-[11px] uppercase tracking-wider">{lang}</span>
+        </button>
+        {langOpen && (
+          <div className="absolute left-0 top-full mt-2 bg-black/90 backdrop-blur-2xl border border-white/15 rounded-xl p-1.5 shadow-2xl shadow-black/80 z-50 min-w-36 animate-fade-scale-in">
+            {Object.entries(LANG_NAMES).filter(([k]) => k !== "xx").map(([code, name]) => (
+              <button
+                type="button"
+                key={code}
+                onClick={() => { pickLang(code); setLangOpen(false) }}
+                className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-all text-left hover:bg-zinc-800 cursor-pointer ${code === lang ? "bg-accent/15 text-accent-orange font-semibold" : "text-zinc-300"}`}
+              >
+                <span>{LANG_FLAGS[code] || <Globe className="w-3.5 h-3.5" />}</span>
+                <span>{name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <button
         type="button"
@@ -286,7 +303,7 @@ export function AppShell() {
       </div>
 
       {/* Desktop Bottom-Right Utility Cluster */}
-      <div className="hidden md:flex fixed bottom-5 right-5 z-50 items-center gap-2 floating-group">
+      <div className="hidden lg:flex fixed bottom-5 right-5 z-50 items-center gap-2 floating-group">
         <button type="button"
           aria-label={t("ui.refreshLists")}
           onClick={async () => { setRefreshing(true); await refreshLists(); setRefreshing(false) }}
