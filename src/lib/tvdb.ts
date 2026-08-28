@@ -212,29 +212,68 @@ export async function getTvdbSeasonTypes(tvdbSeriesId: number, apiKey: string): 
   if (!token) return []
 
   try {
-    const res = await fetch(`${TVDB_BASE}/series/${tvdbSeriesId}/seasonTypes`, {
+    const res = await fetch(`${TVDB_BASE}/series/${tvdbSeriesId}/extended`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       signal: AbortSignal.timeout(8000),
     })
     if (!res.ok) {
-      log.warn("TVDB seasonTypes failed", { status: res.status, tvdbSeriesId })
+      log.warn("TVDB series extended failed", { status: res.status, tvdbSeriesId })
       return []
     }
     const json = await res.json()
-    const raw: unknown = json?.data
-    const list: TvdbSeasonType[] = Array.isArray(raw)
-      ? raw
-          .map((x) => {
-            const r = x as Record<string, unknown>
-            return {
-              id: Number(r.id),
-              name: String(r.name || r.type || "Order"),
-              type: String(r.type || r.name || "unknown"),
-              alternateName: (r.alternateName as string | null) ?? null,
-            }
+    const data = json?.data as Record<string, unknown> | undefined
+    if (!data) return []
+
+    const typesMap = new Map<string, TvdbSeasonType>()
+
+    // 1. Controlla data.seasonTypes se presente direttamente
+    if (Array.isArray(data.seasonTypes)) {
+      for (const item of data.seasonTypes) {
+        const r = item as Record<string, unknown>
+        const id = Number(r.id)
+        const typeStr = String(r.type || r.name || "").trim().toLowerCase()
+        const name = String(r.name || r.type || "Order").trim()
+        if (typeStr && Number.isFinite(id)) {
+          typesMap.set(typeStr, {
+            id,
+            name,
+            type: typeStr,
+            alternateName: (r.alternateName as string | null) ?? null,
           })
-          .filter((t) => Number.isFinite(t.id) && t.type)
-      : []
+        }
+      }
+    }
+
+    // 2. Controlla data.seasons per estrarre tutti i tipi di stagione presenti per la serie
+    if (Array.isArray(data.seasons)) {
+      for (const s of data.seasons) {
+        const seasonObj = s as Record<string, unknown>
+        if (seasonObj?.type && typeof seasonObj.type === "object") {
+          const st = seasonObj.type as Record<string, unknown>
+          const id = Number(st.id)
+          const typeStr = String(st.type || st.name || "").trim().toLowerCase()
+          const name = String(st.name || st.type || "Order").trim()
+          if (typeStr && !typesMap.has(typeStr)) {
+            typesMap.set(typeStr, {
+              id: Number.isFinite(id) ? id : typesMap.size + 1,
+              name,
+              type: typeStr,
+              alternateName: (st.alternateName as string | null) ?? null,
+            })
+          }
+        }
+      }
+    }
+
+    let list = Array.from(typesMap.values())
+
+    // Se la serie esiste ma non ha seasonTypes espliciti, fallback a Aired Order
+    if (list.length === 0 && data.id) {
+      list = [
+        { id: 1, name: "Aired Order", type: "official", alternateName: null }
+      ]
+    }
+
     if (list.length > 0) {
       setBounded(seasonTypesCache, cacheKey, { types: list, expiry: Date.now() + CACHE_TTL_SEASONTYPES }, 100)
     }
@@ -358,7 +397,18 @@ export async function enrichVideosWithTvdb(
     tvdbSeriesId = await getTvdbSeriesId(imdbId, apiKey)
   }
   if (!tvdbSeriesId && tmdbId) {
-    tvdbSeriesId = await getTvdbSeriesId(String(tmdbId), apiKey)
+    try {
+      const { getExternalIds } = await import("@/lib/tmdb")
+      const ext = await getExternalIds("tv", tmdbId)
+      if (ext?.tvdb_id && ext.tvdb_id > 0) {
+        tvdbSeriesId = ext.tvdb_id
+      } else if (ext?.imdb_id) {
+        tvdbSeriesId = await getTvdbSeriesId(ext.imdb_id, apiKey)
+      }
+    } catch {}
+    if (!tvdbSeriesId) {
+      tvdbSeriesId = await getTvdbSeriesId(String(tmdbId), apiKey)
+    }
   }
 
   if (!tvdbSeriesId) return

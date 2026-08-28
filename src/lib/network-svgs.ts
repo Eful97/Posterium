@@ -67,41 +67,42 @@ const NETWORK_FILES: Record<string, string> = {
   ghibli: "Studio_Ghibli.svg",
 }
 
-// Target rendered widths (at pw=380) — height is proportional via sharp
+// Target rendered widths (at pw=380) — normalizzati per area visiva ~3200px² a pw=500 (senza pill, logo diretto su poster)
+// flat ultra-wide (sony/legendary/lionsgate) al max 72 per non sovrapporre badge; square grandi (warner/medusa) ridotti
 const NETWORK_TARGET_W: Record<string, number> = {
-  netflix: 26,
-  hbo: 52,
-  disney: 72,
-  prime: 56,
-  apple: 54,
-  paramount: 72,
-  rai: 44,
-  crunchyroll: 28,
-  sky: 48,
-  mediaset: 64,
-  tubi: 90,
-  pluto: 64,
-  amc: 48,
-  abc: 44,
-  cbs: 56,
-  fx: 36,
-  hulu: 52,
-  natgeo: 64,
-  nbc: 52,
-  showtime: 56,
-  warner: 64,
-  universal: 64,
-  century: 64,
-  columbia: 64,
-  sony: 52,
+  netflix: 32,
+  hbo: 51,
+  disney: 59,
+  prime: 43,
+  apple: 61,
+  paramount: 55,
+  rai: 43,
+  crunchyroll: 41,
+  sky: 72,
+  mediaset: 62,
+  tubi: 72,
+  pluto: 49,
+  amc: 57,
+  abc: 43,
+  cbs: 72,
+  fx: 55,
+  hulu: 72,
+  natgeo: 72,
+  nbc: 43,
+  showtime: 71,
+  warner: 42,
+  universal: 59,
+  century: 47,
+  columbia: 72,
+  sony: 72,
   disney_pictures: 72,
   marvel: 72,
-  a24: 52,
-  legendary: 56,
-  lionsgate: 56,
-  fandango: 48,
-  medusa: 64,
-  ghibli: 56,
+  a24: 67,
+  legendary: 72,
+  lionsgate: 72,
+  fandango: 61,
+  medusa: 43,
+  ghibli: 72,
 }
 
 function getNetworkKey(networkName: string): string | null {
@@ -149,8 +150,8 @@ function getNetworkKey(networkName: string): string | null {
   return null
 }
 
-async function loadNetworkPng(networkKey: string, pw: number): Promise<{ png: Buffer; w: number; h: number } | null> {
-  const cacheKey = `${networkKey}:${pw}`
+async function loadNetworkPng(networkKey: string, pw: number, topLight: boolean = false): Promise<{ png: Buffer; w: number; h: number } | null> {
+  const cacheKey = `${networkKey}:${pw}:${topLight ? 1 : 0}`
   const cached = networkLogoCache.get(cacheKey)
   if (cached) return cached
 
@@ -180,27 +181,72 @@ async function loadNetworkPng(networkKey: string, pw: number): Promise<{ png: Bu
     const pad = Math.max(Math.round(4 * pw / 380), 3)
     const off = Math.max(Math.round(2 * pw / 380), 1)
 
-    // Generate soft black drop shadow from logo alpha
-    const shadowLayer = await sharp(data)
-      .ensureAlpha()
-      .linear([0, 0, 0, 0.65], [0, 0, 0, 0])
-      .blur(1.8)
-      .toBuffer()
+    // Logo monocromatico allineato al badge trend SENZA pill: stesso colore del bg badge (non del testo) per contrasto diretto sul poster
+    // svg-badge.ts: bg = topLight ? nero : bianco → logo = bg (topLight→nero, altrimenti bianco)
+    // Eccezioni: netflix, marvel, 20th century restano a colori originali
+    const keepColor = networkKey === "netflix" || networkKey === "marvel" || networkKey === "century"
+    let recolored: Buffer
+    if (keepColor) {
+      recolored = data // conserva colori brand
+    } else {
+      const fgBg = topLight
+        ? { r: 0, g: 0, b: 0, alpha: 0.8 }
+        : { r: 255, g: 255, b: 255, alpha: 0.8 }
+      const fgSolid = await sharp({
+        create: { width: info.width, height: info.height, channels: 4, background: fgBg },
+      })
+        .png()
+        .toBuffer()
+      recolored = await sharp(fgSolid)
+        .composite([{ input: data, blend: "dest-in" }])
+        .png()
+        .toBuffer()
+    }
 
+    // Ombra del solo logo: nera su logo bianco, bianca su logo nero — invertita rispetto al logo; keepColor sempre ombra nera
+    let shadowLayer: Buffer
+    if (keepColor) {
+      shadowLayer = await sharp(data)
+        .ensureAlpha()
+        .linear([0, 0, 0, 0.65], [0, 0, 0, 0])
+        .blur(1.8)
+        .toBuffer()
+    } else if (topLight) {
+      // logo nero → ombra bianca
+      const whiteSolid = await sharp({
+        create: { width: info.width, height: info.height, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 0.52 } },
+      })
+        .png()
+        .toBuffer()
+      shadowLayer = await sharp(whiteSolid)
+        .composite([{ input: data, blend: "dest-in" }])
+        .blur(1.8)
+        .toBuffer()
+    } else {
+      // logo bianco → ombra nera
+      shadowLayer = await sharp(data)
+        .ensureAlpha()
+        .linear([0, 0, 0, 0.65], [0, 0, 0, 0])
+        .blur(1.8)
+        .toBuffer()
+    }
+
+    const finalW = info.width + pad * 2 + off
+    const finalH = info.height + pad * 2 + off
     const { data: finalPng, info: finalInfo } = await sharp({
       create: {
-        width: info.width + pad * 2,
-        height: info.height + pad * 2,
+        width: finalW,
+        height: finalH,
         channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      }
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
     })
-    .composite([
-      { input: shadowLayer, top: pad + off, left: pad + off },
-      { input: data, top: pad, left: pad }
-    ])
-    .png()
-    .toBuffer({ resolveWithObject: true })
+      .composite([
+        { input: shadowLayer, top: pad + off, left: pad + off },
+        { input: recolored, top: pad, left: pad },
+      ])
+      .png()
+      .toBuffer({ resolveWithObject: true })
 
     const result = { png: finalPng, w: finalInfo.width, h: finalInfo.height }
     networkLogoCache.set(cacheKey, result)
@@ -213,13 +259,14 @@ async function loadNetworkPng(networkKey: string, pw: number): Promise<{ png: Bu
 
 export async function renderFirstMatchingNetworkLogoBadge(
   names: (string | null | undefined)[],
-  pw: number = 500
+  pw: number = 500,
+  topLight: boolean = false
 ): Promise<{ png: Buffer; w: number; h: number; networkKey: string; matchedName: string } | null> {
   for (const name of names) {
     if (!name) continue
     const networkKey = getNetworkKey(name)
     if (!networkKey) continue
-    const result = await loadNetworkPng(networkKey, pw)
+    const result = await loadNetworkPng(networkKey, pw, topLight)
     if (result) {
       return { ...result, networkKey, matchedName: name }
     }
@@ -245,11 +292,11 @@ export function getNetworkSvgResult(networkName?: string | null, pw: number = 50
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"></svg>`, w, h, networkKey }
 }
 
-export async function renderNetworkLogoBadge(networkName?: string | null, pw: number = 500): Promise<{ png: Buffer; w: number; h: number; networkKey: string } | null> {
+export async function renderNetworkLogoBadge(networkName?: string | null, pw: number = 500, topLight: boolean = false): Promise<{ png: Buffer; w: number; h: number; networkKey: string } | null> {
   if (!networkName) return null
   const networkKey = getNetworkKey(networkName)
   if (!networkKey) return null
-  const result = await loadNetworkPng(networkKey, pw)
+  const result = await loadNetworkPng(networkKey, pw, topLight)
   if (!result) return null
   return { ...result, networkKey }
 }

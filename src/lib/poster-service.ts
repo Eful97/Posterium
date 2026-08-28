@@ -383,7 +383,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   ].filter(Boolean) as string[]
 
   const networkLogoResult = netLogoEnabled
-    ? await renderFirstMatchingNetworkLogoBadge(networkCandidates, STD_W)
+    ? await renderFirstMatchingNetworkLogoBadge(networkCandidates, STD_W, topLight)
     : null
 
   if (networkLogoResult && topBadge && topBadge.type === "extra") {

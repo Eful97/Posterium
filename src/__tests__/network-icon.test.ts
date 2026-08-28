@@ -137,4 +137,37 @@ describe("network-svgs", () => {
     expect(res!.w).toBeGreaterThan(0)
     expect(res!.h).toBeGreaterThan(0)
   })
+
+  it("renders distinct buffers for topLight true vs false (chip + shadow inverted)", async () => {
+    const light = await renderNetworkLogoBadge("HBO Max", 500, true)
+    const dark = await renderNetworkLogoBadge("HBO Max", 500, false)
+    expect(light).not.toBeNull()
+    expect(dark).not.toBeNull()
+    // stesso logo ma bianco/nero e ombra nera/bianca → buffer diversi
+    expect(light!.png.equals(dark!.png)).toBe(false)
+    expect(light!.w).toBe(dark!.w)
+    expect(light!.h).toBe(dark!.h)
+  })
+
+  it("keeps Netflix invariant (rosso brand) across topLight", async () => {
+    const light = await renderNetworkLogoBadge("Netflix", 500, true)
+    const dark = await renderNetworkLogoBadge("Netflix", 500, false)
+    expect(light!.png.equals(dark!.png)).toBe(true)
+  })
+
+  it("keeps Marvel and 20th Century invariant across topLight", async () => {
+    for (const name of ["Marvel", "20th Century Studios"]) {
+      const light = await renderNetworkLogoBadge(name, 500, true)
+      const dark = await renderNetworkLogoBadge(name, 500, false)
+      expect(light!.png.equals(dark!.png), name).toBe(true)
+    }
+  })
+
+  it("caches per topLight (cache key includes topLight)", async () => {
+    const a = await renderNetworkLogoBadge("HBO Max", 380, false)
+    const b = await renderNetworkLogoBadge("HBO Max", 380, false)
+    expect(a!.png.equals(b!.png)).toBe(true)
+    const c = await renderNetworkLogoBadge("HBO Max", 380, true)
+    expect(a!.png.equals(c!.png)).toBe(false)
+  })
 })

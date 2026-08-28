@@ -187,7 +187,20 @@ export async function buildVideosFromTvdb(
   if (!tvdbApiKey) return []
   let tvdbSeriesId: number | null = null
   if (imdbId) tvdbSeriesId = await getTvdbSeriesId(imdbId, tvdbApiKey)
-  if (!tvdbSeriesId && tmdbId) tvdbSeriesId = await getTvdbSeriesId(String(tmdbId), tvdbApiKey)
+  if (!tvdbSeriesId && tmdbId) {
+    try {
+      const { getExternalIds } = await import("@/lib/tmdb")
+      const ext = await getExternalIds("tv", tmdbId)
+      if (ext?.tvdb_id && ext.tvdb_id > 0) {
+        tvdbSeriesId = ext.tvdb_id
+      } else if (ext?.imdb_id) {
+        tvdbSeriesId = await getTvdbSeriesId(ext.imdb_id, tvdbApiKey)
+      }
+    } catch {}
+    if (!tvdbSeriesId) {
+      tvdbSeriesId = await getTvdbSeriesId(String(tmdbId), tvdbApiKey)
+    }
+  }
   if (!tvdbSeriesId) return []
   const tvdbEps = await getTvdbEpisodes(tvdbSeriesId, "ita", tvdbApiKey, seasonType)
   const sorted = [...tvdbEps].sort((a, b) => a.seasonNumber - b.seasonNumber || a.number - b.number)

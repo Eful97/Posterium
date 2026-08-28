@@ -21,22 +21,24 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
   if (!tvdbKey) return Response.json({ results: [], error: "TVDB key missing — imposta in Impostazioni" }, { status: 200 })
 
   // tmdb key opzionale: permette di risolvere tvdb_id via TMDB external_ids (molto più affidabile di search/remoteid per id numerici)
-  const tmdbKey = req.headers.get("x-tmdb-key") || req.nextUrl.searchParams.get("tmdb_key") || req.nextUrl.searchParams.get("api_key") || req.headers.get("x-api-key-tvdb") || ""
+  const tmdbKey = req.headers.get("x-tmdb-key") || req.nextUrl.searchParams.get("tmdb_key") || req.nextUrl.searchParams.get("api_key") || req.headers.get("x-api-key-tvdb") || process.env.POSTERIUM_TMDB_KEY || ""
   const cacheKey = `tvdb:seasonTypes:raw${rawId}:ak${hashFragment(tvdbKey)}:tk${hashFragment(tmdbKey || "")}`
-  const cached = cacheGet<{ results: { id: number; name: string; type: string }[]; tvdbId?: number | null }>(cacheKey)
+  const cached = cacheGet<{ results: { id: number; name: string; type: string; alternateName?: string | null }[]; tvdbId?: number | null }>(cacheKey)
   if (cached) return Response.json(cached, { headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=3600" } })
 
   try {
     let tvdbSeriesId: number | null = null
     const asNum = parseInt(rawId, 10)
     const isNumeric = String(asNum) === rawId && asNum > 0
-    // 1) Se rawId è numerico e abbiamo tmdbKey, prova a risolvere tvdb_id via TMDB external_ids (via più affidabile)
-    if (isNumeric && tmdbKey) {
+    // 1) Se rawId è numerico, prova a risolvere tvdb_id via TMDB external_ids (via più affidabile)
+    if (isNumeric) {
       try {
         const { getExternalIds } = await import("@/lib/tmdb")
-        const ext = await getExternalIds("tv", asNum, tmdbKey.trim())
+        const ext = await getExternalIds("tv", asNum, tmdbKey.trim() || undefined)
         if (ext?.tvdb_id && ext.tvdb_id > 0) {
           tvdbSeriesId = ext.tvdb_id
+        } else if (ext?.imdb_id) {
+          tvdbSeriesId = await getTvdbSeriesId(ext.imdb_id, tvdbKey)
         }
       } catch {}
     }
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
         if (!tvdbSeriesId) {
           const trial = await getTvdbSeasonTypes(asNum, tvdbKey)
           if (trial.length > 0) {
-            const body = { results: trial.map((t) => ({ id: t.id, name: t.name, type: t.type })), tvdbId: asNum }
+            const body = { results: trial.map((t) => ({ id: t.id, name: t.name, type: t.type, alternateName: t.alternateName })), tvdbId: asNum }
             cacheSet(cacheKey, body, ["tvdb"], 24 * 60 * 60 * 1000)
             return Response.json(body, { headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=3600" } })
           }
@@ -59,7 +61,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       if (Number.isFinite(asNum) && asNum > 0) {
         const trial = await getTvdbSeasonTypes(asNum, tvdbKey)
         if (trial.length > 0) {
-          const body = { results: trial.map((t) => ({ id: t.id, name: t.name, type: t.type })), tvdbId: asNum }
+          const body = { results: trial.map((t) => ({ id: t.id, name: t.name, type: t.type, alternateName: t.alternateName })), tvdbId: asNum }
           cacheSet(cacheKey, body, ["tvdb"], 24 * 60 * 60 * 1000)
           return Response.json(body, { headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=3600" } })
         }
@@ -77,7 +79,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     if (types.length === 0) {
       return Response.json({ results: [], tvdbId: tvdbSeriesId, error: `Nessun seasonType per serie ${tvdbSeriesId}` }, { headers: { "Cache-Control": "public, max-age=600, stale-while-revalidate=600" } })
     }
-    const body = { results: types.map((t) => ({ id: t.id, name: t.name, type: t.type })), tvdbId: tvdbSeriesId }
+    const body = { results: types.map((t) => ({ id: t.id, name: t.name, type: t.type, alternateName: t.alternateName })), tvdbId: tvdbSeriesId }
     cacheSet(cacheKey, body, ["tvdb"], 24 * 60 * 60 * 1000)
     return Response.json(body, { headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=3600" } })
   } catch (e) {

@@ -19,7 +19,7 @@ export function EpisodeGroupControls() {
   const ed = usePosterEditor()
 
   const [epGroups, setEpGroups] = useState<{ id: string; name: string; group_count: number; episode_count: number }[]>([])
-  const [tvdbSeasonTypes, setTvdbSeasonTypes] = useState<{ type: string; name: string }[]>([])
+  const [tvdbSeasonTypes, setTvdbSeasonTypes] = useState<{ type: string; name: string; alternateName?: string | null }[]>([])
   const [tvdbLoading, setTvdbLoading] = useState(false)
   const [tvdbError, setTvdbError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -238,8 +238,14 @@ export function EpisodeGroupControls() {
           ) : (
             tvdbSeasonTypes.map((st) => {
               const sentinel = `tvdb:${st.type}`
-              const isSelected = ed.episodeGroupId === sentinel || (ed.episodeGroupId === "tvdb" && st.type === "default")
-              const label = st.name === st.type ? st.type : `${st.name} (${st.type})`
+              const isSelected =
+                ed.episodeGroupId === sentinel ||
+                (ed.episodeGroupId === "tvdb" && (st.type === "default" || st.type === "official")) ||
+                (ed.episodeGroupId === "tvdb:default" && st.type === "official") ||
+                (ed.episodeGroupId === "tvdb:official" && st.type === "default")
+              const label = st.alternateName
+                ? `${st.name} (${st.alternateName})`
+                : (st.name.toLowerCase() === st.type.toLowerCase() ? st.name : `${st.name} (${st.type})`)
               return (
                 <button
                   type="button"

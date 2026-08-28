@@ -1,8 +1,9 @@
-﻿import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import {
   getTvdbToken,
   getTvdbSeriesId,
   getTvdbEpisodes,
+  getTvdbSeasonTypes,
   enrichVideosWithTvdb,
   formatTvdbImageUrl,
   clearTvdbCache,
@@ -197,6 +198,93 @@ describe("TVDB Integration", () => {
       expect(videos[0].name).toBe("Questione di chimica")
       expect(videos[0].overview).toBe("Trama italiana accurata da TVDB.")
       expect(videos[0].thumbnail).toBe("https://artworks.thetvdb.com/banners/episodes/75710/1.jpg")
+    })
+  })
+
+  describe("getTvdbSeasonTypes", () => {
+    it("extracts season types from series extended data", async () => {
+      vi.spyOn(globalThis, "fetch")
+        // Auth
+        .mockResolvedValueOnce(
+          Response.json({ status: "success", data: { token: "mock-jwt" } })
+        )
+        // Series extended
+        .mockResolvedValueOnce(
+          Response.json({
+            status: "success",
+            data: {
+              id: 327153,
+              name: "La Casa de Papel",
+              seasonTypes: [
+                {
+                  id: 1,
+                  name: "Aired Order",
+                  type: "official",
+                  alternateName: null,
+                },
+                {
+                  id: 3,
+                  name: "Alternate Order",
+                  type: "alternate",
+                  alternateName: "Netflix",
+                },
+              ],
+            },
+          })
+        )
+
+      const types = await getTvdbSeasonTypes(327153, "test-key")
+      expect(types).toHaveLength(2)
+      expect(types[0]).toEqual({
+        id: 1,
+        name: "Aired Order",
+        type: "official",
+        alternateName: null,
+      })
+      expect(types[1]).toEqual({
+        id: 3,
+        name: "Alternate Order",
+        type: "alternate",
+        alternateName: "Netflix",
+      })
+    })
+
+    it("extracts unique season types from seasons array if seasonTypes is missing", async () => {
+      vi.spyOn(globalThis, "fetch")
+        // Auth
+        .mockResolvedValueOnce(
+          Response.json({ status: "success", data: { token: "mock-jwt" } })
+        )
+        // Series extended with seasons array
+        .mockResolvedValueOnce(
+          Response.json({
+            status: "success",
+            data: {
+              id: 327153,
+              seasons: [
+                {
+                  id: 101,
+                  number: 1,
+                  type: { id: 1, name: "Aired Order", type: "official" },
+                },
+                {
+                  id: 102,
+                  number: 2,
+                  type: { id: 1, name: "Aired Order", type: "official" },
+                },
+                {
+                  id: 201,
+                  number: 1,
+                  type: { id: 2, name: "DVD Order", type: "dvd" },
+                },
+              ],
+            },
+          })
+        )
+
+      const types = await getTvdbSeasonTypes(327153, "test-key")
+      expect(types).toHaveLength(2)
+      expect(types.map((t) => t.type)).toEqual(["official", "dvd"])
     })
   })
 })
