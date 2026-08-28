@@ -10,7 +10,8 @@ import {
   posterUrl,
   resolveRequestApiKey,
 } from "@/lib/tmdb"
-import { enrichVideosWithTvdb, getTvdbEpisodes, getTvdbSeriesId, formatTvdbImageUrl } from "@/lib/tvdb"
+import { enrichVideosWithTvdb } from "@/lib/tvdb"
+import { buildVideosFromGroups, buildVideosFromTvdb, resolveSeasonNumbers, seasonNumberForGroup } from "@/lib/episode-ordering"
 
 interface PreviewVideo {
   id: string
@@ -79,32 +80,13 @@ export async function GET(req: NextRequest) {
     const videos: PreviewVideo[] = []
     let groupDetails: TMDBEpisodeGroupDetails | null = null
 
-    // TVDB ordering sentinel
+    // TVDB ordering sentinel (shared helper) — fallback silenzioso a standard
     if (episodeGroupId === "tvdb") {
-      if (tvdbApiKey) {
-        try {
-          let tvdbSeriesId: number | null = null
-          if (imdbId) tvdbSeriesId = await getTvdbSeriesId(imdbId, tvdbApiKey)
-          if (!tvdbSeriesId && tmdbId) tvdbSeriesId = await getTvdbSeriesId(String(tmdbId), tvdbApiKey)
-          if (tvdbSeriesId) {
-            const tvdbEps = await getTvdbEpisodes(tvdbSeriesId, "ita", tvdbApiKey)
-            const sortedTvdb = [...tvdbEps].sort((a, b) => a.seasonNumber - b.seasonNumber || a.number - b.number)
-            for (const ep of sortedTvdb) {
-              if (typeof ep.seasonNumber !== "number" || typeof ep.number !== "number") continue
-              videos.push({
-                id: `${primaryId}:${ep.seasonNumber}:${ep.number}`,
-                name: ep.name || `Episodio ${ep.number}`,
-                season: ep.seasonNumber,
-                episode: ep.number,
-                overview: ep.overview || undefined,
-                thumbnail: formatTvdbImageUrl(ep.image) || undefined,
-                released: ep.aired ? `${ep.aired}T00:00:00.000Z` : undefined,
-              })
-            }
-          }
-        } catch {
-          // fallback silenzioso a TMDB standard
-        }
+      try {
+        const tvdbVideos = await buildVideosFromTvdb(imdbId, tmdbId, primaryId, tvdbApiKey || "")
+        if (tvdbVideos.length > 0) videos.push(...(tvdbVideos as unknown as PreviewVideo[]))
+      } catch {
+        // fallback silenzioso a TMDB standard
       }
     }
 
@@ -113,41 +95,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (groupDetails?.groups && groupDetails.groups.length > 0) {
-      const nonEmptyGroups = groupDetails.groups.filter((g) => g.episodes && g.episodes.length > 0)
-      const groupsForMeta = nonEmptyGroups.length > 0 ? nonEmptyGroups : groupDetails.groups
-      const sortedGroups = [...groupsForMeta].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
-      const hasZeroGroupOrder = sortedGroups.some((g) => g.order === 0)
-      const hasSpecialsGroup = sortedGroups.some((g) => g.name?.toLowerCase().includes("special"))
-      for (let gIdx = 0; gIdx < sortedGroups.length; gIdx++) {
-        const grp = sortedGroups[gIdx]
-        let seasonNumber: number
-        if (typeof grp.order === "number") {
-          if (hasSpecialsGroup && grp.name?.toLowerCase().includes("special") && grp.order === 0) {
-            seasonNumber = 0
-          } else if (hasZeroGroupOrder) {
-            seasonNumber = hasSpecialsGroup ? grp.order : grp.order + 1
-          } else {
-            seasonNumber = grp.order
-          }
-        } else {
-          seasonNumber = gIdx + 1
-        }
-        const sortedEpisodes = [...(grp.episodes || [])].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
-        for (let epIdx = 0; epIdx < sortedEpisodes.length; epIdx++) {
-          const ep = sortedEpisodes[epIdx]
-          const episodeNumber = typeof ep.order === "number" ? ep.order + 1 : epIdx + 1
-          videos.push({
-            id: `${primaryId}:${seasonNumber}:${episodeNumber}`,
-            name: ep.name || `Episodio ${episodeNumber}`,
-            season: seasonNumber,
-            episode: episodeNumber,
-            overview: ep.overview || undefined,
-            thumbnail: ep.still_path ? posterUrl(ep.still_path, "w500") : undefined,
-            released: ep.air_date ? `${ep.air_date}T00:00:00.000Z` : undefined,
-            rating: ep.vote_average ? ep.vote_average.toFixed(1) : undefined,
-          })
-        }
-      }
+      videos.push(...(buildVideosFromGroups(groupDetails, primaryId) as unknown as PreviewVideo[]))
     }
 
     // Fallback standard
@@ -192,23 +140,11 @@ export async function GET(req: NextRequest) {
         }
       }
     }
-    // per groupDetails usa il nome del gruppo
+    // per groupDetails usa il nome del gruppo (shared helper per season number)
     if (groupDetails?.groups) {
+      const { sorted, hasZero, hasSpecials } = resolveSeasonNumbers(groupDetails.groups)
       for (const g of groupDetails.groups) {
-        const derivedSeason = (() => {
-          const sortedGroups = [...groupDetails!.groups].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
-          const hasZero = sortedGroups.some((x) => x.order === 0)
-          const hasSpecial = sortedGroups.some((x) => x.name?.toLowerCase().includes("special"))
-          let sn: number
-          if (typeof g.order === "number") {
-            if (hasSpecial && g.name?.toLowerCase().includes("special") && g.order === 0) sn = 0
-            else if (hasZero) sn = hasSpecial ? g.order : g.order + 1
-            else sn = g.order
-          } else {
-            sn = sortedGroups.indexOf(g) + 1
-          }
-          return sn
-        })()
+        const derivedSeason = seasonNumberForGroup(g, sorted.indexOf(g), sorted, hasZero, hasSpecials)
         if (!seasonMetaMap.has(derivedSeason)) {
           seasonMetaMap.set(derivedSeason, { name: g.name || `Stagione ${derivedSeason}` })
         }

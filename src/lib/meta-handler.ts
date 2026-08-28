@@ -21,7 +21,8 @@ import {
 } from "@/lib/tmdb"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
-import { enrichVideosWithTvdb, getTvdbEpisodes, getTvdbSeriesId, formatTvdbImageUrl } from "@/lib/tvdb"
+import { enrichVideosWithTvdb } from "@/lib/tvdb"
+import { buildVideosFromGroups, buildVideosFromTvdb } from "@/lib/episode-ordering"
 import { createLogger } from "@/lib/logger"
 
 const log = createLogger("meta")
@@ -267,32 +268,13 @@ export async function posteriumMeta(
       videos = []
       const mapping = await getById("tv", tmdbId)
 
-      // TVDB ordering sentinel: costruisce i video direttamente da TheTVDB
+      // TVDB ordering sentinel (shared helper) — fallback silenzioso a standard se chiave assente/fallisce
       if (mapping?.episodeGroupId === "tvdb") {
-        if (tvdbApiKey) {
-          try {
-            let tvdbSeriesId: number | null = null
-            if (imdbId) tvdbSeriesId = await getTvdbSeriesId(imdbId, tvdbApiKey)
-            if (!tvdbSeriesId && tmdbId) tvdbSeriesId = await getTvdbSeriesId(String(tmdbId), tvdbApiKey)
-            if (tvdbSeriesId) {
-              const tvdbEps = await getTvdbEpisodes(tvdbSeriesId, "ita", tvdbApiKey)
-              const sortedTvdb = [...tvdbEps].sort((a, b) => a.seasonNumber - b.seasonNumber || a.number - b.number)
-              for (const ep of sortedTvdb) {
-                if (typeof ep.seasonNumber !== "number" || typeof ep.number !== "number") continue
-                videos.push({
-                  id: `${primaryId}:${ep.seasonNumber}:${ep.number}`,
-                  name: ep.name || `Episodio ${ep.number}`,
-                  season: ep.seasonNumber,
-                  episode: ep.number,
-                  overview: ep.overview || undefined,
-                  thumbnail: formatTvdbImageUrl(ep.image) || undefined,
-                  released: ep.aired ? `${ep.aired}T00:00:00.000Z` : undefined,
-                })
-              }
-            }
-          } catch (e) {
-            log.warn("TVDB ordering failed, fallback to standard", { error: e instanceof Error ? e.message : String(e) })
-          }
+        try {
+          const tvdbVideos = await buildVideosFromTvdb(imdbId, tmdbId, primaryId, tvdbApiKey || "")
+          if (tvdbVideos.length > 0) videos.push(...(tvdbVideos as StremioVideo[]))
+        } catch (e) {
+          log.warn("TVDB ordering failed, fallback to standard", { error: e instanceof Error ? e.message : String(e) })
         }
       }
 
@@ -305,47 +287,7 @@ export async function posteriumMeta(
       }
 
       if (groupDetails?.groups && groupDetails.groups.length > 0) {
-        // Filtra gruppi vuoti (es. Chapter Arc con 3 parti vuote su 6) per non creare stagioni vuote
-        const nonEmptyGroups = groupDetails.groups.filter((g) => g.episodes && g.episodes.length > 0)
-        const groupsForMeta = nonEmptyGroups.length > 0 ? nonEmptyGroups : groupDetails.groups
-        const sortedGroups = [...groupsForMeta].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
-        // TMDB gruppi hanno order 1-indexed in molti casi (es. Netflix Collections 1..6) ma
-        // 0-indexed in altri (es. 0..4). Rileva in base alla presenza di uno 0: se c'è
-        // uno 0, tutti i valori sono 0-based e va aggiunto +1, altrimenti sono già 1-based.
-        // Eccezione: se c'è un gruppo "Specials" a order 0, quello va mappato a stagione 0
-        // (Stremio season 0 = Specials), non a 1 — altrimenti Re:ZERO shifta tutto di 1.
-        const hasZeroGroupOrder = sortedGroups.some((g) => g.order === 0)
-        const hasSpecialsGroup = sortedGroups.some((g) => g.name?.toLowerCase().includes("special"))
-        for (let gIdx = 0; gIdx < sortedGroups.length; gIdx++) {
-          const grp = sortedGroups[gIdx]
-          let seasonNumber: number
-          if (typeof grp.order === "number") {
-            if (hasSpecialsGroup && grp.name?.toLowerCase().includes("special") && grp.order === 0) {
-              seasonNumber = 0
-            } else if (hasZeroGroupOrder) {
-              seasonNumber = hasSpecialsGroup ? grp.order : grp.order + 1
-            } else {
-              seasonNumber = grp.order
-            }
-          } else {
-            seasonNumber = gIdx + 1
-          }
-          const sortedEpisodes = [...(grp.episodes || [])].sort((a, b) => (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0))
-          for (let epIdx = 0; epIdx < sortedEpisodes.length; epIdx++) {
-            const ep = sortedEpisodes[epIdx]
-            const episodeNumber = typeof ep.order === "number" ? ep.order + 1 : epIdx + 1
-            videos.push({
-              id: `${primaryId}:${seasonNumber}:${episodeNumber}`,
-              name: ep.name || `Episodio ${episodeNumber}`,
-              season: seasonNumber,
-              episode: episodeNumber,
-              overview: ep.overview || undefined,
-              thumbnail: ep.still_path ? posterUrl(ep.still_path, "w500") : undefined,
-              released: ep.air_date ? `${ep.air_date}T00:00:00.000Z` : undefined,
-              rating: ep.vote_average ? ep.vote_average.toFixed(1) : undefined,
-            })
-          }
-        }
+        videos.push(...(buildVideosFromGroups(groupDetails, primaryId) as StremioVideo[]))
       }
 
       // Fallback alle stagioni standard se non ci sono Episode Groups alternativi

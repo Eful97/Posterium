@@ -280,6 +280,7 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | `POSTERIUM_CACHE_MAX_MB` | `150` | Memoria RAM massima per la cache dei poster in memoria (MB). |
 | `POSTERIUM_SELF_WARMUP` | `1` | Preriscaldamento automatico dei cataloghi all'avvio (`0` per disattivare). |
 | `POSTERIUM_BEST_FIT_ENABLED` | *Auto* | Forza attivazione (`1`) o disattivazione (`0`) globale di Best-Fit. |
+| `POSTERIUM_TRUST_PROXY` | `0` | Imposta a `1` se dietro Cloudflare/HF/Nginx per sbloccare `x-forwarded-for`/`cf-connecting-ip` nel rate-limit (evita throttle condiviso su istanze pubbliche). |
 
 ### 🎨 Stili Predefiniti per i Cataloghi
 I poster dei cataloghi Stremio utilizzano i valori di default dell'istanza. Su istanze personali puoi configurarli anche via env:

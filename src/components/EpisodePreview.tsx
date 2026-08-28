@@ -137,10 +137,14 @@ export function EpisodePreview() {
         </div>
       )}
 
+      {episodeGroupId === "tvdb" && !tvdbApiKey && (
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2">
+          <p className="text-[11px] text-amber-300">⚠️ Chiave TVDB mancante — inseriscila in Impostazioni. Anteprima in fallback su Standard TMDB.</p>
+        </div>
+      )}
+
       {!loading && !error && data && data.seasons.length === 0 && (
-        <p className="text-[11px] text-zinc-500 text-center py-4 italic">
-          {episodeGroupId === "tvdb" && !tvdbApiKey ? "Chiave TVDB mancante — inseriscila in Impostazioni per usare l'ordinamento TVDB." : "Nessun episodio disponibile per questa configurazione."}
-        </p>
+        <p className="text-[11px] text-zinc-500 text-center py-4 italic">Nessun episodio disponibile per questa configurazione.</p>
       )}
 
       {!loading && !error && data && data.seasons.length > 0 && (

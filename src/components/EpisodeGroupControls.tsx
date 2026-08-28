@@ -59,6 +59,11 @@ export function EpisodeGroupControls() {
 
   const handleSaveEpisodeGroup = async () => {
     if (!selected) return
+    if (ed.episodeGroupId === "tvdb" && !tvdbApiKey) {
+      const { toast } = await import("sonner")
+      toast("Chiave TVDB mancante — imposta la chiave in Impostazioni o scegli Standard TMDB")
+      return
+    }
 
     setSaving(true)
     try {
