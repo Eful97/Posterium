@@ -63,7 +63,7 @@ export function EpisodePreview() {
     }
     if (tvdbApiKey) params.set("tvdb_key", tvdbApiKey)
     // per l'anteprima TVDB mostra sempre thumbnail TVDB se disponibile
-    if (episodeGroupId === "tvdb") params.set("source", "tvdb")
+    if (episodeGroupId === "tvdb" || episodeGroupId?.startsWith("tvdb:")) params.set("source", "tvdb")
 
     fetch(`/api/preview/episodes?${params.toString()}`, {
       headers: tmdbKey ? { "x-api-key": tmdbKey } : undefined,
@@ -121,7 +121,7 @@ export function EpisodePreview() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-12 rounded-lg skeleton-shimmer" />
           ))}
-          <p className="text-[11px] text-zinc-500 text-center py-1">Carico episodi da {episodeGroupId === "tvdb" ? "TheTVDB" : "TMDB"}…</p>
+          <p className="text-[11px] text-zinc-500 text-center py-1">Carico episodi da {(episodeGroupId === "tvdb" || episodeGroupId?.startsWith("tvdb:")) ? "TheTVDB" : "TMDB"}…</p>
         </div>
       )}
 
@@ -131,7 +131,7 @@ export function EpisodePreview() {
         </div>
       )}
 
-      {episodeGroupId === "tvdb" && !tvdbApiKey && (
+      {(episodeGroupId === "tvdb" || episodeGroupId?.startsWith("tvdb:")) && !tvdbApiKey && (
         <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2">
           <p className="text-[11px] text-amber-300">⚠️ Chiave TVDB mancante — inseriscila in Impostazioni. Anteprima in fallback su Standard TMDB.</p>
         </div>

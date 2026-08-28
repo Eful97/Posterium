@@ -19,6 +19,7 @@ export function EpisodeGroupControls() {
   const ed = usePosterEditor()
 
   const [epGroups, setEpGroups] = useState<{ id: string; name: string; group_count: number; episode_count: number }[]>([])
+  const [tvdbSeasonTypes, setTvdbSeasonTypes] = useState<{ type: string; name: string }[]>([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -48,6 +49,37 @@ export function EpisodeGroupControls() {
     return () => { active = false }
   }, [selected, tmdbKey])
 
+  // TVDB seasonTypes per mostrare tutti gli ordinamenti (La Casa de Papel ha 2)
+  useEffect(() => {
+    if (!selected || selected.media_type !== "tv" || !tvdbApiKey) {
+      setTvdbSeasonTypes([])
+      return
+    }
+    let active = true
+    // prova con tmdbId e con imdb se disponibile (La Casa de Papel ha entrambi)
+    const candidates = [String(selected.id), selected.imdb_id].filter(Boolean) as string[]
+    // usa il primo che ritorna risultati
+    const fetchOne = (id: string) =>
+      fetch(`/api/tvdb/${encodeURIComponent(id)}/seasonTypes`, {
+        headers: { "x-api-key": tvdbApiKey },
+      })
+        .then((r) => r.json())
+        .then((d) => (Array.isArray(d.results) ? d.results : []))
+        .catch(() => [])
+
+    ;(async () => {
+      for (const cid of candidates) {
+        const res = await fetchOne(cid)
+        if (active && res.length > 0) {
+          setTvdbSeasonTypes(res)
+          return
+        }
+      }
+      if (active) setTvdbSeasonTypes([])
+    })()
+    return () => { active = false }
+  }, [selected, tvdbApiKey])
+
   // Reset "saved" feedback after 2s
   useEffect(() => {
     if (!saved) return
@@ -59,7 +91,7 @@ export function EpisodeGroupControls() {
 
   const handleSaveEpisodeGroup = async () => {
     if (!selected) return
-    if (ed.episodeGroupId === "tvdb" && !tvdbApiKey) {
+    if ((ed.episodeGroupId === "tvdb" || ed.episodeGroupId?.startsWith("tvdb:")) && !tvdbApiKey) {
       const { toast } = await import("sonner")
       toast("Chiave TVDB mancante — imposta la chiave in Impostazioni o scegli Standard TMDB")
       return
@@ -156,27 +188,57 @@ export function EpisodeGroupControls() {
             {(!ed.episodeGroupId || ed.episodeGroupId === "standard") && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
           </button>
 
-          <button
-            type="button"
-            onClick={() => tvdbApiKey && ed.setEpisodeGroupId("tvdb")}
-            disabled={!tvdbApiKey}
-            title={!tvdbApiKey ? "Richiede chiave TVDB nelle Impostazioni" : undefined}
-            className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between ${
-              !tvdbApiKey ? "opacity-50 cursor-not-allowed bg-surface2/20 text-zinc-500 border-white/5" : "cursor-pointer"
-            } ${
-              ed.episodeGroupId === "tvdb"
-                ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
-                : tvdbApiKey
-                  ? "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
-                  : ""
-            }`}
-          >
-            <div className="flex flex-col">
-              <span>🗄️ TheTVDB (Aired Order)</span>
-              <span className="text-[10px] text-zinc-400">{tvdbApiKey ? "Ordinamento TVDB con thumbnail TVDB" : "Richiede chiave TVDB nelle impostazioni"}</span>
-            </div>
-            {ed.episodeGroupId === "tvdb" && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
-          </button>
+          {!tvdbApiKey ? (
+            <button
+              type="button"
+              disabled
+              title="Richiede chiave TVDB nelle Impostazioni"
+              className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] border bg-surface2/20 text-zinc-500 border-white/5 opacity-50 cursor-not-allowed flex items-center justify-between"
+            >
+              <div className="flex flex-col">
+                <span>🗄️ TheTVDB</span>
+                <span className="text-[10px] text-zinc-400">Richiede chiave TVDB nelle impostazioni</span>
+              </div>
+            </button>
+          ) : tvdbSeasonTypes.length === 0 ? (
+            <button
+              type="button"
+              onClick={() => ed.setEpisodeGroupId("tvdb")}
+              className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between cursor-pointer ${
+                ed.episodeGroupId === "tvdb" || ed.episodeGroupId?.startsWith("tvdb:")
+                  ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
+                  : "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
+              }`}
+            >
+              <div className="flex flex-col">
+                <span>🗄️ TheTVDB (Aired Order)</span>
+                <span className="text-[10px] text-zinc-400">Ordinamento TVDB — caricamento tipi…</span>
+              </div>
+              {(ed.episodeGroupId === "tvdb" || ed.episodeGroupId?.startsWith("tvdb:")) && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
+            </button>
+          ) : (
+            tvdbSeasonTypes.map((st) => {
+              const sentinel = `tvdb:${st.type}`
+              const isSelected = ed.episodeGroupId === sentinel || (ed.episodeGroupId === "tvdb" && st.type === "default")
+              const label = st.name === st.type ? st.type : `${st.name} (${st.type})`
+              return (
+                <button
+                  type="button"
+                  key={st.type}
+                  onClick={() => ed.setEpisodeGroupId(sentinel)}
+                  className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between cursor-pointer ${
+                    isSelected ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold" : "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
+                  }`}
+                >
+                  <div className="flex flex-col">
+                    <span>🗄️ TheTVDB — {label}</span>
+                    <span className="text-[10px] text-zinc-400">Ordinamento TVDB {st.type}</span>
+                  </div>
+                  {isSelected && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
+                </button>
+              )
+            })
+          )}
 
           <button
             type="button"

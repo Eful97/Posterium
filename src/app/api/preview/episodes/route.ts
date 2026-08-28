@@ -80,10 +80,12 @@ export async function GET(req: NextRequest) {
     const videos: PreviewVideo[] = []
     let groupDetails: TMDBEpisodeGroupDetails | null = null
 
-    // TVDB / AniZip ordering sentinel (shared helper) — fallback silenzioso a standard
-    if (episodeGroupId === "tvdb") {
+    // TVDB / AniZip ordering sentinel (shared helper) — supporta tvdb:<seasonType>
+    const isTvdbPreview = episodeGroupId === "tvdb" || (episodeGroupId?.startsWith("tvdb:") ?? false)
+    if (isTvdbPreview) {
+      const seasonType = episodeGroupId === "tvdb" ? "default" : (episodeGroupId!.slice(5) || "default")
       try {
-        const tvdbVideos = await buildVideosFromTvdb(imdbId, tmdbId, primaryId, tvdbApiKey || "")
+        const tvdbVideos = await buildVideosFromTvdb(imdbId, tmdbId, primaryId, tvdbApiKey || "", seasonType)
         if (tvdbVideos.length > 0) videos.push(...(tvdbVideos as unknown as PreviewVideo[]))
       } catch {
         // fallback silenzioso a TMDB standard
@@ -97,8 +99,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (videos.length === 0 && episodeGroupId && episodeGroupId !== "standard" && episodeGroupId !== "tvdb" && episodeGroupId !== "anizip") {
-      groupDetails = await getTVEpisodeGroup(episodeGroupId, language, apiKey)
+    const isGroupPreview = episodeGroupId !== null && episodeGroupId !== "standard" && !isTvdbPreview && episodeGroupId !== "anizip"
+    if (videos.length === 0 && isGroupPreview) {
+      groupDetails = await getTVEpisodeGroup(episodeGroupId!, language, apiKey)
     }
 
     if (groupDetails?.groups && groupDetails.groups.length > 0) {
@@ -126,7 +129,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (videos.length > 0 && episodeMetadataSource === "tvdb" && tvdbApiKey && episodeGroupId !== "tvdb") {
+    const isTvdbPreviewForEnrich = episodeGroupId === "tvdb" || (episodeGroupId?.startsWith("tvdb:") ?? false)
+    if (videos.length > 0 && episodeMetadataSource === "tvdb" && tvdbApiKey && !isTvdbPreviewForEnrich) {
       await enrichVideosWithTvdb(videos as unknown as import("@/lib/meta-handler").StremioVideo[], imdbId, tmdbId, tvdbApiKey, "ita")
     }
 

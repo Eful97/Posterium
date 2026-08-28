@@ -268,15 +268,18 @@ export async function posteriumMeta(
       videos = []
       const mapping = await getById("tv", tmdbId)
 
-      // TVDB ordering sentinel (shared helper) — fallback silenzioso a standard se chiave assente/fallisce
-      if (mapping?.episodeGroupId === "tvdb") {
+      // TVDB / AniZip ordering sentinel (shared helper) — supporta tvdb:<seasonType>
+      const sentinel = mapping?.episodeGroupId || null
+      const isTvdbSentinel = sentinel === "tvdb" || (sentinel?.startsWith("tvdb:") ?? false)
+      if (isTvdbSentinel) {
+        const seasonType = sentinel === "tvdb" ? "default" : (sentinel!.slice(5) || "default")
         try {
-          const tvdbVideos = await buildVideosFromTvdb(imdbId, tmdbId, primaryId, tvdbApiKey || "")
+          const tvdbVideos = await buildVideosFromTvdb(imdbId, tmdbId, primaryId, tvdbApiKey || "", seasonType)
           if (tvdbVideos.length > 0) videos.push(...(tvdbVideos as StremioVideo[]))
         } catch (e) {
           log.warn("TVDB ordering failed, fallback to standard", { error: e instanceof Error ? e.message : String(e) })
         }
-      } else if (mapping?.episodeGroupId === "anizip") {
+      } else if (sentinel === "anizip") {
         try {
           const anizipVideos = await buildVideosFromAnizip(tmdbId, primaryId)
           if (anizipVideos.length > 0) videos.push(...(anizipVideos as StremioVideo[]))
@@ -286,11 +289,12 @@ export async function posteriumMeta(
       }
 
       let groupDetails: TMDBEpisodeGroupDetails | null = null
+      const isGroupSentinel = sentinel !== null && sentinel !== "standard" && !isTvdbSentinel && sentinel !== "anizip"
 
       // Default: stagioni standard TMDB. Si usa un Episode Group solo se
-      // l'utente ha salvato esplicitamente un episodeGroupId diverso da "standard", "tvdb" e "anizip".
-      if (videos.length === 0 && mapping?.episodeGroupId && mapping.episodeGroupId !== "standard" && mapping.episodeGroupId !== "tvdb" && mapping.episodeGroupId !== "anizip") {
-        groupDetails = await getTVEpisodeGroup(mapping.episodeGroupId, "it-IT", apiKey)
+      // l'utente ha salvato esplicitamente un episodeGroupId diverso da "standard", "tvdb:*" e "anizip".
+      if (videos.length === 0 && isGroupSentinel) {
+        groupDetails = await getTVEpisodeGroup(sentinel!, "it-IT", apiKey)
       }
 
       if (groupDetails?.groups && groupDetails.groups.length > 0) {
@@ -321,7 +325,8 @@ export async function posteriumMeta(
 
       // Se la fonte metadati episodi è TVDB ed è presente una chiave TVDB, arricchisci con copertine e trame TVDB
       // Skip se già ordinato via TVDB (dati già TVDB nativi)
-      if (videos.length > 0 && episodeMetadataSource === "tvdb" && tvdbApiKey && mapping?.episodeGroupId !== "tvdb") {
+      const isTvdbOrdering = (mapping?.episodeGroupId === "tvdb" || (mapping?.episodeGroupId?.startsWith("tvdb:") ?? false))
+      if (videos.length > 0 && episodeMetadataSource === "tvdb" && tvdbApiKey && !isTvdbOrdering) {
         await enrichVideosWithTvdb(videos, imdbId, tmdbId, tvdbApiKey, "ita")
       }
     }

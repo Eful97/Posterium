@@ -20,11 +20,15 @@ const inflightTokens = new Map<string, Promise<string | null>>()
 // Remote ID cache: (es. tt6468322 -> tvdbId)
 const remoteIdCache = new Map<string, { tvdbId: number; expiry: number }>()
 
-// Episodes cache: (tvdbId:lang -> TvdbEpisode[])
+// Episodes cache: (tvdbId:lang:seasonType -> TvdbEpisode[])
 const episodesCache = new Map<string, { episodes: TvdbEpisode[]; expiry: number }>()
+
+// SeasonTypes cache: (tvdbId -> TvdbSeasonType[])
+const seasonTypesCache = new Map<string, { types: TvdbSeasonType[]; expiry: number }>()
 
 const CACHE_TTL_REMOTE = 24 * 60 * 60 * 1000 // 24 ore
 const CACHE_TTL_EPISODES = 6 * 60 * 60 * 1000 // 6 ore
+const CACHE_TTL_SEASONTYPES = 24 * 60 * 60 * 1000 // 24 ore
 
 const MAX_TOKEN_ENTRIES = 50
 const MAX_REMOTE_ENTRIES = 1000
@@ -48,6 +52,14 @@ export function clearTvdbCache(): void {
   inflightTokens.clear()
   remoteIdCache.clear()
   episodesCache.clear()
+  seasonTypesCache.clear()
+}
+
+export interface TvdbSeasonType {
+  id: number
+  name: string
+  type: string
+  alternateName?: string | null
 }
 
 export interface TvdbEpisode {
@@ -188,10 +200,57 @@ export async function getTvdbSeriesId(remoteId: string, apiKey: string): Promise
 }
 
 /**
+ * Recupera i seasonTypes disponibili per una serie (es. official, dvd, absolute, alternative).
+ * Usato per esporre tutti gli ordinamenti TVDB (La Casa de Papel ne ha 2).
+ */
+export async function getTvdbSeasonTypes(tvdbSeriesId: number, apiKey: string): Promise<TvdbSeasonType[]> {
+  const cacheKey = `st:${tvdbSeriesId}`
+  const cached = seasonTypesCache.get(cacheKey)
+  if (cached && Date.now() < cached.expiry) return cached.types
+
+  const token = await getTvdbToken(apiKey)
+  if (!token) return []
+
+  try {
+    const res = await fetch(`${TVDB_BASE}/series/${tvdbSeriesId}/seasonTypes`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) {
+      log.warn("TVDB seasonTypes failed", { status: res.status, tvdbSeriesId })
+      return []
+    }
+    const json = await res.json()
+    const raw: unknown = json?.data
+    const list: TvdbSeasonType[] = Array.isArray(raw)
+      ? raw
+          .map((x) => {
+            const r = x as Record<string, unknown>
+            return {
+              id: Number(r.id),
+              name: String(r.name || r.type || "Order"),
+              type: String(r.type || r.name || "unknown"),
+              alternateName: (r.alternateName as string | null) ?? null,
+            }
+          })
+          .filter((t) => Number.isFinite(t.id) && t.type)
+      : []
+    if (list.length > 0) {
+      setBounded(seasonTypesCache, cacheKey, { types: list, expiry: Date.now() + CACHE_TTL_SEASONTYPES }, 100)
+    }
+    return list
+  } catch (e) {
+    log.error("TVDB seasonTypes exception", { error: e instanceof Error ? e.message : String(e) })
+    return []
+  }
+}
+
+/**
  * Recupera la lista degli episodi con trame e copertine still da TheTVDB.
  */
-export async function getTvdbEpisodes(tvdbSeriesId: number, language = "ita", apiKey: string): Promise<TvdbEpisode[]> {
-  const cacheKey = `${tvdbSeriesId}:${language}`
+export async function getTvdbEpisodes(tvdbSeriesId: number, language = "ita", apiKey: string, seasonType: string = "default"): Promise<TvdbEpisode[]> {
+  const normalizedType = seasonType?.trim() || "default"
+  const cacheKey = `${tvdbSeriesId}:${language}:${normalizedType}`
   const cached = episodesCache.get(cacheKey)
   if (cached && Date.now() < cached.expiry) {
     return cached.episodes
@@ -207,7 +266,7 @@ export async function getTvdbEpisodes(tvdbSeriesId: number, language = "ita", ap
 
     while (hasMore && page < 10) {
       const langSegment = language && language !== "default" ? `/${encodeURIComponent(language)}` : ""
-      const url = `${TVDB_BASE}/series/${tvdbSeriesId}/episodes/default${langSegment}?page=${page}`
+      const url = `${TVDB_BASE}/series/${tvdbSeriesId}/episodes/${encodeURIComponent(normalizedType)}${langSegment}?page=${page}`
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -219,7 +278,7 @@ export async function getTvdbEpisodes(tvdbSeriesId: number, language = "ita", ap
       if (!res.ok) {
         // Se la lingua specifica (es. ita) fallisce o non ha episodi, prova il default
         if (page === 0 && language !== "default") {
-          return getTvdbEpisodes(tvdbSeriesId, "default", apiKey)
+          return getTvdbEpisodes(tvdbSeriesId, "default", apiKey, normalizedType)
         }
         break
       }

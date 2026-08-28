@@ -181,14 +181,15 @@ export async function buildVideosFromTvdb(
   imdbId: string | null,
   tmdbId: number | null,
   primaryId: string,
-  tvdbApiKey: string
+  tvdbApiKey: string,
+  seasonType: string = "default"
 ): Promise<PreviewVideo[]> {
   if (!tvdbApiKey) return []
   let tvdbSeriesId: number | null = null
   if (imdbId) tvdbSeriesId = await getTvdbSeriesId(imdbId, tvdbApiKey)
   if (!tvdbSeriesId && tmdbId) tvdbSeriesId = await getTvdbSeriesId(String(tmdbId), tvdbApiKey)
   if (!tvdbSeriesId) return []
-  const tvdbEps = await getTvdbEpisodes(tvdbSeriesId, "ita", tvdbApiKey)
+  const tvdbEps = await getTvdbEpisodes(tvdbSeriesId, "ita", tvdbApiKey, seasonType)
   const sorted = [...tvdbEps].sort((a, b) => a.seasonNumber - b.seasonNumber || a.number - b.number)
   const videos: PreviewVideo[] = []
   for (const ep of sorted) {
