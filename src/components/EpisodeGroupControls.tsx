@@ -65,8 +65,8 @@ export function EpisodeGroupControls() {
     // prova con imdb prima (più affidabile per TVDB), poi tmdbId
     const candidates = [selected.imdb_id, String(selected.id)].filter(Boolean) as string[]
     const fetchOne = (id: string) =>
-      fetch(`/api/tvdb/${encodeURIComponent(id)}/seasonTypes?tvdb_key=${encodeURIComponent(tvdbApiKey)}`, {
-        headers: { "x-api-key": tvdbApiKey },
+      fetch(`/api/tvdb/${encodeURIComponent(id)}/seasonTypes?tvdb_key=${encodeURIComponent(tvdbApiKey)}&tmdb_key=${encodeURIComponent(tmdbKey || "")}`, {
+        headers: { "x-api-key": tvdbApiKey, "x-tmdb-key": tmdbKey || "" },
       })
         .then(async (r) => {
           const d = await r.json().catch(() => ({ results: [] }))
@@ -94,7 +94,7 @@ export function EpisodeGroupControls() {
       }
     })()
     return () => { active = false }
-  }, [selected?.id, selected?.imdb_id, selected?.media_type, tvdbApiKey])
+  }, [selected?.id, selected?.imdb_id, selected?.media_type, tvdbApiKey, tmdbKey])
 
   // Reset "saved" feedback after 2s
   useEffect(() => {

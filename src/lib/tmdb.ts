@@ -61,6 +61,7 @@ const tmdbImagesResponseSchema = z.object({
 const tmdbExternalIdsSchema = z.object({
   id: z.number().int().positive(),
   imdb_id: z.string().nullable().optional(),
+  tvdb_id: z.number().nullable().optional(),
 }).passthrough()
 
 const tmdbKeywordItemSchema = z.object({
@@ -398,6 +399,7 @@ export function posterUrlOriginal(path: string): string {
 
 export interface TMDBExternalIds {
   imdb_id: string | null
+  tvdb_id?: number | null
 }
 
 export async function getExternalIds(mediaType: "movie" | "tv", id: number, apiKey?: string, signal?: AbortSignal): Promise<TMDBExternalIds> {
