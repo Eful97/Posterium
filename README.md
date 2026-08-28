@@ -89,7 +89,8 @@ pinned: false
   * ✏️ **Rinomina**: Assegna nomi personalizzati ed emoji a qualsiasi catalogo.
   * 🔌 **Attivazione/Disattivazione**: Disabilita i cataloghi che non utilizzi.
   * 🏠 **Selettore Visibilità Home vs Esplora**: Scegli se visualizzare un catalogo nella **Home/Bacheca** di Stremio o mantenerlo accessibile solo nella scheda **Esplora**.
-* **Episodi TMDB o TheTVDB (TVDB)**: Scegli la fonte preferita per immagini e descrizioni degli episodi con traduzioni italiane e fallback automatico.
+* **Episodi TMDB o TheTVDB (TVDB)**: Scegli la fonte preferita per immagini e descrizioni degli episodi con traduzioni italiane e fallback automatico. Default: **Stagioni Standard TMDB** (ordinamento cronologico ufficiale); gli Episode Groups alternativi (es. Italian/Netflix) sono selezionabili manualmente per titolo.
+* **Anteprima Stagioni & Episodi Live**: Nel pannello `📺 Stagioni` dell'editor, anteprima immediata delle stagioni/episodi che Stremio riceverà su `/meta` — gruppi per stagione, thumbnail, titolo, `S:E`, air date e voto, aggiornata al cambio ordinamento senza salvare. Endpoint `GET /api/preview/episodes?tmdbId=&episodeGroupId=`.
 * **Ricerca Globale Stremio**: Cerca qualsiasi titolo direttamente dalla barra di ricerca di Stremio su Smart TV, PC e smartphone: Posterium genererà al volo i poster personalizzati per ogni risultato.
 * **Addon Proxy Stremio**: Incolla il link `manifest.json` di qualsiasi altro addon Stremio per arricchire istantaneamente tutti i suoi poster con il tuo stile grafico.
 
