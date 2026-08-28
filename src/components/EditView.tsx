@@ -165,6 +165,12 @@ export default function EditView() {
     ...(selected?.media_type === "tv" ? [{ key: "stagioni", label: t("ui.seasons") || "Stagioni" }] : []),
   ]
 
+  useEffect(() => {
+    if (!rightTabs.some((tab) => tab.key === activeRightTab)) {
+      setActiveRightTab("logo")
+    }
+  }, [cleanPoster, selectedLogo, selected?.media_type, activeRightTab])
+
   return (
     <div>
       {selected && (
@@ -250,7 +256,7 @@ export default function EditView() {
           <div className="editor-workspace w-full px-2 sm:px-4 md:px-6 lg:h-[clamp(660px,calc(100dvh-260px),830px)] lg:min-h-0">
 
             {/* LEFT: Poster */}
-            <div className={mobileSection === "poster" ? "block w-full" : "hidden lg:block h-full"}>
+            <div className={mobileSection === "poster" ? "block w-full" : "hidden lg:block h-full min-w-0"}>
               <EditorPanel className="animate-fade-scale-in-panel-left h-full" aria-label={`${selected?.title || ""} — Poster selection`} title={t("ui.posterAvailable")} headerRight={<span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/10 tabular-nums">{posters.length}</span>}>
                 {loadingImages ? (
                   <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 rounded-lg skeleton-shimmer" />)}</div>
@@ -261,7 +267,7 @@ export default function EditView() {
             </div>
 
             {/* CENTER: Preview */}
-            <div className={mobileSection === "preview" ? "block w-full" : "hidden lg:block h-full"}>
+            <div className={mobileSection === "preview" ? "block w-full" : "hidden lg:block h-full min-w-0"}>
               <EditorPanel className="animate-fade-scale-in h-full" title={<><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 align-middle shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />{t("ui.previewLive")}</>} footer={
                 previewPoster && selected ? (
                   <div className="flex flex-wrap items-center justify-center gap-2">
@@ -365,7 +371,7 @@ export default function EditView() {
             </div>
 
             {/* RIGHT: Edit */}
-            <div className={mobileSection === "customize" ? "block w-full" : "hidden lg:block h-full"}>
+            <div className={mobileSection === "customize" ? "block w-full" : "hidden lg:block h-full min-w-0"}>
               <EditorPanel className="animate-fade-scale-in-panel-right h-full" title={t("ui.customize")} tabs={rightTabs} activeTab={activeRightTab} onTabChange={(k) => setActiveRightTab(k as typeof activeRightTab)}>
                 {selected && (
                   <div className="mb-3 pb-3 border-b border-white/[0.08]">
@@ -391,7 +397,7 @@ export default function EditView() {
                     </div>
                   </div>
                 )}
-                <div key={activeRightTab} className="animate-tab-fade-in space-y-3">
+                <div className="animate-tab-fade-in space-y-3">
                 {activeRightTab === "logo" && <>
                   <LogoOptions logos={logos} selectedLogo={selectedLogo} lang={lang} selectLogo={selectLogo} removeLogo={removeLogo} disabled={!cleanPoster} />
                   {!cleanPoster && <p className="text-xs text-zinc-500 text-center mt-2 px-1">{t("ui.logoHint")}</p>}

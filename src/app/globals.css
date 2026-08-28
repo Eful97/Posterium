@@ -597,7 +597,10 @@ input[type="range"]::-moz-range-thumb {
 
 .editor-panel-header {
   flex-shrink: 0;
-  padding: 1rem 1.125rem;
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.125rem;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.02);
 }
@@ -648,16 +651,11 @@ input[type="range"]::-moz-range-thumb {
 /* Workspace editor: 3 colonne su desktop, colonna singola fluida sotto 1024px */
 .editor-workspace {
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(400px, 540px) minmax(300px, 1fr);
+  grid-template-columns: minmax(280px, 1fr) minmax(340px, 480px) minmax(280px, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 1.25rem;
   align-items: stretch;
   width: 100%;
-}
-
-@media (max-width: 1180px) and (min-width: 1025px) {
-  .editor-workspace {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 @media (max-width: 1024px) {

@@ -40,8 +40,9 @@ export function BadgeStyleSelector<S extends string>({
   accentColor?: string | null
   disabled?: readonly S[]
 }) {
+  const gridCols = options.length <= 3 ? "grid-cols-3" : "grid-cols-3 sm:grid-cols-6"
   return (
-    <div className="flex gap-1 flex-wrap">
+    <div className={`grid ${gridCols} gap-1.5 w-full`}>
       {options.map((s) => {
         const isActive = value === s
         const isDisabled = disabled?.includes(s) ?? false
@@ -50,7 +51,7 @@ export function BadgeStyleSelector<S extends string>({
             key={s}
             type="button"
             onClick={() => !isDisabled && onChange(s)}
-            className={`flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 rounded-lg border transition-all duration-150 ${
+            className={`flex flex-col items-center justify-center gap-0.5 w-full py-1.5 px-1 rounded-lg border transition-all duration-150 ${
               isDisabled
                 ? "bg-white/5 text-zinc-600 cursor-not-allowed opacity-50 border-transparent"
                 : isActive
@@ -59,7 +60,7 @@ export function BadgeStyleSelector<S extends string>({
             }`}
           >
             <BadgePreview style={s} accentColor={accentColor} />
-            <span className="text-[10px] font-semibold leading-tight">
+            <span className="text-[10px] font-semibold leading-tight truncate max-w-full">
               {s === "shadow" ? t("ui.shadow") : s === "pill" ? t("ui.pill") : s === "bar" ? t("ui.bar") : s === "default" ? t("ui.bsDefault") : s === "colored" ? t("ui.colored") : s === "bordo" ? t("ui.bordo") : s === "vetro" ? t("ui.vetro") : s === "netflix" ? t("ui.netflix") : s}
             </span>
           </button>

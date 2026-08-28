@@ -282,6 +282,8 @@
     "ui.heroSubtitle":  "Search for a movie or series, customize badges, logos, and gradients — then save or copy your poster URL.",
     "ui.heroCatalogsCta":  "Browse catalogs",
     "ui.homeBtn":  "Home",
+    "ui.catalogs": "Catalogs",
+    "ui.seasons": "Seasons",
     "ui.catalogsTitle":  "Catalogs",
     "ui.catalogsSubtitle":  "Top 20 JustWatch, streaming platform charts and trending anime",
     "ui.justwatchTop20":  "JustWatch Top 20",

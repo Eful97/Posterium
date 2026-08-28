@@ -329,7 +329,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
 
       {activeClean && hasClean && (
         <>
-          <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {visibleCleanPosters.map((img) => {
               const stagger = idx++
               const inRotation = ed.rotationPosters.includes(img.file_path)
@@ -394,7 +394,7 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
 
       {!activeClean && (
         <>
-          <div className="grid grid-cols-3 2xl:grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {visibleLangImgs.map((img) => {
               const stagger = idx++
               return <PosterBtn key={img.file_path} staggerIndex={stagger} img={img} active={posterActivePath === img.file_path} onSelect={selectPoster} />

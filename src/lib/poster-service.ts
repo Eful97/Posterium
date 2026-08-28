@@ -479,9 +479,12 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     } else {
       left = Math.round((STD_W - safeRankBadgeResult.w) / 2)
     }
-    // Se il badge superiore (extra o ranking centrato) si tocca con logo network o badge qualità,
-    // rimpicciolisci progressivamente il badge finché non si sovrappone più
-    if ((networkLogoResult || safeQualityBadgeResult) && !isBar && !isNetflixRibbon) {
+    // Se il badge superiore (extra o ranking centrato) si tocca con logo network o badge qualità
+    // (solo quando non è stile Netflix e quindi i loghi sono posizionati negli angoli),
+    // rimpicciolisci progressivamente il badge finché non si sovrappone più.
+    const isNetflixBadgePresent = Boolean(finalRankBadge && rankingBadgeStyle === "netflix")
+
+    if (!isNetflixBadgePresent && (networkLogoResult || safeQualityBadgeResult) && !isBar && !isNetflixRibbon) {
       const netPadX = Math.round(18 * STD_W / 380)
       const netPadY = Math.round(18 * STD_H / 570)
 
@@ -571,36 +574,90 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
       left: finalRankLeft,
     })
   }
-  if (networkLogoResult) {
-    const isNetflixRank = finalRankBadge && rankingBadgeStyle === "netflix" && topBadge?.type === "rank"
-    const netPadX = Math.round(18 * STD_W / 380)
-    const netPadY = Math.round(18 * STD_H / 570)
-    let left: number
-    if (isRightRibbon) {
-      // Stremio: logo network ancorato a destra, a sinistra del nastro quando presente
-      left = isNetflixRank
-        ? Math.round(STD_W - finalRankBadge!.w - 10 - networkLogoResult.w)
-        : Math.round(STD_W - netPadX - networkLogoResult.w)
-    } else {
-      left = isNetflixRank ? Math.round(finalRankBadge!.w + 10) : netPadX
-    }
-    composites.push({
-      input: networkLogoResult.png,
-      top: netPadY,
-      left,
-    })
-  }
+  // Posizionamento Network logo & Quality badge:
+  // - Con badge stile Netflix (nastro laterale): mettili in alto CENTRATI (affiancati se entrambi presenti).
+  // - Con gli altri stili: posizionamento standard negli angoli in alto.
+  const isNetflixActive = Boolean(finalRankBadge && rankingBadgeStyle === "netflix")
 
-  if (safeQualityBadgeResult) {
-    const isNetflixRight = rankingBadgeStyle === "netflix" && ribbonSide === "right" && topBadge?.type === "rank"
-    if (!isNetflixRight) {
-      const top = Math.round(18 * STD_H / 570)
-      const left = STD_W - safeQualityBadgeResult.w - Math.round(18 * STD_W / 380)
+  if (isNetflixActive && (networkLogoResult || safeQualityBadgeResult)) {
+    const netPadY = Math.round(18 * STD_H / 570)
+    const spacing = Math.round(8 * STD_W / 500)
+    const ribbonOffset = finalRankBadge ? finalRankBadge.w + Math.round(10 * STD_W / 500) : Math.round(18 * STD_W / 380)
+
+    if (networkLogoResult && safeQualityBadgeResult) {
+      const totalW = networkLogoResult.w + spacing + safeQualityBadgeResult.w
+      const badgeH = Math.max(networkLogoResult.h, safeQualityBadgeResult.h)
+      const idealLeft = Math.round((STD_W - totalW) / 2)
+      const safeLeft = isRightRibbon
+        ? Math.max(Math.round(18 * STD_W / 380), Math.min(STD_W - totalW - ribbonOffset, idealLeft))
+        : Math.max(ribbonOffset, Math.min(STD_W - totalW - Math.round(18 * STD_W / 380), idealLeft))
+
+      composites.push({
+        input: networkLogoResult.png,
+        top: netPadY + Math.round((badgeH - networkLogoResult.h) / 2),
+        left: safeLeft,
+      })
       composites.push({
         input: safeQualityBadgeResult.png,
-        top,
+        top: netPadY + Math.round((badgeH - safeQualityBadgeResult.h) / 2),
+        left: safeLeft + networkLogoResult.w + spacing,
+      })
+    } else if (networkLogoResult) {
+      const idealLeft = Math.round((STD_W - networkLogoResult.w) / 2)
+      const safeLeft = isRightRibbon
+        ? Math.max(Math.round(18 * STD_W / 380), Math.min(STD_W - networkLogoResult.w - ribbonOffset, idealLeft))
+        : Math.max(ribbonOffset, Math.min(STD_W - networkLogoResult.w - Math.round(18 * STD_W / 380), idealLeft))
+
+      composites.push({
+        input: networkLogoResult.png,
+        top: netPadY,
+        left: safeLeft,
+      })
+    } else if (safeQualityBadgeResult) {
+      const idealLeft = Math.round((STD_W - safeQualityBadgeResult.w) / 2)
+      const safeLeft = isRightRibbon
+        ? Math.max(Math.round(18 * STD_W / 380), Math.min(STD_W - safeQualityBadgeResult.w - ribbonOffset, idealLeft))
+        : Math.max(ribbonOffset, Math.min(STD_W - safeQualityBadgeResult.w - Math.round(18 * STD_W / 380), idealLeft))
+
+      composites.push({
+        input: safeQualityBadgeResult.png,
+        top: netPadY,
+        left: safeLeft,
+      })
+    }
+  } else {
+    // Posizionamento standard negli angoli in alto
+    if (networkLogoResult) {
+      const isNetflixRank = finalRankBadge && rankingBadgeStyle === "netflix" && topBadge?.type === "rank"
+      const netPadX = Math.round(18 * STD_W / 380)
+      const netPadY = Math.round(18 * STD_H / 570)
+      let left: number
+      if (isRightRibbon) {
+        // Stremio: logo network ancorato a destra, a sinistra del nastro quando presente
+        left = isNetflixRank
+          ? Math.round(STD_W - finalRankBadge!.w - 10 - networkLogoResult.w)
+          : Math.round(STD_W - netPadX - networkLogoResult.w)
+      } else {
+        left = isNetflixRank ? Math.round(finalRankBadge!.w + 10) : netPadX
+      }
+      composites.push({
+        input: networkLogoResult.png,
+        top: netPadY,
         left,
       })
+    }
+
+    if (safeQualityBadgeResult) {
+      const isNetflixRight = rankingBadgeStyle === "netflix" && ribbonSide === "right" && topBadge?.type === "rank"
+      if (!isNetflixRight) {
+        const top = Math.round(18 * STD_H / 570)
+        const left = STD_W - safeQualityBadgeResult.w - Math.round(18 * STD_W / 380)
+        composites.push({
+          input: safeQualityBadgeResult.png,
+          top,
+          left,
+        })
+      }
     }
   }
 

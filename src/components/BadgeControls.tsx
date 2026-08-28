@@ -201,11 +201,11 @@ export function BadgeControls() {
               <Flame className="w-3.5 h-3.5 text-accent-orange" />
               {t("ui.badgePosition")}
             </span>
-            <div className="flex gap-1 flex-1 max-w-[150px]">
+            <div className="grid grid-cols-2 gap-1 w-36 shrink-0">
               <button
                 type="button"
                 onClick={() => ed.setRibbonSide("left")}
-                className={`flex-1 py-1 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
+                className={`w-full py-1 text-center rounded-lg text-[11px] font-semibold transition-all duration-150 ${
                   ed.ribbonSide === "left"
                     ? "bg-white/20 text-white shadow-sm"
                     : "bg-white/5 text-muted hover:bg-white/10 hover:text-zinc-200"
@@ -216,7 +216,7 @@ export function BadgeControls() {
               <button
                 type="button"
                 onClick={() => ed.setRibbonSide("right")}
-                className={`flex-1 py-1 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
+                className={`w-full py-1 text-center rounded-lg text-[11px] font-semibold transition-all duration-150 ${
                   ed.ribbonSide === "right"
                     ? "bg-white/20 text-white shadow-sm"
                     : "bg-white/5 text-muted hover:bg-white/10 hover:text-zinc-200"
@@ -231,8 +231,8 @@ export function BadgeControls() {
 
       {/* CARD 2: Badge Personalizzato & Classifica */}
       <div className="bg-surface/50 border border-surface2/60 rounded-xl p-3 space-y-3 shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="font-semibold text-zinc-200 flex items-center gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold text-zinc-200 flex items-center gap-1.5 shrink-0">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             {t("ui.customBadge")}
           </span>
@@ -245,7 +245,7 @@ export function BadgeControls() {
               onBlur={() => { const v = editText.trim(); ed.setCustomBadge(v || null); setEditingValue(null) }}
               onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur() } }}
               maxLength={40}
-              className="editor-input w-36 text-right px-2 py-1 font-medium"
+              className="editor-input w-44 max-w-[55%] min-w-0 text-right px-2 py-1 font-medium"
               placeholder={t("ui.customBadgePlaceholder")}
             />
           ) : (
@@ -257,7 +257,7 @@ export function BadgeControls() {
                 else if (v === "__auto__") ed.setCustomBadge(null)
                 else ed.setCustomBadge(v)
               }}
-              className="editor-input max-w-[170px] text-right px-2 py-1 cursor-pointer truncate font-medium"
+              className="editor-input w-44 max-w-[55%] min-w-0 text-right px-2 py-1 cursor-pointer truncate font-medium"
             >
               <option value="__auto__">{t("ui.auto")}</option>
               {(() => {
@@ -337,38 +337,42 @@ export function BadgeControls() {
           accentColor={accentColor}
         />
 
-        <div className="flex items-center gap-2 justify-center pt-2 border-t border-surface2/50">
-          <input
-            type="color"
-            value={effectiveColor.startsWith("#") && effectiveColor.length === 7 ? effectiveColor : "#555555"}
-            onChange={(e) => setAccentColor(e.target.value)}
-            className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded shadow-sm"
-          />
-          <input
-            type="text"
-            value={accentColor || autoAccentColor || ""}
-            onChange={(e) => { const v = e.target.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) setAccentColor(v) }}
-            onBlur={(e) => { if (!/^#[0-9a-fA-F]{6}$/.test(e.target.value)) e.target.value = accentColor || autoAccentColor || "" }}
-            className="editor-input w-24 text-center px-2 py-1 font-mono text-[11px]"
-            placeholder="#555555"
-          />
-          {isCustomColor ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (autoAccentColor) setAccentColor(autoAccentColor)
-                else setAccentColor(null)
-              }}
-              className="text-[11px] text-zinc-400 hover:text-zinc-200 transition-colors px-1.5 py-0.5 rounded bg-surface2/50 border border-surface2 hover:bg-surface2"
-              title="Ripristina colore rilevato automaticamente"
-            >
-              ↺ Reset
-            </button>
-          ) : (
-            <span className="text-[10px] text-zinc-500 italic">
-              {autoAccentColor ? "Auto-rilevato" : t("ui.noDominantColor")}
-            </span>
-          )}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-surface2/50">
+          <div className="flex items-center gap-2 shrink-0">
+            <input
+              type="color"
+              value={effectiveColor.startsWith("#") && effectiveColor.length === 7 ? effectiveColor : "#555555"}
+              onChange={(e) => setAccentColor(e.target.value)}
+              className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded shadow-sm shrink-0"
+            />
+            <input
+              type="text"
+              value={accentColor || autoAccentColor || ""}
+              onChange={(e) => { const v = e.target.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) setAccentColor(v) }}
+              onBlur={(e) => { if (!/^#[0-9a-fA-F]{6}$/.test(e.target.value)) e.target.value = accentColor || autoAccentColor || "" }}
+              className="editor-input w-24 text-center px-2 py-1 font-mono text-[11px] shrink-0"
+              placeholder="#555555"
+            />
+          </div>
+          <div className="shrink-0 flex items-center">
+            {isCustomColor ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (autoAccentColor) setAccentColor(autoAccentColor)
+                  else setAccentColor(null)
+                }}
+                className="text-[11px] text-zinc-400 hover:text-zinc-200 transition-colors px-1.5 py-0.5 rounded bg-surface2/50 border border-surface2 hover:bg-surface2"
+                title="Ripristina colore rilevato automaticamente"
+              >
+                ↺ Reset
+              </button>
+            ) : (
+              <span className="text-[10px] text-zinc-500 italic">
+                {autoAccentColor ? "Auto-rilevato" : t("ui.noDominantColor")}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

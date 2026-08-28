@@ -298,12 +298,12 @@ export function AppShell() {
         <div key={view} className="animate-view-enter">
           {view === "search" ? <SearchView /> : view === "myposters" ? <MyPostersView /> : view === "cataloghi" ? <CataloghiView /> : <EditView />}
         </div>
-        {/* Strip di stato: presente in tutte le viste */}
-        <HomeStatusStrip />
+        {/* Strip di stato: presente nelle viste principali, nascosto in editor poster */}
+        {!(view === "edit" && selected) && <HomeStatusStrip />}
       </div>
 
       {/* Desktop Bottom-Right Utility Cluster */}
-      <div className="hidden lg:flex fixed bottom-5 right-5 z-50 items-center gap-2 floating-group">
+      <div className="hidden md:flex fixed bottom-5 right-5 z-50 items-center gap-2 floating-group">
         <button type="button"
           aria-label={t("ui.refreshLists")}
           onClick={async () => { setRefreshing(true); await refreshLists(); setRefreshing(false) }}
