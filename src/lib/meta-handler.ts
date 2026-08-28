@@ -11,7 +11,6 @@ import {
   getExternalIds,
   getImages,
   getTVSeason,
-  getTVEpisodeGroups,
   getTVEpisodeGroup,
   type TMDBEpisodeGroupDetails,
   posterUrl,
@@ -270,41 +269,10 @@ export async function posteriumMeta(
 
       let groupDetails: TMDBEpisodeGroupDetails | null = null
 
+      // Default: stagioni standard TMDB. Si usa un Episode Group solo se
+      // l'utente ha salvato esplicitamente un episodeGroupId diverso da "standard".
       if (mapping?.episodeGroupId && mapping.episodeGroupId !== "standard") {
         groupDetails = await getTVEpisodeGroup(mapping.episodeGroupId, "it-IT", apiKey)
-      } else if (!mapping?.episodeGroupId) {
-        // Controlla se esistono Episode Groups alternativi (es. Italian Parts, Netflix Order, Digital, ecc.)
-        const epGroups = await getTVEpisodeGroups(tmdbId, apiKey)
-        // Filtra gruppi vuoti (episode_count 0 => selezione inutile, Re:ZERO ne ha 2)
-        const validGroups = epGroups.filter((g) => (g.episode_count ?? 0) > 0 && (g.group_count ?? 0) > 0)
-        const candidatePool = validGroups.length > 0 ? validGroups : epGroups
-        const preferredGroup = candidatePool.find((g) => {
-          const n = (g.name ?? "").toLowerCase()
-          return (n.includes("italian") || n.includes("italia") || n.includes("italy")) && (g.group_count ?? 0) > 1
-        }) || candidatePool.find((g) => {
-          const n = (g.name ?? "").toLowerCase()
-          return (n.includes("part") || n.includes("digital")) && (g.group_count ?? 0) >= 4
-        }) || candidatePool.find((g) => {
-          const n = (g.name ?? "").toLowerCase()
-          return n.includes("netflix") && !n.includes("seasons (edited")
-        }) || candidatePool.find((g) => {
-          const n = (g.name ?? "").toLowerCase()
-          return (n.includes("digital") || n.includes("part") || n.includes("streaming") || (g.type === 1 && (g.group_count ?? 0) > 1))
-        }) || (() => {
-          // Fallback per anime/titoli senza match euristici (Re:ZERO: 8 gruppi,
-          // nessuno matcha sopra → prima fallback a standard 1 stagione con 85 ep.
-          // Scegli il gruppo valido con più episodi e più parti, preferendo
-          // type 6 (Production/Seasons) che di solito è l'ordinamento a stagioni.
-          const sortedByEpisodes = [...candidatePool].sort((a, b) => (b.episode_count ?? 0) - (a.episode_count ?? 0))
-          const prodSeasons = sortedByEpisodes.find((g) => g.type === 6 && (g.group_count ?? 0) > 1)
-          if (prodSeasons) return prodSeasons
-          // altrimenti il più popolato con almeno 2 parti
-          return sortedByEpisodes.find((g) => (g.group_count ?? 0) > 1) || null
-        })()
-
-        if (preferredGroup) {
-          groupDetails = await getTVEpisodeGroup(preferredGroup.id, "it-IT", apiKey)
-        }
       }
 
       if (groupDetails?.groups && groupDetails.groups.length > 0) {

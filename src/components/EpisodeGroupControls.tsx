@@ -122,34 +122,18 @@ export function EpisodeGroupControls() {
         <div className="space-y-1.5">
           <button
             type="button"
-            onClick={() => ed.setEpisodeGroupId(null)}
-            className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between cursor-pointer ${
-              !ed.episodeGroupId
-                ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
-                : "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
-            }`}
-          >
-            <div className="flex flex-col">
-              <span>🪄 Automatico (Italian Parts / Netflix)</span>
-              <span className="text-[10px] text-zinc-400">Rileva l&apos;ordinamento streaming italiano consigliato</span>
-            </div>
-            {!ed.episodeGroupId && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
-          </button>
-
-          <button
-            type="button"
             onClick={() => ed.setEpisodeGroupId("standard")}
             className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between cursor-pointer ${
-              ed.episodeGroupId === "standard"
+              !ed.episodeGroupId || ed.episodeGroupId === "standard"
                 ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
                 : "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
             }`}
           >
             <div className="flex flex-col">
               <span>📺 Stagioni Standard TMDB</span>
-              <span className="text-[10px] text-zinc-400">Ordinamento originale per data di messa in onda</span>
+              <span className="text-[10px] text-zinc-400">Ordinamento originale per data di messa in onda (default)</span>
             </div>
-            {ed.episodeGroupId === "standard" && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
+            {(!ed.episodeGroupId || ed.episodeGroupId === "standard") && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
           </button>
 
           {epGroups.map((g) => {

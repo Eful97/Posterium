@@ -104,8 +104,6 @@ describe("GET /meta/[type]/[id]", () => {
       }))
       // /tv/94997/images
       .mockResolvedValueOnce(Response.json({ logos: [] }))
-      // /tv/94997/episode_groups
-      .mockResolvedValueOnce(Response.json({ results: [] }))
       // /tv/94997/season/1
       .mockResolvedValueOnce(Response.json({
         id: 1234,
@@ -170,6 +168,8 @@ describe("GET /meta/[type]/[id]", () => {
   })
 
   it("supports alternative Netflix Episode Groups (e.g. 5 parts for La Casa de Papel)", async () => {
+    // Default è standard TMDB: l'episode group si usa solo se salvato esplicitamente
+    mockedGetById.mockResolvedValue({ episodeGroupId: "grp_netflix_5" } as unknown as Awaited<ReturnType<typeof getById>>)
     vi.spyOn(globalThis, "fetch")
       // /find/tt6468322
       .mockResolvedValueOnce(Response.json({
@@ -188,12 +188,6 @@ describe("GET /meta/[type]/[id]", () => {
       }))
       // /tv/71446/images
       .mockResolvedValueOnce(Response.json({ logos: [] }))
-      // /tv/71446/episode_groups
-      .mockResolvedValueOnce(Response.json({
-        results: [
-          { id: "grp_netflix_5", name: "Netflix Order", type: 1, group_count: 5 },
-        ],
-      }))
       // /tv/episode_group/grp_netflix_5
       .mockResolvedValueOnce(Response.json({
         id: "grp_netflix_5",
@@ -270,8 +264,6 @@ describe("GET /meta/[type]/[id]", () => {
       }))
       // /tv/1396/images
       .mockResolvedValueOnce(Response.json({ logos: [] }))
-      // /tv/1396/episode_groups
-      .mockResolvedValueOnce(Response.json({ results: [] }))
       // /tv/1396/season/1
       .mockResolvedValueOnce(Response.json({
         id: 1396,

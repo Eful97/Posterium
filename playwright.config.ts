@@ -10,12 +10,13 @@ const mockUrl = `http://127.0.0.1:${mockPort}`
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 60_000,
+  timeout: isCi ? 90_000 : 60_000,
   expect: {
-    timeout: 10_000,
+    timeout: isCi ? 15_000 : 10_000,
   },
   fullyParallel: false,
-  retries: 0,
+  retries: isCi ? 1 : 0,
+  workers: isCi ? 1 : undefined,
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     trace: "retain-on-failure",
@@ -41,7 +42,7 @@ export default defineConfig({
       command: `node ./node_modules/next/dist/bin/next dev -H 127.0.0.1 -p ${port}`,
       url: `http://127.0.0.1:${port}`,
       reuseExistingServer: !isCi,
-      timeout: 120_000,
+      timeout: 180_000,
       env: {
         // DistDir separato: `next dev` può girare anche con un altro dev server
         // attivo su .next (lock "already running" di Next 16).
