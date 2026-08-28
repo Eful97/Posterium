@@ -500,10 +500,11 @@ export async function getTVSeason(tvId: number, seasonNumber: number, language =
 export interface TMDBEpisodeGroupItem {
   id: string
   name: string
-  order: number
-  description: string
-  type: number
-  group_count: number
+  order?: number
+  description?: string
+  type?: number
+  group_count?: number
+  episode_count?: number
 }
 
 export interface TMDBEpisodeGroupsResponse {
