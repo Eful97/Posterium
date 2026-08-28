@@ -20,6 +20,8 @@ export function EpisodeGroupControls() {
 
   const [epGroups, setEpGroups] = useState<{ id: string; name: string; group_count: number; episode_count: number }[]>([])
   const [tvdbSeasonTypes, setTvdbSeasonTypes] = useState<{ type: string; name: string }[]>([])
+  const [tvdbLoading, setTvdbLoading] = useState(false)
+  const [tvdbError, setTvdbError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -53,32 +55,46 @@ export function EpisodeGroupControls() {
   useEffect(() => {
     if (!selected || selected.media_type !== "tv" || !tvdbApiKey) {
       setTvdbSeasonTypes([])
+      setTvdbLoading(false)
+      setTvdbError(null)
       return
     }
     let active = true
-    // prova con tmdbId e con imdb se disponibile (La Casa de Papel ha entrambi)
-    const candidates = [String(selected.id), selected.imdb_id].filter(Boolean) as string[]
-    // usa il primo che ritorna risultati
+    setTvdbLoading(true)
+    setTvdbError(null)
+    // prova con imdb prima (più affidabile per TVDB), poi tmdbId
+    const candidates = [selected.imdb_id, String(selected.id)].filter(Boolean) as string[]
     const fetchOne = (id: string) =>
-      fetch(`/api/tvdb/${encodeURIComponent(id)}/seasonTypes`, {
+      fetch(`/api/tvdb/${encodeURIComponent(id)}/seasonTypes?tvdb_key=${encodeURIComponent(tvdbApiKey)}`, {
         headers: { "x-api-key": tvdbApiKey },
       })
-        .then((r) => r.json())
-        .then((d) => (Array.isArray(d.results) ? d.results : []))
-        .catch(() => [])
+        .then(async (r) => {
+          const d = await r.json().catch(() => ({ results: [] }))
+          if (d?.error && active) setTvdbError(String(d.error))
+          return Array.isArray(d.results) ? d.results : []
+        })
+        .catch((e) => {
+          if (active) setTvdbError(e instanceof Error ? e.message : String(e))
+          return []
+        })
 
     ;(async () => {
       for (const cid of candidates) {
         const res = await fetchOne(cid)
         if (active && res.length > 0) {
           setTvdbSeasonTypes(res)
+          setTvdbLoading(false)
           return
         }
       }
-      if (active) setTvdbSeasonTypes([])
+      if (active) {
+        setTvdbSeasonTypes([])
+        setTvdbLoading(false)
+        if (!tvdbError) setTvdbError(null)
+      }
     })()
     return () => { active = false }
-  }, [selected, tvdbApiKey])
+  }, [selected?.id, selected?.imdb_id, selected?.media_type, tvdbApiKey])
 
   // Reset "saved" feedback after 2s
   useEffect(() => {
@@ -200,22 +216,25 @@ export function EpisodeGroupControls() {
                 <span className="text-[10px] text-zinc-400">Richiede chiave TVDB nelle impostazioni</span>
               </div>
             </button>
-          ) : tvdbSeasonTypes.length === 0 ? (
+          ) : tvdbLoading ? (
             <button
               type="button"
-              onClick={() => ed.setEpisodeGroupId("tvdb")}
-              className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] border transition-all flex items-center justify-between cursor-pointer ${
-                ed.episodeGroupId === "tvdb" || ed.episodeGroupId?.startsWith("tvdb:")
-                  ? "bg-accent-orange/15 text-white border-accent-orange/40 font-semibold"
-                  : "bg-surface2/40 text-zinc-300 border-surface2 hover:bg-surface2 hover:text-white"
-              }`}
+              disabled
+              className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] border bg-surface2/40 text-zinc-400 border-surface2 flex items-center justify-between cursor-wait"
             >
               <div className="flex flex-col">
-                <span>🗄️ TheTVDB (Aired Order)</span>
-                <span className="text-[10px] text-zinc-400">Ordinamento TVDB — caricamento tipi…</span>
+                <span>🗄️ TheTVDB</span>
+                <span className="text-[10px] text-zinc-400">Caricamento tipi TVDB…</span>
               </div>
-              {(ed.episodeGroupId === "tvdb" || ed.episodeGroupId?.startsWith("tvdb:")) && <Check className="w-3.5 h-3.5 text-accent-orange shrink-0" />}
+              <span className="w-3.5 h-3.5 border-2 border-zinc-500 border-t-transparent rounded-full animate-spin shrink-0" />
             </button>
+          ) : tvdbSeasonTypes.length === 0 ? (
+            <div className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] border bg-surface2/20 text-zinc-400 border-white/5">
+              <div className="flex flex-col">
+                <span>🗄️ TheTVDB — nessun tipo trovato</span>
+                <span className="text-[10px] text-zinc-500">{tvdbError ? `Errore: ${tvdbError}` : "Nessun ordinamento alternativo per questa serie. Prova con un'altra serie o verifica la chiave TVDB."}</span>
+              </div>
+            </div>
           ) : (
             tvdbSeasonTypes.map((st) => {
               const sentinel = `tvdb:${st.type}`

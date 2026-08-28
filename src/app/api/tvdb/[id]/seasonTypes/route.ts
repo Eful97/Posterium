@@ -16,23 +16,21 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
   const rawId = (id || "").trim()
   if (!rawId) return Response.json({ error: "Missing id" }, { status: 400 })
 
-  const tvdbKey = req.headers.get("x-api-key") || req.nextUrl.searchParams.get("tvdb_key") || process.env.POSTERIUM_TVDB_API_KEY || process.env.TVDB_API_KEY || ""
-  if (!tvdbKey) return Response.json({ results: [], error: "TVDB key missing" }, { status: 200 })
+  const rawTvdbKey = req.headers.get("x-api-key") || req.nextUrl.searchParams.get("tvdb_key") || process.env.POSTERIUM_TVDB_API_KEY || process.env.TVDB_API_KEY || ""
+  const tvdbKey = rawTvdbKey.trim()
+  if (!tvdbKey) return Response.json({ results: [], error: "TVDB key missing — imposta in Impostazioni" }, { status: 200 })
 
   const cacheKey = `tvdb:seasonTypes:raw${rawId}:ak${hashFragment(tvdbKey)}`
   const cached = cacheGet<{ results: { id: number; name: string; type: string }[] }>(cacheKey)
   if (cached) return Response.json(cached, { headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=3600" } })
 
   try {
-    // rawId è solitamente tmdbId o imdb tt... — risolvi tvdbSeriesId via remoteid
-    // Se è già numerico tvdb, provalo diretto, altrimenti usa search
     let tvdbSeriesId: number | null = null
     const asNum = parseInt(rawId, 10)
-    if (String(asNum) === rawId && asNum > 0) {
-      // prova come tmdb/imdb remoteid prima, fallback diretto
+    const isNumeric = String(asNum) === rawId && asNum > 0
+    if (isNumeric) {
       tvdbSeriesId = await getTvdbSeriesId(rawId, tvdbKey)
       if (!tvdbSeriesId) {
-        // se rawId sembra tvdb (test con seasonTypes diretto)
         const trial = await getTvdbSeasonTypes(asNum, tvdbKey)
         if (trial.length > 0) {
           const body = { results: trial.map((t) => ({ id: t.id, name: t.name, type: t.type })) }
@@ -42,13 +40,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       }
     } else {
       tvdbSeriesId = await getTvdbSeriesId(rawId, tvdbKey)
-      // fallback: se rawId è tt... e non trovato, prova come tmdb string numerica senza tt
-      if (!tvdbSeriesId && /^tt\d+$/i.test(rawId)) {
-        // niente
-      }
     }
     if (!tvdbSeriesId) {
-      // prova a interpretare rawId come tvdb id diretto se numerico
       if (Number.isFinite(asNum) && asNum > 0) {
         const trial = await getTvdbSeasonTypes(asNum, tvdbKey)
         if (trial.length > 0) {
@@ -57,14 +50,23 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
           return Response.json(body, { headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=3600" } })
         }
       }
-      return Response.json({ results: [] }, { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" } })
+      // diagnostica: prova login per capire se chiave è invalida
+      const { getTvdbToken } = await import("@/lib/tvdb")
+      const token = await getTvdbToken(tvdbKey)
+      if (!token) {
+        return Response.json({ results: [], error: "TVDB login fallito — chiave non valida o rete down" }, { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=60" } })
+      }
+      return Response.json({ results: [], error: `Nessuna serie TVDB per id ${rawId}` }, { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" } })
     }
 
     const types = await getTvdbSeasonTypes(tvdbSeriesId, tvdbKey)
+    if (types.length === 0) {
+      return Response.json({ results: [], error: `Nessun seasonType per serie ${tvdbSeriesId}` }, { headers: { "Cache-Control": "public, max-age=600, stale-while-revalidate=600" } })
+    }
     const body = { results: types.map((t) => ({ id: t.id, name: t.name, type: t.type })) }
     cacheSet(cacheKey, body, ["tvdb"], 24 * 60 * 60 * 1000)
     return Response.json(body, { headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=3600" } })
-  } catch {
-    return Response.json({ results: [] }, { status: 200 })
+  } catch (e) {
+    return Response.json({ results: [], error: e instanceof Error ? e.message : String(e) }, { status: 200 })
   }
 }
