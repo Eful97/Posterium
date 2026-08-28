@@ -112,6 +112,30 @@ describe("network-svgs", () => {
     expect(getNetworkSvgResult("Pluto TV")?.networkKey).toBe("pluto")
   })
 
+  it("does NOT match anime false positives", () => {
+    // ABC Animation (Asahi, anime) ≠ ABC USA
+    expect(getNetworkSvgResult("ABC Animation")).toBeNull()
+    expect(getNetworkSvgResult("ABC Animation Studio")).toBeNull()
+    // Nippon Columbia (musica anime) ≠ Columbia Pictures
+    expect(getNetworkSvgResult("Nippon Columbia")).toBeNull()
+    expect(getNetworkSvgResult("Nippon Columbia Co., Ltd.")).toBeNull()
+    // Universal Music ≠ Universal Pictures
+    expect(getNetworkSvgResult("Universal Music Japan")).toBeNull()
+    expect(getNetworkSvgResult("Universal Music")).toBeNull()
+    // Warner Music ≠ Warner Bros.
+    expect(getNetworkSvgResult("Warner Music Japan")).toBeNull()
+    expect(getNetworkSvgResult("Warner Music")).toBeNull()
+    // SKY PerfecTV! (sat giapponese) ≠ Sky EU
+    expect(getNetworkSvgResult("SKY PerfecTV!")).toBeNull()
+    expect(getNetworkSvgResult("SKY PerfecTV")).toBeNull()
+    // Legittimi restano mappati
+    expect(getNetworkSvgResult("Warner Bros.")?.networkKey).toBe("warner")
+    expect(getNetworkSvgResult("Warner Bros. Japan")?.networkKey).toBe("warner")
+    expect(getNetworkSvgResult("Universal Pictures")?.networkKey).toBe("universal")
+    expect(getNetworkSvgResult("Columbia Pictures")?.networkKey).toBe("columbia")
+    expect(getNetworkSvgResult("Columbia Pictures Corporation")?.networkKey).toBe("columbia")
+  })
+
   it("renders PNG buffers for the imported network logos", async () => {
     const cases: [string, string][] = [
       ["Sky", "sky"],

@@ -122,11 +122,16 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("mediaset")) return "mediaset"
   if (lower.includes("tubi")) return "tubi"
   if (lower.includes("pluto")) return "pluto"
+  // Filtro anime: SKY PerfecTV! (sat giapponese) condivide nome con Sky EU ma è servizio diverso.
+  if (lower.includes("sky perfec")) return null
   // NOW è lo stesso servizio di Sky (streaming Sky) → stesso logo, alias a sky.
   // Word boundary per evitare falsi positivi tipo "Skydance".
   // NOW matchato solo quando il nome inizia con "now" (NOW / Now TV), non la parola ovunque
   // (evita falsi positivi tipo "Don't Look Now").
   if (/\bsky\b/.test(lower) || lower === "now" || lower.startsWith("now ")) return "sky"
+  // Filtro anime: ABC Animation (Asahi, produttore anime) condivide sigla con ABC USA.
+  // Escludiamo esplicitamente prima del match ABC per evitare logo ABC USA su poster anime.
+  if (lower.includes("abc animation")) return null
   // Word boundary per evitare falsi positivi: "amc" dentro parole composte,
   // "abc" in sigle/parole, "fx" in titoli tipo "The X-Files" spin-off ecc.
   if (/\bamc\+?\b/.test(lower)) return "amc"
@@ -139,9 +144,12 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("national geographic") || /\bnat\s?geo\b/.test(lower)) return "natgeo"
   if (/\bnbc\b/.test(lower)) return "nbc"
   if (/\bshowtime\b/.test(lower)) return "showtime"
-  if (lower.includes("warner")) return "warner"
-  if (lower.includes("universal")) return "universal"
-  if (lower.includes("columbia")) return "columbia"
+  // Filtro anime: Nippon Columbia (etichetta musicale anime) vs Columbia Pictures.
+  // Solo "columbia pictures" deve mappare a columbia, per evitare logo Columbia su OST anime.
+  if (lower.includes("nippon columbia")) return null
+  if (lower.includes("warner bros")) return "warner"
+  if (lower.includes("universal pictures")) return "universal"
+  if (lower.includes("columbia pictures")) return "columbia"
   if (lower.includes("marvel")) return "marvel"
   if (/\bsony\b/.test(lower)) return "sony"
   if (lower === "a24" || lower.includes("a24")) return "a24"
