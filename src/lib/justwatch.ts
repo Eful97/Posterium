@@ -160,7 +160,7 @@ export async function getJWTitleQuality(
       filter.searchQuery = searchTitle
     }
 
-    const timeoutSignal = AbortSignal.timeout(2500)
+    const timeoutSignal = AbortSignal.timeout(4000)
     const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal
 
     const res = await fetch(JW_API, {

@@ -636,13 +636,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         (badgesEnabledEarly && badgeQualityEarly)
           ? (qQualityParam
               ? Promise.resolve(qQualityParam)
-              : resolveStreamQuality(
-                  mediaType === "movie" ? "movie" : "series",
-                  imdbId,
-                  tmdbId,
-                  mapping?.title || req.nextUrl.searchParams.get("title") || null,
-                  renderAbort.signal,
-                ).catch(() => null))
+              : (() => {
+                  const sessionTitle = getTMDBSessionCache(mediaType, tmdbId)?.details?.title
+                    || getTMDBSessionCache(mediaType, tmdbId)?.details?.name
+                    || null
+                  const fallbackTitle = mapping?.title || req.nextUrl.searchParams.get("title") || sessionTitle || genreName || null
+                  return resolveStreamQuality(
+                    mediaType === "movie" ? "movie" : "series",
+                    imdbId,
+                    tmdbId,
+                    fallbackTitle,
+                    renderAbort.signal,
+                  ).catch(() => null)
+                })())
           : Promise.resolve(null),
       ]),
       // Block B: badge data (independent of Block A — runs concurrently)

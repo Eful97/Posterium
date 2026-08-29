@@ -45,22 +45,33 @@ export async function fetchTorrentioQuality(
   signal?: AbortSignal
 ): Promise<StreamQuality | null> {
   const streamId = type === "movie" ? imdbId : `${imdbId}:1:1`
-  const url = `${TORRENTIO_BASE_URL}/stream/${type}/${encodeURIComponent(streamId)}.json`
-  try {
-    const timeoutSignal = AbortSignal.timeout(2000)
-    const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal
+  const urls = [
+    `${TORRENTIO_BASE_URL}/stream/${type}/${encodeURIComponent(streamId)}.json`,
+    // Fallback mirror se il primary è bloccato da WAF/IP su Vercel
+    `https://torrentio.strem.io/stream/${type}/${encodeURIComponent(streamId)}.json`,
+  ]
+  for (const url of urls) {
+    try {
+      const timeoutSignal = AbortSignal.timeout(4000)
+      const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal
 
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Posterium/1.0" },
-      signal: combinedSignal,
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return parseStreamQualityFromStreams(data?.streams)
-  } catch (err) {
-    log.debug("Torrentio stream quality check failed or timed out", { imdbId, error: err instanceof Error ? err.message : String(err) })
-    return null
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Posterium/1.0" },
+        signal: combinedSignal,
+      })
+      if (!res.ok) continue
+      const data = await res.json()
+      const q = parseStreamQualityFromStreams(data?.streams)
+      if (q) return q
+      // se il primo mirror risponde senza 4K, prova il secondo solo se null
+      if (q === null && url === urls[0]) continue
+      return q
+    } catch (err) {
+      log.debug("Torrentio stream quality check failed or timed out", { imdbId, url, error: err instanceof Error ? err.message : String(err) })
+      // prova il mirror successivo
+    }
   }
+  return null
 }
 
 export async function resolveStreamQuality(
