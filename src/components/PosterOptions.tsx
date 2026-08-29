@@ -56,14 +56,10 @@ export function PosterOptions({ posters, posterActivePath, lang, selectPoster, a
   const [internalActiveGroup, setInternalActiveGroup] = useState("clean")
   const activeGroup = controlledActiveGroup ?? internalActiveGroup
   const setActiveGroup = onActiveGroupChange ?? setInternalActiveGroup
-  const prevTabCountRef = useRef(posterTabs.length)
 
   useEffect(() => {
-    if (posterTabs.length !== prevTabCountRef.current) {
-      prevTabCountRef.current = posterTabs.length
-      if (!posterTabs.some((t) => t.key === activeGroup)) {
-        setActiveGroup(posterTabs[0]?.key ?? "clean")
-      }
+    if (posterTabs.length > 0 && !posterTabs.some((t) => t.key === activeGroup)) {
+      setActiveGroup(posterTabs[0]?.key ?? "clean")
     }
   }, [posterTabs, activeGroup, setActiveGroup])
 

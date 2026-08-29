@@ -53,7 +53,22 @@ export async function fetchTorrentioQuality(
   for (const url of urls) {
     try {
       const timeoutSignal = AbortSignal.timeout(4000)
-      const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal
+      let combinedSignal: AbortSignal = timeoutSignal
+      if (signal) {
+        if (typeof (AbortSignal as unknown as { any?: unknown }).any === "function") {
+          combinedSignal = (AbortSignal as unknown as { any: (signals: AbortSignal[]) => AbortSignal }).any([signal, timeoutSignal])
+        } else {
+          // Fallback Node <19: combina manualmente i signal
+          const ctrl = new AbortController()
+          const onAbort = () => ctrl.abort((signal as unknown as { reason?: unknown })?.reason ?? timeoutSignal.reason)
+          if (signal.aborted || timeoutSignal.aborted) ctrl.abort()
+          else {
+            signal.addEventListener("abort", onAbort, { once: true })
+            timeoutSignal.addEventListener("abort", onAbort, { once: true })
+          }
+          combinedSignal = ctrl.signal
+        }
+      }
 
       const res = await fetch(url, {
         headers: { "User-Agent": "Posterium/1.0" },

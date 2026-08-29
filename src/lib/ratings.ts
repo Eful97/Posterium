@@ -108,11 +108,25 @@ export async function fetchAggregatedRating(
   const qs = key ? `?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(imdbId)}` : `?i=${encodeURIComponent(imdbId)}`
 
   try {
+    const timeoutSignal = AbortSignal.timeout(8000)
+    let combined: AbortSignal = timeoutSignal
+    if (signal) {
+      if (typeof (AbortSignal as unknown as { any?: unknown }).any === "function") {
+        combined = (AbortSignal as unknown as { any: (s: AbortSignal[]) => AbortSignal }).any([signal, timeoutSignal])
+      } else {
+        const ctrl = new AbortController()
+        const onAbort = () => ctrl.abort((signal as unknown as { reason?: unknown })?.reason ?? timeoutSignal.reason)
+        if (signal.aborted || timeoutSignal.aborted) ctrl.abort()
+        else {
+          signal.addEventListener("abort", onAbort, { once: true })
+          timeoutSignal.addEventListener("abort", onAbort, { once: true })
+        }
+        combined = ctrl.signal
+      }
+    }
     const res = await fetch(
       `${MDBLIST}/${qs}`,
-      // Un signal esterno (es. ratingAbort della route poster) non deve bypassare
-      // il timeout interno di 8s: il fetch si auto-termina comunque (D4).
-      { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000) }
+      { signal: combined }
     )
     if (res.ok) {
       const raw = await res.json()

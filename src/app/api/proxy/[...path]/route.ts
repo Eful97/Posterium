@@ -200,7 +200,21 @@ async function readJsonCapped(res: Response): Promise<unknown> {
  */
 function hopSignal(hopTimeoutMs: number): { signal: AbortSignal; deadline: AbortSignal } {
   const deadline = AbortSignal.timeout(PROXY_DEADLINE_MS)
-  return { deadline, signal: AbortSignal.any([deadline, AbortSignal.timeout(hopTimeoutMs)]) }
+  const hopTimeout = AbortSignal.timeout(hopTimeoutMs)
+  let signal: AbortSignal
+  if (typeof (AbortSignal as unknown as { any?: unknown }).any === "function") {
+    signal = (AbortSignal as unknown as { any: (s: AbortSignal[]) => AbortSignal }).any([deadline, hopTimeout])
+  } else {
+    const ctrl = new AbortController()
+    const onAbort = () => ctrl.abort()
+    if (deadline.aborted || hopTimeout.aborted) ctrl.abort()
+    else {
+      deadline.addEventListener("abort", onAbort, { once: true })
+      hopTimeout.addEventListener("abort", onAbort, { once: true })
+    }
+    signal = ctrl.signal
+  }
+  return { deadline, signal }
 }
 
 /**
