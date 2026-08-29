@@ -8,6 +8,7 @@ export type StreamQuality = "4K" | "1080p" | "720p" | "SD"
 
 const TORRENTIO_BASE_URL = (process.env.POSTERIUM_TORRENTIO_URL || process.env.TORRENTIO_URL || "https://torrentio.strem.fun").replace(/\/+$/, "")
 const STREAM_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+const STREAM_CACHE_TTL_NULL = 2 * 60 * 1000 // 2 minutes for null (evita cache avvelenata su Vercel)
 const qualityCache = new Map<string, { quality: StreamQuality | null; timestamp: number }>()
 
 export function parseStreamQualityFromStreams(
@@ -45,14 +46,9 @@ export async function fetchTorrentioQuality(
   signal?: AbortSignal
 ): Promise<StreamQuality | null> {
   const streamId = type === "movie" ? imdbId : `${imdbId}:1:1`
-  const urls = [
-    `${TORRENTIO_BASE_URL}/stream/${type}/${encodeURIComponent(streamId)}.json`,
-    // Fallback mirror se il primary è bloccato da WAF/IP su Vercel
-    `https://torrentio.strem.io/stream/${type}/${encodeURIComponent(streamId)}.json`,
-  ]
-  for (const url of urls) {
-    try {
-      const timeoutSignal = AbortSignal.timeout(4000)
+  const url = `${TORRENTIO_BASE_URL}/stream/${type}/${encodeURIComponent(streamId)}.json`
+  try {
+    const timeoutSignal = AbortSignal.timeout(6000)
       let combinedSignal: AbortSignal = timeoutSignal
       if (signal) {
         if (typeof (AbortSignal as unknown as { any?: unknown }).any === "function") {
@@ -74,19 +70,18 @@ export async function fetchTorrentioQuality(
         headers: { "User-Agent": "Posterium/1.0" },
         signal: combinedSignal,
       })
-      if (!res.ok) continue
+      if (!res.ok) {
+        log.debug("Torrentio non-OK", { imdbId, status: res.status })
+        return null
+      }
       const data = await res.json()
       const q = parseStreamQualityFromStreams(data?.streams)
-      if (q) return q
-      // se il primo mirror risponde senza 4K, prova il secondo solo se null
-      if (q === null && url === urls[0]) continue
+      if (q) log.debug("Torrentio quality", { imdbId, quality: q })
       return q
     } catch (err) {
-      log.debug("Torrentio stream quality check failed or timed out", { imdbId, url, error: err instanceof Error ? err.message : String(err) })
-      // prova il mirror successivo
+      log.debug("Torrentio stream quality check failed or timed out", { imdbId, error: err instanceof Error ? err.message : String(err) })
+      return null
     }
-  }
-  return null
 }
 
 export async function resolveStreamQuality(
@@ -98,8 +93,9 @@ export async function resolveStreamQuality(
 ): Promise<StreamQuality | null> {
   const cacheKey = `${type}:${imdbId || tmdbId || searchTitle}`
   const cached = qualityCache.get(cacheKey)
-  if (cached && Date.now() - cached.timestamp < STREAM_CACHE_TTL) {
-    return cached.quality
+  if (cached) {
+    const ttl = cached.quality === null ? STREAM_CACHE_TTL_NULL : STREAM_CACHE_TTL
+    if (Date.now() - cached.timestamp < ttl) return cached.quality
   }
 
   let quality: StreamQuality | null = null
