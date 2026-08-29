@@ -31,7 +31,7 @@ export function __resetNetworkLogoCache(): void {
 
 // Map networkKey → filename in public/networks/
 const NETWORK_FILES: Record<string, string> = {
-  netflix: "Netflix_2015_logo.svg",
+  netflix: "Netflix_2016_N_logo.svg",
   hbo: "HBO_Max_(2025).svg",
   disney: "Disney+_logo.svg",
   prime: "Amazon_Prime_Video_logo_(2024).svg",
@@ -174,8 +174,9 @@ async function loadNetworkPng(networkKey: string, pw: number, topLight: boolean 
   if (!fs.existsSync(filePath)) return null
   try {
     const sharp = (await import("sharp")).default
-    const targetW = Math.round((NETWORK_TARGET_W[networkKey] ?? 50) * pw / 380)
-    const maxLogoH = Math.round(24 * pw / 380)
+    const NETWORK_SCALE = 1.45 // ingrandito su richiesta utente (pill uniforme)
+    const targetW = Math.round((NETWORK_TARGET_W[networkKey] ?? 50) * pw / 380 * NETWORK_SCALE)
+    const maxLogoH = Math.round(26 * pw / 380)
     let svgBuffer: Buffer
     if (networkKey === "marvel") {
       const studiosColor = topLight ? "#ffffff" : "#121216"
@@ -198,17 +199,17 @@ async function loadNetworkPng(networkKey: string, pw: number, topLight: boolean 
       .png()
       .toBuffer({ resolveWithObject: true })
 
-    // Logo dentro la pill:
-    // topLight ? bg pill nero(0.80) → logo bianco(0.85) : bg pill bianco(0.80) → logo nero(0.88)
-    // Eccezioni: marvel conserva i colori originali (con testo STUDIOS dinamico)
+    // Logo senza pill (richiesta utente): solo logo con ombra a contrasto.
+    // Senza pill il colore deve contrastare direttamente il poster: top chiaro
+    // → logo scuro, top scuro → logo chiaro. Marvel conserva i colori brand.
     const keepColor = networkKey === "marvel"
     let recolored: Buffer
     if (keepColor) {
       recolored = data // conserva colori brand
     } else {
       const fgBg = topLight
-        ? { r: 255, g: 255, b: 255, alpha: 0.85 }
-        : { r: 18, g: 18, b: 22, alpha: 0.88 }
+        ? { r: 18, g: 18, b: 22, alpha: 0.88 }
+        : { r: 255, g: 255, b: 255, alpha: 0.88 }
       const fgSolid = await sharp({
         create: { width: info.width, height: info.height, channels: 4, background: fgBg },
       })
@@ -220,37 +221,53 @@ async function loadNetworkPng(networkKey: string, pw: number, topLight: boolean 
         .toBuffer()
     }
 
-    // Geometria pill allineata al badge qualità (squircle):
-    // fs = Math.round(Math.max(18 * pw / 380, 12)) -> 24 @ 500
-    // px = Math.round(fs * 0.65), pt = pb = Math.round(fs * 0.32)
-    // svgH = fs + pt + pb -> 40 @ 500, r = Math.round(svgH * 0.35) -> 14 @ 500
-    const fsVal = Math.round(Math.max(18 * pw / 380, 12))
-    const px = Math.round(fsVal * 0.65)
-    const pt = Math.round(fsVal * 0.32)
-    const pb = pt
+    // Ombra a contrasto (senza pill)
+    const shadowBlur = Math.max(2, Math.round(3 * pw / 380))
+    const shadowDy = Math.max(1, Math.round(2 * pw / 380))
+    const shadowColor = { r: 0, g: 0, b: 0, alpha: 0.55 as const }
+    let shadowBuf: Buffer
+    if (keepColor) {
+      const shadowSolid = await sharp({
+        create: { width: info.width, height: info.height, channels: 4, background: shadowColor },
+      })
+        .png()
+        .toBuffer()
+      const masked = await sharp(shadowSolid)
+        .composite([{ input: data, blend: "dest-in" }])
+        .png()
+        .toBuffer()
+      shadowBuf = await sharp(masked).blur(shadowBlur).toBuffer()
+    } else {
+      const shadowSolid = await sharp({
+        create: { width: info.width, height: info.height, channels: 4, background: shadowColor },
+      })
+        .png()
+        .toBuffer()
+      const masked = await sharp(shadowSolid)
+        .composite([{ input: data, blend: "dest-in" }])
+        .png()
+        .toBuffer()
+      shadowBuf = await sharp(masked).blur(shadowBlur).toBuffer()
+    }
 
-    const pillH = Math.max(info.height + pt + pb, fsVal + pt + pb)
-    const pillW = info.width + px * 2
-    const r = Math.round(pillH * 0.35)
+    const canvasW = info.width + shadowBlur * 2 + 2
+    const canvasH = info.height + shadowBlur * 2 + shadowDy + 2
+    const shadowLeft = shadowBlur + 1
+    const shadowTop = shadowBlur + shadowDy + 1
+    const logoLeft = shadowBlur + 1
+    const logoTop = shadowBlur + 1
 
-    const bg = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
-    const stroke = topLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)"
-
-    const pillSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pillW}" height="${pillH}">
-  <rect x="0.5" y="0.5" width="${pillW - 1}" height="${pillH - 1}" rx="${r}" fill="${bg}" stroke="${stroke}" stroke-width="1"/>
-</svg>`
-
-    const pillBg = await sharp(Buffer.from(pillSvg)).png().toBuffer()
-
-    const logoLeft = Math.round((pillW - info.width) / 2)
-    const logoTop = Math.round((pillH - info.height) / 2)
-
-    const finalPng = await sharp(pillBg)
-      .composite([{ input: recolored, top: logoTop, left: logoLeft }])
+    const finalPng = await sharp({
+      create: { width: canvasW, height: canvasH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+      .composite([
+        { input: shadowBuf, left: shadowLeft, top: shadowTop },
+        { input: recolored, left: logoLeft, top: logoTop },
+      ])
       .png()
       .toBuffer()
 
-    const result = { png: finalPng, w: pillW, h: pillH }
+    const result = { png: finalPng, w: canvasW, h: canvasH }
     networkLogoCache.set(cacheKey, result)
     return result
   } catch (e) {
@@ -274,6 +291,76 @@ export async function renderFirstMatchingNetworkLogoBadge(
     }
   }
   return null
+}
+
+/** Logo network raw: colore originale SVG, senza pill/ricolorazione, con leggera ombra per contrasto. */
+async function loadNetworkRawPng(networkKey: string, pw: number): Promise<{ png: Buffer; w: number; h: number } | null> {
+  const cacheKey = `raw:${networkKey}:${pw}`
+  const cached = networkLogoCache.get(cacheKey)
+  if (cached) return cached
+  const filename = NETWORK_FILES[networkKey]
+  if (!filename) return null
+  const filePath = path.join(NETWORKS_DIR, filename)
+  if (!fs.existsSync(filePath)) return null
+  try {
+    const sharp = (await import("sharp")).default
+    const NETWORK_SCALE = 1.45
+    const targetW = Math.round((NETWORK_TARGET_W[networkKey] ?? 50) * pw / 380 * NETWORK_SCALE)
+    const maxLogoH = Math.round(26 * pw / 380)
+    const svgBuffer = await fs.promises.readFile(filePath)
+    let density = 72
+    try {
+      const meta = await sharp(svgBuffer).metadata()
+      if (meta.width && meta.width > 0 && meta.width < targetW) {
+        density = Math.min(Math.ceil((72 * targetW) / meta.width), 2400)
+      }
+    } catch {}
+    const { data, info } = await sharp(svgBuffer, { density })
+      .resize(targetW, maxLogoH, { fit: "inside", withoutEnlargement: false })
+      .png()
+      .toBuffer({ resolveWithObject: true })
+    // Ombra leggera con colore originale (nessuna ricolorazione)
+    const shadowBlur = Math.max(2, Math.round(3 * pw / 380))
+    const shadowDy = Math.max(1, Math.round(2 * pw / 380))
+    const shadowColor = { r: 0, g: 0, b: 0, alpha: 0.45 as const }
+    const shadowSolid = await sharp({ create: { width: info.width, height: info.height, channels: 4, background: shadowColor } }).png().toBuffer()
+    const masked = await sharp(shadowSolid).composite([{ input: data, blend: "dest-in" }]).png().toBuffer()
+    const shadowBuf = await sharp(masked).blur(shadowBlur).toBuffer()
+    const canvasW = info.width + shadowBlur * 2 + 2
+    const canvasH = info.height + shadowBlur * 2 + shadowDy + 2
+    const finalPng = await sharp({ create: { width: canvasW, height: canvasH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: shadowBuf, left: shadowBlur + 1, top: shadowBlur + shadowDy + 1 }, { input: data, left: shadowBlur + 1, top: shadowBlur + 1 }])
+      .png().toBuffer()
+    const result = { png: finalPng, w: canvasW, h: canvasH }
+    networkLogoCache.set(cacheKey, result)
+    return result
+  } catch (e) {
+    log.error(`Failed to load raw PNG for ${networkKey}`, { error: e instanceof Error ? e.message : String(e) })
+    return null
+  }
+}
+
+export async function renderFirstMatchingNetworkRawBadge(
+  names: (string | null | undefined)[],
+  pw: number = 500
+): Promise<{ png: Buffer; w: number; h: number; networkKey: string; matchedName: string } | null> {
+  for (const name of names) {
+    if (!name) continue
+    const networkKey = getNetworkKey(name)
+    if (!networkKey) continue
+    const result = await loadNetworkRawPng(networkKey, pw)
+    if (result) return { ...result, networkKey, matchedName: name }
+  }
+  return null
+}
+
+export async function renderNetworkRawBadge(networkName?: string | null, pw: number = 500): Promise<{ png: Buffer; w: number; h: number; networkKey: string } | null> {
+  if (!networkName) return null
+  const networkKey = getNetworkKey(networkName)
+  if (!networkKey) return null
+  const result = await loadNetworkRawPng(networkKey, pw)
+  if (!result) return null
+  return { ...result, networkKey }
 }
 
 // Legacy SVG-based exports kept for unit tests compatibility

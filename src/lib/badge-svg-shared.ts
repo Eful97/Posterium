@@ -253,8 +253,8 @@ export function buildRankingDefaultSvg(fullText: string, fs: number, textColor: 
 }
 
 export function buildRankingPillSvg(fullText: string, fs: number, textColor: string, bg: string) {
-  const px = Math.round(fs * 1.0)
-  const pt = Math.round(fs * 0.4)
+  const px = Math.round(fs * 0.75)
+  const pt = Math.round(fs * 0.35)
   const pb = pt
   const textW = Math.max(estimateTextWidth(fullText, fs), fs)
   const totalW = textW + px * 2
@@ -391,18 +391,16 @@ export function buildNetflixRankSvg(rank: number, pw: number) {
   return { svg, w, h }
 }
 
-export function buildQualityBadgeSvg(quality: string, fs: number, textColor: string, bg: string, topLight: boolean = false) {
-  const px = Math.round(fs * 0.75)
-  const pt = Math.round(fs * 0.35)
-  const pb = pt
+export function buildQualityBadgeSvg(quality: string, fs: number, _textColor: string, _bg: string, _topLight: boolean = false) {
+  // Senza pill, più piccola, solo testo con ombra (richiesta utente: sempre top-right piccola senza pill)
   const textW = Math.max(estimateTextWidth(quality, fs), fs)
-  const totalW = textW + px * 2
-  const svgH = fs + pt + pb
-  const r = Math.round(svgH * 0.35)
-  const renderW = totalW
-  const stroke = topLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)"
-  const textEl = `<text x="${renderW / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${textColor}"${textFitAttrs(textW)}>${escSvg(quality)}</text>`
-  const bgEl = `<rect x="0" y="0" width="${totalW}" height="${svgH}" rx="${r}" fill="${bg}" stroke="${stroke}" stroke-width="1"/>`
-  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${svgH}">${bgEl}${textEl}</svg>`, w: renderW, h: svgH }
+  const shadowPad = 8
+  const shadowDrop = 5
+  const renderW = textW + shadowPad * 2
+  const renderH = fs + shadowDrop + shadowPad
+  const fg = "#ffffff"
+  const defs = `<defs><filter id="qs" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.8)"/><feDropShadow dx="0" dy="5" stdDeviation="4.5" flood-color="rgba(0,0,0,0.55)"/></filter></defs>`
+  const textEl = `<text x="${renderW / 2}" y="${shadowDrop + fs / 2 + shadowPad / 4}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${fg}" filter="url(#qs)"${textFitAttrs(textW)}>${escSvg(quality)}</text>`
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}${textEl}</svg>`, w: renderW, h: renderH }
 }
 
