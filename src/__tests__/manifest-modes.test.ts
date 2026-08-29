@@ -39,7 +39,9 @@ describe("buildManifestResponse with hubMode options", () => {
     const catalogIds = json.catalogs.map((c: { id: string }) => c.id)
     expect(catalogIds).toContain("posterium-search-movies")
     expect(catalogIds).toContain("posterium-search-series")
-    expect(catalogIds.length).toBe(2)
+    expect(catalogIds).toContain("posterium-search-people-movies")
+    expect(catalogIds).toContain("posterium-search-people-series")
+    expect(catalogIds.length).toBe(4)
   })
 
   it("generates distinct deterministic addonId for different config tokens", async () => {

@@ -59,7 +59,8 @@ pinned: false
 * **Algoritmo Best-Fit Intelligente**: Analizza automaticamente la luminosità e gli spazi vuoti del poster per posizionare e scalare il logo evitando di coprire i volti dei protagonisti.
 * **Sfocatura Sfondo Nativa (Sharp C++)**: Generazione di sfondi con effetto blur ultra-rapido (10–20ms) a bassissimo consumo di memoria.
 * **Rotazione Automatica 24h**: Seleziona più poster per lo stesso titolo e falli alternare automaticamente ogni giorno.
-* **Loghi Network Ufficiali in Vettoriale (SVG)**: Riconoscimento automatico e sovrapposizione loghi per Netflix, Prime Video, Disney+, Apple TV+, HBO/HBO Max, Paramount+, Sky/NOW, Crunchyroll, Rai, Mediaset Infinity, Tubi, Pluto TV, AMC, ABC, CBS, FX/FXX, Hulu, National Geographic, NBC, Showtime, Pixar, Marvel, Studio Ghibli, 20th Century Studios, Warner Bros., Universal, Columbia, Sony e altri. Tutti i loghi sono normalizzati ad area visiva uniforme (~3600px² @500) e rasterizzati con densità adattiva: nitidezza perfetta a ogni dimensione.
+* **Loghi Network Ufficiali in Vettoriale (SVG)**: Riconoscimento automatico e sovrapposizione loghi per Netflix, Prime Video, Disney+, Apple TV+, HBO/HBO Max, Paramount+, Sky/NOW, Crunchyroll, Rai, Mediaset Infinity, Tubi, Pluto TV, AMC, ABC, CBS, FX/FXX, Hulu, National Geographic, NBC, Showtime, Pixar, Marvel, Studio Ghibli, 20th Century Studios, Warner Bros., Universal, Columbia, Sony e altri. Tutti i loghi sono normalizzati ad area visiva uniforme (~3600px² @500) e rasterizzati con densità adattiva: nitidezza perfetta a ogni dimensione. Su poster non-clean con badge rank il network viene leggermente traslato a destra per evitare sovrapposizioni.
+* **Editor sempre disponibile**: Badge e Stagioni restano accessibili anche con poster non-clean (fix UX).
 
 ### 🏷️ Badge, Rating & Classifiche
 * **✨ Badge Qualità Streaming (4K / 1080p / 720p / SD)**: Visualizza in alto a destra la risoluzione video massima disponibile rilevata in tempo reale dai flussi Stremio (Torrentio/Scraper) con fallback automatico su JustWatch. Presenta uno schema cromatico adattivo dinamico (*contrasto chiaro/scuro invertito in base alla luminosità del poster*).
@@ -71,6 +72,7 @@ pinned: false
 
 ### 🔍 Ricerca
 * **Ricerca TMDB**: Trova film e serie TV per titolo con risultati in italiano e poster ufficiali.
+* **Ricerca per Persona (Attore/Regista)**: Due cataloghi dedicati *“Cerca per Persona (Film/Serie TV)”* (`posterium-search-people-movies`/`posterium-search-people-series`) che cercano su TMDB `/search/person` e mostrano la filmografia (cast + crew) della persona più rilevante — filtrianti per nome esatto/middle/suffisso e soglie popolarità/voti come AIOMetadata.
 * **Cronologia Ricerche**: Salvataggio automatico delle ricerche recenti.
 
 ### 📺 Cataloghi Stremio, Posterium Hub & Gestione Avanzata

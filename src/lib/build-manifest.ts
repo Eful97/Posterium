@@ -1,7 +1,7 @@
 import crypto from "node:crypto"
 import { NextRequest } from "next/server"
 import { APP_VERSION } from "@/generated/app-version"
-import { POSTERIUM_CATALOGS } from "@/lib/catalog-definitions"
+import { POSTERIUM_CATALOGS, POSTERIUM_PEOPLE_SEARCH_CATALOGS } from "@/lib/catalog-definitions"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
 import { getServerDefaults } from "@/lib/server-defaults"
@@ -148,13 +148,20 @@ export async function buildManifestResponse(req: NextRequest, user?: string | nu
     },
   ]
 
+  const peopleSearchCatalogs = POSTERIUM_PEOPLE_SEARCH_CATALOGS.map((c) => ({
+    id: c.id,
+    name: c.name,
+    type: c.type,
+    extra: [{ name: "search", isRequired: true }, { name: "skip", isRequired: false }] as const,
+  }))
+
   let manifestCatalogs: typeof contentCatalogs = []
   if (hubMode === "search") {
-    manifestCatalogs = searchCatalogs
+    manifestCatalogs = [...searchCatalogs, ...peopleSearchCatalogs] as typeof contentCatalogs
   } else if (hubMode === "catalogs") {
     manifestCatalogs = contentCatalogs
   } else {
-    manifestCatalogs = [...contentCatalogs, ...searchCatalogs]
+    manifestCatalogs = [...contentCatalogs, ...searchCatalogs, ...peopleSearchCatalogs] as typeof contentCatalogs
   }
 
   const ID_PREFIXES = [

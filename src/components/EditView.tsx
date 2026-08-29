@@ -160,8 +160,8 @@ export default function EditView() {
 
   const rightTabs = [
     { key: "logo", label: t("ui.logoSection") },
-    ...(cleanPoster ? [{ key: "badge", label: t("ui.badgeSection") }] : []),
-    ...(cleanPoster && selectedLogo ? [{ key: "transform", label: t("ui.transform") }] : []),
+    { key: "badge", label: t("ui.badgeSection") },
+    ...(selectedLogo ? [{ key: "transform", label: t("ui.transform") }] : []),
     ...(selected?.media_type === "tv" ? [{ key: "stagioni", label: t("ui.seasons") || "Stagioni" }] : []),
   ]
 
@@ -169,7 +169,7 @@ export default function EditView() {
     if (!rightTabs.some((tab) => tab.key === activeRightTab)) {
       setActiveRightTab("logo")
     }
-  }, [cleanPoster, selectedLogo, selected?.media_type, activeRightTab])
+  }, [selectedLogo, selected?.media_type, activeRightTab])
 
   return (
     <div>

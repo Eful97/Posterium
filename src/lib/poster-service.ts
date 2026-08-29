@@ -716,7 +716,31 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
         const netPadX = Math.round(18 * STD_W / 380)
         const netPadY = Math.round(18 * STD_H / 570)
         top = netPadY
-        left = netPadX
+        // Poster non-clean + rank badge: evita sovrapposizione spostando leggermente a destra
+        if (finalRankBadge && finalRankLeft !== null) {
+          const isBar = rankingBadgeStyle === "bar"
+          if (!isBar) {
+            const rankLeft = finalRankLeft
+            const rankRight = finalRankLeft + finalRankBadge.w
+            const rankBottom = finalRankTop + finalRankBadge.h
+            const netRightAtPad = netPadX + fittedRaw.w
+            const netBottom = netPadY + fittedRaw.h
+            const overlapX = netPadX < rankRight + 6 && netRightAtPad > rankLeft - 6
+            const overlapY = netPadY < rankBottom + 4 && netBottom > finalRankTop - 4
+            if (overlapX && overlapY) {
+              const shifted = Math.round(rankRight + 10)
+              const maxLeft = STD_W - fittedRaw.w - netPadX
+              left = Math.min(shifted, maxLeft)
+              if (left <= netPadX) left = netPadX + Math.round(12 * STD_W / 380)
+            } else {
+              left = netPadX
+            }
+          } else {
+            left = netPadX
+          }
+        } else {
+          left = netPadX
+        }
       }
       composites.push({ input: fittedRaw.png, top, left })
     }

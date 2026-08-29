@@ -135,6 +135,53 @@ const server = http.createServer(async (req, res) => {
       return respond(res, 200, await getPosterBuffer(), "image/jpeg")
     }
 
+    // TMDB API — search person
+    if (pathname === "/3/search/person") {
+      const q = (url.searchParams.get("query") || "").toLowerCase()
+      // Only exact "brad pitt" (normalized) returns a match — mirrors person-search thresholds
+      if (q.includes("brad pitt")) {
+        return json(res, 200, {
+          page: 1,
+          total_pages: 1,
+          total_results: 1,
+          results: [
+            {
+              id: 287,
+              name: "Brad Pitt",
+              popularity: 35,
+              profile_path: "/mocked/brad.jpg",
+              known_for: [
+                { id: 603, media_type: "movie", vote_count: 9000 },
+                { id: 27205, media_type: "movie", vote_count: 8000 },
+              ],
+            },
+          ],
+        })
+      }
+      return json(res, 200, { page: 1, total_pages: 1, total_results: 0, results: [] })
+    }
+    const personCreditsMatch = pathname.match(/^\/3\/person\/(\d+)\/(movie_credits|tv_credits)$/)
+    if (personCreditsMatch) {
+      const kind = personCreditsMatch[2]
+      const isMovie = kind === "movie_credits"
+      const makeCredit = (id, title, date) => ({
+        id,
+        title: isMovie ? title : undefined,
+        name: isMovie ? undefined : title,
+        media_type: isMovie ? "movie" : "tv",
+        poster_path: MOCKED_POSTER_PATH,
+        release_date: isMovie ? date : undefined,
+        first_air_date: isMovie ? undefined : date,
+        popularity: 50,
+      })
+      const cast = isMovie
+        ? [makeCredit(603, "Fight Club", "1999-10-15"), makeCredit(27205, "Inception", "2010-07-15")]
+        : [makeCredit(1396, "Breaking Bad", "2008-01-20")]
+      const crew = isMovie
+        ? [makeCredit(680, "Pulp Fiction", "1994-10-14")]
+        : []
+      return json(res, 200, { id: Number(personCreditsMatch[1]), cast, crew })
+    }
     // TMDB API
     if (pathname === "/3/search/multi" || pathname === "/3/search/movie" || pathname === "/3/search/tv") {
       const isTV = pathname === "/3/search/tv"

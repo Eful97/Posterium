@@ -45,6 +45,11 @@ export const POSTERIUM_SEARCH_CATALOGS = [
   { id: "posterium-search-series", name: "🔍 Posterium — Cerca Serie TV", type: "series" },
 ] as const satisfies readonly PosteriumCatalogDefinition[]
 
+export const POSTERIUM_PEOPLE_SEARCH_CATALOGS = [
+  { id: "posterium-search-people-movies", name: "🔍 Posterium — Cerca per Persona (Film)", type: "movie" },
+  { id: "posterium-search-people-series", name: "🔍 Posterium — Cerca per Persona (Serie TV)", type: "series" },
+] as const satisfies readonly PosteriumCatalogDefinition[]
+
 export const WARMUP_CATALOG_IDS = [
   "posterium-jw-movies",
   "posterium-jw-series",

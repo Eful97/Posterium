@@ -162,6 +162,31 @@ const tmdbFindResponseSchema = z.object({
   tv_results: z.array(z.object({ id: z.number().int().positive() }).passthrough()).default([]),
 }).passthrough()
 
+const tmdbPersonSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string(),
+  popularity: z.number().optional(),
+  profile_path: z.string().nullable().optional(),
+  known_for: z.array(z.object({
+    id: z.number().int().positive(),
+    media_type: z.string().optional(),
+    vote_count: z.number().optional(),
+  }).passthrough()).optional(),
+}).passthrough()
+
+const tmdbPersonSearchResponseSchema = z.object({
+  results: z.array(tmdbPersonSchema).default([]),
+  page: z.number().optional(),
+  total_pages: z.number().optional(),
+  total_results: z.number().optional(),
+}).passthrough()
+
+const tmdbPersonCreditsSchema = z.object({
+  id: z.number().int().positive(),
+  cast: z.array(tmdbMediaItemSchema).default([]),
+  crew: z.array(tmdbMediaItemSchema).default([]),
+}).passthrough()
+
 /**
  * Valida una risposta TMDB con lo schema dato. Su successo restituisce la
  * risposta (i campi conosciuti tipizzati, il resto passthrough). Su fallimento
@@ -560,6 +585,42 @@ export interface TMDBTrendingResponse {
 export async function getTrending(mediaType: "movie" | "tv", timeWindow: "day" | "week" = "day", apiKey?: string, page = 1): Promise<TMDBTrendingResponse> {
   const data = await tmdbFetch(`/trending/${mediaType}/${timeWindow}?language=it-IT&page=${page}`, apiKey)
   return parseTmdb<TMDBTrendingResponse>("trending", tmdbTrendingResponseSchema, data)
+}
+
+export interface TMDBPerson {
+  id: number
+  name: string
+  popularity?: number
+  profile_path: string | null
+  known_for?: { id: number; media_type?: string; vote_count?: number }[]
+}
+
+export interface TMDBPersonSearchResponse {
+  page: number
+  results: TMDBPerson[]
+  total_pages: number
+  total_results: number
+}
+
+export interface TMDBPersonCredits {
+  id: number
+  cast: TMDBMediaResult[]
+  crew: TMDBMediaResult[]
+}
+
+export async function searchPerson(query: string, language = "it-IT", apiKey?: string, page = 1, signal?: AbortSignal): Promise<TMDBPersonSearchResponse> {
+  const data = await tmdbFetch(`/search/person?query=${encodeURIComponent(query)}&language=${language}&page=${page}`, apiKey, signal)
+  return parseTmdb<TMDBPersonSearchResponse>("search/person", tmdbPersonSearchResponseSchema, data)
+}
+
+export async function personMovieCredits(personId: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBPersonCredits> {
+  const data = await tmdbFetch(`/person/${personId}/movie_credits?language=${language}`, apiKey, signal)
+  return parseTmdb<TMDBPersonCredits>("person/movie_credits", tmdbPersonCreditsSchema, data)
+}
+
+export async function personTvCredits(personId: number, language = "it-IT", apiKey?: string, signal?: AbortSignal): Promise<TMDBPersonCredits> {
+  const data = await tmdbFetch(`/person/${personId}/tv_credits?language=${language}`, apiKey, signal)
+  return parseTmdb<TMDBPersonCredits>("person/tv_credits", tmdbPersonCreditsSchema, data)
 }
 
 /** Fix L26: svuota la cache TMDB condivisa (per /api/cache/clear). */

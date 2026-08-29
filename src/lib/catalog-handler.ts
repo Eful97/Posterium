@@ -7,7 +7,7 @@ import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
-import { getDetails, resolveRequestApiKey, searchMovies, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
+import { getDetails, personMovieCredits, personTvCredits, resolveRequestApiKey, searchMovies, searchPerson, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
 import { resolveImdbId } from "@/lib/imdb-cache"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchUnifiedCatalogItems } from "@/lib/custom-catalog-providers"
@@ -16,6 +16,7 @@ import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { getJWRankings, type JWRankEntry } from "@/lib/justwatch"
 import { createLogger } from "@/lib/logger"
 import { concurrentMap } from "@/lib/episode-ordering"
+import { isPersonQuery, pickTopPerson } from "@/lib/person-search"
 
 const log = createLogger("catalog")
 
@@ -212,6 +213,78 @@ export async function posteriumCatalog(
 
   // --- Gestione Ricerca Stremio (sia via barra di ricerca che catalogo dedicato) ---
   if (extra.search) {
+    const isPeopleCatalog = catalogId.startsWith("posterium-search-people-")
+    if (isPeopleCatalog) {
+      if (!apiKey) return catalogResponse({ metas: [] })
+      const page = Math.floor((extra.skip || 0) / 20) + 1
+      const searchCacheKey = `stremio:search:people:${stType}:${hashFragment(extra.search)}:p${page}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+      const cachedSearch = cacheGet<{ metas: StremioMeta[] }>(searchCacheKey)
+      if (cachedSearch) return catalogResponse(cachedSearch)
+
+      if (!isPersonQuery(extra.search)) {
+        const body = { metas: [] as StremioMeta[] }
+        cacheSet(searchCacheKey, body, ["stremio", "search"], 60_000)
+        return catalogResponse(body)
+      }
+
+      try {
+        const personRes = await searchPerson(extra.search, "it-IT", apiKey, page)
+        const candidates = personRes?.results || []
+        const topPerson = pickTopPerson(candidates, extra.search)
+        if (!topPerson) {
+          const body = { metas: [] as StremioMeta[] }
+          cacheSet(searchCacheKey, body, ["stremio", "search"], 60_000)
+          return catalogResponse(body)
+        }
+
+        const credits = stType === "movie"
+          ? await personMovieCredits(topPerson.id, "it-IT", apiKey)
+          : await personTvCredits(topPerson.id, "it-IT", apiKey)
+
+        const allCredits = [...(credits.cast || []), ...(credits.crew || [])]
+        const seen = new Map<number, typeof allCredits[number]>()
+        for (const item of allCredits) {
+          if (!item || !item.id || seen.has(item.id)) continue
+          // credits for movie endpoint are movies, tv endpoint are shows — but filter by media_type if present
+          const mt = (item.media_type as string | undefined) || (stType === "movie" ? "movie" : "tv")
+          if (stType === "movie" && mt !== "movie") continue
+          if (stType === "series" && mt !== "tv" && mt !== "series") continue
+          seen.set(item.id, item)
+        }
+
+        // Ordina per popolarità decrescente se disponibile, altrimenti mantieni ordine crediti
+        const deduped = Array.from(seen.values()).sort((a, b) => {
+          const pa = (a as unknown as { popularity?: number }).popularity || 0
+          const pb = (b as unknown as { popularity?: number }).popularity || 0
+          return pb - pa
+        })
+
+        const skip = extra.skip || 0
+        const paged = deduped.slice(skip, skip + 20)
+
+        const results: (StremioMeta | null)[] = await concurrentMap(paged, async (item) => {
+          if (!item.id) return null
+          const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", item.id, apiKey)
+          const poster = await posteriumPosterUrl(req, stType, item.id, configParam, userParam, mdblistKeyParam)
+          const releaseInfo = (item.release_date || item.first_air_date || "").slice(0, 4) || undefined
+          return {
+            id: catalogMetaId(imdbId, item.id),
+            type: stType,
+            name: item.title || item.name || "",
+            poster,
+            releaseInfo,
+          }
+        }, 5)
+        const metas = results.filter((m): m is StremioMeta => m !== null)
+        const body = { metas }
+        cacheSet(searchCacheKey, body, ["stremio", "search"], 10 * 60 * 1000)
+        return catalogResponse(body)
+      } catch (e) {
+        log.error("People search failed", { error: e instanceof Error ? e.message : String(e) })
+        return catalogResponse({ metas: [] })
+      }
+    }
+
     if (!apiKey) return catalogResponse({ metas: [] })
     const page = Math.floor((extra.skip || 0) / 20) + 1
     const searchCacheKey = `stremio:search:${stType}:${hashFragment(extra.search)}:p${page}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
