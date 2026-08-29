@@ -180,6 +180,7 @@ const NETWORK_FILES_COMBINED: Record<string, string> = {
   hulu: "Hulu_logo_(2018).svg",
   natgeo: "National-Geographic-Logo.svg",
   nbc: "NBC_logo.svg",
+  mbs: "Mainichi_Broadcasting_System_logo.svg",
   showtime: "Showtime_logo.svg",
   warner: "Warner_Bros_logo.svg",
   universal: "Universal_Pictures_logo.svg",

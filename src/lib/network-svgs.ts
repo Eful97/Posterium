@@ -52,6 +52,7 @@ const NETWORK_FILES: Record<string, string> = {
   hulu: "Hulu_logo_(2018).svg",
   natgeo: "National-Geographic-Logo.svg",
   nbc: "NBC_logo.svg", // peacock colors updated 2026-08-28
+  mbs: "Mainichi_Broadcasting_System_logo.svg",
   showtime: "Showtime_logo.svg",
   warner: "Warner_Bros_logo.svg",
   universal: "Universal_Pictures_logo.svg",
@@ -67,6 +68,31 @@ const NETWORK_FILES: Record<string, string> = {
   fandango: "Fandango_2014.svg",
   medusa: "Medusa_Film_-_logo_(Italy,_2017-).svg",
   ghibli: "Studio_Ghibli.svg",
+}
+
+// Falso positivo NBC giapponese (Jujutsu Kaisen tmdb 95479): network list contiene 25+ regionali tra cui "NBC" (Nagasaki Broadcasting).
+// Distinguiamo NBC USA (peacock) da NBC JP controllando se la lista candidati è tipicamente giapponese.
+const JAPANESE_REGIONAL_MARKERS: ReadonlySet<string> = new Set([
+  "mbs", "tbs", "cbc", "tys", "sbc", "bsn", "hbc", "rkk", "i-television", "sbs", "ibc", "bss", "mro", "obs", "tuf", "rsk", "tuy", "tbc", "rkb", "kutv", "rbc", "uty", "rcc", "mrt", "atv", "mbc", "tulip television", "tulip", "kbs", "rsk", "sbc",
+])
+
+function isJapaneseRegionalList(names: readonly (string | null | undefined)[]): boolean {
+  let hits = 0
+  for (const n of names) {
+    if (!n) continue
+    const l = n.toLowerCase().trim()
+    if (JAPANESE_REGIONAL_MARKERS.has(l)) {
+      hits++
+      if (hits >= 3) return true
+    }
+  }
+  return false
+}
+
+function shouldSkipNbcForJapaneseList(names: readonly (string | null | undefined)[], currentName: string): boolean {
+  const l = currentName.toLowerCase().trim()
+  if (!l.includes("nbc")) return false
+  return isJapaneseRegionalList(names)
 }
 
 // Target rendered widths (at pw=380) — normalizzati per area visiva ~3200px² a pw=500 (senza pill, logo diretto su poster)
@@ -92,6 +118,7 @@ const NETWORK_TARGET_W: Record<string, number> = {
   hulu: 62,
   natgeo: 62,
   nbc: 40,
+  mbs: 52,
   showtime: 62,
   warner: 38,
   universal: 52,
@@ -146,7 +173,9 @@ function getNetworkKey(networkName: string): string | null {
   if (/\bfxx?\b/.test(lower)) return "fx"
   if (lower.includes("hulu")) return "hulu"
   if (lower.includes("national geographic") || /\bnat\s?geo\b/.test(lower)) return "natgeo"
+  if (lower.includes("nbcuniversal")) return "nbc"
   if (/\bnbc\b/.test(lower)) return "nbc"
+  if (lower === "mbs" || lower.includes("mainichi")) return "mbs"
   if (/\bshowtime\b/.test(lower)) return "showtime"
   // Filtro anime: Nippon Columbia (etichetta musicale anime) vs Columbia Pictures.
   // Solo "columbia pictures" deve mappare a columbia, per evitare logo Columbia su OST anime.
@@ -156,6 +185,8 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("columbia pictures")) return "columbia"
   if (lower.includes("marvel")) return "marvel"
   if (lower.includes("pixar")) return "pixar"
+  // Filtro Sony Music (anime) vs Sony Pictures (film) — non mostrare Sony per OST anime
+  if (lower.includes("sony music")) return null
   if (/\bsony\b/.test(lower)) return "sony"
   if (lower === "a24" || lower.includes("a24")) return "a24"
   if (lower.includes("legendary")) return "legendary"
@@ -299,6 +330,7 @@ export async function renderFirstMatchingNetworkLogoBadge(
 ): Promise<{ png: Buffer; w: number; h: number; networkKey: string; matchedName: string } | null> {
   for (const name of names) {
     if (!name) continue
+    if (shouldSkipNbcForJapaneseList(names, name)) continue
     const networkKey = getNetworkKey(name)
     if (!networkKey) continue
     const result = await loadNetworkPng(networkKey, pw, topLight)
@@ -365,6 +397,7 @@ export async function renderFirstMatchingNetworkRawBadge(
 ): Promise<{ png: Buffer; w: number; h: number; networkKey: string; matchedName: string } | null> {
   for (const name of names) {
     if (!name) continue
+    if (shouldSkipNbcForJapaneseList(names, name)) continue
     const networkKey = getNetworkKey(name)
     if (!networkKey) continue
     const result = await loadNetworkRawPng(networkKey, pw, topLight)
@@ -412,6 +445,7 @@ export async function renderNetworkLogoBadge(networkName?: string | null, pw: nu
 export function findMatchingNetworkSvg(names: (string | null | undefined)[], pw: number = 500): { res: NetworkSvgResult_Legacy; matchedName: string } | null {
   for (const name of names) {
     if (!name) continue
+    if (shouldSkipNbcForJapaneseList(names, name)) continue
     const res = getNetworkSvgResult(name, pw)
     if (res) return { res, matchedName: name }
   }
