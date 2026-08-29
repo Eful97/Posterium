@@ -31,14 +31,14 @@ export function __resetNetworkLogoCache(): void {
 
 // Map networkKey → filename in public/networks/
 const NETWORK_FILES: Record<string, string> = {
-  netflix: "Netflix_2016_N_logo.svg",
-  hbo: "HBO_Max_(2025).svg",
+  netflix: "Netflix_2015_logo.svg",
+  hbo: "HBO_logo.svg",
   disney: "Disney+_logo.svg",
-  prime: "Amazon_Prime_Video_logo_(2024).svg",
+  prime: "Prime_Video_logo_(2024).svg",
   apple: "Apple_TV_logo.svg",
   paramount: "Paramount_Plus.svg",
   rai: "Logo_of_RAI_(2016).svg",
-  crunchyroll: "Crunchyroll_Logo.svg",
+  crunchyroll: "cr_logo_noTagline.svg",
   // Il logo NOW ha sostituito il vecchio Sky Group: entrambi i nomi usano lo stesso file.
   sky: "Now_logo.svg",
   mediaset: "Mediaset_Infinity_logo.svg",
@@ -60,6 +60,7 @@ const NETWORK_FILES: Record<string, string> = {
   sony: "Sony_logo.svg",
   disney_pictures: "Walt_Disney_Pictures_text_logo.svg",
   marvel: "Marvel_Studios_2016_logo.svg",
+  pixar: "Pixar_logo.svg",
   a24: "A24_logo.svg",
   legendary: "Legendary_Entertainment_logo.svg",
   lionsgate: "Lionsgate_Logo.svg",
@@ -99,6 +100,7 @@ const NETWORK_TARGET_W: Record<string, number> = {
   sony: 62,
   disney_pictures: 62,
   marvel: 62,
+  pixar: 62,
   a24: 58,
   legendary: 62,
   lionsgate: 62,
@@ -153,6 +155,7 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("universal pictures")) return "universal"
   if (lower.includes("columbia pictures")) return "columbia"
   if (lower.includes("marvel")) return "marvel"
+  if (lower.includes("pixar")) return "pixar"
   if (/\bsony\b/.test(lower)) return "sony"
   if (lower === "a24" || lower.includes("a24")) return "a24"
   if (lower.includes("legendary")) return "legendary"
@@ -174,9 +177,6 @@ async function loadNetworkPng(networkKey: string, pw: number, topLight: boolean 
   if (!fs.existsSync(filePath)) return null
   try {
     const sharp = (await import("sharp")).default
-    const NETWORK_SCALE = 1.45 // ingrandito su richiesta utente (pill uniforme)
-    const targetW = Math.round((NETWORK_TARGET_W[networkKey] ?? 50) * pw / 380 * NETWORK_SCALE)
-    const maxLogoH = Math.round(26 * pw / 380)
     let svgBuffer: Buffer
     if (networkKey === "marvel") {
       const studiosColor = topLight ? "#ffffff" : "#121216"
@@ -187,13 +187,29 @@ async function loadNetworkPng(networkKey: string, pw: number, topLight: boolean 
       svgBuffer = await fs.promises.readFile(filePath)
     }
 
+    // Uniform area: tutti i loghi stessa area visiva (~3600px² @500), flat ultra-wide ridotti
+    let targetW: number
+    let maxLogoH: number
     let density = 72
     try {
       const meta = await sharp(svgBuffer).metadata()
-      if (meta.width && meta.width > 0 && meta.width < targetW) {
-        density = Math.min(Math.ceil((72 * targetW) / meta.width), 2400)
+      const w = meta.width || 100
+      const h = meta.height || 50
+      const aspect = w / h
+      const isFlatWide = ["lionsgate", "sony", "legendary", "fandango", "pixar"].includes(networkKey)
+      const areaScale = isFlatWide ? 0.62 : 1 // Lionsgate, Pixar e simili troppo larghi → area -38%
+      const desiredArea = 3600 * areaScale * (pw / 500) * (pw / 500)
+      const desiredH = Math.round(Math.sqrt(desiredArea / aspect))
+      const desiredW = Math.round(desiredH * aspect)
+      targetW = desiredW
+      maxLogoH = desiredH
+      if (w < targetW) {
+        density = Math.min(Math.ceil((72 * targetW) / w), 2400)
       }
-    } catch {}
+    } catch {
+      targetW = Math.round(60 * pw / 380)
+      maxLogoH = Math.round(26 * pw / 380)
+    }
     const { data, info } = await sharp(svgBuffer, { density })
       .resize(targetW, maxLogoH, { fit: "inside", withoutEnlargement: false })
       .png()
@@ -293,8 +309,8 @@ export async function renderFirstMatchingNetworkLogoBadge(
   return null
 }
 
-/** Logo network raw: colore originale SVG, senza pill/ricolorazione, con leggera ombra per contrasto. */
-async function loadNetworkRawPng(networkKey: string, pw: number): Promise<{ png: Buffer; w: number; h: number } | null> {
+/** Logo network raw: colore originale SVG, senza pill e senza ombra (quasi attaccato al logo film). */
+async function loadNetworkRawPng(networkKey: string, pw: number, _topLight?: boolean): Promise<{ png: Buffer; w: number; h: number } | null> {
   const cacheKey = `raw:${networkKey}:${pw}`
   const cached = networkLogoCache.get(cacheKey)
   if (cached) return cached
@@ -304,34 +320,36 @@ async function loadNetworkRawPng(networkKey: string, pw: number): Promise<{ png:
   if (!fs.existsSync(filePath)) return null
   try {
     const sharp = (await import("sharp")).default
-    const NETWORK_SCALE = 1.45
-    const targetW = Math.round((NETWORK_TARGET_W[networkKey] ?? 50) * pw / 380 * NETWORK_SCALE)
-    const maxLogoH = Math.round(26 * pw / 380)
     const svgBuffer = await fs.promises.readFile(filePath)
+    // Uniform area come per loadNetworkPng — flat ridotti
+    let targetW: number
+    let maxLogoH: number
     let density = 72
     try {
       const meta = await sharp(svgBuffer).metadata()
-      if (meta.width && meta.width > 0 && meta.width < targetW) {
-        density = Math.min(Math.ceil((72 * targetW) / meta.width), 2400)
+      const w = meta.width || 100
+      const h = meta.height || 50
+      const aspect = w / h
+      const isFlatWide2 = ["lionsgate", "sony", "legendary", "fandango", "pixar"].includes(networkKey)
+      const areaScale2 = isFlatWide2 ? 0.62 : 1
+      const desiredArea = 3600 * areaScale2 * (pw / 500) * (pw / 500)
+      const desiredH = Math.round(Math.sqrt(desiredArea / aspect))
+      const desiredW = Math.round(desiredH * aspect)
+      targetW = desiredW
+      maxLogoH = desiredH
+      if (w < targetW) {
+        density = Math.min(Math.ceil((72 * targetW) / w), 2400)
       }
-    } catch {}
+    } catch {
+      targetW = Math.round(60 * pw / 380)
+      maxLogoH = Math.round(26 * pw / 380)
+    }
     const { data, info } = await sharp(svgBuffer, { density })
       .resize(targetW, maxLogoH, { fit: "inside", withoutEnlargement: false })
       .png()
       .toBuffer({ resolveWithObject: true })
-    // Ombra leggera con colore originale (nessuna ricolorazione)
-    const shadowBlur = Math.max(2, Math.round(3 * pw / 380))
-    const shadowDy = Math.max(1, Math.round(2 * pw / 380))
-    const shadowColor = { r: 0, g: 0, b: 0, alpha: 0.45 as const }
-    const shadowSolid = await sharp({ create: { width: info.width, height: info.height, channels: 4, background: shadowColor } }).png().toBuffer()
-    const masked = await sharp(shadowSolid).composite([{ input: data, blend: "dest-in" }]).png().toBuffer()
-    const shadowBuf = await sharp(masked).blur(shadowBlur).toBuffer()
-    const canvasW = info.width + shadowBlur * 2 + 2
-    const canvasH = info.height + shadowBlur * 2 + shadowDy + 2
-    const finalPng = await sharp({ create: { width: canvasW, height: canvasH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-      .composite([{ input: shadowBuf, left: shadowBlur + 1, top: shadowBlur + shadowDy + 1 }, { input: data, left: shadowBlur + 1, top: shadowBlur + 1 }])
-      .png().toBuffer()
-    const result = { png: finalPng, w: canvasW, h: canvasH }
+    // Senza pill e senza ombra — solo logo originale (quasi attaccato al logo film)
+    const result = { png: data, w: info.width, h: info.height }
     networkLogoCache.set(cacheKey, result)
     return result
   } catch (e) {
@@ -342,23 +360,24 @@ async function loadNetworkRawPng(networkKey: string, pw: number): Promise<{ png:
 
 export async function renderFirstMatchingNetworkRawBadge(
   names: (string | null | undefined)[],
-  pw: number = 500
+  pw: number = 500,
+  topLight: boolean = false
 ): Promise<{ png: Buffer; w: number; h: number; networkKey: string; matchedName: string } | null> {
   for (const name of names) {
     if (!name) continue
     const networkKey = getNetworkKey(name)
     if (!networkKey) continue
-    const result = await loadNetworkRawPng(networkKey, pw)
+    const result = await loadNetworkRawPng(networkKey, pw, topLight)
     if (result) return { ...result, networkKey, matchedName: name }
   }
   return null
 }
 
-export async function renderNetworkRawBadge(networkName?: string | null, pw: number = 500): Promise<{ png: Buffer; w: number; h: number; networkKey: string } | null> {
+export async function renderNetworkRawBadge(networkName?: string | null, pw: number = 500, topLight: boolean = false): Promise<{ png: Buffer; w: number; h: number; networkKey: string } | null> {
   if (!networkName) return null
   const networkKey = getNetworkKey(networkName)
   if (!networkKey) return null
-  const result = await loadNetworkRawPng(networkKey, pw)
+  const result = await loadNetworkRawPng(networkKey, pw, topLight)
   if (!result) return null
   return { ...result, networkKey }
 }

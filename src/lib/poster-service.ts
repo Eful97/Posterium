@@ -160,14 +160,14 @@ function coalesceBadgeRender<T>(key: string, run: () => Promise<T>): Promise<T |
 
 const NETWORKS_DIR_COMBINED = path.join(process.cwd(), "public", "networks")
 const NETWORK_FILES_COMBINED: Record<string, string> = {
-  netflix: "Netflix_2016_N_logo.svg",
-  hbo: "HBO_Max_(2025).svg",
+  netflix: "Netflix_2015_logo.svg",
+  hbo: "HBO_logo.svg",
   disney: "Disney+_logo.svg",
-  prime: "Amazon_Prime_Video_logo_(2024).svg",
+  prime: "Prime_Video_logo_(2024).svg",
   apple: "Apple_TV_logo.svg",
   paramount: "Paramount_Plus.svg",
   rai: "Logo_of_RAI_(2016).svg",
-  crunchyroll: "Crunchyroll_Logo.svg",
+  crunchyroll: "cr_logo_noTagline.svg",
   sky: "Now_logo.svg",
   mediaset: "Mediaset_Infinity_logo.svg",
   tubi: "Tubi logo.svg",
@@ -188,6 +188,7 @@ const NETWORK_FILES_COMBINED: Record<string, string> = {
   sony: "Sony_logo.svg",
   disney_pictures: "Walt_Disney_Pictures_text_logo.svg",
   marvel: "Marvel_Studios_2016_logo.svg",
+  pixar: "Pixar_logo.svg",
   a24: "A24_logo.svg",
   legendary: "Legendary_Entertainment_logo.svg",
   lionsgate: "Lionsgate_Logo.svg",
@@ -230,7 +231,7 @@ async function loadNetworkLogoForPill(networkKey: string, targetH: number, fg: s
 }
 
 export async function renderCombinedRankNetworkPill(rank: number, label: string, networkKey: string, pw: number, topLight: boolean, _accentColor: string | undefined, _isAnime: boolean | undefined): Promise<{ png: Buffer; w: number; h: number } | null> {
-  const fs = Math.round(Math.max(26 * pw / 380, 17))
+  const fs = Math.round(Math.max(20 * pw / 380, 13))
   const px = Math.round(fs * 0.75)
   const pt = Math.round(fs * 0.35)
   const gap = Math.round(fs * 0.25)
@@ -263,7 +264,7 @@ export async function renderCombinedRankNetworkPill(rank: number, label: string,
 }
 
 export async function renderNetworkOnlyLargePill(networkKey: string, pw: number, topLight: boolean): Promise<{ png: Buffer; w: number; h: number } | null> {
-  const fs = Math.round(Math.max(26 * pw / 380, 17))
+  const fs = Math.round(Math.max(20 * pw / 380, 13))
   const px = Math.round(fs * 0.75)
   const pt = Math.round(fs * 0.35)
   const pillH = fs + pt * 2
@@ -288,7 +289,7 @@ export async function renderNetworkOnlyLargePill(networkKey: string, pw: number,
 }
 
 export async function renderCombinedExtraNetworkPill(label: string, networkKey: string, pw: number, topLight: boolean): Promise<{ png: Buffer; w: number; h: number } | null> {
-  const fs = Math.round(Math.max(26 * pw / 380, 17))
+  const fs = Math.round(Math.max(20 * pw / 380, 13))
   const px = Math.round(fs * 0.75)
   const pt = Math.round(fs * 0.35)
   const gap = Math.round(fs * 0.25)
@@ -567,12 +568,8 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   const isAnimeRank = topBadge?.type === "rank" && animeRankResult !== null && topBadge.rank === animeRankResult
 
   const hasQualityBadge = badgesEnabled && badgeQuality !== false && !!quality
-  // Network raw: visibile solo quando trend manca (top-left) oppure quando trend è nastro Netflix (di fianco al nastro a destra)
-  const isNetflixRibbonForNetwork = rankingBadgeStyle === "netflix" && topBadge?.type === "rank"
-  const shouldShowNetworkTopLeft = !!networkLogoResult && !topBadge
-  const shouldShowNetworkBesideNetflix = !!networkLogoResult && !!topBadge && isNetflixRibbonForNetwork
-  const shouldShowNetwork = shouldShowNetworkTopLeft || shouldShowNetworkBesideNetflix
-  const networkRawResult = shouldShowNetwork
+  // Network: sempre visibile quando abilitato, subito sopra il logo film, quasi attaccato, senza pill
+  const networkRawResult = networkLogoResult
     ? await renderFirstMatchingNetworkRawBadge(networkCandidates, STD_W)
     : null
 
@@ -705,43 +702,31 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
       left: finalRankLeft,
     })
   }
-  // Network: top-left raw quando trend manca, oppure di fianco al nastro Netflix a destra
+  // Network: subito sopra il logo del film, quasi attaccato, senza pill
   if (networkRawResult) {
-    const netPadX = Math.round(18 * STD_W / 380)
-    const netPadY = Math.round(18 * STD_H / 570)
+    const gap = Math.round(6 * STD_H / 570)
     const fittedRaw = await fitBadgeToCanvas(networkRawResult, STD_W, STD_H)
-    if (!fittedRaw) {
-      // no-op
-    } else if (shouldShowNetworkBesideNetflix && finalRankBadge) {
-      // Di fianco al nastro Netflix, sulla destra, allineato al badge qualità (stesso top)
-      const isRightRibbon2 = ribbonSide === "right"
+    if (fittedRaw) {
+      let top: number
       let left: number
-      if (isRightRibbon2) {
-        // Nastro a destra → network a sinistra del nastro
-        left = Math.round(STD_W - finalRankBadge.w - 10 - fittedRaw.w)
+      if (logoResult) {
+        top = Math.max(0, logoResult.top - fittedRaw.h - gap)
+        left = Math.round((STD_W - fittedRaw.w) / 2)
       } else {
-        // Nastro a sinistra (default Nuvio) → network a destra del nastro
-        left = Math.round(finalRankBadge.w + 10)
+        const netPadX = Math.round(18 * STD_W / 380)
+        const netPadY = Math.round(18 * STD_H / 570)
+        top = netPadY
+        left = netPadX
       }
-      const netPadY2 = Math.round(18 * STD_H / 570)
-      const top = netPadY2
       composites.push({ input: fittedRaw.png, top, left })
-    } else if (shouldShowNetworkTopLeft) {
-      composites.push({ input: fittedRaw.png, top: netPadY, left: netPadX })
     }
   }
 
-  // Qualità: sempre in alto a destra, piccola senza pill — base allineata al logo network quando presente
+  // Qualità: sempre in alto a destra, piccola senza pill — top allineato al logo network
   if (safeQualityBadgeResult) {
     const netBaseTop = Math.round(18 * STD_H / 570)
     const netPadX = Math.round(18 * STD_W / 380)
-    let top = netBaseTop
-    if (networkRawResult && (shouldShowNetworkTopLeft || shouldShowNetworkBesideNetflix)) {
-      const fittedNet = await fitBadgeToCanvas(networkRawResult, STD_W, STD_H)
-      if (fittedNet) {
-        top = Math.max(0, netBaseTop + fittedNet.h - safeQualityBadgeResult.h)
-      }
-    }
+    const top = netBaseTop
     const isNetflixRight = rankingBadgeStyle === "netflix" && ribbonSide === "right" && topBadge?.type === "rank"
 
     let left: number

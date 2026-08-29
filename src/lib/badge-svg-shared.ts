@@ -391,16 +391,19 @@ export function buildNetflixRankSvg(rank: number, pw: number) {
   return { svg, w, h }
 }
 
-export function buildQualityBadgeSvg(quality: string, fs: number, _textColor: string, _bg: string, _topLight: boolean = false) {
-  // Senza pill, più piccola, solo testo con ombra (richiesta utente: sempre top-right piccola senza pill)
+export function buildQualityBadgeSvg(quality: string, fs: number, _textColor: string, _bg: string, topLight: boolean = false) {
+  // Pill con funzionamento identico al badge grande: bianco→testo nero, nero→testo bianco
+  const px = Math.round(fs * 0.75)
+  const pt = Math.round(fs * 0.35)
   const textW = Math.max(estimateTextWidth(quality, fs), fs)
-  const shadowPad = 8
-  const shadowDrop = 5
-  const renderW = textW + shadowPad * 2
-  const renderH = fs + shadowDrop + shadowPad
-  const fg = "#ffffff"
-  const defs = `<defs><filter id="qs" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.8)"/><feDropShadow dx="0" dy="5" stdDeviation="4.5" flood-color="rgba(0,0,0,0.55)"/></filter></defs>`
-  const textEl = `<text x="${renderW / 2}" y="${shadowDrop + fs / 2 + shadowPad / 4}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${fg}" filter="url(#qs)"${textFitAttrs(textW)}>${escSvg(quality)}</text>`
-  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${renderW}" height="${renderH}">${defs}${textEl}</svg>`, w: renderW, h: renderH }
+  const totalW = textW + px * 2
+  const svgH = fs + pt * 2
+  const r = Math.round(svgH / 2)
+  const bg = topLight ? "rgba(0,0,0,0.80)" : "rgba(255,255,255,0.80)"
+  const stroke = topLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)"
+  const fg = topLight ? "rgba(255,255,255,0.95)" : "rgba(0,0,0,0.88)"
+  const textEl = `<text x="${totalW / 2}" y="${svgH / 2}" text-anchor="middle" dominant-baseline="central" font-family="Inter" font-weight="700" font-size="${fs}" fill="${fg}"${textFitAttrs(textW)}>${escSvg(quality)}</text>`
+  const bgEl = `<rect width="${totalW}" height="${svgH}" rx="${r}" fill="${bg}" stroke="${stroke}" stroke-width="1"/>`
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${svgH}">${bgEl}${textEl}</svg>`, w: totalW, h: svgH }
 }
 
