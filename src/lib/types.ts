@@ -99,6 +99,9 @@ export interface Mapping {
   autoRotateClean?: boolean | null
   networkLogo?: boolean | null
   ribbonSide?: "left" | "right" | null
+  /** Logo	path TMDB del network/produttore (es. /8AcaW...png) — usato come fallback quando non c'è SVG locale. */
+  networkLogoPath?: string | null
+  networkLogoName?: string | null
   excludedPosters?: string[] | null
   defaultBadgeStyle?: BadgeStyle | null
   defaultRankingBadgeStyle?: RankingBadgeStyle | null

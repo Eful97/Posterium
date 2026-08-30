@@ -22,7 +22,14 @@ export interface NetworkPngResult {
   matchedName: string
 }
 
+export interface NetworkCandidate {
+  name: string
+  logoPath: string | null
+}
+
 const NETWORKS_DIR = path.join(process.cwd(), "public", "networks")
+const TMDB_IMG_BASE = process.env.TMDB_IMG_URL || "https://image.tmdb.org/t/p"
+const TMDB_LOGO_SIZE = "w300"
 
 /** Svuota la cache dei logo pre-renderizzati (per /api/cache/clear e test). */
 export function __resetNetworkLogoCache(): void {
@@ -68,6 +75,7 @@ const NETWORK_FILES: Record<string, string> = {
   fandango: "Fandango_2014.svg",
   medusa: "Medusa_Film_-_logo_(Italy,_2017-).svg",
   ghibli: "Studio_Ghibli.svg",
+  mgm_plus: "MGM+_logo.svg",
 }
 
 // Falso positivo NBC giapponese (Jujutsu Kaisen tmdb 95479): network list contiene 25+ regionali tra cui "NBC" (Nagasaki Broadcasting).
@@ -134,16 +142,19 @@ const NETWORK_TARGET_W: Record<string, number> = {
   fandango: 54,
   medusa: 40,
   ghibli: 62,
+  mgm_plus: 54,
 }
 
 function getNetworkKey(networkName: string): string | null {
   const lower = networkName.toLowerCase().trim()
   if (lower.includes("netflix")) return "netflix"
   if (lower.includes("hbo") || lower === "max") return "hbo"
+  // MGM+ (ex Epix) va prima del generico MGM/Amazon MGM → prime
+  if (lower.includes("mgm+") || lower.includes("mgm plus") || lower === "mgm+" || lower === "mgm plus") return "mgm_plus"
   // Walt Disney Pictures va prima di Disney generico per non clashare con Disney+
   if (lower.includes("walt disney")) return "disney_pictures"
   if (lower.includes("disney")) return "disney"
-  if (lower.includes("prime") || lower.includes("amazon")) return "prime"
+  if (lower.includes("prime") || lower.includes("amazon") || lower.includes("mgm") || lower.includes("metro-goldwyn") || lower.includes("metro goldwyn")) return "prime"
   if (lower.includes("apple")) return "apple"
   if (lower.includes("paramount")) return "paramount"
   if (lower === "rai" || lower.startsWith("rai ")) return "rai"
@@ -246,13 +257,11 @@ async function loadNetworkPng(networkKey: string, pw: number, topLight: boolean 
       .png()
       .toBuffer({ resolveWithObject: true })
 
-    // Logo senza pill (richiesta utente): solo logo con ombra a contrasto.
-    // Senza pill il colore deve contrastare direttamente il poster: top chiaro
-    // → logo scuro, top scuro → logo chiaro. Marvel conserva i colori brand.
+    // Logo SVG: colore originale con ombra adattiva (richiesta: svg originale, TMDB bianco)
     const keepColor = networkKey === "marvel"
     let recolored: Buffer
     if (keepColor) {
-      recolored = data // conserva colori brand
+      recolored = data
     } else {
       const fgBg = topLight
         ? { r: 18, g: 18, b: 22, alpha: 0.88 }
@@ -341,7 +350,224 @@ export async function renderFirstMatchingNetworkLogoBadge(
   return null
 }
 
-/** Logo network raw: colore originale SVG, senza pill e senza ombra (quasi attaccato al logo film). */
+/** TMDB fallback: tenta di caricare il logo direttamente da TMDB image CDN. Mantiene stile invariato (ombra + ricolorazione) come SVG. */
+async function isTmdbBlockLogo(buf: Buffer, logoPath: string): Promise<boolean> {
+  try {
+    const sharp = (await import("sharp")).default
+    const meta = await sharp(buf).metadata()
+    // 1) Senza alpha → sfondo opaco → blocco (es. Moon Liberty Films)
+    if (meta.hasAlpha === false) return true
+    if ((meta.channels ?? 4) < 4) return true
+    const w = meta.width || 0
+    const h = meta.height || 0
+    if (!w || !h) return false
+    const aspect = w / h
+    // Un logo buono tipico è wide (aspect > 1.4) e ritagliato; un blocco ha sfondo bianco/opaco esteso
+    const raw = await sharp(buf).ensureAlpha().raw().toBuffer()
+    let transparent = 0
+    let whiteOpaque = 0
+    const total = raw.length / 4
+    for (let i = 0; i < raw.length; i += 4) {
+      const a = raw[i + 3]
+      if (a < 128) transparent++
+      else if (raw[i] > 240 && raw[i + 1] > 240 && raw[i + 2] > 240) whiteOpaque++
+    }
+    const transparentRatio = transparent / total
+    const whiteRatio = whiteOpaque / total
+    // 2a) Quasi quadrato + poca trasparenza → rettangolo pieno
+    if (aspect > 0.88 && aspect < 1.22 && w >= 60 && transparentRatio < 0.06) return true
+    // 2b) Fondo bianco dominante (anche wide come Moon) → blocco che con dest-in diventa rettangolo bianco
+    // Un logo ritagliato ha <20% bianco pieno; un PNG con sfondo bianco ne ha >30-60%
+    if (whiteRatio > 0.32 && transparentRatio < 0.22) return true
+    // 2c) Opaquissimo in generale (pochissima trasparenza) → non è un logo ritagliato
+    if (transparentRatio < 0.02 && whiteRatio < 0.10) {
+      // Es. PNG senza alpha ma hasAlpha true per via di un pixel trasparente: quasi tutto opaco non-bianco → comunque blocco colorato pieno
+      // Trattalo come blocco se aspect non è tipico da logo wide ritagliato
+      if (aspect > 0.75 && aspect < 1.6) return true
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
+async function loadTmdbNetworkPng(logoPath: string, pw: number, topLight: boolean = false, signal?: AbortSignal): Promise<{ png: Buffer; w: number; h: number } | null> {
+  if (!logoPath) return null
+  const cacheKey = `tmdb:${logoPath}:${pw}:${topLight ? 1 : 0}`
+  const cached = networkLogoCache.get(cacheKey)
+  if (cached) return cached
+  try {
+    const sharp = (await import("sharp")).default
+    const url = `${TMDB_IMG_BASE}/${TMDB_LOGO_SIZE}${logoPath}`
+    const { fetchImg } = await import("./poster-render-helpers")
+    const buf = await fetchImg(url, signal)
+    if (await isTmdbBlockLogo(buf, logoPath)) {
+      log.warn(`Skipping TMDB network logo with opaque/block background — add SVG for it`, { logoPath })
+      return null
+    }
+    const meta = await sharp(buf).metadata()
+    const w0 = meta.width || 100
+    const h0 = meta.height || 50
+    const aspect = w0 / h0
+    const desiredArea = 3600 * (pw / 500) * (pw / 500)
+    const desiredH = Math.round(Math.sqrt(desiredArea / aspect))
+    const desiredW = Math.round(desiredH * aspect)
+    const maxLogoH = desiredH
+    const { data, info } = await sharp(buf).resize(desiredW, maxLogoH, { fit: "inside", withoutEnlargement: false }).png().toBuffer({ resolveWithObject: true })
+
+    // Sempre bianco con ombra — richiesta "sempre bianchi"
+    const fgBg = { r: 255, g: 255, b: 255, alpha: 0.88 } as const
+    const fgSolid = await sharp({ create: { width: info.width, height: info.height, channels: 4, background: fgBg } }).png().toBuffer()
+    const recolored = await sharp(fgSolid).composite([{ input: data, blend: "dest-in" }]).png().toBuffer()
+
+    const shadowBlur = Math.max(2, Math.round(3 * pw / 380))
+    const shadowDy = Math.max(1, Math.round(2 * pw / 380))
+    const shadowColor = { r: 0, g: 0, b: 0, alpha: 0.55 as const }
+    const shadowSolid = await sharp({ create: { width: info.width, height: info.height, channels: 4, background: shadowColor } }).png().toBuffer()
+    const masked = await sharp(shadowSolid).composite([{ input: data, blend: "dest-in" }]).png().toBuffer()
+    const shadowBuf = await sharp(masked).blur(shadowBlur).toBuffer()
+
+    const canvasW = info.width + shadowBlur * 2 + 2
+    const canvasH = info.height + shadowBlur * 2 + shadowDy + 2
+    const finalPng = await sharp({ create: { width: canvasW, height: canvasH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: shadowBuf, left: shadowBlur + 1, top: shadowBlur + shadowDy + 1 }, { input: recolored, left: shadowBlur + 1, top: shadowBlur + 1 }])
+      .png().toBuffer()
+
+    const result = { png: finalPng, w: canvasW, h: canvasH }
+    networkLogoCache.set(cacheKey, result)
+    return result
+  } catch (e) {
+    log.error(`Failed to load TMDB PNG ${logoPath}`, { error: e instanceof Error ? e.message : String(e) })
+    return null
+  }
+}
+
+async function loadTmdbNetworkRawPng(logoPath: string, pw: number, topLight: boolean = false, signal?: AbortSignal): Promise<{ png: Buffer; w: number; h: number } | null> {
+  if (!logoPath) return null
+  const cacheKey = `tmdb:raw:${logoPath}:${pw}:${topLight ? 1 : 0}`
+  const cached = networkLogoCache.get(cacheKey)
+  if (cached) return cached
+  try {
+    const sharp = (await import("sharp")).default
+    const url = `${TMDB_IMG_BASE}/${TMDB_LOGO_SIZE}${logoPath}`
+    const { fetchImg } = await import("./poster-render-helpers")
+    const buf = await fetchImg(url, signal)
+    if (await isTmdbBlockLogo(buf, logoPath)) {
+      log.warn(`Skipping TMDB network logo with opaque/block background — add SVG for it`, { logoPath })
+      return null
+    }
+    const meta = await sharp(buf).metadata()
+    const w0 = meta.width || 100
+    const h0 = meta.height || 50
+    const aspect = w0 / h0
+    const desiredArea = 3600 * (pw / 500) * (pw / 500)
+    const desiredH = Math.round(Math.sqrt(desiredArea / aspect))
+    const desiredW = Math.round(desiredH * aspect)
+    const maxLogoH = desiredH
+    const { data, info } = await sharp(buf).resize(desiredW, maxLogoH, { fit: "inside", withoutEnlargement: false }).png().toBuffer({ resolveWithObject: true })
+
+    // Sempre bianco con ombra
+    const fgBg = { r: 255, g: 255, b: 255, alpha: 0.88 } as const
+    const fgSolid = await sharp({ create: { width: info.width, height: info.height, channels: 4, background: fgBg } }).png().toBuffer()
+    const recolored = await sharp(fgSolid).composite([{ input: data, blend: "dest-in" }]).png().toBuffer()
+
+    const shadowBlur = Math.max(2, Math.round(3 * pw / 380))
+    const shadowDy = Math.max(1, Math.round(2 * pw / 380))
+    const shadowColor = { r: 0, g: 0, b: 0, alpha: 0.55 as const }
+    const shadowSolid = await sharp({ create: { width: info.width, height: info.height, channels: 4, background: shadowColor } }).png().toBuffer()
+    const masked = await sharp(shadowSolid).composite([{ input: data, blend: "dest-in" }]).png().toBuffer()
+    const shadowBuf = await sharp(masked).blur(shadowBlur).toBuffer()
+
+    const canvasW = info.width + shadowBlur * 2 + 2
+    const canvasH = info.height + shadowBlur * 2 + shadowDy + 2
+    const finalPng = await sharp({ create: { width: canvasW, height: canvasH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: shadowBuf, left: shadowBlur + 1, top: shadowBlur + shadowDy + 1 }, { input: recolored, left: shadowBlur + 1, top: shadowBlur + 1 }])
+      .png().toBuffer()
+
+    const result = { png: finalPng, w: canvasW, h: canvasH }
+    networkLogoCache.set(cacheKey, result)
+    return result
+  } catch (e) {
+    log.error(`Failed to load TMDB raw PNG ${logoPath}`, { error: e instanceof Error ? e.message : String(e) })
+    return null
+  }
+}
+
+/** Ibrido SVG-first → TMDB-fallback, per candidati con name + logoPath.
+ *  Priorità richiesta: tutti gli SVG prima, poi fallback TMDB solo se nessun SVG matcha (es. Project Hail Mary: Lord Miller TMDB non deve anticipare Amazon MGM → Prime SVG). */
+export async function renderFirstMatchingNetworkLogoBadgeHybrid(
+  candidates: (NetworkCandidate | string | null | undefined)[],
+  pw: number = 500,
+  topLight: boolean = false,
+  signal?: AbortSignal
+): Promise<{ png: Buffer; w: number; h: number; networkKey: string; matchedName: string } | null> {
+  const names = candidates.map((c) => (typeof c === "string" ? c : c?.name) ?? null).filter(Boolean) as string[]
+  // Pass 1: tutti gli SVG
+  for (const cand of candidates) {
+    if (!cand) continue
+    const name = typeof cand === "string" ? cand : cand.name
+    if (!name) continue
+    if (shouldSkipNbcForJapaneseList(names, name)) continue
+    const networkKey = getNetworkKey(name)
+    if (networkKey) {
+      const svgRes = await loadNetworkPng(networkKey, pw, topLight)
+      if (svgRes) return { ...svgRes, networkKey, matchedName: name }
+    }
+  }
+  // Pass 2: fallback TMDB solo se nessun SVG ha matchato
+  for (const cand of candidates) {
+    if (!cand) continue
+    const name = typeof cand === "string" ? cand : cand.name
+    const logoPath = typeof cand === "string" ? null : cand.logoPath
+    if (!name || !logoPath) continue
+    if (shouldSkipNbcForJapaneseList(names, name)) continue
+    const networkKey = getNetworkKey(name)
+    const tmdbRes = await loadTmdbNetworkPng(logoPath, pw, topLight, signal)
+    if (tmdbRes) {
+      const fallbackKey = networkKey ?? name.toLowerCase().replace(/\s+/g, "_").slice(0, 24)
+      return { ...tmdbRes, networkKey: fallbackKey, matchedName: name }
+    }
+  }
+  return null
+}
+
+export async function renderFirstMatchingNetworkRawBadgeHybrid(
+  candidates: (NetworkCandidate | string | null | undefined)[],
+  pw: number = 500,
+  topLight: boolean = false,
+  signal?: AbortSignal
+): Promise<{ png: Buffer; w: number; h: number; networkKey: string; matchedName: string } | null> {
+  const names = candidates.map((c) => (typeof c === "string" ? c : c?.name) ?? null).filter(Boolean) as string[]
+  // Pass 1: tutti gli SVG (colore originale)
+  for (const cand of candidates) {
+    if (!cand) continue
+    const name = typeof cand === "string" ? cand : cand.name
+    if (!name) continue
+    if (shouldSkipNbcForJapaneseList(names, name)) continue
+    const networkKey = getNetworkKey(name)
+    if (networkKey) {
+      const svgRes = await loadNetworkRawPng(networkKey, pw)
+      if (svgRes) return { ...svgRes, networkKey, matchedName: name }
+    }
+  }
+  // Pass 2: TMDB sempre bianco
+  for (const cand of candidates) {
+    if (!cand) continue
+    const name = typeof cand === "string" ? cand : cand.name
+    const logoPath = typeof cand === "string" ? null : cand.logoPath
+    if (!name || !logoPath) continue
+    if (shouldSkipNbcForJapaneseList(names, name)) continue
+    const networkKey = getNetworkKey(name)
+    const tmdbRes = await loadTmdbNetworkRawPng(logoPath, pw, topLight, signal)
+    if (tmdbRes) {
+      const fallbackKey = networkKey ?? name.toLowerCase().replace(/\s+/g, "_").slice(0, 24)
+      return { ...tmdbRes, networkKey: fallbackKey, matchedName: name }
+    }
+  }
+  return null
+}
+
+/** Logo network raw: sempre bianco con ombra (richiesta "sempre bianchi"), quasi attaccato al logo film. */
 async function loadNetworkRawPng(networkKey: string, pw: number, _topLight?: boolean): Promise<{ png: Buffer; w: number; h: number } | null> {
   const cacheKey = `raw:${networkKey}:${pw}`
   const cached = networkLogoCache.get(cacheKey)
@@ -380,7 +606,7 @@ async function loadNetworkRawPng(networkKey: string, pw: number, _topLight?: boo
       .resize(targetW, maxLogoH, { fit: "inside", withoutEnlargement: false })
       .png()
       .toBuffer({ resolveWithObject: true })
-    // Senza pill e senza ombra — solo logo originale (quasi attaccato al logo film)
+    // Senza pill e senza ombra — solo logo originale (quasi attaccato al logo film) — richiesta: svg originale
     const result = { png: data, w: info.width, h: info.height }
     networkLogoCache.set(cacheKey, result)
     return result

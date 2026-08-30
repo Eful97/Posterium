@@ -47,7 +47,7 @@ export function isNetworkStudio(studioName: string | null): boolean {
     lower.includes("netflix") ||
     lower.includes("hbo") || lower === "max" ||
     lower.includes("disney") ||
-    lower.includes("prime") || lower.includes("amazon") ||
+    lower.includes("prime") || lower.includes("amazon") || lower.includes("mgm") || lower.includes("metro-goldwyn") || lower.includes("metro goldwyn") ||
     lower.includes("apple") ||
     lower.includes("paramount") ||
     lower === "rai" || lower.startsWith("rai ") ||

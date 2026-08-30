@@ -11,7 +11,7 @@ import {
   PosterComposite,
 } from "./poster-render-helpers"
 import { renderGenreBadge, renderRankingBadge, renderExtraBadge, renderQualityBadge } from "./svg-badge"
-import { renderFirstMatchingNetworkLogoBadge, renderFirstMatchingNetworkRawBadge } from "./network-svgs"
+import { renderFirstMatchingNetworkLogoBadge, renderFirstMatchingNetworkRawBadge, renderFirstMatchingNetworkLogoBadgeHybrid, renderFirstMatchingNetworkRawBadgeHybrid, type NetworkCandidate } from "./network-svgs"
 import { computeLogoLayout } from "./logo-layout"
 import fs from "fs"
 import path from "path"
@@ -86,6 +86,9 @@ export interface GenerationInput {
   tmdbNetworks: readonly string[]
   productionCompanies: readonly string[]
   tmdbStudios: readonly string[]
+  /** Mappa name -> logo_path TMDB per fallback (SVG first -> TMDB). */
+  tmdbNetworksDetailed?: readonly NetworkCandidate[]
+  productionCompaniesDetailed?: readonly NetworkCandidate[]
   tvType: string | null
   tvStatus: string | null
   releaseDate: string | null
@@ -196,6 +199,7 @@ const NETWORK_FILES_COMBINED: Record<string, string> = {
   fandango: "Fandango_2014.svg",
   medusa: "Medusa_Film_-_logo_(Italy,_2017-).svg",
   ghibli: "Studio_Ghibli.svg",
+  mgm_plus: "MGM+_logo.svg",
 }
 
 async function loadNetworkLogoForPill(networkKey: string, targetH: number, fg: string): Promise<{ png: Buffer; w: number; h: number } | null> {
@@ -426,6 +430,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     logoScale, logoOffsetX, logoOffsetY,
     mediaType, finalRank, animeRankResult,
     mapping, tmdbNetworks, productionCompanies, tmdbStudios,
+    tmdbNetworksDetailed, productionCompaniesDetailed,
     tvType, tvStatus, releaseDate, firstAirDate,
     wikidataResult, tmdbKeywords, locale, t,
     qLabel, queryExtra, qNetLogo, sd, accentOverride, imdbTop250,
@@ -539,18 +544,36 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     }
   }
 
-  // Network logo (parallel with badge render)
+  // Network logo (parallel with badge render) — SVG first, TMDB fallback
   const netLogoEnabled = sd.networkLogo !== false && (mapping?.networkLogo ?? true) !== false && qNetLogo !== "0"
-  const networkCandidates = [
+  // Se i candidati dettagliati sono disponibili, usali (con logo_path); altrimenti fallback a soli nomi per retrocompat.
+  const hasDetailed = !!(tmdbNetworksDetailed?.length || productionCompaniesDetailed?.length)
+  const detailedCandidates: NetworkCandidate[] = hasDetailed
+    ? [
+        ...(tmdbNetworksDetailed ?? []),
+        ...(productionCompaniesDetailed ?? []),
+        // Wikidata studios non hanno logo_path TMDB -> solo name
+        ...wikidataResult.studios.map((s) => ({ name: s, logoPath: null as string | null })),
+        ...tmdbStudios.map((s) => ({ name: s, logoPath: null })),
+        ...(isNetStudio ? [] : studioBadge ? [{ name: studioBadge, logoPath: null as string | null }] : []),
+        // Mapping salvato come fallback extra (se presente)
+        ...(mapping?.networkLogoName ? [{ name: mapping.networkLogoName!, logoPath: mapping.networkLogoPath ?? null }] : []),
+      ]
+    : []
+  const stringCandidates = [
     ...tmdbNetworks,
     ...productionCompanies,
     ...wikidataResult.studios,
     ...tmdbStudios,
     isNetStudio ? null : studioBadge,
   ].filter(Boolean) as string[]
+  // Unifica: se abbiamo detailed, usiamo hybrid; altrimenti legacy string path
+  const networkCandidatesHybrid: (NetworkCandidate | string)[] = hasDetailed ? detailedCandidates : stringCandidates
 
   const networkLogoResult = netLogoEnabled
-    ? await renderFirstMatchingNetworkLogoBadge(networkCandidates, STD_W, topLight)
+    ? hasDetailed
+      ? await renderFirstMatchingNetworkLogoBadgeHybrid(networkCandidatesHybrid as NetworkCandidate[], STD_W, topLight)
+      : await renderFirstMatchingNetworkLogoBadge(stringCandidates, STD_W, topLight)
     : null
 
   if (networkLogoResult && topBadge && topBadge.type === "extra") {
@@ -569,9 +592,11 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
   const isAnimeRank = topBadge?.type === "rank" && animeRankResult !== null && topBadge.rank === animeRankResult
 
   const hasQualityBadge = badgesEnabled && badgeQuality !== false && !!quality
-  // Network: sempre visibile quando abilitato, subito sopra il logo film, quasi attaccato, senza pill
+  // Network: sempre visibile quando abilitato, subito sopra il logo film, quasi attaccato — SVG resta raw, TMDB fallback è A (ricolor + ombra) per non risultare scuro.
   const networkRawResult = networkLogoResult
-    ? await renderFirstMatchingNetworkRawBadge(networkCandidates, STD_W)
+    ? hasDetailed
+      ? await renderFirstMatchingNetworkRawBadgeHybrid(networkCandidatesHybrid as NetworkCandidate[], STD_W, topLight)
+      : await renderFirstMatchingNetworkRawBadge(stringCandidates, STD_W)
     : null
 
   const genreBadgeKey = hasGenreBadge
@@ -655,14 +680,25 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     finalRankLeft = left
     finalRankTop = 0
 
-    // Se il badge grande (es. "Vincitore Golden Globe" extra) si sovrappone alla qualità top-right,
-    // riducilo progressivamente per evitare intersezione (qualità è piccola senza pill ma comunque occupa spazio)
-    if (finalRankBadge && safeQualityBadgeResult && !isBar && !isNetflixRibbon) {
+    // Se il badge grande (centrale) si sovrappone ai badge alti (qualità top-right e network top-left), riducilo progressivamente.
+    // In caso di poster non-clean il network è in alto a sinistra e non va toccato — si scala solo il centrale.
+    if (finalRankBadge && !isBar && !isNetflixRibbon) {
       const netPadX = Math.round(18 * STD_W / 380)
       const netPadY = Math.round(18 * STD_H / 570)
-      const qLeft = Math.round(STD_W - safeQualityBadgeResult.w - netPadX)
-      const qRight = qLeft + safeQualityBadgeResult.w
-      const qBottom = netPadY + safeQualityBadgeResult.h
+      const hasQuality = !!safeQualityBadgeResult
+      const qLeft = hasQuality ? Math.round(STD_W - safeQualityBadgeResult!.w - netPadX) : 0
+      const qRight = hasQuality ? qLeft + safeQualityBadgeResult!.w : 0
+      const qBottom = hasQuality ? netPadY + safeQualityBadgeResult!.h : 0
+      // Network in alto a sinistra solo quando non c'è logo film (poster non-clean)
+      const hasNetworkTop = !logoResult && !!networkRawResult
+      let netW = 0, netH = 0, netRight = 0, netBottom = 0
+      if (hasNetworkTop) {
+        // Stima dimensioni fitted (evita sharp qui — il logo network è piccolo e raramente scalato)
+        const nw = networkRawResult!.w, nh = networkRawResult!.h
+        const s = Math.min(STD_W / nw, STD_H / nh, 1)
+        netW = Math.round(nw * s); netH = Math.round(nh * s)
+        netRight = netPadX + netW; netBottom = netPadY + netH
+      }
       let curW = finalRankBadge.w
       let curH = finalRankBadge.h
       let curLeft = left
@@ -672,9 +708,9 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
         const rankRight = curLeft + curW
         const rankTop = 0
         const rankBottom = curH
-        const overlapX = rankLeft < qRight + 6 && rankRight > qLeft - 6
-        const overlapY = rankTop < qBottom + 4 && rankBottom > netPadY - 4
-        return overlapX && overlapY
+        const overlapQuality = hasQuality && rankLeft < qRight + 6 && rankRight > qLeft - 6 && rankTop < qBottom + 4 && rankBottom > netPadY - 4
+        const overlapNetwork = hasNetworkTop && rankLeft < netRight + 6 && rankRight > netPadX - 6 && rankTop < netBottom + 4 && rankBottom > netPadY - 4
+        return overlapQuality || overlapNetwork
       }
       if (checkOverlap()) {
         let scale = 1
@@ -703,7 +739,7 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
       left: finalRankLeft,
     })
   }
-  // Network: subito sopra il logo del film, quasi attaccato, senza pill
+  // Network: subito sopra il logo del film; se poster non-clean → in alto a sinistra, senza toccare badge alti (qualità/rank)
   if (networkRawResult) {
     const gap = Math.round(6 * STD_H / 570)
     const fittedRaw = await fitBadgeToCanvas(networkRawResult, STD_W, STD_H)
@@ -717,30 +753,20 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
         const netPadX = Math.round(18 * STD_W / 380)
         const netPadY = Math.round(18 * STD_H / 570)
         top = netPadY
-        // Poster non-clean + rank badge: evita sovrapposizione spostando leggermente a destra
-        if (finalRankBadge && finalRankLeft !== null) {
-          const isBar = rankingBadgeStyle === "bar"
-          if (!isBar) {
-            const rankLeft = finalRankLeft
-            const rankRight = finalRankLeft + finalRankBadge.w
-            const rankBottom = finalRankTop + finalRankBadge.h
-            const netRightAtPad = netPadX + fittedRaw.w
-            const netBottom = netPadY + fittedRaw.h
-            const overlapX = netPadX < rankRight + 6 && netRightAtPad > rankLeft - 6
-            const overlapY = netPadY < rankBottom + 4 && netBottom > finalRankTop - 4
-            if (overlapX && overlapY) {
-              const shifted = Math.round(rankRight + 10)
-              const maxLeft = STD_W - fittedRaw.w - netPadX
-              left = Math.min(shifted, maxLeft)
-              if (left <= netPadX) left = netPadX + Math.round(12 * STD_W / 380)
-            } else {
-              left = netPadX
-            }
-          } else {
-            left = netPadX
+        left = netPadX
+        // Solo quando c'è il nastro Netflix a sinistra (Nuvio, default): il network in top-left ci finirebbe sotto → spostalo a destra del nastro
+        const isNetflixLeftRibbon = rankingBadgeStyle === "netflix" && topBadge?.type === "rank" && ribbonSide !== "right" && finalRankBadge && finalRankLeft !== null
+        if (isNetflixLeftRibbon) {
+          const ribbonRight = finalRankLeft! + finalRankBadge!.w
+          const netRight = left + fittedRaw.w
+          const netBottom = top + fittedRaw.h
+          const overlapX = left < ribbonRight + 6 && netRight > finalRankLeft! - 6
+          const overlapY = top < finalRankBadge!.h + 4 && netBottom > finalRankTop - 4
+          if (overlapX && overlapY) {
+            left = Math.round(ribbonRight + 10)
+            const maxLeft = STD_W - fittedRaw.w - netPadX
+            if (left > maxLeft) left = maxLeft
           }
-        } else {
-          left = netPadX
         }
       }
       composites.push({ input: fittedRaw.png, top, left })

@@ -71,6 +71,11 @@ export default function EditView() {
   const [testUrl, setTestUrl] = useState<string | null>(null)
   const [urlCopied, setUrlCopied] = useState(false)
 
+  // Quando si seleziona un nuovo titolo, mostra sempre prima i clean (iso_639_1 === null)
+  useEffect(() => {
+    if (selected?.id) setActivePosterTab("clean")
+  }, [selected?.id])
+
   const { imageError, setImageError, previewLoading, loadProgress, imgSrc, retry } = usePosterPreview()
 
   const handleSave = useCallback(async () => {

@@ -58,6 +58,8 @@ export const mappingSchema = z.object({
   logoDisabled: z.boolean().nullable().optional(),
   networkLogo: z.boolean().nullable().optional(),
   ribbonSide: z.enum(["left", "right"]).nullable().optional(),
+  networkLogoPath: z.string().nullable().optional(),
+  networkLogoName: z.string().nullable().optional(),
   defaultBadgeStyle: z.enum(BADGE_STYLES).nullable().optional(),
   defaultRankingBadgeStyle: z.enum(RANKING_BADGE_STYLES).nullable().optional(),
   episodeGroupId: z.string().max(80).nullable().optional(),

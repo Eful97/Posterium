@@ -59,6 +59,8 @@ export async function POST(req: NextRequest) {
     firstAirDate: parsed.data.firstAirDate ?? undefined,
     backdropPath: parsed.data.backdropPath ?? null,
     logoDisabled: parsed.data.logoDisabled ?? undefined,
+    networkLogoPath: parsed.data.networkLogoPath ?? null,
+    networkLogoName: parsed.data.networkLogoName ?? null,
     episodeGroupId: parsed.data.episodeGroupId ?? undefined,
     updatedAt: new Date().toISOString(),
   }

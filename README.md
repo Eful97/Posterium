@@ -55,11 +55,11 @@ pinned: false
 ## ✨ Funzionalità
 
 ### 🖼️ Locandine, Loghi & Grafica
-* **Selezione Poster Clean**: Scegli in un click la locandina senza testo preferita tra i candidati ufficiali TMDB.
+* **Selezione Poster Clean**: Scegli in un click la locandina senza testo preferita tra i candidati ufficiali TMDB. La griglia si apre sempre sui clean (`iso_639_1===null`) prima delle lingue.
 * **Algoritmo Best-Fit Intelligente**: Analizza automaticamente la luminosità e gli spazi vuoti del poster per posizionare e scalare il logo evitando di coprire i volti dei protagonisti.
 * **Sfocatura Sfondo Nativa (Sharp C++)**: Generazione di sfondi con effetto blur ultra-rapido (10–20ms) a bassissimo consumo di memoria.
 * **Rotazione Automatica 24h**: Seleziona più poster per lo stesso titolo e falli alternare automaticamente ogni giorno.
-* **Loghi Network Ufficiali in Vettoriale (SVG)**: Riconoscimento automatico e sovrapposizione loghi per Netflix, Prime Video, Disney+, Apple TV+, HBO/HBO Max, Paramount+, Sky/NOW, Crunchyroll, Rai, Mediaset Infinity, Tubi, Pluto TV, AMC, ABC, CBS, FX/FXX, Hulu, National Geographic, NBC, Showtime, Pixar, Marvel, Studio Ghibli, 20th Century Studios, Warner Bros., Universal, Columbia, Sony e altri. Tutti i loghi sono normalizzati ad area visiva uniforme (~3600px² @500) e rasterizzati con densità adattiva: nitidezza perfetta a ogni dimensione. Su poster non-clean con badge rank il network viene leggermente traslato a destra per evitare sovrapposizioni.
+* **Loghi Network Ufficiali (SVG → TMDB fallback)**: Riconoscimento automatico e sovrapposizione loghi per Netflix, Prime Video (incluso Amazon MGM Studios / MGM via alias a Prime), Disney+, Apple TV+, HBO/HBO Max, Paramount+, Sky/NOW, Crunchyroll, Rai, Mediaset Infinity, Tubi, Pluto TV, AMC, ABC, CBS, FX/FXX, Hulu, National Geographic, NBC, Showtime, Pixar, Marvel, Studio Ghibli, 20th Century Studios, Warner Bros., Universal, Columbia, Sony, MGM+ e altri. Priorità a SVG locali (colore originale) poi fallback a TMDB `w300` sempre bianchi con ombra; i PNG opachi a sfondo pieno vengono skippati per evitare rettangoli. Tutti i loghi sono normalizzati ad area visiva uniforme (~3600px² @500) e rasterizzati con densità adattiva. Su poster non-clean il network resta in alto a sinistra e, solo con nastro Netflix a sinistra, slitta a destra del nastro.
 * **Editor sempre disponibile**: Badge e Stagioni restano accessibili anche con poster non-clean (fix UX).
 
 ### 🏷️ Badge, Rating & Classifiche

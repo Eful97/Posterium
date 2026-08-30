@@ -316,6 +316,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let tmdbStudios: string[] = []
   let tmdbNetworks: string[] = []
   let productionCompanies: string[] = []
+  let tmdbNetworksDetailed: { name: string; logoPath: string | null }[] = []
+  let productionCompaniesDetailed: { name: string; logoPath: string | null }[] = []
   let imdbId: string | null = null
 
   const queryPoster = req.nextUrl.searchParams.get("poster")
@@ -430,7 +432,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       releaseDate = details.release_date || null
       firstAirDate = details.first_air_date || null
       tmdbNetworks = (details.networks || []).map((n: TMDBCompany) => n.name)
+      tmdbNetworksDetailed = (details.networks || []).map((n: TMDBCompany) => ({ name: n.name, logoPath: n.logo_path }))
       productionCompanies = (details.production_companies || []).map((c: TMDBCompany) => c.name)
+      productionCompaniesDetailed = (details.production_companies || []).map((c: TMDBCompany) => ({ name: c.name, logoPath: c.logo_path }))
       tmdbStudios = matchTMDBStudios([...tmdbNetworks, ...productionCompanies])
       tvType = details.type || null
       tvStatus = details.status || null
@@ -751,8 +755,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
             if (!firstAirDate) firstAirDate = details.first_air_date || null
             if (!tvType) tvType = details.type || null
             if (!tvStatus) tvStatus = details.status || null
-            if (details.networks) tmdbNetworks = details.networks.map((n: TMDBCompany) => n.name)
-            if (details.production_companies) productionCompanies = details.production_companies.map((c: TMDBCompany) => c.name)
+            if (details.networks) {
+              tmdbNetworks = details.networks.map((n: TMDBCompany) => n.name)
+              tmdbNetworksDetailed = details.networks.map((n: TMDBCompany) => ({ name: n.name, logoPath: n.logo_path }))
+            }
+            if (details.production_companies) {
+              productionCompanies = details.production_companies.map((c: TMDBCompany) => c.name)
+              productionCompaniesDetailed = details.production_companies.map((c: TMDBCompany) => ({ name: c.name, logoPath: c.logo_path }))
+            }
             if (tmdbNetworks.length || productionCompanies.length) tmdbStudios = matchTMDBStudios([...tmdbNetworks, ...productionCompanies])
           })().catch((e: unknown) => { log.error("Details fetch failed", { error: e instanceof Error ? e.message : String(e) }) })
         : Promise.resolve(),
@@ -890,6 +900,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       })
     }
 
+    // Fallback mapping network logo per poster salvati (quando non c'è fetch live)
+    if (mapping && tmdbNetworksDetailed.length === 0 && productionCompaniesDetailed.length === 0 && (mapping.networkLogoPath || mapping.networkLogoName)) {
+      const fallbackName = mapping.networkLogoName || "network"
+      const fallbackPath = mapping.networkLogoPath || null
+      // Non sappiamo se è network o production: mettiamo in networks per priorità
+      tmdbNetworks = [fallbackName]
+      tmdbNetworksDetailed = [{ name: fallbackName, logoPath: fallbackPath }]
+    }
+
     // 10. Generate poster buffer
     const genInput: GenerationInput = {
       posterBuf, logoFetch, backdropFetch,
@@ -903,6 +922,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       mediaType: mediaType as "movie" | "tv",
       finalRank, animeRankResult, rankingResult,
       mapping, tmdbNetworks, productionCompanies, tmdbStudios,
+      tmdbNetworksDetailed, productionCompaniesDetailed,
       tvType, tvStatus, releaseDate, firstAirDate,
       wikidataResult, tmdbKeywords, locale, t,
       qLabel, queryExtra, qNetLogo, sd,

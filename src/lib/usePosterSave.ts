@@ -18,7 +18,7 @@ interface PosterSaveDeps {
   setPreviewPoster: (poster: TMDBImage | null) => void
   setPreviewId: (id: string | null) => void
   posters: TMDBImage[]
-  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; awards?: string[]; nominations?: string[]; studios?: string[]; director?: string | null; keywords?: string[]; imdb_id?: string | null }
+  metaInfo: { genres: { id: number; name: string }[]; voteAverage: number; type?: string; status?: string; release_date?: string; first_air_date?: string; awards?: string[]; nominations?: string[]; studios?: string[]; director?: string | null; keywords?: string[]; imdb_id?: string | null; networksDetailed?: { name: string; logo_path: string | null }[]; productionCompaniesDetailed?: { name: string; logo_path: string | null }[] }
   /** IMDb Top 250 membership for the selected content. */
   imdbTop250?: boolean
   trendRank: number | null
@@ -201,6 +201,21 @@ export function usePosterSave(deps: PosterSaveDeps) {
         ? posters.filter(p => p.iso_639_1 === null).map(p => p.file_path)
         : []
     const effectiveRotationPosters = baseRotationPosters.filter((path) => !excludedSet.has(path))
+    // Risolvi network logo da salvare: SVG first → TMDB fallback, stesso ordine del poster-service
+    let networkLogoPath: string | null = null
+    let networkLogoName: string | null = null
+    {
+      const candidates: { name: string; logoPath: string | null }[] = [
+        ...(metaInfo.networksDetailed ?? []),
+        ...(metaInfo.productionCompaniesDetailed ?? []),
+      ].map((c) => ({ name: c.name, logoPath: c.logo_path }))
+      // Filtro anime già in getNetworkKey (ma per salvataggio teniamo semplice: prova SVG existence via heuristica locale minima)
+      // Per non importare getNetworkKey qui, salva il primo con logo_path non null; il render farà comunque SVG-first.
+      for (const cand of candidates) {
+        if (cand.logoPath) { networkLogoPath = cand.logoPath; networkLogoName = cand.name; break }
+      }
+      if (!networkLogoPath && candidates.length) { networkLogoName = candidates[0].name }
+    }
     try {
       await http("/api/mappings", {
         method: "POST",
@@ -253,6 +268,8 @@ export function usePosterSave(deps: PosterSaveDeps) {
           logoDisabled: logoDisabled || undefined,
           networkLogo: networkLogo !== undefined ? networkLogo : undefined,
           ribbonSide: ribbonSide !== undefined ? ribbonSide : undefined,
+          networkLogoPath: networkLogoPath ?? null,
+          networkLogoName: networkLogoName ?? null,
           episodeGroupId: episodeGroupId || undefined,
         }),
       })
