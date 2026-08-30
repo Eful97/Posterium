@@ -200,6 +200,9 @@ const NETWORK_FILES_COMBINED: Record<string, string> = {
   medusa: "Medusa_Film_-_logo_(Italy,_2017-).svg",
   ghibli: "Studio_Ghibli.svg",
   mgm_plus: "MGM+_logo.svg",
+  lucasfilm: "Lucasfilm_logo.svg",
+  miramax: "Miramax_logo.svg",
+  castle_rock: "castle-rock-entertainment.svg",
 }
 
 async function loadNetworkLogoForPill(networkKey: string, targetH: number, fg: string): Promise<{ png: Buffer; w: number; h: number } | null> {

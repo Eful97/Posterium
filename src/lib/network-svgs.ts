@@ -76,6 +76,9 @@ const NETWORK_FILES: Record<string, string> = {
   medusa: "Medusa_Film_-_logo_(Italy,_2017-).svg",
   ghibli: "Studio_Ghibli.svg",
   mgm_plus: "MGM+_logo.svg",
+  lucasfilm: "Lucasfilm_logo.svg",
+  miramax: "Miramax_logo.svg",
+  castle_rock: "castle-rock-entertainment.svg",
 }
 
 // Falso positivo NBC giapponese (Jujutsu Kaisen tmdb 95479): network list contiene 25+ regionali tra cui "NBC" (Nagasaki Broadcasting).
@@ -143,6 +146,9 @@ const NETWORK_TARGET_W: Record<string, number> = {
   medusa: 40,
   ghibli: 62,
   mgm_plus: 54,
+  lucasfilm: 62,
+  miramax: 54,
+  castle_rock: 58,
 }
 
 function getNetworkKey(networkName: string): string | null {
@@ -205,6 +211,9 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("fandango")) return "fandango"
   if (lower.includes("medusa")) return "medusa"
   if (lower.includes("ghibli") || lower.includes("studio ghibli")) return "ghibli"
+  if (lower.includes("lucasfilm")) return "lucasfilm"
+  if (lower.includes("miramax")) return "miramax"
+  if (lower.includes("castle rock")) return "castle_rock"
   return null
 }
 
