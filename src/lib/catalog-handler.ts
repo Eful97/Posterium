@@ -7,7 +7,7 @@ import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
-import { getDetails, personMovieCredits, personTvCredits, resolveRequestApiKey, searchMovies, searchPerson, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
+import { getDetails, getImages, personMovieCredits, personTvCredits, posterUrlOriginal, resolveRequestApiKey, searchMovies, searchPerson, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
 import { resolveImdbId } from "@/lib/imdb-cache"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchUnifiedCatalogItems } from "@/lib/custom-catalog-providers"
@@ -25,9 +25,13 @@ interface StremioMeta {
   type: string
   name: string
   poster: string | null
+  background?: string
+  banner?: string
+  logo?: string
   releaseInfo?: string
   genres?: string[]
   description?: string
+  posterShape?: string
 }
 
 export interface CatalogExtraParams {
@@ -157,6 +161,24 @@ async function posteriumPosterUrl(req: NextRequest, type: "movie" | "series", id
     mdblistKey: mdblistKeyParam || undefined,
     animerank: animeRankParam ?? undefined,
   }).toString()
+}
+
+function catalogBackground(backdropPath: string | null | undefined): string | undefined {
+  return backdropPath ? posterUrlOriginal(backdropPath) : undefined
+}
+
+async function catalogLogo(mediaType: "movie" | "tv", tmdbId: number, apiKey?: string): Promise<string | undefined> {
+  try {
+    const signal = typeof AbortSignal !== "undefined" && "timeout" in AbortSignal ? AbortSignal.timeout(2500) : undefined
+    const images = await getImages(mediaType, tmdbId, "it,en,null", apiKey, signal)
+    if (images?.logos && images.logos.length > 0) {
+      const itLogo = images.logos.find((l) => l.iso_639_1 === "it") || images.logos[0]
+      if (itLogo?.file_path) return posterUrlOriginal(itLogo.file_path)
+    }
+  } catch {
+    // logo opzionale — ignora errori (rate limit, 404, timeout)
+  }
+  return undefined
 }
 
 
@@ -394,18 +416,29 @@ export async function posteriumCatalog(
             releaseInfo,
             rank: rankOffset + idx + 1,
             genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
+            backdropPath: details?.backdrop_path ?? null,
+            description: details?.overview ?? undefined,
           }
         }, 5)
         const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null)
         metas = await concurrentMap(validResults, async (r) => {
-          const imdbId = r.imdb || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
+          const [imdbId, poster, logo] = await Promise.all([
+            r.imdb ? Promise.resolve(r.imdb) : resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey),
+            posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
+            apiKey ? catalogLogo(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey) : Promise.resolve(undefined),
+          ])
+          const background = catalogBackground(r.backdropPath)
           return {
             id: catalogMetaId(imdbId, r.tmdbId),
             type: stType,
             name: r.title,
-            poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
+            poster,
+            background,
+            banner: background,
+            logo,
             releaseInfo: r.releaseInfo,
             genres: r.genres,
+            description: r.description,
           }
         }, 5)
       }
@@ -433,14 +466,23 @@ export async function posteriumCatalog(
       }, 5)
       const validResults = results.filter((r): r is { d: TMDBDetails; tmdbId: number; imdbId: string | null } => r !== null)
       metas = await concurrentMap(validResults, async (r) => {
-        const imdbId = r.imdbId || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
+        const [imdbId, poster, logo] = await Promise.all([
+          r.imdbId ? Promise.resolve(r.imdbId) : resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey),
+          posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam),
+          apiKey ? catalogLogo(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey) : Promise.resolve(undefined),
+        ])
+        const background = catalogBackground(r.d.backdrop_path)
         return {
           id: catalogMetaId(imdbId, r.tmdbId),
           type: stType,
           name: r.d.title || r.d.name || "",
-          poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam),
+          poster,
+          background,
+          banner: background,
+          logo,
           releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
           genres: (r.d.genres || []).map((g) => g.name).filter(Boolean),
+          description: r.d.overview ?? undefined,
         }
       }, 5)
     } else if (catalogId.startsWith("posterium-anime")) {
@@ -475,18 +517,29 @@ export async function posteriumCatalog(
           releaseInfo,
           rank: idx + 1,
           genres: (d?.genres || []).map((g) => g.name).filter(Boolean),
+          backdropPath: d?.backdrop_path ?? null,
+          description: d?.overview ?? undefined,
         }
       }, 5)
       const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null).slice(0, 20)
       metas = await concurrentMap(validResults, async (r) => {
-        const imdbId = r.imdb || await resolveImdbId(mediaType, r.tmdbId, apiKey)
+        const [imdbId, poster, logo] = await Promise.all([
+          r.imdb ? Promise.resolve(r.imdb) : resolveImdbId(mediaType, r.tmdbId, apiKey),
+          posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
+          apiKey ? catalogLogo(mediaType, r.tmdbId, apiKey) : Promise.resolve(undefined),
+        ])
+        const background = catalogBackground(r.backdropPath)
         return {
           id: catalogMetaId(imdbId, r.tmdbId),
           type: stType,
           name: r.name,
-          poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam, r.rank),
+          poster,
+          background,
+          banner: background,
+          logo,
           releaseInfo: r.releaseInfo,
           genres: r.genres,
+          description: r.description,
         }
       }, 5)
     } else {
@@ -530,18 +583,29 @@ export async function posteriumCatalog(
               title,
               releaseInfo: (details?.release_date || details?.first_air_date || "").slice(0, 4) || undefined,
               genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
+              backdropPath: details?.backdrop_path ?? null,
+              description: details?.overview ?? undefined,
             }
           }, 5)
           const validResults = results.filter((r) => r.title.length > 0)
           metas = await concurrentMap(validResults, async (r) => {
-            const imdbId = r.imdbId || await resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey)
+            const [imdbId, poster, logo] = await Promise.all([
+              r.imdbId ? Promise.resolve(r.imdbId) : resolveImdbId(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey),
+              posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam),
+              apiKey ? catalogLogo(stType === "movie" ? "movie" : "tv", r.tmdbId, apiKey) : Promise.resolve(undefined),
+            ])
+            const background = catalogBackground(r.backdropPath)
             return {
               id: catalogMetaId(imdbId, r.tmdbId),
               type: stType,
               name: r.title,
-              poster: await posteriumPosterUrl(req, stType, r.tmdbId, configParam, userParam, mdblistKeyParam),
+              poster,
+              background,
+              banner: background,
+              logo,
               releaseInfo: r.releaseInfo,
               genres: r.genres,
+              description: r.description,
             }
           }, 5)
         } else if (slug && apiKey) {
@@ -560,18 +624,25 @@ export async function posteriumCatalog(
             const itemsWithTmdb = allWithTmdb.slice(skipForPlatform, skipForPlatform + 10)
 
             metas = await concurrentMap(itemsWithTmdb, async (item) => {
-              const [imdbId, details] = await Promise.all([
+              const [imdbId, details, poster, logo] = await Promise.all([
                 resolveImdbId(stType === "movie" ? "movie" : "tv", item.tmdbId, apiKey),
                 getDetails(stType === "movie" ? "movie" : "tv", item.tmdbId, "it-IT", apiKey).catch(() => null),
+                posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam, mdblistKeyParam),
+                catalogLogo(stType === "movie" ? "movie" : "tv", item.tmdbId, apiKey),
               ])
               const italianTitle = details?.title || details?.name || item.title
+              const background = catalogBackground(details?.backdrop_path ?? null)
               return {
                 id: catalogMetaId(imdbId, item.tmdbId),
                 type: stType,
                 name: italianTitle,
-                poster: await posteriumPosterUrl(req, stType, item.tmdbId, configParam, userParam, mdblistKeyParam),
+                poster,
+                background,
+                banner: background,
+                logo,
                 releaseInfo: (details?.release_date || details?.first_air_date || item.releaseDate)?.slice(0, 4) || undefined,
                 genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
+                description: details?.overview ?? undefined,
               }
             }, 5)
           }
