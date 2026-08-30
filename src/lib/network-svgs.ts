@@ -351,7 +351,7 @@ export async function renderFirstMatchingNetworkLogoBadge(
 }
 
 /** TMDB fallback: tenta di caricare il logo direttamente da TMDB image CDN. Mantiene stile invariato (ombra + ricolorazione) come SVG. */
-async function isTmdbBlockLogo(buf: Buffer, logoPath: string): Promise<boolean> {
+async function isTmdbBlockLogo(buf: Buffer, _logoPath: string): Promise<boolean> {
   try {
     const sharp = (await import("sharp")).default
     const meta = await sharp(buf).metadata()
