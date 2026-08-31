@@ -67,12 +67,12 @@ const NETWORK_FILES: Record<string, string> = {
   columbia: "Columbia_Pictures.svg",
   sony: "Sony_logo.svg",
   disney_pictures: "Walt_Disney_Pictures_text_logo.svg",
-  marvel: "Marvel_Studios_2016_logo.svg",
+  marvel: "Marvel_Logo.svg",
   pixar: "Pixar_logo.svg",
   a24: "A24_logo.svg",
   legendary: "Legendary_Entertainment_logo.svg",
   lionsgate: "Lionsgate_Logo.svg",
-  fandango: "Fandango_2014.svg",
+  fandango: "Fandango_logotipo.svg",
   medusa: "Medusa_Film_-_logo_(Italy,_2017-).svg",
   ghibli: "Studio_Ghibli.svg",
   mgm_plus: "MGM+_logo.svg",
@@ -83,6 +83,10 @@ const NETWORK_FILES: Record<string, string> = {
   indiana: "Indiana_Production.svg",
   sky_cinema: "Sky_Cinema_-_Logo_2021.svg",
   taodue: "Taodue_logo.svg",
+  bandai: "Bandai_Visual_corporate_logo.svg",
+  mappa: "MAPPA_Logo.svg",
+  skydance: "Skydance_Media_2020.svg",
+  dg_cinema: "direzione-generale-cinema-e-audiovisivo-vector-logo.svg",
 }
 
 // Falso positivo NBC giapponese (Jujutsu Kaisen tmdb 95479): network list contiene 25+ regionali tra cui "NBC" (Nagasaki Broadcasting).
@@ -157,6 +161,10 @@ const NETWORK_TARGET_W: Record<string, number> = {
   indiana: 62,
   sky_cinema: 58,
   taodue: 62,
+  bandai: 58,
+  mappa: 58,
+  skydance: 62,
+  dg_cinema: 48,
 }
 
 function getNetworkKey(networkName: string): string | null {
@@ -226,6 +234,10 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("dreamworks")) return "dreamworks"
   if (lower.includes("indiana")) return "indiana"
   if (lower.includes("taodue")) return "taodue"
+  if (lower.includes("bandai")) return "bandai"
+  if (lower.includes("mappa")) return "mappa"
+  if (lower.includes("skydance")) return "skydance"
+  if (lower.includes("direzione generale") || lower.includes("cinema e audiovisivo") || lower.includes("dg cinema")) return "dg_cinema"
   return null
 }
 
@@ -259,7 +271,7 @@ async function loadNetworkPng(networkKey: string, pw: number, topLight: boolean 
       const w = meta.width || 100
       const h = meta.height || 50
       const aspect = w / h
-      const isFlatWide = ["lionsgate", "sony", "legendary", "fandango", "pixar", "dreamworks", "taodue"].includes(networkKey)
+      const isFlatWide = ["lionsgate", "sony", "legendary", "fandango", "pixar", "dreamworks", "taodue", "mappa", "skydance"].includes(networkKey)
       const areaScale = isFlatWide ? 0.62 : 1 // Lionsgate, Pixar e simili troppo larghi → area -38%
       const desiredArea = 3600 * areaScale * (pw / 500) * (pw / 500)
       const desiredH = Math.round(Math.sqrt(desiredArea / aspect))
@@ -609,7 +621,7 @@ async function loadNetworkRawPng(networkKey: string, pw: number, _topLight?: boo
       const w = meta.width || 100
       const h = meta.height || 50
       const aspect = w / h
-      const isFlatWide2 = ["lionsgate", "sony", "legendary", "fandango", "pixar", "dreamworks", "taodue"].includes(networkKey)
+      const isFlatWide2 = ["lionsgate", "sony", "legendary", "fandango", "pixar", "dreamworks", "taodue", "mappa", "skydance"].includes(networkKey)
       const areaScale2 = isFlatWide2 ? 0.62 : 1
       const desiredArea = 3600 * areaScale2 * (pw / 500) * (pw / 500)
       const desiredH = Math.round(Math.sqrt(desiredArea / aspect))

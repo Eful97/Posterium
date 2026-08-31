@@ -82,8 +82,8 @@ describe("network-svgs", () => {
   })
 
   it("does NOT match Sky for substring collisions", () => {
-    expect(getNetworkSvgResult("Skydance")).toBeNull()
-    expect(getNetworkSvgResult("Skydance Media")).toBeNull()
+    expect(getNetworkSvgResult("Skydance")?.networkKey).toBe("skydance")
+    expect(getNetworkSvgResult("Skydance Media")?.networkKey).toBe("skydance")
     expect(getNetworkSvgResult("Skywalker")).toBeNull()
     expect(getNetworkSvgResult("Skyline")).toBeNull()
   })
