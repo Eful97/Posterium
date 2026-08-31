@@ -258,7 +258,7 @@ async function safeFetch(url: string, options: RequestInit & { signal: AbortSign
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
-  const rl = rateLimit(rateLimitKey(req), "default")
+  const rl = await rateLimit(rateLimitKey(req), "default")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const { path } = await params

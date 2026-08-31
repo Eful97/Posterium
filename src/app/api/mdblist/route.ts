@@ -7,7 +7,7 @@ import { createLogger } from "@/lib/logger"
 const log = createLogger("mdblist")
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const imdbId = req.nextUrl.searchParams.get('imdb')

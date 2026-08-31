@@ -117,7 +117,7 @@ function posterErrorResponse(status: PosterErrorStatus): Response {
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const startTime = Date.now()
   initSharp()
-  const rl = rateLimit(rateLimitKey(req), "poster")
+  const rl = await rateLimit(rateLimitKey(req), "poster")
   warmFonts()
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { type, id } = await params

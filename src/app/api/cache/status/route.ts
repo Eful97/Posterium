@@ -7,7 +7,7 @@ import { getTMDBStats } from "@/lib/tmdb"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "default")
+  const rl = await rateLimit(rateLimitKey(req), "default")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
 

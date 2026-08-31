@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
         return !!header && constantTimeEqual(header, warmupToken)
       })()
   if (warmupHeaderOk !== true && !checkAdminToken(req)) return adminAuthResponse()
-  const rl = rateLimit(rateLimitKey(req), "warmup")
+  const rl = await rateLimit(rateLimitKey(req), "warmup")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!isSameOrigin(req)) return originMismatchResponse()
 

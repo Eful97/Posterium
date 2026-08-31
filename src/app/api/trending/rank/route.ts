@@ -7,7 +7,7 @@ import { createLogger } from "@/lib/logger"
 const log = createLogger("trending-rank")
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const rawType = req.nextUrl.searchParams.get("type")
   const rawId = req.nextUrl.searchParams.get("id")

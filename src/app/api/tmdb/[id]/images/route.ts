@@ -7,7 +7,7 @@ import { jsonGzip } from "@/lib/json-response"
 type RouteParams = { id: string }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { id } = await params
   const type = req.nextUrl.searchParams.get("type") || "movie"

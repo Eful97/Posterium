@@ -14,7 +14,7 @@ import { readJsonBody, BodyTooLargeError, DEFAULT_MAX_BODY_BYTES } from "@/lib/r
 const log = createLogger("mappings")
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "mappings")
+  const rl = await rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   // Fail-open senza ADMIN_TOKEN (istanza pubblica HF Spaces); fail-closed con token.
   if (!checkAdminToken(req)) return adminAuthResponse()
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "mappings")
+  const rl = await rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
   if (!isSameOrigin(req)) return originMismatchResponse()
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "mappings")
+  const rl = await rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   // Wipe-all: richiede SEMPRE admin token, anche su istanze pubbliche senza
   // ADMIN_TOKEN configurato (fail-closed). Nessun client lo invoca.

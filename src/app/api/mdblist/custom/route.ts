@@ -4,7 +4,7 @@ import { fetchUnifiedCatalogItems, detectCatalogProvider } from "@/lib/custom-ca
 import { getDetails, resolveRequestApiKey, tmdbFindByImdb } from "@/lib/tmdb"
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const url = req.nextUrl.searchParams.get("url")

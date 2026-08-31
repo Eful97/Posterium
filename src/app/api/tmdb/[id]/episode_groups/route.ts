@@ -3,7 +3,7 @@ import { getTVEpisodeGroups, resolveRequestApiKey } from "@/lib/tmdb"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const { id } = await params

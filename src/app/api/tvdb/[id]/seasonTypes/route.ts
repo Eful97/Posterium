@@ -9,7 +9,7 @@ function hashFragment(v: string): string {
 }
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const { id } = await context.params

@@ -9,7 +9,7 @@ const log = createLogger("awards")
 type RouteParams = { type: string; id: string }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
-  const rl = rateLimit(rateLimitKey(req), "default")
+  const rl = await rateLimit(rateLimitKey(req), "default")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { type, id } = await params
   const mediaType = type === "tv" || type === "series" ? "tv" : "movie"

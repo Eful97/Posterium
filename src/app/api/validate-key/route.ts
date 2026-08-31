@@ -5,7 +5,7 @@ import { createLogger } from "@/lib/logger"
 const log = createLogger("validate-key")
 
 export async function POST(req: NextRequest): Promise<Response> {
-  const rl = rateLimit(rateLimitKey(req), "default")
+  const rl = await rateLimit(rateLimitKey(req), "default")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   let body: { provider?: string; key?: string }

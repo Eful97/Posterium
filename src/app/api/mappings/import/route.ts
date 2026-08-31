@@ -15,7 +15,7 @@ const MAX_BODY_BYTES = 1_000_000
 const MAX_MAPPINGS = 1000
 
 export async function POST(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "mappings")
+  const rl = await rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
   if (!isSameOrigin(req)) return originMismatchResponse()

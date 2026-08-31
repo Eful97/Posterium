@@ -5,7 +5,7 @@ import { checkAdminToken, adminAuthResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "mappings")
+  const rl = await rateLimit(rateLimitKey(req), "mappings")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   // Fail-open senza ADMIN_TOKEN (istanza pubblica HF Spaces); fail-closed con token.
   if (!checkAdminToken(req)) return adminAuthResponse()
