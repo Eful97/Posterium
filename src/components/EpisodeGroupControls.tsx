@@ -52,8 +52,13 @@ export function EpisodeGroupControls() {
   }, [selected, tmdbKey])
 
   // TVDB seasonTypes per mostrare tutti gli ordinamenti (La Casa de Papel ha 2)
+  // Campi primitivi per il deps array (stesso motivo di EditView): l'oggetto
+  // `selected` cambia identità a ogni render del parent.
+  const selectedId = selected?.id
+  const selectedImdbId = selected?.imdb_id
+  const selectedMediaType = selected?.media_type
   useEffect(() => {
-    if (!selected || selected.media_type !== "tv" || !tvdbApiKey) {
+    if (selectedMediaType !== "tv" || !tvdbApiKey) {
       setTvdbSeasonTypes([])
       setTvdbLoading(false)
       setTvdbError(null)
@@ -63,7 +68,7 @@ export function EpisodeGroupControls() {
     setTvdbLoading(true)
     setTvdbError(null)
     // prova con imdb prima (più affidabile per TVDB), poi tmdbId
-    const candidates = [selected.imdb_id, String(selected.id)].filter(Boolean) as string[]
+    const candidates = [selectedImdbId, String(selectedId)].filter(Boolean) as string[]
     const fetchOne = (id: string) =>
       fetch(`/api/tvdb/${encodeURIComponent(id)}/seasonTypes?tvdb_key=${encodeURIComponent(tvdbApiKey)}&tmdb_key=${encodeURIComponent(tmdbKey || "")}`, {
         headers: { "x-api-key": tvdbApiKey, "x-tmdb-key": tmdbKey || "" },
@@ -90,11 +95,13 @@ export function EpisodeGroupControls() {
       if (active) {
         setTvdbSeasonTypes([])
         setTvdbLoading(false)
-        if (!tvdbError) setTvdbError(null)
+        // NB: l'errore eventualmente impostato da fetchOne resta — il vecchio
+        // `if (!tvdbError) setTvdbError(null)` leggeva la stale closure del
+        // render corrente (sempre null) e cancellava l'errore appena settato.
       }
     })()
     return () => { active = false }
-  }, [selected?.id, selected?.imdb_id, selected?.media_type, tvdbApiKey, tmdbKey])
+  }, [selectedId, selectedImdbId, selectedMediaType, tvdbApiKey, tmdbKey])
 
   // Reset "saved" feedback after 2s
   useEffect(() => {

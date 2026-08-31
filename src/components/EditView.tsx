@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { usePSelector } from "@/lib/context"
 import { useT } from "@/lib/contexts/TranslationContext"
@@ -133,13 +133,19 @@ export default function EditView() {
   }, [handleSave])
 
   // TVDB id per i dettagli titolo (usa TMDB external_ids via seasonTypes route con tmdbKey)
+  // Campi primitivi estratti per il deps array: l'oggetto `selected` cambia
+  // identità a ogni update del parent anche quando i campi rilevanti non
+  // cambiano — dipendere dall'oggetto rifarebbe il fetch TVDB a ogni render.
+  const selectedId = selected?.id
+  const selectedImdbId = selected?.imdb_id
+  const selectedMediaType = selected?.media_type
   useEffect(() => {
-    if (!selected || selected.media_type !== "tv" || !tvdbApiKey) {
+    if (selectedMediaType !== "tv" || !tvdbApiKey) {
       setTvdbId(null)
       return
     }
     let active = true
-    const candidates = [selected.imdb_id, String(selected.id)].filter(Boolean) as string[]
+    const candidates = [selectedImdbId, String(selectedId)].filter(Boolean) as string[]
     const fetchTvdbId = async (cid: string) => {
       try {
         const res = await fetch(`/api/tvdb/${encodeURIComponent(cid)}/seasonTypes?tvdb_key=${encodeURIComponent(tvdbApiKey)}&tmdb_key=${encodeURIComponent(tmdbKey || "")}`, {
@@ -159,22 +165,27 @@ export default function EditView() {
       if (active) setTvdbId(null)
     })()
     return () => { active = false }
-  }, [selected?.id, selected?.imdb_id, selected?.media_type, tvdbApiKey, tmdbKey])
+  }, [selectedId, selectedImdbId, selectedMediaType, tvdbApiKey, tmdbKey])
 
   const cleanPoster = previewPoster?.iso_639_1 === null
 
-  const rightTabs = [
+  // Memoizzato: l'array entra nel deps array dell'effect sotto e non deve
+  // cambiare identità a ogni render (react-hooks/exhaustive-deps).
+  const rightTabs = useMemo(() => [
     { key: "logo", label: t("ui.logoSection") },
     { key: "badge", label: t("ui.badgeSection") },
     ...(selectedLogo ? [{ key: "transform", label: t("ui.transform") }] : []),
     ...(selected?.media_type === "tv" ? [{ key: "stagioni", label: t("ui.seasons") || "Stagioni" }] : []),
-  ]
+  ], [t, selectedLogo, selected?.media_type])
 
   useEffect(() => {
     if (!rightTabs.some((tab) => tab.key === activeRightTab)) {
       setActiveRightTab("logo")
     }
-  }, [selectedLogo, selected?.media_type, activeRightTab])
+    // `rightTabs` è derivato da selectedLogo/selected?.media_type: dipendere
+    // dall'array (ricreato a ogni render) è equivalente e idempotente — il
+    // body non fa setState quando la tab attiva è ancora valida.
+  }, [rightTabs, activeRightTab])
 
   return (
     <div>
