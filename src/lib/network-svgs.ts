@@ -79,7 +79,10 @@ const NETWORK_FILES: Record<string, string> = {
   lucasfilm: "Lucasfilm_logo.svg",
   miramax: "Miramax_logo.svg",
   castle_rock: "castle-rock-entertainment.svg",
-  dreamworks: "dreamworks-animation-logo-svg-vector.svg",
+  dreamworks: "dreamworks-animation-logo-vector.svg",
+  indiana: "Indiana_Production.svg",
+  sky_cinema: "Sky_Cinema_-_Logo_2021.svg",
+  taodue: "Taodue_logo.svg",
 }
 
 // Falso positivo NBC giapponese (Jujutsu Kaisen tmdb 95479): network list contiene 25+ regionali tra cui "NBC" (Nagasaki Broadcasting).
@@ -150,7 +153,10 @@ const NETWORK_TARGET_W: Record<string, number> = {
   lucasfilm: 62,
   miramax: 54,
   castle_rock: 58,
-  dreamworks: 62,
+  dreamworks: 58,
+  indiana: 62,
+  sky_cinema: 58,
+  taodue: 62,
 }
 
 function getNetworkKey(networkName: string): string | null {
@@ -172,6 +178,7 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("pluto")) return "pluto"
   // Filtro anime: SKY PerfecTV! (sat giapponese) condivide nome con Sky EU ma è servizio diverso.
   if (lower.includes("sky perfec")) return null
+  if (lower.includes("sky cinema")) return "sky_cinema"
   // NOW è lo stesso servizio di Sky (streaming Sky) → stesso logo, alias a sky.
   // Word boundary per evitare falsi positivi tipo "Skydance".
   // NOW matchato solo quando il nome inizia con "now" (NOW / Now TV), non la parola ovunque
@@ -217,6 +224,8 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("miramax")) return "miramax"
   if (lower.includes("castle rock")) return "castle_rock"
   if (lower.includes("dreamworks")) return "dreamworks"
+  if (lower.includes("indiana")) return "indiana"
+  if (lower.includes("taodue")) return "taodue"
   return null
 }
 
@@ -250,7 +259,7 @@ async function loadNetworkPng(networkKey: string, pw: number, topLight: boolean 
       const w = meta.width || 100
       const h = meta.height || 50
       const aspect = w / h
-      const isFlatWide = ["lionsgate", "sony", "legendary", "fandango", "pixar"].includes(networkKey)
+      const isFlatWide = ["lionsgate", "sony", "legendary", "fandango", "pixar", "dreamworks", "taodue"].includes(networkKey)
       const areaScale = isFlatWide ? 0.62 : 1 // Lionsgate, Pixar e simili troppo larghi → area -38%
       const desiredArea = 3600 * areaScale * (pw / 500) * (pw / 500)
       const desiredH = Math.round(Math.sqrt(desiredArea / aspect))
@@ -600,7 +609,7 @@ async function loadNetworkRawPng(networkKey: string, pw: number, _topLight?: boo
       const w = meta.width || 100
       const h = meta.height || 50
       const aspect = w / h
-      const isFlatWide2 = ["lionsgate", "sony", "legendary", "fandango", "pixar"].includes(networkKey)
+      const isFlatWide2 = ["lionsgate", "sony", "legendary", "fandango", "pixar", "dreamworks", "taodue"].includes(networkKey)
       const areaScale2 = isFlatWide2 ? 0.62 : 1
       const desiredArea = 3600 * areaScale2 * (pw / 500) * (pw / 500)
       const desiredH = Math.round(Math.sqrt(desiredArea / aspect))
