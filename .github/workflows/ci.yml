@@ -12,7 +12,10 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          # Node 22: jsdom 30 (devDep) richiede ^22.22.2 || ^24.15.0 || >=26 —
+          # su Node 20 i worker vitest crashano (undici 8: markAsUncloneable).
+          # Il runtime di produzione non usa jsdom (devDependency only).
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npx tsc --noEmit
