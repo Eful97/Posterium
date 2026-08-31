@@ -291,6 +291,7 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | `1200` | Tetto scoring best-fit CPU (300–10000ms). |
 | `POSTERIUM_AUTO_FIT_FETCH_TIMEOUT_MS` | `5000` | Tetto fetch logo/candidati best-fit (1s–15s). |
 | `POSTERIUM_RATELIMIT_POSTER_MAX` | `200` | Burst max bucket poster (10–10000). |
+| `POSTERIUM_RATELIMIT_KV` | *auto* | Con KV configurato (`KV_REST_API_URL`/`KV_REST_API_TOKEN`) il rate-limit usa un contatore shared su Upstash tra tutte le istanze (fixed-window 1s); `0` forza lo store in-memory per-processo. Su errore KV degrada automaticamente al bucket locale. |
 | `POSTERIUM_PROXY_ALLOW_DOMAINS` | *(vuoto)* | Allowlist domini per addon proxy (vuoto=aperto). |
 | `POSTERIUM_TORRENTIO_URL` | `https://torrentio.strem.fun` | Endpoint provider per lo scraping real-time della qualità stream. |
 | `POSTERIUM_LOG_LEVEL` | `info` | Livello logger (`debug`/`info`/`warn`/`error`). |

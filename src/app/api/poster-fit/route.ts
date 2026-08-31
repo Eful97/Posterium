@@ -62,7 +62,7 @@ const MAX_BODY_BYTES = 50_000
 const POSTER_SIZES = new Set(["w342", "w500"])
 
 export async function POST(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "search")
+  const rl = await rateLimit(rateLimitKey(req), "search")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   // S10: endpoint CPU/network-heavy (fetch di fino a 17 immagini + analisi
   // sharp). Protetto come le altre route admin: senza auth un attaccante lo

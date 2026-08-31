@@ -205,7 +205,7 @@ export async function posteriumCatalog(
   configParam: string | null,
   extraSegments?: string[] | string | null,
 ): Promise<Response> {
-  const rl = rateLimit(rateLimitKey(req), "catalog")
+  const rl = await rateLimit(rateLimitKey(req), "catalog")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const catalogId = rawId.replace(/\.json$/, "")

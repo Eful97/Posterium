@@ -15,7 +15,7 @@ const RATING_WAIT_MS = (() => {
 })()
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const { id } = await params
   const type = req.nextUrl.searchParams.get("type") || "movie"

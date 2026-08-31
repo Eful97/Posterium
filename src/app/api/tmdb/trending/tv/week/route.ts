@@ -9,7 +9,7 @@ const log = createLogger("trending-tv-week")
 const TMDB_BASE = "https://api.themoviedb.org/3"
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const apiKey = req.nextUrl.searchParams.get("api_key") || ""

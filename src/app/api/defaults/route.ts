@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "defaults")
+  const rl = await rateLimit(rateLimitKey(req), "defaults")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!checkAdminToken(req)) return adminAuthResponse()
   if (!isSameOrigin(req)) return originMismatchResponse()

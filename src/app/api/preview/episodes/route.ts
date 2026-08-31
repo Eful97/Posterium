@@ -29,7 +29,7 @@ function hashFragment(value: string): string {
 }
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const tmdbIdRaw = req.nextUrl.searchParams.get("tmdbId") || req.nextUrl.searchParams.get("id")

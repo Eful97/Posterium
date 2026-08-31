@@ -16,7 +16,7 @@ const log = createLogger("config-token")
  * fallisce (fail-closed): risposta chiara con le istruzioni.
  */
 export async function POST(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "config")
+  const rl = await rateLimit(rateLimitKey(req), "config")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!isSameOrigin(req)) return originMismatchResponse()
 

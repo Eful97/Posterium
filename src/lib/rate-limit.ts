@@ -5,6 +5,9 @@ const CLEANUP_INTERVAL = 30 * 60 * 1000
 // vecchi vengono rimossi (FIFO) per tenere la memoria bounded.
 const MAX_KEYS = 50_000
 let cleanupTimer: ReturnType<typeof setInterval> | null = null
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger("rate-limit")
 
 function evictOldest() {
   const oldest = buckets.keys().next().value
@@ -51,16 +54,8 @@ const limits: Record<string, BucketConfig> = {
   defaults: { maxTokens: 30, refillRate: 3,  refillWindow: 1000 },
 }
 
-export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter: number } {
+function memoryRateLimit(bucketKey: string, cfg: BucketConfig, now: number): { ok: boolean; retAfter: number } {
   startCleanup()
-  const cfg = limits[bucket] || limits.default
-  const now = Date.now()
-  // Chiave composta (bucket, client): con la chiave client condivisa "shared"
-  // (senza POSTERIUM_TRUST_PROXY) tutte le route finivano in un UNICO bucket
-  // il cui maxTokens/refill veniva sovrascritto dall'ultima route chiamata
-  // (una chiamata warmup con max 5 sgonfiava il bucket di poster/tmdb e
-  // viceversa, rendendo i limiti per-route illusori).
-  const bucketKey = `${bucket}:${key}`
   let b = buckets.get(bucketKey)
 
   if (!b) {
@@ -84,6 +79,75 @@ export function rateLimit(key: string, bucket: string): { ok: boolean; retAfter:
 
   const waitMs = b.lastRefill + cfg.refillWindow - now
   return { ok: false, retAfter: Math.ceil(waitMs / 1000) }
+}
+
+// ---- Store distribuito (opzionale) ----
+// Con KV configurato (Upstash / Vercel KV) il rate-limit usa un contatore
+// fixed-window condiviso su Redis: su deploy multi-istanza (Vercel multi-
+// lambda, HF multi-replica) il limite in-memory per-process vale comunque
+// N × maxTokens per istanza. La finestra è `refillWindow` (1s) con cap
+// `maxTokens` per finestra — approssimazione del token bucket locale.
+// POSTERIUM_RATELIMIT_KV=0 forza lo store in-memory anche con KV presente.
+// Su errore KV si degrada al bucket in-memory di questo processo (fail-open
+// locale): un outage del rate-limit non deve mai rompere il serving.
+const useKvStore =
+  !!process.env.KV_REST_API_URL &&
+  !!process.env.KV_REST_API_TOKEN &&
+  process.env.POSTERIUM_RATELIMIT_KV !== "0"
+
+let lastKvErrorLog = 0
+
+function logKvFallback(error: unknown): void {
+  const now = Date.now()
+  // Log throttled: in outage il fallback gira su ogni richiesta.
+  if (now - lastKvErrorLog < 60_000) return
+  lastKvErrorLog = now
+  log.warn("KV rate-limit store unavailable — falling back to per-process bucket", {
+    error: error instanceof Error ? error.message : String(error),
+  })
+}
+
+async function kvRateLimit(bucketKey: string, cfg: BucketConfig, now: number): Promise<{ ok: boolean; retAfter: number }> {
+  const { kv } = await import("@vercel/kv")
+  const windowMs = cfg.refillWindow
+  const win = Math.floor(now / windowMs)
+  const kvKey = `rl:${bucketKey}:${win}`
+  const count = await kv.incr(kvKey)
+  if (count === 1) {
+    // TTL 2× finestra: la chiave scade da sola anche se il processo muore
+    // tra INCR ed EXPIRE (nessuna chiave orfana permanente su Redis).
+    await kv.expire(kvKey, Math.ceil((windowMs * 2) / 1000))
+  }
+  if (count > cfg.maxTokens) {
+    const retAfter = Math.max(1, Math.ceil(((win + 1) * windowMs - now) / 1000))
+    return { ok: false, retAfter }
+  }
+  return { ok: true, retAfter: 0 }
+}
+
+/**
+ * Rate-limit con store selezionabile: KV condiviso quando configurato
+ * (POSTERIUM_RATELIMIT_KV non è "0"), altrimenti token bucket per-processo.
+ * È async da quando esiste il percorso KV: tutte le call site fanno `await`.
+ */
+export async function rateLimit(key: string, bucket: string): Promise<{ ok: boolean; retAfter: number }> {
+  const cfg = limits[bucket] || limits.default
+  const now = Date.now()
+  // Chiave composta (bucket, client): con la chiave client condivisa "shared"
+  // (senza POSTERIUM_TRUST_PROXY) tutte le route finivano in un UNICO bucket
+  // il cui maxTokens/refill veniva sovrascritto dall'ultima route chiamata
+  // (una chiamata warmup con max 5 sgonfiava il bucket di poster/tmdb e
+  // viceversa, rendendo i limiti per-route illusori).
+  const bucketKey = `${bucket}:${key}`
+  if (useKvStore) {
+    try {
+      return await kvRateLimit(bucketKey, cfg, now)
+    } catch (error) {
+      logKvFallback(error)
+      // fallback: bucket in-memory di questo processo
+    }
+  }
+  return memoryRateLimit(bucketKey, cfg, now)
 }
 
 export function rateLimitKey(request: Request): string {

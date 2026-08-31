@@ -5,7 +5,7 @@ import { cacheGet, cacheSet } from "@/lib/cache"
 import { jsonGzip } from "@/lib/json-response"
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "search")
+  const rl = await rateLimit(rateLimitKey(req), "search")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const rawQuery = req.nextUrl.searchParams.get("q")
   const query = rawQuery ? rawQuery.trim().slice(0, 100) : null

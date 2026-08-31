@@ -6,7 +6,7 @@ import { createLogger } from "@/lib/logger"
 const log = createLogger("flixpatrol-api")
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   const apiKey = req.nextUrl.searchParams.get("api_key") || undefined
   const platform = req.nextUrl.searchParams.get("platform") || "netflix"

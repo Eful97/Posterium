@@ -10,7 +10,7 @@ import type { EnrichedAnimeItem } from "@/lib/validation"
 const log = createLogger("mdblist-anime")
 
 export async function GET(req: NextRequest) {
-  const rl = rateLimit(rateLimitKey(req), "tmdb")
+  const rl = await rateLimit(rateLimitKey(req), "tmdb")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   const typeParam = req.nextUrl.searchParams.get("type") // "movie" | "tv" | null

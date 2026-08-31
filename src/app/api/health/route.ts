@@ -78,7 +78,7 @@ async function canWriteDir(dir: string): Promise<boolean> {
 }
 
 export async function GET(request: Request) {
-  const rl = rateLimit(rateLimitKey(request), "default")
+  const rl = await rateLimit(rateLimitKey(request), "default")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
 
   // S9: la chiave arriva via header x-api-key (solo richiesta: non esiste più

@@ -77,55 +77,55 @@ describe("rateLimit (token bucket per (bucket, key))", () => {
     delete process.env.POSTERIUM_TRUST_PROXY
   })
 
-  it("scarica un bucket e risponde 429 con Retry-After quando è esaurito", () => {
+  it("scarica un bucket e risponde 429 con Retry-After quando è esaurito", async () => {
     const key = "h2-exhaust-1"
     // warmup ha maxTokens=5, refill 1/s → 6 richieste: le prime 5 ok, la 6a no
     for (let i = 0; i < 5; i++) {
-      expect(rateLimit(key, "warmup")).toEqual({ ok: true, retAfter: 0 })
+      expect(await rateLimit(key, "warmup")).toEqual({ ok: true, retAfter: 0 })
     }
-    const denied = rateLimit(key, "warmup")
+    const denied = await rateLimit(key, "warmup")
     expect(denied.ok).toBe(false)
     expect(denied.retAfter).toBeGreaterThan(0)
   })
 
-  it("route diverse con la stessa chiave client NON condividono il bucket (chiave composta)", () => {
+  it("route diverse con la stessa chiave client NON condividono il bucket (chiave composta)", async () => {
     // Senza trust proxy la chiave client è sempre "shared": prima del fix il
     // bucket era unico e il cfg dell'ultima route chiamata vinceva.
     vi.useFakeTimers()
     try {
-      for (let i = 0; i < 5; i++) expect(rateLimit("shared", "warmup").ok).toBe(true)
-      expect(rateLimit("shared", "warmup").ok).toBe(false) // warmup esaurito
+      for (let i = 0; i < 5; i++) expect((await rateLimit("shared", "warmup")).ok).toBe(true)
+      expect((await rateLimit("shared", "warmup")).ok).toBe(false) // warmup esaurito
 
       // Il bucket poster (max 200) è intatto: non deve risentire del cap warmup.
-      expect(rateLimit("shared", "poster").ok).toBe(true)
-      for (let i = 0; i < 4; i++) expect(rateLimit("shared", "poster").ok).toBe(true)
+      expect((await rateLimit("shared", "poster")).ok).toBe(true)
+      for (let i = 0; i < 4; i++) expect((await rateLimit("shared", "poster")).ok).toBe(true)
       // E nemmeno il bucket default (max 120): riparte pieno.
-      expect(rateLimit("shared", "default").ok).toBe(true)
+      expect((await rateLimit("shared", "default")).ok).toBe(true)
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it("ricarica i token dopo la finestra di refill (con clock finto)", () => {
+  it("ricarica i token dopo la finestra di refill (con clock finto)", async () => {
     vi.useFakeTimers()
     try {
       const key = "h2-refill-1"
-      for (let i = 0; i < 5; i++) expect(rateLimit(key, "warmup").ok).toBe(true)
-      expect(rateLimit(key, "warmup").ok).toBe(false)
+      for (let i = 0; i < 5; i++) expect((await rateLimit(key, "warmup")).ok).toBe(true)
+      expect((await rateLimit(key, "warmup")).ok).toBe(false)
 
       // Dopo 2 finestre da 1 s: 2 token aggiuntivi (capped al max di 5) → 2 richieste ok
       vi.setSystemTime(Date.now() + 2_000)
-      expect(rateLimit(key, "warmup").ok).toBe(true)
-      expect(rateLimit(key, "warmup").ok).toBe(true)
-      expect(rateLimit(key, "warmup").ok).toBe(false)
+      expect((await rateLimit(key, "warmup")).ok).toBe(true)
+      expect((await rateLimit(key, "warmup")).ok).toBe(true)
+      expect((await rateLimit(key, "warmup")).ok).toBe(false)
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it("bucket sconosciuti cadono sul default (120 burst)", () => {
+  it("bucket sconosciuti cadono sul default (120 burst)", async () => {
     const key = "h2-fallback-1"
-    for (let i = 0; i < 120; i++) expect(rateLimit(key, "non-esistente").ok).toBe(true)
-    expect(rateLimit(key, "non-esistente").ok).toBe(false)
+    for (let i = 0; i < 120; i++) expect((await rateLimit(key, "non-esistente")).ok).toBe(true)
+    expect((await rateLimit(key, "non-esistente")).ok).toBe(false)
   })
 })
