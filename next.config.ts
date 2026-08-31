@@ -21,7 +21,12 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // `standalone` serve al self-hosting Docker (il Dockerfile copia
+  // .next/standalone). Su Vercel NON va impostato: con Next 16.3+ l'output
+  // standalone salta la generazione dei file di tracing serverless
+  // (.nft.json) e il build fallisce con
+  // "ENOENT .next/next-server.js.nft.json" — lì si usa l'output default.
+  output: process.env.VERCEL ? undefined : "standalone",
   // React Compiler: ottimizza automaticamente il re-rendering dei componenti,
   // riducendo la necessita' di useMemo/useCallback manuali.
   reactCompiler: true,
