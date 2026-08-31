@@ -1,5 +1,25 @@
 import type { NextConfig } from "next";
 
+// CSP estesa (hardening): default-src 'self' mitiga XSS, img-src copre i
+// poster TMDB diretti e i blob: delle preview secure (useSecurePosterUrl/
+// usePosterPreview), connect-src 'self' basta perché TUTTE le fetch client
+// passano da /api/* (le chiamate a TMDB/MDBList/JustWatch/ani.zip sono
+// server-side). In dev si aggiungono 'unsafe-eval' (React Refresh) e il
+// websocket HMR. frame-ancestors permette l'embedding su HF Spaces.
+const isDev = process.env.NODE_ENV === "development";
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://image.tmdb.org",
+  "font-src 'self'",
+  `connect-src 'self'${isDev ? " ws://127.0.0.1:* ws://localhost:*" : ""}`,
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self' https://huggingface.co https://*.huggingface.co https://*.hf.space",
+].join("; ");
+
 const nextConfig: NextConfig = {
   output: "standalone",
   // React Compiler: ottimizza automaticamente il re-rendering dei componenti,
@@ -28,7 +48,7 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self' https://huggingface.co https://*.huggingface.co https://*.hf.space;" },
+          { key: "Content-Security-Policy", value: contentSecurityPolicy },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
