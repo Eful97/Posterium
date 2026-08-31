@@ -216,6 +216,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
       }
       if (!networkLogoPath && candidates.length) { networkLogoName = candidates[0].name }
     }
+    const effectiveLogoPath = isClean && !logoDisabled ? (selectedLogo?.file_path || null) : null
     try {
       await http("/api/mappings", {
         method: "POST",
@@ -225,7 +226,7 @@ export function usePosterSave(deps: PosterSaveDeps) {
           mediaType: selected.media_type,
           title: titleOf(selected),
           posterPath: posterToSave.file_path,
-          logoPath: selectedLogo?.file_path || null,
+          logoPath: effectiveLogoPath,
           originalPosterPath: selected.poster_path,
           language: posterToSave.iso_639_1,
           logoScale, logoOffsetX, logoOffsetY,

@@ -365,7 +365,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     etag = `"p${etagBase}"`
   } else if (mapping) {
     posterPath = mapping.posterPath
-    logoPath = queryLogo || mapping.logoPath
+    // Poster non-clean (language !== null) ha già testo incorporato → mai sovrapporre logo
+    const isMappingClean = mapping.language === null
+    const effectiveMappingLogo = isMappingClean && !mapping.logoDisabled ? mapping.logoPath : null
+    logoPath = queryLogo || effectiveMappingLogo
+    if (!isMappingClean) logoPath = null
     backdropPath = queryBackdrop || mapping?.backdropPath || null
     backdropScale = mapping?.backdropScale ?? 100
     // Fix M5: clamp difensivo anche sui mapping già salvati (pre-bounds zod):
