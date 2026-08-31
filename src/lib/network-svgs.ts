@@ -79,6 +79,7 @@ const NETWORK_FILES: Record<string, string> = {
   lucasfilm: "Lucasfilm_logo.svg",
   miramax: "Miramax_logo.svg",
   castle_rock: "castle-rock-entertainment.svg",
+  dreamworks: "dreamworks-animation-logo-svg-vector.svg",
 }
 
 // Falso positivo NBC giapponese (Jujutsu Kaisen tmdb 95479): network list contiene 25+ regionali tra cui "NBC" (Nagasaki Broadcasting).
@@ -149,6 +150,7 @@ const NETWORK_TARGET_W: Record<string, number> = {
   lucasfilm: 62,
   miramax: 54,
   castle_rock: 58,
+  dreamworks: 62,
 }
 
 function getNetworkKey(networkName: string): string | null {
@@ -214,6 +216,7 @@ function getNetworkKey(networkName: string): string | null {
   if (lower.includes("lucasfilm")) return "lucasfilm"
   if (lower.includes("miramax")) return "miramax"
   if (lower.includes("castle rock")) return "castle_rock"
+  if (lower.includes("dreamworks")) return "dreamworks"
   return null
 }
 
