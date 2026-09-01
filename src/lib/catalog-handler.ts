@@ -546,7 +546,9 @@ export async function posteriumCatalog(
       let platformKey = ""
       let slug = ""
       for (const [k, v] of Object.entries(PLATFORM_SLUGS)) {
-        if (catalogId.includes(k)) {
+        // Fix M4: match ancorato invece di includes(k) — "now" dentro "unknown"
+        // o "snow-white" dava falso positivo su customCatalog id arbitrari
+        if (catalogId === `posterium-${k}-movies` || catalogId === `posterium-${k}-series`) {
           platformKey = k
           slug = v
           break

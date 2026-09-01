@@ -8,20 +8,51 @@ function resolveAdminToken(): string | undefined {
 }
 
 /** Istanza in modalità pubblica: le route admin restano aperte senza
- *  ADMIN_TOKEN quando esplicitamente configurata via
- *  POSTERIUM_PUBLIC_INSTANCE=1 (HF Spaces multi-utente) o in dev locale
- *  (`next dev`, NODE_ENV=development) dove l'operatore è l'admin. In
- *  produzione senza flag resta fail-closed. */
+ *  ADMIN_TOKEN solo quando esplicitamente configurata via
+ *  POSTERIUM_PUBLIC_INSTANCE=1 (HF Spaces multi-utente). In dev locale
+ *  (`next dev`, NODE_ENV=development) l'accesso senza token è consentito
+ *  solo su loopback (127.0.0.1/::1/localhost) o con POSTERIUM_ALLOW_DEV_ADMIN=1.
+ *  In produzione senza flag resta fail-closed. */
 function isPublicInstance(): boolean {
-  return process.env.POSTERIUM_PUBLIC_INSTANCE === "1" || process.env.NODE_ENV === "development"
+  return process.env.POSTERIUM_PUBLIC_INSTANCE === "1"
+}
+
+function isLoopbackRequest(request: Request): boolean {
+  try {
+    const hostname = new URL(request.url).hostname.toLowerCase()
+    if (hostname === "127.0.0.1" || hostname === "::1" || hostname === "localhost") return true
+  } catch {}
+  const hostHeader = request.headers.get("host")
+  if (hostHeader) {
+    const h = hostHeader.split(":")[0].trim().toLowerCase()
+    if (h === "127.0.0.1" || h === "::1" || h === "localhost") return true
+  }
+  return false
+}
+
+function isDevAdminAllowed(request: Request): boolean {
+  if (process.env.NODE_ENV !== "development") return false
+  if (process.env.POSTERIUM_ALLOW_DEV_ADMIN === "1") return true
+  return isLoopbackRequest(request)
 }
 
 if (!resolveAdminToken() && !isPublicInstance()) {
-  log.warn("⚠️  Nessun ADMIN_TOKEN configurato e modalità pubblica non attiva — route admin CHIUSE (fail-closed).")
-  log.warn("   - Istanza pubblica (HF Spaces multi-utente): imposta POSTERIUM_PUBLIC_INSTANCE=1")
-  log.warn("   - Istanza privata: imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) (x-admin-token / Bearer)")
+  if (process.env.NODE_ENV === "development") {
+    if (process.env.POSTERIUM_ALLOW_DEV_ADMIN === "1") {
+      log.warn("⚠️  Dev locale con POSTERIUM_ALLOW_DEV_ADMIN=1 senza ADMIN_TOKEN — route admin APERTE in dev (esplicito).")
+      log.warn("   Imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) per proteggerle anche in dev.")
+    } else {
+      log.warn("⚠️  Dev locale senza ADMIN_TOKEN — route admin APERTE solo su loopback (127.0.0.1/localhost) o con POSTERIUM_ALLOW_DEV_ADMIN=1.")
+      log.warn("   - Per aprire ovunque in dev: POSTERIUM_ALLOW_DEV_ADMIN=1")
+      log.warn("   - Istanza privata: imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) per chiudere ovunque")
+    }
+  } else {
+    log.warn("⚠️  Nessun ADMIN_TOKEN configurato e modalità pubblica non attiva — route admin CHIUSE (fail-closed).")
+    log.warn("   - Istanza pubblica (HF Spaces multi-utente): imposta POSTERIUM_PUBLIC_INSTANCE=1")
+    log.warn("   - Istanza privata: imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) (x-admin-token / Bearer)")
+  }
 } else if (!resolveAdminToken()) {
-  log.warn("⚠️  Modalità pubblica senza ADMIN_TOKEN — route admin APERTE (istanza pubblica esplicita o dev locale).")
+  log.warn("⚠️  Modalità pubblica senza ADMIN_TOKEN — route admin APERTE (POSTERIUM_PUBLIC_INSTANCE=1).")
   log.warn("   Imposta POSTERIUM_ADMIN_TOKEN (o ADMIN_TOKEN) per proteggerle.")
 }
 
@@ -33,12 +64,16 @@ function constantTimeEqual(a: string, b: string): boolean {
 export function checkAdminToken(request: Request): boolean {
   const token = resolveAdminToken()
   // Nessun token configurato → le route restano aperte solo in modalità
-  // pubblica: esplicita (POSTERIUM_PUBLIC_INSTANCE=1, HF Spaces multi-utente)
-  // o dev locale (NODE_ENV=development, dove l'operatore è l'admin). Il client
-  // non invia mai il token admin, quindi la modalità pubblica è l'unico modo
-  // per far funzionare l'editor. Un'istanza di produzione privata che ha
-  // dimenticato il token NON resta esposta → fail-closed.
-  if (!token) return isPublicInstance()
+  // pubblica esplicita (POSTERIUM_PUBLIC_INSTANCE=1) o in dev su loopback /
+  // con POSTERIUM_ALLOW_DEV_ADMIN=1. Il client non invia mai il token admin,
+  // quindi la modalità pubblica è l'unico modo per far funzionare l'editor
+  // su HF. Un'istanza di produzione privata che ha dimenticato il token
+  // NON resta esposta → fail-closed.
+  if (!token) {
+    if (isPublicInstance()) return true
+    if (isDevAdminAllowed(request)) return true
+    return false
+  }
 
   const headers = request.headers
   const bearer = headers.get("authorization")?.replace(/^Bearer\s+/i, "")

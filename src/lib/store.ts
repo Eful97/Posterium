@@ -120,6 +120,7 @@ function enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
       if (writeFailures >= 5) {
         log.error("Write queue has 5+ consecutive failures — check disk permissions or storage backend")
       }
+      throw error
     },
   )
   return run
@@ -182,12 +183,24 @@ async function persist(data: Record<string, Mapping>) {
   const tmp = `${DATA_FILE}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}.tmp`
   try {
     await fsp.writeFile(tmp, JSON.stringify(data, null, 2))
-    await fsp.rename(tmp, DATA_FILE)
+    try {
+      await fsp.rename(tmp, DATA_FILE)
+    } catch (e) {
+      if (isNodeError(e) && (e as NodeJS.ErrnoException).code === "EXDEV") {
+        // HF Storage FUSE può dare EXDEV se tmp e DATA_FILE sono su mount diversi
+        // (es. symlink o /tmp separato). Fallback come in flixpatrol.ts: copy+unlink
+        await fsp.copyFile(tmp, DATA_FILE)
+        await fsp.unlink(tmp).catch(() => {})
+      } else {
+        throw e
+      }
+    }
     // Aggiorna la memCache SOLO dopo la write riuscita: se la persist fallisce,
     // la memCache resta coerente con il disco e non serve dati mai persistiti.
     memCache = data
     memCacheTime = Date.now()
   } catch (e) {
+    await fsp.unlink(tmp).catch(() => {})
     const msg = e instanceof Error ? e.message : String(e)
     log.error("Failed to write mappings", { file: DATA_FILE, error: msg })
     if (msg.includes("EACCES") || msg.includes("EPERM")) {

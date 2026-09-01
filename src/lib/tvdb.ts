@@ -303,7 +303,10 @@ export async function getTvdbEpisodes(tvdbSeriesId: number, language = "ita", ap
     let page = 0
     let hasMore = true
 
-    while (hasMore && page < 10) {
+    // Fix M5: cap alzato da 10 a 50 pagine (100 ep/page → 5000 ep) per serie
+    // long-running (es. One Piece >1000 ep). Il loop termina comunque su
+    // total_pages quando disponibile, il cap è solo safety bound.
+    while (hasMore && page < 50) {
       const langSegment = language && language !== "default" ? `/${encodeURIComponent(language)}` : ""
       const url = `${TVDB_BASE}/series/${tvdbSeriesId}/episodes/${encodeURIComponent(normalizedType)}${langSegment}?page=${page}`
       const res = await fetch(url, {

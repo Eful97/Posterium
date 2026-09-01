@@ -152,10 +152,12 @@ export async function rateLimit(key: string, bucket: string): Promise<{ ok: bool
 
 export function rateLimitKey(request: Request): string {
   // Estrae l'IP client per il rate limit. Quando POSTERIUM_TRUST_PROXY=1
-  // gli header sono considerati fidati (proxy sovrascrive), altrimenti sono
-  // comunque usati per bucket per-IP (preferibile al vecchio "shared" che
-  // metteva tutti gli utenti nello stesso bucket causando DoS). Lo spoof
-  // senza proxy è possibile ma meno dannoso di un bucket condiviso.
+  // gli header sono considerati fidati (proxy sovrascrive XFF), altrimenti
+  // x-forwarded-for è ignorato per evitare bucket pollution (H2): l'attaccante
+  // poteva inviare X-Forwarded-For arbitrario e generare fino a MAX_KEYS bucket
+  // distinti, evictando quelli legittimi (FIFO). x-real-ip / cf-connecting-ip
+  // restano usati (Nginx/Cloudflare) ma il fallback ua: garantisce granularità
+  // minima senza ricadere nel vecchio bucket "shared" globale.
   const trusted = process.env.POSTERIUM_TRUST_PROXY === "1"
   // 1) x-real-ip — Nginx/HF
   const realIp = request.headers.get("x-real-ip")
@@ -163,19 +165,19 @@ export function rateLimitKey(request: Request): string {
   // 2) cf-connecting-ip — Cloudflare
   const cfIp = request.headers.get("cf-connecting-ip")
   if (cfIp) return cfIp.trim()
-  // 3) x-forwarded-for — ultimo hop se trusted, altrimenti primo IP
-  const forwarded = request.headers.get("x-forwarded-for")
-  if (forwarded) {
-    const parts = forwarded.split(",").map((p) => p.trim()).filter(Boolean)
-    if (parts.length > 0) {
-      // Con proxy trusted l'ultimo è l'IP reale; senza trust usiamo il primo
-      // (più vicino al client, anche se spoofabile) per mantenere per-IP.
-      const ip = trusted ? parts[parts.length - 1] : parts[0]
-      if (ip) return ip
+  // 3) x-forwarded-for — solo se trusted, altrimenti spoofabile (H2)
+  if (trusted) {
+    const forwarded = request.headers.get("x-forwarded-for")
+    if (forwarded) {
+      const parts = forwarded.split(",").map((p) => p.trim()).filter(Boolean)
+      if (parts.length > 0) {
+        const ip = parts[parts.length - 1]
+        if (ip) return ip
+      }
     }
   }
-  // Fallback: senza header IP, usa un bucket per-istanza ma con limite più alto
-  // (evita DoS del vecchio "shared" con limiti bassi). Distinguiamo con
+  // Fallback: senza header IP affidabile, usa un bucket per-istanza ma con
+  // limite più alto (evita DoS del vecchio "shared"). Distinguiamo con
   // user-agent hash quando disponibile per granularità minima.
   const ua = request.headers.get("user-agent")
   if (ua) return `ua:${ua.slice(0, 48)}`

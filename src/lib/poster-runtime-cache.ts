@@ -229,6 +229,12 @@ export function schedulePosterRefresh(req: NextRequest, isPreview: boolean = fal
   if (process.env.VERCEL) return // Serverless: nessun self-fetch in background
   const internalOrigin = `http://127.0.0.1:${process.env.PORT || "3000"}`
   const searchParams = new URLSearchParams(req.nextUrl.searchParams)
+  // Fix M1: non inoltrare api_key in chiaro nell'URL di loopback — la chiave
+  // viene passata via header x-api-key (come già fa il warmup dei cataloghi).
+  // route.ts:167 rimuove già api_key dal cacheKey per non tenerla in memoria.
+  const apiKeyForRefresh = searchParams.get("api_key") || req.headers.get("x-api-key") || undefined
+  searchParams.delete("api_key")
+  searchParams.delete("x-api-key")
   searchParams.set(POSTER_REFRESH_PARAM, "1")
   const refreshUrl = `${internalOrigin}${req.nextUrl.pathname}?${searchParams.toString()}`
   const key = `${req.nextUrl.pathname}?${searchParams.toString()}`
@@ -243,7 +249,12 @@ export function schedulePosterRefresh(req: NextRequest, isPreview: boolean = fal
   if (lastRefreshAt.size >= MAX_REFRESH_TRACKED) lastRefreshAt.delete(lastRefreshAt.keys().next().value!)
   lastRefreshAt.set(key, now)
   refreshInFlight.add(key)
-  void fetch(refreshUrl, { signal: AbortSignal.timeout(60_000) })
+  const refreshHeaders: Record<string, string> = {}
+  if (apiKeyForRefresh) refreshHeaders["x-api-key"] = apiKeyForRefresh
+  void fetch(refreshUrl, {
+    headers: Object.keys(refreshHeaders).length > 0 ? refreshHeaders : undefined,
+    signal: AbortSignal.timeout(60_000),
+  })
     .then(async (res) => {
       // Consuma/cancella il body per evitare memory leak senza allocare buffer enormi
       await res.body?.cancel().catch(() => {})

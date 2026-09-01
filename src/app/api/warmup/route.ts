@@ -102,26 +102,33 @@ function constantTimeEqual(a: string, b: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  // Auth coerente con le altre route admin: fail-open su istanza pubblica senza
-  // ADMIN_TOKEN (HF Spaces), fail-closed quando un token è configurato.
-  // Finding 16: POSTERIUM_WARMUP_TOKEN opzionale — se configurato, il warmup
-  // richiede quel token (header x-warmup-token) O l'admin token. Così un'istanza
-  // condivisa può proteggere l'endpoint-amplificatore senza rompere il
-  // self-warmup dell'entrypoint (che lo invia se configurato).
   const warmupToken = process.env.POSTERIUM_WARMUP_TOKEN
-  // Se POSTERIUM_WARMUP_TOKEN e' configurato, il warmup richiede quel token
-  // (header x-warmup-token) O l'admin token. Se NON e' configurato, la guardia
-  // resta checkAdminToken come prima (fail-open solo su istanza pubblica,
-  // fail-closed sulle istanze private con ADMIN_TOKEN). NB: un primo ||
-  // qui avrebbe aperto l'endpoint su ogni istanza senza warmup token -- il
-  // checkAdminToken va consultato SEMPRE.
-  const warmupHeaderOk = !warmupToken
-    ? undefined
-    : (() => {
-        const header = req.headers.get("x-warmup-token")
-        return !!header && constantTimeEqual(header, warmupToken)
-      })()
-  if (warmupHeaderOk !== true && !checkAdminToken(req)) return adminAuthResponse()
+  const isPublic = process.env.POSTERIUM_PUBLIC_INSTANCE === "1"
+  if (isPublic) {
+    // Fix H3: su istanza pubblica il warmup è un amplificatore (1 req → 500
+    // poster tentati) — POSTERIUM_WARMUP_TOKEN è obbligatorio. Senza token
+    // l'endpoint non è utilizzabile (evita DoS su HF Spaces). Con token
+    // configurato, richiede x-warmup-token esatto (non basta checkAdminToken
+    // che su public è fail-open).
+    if (!warmupToken) {
+      log.warn("Warmup rejected: POSTERIUM_PUBLIC_INSTANCE=1 requires POSTERIUM_WARMUP_TOKEN")
+      return adminAuthResponse()
+    }
+    const header = req.headers.get("x-warmup-token")
+    const ok = !!header && constantTimeEqual(header, warmupToken)
+    if (!ok) return adminAuthResponse()
+  } else {
+    // Istanza privata: auth coerente con le altre route admin (fail-closed con
+    // token, fail-open solo se isPublic o dev loopback). Warmup token resta
+    // opzionale: se configurato, richiede x-warmup-token O admin token.
+    const warmupHeaderOk = !warmupToken
+      ? undefined
+      : (() => {
+          const header = req.headers.get("x-warmup-token")
+          return !!header && constantTimeEqual(header, warmupToken)
+        })()
+    if (warmupHeaderOk !== true && !checkAdminToken(req)) return adminAuthResponse()
+  }
   const rl = await rateLimit(rateLimitKey(req), "warmup")
   if (!rl.ok) return rateLimitResponse(rl.retAfter)
   if (!isSameOrigin(req)) return originMismatchResponse()

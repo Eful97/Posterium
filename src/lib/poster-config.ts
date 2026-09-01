@@ -89,17 +89,38 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
     rankingBadgeStyle = "default"
   }
 
-  const blurEnabled = q.get("be") !== null ? q.get("be") !== "0" : (configOverride !== null ? configOverride.blurEnabled : true)
+  // Fix M3: includere i campi blur salvati nel mapping nella catena di fallback
+  // (query > mapping > configOverride > default), come già fatto per badgeGenre/badgeStyle.
+  // Prima il mapping salvato con blur custom non veniva mai applicato.
+  const blurEnabled = q.get("be") !== null
+    ? q.get("be") !== "0"
+    : (mapping?.blurEnabled != null ? mapping.blurEnabled : (configOverride !== null ? configOverride.blurEnabled : true))
   // Clamp espliciti: impediscono a valori estremi (query o config) di arrivare a
   // sharp.blur con sigma enormi o gradienti fuori scala (potenziale DoS CPU).
   const rawGradHeight = q.get("gradHeight") ? Number(q.get("gradHeight")) : NaN
-  const blurHeight = Number.isFinite(rawGradHeight) ? clamp(rawGradHeight, 5, 100) : (configOverride !== null ? clamp(configOverride.gradientHeight, 5, 100) : 30)
+  const blurHeight = Number.isFinite(rawGradHeight)
+    ? clamp(rawGradHeight, 5, 100)
+    : (mapping?.gradientHeight != null && Number.isFinite(mapping.gradientHeight)
+        ? clamp(mapping.gradientHeight, 5, 100)
+        : (configOverride !== null ? clamp(configOverride.gradientHeight, 5, 100) : 30))
   const rawBlur = q.get("blur") ? Number(q.get("blur")) : NaN
-  const blurIntensity = Number.isFinite(rawBlur) ? clamp(rawBlur, 1, 100) : (configOverride !== null ? clamp(configOverride.blurIntensity, 1, 100) : 5)
+  const blurIntensity = Number.isFinite(rawBlur)
+    ? clamp(rawBlur, 1, 100)
+    : (mapping?.blurIntensity != null && Number.isFinite(mapping.blurIntensity)
+        ? clamp(mapping.blurIntensity, 1, 100)
+        : (configOverride !== null ? clamp(configOverride.blurIntensity, 1, 100) : 5))
   const rawBf = q.get("bf") ? Number(q.get("bf")) : NaN
-  const blurFade = Number.isFinite(rawBf) ? clamp(rawBf, 0, 100) : (configOverride !== null ? clamp(configOverride.blurFade, 0, 100) : 60)
+  const blurFade = Number.isFinite(rawBf)
+    ? clamp(rawBf, 0, 100)
+    : (mapping?.blurFade != null && Number.isFinite(mapping.blurFade)
+        ? clamp(mapping.blurFade, 0, 100)
+        : (configOverride !== null ? clamp(configOverride.blurFade, 0, 100) : 60))
   const rawBd = q.get("bd") ? Number(q.get("bd")) : NaN
-  const blurDarkness = Number.isFinite(rawBd) ? clamp(rawBd, 0, 100) : (configOverride !== null ? clamp(configOverride.blurDarkness, 0, 100) : 40)
+  const blurDarkness = Number.isFinite(rawBd)
+    ? clamp(rawBd, 0, 100)
+    : (mapping?.blurDarkness != null && Number.isFinite(mapping.blurDarkness)
+        ? clamp(mapping.blurDarkness, 0, 100)
+        : (configOverride !== null ? clamp(configOverride.blurDarkness, 0, 100) : 40))
 
   const qBadges = q.get("badges")
   const qRanking = q.get("ranking")

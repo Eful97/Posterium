@@ -262,7 +262,9 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 ### 🛡️ Accesso & API Keys
 | Variabile | Descrizione |
 |---|---|
-| `POSTERIUM_PUBLIC_INSTANCE` | Imposta a `1` per sbloccare l'editor su istanze pubbliche (Vercel/HF) senza richiedere token admin. |
+| `POSTERIUM_PUBLIC_INSTANCE` | Imposta a `1` per sbloccare l'editor su istanze pubbliche (Vercel/HF) senza richiedere token admin. Unico fail-open esplicito — `NODE_ENV=development` da solo non apre più le route admin (serve loopback o `POSTERIUM_ALLOW_DEV_ADMIN=1`). |
+| `POSTERIUM_ALLOW_DEV_ADMIN` | In `NODE_ENV=development` consente l'accesso admin senza token su qualsiasi host (`1`), altrimenti solo su loopback (`127.0.0.1`/`localhost`/`::1`). |
+| `POSTERIUM_WARMUP_TOKEN` | Token per `POST /api/warmup` (header `x-warmup-token`). **Obbligatorio quando `POSTERIUM_PUBLIC_INSTANCE=1`** per evitare DoS via amplificazione (1 req → 500 poster). Su istanze private è opzionale (fallback a `x-admin-token`). |
 | `POSTERIUM_TMDB_KEY` | Fallback d'istanza **opt-in** per deploy personali single-user (NON usare su istanze pubbliche multi-utente — la chiave viaggia via header/query/profilo). |
 | `POSTERIUM_MDBLIST_KEY` | Fallback d'istanza **opt-in** per liste MDBList personali (come sopra). |
 | `POSTERIUM_TVDB_API_KEY` | Fallback d'istanza **opt-in** per TheTVDB (come sopra). |
@@ -298,7 +300,7 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | `POSTERIUM_LOG_FORMAT` | `human` | Formato logger (`human`/`json` — `json` per log aggregation). |
 | `POSTERIUM_SELF_WARMUP` | `1` | Preriscaldamento automatico dei cataloghi all'avvio (`0` per disattivare). |
 | `POSTERIUM_BEST_FIT_ENABLED` | *Auto* | Forza attivazione (`1`) o disattivazione (`0`) globale di Best-Fit. |
-| `POSTERIUM_TRUST_PROXY` | `0` | Imposta a `1` se dietro Cloudflare/HF/Nginx per sbloccare `x-forwarded-for`/`cf-connecting-ip` nel rate-limit (evita throttle condiviso su istanze pubbliche). |
+| `POSTERIUM_TRUST_PROXY` | `0` | Imposta a `1` se dietro Cloudflare/HF/Nginx fidato per usare `x-forwarded-for` nel rate-limit. Senza trust, `x-forwarded-for` è ignorato per evitare bucket pollution (spoof fino a 50k bucket). |
 
 ### 🎨 Stili Predefiniti per i Cataloghi
 I poster dei cataloghi Stremio utilizzano i valori di default dell'istanza. Su istanze personali puoi configurarli anche via env:
