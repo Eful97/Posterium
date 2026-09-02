@@ -1,5 +1,5 @@
 import dns, { type LookupOptions } from "node:dns"
-import { Agent } from "undici"
+import { createRequire } from "node:module"
 import { NextRequest } from "next/server"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { rewriteMetasPosters, rewriteSingleMetaPoster, type StremioItemMeta } from "@/lib/addon-proxy"
@@ -155,8 +155,24 @@ function safeLookup(hostname: string, options: LookupOptions, callback: (err: No
     .catch((err: NodeJS.ErrnoException) => callback(err, []))
 }
 
-/** Agent undici con lookup vincolato agli IP pubblici (DNS pin). */
-const SAFE_AGENT = new Agent({ connect: { lookup: safeLookup } })
+/** Agent undici con lookup vincolato agli IP pubblici (DNS pin) — lazy per non rompere la build su Node 20 (undici 8 richiede >=22.19: markAsUncloneable). */
+let safeAgent: InstanceType<typeof import("undici").Agent> | undefined
+let safeAgentTried = false
+function getSafeAgent(): InstanceType<typeof import("undici").Agent> | undefined {
+  if (safeAgentTried) return safeAgent
+  safeAgentTried = true
+  try {
+    const require = createRequire(import.meta.url)
+    const { Agent } = require("undici") as typeof import("undici")
+    safeAgent = new Agent({ connect: { lookup: safeLookup } })
+  } catch (e) {
+    log.warn("undici Agent unavailable — DNS pin disabilitato, fallback a fetch senza dispatcher", {
+      error: e instanceof Error ? e.message : String(e),
+    })
+    safeAgent = undefined
+  }
+  return safeAgent
+}
 
 /** Allowlist opzionale di domini proxy (POSTERIUM_PROXY_ALLOW_DOMAINS). */
 export function isAllowedByAllowlist(url: URL): boolean {
@@ -232,9 +248,16 @@ async function safeFetch(url: string, options: RequestInit & { signal: AbortSign
       return Response.json({ error: "Target domain not allowed" }, { status: 403, headers: corsHeaders() })
     }
     // La fetch globale di Node (undici) accetta `dispatcher`; il lib DOM di
-    // Next non lo tipizza, quindi il cast è necessario. Il dispatcher SAFE_AGENT
-    // vincola la connessione agli IP pubblici verificati (DNS pin).
-    const fetchOpts = { ...options, redirect: "manual", dispatcher: SAFE_AGENT } as unknown as RequestInit
+    // Next non lo tipizza, quindi il cast è necessario. Il dispatcher vincola
+    // la connessione agli IP pubblici verificati (DNS pin) — se undici non è
+    // caricabile (Node 20 + undici 8) si usa fetch senza dispatcher +
+    // resolveAndCheckBlocked già fatto sopra.
+    const dispatcher = getSafeAgent()
+    const fetchOpts = {
+      ...options,
+      redirect: "manual",
+      ...(dispatcher ? { dispatcher } : {}),
+    } as unknown as RequestInit
     const res = await fetch(currentUrl, fetchOpts)
     if (res.status < 300 || res.status >= 400) return res
     // Redirect — validiamo la destinazione
