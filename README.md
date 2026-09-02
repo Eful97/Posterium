@@ -289,6 +289,7 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | `POSTERIUM_CACHE_MAX` | `2000` | Numero massimo di entry in cache (oltre FIFO eviction). |
 | `POSTERIUM_CACHE_REFRESH_HOUR` | `3` | Ora UTC del refresh schedulato giornaliero per poster/cataloghi. |
 | `POSTERIUM_NEGATIVE_CACHE_TTL_MS` | `5000` | TTL negative cache per errori poster 500/503/404 (1s–60s). |
+| `POSTERIUM_DYNAMIC_POSTER_TTL_MS` | `21600000` | TTL dei poster dinamici non-mappati, in ms (default 6h). Clamp 5min–24h. Gli header `Cache-Control`/`Surrogate-Control` dynamic derivano dallo stesso valore. |
 | `POSTERIUM_RATING_WAIT_MS` | `1500` | Tetto attesa rating MDBList prima di fallback TMDB. |
 | `POSTERIUM_AUTO_FIT_TIMEOUT_MS` | `1200` | Tetto scoring best-fit CPU (300–10000ms). |
 | `POSTERIUM_AUTO_FIT_FETCH_TIMEOUT_MS` | `5000` | Tetto fetch logo/candidati best-fit (1s–15s). |

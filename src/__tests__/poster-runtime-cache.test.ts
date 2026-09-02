@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { cacheClear } from "@/lib/cache"
 import {
   isImmutablePosterRequest,
@@ -72,6 +72,56 @@ describe("poster CDN headers", () => {
       isRotating: false,
       mappingVersionMatches: false,
     })).toBe(false)
+  })
+})
+
+describe("dynamic poster TTL via POSTERIUM_DYNAMIC_POSTER_TTL_MS", () => {
+  const originalTtl = process.env.POSTERIUM_DYNAMIC_POSTER_TTL_MS
+
+  afterEach(() => {
+    if (originalTtl === undefined) delete process.env.POSTERIUM_DYNAMIC_POSTER_TTL_MS
+    else process.env.POSTERIUM_DYNAMIC_POSTER_TTL_MS = originalTtl
+    vi.resetModules()
+  })
+
+  // Il modulo legge l'env a module level: reset + re-import per ogni caso.
+  async function importCache() {
+    vi.resetModules()
+    return import("@/lib/poster-runtime-cache")
+  }
+
+  it("derives the dynamic cache headers from the configured TTL", async () => {
+    process.env.POSTERIUM_DYNAMIC_POSTER_TTL_MS = "600000" // 10 min
+    const { posterHeaders } = await importCache()
+    const headers = posterHeaders("\"etag\"", false, false, true)
+
+    expect(headers["Cache-Control"]).toContain("max-age=600")
+    expect(headers["CDN-Cache-Control"]).toContain("max-age=600")
+    expect(headers["Surrogate-Control"]).toBe("max-age=600, stale-while-revalidate=86400")
+  })
+
+  it("clamps values below the 5 min floor back to the 6h default", async () => {
+    process.env.POSTERIUM_DYNAMIC_POSTER_TTL_MS = "1000"
+    const { posterHeaders } = await importCache()
+    const headers = posterHeaders("\"etag\"", false, false, true)
+
+    expect(headers["Cache-Control"]).toContain("max-age=21600")
+  })
+
+  it("clamps values above the 24h ceiling back to the 6h default", async () => {
+    process.env.POSTERIUM_DYNAMIC_POSTER_TTL_MS = "999999999"
+    const { posterHeaders } = await importCache()
+    const headers = posterHeaders("\"etag\"", false, false, true)
+
+    expect(headers["Cache-Control"]).toContain("max-age=21600")
+  })
+
+  it("falls back to the 6h default on non-numeric values", async () => {
+    process.env.POSTERIUM_DYNAMIC_POSTER_TTL_MS = "abc"
+    const { posterHeaders } = await importCache()
+    const headers = posterHeaders("\"etag\"", false, false, true)
+
+    expect(headers["Cache-Control"]).toContain("max-age=21600")
   })
 })
 

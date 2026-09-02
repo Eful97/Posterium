@@ -8,15 +8,34 @@ export const POSTER_REFRESH_PARAM = "__poster_refresh"
 
 const POSTER_CACHE_CONTROL = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
 const POSTER_IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, s-maxage=31536000, immutable"
-const POSTER_DYNAMIC_CACHE_CONTROL = "public, max-age=21600, s-maxage=21600, stale-while-revalidate=86400"
-const POSTER_CDN_CACHE_CONTROL = POSTER_CACHE_CONTROL
-const POSTER_DYNAMIC_CDN_CACHE_CONTROL = POSTER_DYNAMIC_CACHE_CONTROL
 const PREVIEW_CACHE_CONTROL = "no-cache, no-store, must-revalidate, max-age=0"
 
 export interface PosterCachePayload {
   readonly buffer: Buffer
   readonly etag: string
 }
+
+// TTL dei poster dinamici (non-mappati, composti al volo): default 6h.
+// Sovrascrivibile via env a module level (un cambio richiede restart).
+// Gli header Cache-Control/Surrogate derivano dallo STESSO valore del TTL di
+// storage: l'header HTTP non può mentire rispetto a quanto resta in cache
+// (coerente con fix M3).
+const DYNAMIC_POSTER_TTL_SEC = (() => {
+  const raw = process.env.POSTERIUM_DYNAMIC_POSTER_TTL_MS
+  const n = raw ? parseInt(raw, 10) : 6 * 60 * 60 * 1000
+  // Clamp 5min–24h: sotto i 5 minuti la CDN martellerebbe il render pipeline,
+  // sopra le 24h i dati dinamici (rank, IMDb Top 250) diventano troppo stantii.
+  return Number.isFinite(n) && n >= 5 * 60 * 1000 && n <= 24 * 60 * 60 * 1000
+    ? Math.round(n / 1000)
+    : 6 * 60 * 60
+})()
+const DYNAMIC_POSTER_TTL_MS = DYNAMIC_POSTER_TTL_SEC * 1000
+
+const POSTER_DYNAMIC_CACHE_CONTROL = `public, max-age=${DYNAMIC_POSTER_TTL_SEC}, s-maxage=${DYNAMIC_POSTER_TTL_SEC}, stale-while-revalidate=86400`
+const POSTER_CDN_CACHE_CONTROL = POSTER_CACHE_CONTROL
+const POSTER_DYNAMIC_CDN_CACHE_CONTROL = POSTER_DYNAMIC_CACHE_CONTROL
+const DYNAMIC_SURROGATE = `max-age=${DYNAMIC_POSTER_TTL_SEC}, stale-while-revalidate=86400`
+
 
 export type PosterHeaders = Readonly<Record<string, string>>
 
@@ -104,7 +123,7 @@ export function posterHeaders(etag: string, immutable: boolean, isPreview: boole
   }
   const cacheControl = immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : dynamic ? POSTER_DYNAMIC_CACHE_CONTROL : POSTER_CACHE_CONTROL
   const cdnCacheControl = immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : dynamic ? POSTER_DYNAMIC_CDN_CACHE_CONTROL : POSTER_CDN_CACHE_CONTROL
-  const surrogate = immutable ? "max-age=31536000" : dynamic ? "max-age=21600, stale-while-revalidate=86400" : "max-age=86400, stale-while-revalidate=604800"
+  const surrogate = immutable ? "max-age=31536000" : dynamic ? DYNAMIC_SURROGATE : "max-age=86400, stale-while-revalidate=604800"
   return {
     ...CORS_HEADERS,
     "Content-Type": contentType,
@@ -118,7 +137,7 @@ export function posterHeaders(etag: string, immutable: boolean, isPreview: boole
 export function posterNotModifiedHeaders(etag: string, immutable: boolean, dynamic: boolean = false): PosterHeaders {
   const cacheControl = immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : dynamic ? POSTER_DYNAMIC_CACHE_CONTROL : POSTER_CACHE_CONTROL
   const cdnCacheControl = immutable ? POSTER_IMMUTABLE_CACHE_CONTROL : dynamic ? POSTER_DYNAMIC_CDN_CACHE_CONTROL : POSTER_CDN_CACHE_CONTROL
-  const surrogate = immutable ? "max-age=31536000" : dynamic ? "max-age=21600, stale-while-revalidate=86400" : "max-age=86400, stale-while-revalidate=604800"
+  const surrogate = immutable ? "max-age=31536000" : dynamic ? DYNAMIC_SURROGATE : "max-age=86400, stale-while-revalidate=604800"
   return {
     ...CORS_HEADERS,
     "Cache-Control": cacheControl,
@@ -142,12 +161,13 @@ export function readCachedPoster(cacheKey: string): { readonly payload: PosterCa
   }
 }
 
-// Poster non-mappati (composti al volo con dati dinamici): TTL esplicito 6h
+// Poster non-mappati (composti al volo con dati dinamici): TTL esplicito
 // (fix M3). Prima writeCachedPoster non passava alcun TTL → il tag "poster"
 // finiva nel refresh schedulato giornaliero alle 3 UTC (cache.ts) e l'header
 // HTTP dynamic (6h) mentiva: in memoria il payload restava fino al refresh
 // delle 3, con rank/IMDb Top 250 potenzialmente stantii per un giorno intero.
-const DYNAMIC_POSTER_TTL_MS = 6 * 60 * 60 * 1000
+// DYNAMIC_POSTER_TTL_MS è definito in testa al modulo (env-parametrizzato) e
+// genera anche gli header dynamic, così header e storage restano sincronizzati.
 
 export function writeCachedPoster(cacheKey: string, payload: PosterCachePayload, mappingTag?: string): void {
   const tags = mappingTag ? ["poster", mappingTag] : ["poster"]
