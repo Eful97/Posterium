@@ -249,6 +249,7 @@
     "ui.pill":  "Pill",
     "ui.styleDefault":  "Default badge style",
     "ui.saveDefaults":  "Save as defaults",
+    "ui.defaultsSyncFailed":  "Saved locally only — the server rejected the sync, so catalog posters on Stremio keep the instance defaults.",
     "ui.bar":  "Bar",
     "ui.styleGenreBadge":  "Badge style",
     "ui.saved":  "Saved!",

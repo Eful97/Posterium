@@ -249,6 +249,7 @@
     "ui.pill":  "Pill",
     "ui.styleDefault":  "Stile badge predefinito",
     "ui.saveDefaults":  "Salva come predefiniti",
+    "ui.defaultsSyncFailed":  "Salvato solo in locale — il server ha rifiutato la sincronizzazione: su Stremio i poster dei cataloghi tengono i default d'istanza.",
     "ui.bar":  "Barra",
     "ui.styleGenreBadge":  "Stile badge",
     "ui.saved":  "Salvato!",

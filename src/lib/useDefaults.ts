@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import type { BadgeStyle, RankingBadgeStyle } from "./badge-styles"
+import { t } from "./i18n"
 
 export type RibbonSide = "left" | "right"
 
@@ -272,13 +273,28 @@ export function useDefaults() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: payloadStr,
-      }).catch((error: unknown) => {
-        // Se il PUT fallisce (rete, serverless cold start, 401 admin) resetta il ref
-        // così un successivo cambio di default riprova invece di considerare "sincronizzato".
-        lastPersistRef.current = ""
-        const message = error instanceof Error ? error.message : String(error)
-        console.warn(`[defaults] Auto-sync failed: ${message}`)
       })
+        .then((res) => {
+          if (res.ok) return
+          // 401 (admin fail-closed), 403 origin, 5xx persist: il client crede di
+          // aver salvato (localStorage) ma i default d'istanza restano vecchi —
+          // e su Stremio i poster dei cataloghi usano QUELLI. Segnala il desync.
+          lastPersistRef.current = ""
+          console.warn(`[defaults] Auto-sync failed: HTTP ${res.status}`)
+          void import("sonner").then(({ toast }) =>
+            toast.warning(t("ui.defaultsSyncFailed")),
+          )
+        })
+        .catch((error: unknown) => {
+          // Se il PUT fallisce (rete, serverless cold start) resetta il ref
+          // così un successivo cambio di default riprova invece di considerare "sincronizzato".
+          lastPersistRef.current = ""
+          const message = error instanceof Error ? error.message : String(error)
+          console.warn(`[defaults] Auto-sync failed: ${message}`)
+          void import("sonner").then(({ toast }) =>
+            toast.warning(t("ui.defaultsSyncFailed")),
+          )
+        })
     }, 500)
 
     return () => clearTimeout(timer)

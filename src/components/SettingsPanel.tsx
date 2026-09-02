@@ -518,7 +518,12 @@ export function SettingsPanel({ setSettingsOpen, exportData, importData, mobile 
         <button
           type="button"
           onClick={() => {
-            saveDefaults({ selected, mappingsMap }, ed)
+            void saveDefaults({ selected, mappingsMap }, ed).then((synced) => {
+              // Sync server fallito (tipicamente 401 su istanza senza
+              // POSTERIUM_PUBLIC_INSTANCE/ADMIN_TOKEN): avvisa che i cataloghi
+              // su Stremio continueranno a usare i default d'istanza.
+              if (!synced) toast.warning(t("ui.defaultsSyncFailed"))
+            })
             setSaved(true)
             if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
             savedTimerRef.current = setTimeout(() => setSaved(false), 1500)

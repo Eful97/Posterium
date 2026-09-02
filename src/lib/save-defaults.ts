@@ -5,7 +5,11 @@ function safeSetItem(key: string, val: string) {
   try { localStorage.setItem(key, val) } catch { /* localStorage non disponibile */ }
 }
 
-export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMap: PosteriumCtx["mappingsMap"] }, ed: PosterEditorCtx) {
+/** Salva i default in localStorage e li sincronizza col server.
+ *  Ritorna `true` se il PUT /api/defaults è andato a buon fine, `false` se è
+ *  fallito (rete, 401 admin fail-closed, 5xx): in quel caso i default D'ISTANZA
+ *  usati dai poster dei cataloghi su Stremio restano quelli vecchi. */
+export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMap: PosteriumCtx["mappingsMap"] }, ed: PosterEditorCtx): Promise<boolean> {
   const d = {
     globalBadges: ed.defaultGlobalBadges,
     rankingBadges: ed.defaultRankingBadges,
@@ -31,10 +35,19 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
     episodeMetadataSource: ed.defaultEpisodeMetadataSource,
   }
   safeSetItem("badgeDefaults", JSON.stringify(d))
-  void fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
+  const syncPromise = fetch("/api/defaults", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
+    .then((res) => {
+      if (res.ok) return true
+      // 401 (admin fail-closed) / 403 origin / 5xx: il localStorage è salvato ma
+      // i default D'ISTANZA no — e su Stremio i poster dei cataloghi usano quelli.
+      // Ritorna false così il chiamante può avvisare l'utente del desync.
+      console.warn(`[defaults] Failed to sync server defaults: HTTP ${res.status}`)
+      return false
+    })
     .catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error)
       console.warn(`[defaults] Failed to sync server defaults: ${message}`)
+      return false
     })
   const key = p.selected ? `${p.selected.media_type}:${p.selected.id}` : null
   const mapping = key ? p.mappingsMap.get(key) : undefined
@@ -53,4 +66,5 @@ export function saveDefaults(p: { selected: PosteriumCtx["selected"]; mappingsMa
   ed.setBlurFade(d.blurFade)
   ed.setBlurDarkness(d.blurDarkness)
   ed.setGradientHeight(d.gradientHeight)
+  return syncPromise
 }
