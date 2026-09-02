@@ -25,6 +25,13 @@ const tmdbMediaItemSchema = z.object({
   poster_path: z.string().nullable().optional(),
   release_date: z.string().nullable().optional(),
   first_air_date: z.string().nullable().optional(),
+  // Campi extra presenti nei payload di search/trending/credits (TMDB li
+  // omette a seconda dell'endpoint): servono alle righe di catalogo/ricerca
+  // (rating, backdrop, trama, generi — vedi catalog-handler).
+  vote_average: z.number().nullable().optional(),
+  backdrop_path: z.string().nullable().optional(),
+  overview: z.string().nullable().optional(),
+  genre_ids: z.array(z.number()).optional(),
 }).passthrough()
 
 const tmdbSearchResponseSchema = z.object({
@@ -85,6 +92,10 @@ const tmdbCompanySchema = z.object({
 const tmdbGenreSchema = z.object({
   id: z.number().int(),
   name: z.string(),
+}).passthrough()
+
+const tmdbGenreListResponseSchema = z.object({
+  genres: z.array(tmdbGenreSchema).default([]),
 }).passthrough()
 
 const tmdbEpisodeSchema = z.object({
@@ -367,6 +378,10 @@ export interface TMDBMediaResult {
   poster_path: string | null
   release_date?: string
   first_air_date?: string
+  vote_average?: number | null
+  backdrop_path?: string | null
+  overview?: string | null
+  genre_ids?: number[]
 }
 
 export interface TMDBSearchResponse {
@@ -397,6 +412,25 @@ export async function searchTV(query: string, language = "it-IT", apiKey?: strin
     res.results = res.results.map((r) => ({ ...r, media_type: "tv" }))
   }
   return res
+}
+
+export interface TMDBGenre {
+  id: number
+  name: string
+}
+
+export interface TMDBGenreListResponse {
+  genres: TMDBGenre[]
+}
+
+/**
+ * Lista generi TMDB localizzata (`/genre/{movie|tv}/list`). Usata per mappare
+ * i `genre_ids` delle risposte di ricerca sui nomi — le liste sono stabili e
+ * tmdbFetch le cachа in memoria (LRU 5 min) condividendo l'URL tra richieste.
+ */
+export async function getGenreList(mediaType: "movie" | "tv", language = "it-IT", apiKey?: string): Promise<TMDBGenreListResponse> {
+  const data = await tmdbFetch(`/genre/${mediaType}/list?language=${language}`, apiKey)
+  return parseTmdb<TMDBGenreListResponse>("genre/list", tmdbGenreListResponseSchema, data)
 }
 
 export async function getPopularMovies(page = 1, language = "it-IT", apiKey?: string): Promise<TMDBSearchResponse> {

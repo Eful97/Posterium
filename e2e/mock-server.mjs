@@ -189,8 +189,11 @@ const server = http.createServer(async (req, res) => {
         page: 1,
         total_pages: 1,
         total_results: 1,
-        results: [{ ...MOVIE, media_type: isTV ? "tv" : "movie", poster_path: MOCKED_POSTER_PATH, popularity: 100 }],
+        results: [{ ...MOVIE, media_type: isTV ? "tv" : "movie", poster_path: MOCKED_POSTER_PATH, backdrop_path: MOCKED_POSTER_PATH, overview: "Trama fittizia deterministica", genre_ids: [28], popularity: 100 }],
       })
+    }
+    if (pathname === "/3/genre/movie/list" || pathname === "/3/genre/tv/list") {
+      return json(res, 200, { genres: [{ id: 28, name: "Azione" }, { id: 12, name: "Avventura" }] })
     }
     if (pathname === "/3/find/tt1234567" || pathname.startsWith("/3/find/")) {
       return json(res, 200, { movie_results: [{ id: 19995 }], tv_results: [{ id: 19995 }] })

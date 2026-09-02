@@ -27,6 +27,20 @@ test.describe("catalog API", () => {
     expect(body.metas[0].name).toContain("Avatar")
   })
 
+  test("search metas carry rating, background, genres and description like AIOMetadata", async ({ request }) => {
+    const res = await request.get("/catalog/movie/posterium-search-movies.json?search=Avatar", {
+      headers: { "x-api-key": "e2e-key" },
+    })
+    expect(res.ok()).toBeTruthy()
+    const body = await res.json()
+    expect(body.metas.length).toBeGreaterThan(0)
+    const meta = body.metas[0]
+    expect(meta.imdbRating).toBe("7.9")
+    expect(meta.background).toContain("/t/p/original/")
+    expect(meta.genres).toContain("Azione")
+    expect(meta.description).toBeTruthy()
+  })
+
   test("platform catalog pagination skip returns fewer-or-empty", async ({ request }) => {
     const res1 = await request.get("/catalog/movie/posterium-netflix-movies.json", {
       headers: { "x-api-key": "e2e-key" },

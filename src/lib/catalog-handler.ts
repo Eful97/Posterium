@@ -7,7 +7,7 @@ import { getServerDefaults } from "@/lib/server-defaults"
 import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getById } from "@/lib/store"
 import { decodeConfig, type PosteriumUserConfig } from "@/lib/config-token"
-import { getDetails, getImages, personMovieCredits, personTvCredits, posterUrlOriginal, resolveRequestApiKey, searchMovies, searchPerson, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
+import { getDetails, getGenreList, getImages, personMovieCredits, personTvCredits, posterUrlOriginal, resolveRequestApiKey, searchMovies, searchPerson, searchTV, tmdbFindByImdb, type TMDBDetails } from "@/lib/tmdb"
 import { resolveImdbId } from "@/lib/imdb-cache"
 import { fetchMDBList } from "@/lib/mdblist"
 import { fetchUnifiedCatalogItems } from "@/lib/custom-catalog-providers"
@@ -29,6 +29,7 @@ interface StremioMeta {
   banner?: string
   logo?: string
   releaseInfo?: string
+  imdbRating?: string
   genres?: string[]
   description?: string
   posterShape?: string
@@ -167,6 +168,26 @@ function catalogBackground(backdropPath: string | null | undefined): string | un
   return backdropPath ? posterUrlOriginal(backdropPath) : undefined
 }
 
+/**
+ * Mappa genre_ids → nomi localizzati per le righe di ricerca (TMDB `/genre/list`).
+ * La risposta è cachata da tmdbFetch (LRU 5 min) ed è condivisa tra richieste;
+ * in caso di errore degrada a mappa vuota (righe senza generi).
+ */
+async function tmdbGenreNames(stType: "movie" | "series", apiKey?: string): Promise<Map<number, string>> {
+  try {
+    const list = await getGenreList(stType === "movie" ? "movie" : "tv", "it-IT", apiKey)
+    return new Map((list.genres || []).map((g) => [g.id, g.name]))
+  } catch {
+    return new Map()
+  }
+}
+
+function genreNamesFromIds(genreIds: number[] | undefined, genreNames: Map<number, string>): string[] | undefined {
+  if (!genreIds || genreIds.length === 0) return undefined
+  const names = genreIds.map((gid) => genreNames.get(gid)).filter((g): g is string => !!g)
+  return names.length > 0 ? names : undefined
+}
+
 async function catalogLogo(mediaType: "movie" | "tv", tmdbId: number, apiKey?: string): Promise<string | undefined> {
   try {
     const signal = typeof AbortSignal !== "undefined" && "timeout" in AbortSignal ? AbortSignal.timeout(2500) : undefined
@@ -283,6 +304,7 @@ export async function posteriumCatalog(
 
         const skip = extra.skip || 0
         const paged = deduped.slice(skip, skip + 20)
+        const genreNames = await tmdbGenreNames(stType, apiKey)
 
         const results: (StremioMeta | null)[] = await concurrentMap(paged, async (item) => {
           if (!item.id) return null
@@ -294,7 +316,11 @@ export async function posteriumCatalog(
             type: stType,
             name: item.title || item.name || "",
             poster,
+            background: catalogBackground(item.backdrop_path),
             releaseInfo,
+            imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
+            genres: genreNamesFromIds(item.genre_ids, genreNames),
+            description: item.overview ?? undefined,
           }
         }, 5)
         const metas = results.filter((m): m is StremioMeta => m !== null)
@@ -320,6 +346,7 @@ export async function posteriumCatalog(
 
       const items = (searchRes?.results || []).slice(0, 20)
 
+      const genreNames = await tmdbGenreNames(stType, apiKey)
       const results: (StremioMeta | null)[] = await concurrentMap(items, async (item) => {
         if (!item.id) return null
         const imdbId = await resolveImdbId(stType === "movie" ? "movie" : "tv", item.id, apiKey)
@@ -330,7 +357,11 @@ export async function posteriumCatalog(
           type: stType,
           name: item.title || item.name || "",
           poster,
+          background: catalogBackground(item.backdrop_path),
           releaseInfo,
+          imdbRating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
+          genres: genreNamesFromIds(item.genre_ids, genreNames),
+          description: item.overview ?? undefined,
         }
       }, 5)
       const metas = results.filter((m): m is StremioMeta => m !== null)
@@ -418,6 +449,7 @@ export async function posteriumCatalog(
             genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
             backdropPath: details?.backdrop_path ?? null,
             description: details?.overview ?? undefined,
+            voteAverage: details?.vote_average ?? undefined,
           }
         }, 5)
         const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null)
@@ -437,6 +469,7 @@ export async function posteriumCatalog(
             banner: background,
             logo,
             releaseInfo: r.releaseInfo,
+            imdbRating: r.voteAverage ? r.voteAverage.toFixed(1) : undefined,
             genres: r.genres,
             description: r.description,
           }
@@ -481,6 +514,7 @@ export async function posteriumCatalog(
           banner: background,
           logo,
           releaseInfo: (r.d.release_date || r.d.first_air_date || "").slice(0, 4) || undefined,
+          imdbRating: r.d.vote_average ? r.d.vote_average.toFixed(1) : undefined,
           genres: (r.d.genres || []).map((g) => g.name).filter(Boolean),
           description: r.d.overview ?? undefined,
         }
@@ -519,6 +553,7 @@ export async function posteriumCatalog(
           genres: (d?.genres || []).map((g) => g.name).filter(Boolean),
           backdropPath: d?.backdrop_path ?? null,
           description: d?.overview ?? undefined,
+          voteAverage: d?.vote_average ?? undefined,
         }
       }, 5)
       const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null).slice(0, 20)
@@ -538,6 +573,7 @@ export async function posteriumCatalog(
           banner: background,
           logo,
           releaseInfo: r.releaseInfo,
+          imdbRating: r.voteAverage ? r.voteAverage.toFixed(1) : undefined,
           genres: r.genres,
           description: r.description,
         }
@@ -587,6 +623,7 @@ export async function posteriumCatalog(
               genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
               backdropPath: details?.backdrop_path ?? null,
               description: details?.overview ?? undefined,
+              voteAverage: details?.vote_average ?? undefined,
             }
           }, 5)
           const validResults = results.filter((r) => r.title.length > 0)
@@ -606,6 +643,7 @@ export async function posteriumCatalog(
               banner: background,
               logo,
               releaseInfo: r.releaseInfo,
+              imdbRating: r.voteAverage ? r.voteAverage.toFixed(1) : undefined,
               genres: r.genres,
               description: r.description,
             }
@@ -643,6 +681,7 @@ export async function posteriumCatalog(
                 banner: background,
                 logo,
                 releaseInfo: (details?.release_date || details?.first_air_date || item.releaseDate)?.slice(0, 4) || undefined,
+                imdbRating: details?.vote_average ? details.vote_average.toFixed(1) : undefined,
                 genres: (details?.genres || []).map((g) => g.name).filter(Boolean),
                 description: details?.overview ?? undefined,
               }
