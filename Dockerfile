@@ -1,4 +1,4 @@
-FROM node:20-bookworm AS source
+FROM node:22-bookworm AS source
 WORKDIR /src
 ARG SOURCE_REPO=https://github.com/Eful97/Posterium.git
 ARG SOURCE_REF=master
@@ -9,19 +9,19 @@ RUN if [ ! -f package.json ]; then \
       cp -a /tmp/posterium/. .; \
     fi && test -f package.json
 
-FROM node:20-bookworm AS deps
+FROM node:22-bookworm AS deps
 WORKDIR /app
 COPY --from=source /src/package.json /src/package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
 
-FROM node:20-bookworm AS builder
+FROM node:22-bookworm AS builder
 WORKDIR /app
 COPY --from=source /src/package.json /src/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY --from=source /src ./
 RUN npm run build
 
-FROM node:20-bookworm AS runner
+FROM node:22-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

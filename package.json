@@ -21,7 +21,7 @@
     "verify": "npx tsc --noEmit && npx eslint . && npm run test && npm run build"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
