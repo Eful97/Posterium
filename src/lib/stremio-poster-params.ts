@@ -23,6 +23,8 @@ export interface StremioPosterParamsInput {
   readonly blurEnabled?: boolean
   readonly networkLogo?: boolean
   readonly ribbonSide?: "left" | "right"
+  /** Badge extra testuale per-titolo (dal mapping): emesso come `extra`. */
+  readonly customBadge?: string | null
   readonly config?: string | null
   readonly user?: string | null
 }
@@ -63,6 +65,7 @@ export function buildStremioPosterSearchParams(input: StremioPosterParamsInput):
   if (input.badgeRating === false) params.set("br", "0")
   if (input.badgeQuality === false) params.set("bq", "0")
   if (input.ratingSources && input.ratingSources.length > 0) params.set("rsrc", input.ratingSources.join(","))
+  if (input.customBadge) params.set("extra", input.customBadge)
   if (!networkLogo) params.set("netLogo", "0")
   if (input.ribbonSide === "right") params.set("side", "right")
   else if (input.ribbonSide === "left") params.set("side", "left")

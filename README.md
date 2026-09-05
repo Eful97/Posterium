@@ -63,11 +63,12 @@ pinned: false
 * **Editor sempre disponibile**: Badge e Stagioni restano accessibili anche con poster non-clean (fix UX).
 
 ### 🏷️ Badge, Rating & Classifiche
-* **✨ Badge Qualità Streaming (4K / 1080p / 720p / SD)**: Visualizza in alto a destra la risoluzione video massima disponibile rilevata in tempo reale dai flussi Stremio (Torrentio/Scraper) con fallback automatico su JustWatch. Presenta uno schema cromatico adattivo dinamico (*contrasto chiaro/scuro invertito in base alla luminosità del poster*).
+* **✨ Badge Qualità Streaming (4K / 1080p / 720p / SD)**: Visualizza in alto a destra la risoluzione video massima disponibile rilevata in tempo reale dai flussi Stremio (Torrentio/Scraper) con fallback automatico su JustWatch. In modalità Stremio (nastro Netflix a destra) si sposta a sinistra per non restargli accanto. Presenta uno schema cromatico adattivo dinamico (*contrasto chiaro/scuro invertito in base alla luminosità del poster*).
 * **6 Stili Badge Genere/Voto**: *Shadow, Pill, Bar, Colored, Bordo, Vetro* con colori accent adattivi calcolati in base alla palette del poster.
 * **5 Stili Badge Trend/Classifiche**: *Default, Bar, Colored, Pill, Nastro Netflix*.
 * **16 Fonti di Valutazione**: Supporto completo per IMDb, TMDB, Rotten Tomatoes (Critics & Audience), Metacritic, Letterboxd, MyAnimeList, AniList, FilmAffinity, Trakt e provider streaming.
 * **Nastro Verticale Netflix Top 10**: Il caratteristico nastro rosso laterale con posizione in classifica e logo della piattaforma (con supporto dedicato anche per gli Anime).
+* **Classifiche sempre aggiornate**: il rank (es. "Top 15") segue la classifica live (JustWatch/MDBList) — se un titolo esce dalla chart il badge sparisce invece di mostrare il vecchio rank del salvataggio. Il rank salvato si riusa solo quando le classifiche live non rispondono.
 * **Premi Cinematografici & Cult**: Riconoscimento automatico Oscar, Cannes, BAFTA, Emmy e badge *"Absolute Cinema"* per i titoli della IMDb Top 250.
 
 ### 🔍 Ricerca
@@ -265,11 +266,11 @@ Manifest Stremio: `http://<IP-DELLO-SMARTPHONE>:3000/manifest.json`.
 | `POSTERIUM_PUBLIC_INSTANCE` | Imposta a `1` per sbloccare l'editor su istanze pubbliche (Vercel/HF) senza richiedere token admin. Unico fail-open esplicito — `NODE_ENV=development` da solo non apre più le route admin (serve loopback o `POSTERIUM_ALLOW_DEV_ADMIN=1`). |
 | `POSTERIUM_ALLOW_DEV_ADMIN` | In `NODE_ENV=development` consente l'accesso admin senza token su qualsiasi host (`1`), altrimenti solo su loopback (`127.0.0.1`/`localhost`/`::1`). |
 | `POSTERIUM_WARMUP_TOKEN` | Token per `POST /api/warmup` (header `x-warmup-token`). **Obbligatorio quando `POSTERIUM_PUBLIC_INSTANCE=1`** per evitare DoS via amplificazione (1 req → 500 poster). Su istanze private è opzionale (fallback a `x-admin-token`). |
-| `POSTERIUM_TMDB_KEY` | Fallback d'istanza **opt-in** per deploy personali single-user (NON usare su istanze pubbliche multi-utente — la chiave viaggia via header/query/profilo). |
+| `POSTERIUM_TMDB_KEY` | Fallback d'istanza **opt-in** per deploy personali single-user (NON usare su istanze pubbliche multi-utente — senza questa env, Stremio deve passare la chiave via header/query, che non manda mai). |
 | `POSTERIUM_MDBLIST_KEY` | Fallback d'istanza **opt-in** per liste MDBList personali (come sopra). |
 | `POSTERIUM_TVDB_API_KEY` | Fallback d'istanza **opt-in** per TheTVDB (come sopra). |
 | `POSTERIUM_ADMIN_TOKEN` | Token segreto per proteggere le route amministrative private. |
-| `CONFIG_HMAC_SECRET` | Chiave segreta per la firma crittografica dei profili stateless. |
+| `CONFIG_HMAC_SECRET` | Chiave segreta per la firma dei config token stateless (`?config=`). |
 
 ### 💾 Storage & Persistenza
 | Variabile | Descrizione |

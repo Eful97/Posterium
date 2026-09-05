@@ -180,16 +180,16 @@ export async function posteriumMeta(
     return metaResponse({ meta: null })
   }
 
-  // Per le serie, il meta videos dipende dal mapping episodeGroupId: includilo nella
-  // cache key (fetch pre-cache) altrimenti dopo un cambio ordinamento si serve lo
-  // stale per 12h. Il lookup è cached (memCache/KV 500ms) quindi costo minimo.
+  // Per le serie, il meta videos dipende dal mapping episodeGroupId; per i film
+  // il poster dipende comunque dal mapping (cambio poster/stili): includere
+  // episodeGroupId+updatedAt nella cache key (fetch pre-cache) altrimenti dopo
+  // un save si serve lo stale fino a 12h. Il lookup è cached (memCache/KV
+  // 500ms) quindi costo minimo. Prima era solo per le serie (F4).
   let preMappingForCache: { episodeGroupId?: string | null; updatedAt?: string } | null = null
-  if (stType === "series") {
-    try {
-      const pre = await getById("tv", tmdbId)
-      if (pre) preMappingForCache = { episodeGroupId: pre.episodeGroupId ?? null, updatedAt: pre.updatedAt }
-    } catch { /* ignore — fallback a auto */ }
-  }
+  try {
+    const pre = await getById(tmdbMediaType, tmdbId)
+    if (pre) preMappingForCache = { episodeGroupId: pre.episodeGroupId ?? null, updatedAt: pre.updatedAt }
+  } catch { /* ignore — fallback a auto */ }
   const egKey = preMappingForCache ? `${preMappingForCache.episodeGroupId ?? "auto"}:${preMappingForCache.updatedAt ?? ""}` : "auto"
   const cacheKey = `stremio:meta:${stType}:${cleanId}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${tvdbApiKey ? `:tk${hashFragment(tvdbApiKey)}` : ""}:es${episodeMetadataSource}:eg${hashFragment(egKey)}`
   const cached = cacheGet<{ meta: StremioMetaDetail }>(cacheKey)

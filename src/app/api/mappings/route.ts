@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { getAll, getById, upsert, removeAll } from "@/lib/store"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { cacheInvalidate, cacheInvalidatePosterData, cacheInvalidatePosterDataFor } from "@/lib/cache"
+import { bumpCatalogEpoch } from "@/lib/catalog-epoch"
 import { mappingSchema } from "@/lib/validation"
 import { checkAdminToken, requireAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
   // Invalidazione mirata al mapping salvato, non globale (i default impattano
   // tutto, un singolo mapping solo il suo poster/badge).
   cacheInvalidatePosterDataFor(parsed.data.mediaType, parsed.data.tmdbId)
+  // Bump epoch cataloghi (F3): invalida cross-instance — la cacheInvalidate
+  // sopra non raggiunge le altre istanze serverless.
+  await bumpCatalogEpoch()
   // Il meta videos (Stremio) dipende da episodeGroupId: invalidare anche i
   // meta cache (tags stremio/meta) altrimenti dopo un cambio ordinamento
   // si serve lo stale 12h e l'utente vede ancora le stagioni vecchie.
@@ -124,5 +128,6 @@ export async function DELETE(req: NextRequest) {
   if (!isSameOrigin(req)) return originMismatchResponse()
   await removeAll()
   cacheInvalidatePosterData()
+  await bumpCatalogEpoch()
   return Response.json({ ok: true })
 }

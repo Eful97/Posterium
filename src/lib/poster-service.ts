@@ -751,6 +751,9 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
     })
   }
   // Network: subito sopra il logo del film; se poster non-clean → in alto a sinistra, senza toccare badge alti (qualità/rank)
+  // netTopLeftBottom traccia il fondo del logo network quando occupa il
+  // top-left: serve al badge qualità (modalità Stremio) per impilarsi sotto.
+  let netTopLeftBottom: number | null = null
   if (networkRawResult) {
     const gap = Math.round(6 * STD_H / 570)
     const fittedRaw = await fitBadgeToCanvas(networkRawResult, STD_W, STD_H)
@@ -779,22 +782,29 @@ export async function generatePosterBuffer(input: GenerationInput): Promise<Buff
             if (left > maxLeft) left = maxLeft
           }
         }
+        netTopLeftBottom = top + fittedRaw.h
       }
       composites.push({ input: fittedRaw.png, top, left })
     }
   }
 
-  // Qualità: sempre in alto a destra, piccola senza pill — top allineato al logo network
+  // Qualità: in alto a destra di default; con nastro Netflix a destra (Stremio)
+  // va a sinistra per non restargli accanto — sopra il logo network se libero,
+  // altrimenti impilata sotto di esso. Top allineato al logo network.
   if (safeQualityBadgeResult) {
     const netBaseTop = Math.round(18 * STD_H / 570)
     const netPadX = Math.round(18 * STD_W / 380)
-    const top = netBaseTop
     const isNetflixRight = rankingBadgeStyle === "netflix" && ribbonSide === "right" && topBadge?.type === "rank"
 
+    let top = netBaseTop
     let left: number
     if (isNetflixRight && finalRankBadge) {
-      // Se il nastro Netflix è a destra (Stremio), posiziona la qualità subito alla sua sinistra
-      left = Math.round(STD_W - finalRankBadge.w - safeQualityBadgeResult.w - 10)
+      // Nastro Netflix a destra (Stremio): qualità a sinistra, speculare
+      // all'angolo destro standard.
+      left = netPadX
+      if (netTopLeftBottom !== null) {
+        top = netTopLeftBottom + Math.round(6 * STD_H / 570)
+      }
     } else {
       // Standard: angolo in alto a destra
       left = Math.round(STD_W - safeQualityBadgeResult.w - netPadX)

@@ -6,6 +6,7 @@ import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchRespons
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { readJsonBody, BodyTooLargeError, InvalidJsonBodyError } from "@/lib/read-body"
 import { cacheInvalidatePosterData } from "@/lib/cache"
+import { bumpCatalogEpoch } from "@/lib/catalog-epoch"
 
 // Il body cap deve stare sopra al massimo payload legittimo: MAX_MAPPINGS
 // mapping completi (decine di campi ciascuno) possono pesare centinaia di KB,
@@ -69,5 +70,6 @@ export async function POST(req: NextRequest) {
   // entry non vengono più serviti comunque — questa invalidazione li libera
   // subito invece di lasciarli scadere col TTL.
   cacheInvalidatePosterData()
+  await bumpCatalogEpoch()
   return Response.json({ ok: true, count: valid.length, errors: Object.keys(errors).length > 0 ? errors : undefined })
 }

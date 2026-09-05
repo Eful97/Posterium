@@ -328,6 +328,14 @@ test.describe("poster API — functional", () => {
     const buffer = await res.body()
     expect(buffer.length).toBeGreaterThan(1000)
   })
+
+  test("stremio mode (right ribbon) — quality badge left — valid image", async ({ request }) => {
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", rs: "netflix", side: "right", quality: "4K" })
+    const res = await request.get(url)
+    expect(res.ok()).toBeTruthy()
+    const buffer = await res.body()
+    expect(buffer.length).toBeGreaterThan(1000)
+  })
 })
 
 //
@@ -446,5 +454,13 @@ test.describe("poster API — visual regression", () => {
     const url = posterUrl({ genreName: "Action", voteAverage: "8.0", badges: "1", ranking: "1", rank: "5", label: "Top 5", bs: "pill", rs: "bar", gradHeight: "25", blur: "5", bf: "50", bd: "30" })
     const poster = await renderPoster(page, url)
     await expect(poster).toHaveScreenshot("poster-full-feature.png", { maxDiffPixelRatio: 0.10 })
+  })
+
+  test("stremio mode (right ribbon) — quality badge left — screenshot", async ({ page }) => {
+    // Nastro Netflix a destra (side=right, Stremio): il badge qualità va a
+    // sinistra invece che accanto al nastro.
+    const url = posterUrl({ genreName: "Action", voteAverage: "7.8", badges: "1", ranking: "1", rank: "3", rs: "netflix", side: "right", quality: "4K" })
+    const poster = await renderPoster(page, url)
+    await expect(poster).toHaveScreenshot("poster-quality-stremio-left.png", { maxDiffPixelRatio: 0.10 })
   })
 })

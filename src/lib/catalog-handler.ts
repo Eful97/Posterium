@@ -14,6 +14,7 @@ import { fetchUnifiedCatalogItems } from "@/lib/custom-catalog-providers"
 import { buildStremioPosterUrl } from "@/lib/stremio-poster-url"
 import { getOriginFromRequest } from "@/lib/poster-public-url"
 import { getJWRankings, type JWRankEntry } from "@/lib/justwatch"
+import { getCatalogEpoch } from "@/lib/catalog-epoch"
 import { createLogger } from "@/lib/logger"
 import { concurrentMap } from "@/lib/episode-ordering"
 import { isPersonQuery, pickTopPerson } from "@/lib/person-search"
@@ -239,8 +240,9 @@ export async function posteriumCatalog(
   // Chiave TMDB della richiesta: parte del cache key così un catalogo vuoto
   // servito a una richiesta senza chiave non avvelena quelle keyed (D3).
   const apiKey = resolveRequestApiKey(req)
-  // Chiave MDBList della richiesta (anime/custom): può arrivare dal profilo o, come
-  // fallback per istanze personali, dall'env POSTERIUM_MDBLIST_KEY.
+  // Chiave MDBList della richiesta (anime/custom): parametro esplicito o, come
+  // fallback per istanze personali, env POSTERIUM_MDBLIST_KEY. Il param `?u=`
+  // NON fornisce chiavi (solo identità/tracking).
   const mdblistKey = mdblistKeyParam || process.env.POSTERIUM_MDBLIST_KEY
   let userConfig: Partial<PosteriumUserConfig> | null = null
   if (configParam) {
@@ -255,6 +257,15 @@ export async function posteriumCatalog(
       catalogOrder: serverDefaults.catalogOrder,
     } as PosteriumUserConfig
   }
+  // Epoch globale + hash dei server defaults: frammenti di freschezza per TUTTI
+  // i cache key di questo handler (ricerche + catalogo). Su deploy
+  // multi-istanza la `cacheInvalidate("stremio")` del save non raggiunge le
+  // altre istanze — senza questi frammenti un body cachato (con vecchi poster
+  // URL) resterebbe servito fino al refresh schedulato (~24h). Ogni save
+  // (mapping/defaults) fa bump dell'epoch.
+  const epoch = await getCatalogEpoch()
+  const sdHash = hashFragment(JSON.stringify(getServerDefaults()))
+  const freshness = `:e${epoch}:sd${sdHash}`
 
   // --- Gestione Ricerca Stremio (sia via barra di ricerca che catalogo dedicato) ---
   if (extra.search) {
@@ -262,7 +273,7 @@ export async function posteriumCatalog(
     if (isPeopleCatalog) {
       if (!apiKey) return catalogResponse({ metas: [] })
       const page = Math.floor((extra.skip || 0) / 20) + 1
-      const searchCacheKey = `stremio:search:people:${stType}:${hashFragment(extra.search)}:p${page}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+      const searchCacheKey = `stremio:search:people:${stType}:${hashFragment(extra.search)}:p${page}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${freshness}`
       const cachedSearch = cacheGet<{ metas: StremioMeta[] }>(searchCacheKey)
       if (cachedSearch) return catalogResponse(cachedSearch)
 
@@ -337,7 +348,7 @@ export async function posteriumCatalog(
 
     if (!apiKey) return catalogResponse({ metas: [] })
     const page = Math.floor((extra.skip || 0) / 20) + 1
-    const searchCacheKey = `stremio:search:${stType}:${hashFragment(extra.search)}:p${page}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}`
+    const searchCacheKey = `stremio:search:${stType}:${hashFragment(extra.search)}:p${page}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${hashFragment(apiKey)}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${freshness}`
     const cachedSearch = cacheGet<{ metas: StremioMeta[] }>(searchCacheKey)
     if (cachedSearch) return catalogResponse(cachedSearch)
 
@@ -383,7 +394,7 @@ export async function posteriumCatalog(
 
   const skipFragment = typeof extra.skip === "number" && extra.skip > 0 ? `:s${extra.skip}` : ""
   const genreFragment = extra.genre && extra.genre !== "Tutti" ? `:g${hashFragment(extra.genre)}` : ""
-  const cacheKey = `stremio:catalog:v2:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${genreFragment}${skipFragment}`
+  const cacheKey = `stremio:catalog:v2:${stType}:${catalogId}:pv${POSTER_URL_VERSION}${userParam ? `:u${hashFragment(userParam)}` : ""}:ak${apiKey ? hashFragment(apiKey) : "none"}${configParam ? `:cfg${hashFragment(configParam)}` : ""}${mdblistKey ? `:mk${hashFragment(mdblistKey)}` : ""}${genreFragment}${skipFragment}${freshness}`
   const cached = cacheGet<{ metas: StremioMeta[] }>(cacheKey)
   if (cached) return catalogResponse(cached)
 

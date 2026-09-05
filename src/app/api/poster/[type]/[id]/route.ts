@@ -613,15 +613,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         rankingEnabledEarly
           ? getJWRankings(mediaType === "movie" ? "MOVIE" : "SHOW", "IT")
             .then((r) => r.find((x) => x.tmdbId === tmdbId)?.rank ?? null)
-            .catch(() => null)
+            // Solo il FETCH FALLITO (rete/outage) ripiega sul rank salvato nel
+            // mapping (degraded esplicito). La miss genuina (fetch riuscito, il
+            // titolo è fuori chart) resta null: MAI resuscitare il rank stantio
+            // del save precedente (es. "top 15" di un titolo oggi fuori top 20).
+            .catch(() => mapping?.badgeRank ?? mapping?.trendRank ?? null)
           : Promise.resolve(null),
         // Rank anime (media_type=tv): la lista MDBList trending anime senza
         // chiave risponde 503 "Invalid API key" → rank sempre null. Si usa la
-        // chiave del profilo (?u=) o quella esplicita della richiesta
-        // (mdblist_key). La cache è quella interna di fetchMDBList (keyed per
-        // chiave, TTL 30min), quindi niente cache manuale non-keyed.
-        // Precedenza: `animerank` (preview/catalogo) > fetch live > mapping.animeRank
-        // (badge salvato: funziona anche senza chiavi, come nel WYSIWYG).
+        // chiave esplicita della richiesta (mdblist_key) o il fallback
+        // d'istanza (POSTERIUM_MDBLIST_KEY). La cache è quella interna di
+        // fetchMDBList (keyed per chiave, TTL 30min), quindi niente cache
+        // manuale non-keyed.
+        // Precedenza: `animerank` (preview/catalogo) > fetch live >
+        // mapping.animeRank su fetch FALLITO (badge salvato: funziona anche
+        // senza chiavi, come nel WYSIWYG). Miss genuina (titolo fuori chart) →
+        // null, mai il rank stantio.
         rankingEnabledEarly
           ? (Number.isFinite(qAnimeRank) && qAnimeRank > 0
               ? Promise.resolve(qAnimeRank)
@@ -630,7 +637,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                   req.nextUrl.searchParams.get("mdblist_key") || process.env.POSTERIUM_MDBLIST_KEY || process.env.MDBLIST_KEY || process.env.MDBLIST_API_KEY || undefined
                 )
                   .then((entries) => {
-                    if (!Array.isArray(entries)) return null
+                    // Shape inattesa → come failure: fallback al salvato.
+                    if (!Array.isArray(entries)) return mapping?.animeRank ?? null
                     const idx = entries.findIndex((e) => {
                       const entry = e as MDBListEntry
                       const animeId = Number(entry.tmdb) || Number((entry as unknown as EnrichedAnimeItem).id)
@@ -638,7 +646,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
                     })
                     return idx >= 0 ? idx + 1 : null
                   })
-                  .then((liveRank) => liveRank ?? mapping?.animeRank ?? null)
                   .catch(() => mapping?.animeRank ?? null))
           : Promise.resolve(null),
         (badgesEnabledEarly && badgeQualityEarly)
@@ -726,7 +733,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
       return new Response("Poster image not available", { status: 404, headers: corsHeaders() })
     }
 
-    const rankingRank = rankingResult ?? mapping?.badgeRank ?? mapping?.trendRank ?? null
+    // rankingResult è autoritativo: il fallback al mapping salvato avviene solo
+    // su fetch fallito (nei catch sopra), MAI su miss genuina. Altrimenti un
+    // titolo uscito dalla chart mostrerebbe per sempre il rank del save
+    // precedente (es. "top 15" di un titolo oggi fuori top 20).
+    const rankingRank = rankingResult
     const qRank = req.nextUrl.searchParams.get("rank")
     const qLabel = req.nextUrl.searchParams.get("label")
     const finalRank = qRank !== null ? (parseInt(qRank, 10) >= 0 ? parseInt(qRank, 10) : rankingRank) : rankingRank

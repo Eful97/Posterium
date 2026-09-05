@@ -50,7 +50,7 @@
 
 ### Removed
 - Fallback OMDb per i rating
-- **Chiavi API d'istanza** (sezione Impostazioni + fallback server in `getServerDefaults`): le chiavi TMDB/MDBList sono ora solo personali — dalla richiesta (`x-api-key`/`api_key`/`mdblist_key`) o dal profilo (`?u=`). Niente più chiave condivisa di fallback: senza chiave esplicita le chiamate falliscono.
+- **Chiavi API d'istanza** (sezione Impostazioni + fallback server in `getServerDefaults`): le chiavi TMDB/MDBList sono ora solo personali — dalla richiesta (`x-api-key`/`api_key`/`mdblist_key`) o dal fallback d'istanza opt-in (`POSTERIUM_TMDB_KEY`/`POSTERIUM_MDBLIST_KEY` per deploy single-user). Niente più chiave condivisa di default: senza chiave esplicita né fallback le chiamate falliscono. (Nota: il riferimento al "profilo (`?u=`)" della stesura originale era errato — `?u=` è solo identità/tracking, non fornisce chiavi; nessun profile store è mai esistito.)
 
 ### Fixed
 - Orphan fetch MDBList dopo la race del rating: `AbortController` dedicato abortito subito dopo la race (prima un signal mai abortito lasciava il fetch in background)

@@ -88,7 +88,7 @@ export function checkAdminToken(request: Request): boolean {
  * A differenza di checkAdminToken (che resta aperto su istanze pubbliche senza
  * ADMIN_TOKEN), questa restituisce false quando non c'è token configurato.
  * Da usare SOLO per le operazioni che devono restare protette anche su HF Spaces
- * (es. DELETE /api/mappings wipe-all, DELETE /api/profile).
+ * (es. DELETE /api/mappings wipe-all).
  */
 export function requireAdminToken(request: Request): boolean {
   const token = resolveAdminToken()

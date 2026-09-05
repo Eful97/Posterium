@@ -2,8 +2,8 @@
 name: tmdb-api
 description: >
   TMDB API usage in Posterium. Covers the v3 endpoints used (find, external_ids,
-  details, images), API key resolution (x-api-key header / api_key query — never
-  a server env var), caching (5 min in-memory, URL without api_key), inflight
+  details, images), API key resolution (x-api-key header / api_key query / opt-in
+  POSTERIUM_TMDB_KEY instance fallback), caching (5 min in-memory, URL without api_key), inflight
   coalescing, health checks, and image URL construction (TMDB_IMG_URL, w500/original).
   Trigger: "tmdb", "api key", "external_ids", "resolveImdbId", "getDetails",
   "poster path", "image.tmdb.org", "chiamata TMDB", "chiave api", "mock server".
@@ -11,12 +11,14 @@ description: >
 
 Posterium has NO instance-level TMDB key by default. Every TMDB call carries the
 key from the request (`x-api-key` header, fallback `api_key` query param) or from
-the user profile. `TMDB_API_KEY` env var is intentionally NOT read by the app.
+the opt-in instance fallback. `TMDB_API_KEY` env var is intentionally NOT read
+by the app. There is NO profile key store: `?u=` is identity/tracking only and
+never provides API keys.
 
 An **opt-in instance fallback** exists for personal single-user deploys (e.g. a
 Vercel instance used by one person): `POSTERIUM_TMDB_KEY` (and
 `POSTERIUM_MDBLIST_KEY` for MDBList) are read as a LAST-RESORT when the request
-carries no key. Header/query/profile always win. Do NOT set these on public
+carries no key. Header/query always win. Do NOT set these on public
 multi-user instances (HF Spaces, shared VPS) — a shared instance key would burn
 one quota for everyone.
 

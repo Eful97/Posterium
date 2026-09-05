@@ -5,6 +5,7 @@ import { GET } from "@/app/api/poster/[type]/[id]/route"
 import { getById } from "@/lib/store"
 import { selectBestLogoFitPosterPath } from "@/lib/poster-auto-fit"
 import { getDetails, getImages, getExternalIds } from "@/lib/tmdb"
+import { getJWRankings } from "@/lib/justwatch"
 import { fetchMDBList } from "@/lib/mdblist"
 import { cacheClear } from "@/lib/cache"
 import { __resetTMDBSessionCache } from "@/lib/tmdb-session-cache"
@@ -78,6 +79,7 @@ vi.mock("@/lib/imdb-resolver", () => ({
 }))
 
 const mockedGetById = vi.mocked(getById)
+const mockedGetJWRankings = vi.mocked(getJWRankings)
 const mockedSelectBestLogoFitPosterPath = vi.mocked(selectBestLogoFitPosterPath)
 const mockedGetDetails = vi.mocked(getDetails)
 const mockedGetImages = vi.mocked(getImages)
@@ -702,6 +704,9 @@ describe("GET /api/poster/[type]/[id] error and edge cases", () => {
 
     // Senza profilo né animerank (poster salvato su Stremio): il fetch MDBList
     // keyless fallisce (503 in produzione) e si usa il rank salvato nel mapping.
+    // Il mock qui RIFIUTA per simulare il failure (una resolve [] sarebbe una
+    // miss genuina → niente fallback, vedi test sotto).
+    mockedFetchMDBList.mockRejectedValueOnce(new Error("MDBList 503"))
     const req = new NextRequest("http://localhost:3000/api/poster/tv/42?debug=1")
     const res = await GET(req, { params: Promise.resolve({ type: "tv", id: "42" }) })
 
@@ -709,5 +714,119 @@ describe("GET /api/poster/[type]/[id] error and edge cases", () => {
     const body = await res.json()
     expect(body.rankings.anime).toBe(3)
     expect(body.badge.computed.badge).toMatchObject({ type: "rank", label: "Anime", rank: 3 })
+  })
+
+  it("does NOT resurrect a stale mapping animeRank on genuine chart miss", async () => {
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+
+    mockedGetById.mockResolvedValue({
+      tmdbId: 42,
+      mediaType: "tv",
+      title: "Saved Anime",
+      posterPath: "/saved-anime.jpg",
+      logoPath: null,
+      originalPosterPath: null,
+      language: "it",
+      showBadges: true,
+      rankingBadges: true,
+      badgeRank: 3,
+      badgeLabel: "Anime",
+      animeRank: 3,
+      updatedAt: "2026-07-16T10:15:30.000Z",
+    } as never)
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array(posterBuf), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(posterBuf.length) },
+      }),
+    )
+
+    // fetchMDBList riuscito ma titolo fuori chart ([]) → miss genuina: niente
+    // fallback al rank salvato.
+    mockedFetchMDBList.mockResolvedValueOnce([])
+    const req = new NextRequest("http://localhost:3000/api/poster/tv/42?debug=1")
+    const res = await GET(req, { params: Promise.resolve({ type: "tv", id: "42" }) })
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.rankings.anime).toBeNull()
+    expect(body.badge.computed.badge?.rank).not.toBe(3)
+  })
+
+  it("does NOT resurrect a stale mapping trend rank on genuine JustWatch miss (The Boys case)", async () => {
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+
+    // The Boys salvata quando era top 15, oggi fuori dalla chart JW.
+    mockedGetById.mockResolvedValue({
+      tmdbId: 76479,
+      mediaType: "tv",
+      title: "The Boys",
+      posterPath: "/the-boys.jpg",
+      logoPath: null,
+      originalPosterPath: null,
+      language: "it",
+      showBadges: true,
+      rankingBadges: true,
+      badgeRank: 15,
+      badgeLabel: "Serie",
+      trendRank: 15,
+      updatedAt: "2026-07-16T10:15:30.000Z",
+    } as never)
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array(posterBuf), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(posterBuf.length) },
+      }),
+    )
+
+    // getJWRankings riuscito ma senza il titolo → miss genuina.
+    mockedGetJWRankings.mockResolvedValueOnce([])
+    const req = new NextRequest("http://localhost:3000/api/poster/tv/76479?debug=1")
+    const res = await GET(req, { params: Promise.resolve({ type: "tv", id: "76479" }) })
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.rankings.justwatch).toBeNull()
+    expect(body.rankings.finalRank).toBeNull()
+    expect(body.badge.computed.badge?.rank).not.toBe(15)
+  })
+
+  it("falls back to the saved mapping trend rank when the JustWatch fetch fails", async () => {
+    const posterBuf = await imageBuffer("#101010", 500, 750)
+
+    mockedGetById.mockResolvedValue({
+      tmdbId: 76479,
+      mediaType: "tv",
+      title: "The Boys",
+      posterPath: "/the-boys.jpg",
+      logoPath: null,
+      originalPosterPath: null,
+      language: "it",
+      showBadges: true,
+      rankingBadges: true,
+      badgeRank: 15,
+      badgeLabel: "Serie",
+      trendRank: 15,
+      updatedAt: "2026-07-16T10:15:30.000Z",
+    } as never)
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array(posterBuf), {
+        status: 200,
+        headers: { "content-type": "image/png", "content-length": String(posterBuf.length) },
+      }),
+    )
+
+    // Fetch fallito (outage) → degraded esplicito col rank salvato.
+    mockedGetJWRankings.mockRejectedValueOnce(new Error("JW down"))
+    const req = new NextRequest("http://localhost:3000/api/poster/tv/76479?debug=1")
+    const res = await GET(req, { params: Promise.resolve({ type: "tv", id: "76479" }) })
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.rankings.finalRank).toBe(15)
+    expect(body.badge.computed.badge).toMatchObject({ type: "rank", rank: 15 })
   })
 })

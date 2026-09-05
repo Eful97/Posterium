@@ -64,17 +64,22 @@ Risolve i dettagli TMDB e deduplica per `tmdbId`.
 
 `resolveRequestApiKey(req)` in `lib/tmdb.ts` — priorità:
 1. header `x-api-key`;
-2. query `api_key`.
+2. query `api_key`;
+3. env `POSTERIUM_TMDB_KEY` (fallback d'istanza, opt-in).
 
 **Nessuna chiave d'istanza di default** (`TMDB_API_KEY`/`MDBLIST_API_KEY` non
 sono lette). La fonte primaria di chiavi è la richiesta (header `x-api-key` >
-query `api_key`) o il profilo utente (`?u=`): senza chiave esplicita la chiamata
+query `api_key`): senza chiave esplicita la chiamata
 TMDB/MDBList fallisce (poster 404, cataloghi vuoti). `resolveImdbId` DEVE
 ricevere la chiave della richiesta (è così oggi).
 
+NOTA: il parametro `?u=` (o path `/u/<uuid>`) è solo identità/tracking per
+manifest e cache key — **non** fornisce chiavi API. Non esiste alcun profile
+store server-side: chiavi "da profilo" non sono mai state implementate.
+
 **Fallback d'istanza (opt-in, per istanze personali)**: `POSTERIUM_TMDB_KEY` e
-`POSTERIUM_MDBLIST_KEY` sono lette come FALLBACK quando la richiesta e il profilo
-non portano la chiave. Pensate per deploy personali (es. Vercel con un solo
+`POSTERIUM_MDBLIST_KEY` sono lette come FALLBACK quando la richiesta
+non porta la chiave. Pensate per deploy personali (es. Vercel con un solo
 utente) dove i cataloghi devono funzionare senza che Stremio passi la chiave.
 Per istanze multi-utente pubbliche NON configurarle: la policy storica (nessuna
 chiave d'istanza condivisa) resta valida per quel caso.
@@ -84,6 +89,14 @@ chiave d'istanza condivisa) resta valida per quel caso.
 - Cache catalogo (`cacheSet`/`cacheGet` in `lib/cache.ts`): key include tipo,
   `catalogId`, `POSTER_URL_VERSION`, hash `config` e hash `mdblist_key`.
   TTL: refresh schedulato alle 3:00 UTC (tag `catalog`); catalogo **vuoto** → 60 s.
+- Cache meta (`meta-handler.ts`): key include `episodeGroupId:updatedAt` del
+  mapping (film e serie) così save poster/ordinamento invalidano anche
+  cross-instance; TTL 12h.
+- Su deploy multi-istanza (Vercel serverless) la `cacheInvalidate("stremio")`
+  del save non raggiunge le altre istanze: il cache key catalogo include anche
+  epoch globale (`lib/catalog-epoch.ts`, bump su ogni scrittura
+  mapping/defaults) e hash dei server defaults — ogni save cambia la chiave su
+  tutte le istanze.
 - Cache JustWatch (30 min) condivisa anche da `/api/trending/rank` e warmup.
 - `metas: []` = catalogo non riconosciuto, chiave mancante o errore. Rate limit →
   429 con `Retry-After`.

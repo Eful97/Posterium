@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { getServerDefaults, setServerDefaults, type ServerDefaults } from "@/lib/server-defaults"
 import { cacheInvalidatePosterData } from "@/lib/cache"
+import { bumpCatalogEpoch } from "@/lib/catalog-epoch"
 import { checkAdminToken, isSameOrigin, adminAuthResponse, originMismatchResponse } from "@/lib/auth"
 import { rateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 import { getWarmupCatalogs } from "@/lib/catalog-definitions"
@@ -88,6 +89,9 @@ export async function PUT(req: NextRequest) {
     return Response.json({ error: `Failed to save: ${message}` }, { status: 500 })
   }
   cacheInvalidatePosterData()
+  // Bump epoch cataloghi (F3): il cambio default globali impatta tutti i
+  // poster URL (con lo sd-hash nel key come seconda rete di sicurezza).
+  await bumpCatalogEpoch()
   // Warm catalog cache — ricostruisci cataloghi principali in background.
   // Usa un origin interno fisso (127.0.0.1) invece dell'origin derivato dall'
   // header Host della richiesta: quest'ultimo è controllabile dal client

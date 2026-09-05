@@ -80,37 +80,34 @@ Run these against the deployed instance:
 ## Vercel specifics
 
 - KV (`KV_REST_API_URL` + `KV_REST_API_TOKEN`) is required for **server-side
-  persistence** of mappings/profiles. Without it the filesystem is read-only and
-  saves degrade: mapping saves fail, and **profile creation falls back to a
-  STATELESS profile** — `POST /api/profile` returns `{ stateless: true,
-  configToken }` and the config travels in the signed `?config=` link instead of
-  being stored. Stateless profiles live in browser localStorage (same-browser
-  reload works); no per-title mappings, no `/u/<uuid>/manifest.json`, and API
-  keys must be passed in the URL.
+  persistence** of mappings/defaults. Without it the filesystem is read-only and
+  mapping saves fail; the stateless path is config-token links (`?config=`,
+  needs CONFIG_HMAC_SECRET). There is no `/api/profile` endpoint and no profile
+  key store — `?u=` is identity/tracking only, never a key source.
 - The stateless fallback requires `CONFIG_HMAC_SECRET` (or
-  `ENCRYPTION_KEY_SECRET`) to sign the token — without storage AND without the
-  secret, profile creation still fails with an explanatory 500.
+  `ENCRYPTION_KEY_SECRET`) to sign the token — without the secret, config token
+  creation fails with an explanatory 500.
 - Hobby function duration is 10s: cold catalogs (~10s) and burst poster renders
   can time out. Warmup does not complete on Hobby — not critical.
 - `CONFIG_HMAC_SECRET` unlocks config tokens (fail-closed without it).
-- `PROFILE_ENCRYPTION_KEY` encrypts profile apiKeys at rest.
 - **Personal single-user instances** (one person deploying their own Vercel):
   set `POSTERIUM_TMDB_KEY` / `POSTERIUM_MDBLIST_KEY` so catalogs populate on
   Stremio without passing `api_key` (read as last-resort fallback; header /
-  query / profile always win). Each person uses their own keys on their own
+  query always win). Each person uses their own keys on their own
   instance — do NOT share keys across public multi-user instances.
-- **Catalog posters use instance defaults, not the user config**: catalog
-  posters are built from `getServerDefaults()`, so the user's saved style
-  (badge off, network logo off) is NOT applied to catalogs. On a personal
-  instance, set the style defaults via env (`POSTERIUM_GLOBAL_BADGES`,
+- **Catalog posters use the saved per-title mapping first, then instance
+  defaults**: `buildStremioPosterUrl` emits mapping values (badges on/off,
+  badge styles, blur, gradient, extra) with fallback to `getServerDefaults()`.
+  For unmapped titles, set the style defaults via env (`POSTERIUM_GLOBAL_BADGES`,
   `POSTERIUM_RANKING_BADGES`, `POSTERIUM_BADGE_YEAR`, `POSTERIUM_NETWORK_LOGO`,
-  `POSTERIUM_BADGE_STYLE`, …) so catalog posters respect them. Saved
-  `defaults.json`/KV wins over these envs.
+  `POSTERIUM_BADGE_STYLE`, …). Saved `defaults.json`/KV wins over these envs.
 
 ## Rules
 
-- No TMDB/MDBList API keys in env or `.env` — keys are request-scoped or per
-  profile (see the `tmdb-api` skill).
+- No TMDB/MDBList API keys in env or `.env`, except the opt-in
+  `POSTERIUM_TMDB_KEY`/`POSTERIUM_MDBLIST_KEY` instance fallback for personal
+  single-user deploys — keys are otherwise request-scoped (see the `tmdb-api`
+  skill). There is no profile key store.
 - `POSTERIUM_TRUST_PROXY=1` only behind a trusted edge that overwrites IP
   headers (Cloudflare/HF edge/Nginx).
 - Env table + full defaults live in README "Variabili d'Ambiente" — keep this
