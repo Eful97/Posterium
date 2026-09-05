@@ -47,6 +47,30 @@ describe("buildStremioPosterSearchParams", () => {
     expect(params.get("rs")).toBe("default")
   })
 
+  it("serializes ribbonSide left and right explicitly", () => {
+    const leftParams = buildStremioPosterSearchParams({ ribbonSide: "left" })
+    expect(leftParams.get("side")).toBe("left")
+
+    const rightParams = buildStremioPosterSearchParams({ ribbonSide: "right" })
+    expect(rightParams.get("side")).toBe("right")
+  })
+
+  it("serializes badge subcomponents and rating sources when configured", () => {
+    const params = buildStremioPosterSearchParams({
+      badgeGenre: false,
+      badgeYear: false,
+      badgeRating: false,
+      badgeQuality: false,
+      ratingSources: ["tmdb", "imdb"],
+    })
+
+    expect(params.get("bg")).toBe("0")
+    expect(params.get("by")).toBe("0")
+    expect(params.get("br")).toBe("0")
+    expect(params.get("bq")).toBe("0")
+    expect(params.get("rsrc")).toBe("tmdb,imdb")
+  })
+
   it("keeps the public Stremio poster URL version in sync with renderer changes", () => {
     expect(POSTER_URL_VERSION).toBe(RENDER_VERSION)
   })

@@ -7,6 +7,7 @@ import { POSTER_URL_VERSION } from "@/lib/render-version"
 import { getTop10 } from "@/lib/flixpatrol"
 import { getById } from "@/lib/store"
 import { __resetJWRankingsCache } from "@/lib/justwatch"
+import { encodeConfig } from "@/lib/config-token"
 vi.mock("@/lib/flixpatrol", () => ({
   getTop10: vi.fn(),
 }))
@@ -121,6 +122,42 @@ describe("GET /catalog/[type]/[id]", () => {
 
     expect(res.status).toBe(200)
     expect(posterUrl.searchParams.get("mv")).toBe(String(Date.parse("2026-07-16T10:15:30.000Z")))
+  })
+
+  it("applies custom styles from config token to catalog poster URLs", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(justWatchResponse(94997, "tt11198330"))
+      .mockResolvedValueOnce(tmdbShowResponse(94997))
+
+    const token = encodeConfig({
+      globalBadges: true,
+      rankingBadges: true,
+      badgeStyle: "pill",
+      rankingBadgeStyle: "bar",
+      blurEnabled: true,
+      blurIntensity: 12,
+      blurFade: 45,
+      blurDarkness: 55,
+      gradientHeight: 50,
+      networkLogo: true,
+      autoRotateClean: false,
+      ribbonSide: "right",
+    })
+
+    const req = new NextRequest(`http://localhost:3000/catalog/series/posterium-jw-series.json?api_key=settings-key&config=${token}`)
+    const res = await GET(req, { params: Promise.resolve({ type: "series", id: "posterium-jw-series.json" }) })
+    const body = await res.json()
+    const posterUrl = new URL(body.metas[0].poster)
+
+    expect(res.status).toBe(200)
+    expect(posterUrl.searchParams.get("bs")).toBe("pill")
+    expect(posterUrl.searchParams.get("rs")).toBe("bar")
+    expect(posterUrl.searchParams.get("blur")).toBe("12")
+    expect(posterUrl.searchParams.get("bf")).toBe("45")
+    expect(posterUrl.searchParams.get("bd")).toBe("55")
+    expect(posterUrl.searchParams.get("gradHeight")).toBe("50")
+    expect(posterUrl.searchParams.get("side")).toBe("right")
+    expect(posterUrl.searchParams.get("config")).toBe(token)
   })
 
   it("normalizes tv catalog routes to Posterium series poster URLs", async () => {

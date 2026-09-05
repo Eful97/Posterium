@@ -65,6 +65,7 @@ export function buildStremioPosterSearchParams(input: StremioPosterParamsInput):
   if (input.ratingSources && input.ratingSources.length > 0) params.set("rsrc", input.ratingSources.join(","))
   if (!networkLogo) params.set("netLogo", "0")
   if (input.ribbonSide === "right") params.set("side", "right")
+  else if (input.ribbonSide === "left") params.set("side", "left")
   params.set("lang", input.lang || "it")
   if (!blurEnabled) params.set("be", "0")
   params.set("gradHeight", String(input.gradientHeight ?? DEFAULT_STREMIO_POSTER_PARAMS.gradientHeight))

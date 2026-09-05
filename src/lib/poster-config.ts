@@ -165,9 +165,13 @@ export function resolvePosterRenderConfig(input: PosterRenderConfigInput): Poste
   const rawExtra = q.get("extra") || configOverride?.customBadge || null
   const queryExtra = rawExtra ? resolveLabelFor(rawExtra, input.lang || "it") : null
   const qNetLogo = q.get("netLogo") ?? (configOverride !== null ? (configOverride.networkLogo ? null : "0") : null)
-  // Modalità layout nastro Netflix + logo network: query `side=right` (Stremio), mapping salvato o config/profilo
+  // Modalità layout nastro Netflix + logo network: query `side=right` (Stremio) o `side=left` (Nuvio), mapping salvato o config/profilo
   const qSide = q.get("side")
-  const ribbonSide: "left" | "right" = qSide === "right" || mapping?.ribbonSide === "right" || configOverride?.ribbonSide === "right" ? "right" : "left"
+  const ribbonSide: "left" | "right" = qSide === "right"
+    ? "right"
+    : qSide === "left"
+      ? "left"
+      : (mapping?.ribbonSide === "right" || configOverride?.ribbonSide === "right" ? "right" : "left")
 
   return {
     badgeStyle,

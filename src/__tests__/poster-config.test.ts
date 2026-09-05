@@ -185,8 +185,10 @@ describe("resolvePosterRenderConfig", () => {
     expect(r2.qNetLogo).toBe("0")
   })
 
-  it("ribbonSide: query side=right wins, then mapping, then config token", () => {
+  it("ribbonSide: query side=right or side=left wins, then mapping, then config token", () => {
     expect(resolvePosterRenderConfig(baseInput({ searchParams: new URLSearchParams({ side: "right" }) })).ribbonSide).toBe("right")
+    expect(resolvePosterRenderConfig(baseInput({ searchParams: new URLSearchParams({ side: "left" }), mapping: mapping({ ribbonSide: "right" }) })).ribbonSide).toBe("left")
+    expect(resolvePosterRenderConfig(baseInput({ searchParams: new URLSearchParams({ side: "left" }), configOverride: config({ ribbonSide: "right" }) })).ribbonSide).toBe("left")
     expect(resolvePosterRenderConfig(baseInput({ mapping: mapping({ ribbonSide: "right" }) })).ribbonSide).toBe("right")
     expect(resolvePosterRenderConfig(baseInput({ configOverride: config({ ribbonSide: "right" }) })).ribbonSide).toBe("right")
     expect(resolvePosterRenderConfig(baseInput()).ribbonSide).toBe("left")

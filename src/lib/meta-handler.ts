@@ -99,7 +99,9 @@ async function posteriumPosterUrl(
   userParam?: string | null,
   mdblistKeyParam?: string | null,
 ): Promise<string> {
-  const defaults = getServerDefaults()
+  const serverDefaults = getServerDefaults()
+  const userConfig = configParam ? decodeConfig(configParam) : null
+  const defaults = userConfig ? { ...serverDefaults, ...userConfig } : serverDefaults
   const mapping = await getById(type === "series" ? "tv" : "movie", id)
   return buildStremioPosterUrl({
     origin: getOriginFromRequest(req),
