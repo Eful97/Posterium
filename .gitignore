@@ -47,7 +47,15 @@ yarn-error.log*
 /CLAUDE.md
 /AGENTS.md
 /agents.md
-/.agents/
+# .agents: tracciati solo i project-docs (contratti utili anche agli agenti
+# dei contributor); resta ignorato il workflow personale (stile + subagent).
+/.agents/*
+!/.agents/render-params.md
+!/.agents/catalog.md
+!/.agents/visual-testing.md
+!/.agents/skills/
+/.agents/skills/caveman*/
+/.agents/skills/cavecrew/
 
 # vercel
 .vercel
