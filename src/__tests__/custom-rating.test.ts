@@ -2,7 +2,7 @@
 import { Readable } from "node:stream"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { request } from "undici"
-import { fetchCustomRatings, formatRating, resolveCustomRatingConfig } from "@/lib/custom-rating"
+import { fetchCustomRatings, formatRating, resolveCustomRatingConfig, diagnoseCustomRatings } from "@/lib/custom-rating"
 import { MAX_CUSTOM_RATINGS, renderMultiRatings } from "@/lib/multi-rating-renderer"
 import sharp from "sharp"
 import type { LookupFunction } from "node:net"
@@ -167,5 +167,32 @@ describe("custom rating", () => {
     expect(metadata.width).toBeLessThanOrEqual(460)
     expect(metadata.height).toBe(row!.h)
     expect(await renderMultiRatings([], 460)).toBeNull()
+  })
+  it("diagnoses disabled and unconfigured providers without requesting", async () => {
+    expect(await diagnoseCustomRatings("tt123", { ...config, enabled: false }))
+      .toMatchObject({ status: null, ratings: [], error: "disabled" })
+    expect(await diagnoseCustomRatings("tt123", { ...config, endpoint: "https://example.com/no-placeholder" }))
+      .toMatchObject({ status: null, ratings: [], error: "no-endpoint" })
+    expect(await diagnoseCustomRatings("tt123", {
+      ...config, endpoint: "http://example.com/{imdbId}", apiKey: "k",
+    })).toMatchObject({ status: null, ratings: [], error: "unsafe-endpoint" })
+    expect(mockedRequest).not.toHaveBeenCalled()
+  })
+  it("diagnoses transport, HTTP and contract outcomes with timing", async () => {
+    respond(JSON.stringify({ ratings: [sample] }))
+    const ok = await diagnoseCustomRatings("tt123", config)
+    expect(ok.error).toBeNull()
+    expect(ok.status).toBe(200)
+    expect(ok.ratings).toEqual([sample])
+    expect(ok.ms).toBeGreaterThanOrEqual(0)
+    mockedRequest.mockRejectedValueOnce(new Error("down"))
+    expect(await diagnoseCustomRatings("tt123", config)).toMatchObject({ status: null, error: "unreachable" })
+    respond("{}", 503)
+    expect(await diagnoseCustomRatings("tt123", config)).toMatchObject({ status: 503, error: "http-error" })
+    respond("not json")
+    expect(await diagnoseCustomRatings("tt123", config)).toMatchObject({ status: 200, error: "invalid-response" })
+    respond(JSON.stringify({ ratings: [{ ...sample, format: "stars" }] }))
+    // Contract-shape ok ma zero item validi: successo con lista vuota.
+    expect(await diagnoseCustomRatings("tt123", config)).toMatchObject({ status: 200, error: null, ratings: [] })
   })
 })

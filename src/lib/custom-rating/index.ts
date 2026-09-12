@@ -3,7 +3,8 @@ import { envWithFallback } from "../env-compat"
 
 export type { CustomRatingConfig, CustomRatingFormat, RatingItem } from "./types"
 export { formatRating } from "./formatter"
-export { fetchCustomRatings } from "./provider"
+export { fetchCustomRatings, diagnoseCustomRatings, parseRatingItems } from "./provider"
+export type { CustomRatingDiagnosis, CustomRatingDiagnosisError } from "./provider"
 
 /** Explicit overrides allow a future server-side token/UI resolver. */
 export function resolveCustomRatingConfig(

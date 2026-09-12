@@ -429,7 +429,7 @@ describe("renderComingSoonRibbon", () => {
     expect(redCount).toBeGreaterThan(500)
   }, 30000)
 
-  it("rasterizes Coming Soon ribbon for all 9 supported translations", async () => {
+  it("rasterizes Coming Soon ribbon for all 10 supported translations", async () => {
     const labels = [
       "Coming Soon",
       "Prossimamente",
@@ -440,6 +440,7 @@ describe("renderComingSoonRibbon", () => {
       "近日公開",
       "개봉 예정",
       "בקרוב",
+      "Brzy",
     ]
     for (const label of labels) {
       const { png, w, h } = await renderComingSoonRibbon(label, 380)

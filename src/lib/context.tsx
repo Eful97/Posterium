@@ -8,6 +8,7 @@ import { setLang as setI18nLang, createT } from "./i18n"
 import { isSupportedUiLang, getRegionDef, defaultRegionForLang } from "./regions"
 import type { EnrichedAnimeItem } from "./validation"
 import { http } from "./http"
+import { copyText } from "./clipboard"
 import { useRootColors } from "./useRootColors"
 import { buildUrlPattern, buildPreviewUrl } from "./poster-url"
 import { selectBestLogo, autoLogoSelection, logoDefaultScale } from "./logo-selection"
@@ -952,7 +953,7 @@ export function usePictorium(): PictoriumCtx {
   openPosterBrowserRef.current = openPosterBrowser
 
   const copyUrl = async () => {
-    await navigator.clipboard.writeText(urlPattern)
+    if (!(await copyText(urlPattern))) return
     setCopied(true)
     if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
     copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)

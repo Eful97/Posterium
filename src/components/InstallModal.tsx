@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react"
 import { X, Check, Copy, Download, ExternalLink, Tv, Sparkles, Film, Search } from "lucide-react"
 import QRCode from "qrcode"
 import { useT } from "@/lib/contexts/TranslationContext"
+import { copyText } from "@/lib/clipboard"
 import { Modal } from "@/components/ui/Modal"
 
 interface InstallModalProps {
@@ -100,7 +101,7 @@ export function InstallModal({ isOpen, onClose, manifestUrl: propManifestUrl, po
   if (!isOpen) return null
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(resolvedManifestUrl)
+    if (!(await copyText(resolvedManifestUrl))) return
     setCopied(true)
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => setCopied(false), 2000)
@@ -108,7 +109,7 @@ export function InstallModal({ isOpen, onClose, manifestUrl: propManifestUrl, po
 
   const handleCopyPosterUrl = async () => {
     if (!posterUrlPattern) return
-    await navigator.clipboard.writeText(posterUrlPattern)
+    if (!(await copyText(posterUrlPattern))) return
     setCopiedPosterUrl(true)
     if (posterTimerRef.current) clearTimeout(posterTimerRef.current)
     posterTimerRef.current = setTimeout(() => setCopiedPosterUrl(false), 2000)

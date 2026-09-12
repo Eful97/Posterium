@@ -1,12 +1,12 @@
 // Script offline una tantum: verifica che i package JustWatch usati da
 // Pictorium (PLATFORM_JW_PACKAGES in catalog-handler.ts) esistano davvero in
-// ognuna delle 12 regioni supportate, includendo gli add-on/channel
+// ognuna delle 15 regioni supportate, includendo gli add-on/channel
 // (includeAddons: true — senza, HBO Max/Crunchyroll/AMC+ via Amazon Channel
 // risultano invisibili).
 //
 // Uso: node scripts/audit-jw-packages.mjs [COUNTRY...]
 // Esempi:
-//   node scripts/audit-jw-packages.mjs            # tutte le 12 regioni
+//   node scripts/audit-jw-packages.mjs            # tutte le 15 regioni
 //   node scripts/audit-jw-packages.mjs IT US      # solo queste
 // Non tocca il codice di produzione: output solo report su stdout.
 

@@ -354,8 +354,8 @@ describe("buildPreviewUrl", () => {
     expect(url).toContain("extra=Custom%20Label")
   })
 
-  it("emits cr=0 in preview and pattern only when customRatings is off", () => {
-    expect(buildPreviewUrl(basePosterState, baseBadgeParams)).not.toContain("cr=")
+  it("always emits cr in preview (WYSIWYG), only-OFF in pattern", () => {
+    expect(buildPreviewUrl(basePosterState, baseBadgeParams)).toContain("cr=1")
     expect(buildPreviewUrl(basePosterState, { ...baseBadgeParams, customRatings: false })).toContain("cr=0")
     const patternUrl = buildUrlPattern({ ...baseBadgeParams, tmdbKey: "k", lang: "it", customRatings: false })
     expect(patternUrl).toContain("cr=0")

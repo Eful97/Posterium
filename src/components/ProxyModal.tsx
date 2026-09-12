@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import { toast } from "sonner"
 import { X, Copy, ExternalLink, Sparkles, Check, Link2 } from "lucide-react"
 import { useT } from "@/lib/contexts/TranslationContext"
+import { copyText } from "@/lib/clipboard"
 import { Modal } from "@/components/ui/Modal"
 
 interface Props {
@@ -32,7 +33,7 @@ export function ProxyModal({ isOpen, onClose }: Props) {
   const handleCopy = async () => {
     if (!proxyUrl) return
     try {
-      await navigator.clipboard.writeText(proxyUrl)
+      if (!(await copyText(proxyUrl))) throw new Error("copy failed")
       setCopied(true)
       toast.success(t("ui.copied"))
       setTimeout(() => setCopied(false), 2000)

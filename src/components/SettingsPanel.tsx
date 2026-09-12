@@ -11,6 +11,7 @@ import { SliderRow } from "@/components/SliderRow"
 import { Toggle } from "@/components/Toggle"
 import { BadgeStyleSelector, MenuItem } from "@/components/ui"
 import { UI_RATING_SOURCES } from "@/lib/ratings"
+import { formatRating } from "@/lib/custom-rating/formatter"
 import { REGIONS } from "@/lib/regions"
 import { UI_LANGUAGES } from "@/lib/utils"
 import { RatingSourceIcon } from "@/components/RatingSourceIcon"
@@ -95,6 +96,43 @@ export function SettingsPanel({ setSettingsOpen, exportData, importData, mobile 
   const [curPinInput, setCurPinInput] = useState("")
   const [newPinInput, setNewPinInput] = useState("")
   const [pinBusy, setPinBusy] = useState(false)
+
+  // Test provider custom rating (sample fisso server-side, chiave mai esposta).
+  const [crTestBusy, setCrTestBusy] = useState(false)
+  const [crTestResult, setCrTestResult] = useState<{
+    ok: boolean
+    status: number | null
+    ms: number
+    ratings?: { id: string; name: string; value: number; format: string }[]
+    error?: string
+  } | null>(null)
+
+  const runCustomRatingTest = async () => {
+    setCrTestBusy(true)
+    setCrTestResult(null)
+    try {
+      // Flush dei default appena digitati: il test gira sulla config salvata.
+      await saveDefaults(ed)
+      const res = await http("/api/custom-rating/test", { method: "POST" })
+      setCrTestResult(res as typeof crTestResult)
+    } catch {
+      setCrTestResult({ ok: false, status: null, ms: 0, error: "unreachable" })
+    } finally {
+      setCrTestBusy(false)
+    }
+  }
+
+  const customRatingTestErrorLabel = (code?: string) => {
+    switch (code) {
+      case "disabled": return t("ui.customRatingTestErrDisabled")
+      case "no-endpoint": return t("ui.customRatingTestErrNoEndpoint")
+      case "unsafe-endpoint": return t("ui.customRatingTestErrUnsafe")
+      case "http-error": return t("ui.customRatingTestErrHttp")
+      case "oversized": return t("ui.customRatingTestErrOversized")
+      case "invalid-response": return t("ui.customRatingTestErrInvalid")
+      default: return t("ui.customRatingTestErrUnreachable")
+    }
+  }
 
   const refreshPin = () => {
     fetch("/api/auth/pin")
@@ -477,6 +515,38 @@ export function SettingsPanel({ setSettingsOpen, exportData, importData, mobile 
               />
             </div>
             <p className="text-[10px] text-zinc-500 italic">{t("ui.customRatingKeyHint")}</p>
+            <div className="pt-1">
+              <button
+                type="button"
+                disabled={crTestBusy}
+                onClick={runCustomRatingTest}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-teal-500/15 text-teal-300 border border-teal-500/30 hover:bg-teal-500/25 disabled:opacity-50 transition-colors cursor-pointer"
+              >
+                {crTestBusy ? t("ui.customRatingTesting") : t("ui.customRatingTest")}
+              </button>
+              {crTestResult && (
+                <div className={`mt-2 p-2 rounded-lg border text-[11px] ${crTestResult.ok ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/10 border-red-500/30"}`}>
+                  {crTestResult.ok ? (
+                    <div className="space-y-1">
+                      <div className="font-semibold text-emerald-300">
+                        {t("ui.customRatingTestOk")} · {crTestResult.status} OK · {crTestResult.ms} ms
+                      </div>
+                      {crTestResult.ratings?.map((r) => (
+                        <div key={r.id} className="flex items-center justify-between text-zinc-200">
+                          <span className="truncate">{r.name}</span>
+                          <span className="font-mono ml-2 shrink-0">{formatRating(r.value, r.format as "decimal" | "percent")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-red-300">
+                      {customRatingTestErrorLabel(crTestResult.error)}
+                      {crTestResult.status ? ` · ${crTestResult.status}` : ""} · {crTestResult.ms} ms
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-between">

@@ -141,6 +141,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   const configToken = req.nextUrl.searchParams.get("config") || req.nextUrl.searchParams.get("c")
   const configOverride = configToken ? decodeConfig(configToken) : null
 
+  // IMDb ID dal path (es. /api/poster/movie/tt1375666): preservato subito così
+  // il provider custom rating (e il ramo mapping) lo usano senza dipendere
+  // da getExternalIds — che richiede una chiave TMDB assente negli URL Stremio.
+  const pathImdbId = typeof id === "string" && /^tt\d+$/.test(id) ? id : null
   let tmdbId = Number(id)
   if (isNaN(tmdbId) || tmdbId <= 0) {
     if (typeof id === "string" && id.startsWith("tt")) {
@@ -424,7 +428,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
   let productionCompanies: string[] = []
   let tmdbNetworksDetailed: { name: string; logoPath: string | null }[] = []
   let productionCompaniesDetailed: { name: string; logoPath: string | null }[] = []
-  let imdbId: string | null = null
+  let imdbId: string | null = pathImdbId
 
   const queryPoster = req.nextUrl.searchParams.get("poster")
   const queryLogo = req.nextUrl.searchParams.get("logo")
@@ -476,7 +480,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
         else releaseDate = `${y}-01-01`
       }
     }
-    imdbId = req.nextUrl.searchParams.get("imdbId") || null
+    imdbId = req.nextUrl.searchParams.get("imdbId") || imdbId
     showBadges = req.nextUrl.searchParams.get("badges") !== "0"
     rankingBadges = req.nextUrl.searchParams.get("ranking") !== "0"
     etag = `"p${etagBase}"`
@@ -498,6 +502,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<RouteP
     voteAverage = mapping.voteAverage ?? null
     showBadges = mapping.showBadges ?? true
     rankingBadges = mapping.rankingBadges ?? true
+    // IMDb ID salvato al save (il path `tt...` vince se presente): evita il
+    // fallback getExternalIds che richiede una chiave TMDB assente in Stremio.
+    imdbId = imdbId ?? mapping.imdbId ?? null
     etag = `"m${etagBase}:${mapping.updatedAt}"`
     if (!customRatingConfig.enabled && req.headers.get("If-None-Match") === etag) {
       clearTimeout(renderDeadline)

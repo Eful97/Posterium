@@ -7,7 +7,9 @@ services:
     container_name: pictorium
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      # Host bind/porta configurabili (default 0.0.0.0:8080). La porta interna
+      # resta 8080 (PORT/HOSTNAME sotto + healthcheck): cambia solo l'esposizione.
+      - "${PICTORIUM_BIND_IP:-0.0.0.0}:${PICTORIUM_HOST_PORT:-8080}:8080"
     environment:
       # ── Chiavi API ──
       # Priorità: header `x-api-key` > query `api_key`/`mdblist_key` > fallback
@@ -19,13 +21,24 @@ services:
       - PICTORIUM_TMDB_KEY=${PICTORIUM_TMDB_KEY:-${POSTERIUM_TMDB_KEY:-}}
       - PICTORIUM_MDBLIST_KEY=${PICTORIUM_MDBLIST_KEY:-${POSTERIUM_MDBLIST_KEY:-}}
       - PICTORIUM_TVDB_API_KEY=${PICTORIUM_TVDB_API_KEY:-${POSTERIUM_TVDB_API_KEY:-}}
+      # ── Custom Rating Provider ──
+      # Endpoint/header configurabili anche dall'editor (vince sul qui sotto);
+      # la chiave resta SEMPRE env (mai in UI/token/URL).
+      - PICTORIUM_CUSTOM_RATING_ENABLED=${PICTORIUM_CUSTOM_RATING_ENABLED:-${POSTERIUM_CUSTOM_RATING_ENABLED:-}}
+      - PICTORIUM_CUSTOM_RATING_ENDPOINT=${PICTORIUM_CUSTOM_RATING_ENDPOINT:-${POSTERIUM_CUSTOM_RATING_ENDPOINT:-}}
+      - PICTORIUM_CUSTOM_RATING_API_KEY=${PICTORIUM_CUSTOM_RATING_API_KEY:-${POSTERIUM_CUSTOM_RATING_API_KEY:-}}
+      - PICTORIUM_CUSTOM_RATING_API_KEY_HEADER=${PICTORIUM_CUSTOM_RATING_API_KEY_HEADER:-${POSTERIUM_CUSTOM_RATING_API_KEY_HEADER:-}}
+      - PICTORIUM_CUSTOM_RATINGS=${PICTORIUM_CUSTOM_RATINGS:-${POSTERIUM_CUSTOM_RATINGS:-}}
       # ── Opzionali — Admin & Sicurezza ──
       # Senza ADMIN_TOKEN né PICTORIUM_PUBLIC_INSTANCE=1 l'editor resta chiuso
       # (fail-closed); gli endpoint poster/cataloghi restano sempre aperti.
       - PICTORIUM_PUBLIC_INSTANCE=${PICTORIUM_PUBLIC_INSTANCE:-}
       - PICTORIUM_ADMIN_TOKEN=${PICTORIUM_ADMIN_TOKEN:-${POSTERIUM_ADMIN_TOKEN:-}}
       - POSTERIUM_ADMIN_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}
-      - WARMUP_TOKEN=${POSTERIUM_ADMIN_TOKEN:-}
+      # Token warmup: l'app/entrypoint leggono PICTORIUM_/POSTERIUM_WARMUP_TOKEN
+      # (il vecchio WARMUP_TOKEN senza prefisso non è mai letto).
+      - PICTORIUM_WARMUP_TOKEN=${PICTORIUM_WARMUP_TOKEN:-${POSTERIUM_WARMUP_TOKEN:-}}
+      - POSTERIUM_WARMUP_TOKEN=${POSTERIUM_WARMUP_TOKEN:-}
       # Firma dei config token URL (CONFIG_HMAC_SECRET). Senza, i token non sono firmati.
       - CONFIG_HMAC_SECRET=${CONFIG_HMAC_SECRET:-}
       # Cifratura AES-256-GCM delle apiKeys dei profili cloud (openssl rand -hex 32).
@@ -73,6 +86,8 @@ services:
       - NODE_ENV=production
       - PORT=8080
       - HOSTNAME=0.0.0.0
+      # Self-warmup post-boot (default 1): 0 per saltarlo.
+      - PICTORIUM_SELF_WARMUP=${PICTORIUM_SELF_WARMUP:-${POSTERIUM_SELF_WARMUP:-}}
     # Hardening: il container gira come utente non-root (uid 1000) e senza
     # capability aggiuntive; niente escalation di privilegi.
     cap_drop:

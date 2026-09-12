@@ -32,48 +32,129 @@ const dispatcher = new Agent({ connect: { lookup(hostname, options, callback) {
   })
 } } })
 
+export type CustomRatingDiagnosisError =
+  | "disabled"
+  | "no-endpoint"
+  | "unsafe-endpoint"
+  | "unreachable"
+  | "http-error"
+  | "oversized"
+  | "invalid-response"
+
+export interface CustomRatingDiagnosis {
+  status: number | null
+  ms: number
+  ratings: RatingItem[]
+  error: CustomRatingDiagnosisError | null
+}
+
+/** Condivide la validazione item con fetchCustomRatings (stesso contratto). */
+export function parseRatingItems(data: unknown): RatingItem[] | null {
+  if (!data || typeof data !== "object" || !("ratings" in data) || !Array.isArray(data.ratings)) return null
+  const ratings = new Map<string, RatingItem>()
+  for (const item of data.ratings) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue
+    const { id, name, value, format } = item
+    if (typeof id !== "string" || !id.trim() || typeof name !== "string" || !name.trim()) continue
+    if (typeof value !== "number" || !Number.isFinite(value)) continue
+    if (format !== "decimal" && format !== "percent") continue
+    // Last valid value wins; retain the first occurrence's position.
+    ratings.set(id.trim(), { id: id.trim(), name: name.trim(), value, format })
+  }
+  return [...ratings.values()]
+}
+
+const RESPONSE_LIMIT = 16 * 1024
+
+function resolveEndpointUrl(imdbId: string, config: CustomRatingConfig): URL | "unsafe" | null {
+  if (!config.endpoint.includes("{imdbId}")) return null
+  try {
+    const url = new URL(config.endpoint.replaceAll("{imdbId}", imdbId))
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return "unsafe"
+    if (config.apiKey && url.protocol !== "https:") return "unsafe"
+    const host = url.hostname.replace(/^\[|\]$/g, "")
+    if (isIP(host) && !publicAddress(host)) return "unsafe"
+    return url
+  } catch {
+    return "unsafe"
+  }
+}
+
+function ratingHeaders(config: CustomRatingConfig): Record<string, string> {
+  const headers: Record<string, string> = { accept: "application/json" }
+  if (config.apiKey) headers[config.apiKeyHeader || "X-API-Key"] = config.apiKey
+  return headers
+}
+
+async function readBody(response: Awaited<ReturnType<typeof request>>): Promise<Buffer | null> {
+  try {
+    const chunks: Buffer[] = []
+    let size = 0
+    for await (const chunk of response.body) {
+      size += chunk.length
+      if (size > RESPONSE_LIMIT) return null
+      chunks.push(Buffer.from(chunk))
+    }
+    return Buffer.concat(chunks)
+  } finally {
+    response.body.destroy()
+  }
+}
+
 export async function fetchCustomRatings(imdbId: string | null | undefined, config: CustomRatingConfig, signal?: AbortSignal): Promise<RatingItem[]> {
   if (!config.enabled || !imdbId || !/^tt\d+$/.test(imdbId) || signal?.aborted) return []
   try {
-    if (!config.endpoint.includes("{imdbId}")) return []
-    const url = new URL(config.endpoint.replaceAll("{imdbId}", imdbId))
-    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return []
-    if (config.apiKey && url.protocol !== "https:") return []
-    const host = url.hostname.replace(/^\[|\]$/g, "")
-    if (isIP(host) && !publicAddress(host)) return []
-    const headers: Record<string, string> = { accept: "application/json" }
-    if (config.apiKey) headers[config.apiKeyHeader || "X-API-Key"] = config.apiKey
+    const url = resolveEndpointUrl(imdbId, config)
+    if (!url || url === "unsafe") return []
     const response = await request(url, {
-      dispatcher, headers, signal: combineAbortSignals(signal, 1500),
+      dispatcher, headers: ratingHeaders(config), signal: combineAbortSignals(signal, 1500),
       // undici.request does not follow redirects (no redirect interceptor).
       headersTimeout: 1500, bodyTimeout: 1500,
     })
-    try {
-      if (response.statusCode < 200 || response.statusCode >= 300) return []
-      const chunks: Buffer[] = []
-      let size = 0
-      for await (const chunk of response.body) {
-        size += chunk.length
-        if (size > 16 * 1024) return []
-        chunks.push(Buffer.from(chunk))
-      }
-      const data: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"))
-      if (!data || typeof data !== "object" || !("ratings" in data) || !Array.isArray(data.ratings)) return []
-      const ratings = new Map<string, RatingItem>()
-      for (const item of data.ratings) {
-        if (!item || typeof item !== "object" || Array.isArray(item)) continue
-        const { id, name, value, format } = item
-        if (typeof id !== "string" || !id.trim() || typeof name !== "string" || !name.trim()) continue
-        if (typeof value !== "number" || !Number.isFinite(value)) continue
-        if (format !== "decimal" && format !== "percent") continue
-        // Last valid value wins; retain the first occurrence's position.
-        ratings.set(id.trim(), { id: id.trim(), name: name.trim(), value, format })
-      }
-      return [...ratings.values()]
-    } finally {
-      response.body.destroy()
-    }
+    const body = await readBody(response)
+    if (response.statusCode < 200 || response.statusCode >= 300) return []
+    if (!body) return []
+    return parseRatingItems(JSON.parse(body.toString("utf8"))) ?? []
   } catch {
     return []
   }
+}
+
+/**
+ * Diagnostica per il bottone "Test provider" (sample fisso server-side):
+ * stessi timeout/limiti/SSRF del fetch reale, ma con esito dettagliato.
+ * Non restituisce mai la chiave API (resta solo negli header della request).
+ */
+export async function diagnoseCustomRatings(imdbId: string, config: CustomRatingConfig): Promise<CustomRatingDiagnosis> {
+  const start = Date.now()
+  const done = (partial: Omit<CustomRatingDiagnosis, "ms">): CustomRatingDiagnosis => ({ ...partial, ms: Date.now() - start })
+  if (!config.enabled) return done({ status: null, ratings: [], error: "disabled" })
+  if (!/^tt\d+$/.test(imdbId)) return done({ status: null, ratings: [], error: "invalid-response" })
+  const url = resolveEndpointUrl(imdbId, config)
+  if (url === null) return done({ status: null, ratings: [], error: "no-endpoint" })
+  if (url === "unsafe") return done({ status: null, ratings: [], error: "unsafe-endpoint" })
+  let response: Awaited<ReturnType<typeof request>>
+  try {
+    response = await request(url, {
+      dispatcher, headers: ratingHeaders(config), signal: combineAbortSignals(undefined, 1500),
+      headersTimeout: 1500, bodyTimeout: 1500,
+    })
+  } catch {
+    return done({ status: null, ratings: [], error: "unreachable" })
+  }
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    response.body.destroy()
+    return done({ status: response.statusCode, ratings: [], error: "http-error" })
+  }
+  const body = await readBody(response)
+  if (!body) return done({ status: response.statusCode, ratings: [], error: "oversized" })
+  let data: unknown
+  try {
+    data = JSON.parse(body.toString("utf8"))
+  } catch {
+    return done({ status: response.statusCode, ratings: [], error: "invalid-response" })
+  }
+  const ratings = parseRatingItems(data)
+  if (!ratings) return done({ status: response.statusCode, ratings: [], error: "invalid-response" })
+  return done({ status: response.statusCode, ratings, error: null })
 }

@@ -30,6 +30,7 @@ export const mappingSchema = z.object({
   badgeYear: z.boolean().nullable().optional(),
   badgeRating: z.boolean().nullable().optional(),
   customRatings: z.boolean().nullable().optional(),
+  imdbId: z.string().regex(/^tt\d{1,20}$/).nullable().optional(),
   genreName: z.string().nullable().optional(),
   voteAverage: z.number().min(0).max(10).nullable().optional(),
   trendRank: z.number().int().min(0).nullable().optional(),

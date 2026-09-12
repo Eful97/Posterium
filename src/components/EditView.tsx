@@ -10,6 +10,7 @@ import { PosterOptions } from "@/components/PosterOptions"
 import { LogoOptions } from "@/components/LogoOptions"
 import { EditorPanel } from "@/components/EditorPanel"
 import { buildPreviewUrl } from "@/lib/poster-url"
+import { copyText } from "@/lib/clipboard"
 import { SearchBar } from "@/components/SearchBar"
 import { PosterCarousel } from "@/components/PosterCarousel"
 import { ScrollReveal } from "@/components/ScrollReveal"
@@ -549,12 +550,11 @@ export default function EditView() {
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button type="button" onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(testUrl)
-                  setUrlCopied(true)
-                  if (urlCopiedTimerRef.current) clearTimeout(urlCopiedTimerRef.current)
-                  urlCopiedTimerRef.current = setTimeout(() => setUrlCopied(false), 2000)
-                } catch { /* clipboard non disponibile */ }
+                // copyText non lancia mai: false se la clipboard non è disponibile.
+                if (!(await copyText(testUrl))) return
+                setUrlCopied(true)
+                if (urlCopiedTimerRef.current) clearTimeout(urlCopiedTimerRef.current)
+                urlCopiedTimerRef.current = setTimeout(() => setUrlCopied(false), 2000)
               }} className="btn-secondary min-h-[44px] rounded-xl text-xs">{urlCopied ? t("ui.copied") : t("ui.copyPosterUrl")}</button>
               <button type="button" onClick={() => window.open(testUrl, "_blank")} className="btn-primary min-h-[44px] rounded-xl text-xs">{t("ui.openInNewTab")}</button>
             </div>

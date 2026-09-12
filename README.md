@@ -212,10 +212,14 @@ services:
     container_name: pictorium
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${PICTORIUM_HOST_PORT:-8080}:8080" # porta host configurabile (es. PICTORIUM_HOST_PORT=9090)
     environment:
       - PICTORIUM_PUBLIC_INSTANCE=1
       - PICTORIUM_TMDB_KEY=la_tua_chiave_tmdb
+      # Rating custom esterni (opzionale): endpoint anche dall'editor, chiave solo env.
+      - PICTORIUM_CUSTOM_RATING_ENABLED=1
+      - PICTORIUM_CUSTOM_RATING_ENDPOINT=https://example.com/ratings/{imdbId}
+      - PICTORIUM_CUSTOM_RATING_API_KEY=la_chiave_del_provider
     volumes:
       - pictorium-data:/data
 
@@ -282,7 +286,7 @@ npm install --ignore-scripts && npm run build && npm start
 | `PICTORIUM_TMDB_KEY` | *(opzionale)* | Chiave API TMDB d'istanza per generare poster e cataloghi senza doverla inserire nei client. |
 | `PICTORIUM_TVDB_API_KEY` | *(opzionale)* | Chiave TheTVDB per ordinamenti stagioni alternativi e descrizioni episodi. |
 | `PICTORIUM_MDBLIST_KEY` | *(opzionale)* | Chiave MDBList per liste personalizzate e cataloghi anime. |
-| `PICTORIUM_REGION` | `IT` | Paese delle classifiche JustWatch/FlixPatrol e lingua dei titoli (`IT`, `US`, `GB`, `FR`, `DE`, `ES`, `MX`, `IL`, `JP`, `KR`, `BR`, `IN`, `CA`, `AU`). Overridabile per-richiesta con `?region=` e per-utente via config-token/default salvati. |
+| `PICTORIUM_REGION` | `IT` | Paese delle classifiche JustWatch/FlixPatrol e lingua dei titoli (`IT`, `US`, `GB`, `FR`, `DE`, `ES`, `MX`, `IL`, `JP`, `KR`, `BR`, `IN`, `CA`, `AU`, `CZ`). Overridabile per-richiesta con `?region=` e per-utente via config-token/default salvati. |
 | `PICTORIUM_DATA_DIR` | `./data` | Cartella di persistenza su disco per database e file salvati. |
 | `KV_REST_API_URL` / `TOKEN` | *(vuoto)* | Parametri di connessione Upstash Redis per deploy serverless su Vercel. |
 

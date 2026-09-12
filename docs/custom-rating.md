@@ -6,6 +6,11 @@ appear in a separate horizontal pill row above the existing bottom badge.
 When disabled, no multi-rating row is rendered. When enabled, available internal
 IMDb data is combined with the provider items for non-mapped, saved and query posters.
 
+The IMDb ID is resolved without an extra TMDB call when possible: a `tt...`
+path ID is preserved by the poster route, `?imdbId=` wins in preview/query,
+and saved mappings persist `imdbId` at save time. Only when none is available
+does the route fall back to `getExternalIds` (which needs a TMDB key).
+
 ## Configuration
 
 Endpoint and key header can be set from the editor (Settings, admin) or via
@@ -90,6 +95,18 @@ light pill on dark ones via `topLight`); text uses per-label font selection and
 per title via query `cr` > mapping `customRatings` > config token > server
 defaults (`PICTORIUM_CUSTOM_RATINGS`) > ON, ANDed with the env `enabled` above:
 the row renders only when the provider is configured and display is on.
+The editor preview always sends an explicit `cr=0/1` so the WYSIWYG toggle
+never desyncs from a saved mapping default.
 Endpoint, API key and header stay env-only — they never travel in URLs, tokens
 or mappings. Asset uploads are left for a separate change; no public endpoint
 or token schema changes here beyond the `customRatings` display boolean.
+
+## Provider test endpoint
+
+`POST /api/custom-rating/test` (admin-gated, same gate as `PUT /api/defaults`)
+probes the configured provider with the fixed sample `tt1375666` and returns
+`{ ok, status, ms, ratings }` or `{ ok: false, error, status, ms }` with one of
+`disabled | no-endpoint | unsafe-endpoint | unreachable | http-error | oversized | invalid-response`.
+It tests only the saved/env endpoint (never a client-supplied URL) and never
+exposes the API key. The Settings panel exposes it as a "Test provider" button
+next to the endpoint fields.

@@ -143,7 +143,9 @@ export function buildPreviewUrl(ps: PosterState, bp: BadgeParams): string {
   params.push(`by=${bp.badgeYear !== false ? "1" : "0"}`)
   params.push(`br=${bp.badgeRating !== false ? "1" : "0"}`)
   params.push(`bq=${bp.badgeQuality !== false ? "1" : "0"}`)
-  if (bp.customRatings === false) params.push("cr=0")
+  // cr SEMPRE esplicito in preview (ON e OFF): senza, un mapping salvato con
+  // customRatings=false scavalcerebbe il toggle editor (desync WYSIWYG).
+  params.push(`cr=${bp.customRatings === false ? "0" : "1"}`)
   if (bp.ratingSources && bp.ratingSources.length > 0) params.push(`rsrc=${encodeURIComponent(bp.ratingSources.join(","))}`)
   if (ps.previewPoster) {
     params.push(`poster=${encodeURIComponent(ps.previewPoster.file_path)}`)

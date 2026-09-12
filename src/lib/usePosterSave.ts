@@ -257,6 +257,8 @@ export function usePosterSave(deps: PosterSaveDeps) {
           backdropScale, backdropOffsetX, backdropOffsetY,
           genreName: metaInfo.genres[0]?.name || null,
           voteAverage: metaInfo.voteAverage || null,
+          // IMDb ID per provider custom rating: evita getExternalIds sui salvati.
+          imdbId: metaInfo.imdb_id || null,
           trendRank: trendRank ?? undefined,
           trendPeriod: "day",
           accentColor: accentColor !== '#ffffff' ? accentColor : undefined,

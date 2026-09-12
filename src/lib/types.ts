@@ -108,6 +108,8 @@ export interface Mapping {
   badgeQuality?: boolean | null
   /** Riga rating custom provider (display). Default ON quando il provider è configurato. */
   customRatings?: boolean | null
+  /** IMDb ID salvato al save: evita getExternalIds per i poster mappati. */
+  imdbId?: string | null
   badgeStyle?: BadgeStyle | null
   rankingBadgeStyle?: RankingBadgeStyle | null
   blurEnabled?: boolean | null

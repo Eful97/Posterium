@@ -863,6 +863,50 @@ describe("GET /api/poster/[type]/[id] error and edge cases", () => {
     expect(res.status).toBe(200)
   })
 
+  it("preserves the path IMDb ID for the custom provider without externalIds", async () => {
+    vi.stubEnv("PICTORIUM_CUSTOM_RATING_ENABLED", "true")
+    vi.stubEnv("PICTORIUM_CUSTOM_RATING_ENDPOINT", "https://example.com/{imdbId}")
+    mockedGetExternalIds.mockClear()
+    const { resolveImdbToTmdb } = await import("@/lib/imdb-resolver")
+    vi.mocked(resolveImdbToTmdb).mockResolvedValue(98770)
+    mockedGetById.mockResolvedValue({
+      tmdbId: 98770, mediaType: "movie", title: "TT path", posterPath: "/tt-path.jpg",
+      logoPath: null, originalPosterPath: null, language: "it", showBadges: false,
+      rankingBadges: false, updatedAt: "2026-09-12T00:00:00.000Z",
+    })
+    const poster = await imageBuffer("#101010", 500, 750)
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(new Uint8Array(poster), {
+      headers: { "content-type": "image/png" },
+    }))
+    const res = await GET(new NextRequest("http://localhost:3000/api/poster/movie/tt1375666"), {
+      params: Promise.resolve({ type: "movie", id: "tt1375666" }),
+    })
+    expect(res.status).toBe(200)
+    expect(fetchCustomRatings).toHaveBeenCalledWith("tt1375666", expect.objectContaining({ enabled: true }), expect.any(AbortSignal))
+    expect(mockedGetExternalIds).not.toHaveBeenCalled()
+  })
+
+  it("uses the saved mapping imdbId without externalIds fallback", async () => {
+    vi.stubEnv("PICTORIUM_CUSTOM_RATING_ENABLED", "true")
+    vi.stubEnv("PICTORIUM_CUSTOM_RATING_ENDPOINT", "https://example.com/{imdbId}")
+    mockedGetExternalIds.mockClear()
+    mockedGetById.mockResolvedValue({
+      tmdbId: 98771, mediaType: "movie", title: "Mapped imdb", posterPath: "/mapped-imdb.jpg",
+      logoPath: null, originalPosterPath: null, language: "it", showBadges: false,
+      rankingBadges: false, imdbId: "tt1375666", updatedAt: "2026-09-12T00:00:00.000Z",
+    })
+    const poster = await imageBuffer("#101010", 500, 750)
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(new Uint8Array(poster), {
+      headers: { "content-type": "image/png" },
+    }))
+    const res = await GET(new NextRequest("http://localhost:3000/api/poster/movie/98771"), {
+      params: Promise.resolve({ type: "movie", id: "98771" }),
+    })
+    expect(res.status).toBe(200)
+    expect(fetchCustomRatings).toHaveBeenCalledWith("tt1375666", expect.objectContaining({ enabled: true }), expect.any(AbortSignal))
+    expect(mockedGetExternalIds).not.toHaveBeenCalled()
+  })
+
   it("normalizes series/tv media type", async () => {
     const posterBuf = await imageBuffer("#101010", 500, 750)
 
