@@ -72,7 +72,6 @@
   "ui.customRatings": "Rating custom",
   "ui.customRatingsHint": "Mostra la riga dei rating esterni (solo se il provider è configurato sul server).",
   "ui.customRatingEndpoint": "Endpoint provider",
-  "ui.customRatingApiKeyHeader": "Header chiave API",
   "ui.customRatingKeyHint": "La chiave API resta variabile d'ambiente sul server (mai nell'interfaccia).",
   "ui.customRatingTest": "Test provider",
   "ui.customRatingTesting": "Test in corso…",

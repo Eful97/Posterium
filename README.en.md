@@ -125,9 +125,9 @@ Expected response:
 The provider supports any number of rating items, optional API-key authentication
 via HTTP header, and fails gracefully without blocking poster generation.
 
-Configuration: endpoint and key header from the editor (Settings) or server-side;
-the saved UI value wins over env (empty falls back to env). The API key stays
-env-only and never appears in the UI. Display is per-title (`cr` / mapping /
+Configuration: endpoint from the editor (Settings) or server-side;
+the saved UI value wins over env (empty falls back to env). The API key and
+key header stay env-only and never appear in the UI. Display is per-title (`cr` / mapping /
 config / defaults, default ON) ANDed with the provider being enabled.
 Use `PICTORIUM_CUSTOM_RATING_ENABLED`, `PICTORIUM_CUSTOM_RATING_ENDPOINT`,
 `PICTORIUM_CUSTOM_RATING_API_KEY`, and `PICTORIUM_CUSTOM_RATING_API_KEY_HEADER`.

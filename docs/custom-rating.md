@@ -13,12 +13,14 @@ does the route fall back to `getExternalIds` (which needs a TMDB key).
 
 ## Configuration
 
-Endpoint and key header can be set from the editor (Settings, admin) or via
-environment variables. The canonical prefix is `PICTORIUM_`; `POSTERIUM_` is
-supported as a legacy fallback through `envWithFallback()`. Canonical values
-take precedence. Precedence for endpoint/header: **saved UI value > env**
-(empty UI value falls back to env); the API key is env-only and never appears
-in the UI, tokens, mappings or URLs (`GET /api/defaults` is public).
+Endpoint can be set from the editor (Settings, admin) or via environment
+variables. The canonical prefix is `PICTORIUM_`; `POSTERIUM_` is supported as
+a legacy fallback through `envWithFallback()`. Canonical values take
+precedence. Precedence for the endpoint: **saved UI value > env** (empty UI
+value falls back to env). The API key header is env-only (`X-API-Key` default;
+previously saved UI values are still honored). The API key is env-only and
+never appears in the UI, tokens, mappings or URLs (`GET /api/defaults` is
+public).
 `PICTORIUM_CUSTOM_RATINGS` (or the editor display toggle) controls the row;
 the endpoint needs `{imdbId}`, http(s) and no URL credentials (rejected on
 save with 400).

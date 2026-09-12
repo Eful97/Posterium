@@ -129,7 +129,7 @@ Risposta attesa:
 
 I voti appaiono in una riga di pill sopra il badge genere/voto (max 5 mostrate). Il provider non blocca mai il render: errori, timeout (1.5s) e risposte invalide danno riga vuota. La chiave API viaggia solo in header e solo su HTTPS (HTTP + chiave = rifiutato); gli indirizzi privati/loopback sono bloccati. I poster con rating attivi non usano la cache immutable annuale, così i voti si aggiornano alla scadenza del TTL.
 
-Configurazione: endpoint e header dall'editor (Impostazioni, vince sull'env) o via env; la chiave API resta sempre env (mai in UI, token o URL). Il display è per-titolo (`?cr=0`, mapping, config-token, default ON) in AND con il provider abilitato (`PICTORIUM_CUSTOM_RATING_ENABLED`).
+Configurazione: endpoint dall'editor (Impostazioni, vince sull'env) o via env; chiave API e header restano sempre env (mai in UI, token o URL). Il display è per-titolo (`?cr=0`, mapping, config-token, default ON) in AND con il provider abilitato (`PICTORIUM_CUSTOM_RATING_ENABLED`).
 
 Dettagli completi in [docs/custom-rating.md](docs/custom-rating.md).
 

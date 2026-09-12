@@ -72,7 +72,6 @@
   "ui.customRatings": "Vlastní hodnocení",
   "ui.customRatingsHint": "Zobrazí řadu externích hodnocení (pouze pokud je provider nastaven na serveru).",
   "ui.customRatingEndpoint": "Endpoint providera",
-  "ui.customRatingApiKeyHeader": "Hlavička API klíče",
   "ui.customRatingKeyHint": "API klíč zůstává proměnnou prostředí na serveru (nikdy v UI).",
   "ui.customRatingTest": "Test providera",
   "ui.customRatingTesting": "Testuji…",

@@ -503,17 +503,6 @@ export function SettingsPanel({ setSettingsOpen, exportData, importData, mobile 
                 className="w-full text-xs font-mono py-1.5 px-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-teal-500/50"
               />
             </div>
-            <div>
-              <label className="text-[10px] text-muted block mb-1">{t("ui.customRatingApiKeyHeader")}</label>
-              <input
-                type="text"
-                value={ed.defaultCustomRatingApiKeyHeader ?? ""}
-                onChange={(e) => ed.setDefaultCustomRatingApiKeyHeader(e.target.value)}
-                placeholder="X-API-Key"
-                maxLength={64}
-                className="w-full text-xs font-mono py-1.5 px-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-teal-500/50"
-              />
-            </div>
             <p className="text-[10px] text-zinc-500 italic">{t("ui.customRatingKeyHint")}</p>
             <div className="pt-1">
               <button
