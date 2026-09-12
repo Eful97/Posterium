@@ -135,13 +135,13 @@ describe("custom rating", () => {
     vi.stubEnv("PICTORIUM_CUSTOM_RATING_ENABLED", "false")
     expect(resolveCustomRatingConfig()).toEqual({ enabled: false, endpoint: "", apiKey: undefined, apiKeyHeader: "X-API-Key" })
   })
-  it.each(["::ffff:127.0.0.1", "::ffff:10.0.0.1", "::ffff:93.184.216.34"])("blocks IPv4-mapped IPv6 endpoint %s before requesting", async address => {
+  it.each(["::ffff:127.0.0.1", "::ffff:10.0.0.1"])("blocks private IPv4-mapped IPv6 endpoint %s before requesting", async address => {
     respond('{"invalid":87}')
     expect(await fetchCustomRatings("tt123", { ...config, endpoint: `http://[${address}]/{imdbId}` })).toEqual([])
     expect(mockedRequest).not.toHaveBeenCalled()
   })
   it("rejects DNS answers containing internal addresses at connection time", async () => {
-    for (const address of ["127.0.0.1", "10.0.0.1", "::1", "::ffff:127.0.0.1", "::ffff:10.0.0.1", "::ffff:93.184.216.34", "fc00::1", "fe80::1"]) {
+    for (const address of ["127.0.0.1", "10.0.0.1", "::1", "::ffff:127.0.0.1", "::ffff:10.0.0.1", "fc00::1", "fe80::1"]) {
       vi.mocked(lookup).mockImplementationOnce(((_host: string, _options: unknown, callback: (error: null, addresses: { address: string; family: number }[]) => void) => {
         callback(null, [{ address: "93.184.216.34", family: 4 }, { address, family: address.includes(":") ? 6 : 4 }])
       }) as typeof lookup)
@@ -152,6 +152,30 @@ describe("custom rating", () => {
         })
       })
     }
+  })
+  it("allows public IPv4 and public IPv4-mapped answers at connection time", async () => {
+    // Regressione: la regola blanket ::ffff:0:0/96 bloccava TUTTO IPv4 (Node
+    // normalizza gli IPv4 come mapped) — il provider non raggiungeva nessuna
+    // API pubblica (es. 104.21.95.211, 172.67.148.158).
+    for (const addresses of [
+      [{ address: "104.21.95.211", family: 4 }, { address: "172.67.148.158", family: 4 }],
+      [{ address: "::ffff:93.184.216.34", family: 6 }],
+    ]) {
+      vi.mocked(lookup).mockImplementationOnce(((_host: string, _options: unknown, callback: (error: null, addresses: { address: string; family: number }[]) => void) => {
+        callback(null, addresses)
+      }) as typeof lookup)
+      await new Promise<void>(resolve => {
+        connection.lookup!("example.com", { all: true }, error => {
+          expect(error).toBeNull()
+          resolve()
+        })
+      })
+    }
+  })
+  it("requests public IPv4 literal endpoints", async () => {
+    respond(JSON.stringify({ ratings: [sample] }))
+    expect(await fetchCustomRatings("tt123", { ...config, endpoint: "http://93.184.216.34/{imdbId}" })).toEqual([sample])
+    expect(mockedRequest).toHaveBeenCalledTimes(1)
   })
   it("caps displayed pills at MAX_CUSTOM_RATINGS, keeping provider data complete", async () => {
     const many = Array.from({ length: MAX_CUSTOM_RATINGS + 2 }, (_, i) => ({ id: `s${i}`, name: `Source ${i}`, value: 8 + i / 10, format: "decimal" as const }))

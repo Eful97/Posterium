@@ -7,7 +7,11 @@ import type { CustomRatingConfig, RatingItem } from "./types"
 const blocked = new BlockList()
 for (const [address, prefix] of [["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16], ["172.16.0.0", 12], ["192.168.0.0", 16], ["192.0.0.0", 24], ["198.18.0.0", 15], ["224.0.0.0", 3]] as const) blocked.addSubnet(address, prefix, "ipv4")
 blocked.addSubnet("::", 96, "ipv6")
-blocked.addSubnet("::ffff:0:0", 96, "ipv6")
+// NOTA: niente regola blanket ::ffff:0:0/96 — Node normalizza gli IPv4 come
+// IPv4-mapped, quindi coprirebbe TUTTO IPv4 compresi gli IP pubblici e il
+// provider non raggiungerebbe nessuna API normale. I mapped privati restano
+// bloccati: normalizzati, ricadono nelle regole IPv4 sopra (verificato:
+// ::ffff:10.0.0.1 bloccato, ::ffff:93.184.216.34 permesso).
 blocked.addSubnet("fc00::", 7, "ipv6")
 blocked.addSubnet("fe80::", 10, "ipv6")
 blocked.addSubnet("ff00::", 8, "ipv6")
